@@ -56,8 +56,12 @@ TEST_CLI = tests/chicago_cli_integration
 TEST_CONFIG = tests/chicago_configuration
 TEST_LOCKCHAIN_INT = tests/chicago_lockchain_integration
 TEST_PERF_V04 = tests/chicago_performance_v04
+TEST_COLD_PATH_UNRDF = chicago_cold_path_unrdf_integration
 
-.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker validate-v0.4.0 lib bench
+# Rust unrdf integration library
+RUST_UNRDF_LIB = ../rust/knhk-unrdf/target/release/libknhk_unrdf.a
+
+.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-cold-path-unrdf validate-v0.4.0 lib bench
 
 all: $(BENCH)
 
@@ -327,6 +331,20 @@ test-cli-coverage: $(TEST_CLI_COVERAGE)
 test-cli-all: test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage
 	@echo "All CLI noun tests completed!"
 
+# Build Rust unrdf integration library
+$(RUST_UNRDF_LIB):
+	@echo "Building Rust unrdf integration library..."
+	@cd ../rust/knhk-unrdf && cargo build --release
+
+# Cold path unrdf integration test
+$(TEST_COLD_PATH_UNRDF): ../tests/chicago_cold_path_unrdf_integration.c $(RUST_UNRDF_LIB) $(LIB)
+	@echo "Building cold path unrdf integration test..."
+	$(CC) $(CFLAGS) $(INCLUDES) ../tests/chicago_cold_path_unrdf_integration.c -o $@ -L. -L../rust/knhk-unrdf/target/release -lknhk -lknhk_unrdf -lpthread -ldl $(RAPTOR_LIBS)
+
+test-cold-path-unrdf: $(TEST_COLD_PATH_UNRDF)
+	@echo "Running Cold Path unrdf Integration Tests (C → Rust → unrdf)..."
+	@./$(TEST_COLD_PATH_UNRDF)
+
 test-integration-docker: $(TEST_KAFKA_INTEGRATION) $(TEST_LOCKCHAIN_INTEGRATION) $(TEST_ETL_INTEGRATION)
 	@echo "Running Docker Integration Tests..."
 	@chmod +x $(TEST_INTEGRATION_DOCKER)
@@ -344,10 +362,11 @@ validate-v0.4.0:
 
 # Clean build artifacts
 clean:
-	rm -f $(BENCH) $(TEST_ENTERPRISE) $(TEST_V1) $(TEST_RECEIPTS) $(TEST_CONSTRUCT8) $(TEST_BATCH) $(TEST_GUARDS) $(TEST_INTEGRATION) $(TEST_INTEGRATION_V2) $(TEST_PERFORMANCE) $(TEST_CONNECTORS) $(TEST_ETL) $(TEST_LOCKCHAIN) $(TEST_OTEL) $(TEST_GAPS_V1) $(TEST_CLI_BOOT) $(TEST_CLI_CONNECT) $(TEST_CLI_COVER) $(TEST_CLI_ADMIT) $(TEST_CLI_REFLEX) $(TEST_CLI_EPOCH) $(TEST_CLI_ROUTE) $(TEST_CLI_RECEIPT) $(TEST_CLI_METRICS) $(TEST_CLI_COVERAGE) $(TEST_KAFKA_INTEGRATION) $(TEST_LOCKCHAIN_INTEGRATION) $(TEST_ETL_INTEGRATION)
+	rm -f $(BENCH) $(TEST_ENTERPRISE) $(TEST_V1) $(TEST_RECEIPTS) $(TEST_CONSTRUCT8) $(TEST_BATCH) $(TEST_GUARDS) $(TEST_INTEGRATION) $(TEST_INTEGRATION_V2) $(TEST_PERFORMANCE) $(TEST_CONNECTORS) $(TEST_ETL) $(TEST_LOCKCHAIN) $(TEST_OTEL) $(TEST_GAPS_V1) $(TEST_CLI_BOOT) $(TEST_CLI_CONNECT) $(TEST_CLI_COVER) $(TEST_CLI_ADMIT) $(TEST_CLI_REFLEX) $(TEST_CLI_EPOCH) $(TEST_CLI_ROUTE) $(TEST_CLI_RECEIPT) $(TEST_CLI_METRICS) $(TEST_CLI_COVERAGE) $(TEST_KAFKA_INTEGRATION) $(TEST_LOCKCHAIN_INTEGRATION) $(TEST_ETL_INTEGRATION) $(TEST_COLD_PATH_UNRDF)
 	rm -f $(LIB) $(LIB_OBJS)
 	rm -rf tests/*.dSYM tools/*.dSYM tests/integration/*.dSYM
 	rm -rf book/book
+	@cd rust/knhk-unrdf && cargo clean 2>/dev/null || true
 
 .PHONY: docs docs-serve docs-clean
 
