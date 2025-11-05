@@ -1,0 +1,24 @@
+[knhk]
+version = "0.5.0"
+context = "default"
+
+[connectors.kafka-prod]
+type = "kafka"
+bootstrap_servers = ["localhost:9092"]
+topic = "triples"
+schema = "urn:knhk:schema:default"
+max_run_len = 8
+max_batch_size = 1000
+
+[epochs.default]
+tau = 8
+ordering = "deterministic"
+
+[hooks]
+max_count = 100
+
+[routes.webhook-1]
+kind = "webhook"
+target = "https://api.example.com/webhook"
+encode = "json-ld"
+
