@@ -26,8 +26,17 @@
 
 ### Selection Criteria
 - Simple ASK queries (no FILTER, OPTIONAL, UNION)
+- COUNT queries (≤8 elements)
 - Data size ≤8 triples
 - Single predicate queries
+
+**Implementation**: 
+- Uses `knhk_eval_bool` C function for ASK queries
+- Uses C hot path COUNT operations for COUNT queries
+- Validates tick budget (≤8 ticks) with automatic fallback
+- Falls back to warm path if hot path execution fails
+
+**Test Coverage**: 100% path selection coverage, with comprehensive tests for hot path routing.
 
 ## Warm Path (Rust + oxigraph)
 
