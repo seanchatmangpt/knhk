@@ -56,12 +56,14 @@ TEST_CLI = tests/chicago_cli_integration
 TEST_CONFIG = tests/chicago_configuration
 TEST_LOCKCHAIN_INT = tests/chicago_lockchain_integration
 TEST_PERF_V04 = tests/chicago_performance_v04
+TEST_WARM_PATH = tests/chicago_warm_path
+TEST_CONFIG_V05 = tests/chicago_config
 TEST_COLD_PATH_UNRDF = chicago_cold_path_unrdf_integration
 
 # Rust unrdf integration library
 RUST_UNRDF_LIB = ../rust/knhk-unrdf/target/release/libknhk_unrdf.a
 
-.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-cold-path-unrdf validate-v0.4.0 lib bench
+.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-warm-path test-config-v05 test-cold-path-unrdf validate-v0.4.0 lib bench
 
 all: $(BENCH)
 
@@ -147,6 +149,14 @@ $(TEST_LOCKCHAIN_INT): tests/chicago_lockchain_integration.c tests/chicago_test_
 
 $(TEST_PERF_V04): tests/chicago_performance_v04.c tests/chicago_test_helpers.c $(LIB)
 	$(CC) $(CFLAGS) -DSTANDALONE_PERFORMANCE_TEST $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_performance_v04.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+
+# v0.5.0 Warm path tests
+$(TEST_WARM_PATH): tests/chicago_warm_path.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) $< -o $@ -L. -lknhk $(RAPTOR_LIBS)
+
+# v0.5.0 Configuration tests
+$(TEST_CONFIG_V05): tests/chicago_config.c
+	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
 
 # CLI noun Chicago TDD tests
 $(TEST_CLI_BOOT): tests/chicago_cli_boot.c $(LIB)
@@ -279,6 +289,14 @@ test-cli-integration: $(TEST_CLI)
 test-config: $(TEST_CONFIG)
 	@echo "Running Configuration Tests..."
 	@./$(TEST_CONFIG)
+
+test-config-v05: $(TEST_CONFIG_V05)
+	@echo "Running v0.5.0 Configuration Tests..."
+	@./$(TEST_CONFIG_V05)
+
+test-warm-path: $(TEST_WARM_PATH)
+	@echo "Running Warm Path Tests..."
+	@./$(TEST_WARM_PATH)
 
 test-lockchain-integration: $(TEST_LOCKCHAIN_INT)
 	@echo "Running Lockchain Integration Tests..."

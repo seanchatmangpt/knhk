@@ -156,16 +156,71 @@ pub extern "C" fn knhk_unrdf_query_with_data(
                                     }
                                     0
                                 } else {
-                                    -1
+                                    // Buffer too small - copy error message
+                                    let error_msg = format!(r#"{{"success":false,"error":"Result too large: {} bytes, buffer: {} bytes"}}"#, json_bytes.len(), result_size);
+                                    let error_bytes = error_msg.as_bytes();
+                                    let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                                    unsafe {
+                                        std::ptr::copy_nonoverlapping(
+                                            error_bytes.as_ptr(),
+                                            result_json as *mut u8,
+                                            copy_len
+                                        );
+                                        *result_json.add(copy_len) = 0;
+                                    }
+                                    -2
                                 }
                             }
-                            Err(_) => -1,
+                            Err(e) => {
+                                // Serialization error - copy error message
+                                let error_msg = format!(r#"{{"success":false,"error":"JSON serialization failed: {}"}}"#, e);
+                                let error_bytes = error_msg.as_bytes();
+                                let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                                unsafe {
+                                    std::ptr::copy_nonoverlapping(
+                                        error_bytes.as_ptr(),
+                                        result_json as *mut u8,
+                                        copy_len
+                                    );
+                                    *result_json.add(copy_len) = 0;
+                                }
+                                -7
+                            }
                         }
                     }
-                    Err(_) => -1,
+                    Err(e) => {
+                        // Query execution error - copy error message
+                        let error_msg = format!(r#"{{"success":false,"error":"{}"}}"#, e);
+                        let error_bytes = error_msg.as_bytes();
+                        let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                        unsafe {
+                            std::ptr::copy_nonoverlapping(
+                                error_bytes.as_ptr(),
+                                result_json as *mut u8,
+                                copy_len
+                            );
+                            *result_json.add(copy_len) = 0;
+                        }
+                        -2
+                    }
                 }
             }
-            _ => -1,
+            (Err(e1), _) | (_, Err(e2)) => {
+                // String conversion error
+                let error = if let Err(e) = q { e } else { data.unwrap_err() };
+                let error_msg = format!(r#"{{"success":false,"error":"Invalid input encoding: {}"}}"#, error);
+                let error_bytes = error_msg.as_bytes();
+                let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        error_bytes.as_ptr(),
+                        result_json as *mut u8,
+                        copy_len
+                    );
+                    *result_json.add(copy_len) = 0;
+                }
+                -8
+            }
         }
     } else {
         // No data to store, just execute query
@@ -280,16 +335,66 @@ pub extern "C" fn knhk_unrdf_execute_hook_with_data(
                                     }
                                     0
                                 } else {
-                                    -1
+                                    let error_msg = format!(r#"{{"success":false,"error":"Result too large: {} bytes, buffer: {} bytes"}}"#, json_bytes.len(), result_size);
+                                    let error_bytes = error_msg.as_bytes();
+                                    let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                                    unsafe {
+                                        std::ptr::copy_nonoverlapping(
+                                            error_bytes.as_ptr(),
+                                            result_json as *mut u8,
+                                            copy_len
+                                        );
+                                        *result_json.add(copy_len) = 0;
+                                    }
+                                    -7
                                 }
                             }
-                            Err(_) => -1,
+                            Err(e) => {
+                                let error_msg = format!(r#"{{"success":false,"error":"JSON serialization failed: {}"}}"#, e);
+                                let error_bytes = error_msg.as_bytes();
+                                let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                                unsafe {
+                                    std::ptr::copy_nonoverlapping(
+                                        error_bytes.as_ptr(),
+                                        result_json as *mut u8,
+                                        copy_len
+                                    );
+                                    *result_json.add(copy_len) = 0;
+                                }
+                                -7
+                            }
                         }
                     }
-                    Err(_) => -1,
+                    Err(e) => {
+                        let error_msg = format!(r#"{{"success":false,"error":"{}"}}"#, e);
+                        let error_bytes = error_msg.as_bytes();
+                        let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                        unsafe {
+                            std::ptr::copy_nonoverlapping(
+                                error_bytes.as_ptr(),
+                                result_json as *mut u8,
+                                copy_len
+                            );
+                            *result_json.add(copy_len) = 0;
+                        }
+                        -4
+                    }
                 }
             }
-            _ => -1,
+            _ => {
+                let error_msg = r#"{"success":false,"error":"Invalid input encoding"}"#;
+                let error_bytes = error_msg.as_bytes();
+                let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        error_bytes.as_ptr(),
+                        result_json as *mut u8,
+                        copy_len
+                    );
+                    *result_json.add(copy_len) = 0;
+                }
+                -8
+            }
         }
     } else {
         // No data to store, just execute hook

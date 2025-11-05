@@ -1,31 +1,35 @@
-# Examples Directory
+# KNHK Examples
 
 This directory contains working examples for common KNHK use cases.
 
 ## Examples
 
-- **[basic-hook](basic-hook/)** - Basic hook execution example
-- **[kafka-connector](kafka-connector/)** - Kafka connector setup example
-- **[etl-pipeline](etl-pipeline/)** - Full ETL pipeline example
-- **[receipt-verification](receipt-verification/)** - Receipt verification example
-- **[cli-usage](cli-usage/)** - CLI usage examples
+### basic-hook
+Basic hook execution example demonstrating hot path and warm path operations.
+
+### kafka-connector
+Kafka connector setup and configuration example.
+
+### etl-pipeline
+Complete ETL pipeline example showing all stages: Ingest → Transform → Load → Reflex → Emit.
+
+### receipt-verification
+Receipt verification and merging example.
+
+### cli-usage
+CLI usage examples demonstrating all 25 commands.
 
 ## Running Examples
 
-Each example directory contains:
-- `README.md` - Example documentation
-- Example files (`.ttl`, `.toml`, `.sh`, etc.)
-- `run.sh` - Execution script
+Each example directory contains a README.md with specific instructions. Generally:
 
-To run an example:
 ```bash
 cd examples/<example-name>
-./run.sh
+./run.sh  # or follow README instructions
 ```
 
 ## Prerequisites
 
-- KNHK CLI installed (`cargo install --path rust/knhk-cli`)
-- Configuration directory initialized (`~/.knhk/`)
-- Required dependencies (Kafka, HTTP endpoints, etc.) as specified in each example
-
+- KNHK CLI installed (`knhk` command available)
+- Configuration file set up (`~/.knhk/config.toml`)
+- Required services running (Kafka, etc.) for integration examples

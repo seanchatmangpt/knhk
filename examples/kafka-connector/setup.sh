@@ -1,29 +1,26 @@
 #!/bin/bash
-# Kafka Connector Setup Example
-# Demonstrates setting up a Kafka connector
+# examples/kafka-connector/setup.sh
+# Kafka connector setup example
 
 set -e
 
-echo "=== Kafka Connector Setup Example ==="
+echo "=========================================="
+echo "Kafka Connector Example"
+echo "=========================================="
+
+# Register Kafka connector
+echo "Registering Kafka connector..."
+knhk connect register kafka-example urn:knhk:schema:example kafka://localhost:9092/triples
+
+# List connectors
 echo ""
-
-# Create config directory if it doesn't exist
-mkdir -p ~/.knhk
-
-# Copy config file
-echo "Copying configuration..."
-cp config.toml ~/.knhk/config.toml
-
-# Register connector
-echo ""
-echo "Registering connector: kafka-prod"
-knhk connect register kafka-prod urn:knhk:schema:default kafka://localhost:9092/triples
-
-echo ""
-echo "Listing connectors:"
+echo "Listing connectors..."
 knhk connect list
 
 echo ""
-echo "=== Setup Complete ==="
-echo "To run pipeline: ./run.sh"
-
+echo "=========================================="
+echo "Connector setup complete"
+echo "=========================================="
+echo ""
+echo "Note: Ensure Kafka is running on localhost:9092"
+echo "      and topic 'triples' exists"
