@@ -33,13 +33,15 @@ let query = "SELECT ?s ?o WHERE { ?s <p1> ?o }";
 let result = execute_select(&graph, query)?;
 println!("Found {} bindings", result.bindings.len());
 
-// Execute ASK query
+// Execute ASK query (may route to hot path if ≤8 triples)
 let ask_query = "ASK { <s1> <p1> <o1> }";
 let ask_result = execute_ask(&graph, ask_query)?;
 println!("Result: {}", ask_result.result);
 ```
 
 ### Using Warm Path Executor
+
+The executor automatically routes queries to the optimal path:
 
 ```rust
 use knhk_warm::WarmPathExecutor;
@@ -48,6 +50,9 @@ use knhk_warm::WarmPathExecutor;
 let mut executor = WarmPathExecutor::new()?;
 
 // Load RDF data
+// Simple queries (≤8 triples) automatically route to hot path (≤2ns)
+// Complex queries route to warm path (≤500ms)
+// Very complex queries route to cold path (unrdf)
 executor.load_rdf(turtle_data)?;
 
 // Execute query (automatically routes to warm or cold path)
