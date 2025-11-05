@@ -450,4 +450,4 @@ See `examples/` directory for complete working examples:
 
 - [Architecture](architecture.md) - System architecture
 - [API Reference](api.md) - API documentation
-- [v0.5.0 Status](v0.4.0-status.md) - Release status (v0.5.0 updates in progress)
+- [v0.5.0 Status](archived/v0.4.0/v0.4.0-status.md) - Release status (v0.5.0 updates in progress)

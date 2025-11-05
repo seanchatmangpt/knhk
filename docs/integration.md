@@ -229,7 +229,7 @@ knhk coverage get
 - ⚠️ **CLI Documentation**: Comprehensive docs pending - Deferred to v0.5.0
 - ⚠️ **Examples Directory**: Missing examples - Deferred to v0.5.0
 
-See [v0.4.0 Status](v0.4.0-status.md) for complete details.
+See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for complete details.
 
 ## See Also
 

@@ -4,7 +4,7 @@
 **Status**: ✅ Production Ready  
 **Quick Start**: Essential steps to get KNHK running.
 
-**See [v0.4.0 Status](v0.4.0-status.md) for complete status and limitations.**
+**See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for complete status and limitations.**
 
 ## 5-Minute Setup
 

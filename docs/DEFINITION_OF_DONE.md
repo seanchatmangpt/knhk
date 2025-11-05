@@ -6,7 +6,7 @@
 **Applies To**: All implementation work (features, stories, tasks, bug fixes)
 
 **Related Documents**:
-- [v0.4.0 Definition of Done](VERSION_0.4.0_DEFINITION_OF_DONE.md) - Release-specific criteria
+- [v0.4.0 Definition of Done](archived/v0.4.0/VERSION_0.4.0_DEFINITION_OF_DONE.md) - Release-specific criteria
 - [80/20 Best Practices](.cursor/rules/80-20-best-practices.mdc) - Code quality standards
 - [Chicago TDD Standards](.cursor/rules/chicago-tdd-standards.mdc) - Testing methodology
 

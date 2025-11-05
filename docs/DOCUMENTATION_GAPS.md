@@ -19,7 +19,7 @@ This document identifies undocumented components and areas requiring documentati
 - ✅ docs/integration.md - Integration guide
 - ✅ docs/deployment.md - Deployment guide
 - ✅ docs/performance.md - Performance characteristics
-- ✅ docs/v0.4.0-status.md - Release status summary
+- ✅ docs/archived/v0.4.0/v0.4.0-status.md - Release status summary
 
 ### Rust Crates
 - ✅ rust/knhk-cli/README.md - CLI tool documentation
@@ -246,7 +246,7 @@ docs/
 ├── integration.md - Integration guide
 ├── deployment.md - Deployment guide
 ├── performance.md - Performance
-├── v0.4.0-status.md - Release status
+├── archived/v0.4.0/v0.4.0-status.md - Release status
 └── archived/ - Historical docs
 ```
 

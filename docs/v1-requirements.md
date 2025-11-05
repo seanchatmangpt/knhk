@@ -4,7 +4,7 @@
 **Current Version**: v0.4.0 (Production Ready)  
 **Target**: v1.0 (Future Release)
 
-**Note**: This document specifies requirements for v1.0. Current production release is v0.4.0. See [v0.4.0 Status](v0.4.0-status.md) for v0.4.0 completion status.
+**Note**: This document specifies requirements for v1.0. Current production release is v0.4.0. See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for v0.4.0 completion status.
 
 ## Overview
 

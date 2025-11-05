@@ -91,7 +91,7 @@ All supported operations achieve ≤2ns when measured externally:
 
 **18/19 enterprise use cases qualify for hot path!**
 
-**Known Limitation**: CONSTRUCT8 operations exceed the 8-tick budget (measured: 41-83 ticks). This is documented and will be addressed in v0.5.0 by moving CONSTRUCT8 to warm path. See [v0.4.0 Status](v0.4.0-status.md) for details.
+**Known Limitation**: CONSTRUCT8 operations exceed the 8-tick budget (measured: 41-83 ticks). This is documented and will be addressed in v0.5.0 by moving CONSTRUCT8 to warm path. See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for details.
 
 ## Performance Diagrams
 

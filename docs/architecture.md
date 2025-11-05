@@ -318,7 +318,7 @@ Queries that exceed hot path or warm path constraints automatically fall back to
 
 ## Production Infrastructure (v0.4.0)
 
-**v0.4.0 Status**: Production-ready critical path features complete. See [v0.4.0 Status](v0.4.0-status.md) for complete details.
+**v0.4.0 Status**: Production-ready critical path features complete. See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for complete details.
 
 **v0.5.0 Updates**:
 - ✅ CONSTRUCT8 moved to warm path (≤500ms budget)
