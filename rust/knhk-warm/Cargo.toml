@@ -14,4 +14,3 @@ knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = ["std"] }
 [features]
 default = ["std"]
 std = []
-
