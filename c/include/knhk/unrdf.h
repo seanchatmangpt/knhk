@@ -22,12 +22,84 @@ int knhk_unrdf_init(const char *unrdf_path);
 int knhk_unrdf_store_turtle(const char *turtle_data);
 
 /// Execute SPARQL query via Rust → unrdf integration layer
-/// Supports all query types: SELECT, ASK, CONSTRUCT, DESCRIBE, UPDATE
 /// @param query SPARQL query string
 /// @param result_json Pre-allocated buffer for JSON result
 /// @param result_size Size of result_json buffer
 /// @return 0 on success, -1 on error
 int knhk_unrdf_query(const char *query, char *result_json, size_t result_size);
+
+/// Execute SPARQL ASK query via Rust → unrdf integration layer
+/// @param query SPARQL ASK query string
+/// @param result Pointer to integer to store boolean result (1 = true, 0 = false)
+/// @return 0 on success, -1 on error
+int knhk_unrdf_query_ask(const char *query, int *result);
+
+/// Execute SPARQL CONSTRUCT query via Rust → unrdf integration layer
+/// @param query SPARQL CONSTRUCT query string
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_query_construct(const char *query, char *result_json, size_t result_size);
+
+/// Execute SPARQL DESCRIBE query via Rust → unrdf integration layer
+/// @param query SPARQL DESCRIBE query string
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_query_describe(const char *query, char *result_json, size_t result_size);
+
+/// Execute SPARQL UPDATE query via Rust → unrdf integration layer
+/// @param query SPARQL UPDATE query string
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_query_update(const char *query, char *result_json, size_t result_size);
+
+/// Generate epistemology (knowledge synthesis) using CONSTRUCT query
+/// Implements A = μ(O) - converts observations O into knowledge A via transformation μ
+/// @param construct_query SPARQL CONSTRUCT query for knowledge synthesis
+/// @param store_triples If non-zero, store generated triples back into unrdf store
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_generate_epistemology(const char *construct_query, int store_triples, char *result_json, size_t result_size);
+
+/// Validate SHACL shapes against data graph via Rust → unrdf integration layer
+/// @param data_turtle Turtle-formatted RDF data to validate
+/// @param shapes_turtle Turtle-formatted SHACL shapes
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_validate_shacl(const char *data_turtle, const char *shapes_turtle, char *result_json, size_t result_size);
+
+/// Begin a new transaction
+/// @param actor Actor identifier for the transaction
+/// @return Transaction ID on success, -1 on error
+int knhk_unrdf_transaction_begin(const char *actor);
+
+/// Add quads to transaction
+/// @param transaction_id Transaction ID
+/// @param turtle_data Turtle-formatted RDF data to add
+/// @return 0 on success, -1 on error
+int knhk_unrdf_transaction_add(int transaction_id, const char *turtle_data);
+
+/// Remove quads from transaction
+/// @param transaction_id Transaction ID
+/// @param turtle_data Turtle-formatted RDF data to remove
+/// @return 0 on success, -1 on error
+int knhk_unrdf_transaction_remove(int transaction_id, const char *turtle_data);
+
+/// Commit transaction
+/// @param transaction_id Transaction ID
+/// @param receipt_json Pre-allocated buffer for JSON receipt
+/// @param receipt_size Size of receipt_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_transaction_commit(int transaction_id, char *receipt_json, size_t receipt_size);
+
+/// Rollback transaction
+/// @param transaction_id Transaction ID
+/// @return 0 on success, -1 on error
+int knhk_unrdf_transaction_rollback(int transaction_id);
 
 /// Execute knowledge hook via Rust → unrdf integration layer
 /// @param hook_name Name of the hook
@@ -37,58 +109,14 @@ int knhk_unrdf_query(const char *query, char *result_json, size_t result_size);
 /// @return 0 on success, -1 on error
 int knhk_unrdf_execute_hook(const char *hook_name, const char *hook_query, char *result_json, size_t result_size);
 
-/// Validate SHACL shapes against data graph
-/// @param data_turtle Turtle-formatted data graph
-/// @param shapes_turtle Turtle-formatted shapes graph
-/// @param result_json Pre-allocated buffer for JSON validation result
-/// @param result_size Size of result_json buffer
-/// @return 0 on success, -1 on error
-int knhk_unrdf_validate_shacl(const char *data_turtle, const char *shapes_turtle, char *result_json, size_t result_size);
-
-/// Execute transaction with additions and removals
-/// @param additions_turtle Turtle-formatted additions (can be empty string "")
-/// @param removals_turtle Turtle-formatted removals (can be empty string "")
-/// @param actor Actor identifier for the transaction
-/// @param result_json Pre-allocated buffer for JSON transaction result
-/// @param result_size Size of result_json buffer
-/// @return 0 on success, -1 on error
-int knhk_unrdf_execute_transaction(const char *additions_turtle, const char *removals_turtle, const char *actor, char *result_json, size_t result_size);
-
-/// Serialize current store to Turtle format
-/// @param result_json Pre-allocated buffer for JSON serialization result
-/// @param result_size Size of result_json buffer
-/// @return 0 on success, -1 on error
-int knhk_unrdf_serialize_to_turtle(char *result_json, size_t result_size);
-
-/// Serialize current store to JSON-LD format
-/// @param result_json Pre-allocated buffer for JSON serialization result
-/// @param result_size Size of result_json buffer
-/// @return 0 on success, -1 on error
-int knhk_unrdf_serialize_to_jsonld(char *result_json, size_t result_size);
-
-/// Serialize current store to N-Quads format
-/// @param result_json Pre-allocated buffer for JSON serialization result
-/// @param result_size Size of result_json buffer
-/// @return 0 on success, -1 on error
-int knhk_unrdf_serialize_to_nquads(char *result_json, size_t result_size);
-
-/// Register a hook with the system
-/// @param hook_json JSON string defining the hook (see unrdf hook definition format)
+/// Register an autonomous epistemology hook for automatic knowledge generation
+/// Implements autonomic epistemology: A = μ(O) triggered by conditions
+/// Hook lifecycle: before → when → run (CONSTRUCT) → after
+/// @param hook_json JSON string containing AutonomousEpistemologyHook definition
 /// @param hook_id Pre-allocated buffer for hook ID
-/// @param hook_id_size Size of hook_id buffer
+/// @param id_size Size of hook_id buffer
 /// @return 0 on success, -1 on error
-int knhk_unrdf_register_hook(const char *hook_json, char *hook_id, size_t hook_id_size);
-
-/// Deregister a hook from the system
-/// @param hook_id Hook ID to deregister
-/// @return 0 on success, -1 on error
-int knhk_unrdf_deregister_hook(const char *hook_id);
-
-/// List all registered hooks
-/// @param result_json Pre-allocated buffer for JSON hook list result
-/// @param result_size Size of result_json buffer
-/// @return 0 on success, -1 on error
-int knhk_unrdf_list_hooks(char *result_json, size_t result_size);
+int knhk_unrdf_register_autonomous_epistemology(const char *hook_json, char *hook_id, size_t id_size);
 
 #ifdef __cplusplus
 }
