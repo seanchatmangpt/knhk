@@ -5,9 +5,10 @@
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
+use alloc::format;
 
-use crate::ingest::{IngestResult, RawTriple};
 use crate::error::PipelineError;
+use crate::ingest::{IngestResult, RawTriple};
 
 /// Stage 2: Transform
 /// Typed by Σ, constrained by Q
@@ -121,3 +122,4 @@ pub struct TypedTriple {
     pub object: u64,     // Hashed value
     pub graph: Option<u64>,
 }
+

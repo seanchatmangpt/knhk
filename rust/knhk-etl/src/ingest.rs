@@ -2,8 +2,6 @@
 // Stage 1: Ingest
 // Input: Raw data from connectors (RDF/Turtle, JSON-LD, streaming triples)
 
-#![allow(dead_code)]
-
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
@@ -173,3 +171,4 @@ pub struct RawTriple {
     pub object: String,
     pub graph: Option<String>,
 }
+

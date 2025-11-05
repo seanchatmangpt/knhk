@@ -2,13 +2,14 @@
 // Stage 5: Emit
 // Actions (A) + Receipts → Lockchain + Downstream APIs
 
+extern crate alloc;
+
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::format;
-use alloc::collections::BTreeMap;
 
-use crate::reflex::{ReflexResult, Receipt, Action};
 use crate::error::PipelineError;
+use crate::reflex::{ReflexResult, Action, Receipt};
 
 /// Stage 5: Emit
 /// Actions (A) + Receipts → Lockchain + Downstream APIs
@@ -138,6 +139,7 @@ impl EmitStage {
         receipt: &Receipt,
     ) -> Result<String, String> {
         use knhk_lockchain::{LockchainEntry, LockchainError};
+        use alloc::collections::BTreeMap;
         
         // Create lockchain entry
         let mut metadata = BTreeMap::new();

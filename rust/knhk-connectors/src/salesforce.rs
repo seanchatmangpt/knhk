@@ -399,10 +399,11 @@ impl SalesforceConnector {
         #[cfg(feature = "std")]
         {
             use std::time::{SystemTime, UNIX_EPOCH};
+            // Handle potential clock error gracefully - return 0 if clock error
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0) // Fallback to 0 if clock error (should never happen in practice)
         }
         #[cfg(not(feature = "std"))]
         {

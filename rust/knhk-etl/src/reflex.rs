@@ -2,12 +2,14 @@
 // Stage 4: Reflex
 // μ executes in ≤8 ticks per Δ
 
+extern crate alloc;
+
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::format;
 
-use crate::load::{LoadResult, SoAArrays, PredRun};
 use crate::error::PipelineError;
+use crate::load::{LoadResult, SoAArrays, PredRun};
 
 /// Stage 4: Reflex
 /// μ executes in ≤8 ticks per Δ

@@ -1,30 +1,42 @@
 // knhk/warm_path.h
-// Warm path API for CONSTRUCT8 operations (≤500ms budget)
-// CONSTRUCT8 moved from hot path (exceeds 8-tick budget)
+// Warm path API for operations that exceed 8-tick budget but complete within 500ms
+// Production-ready FFI interface for warm path operations
 
 #ifndef KNHK_WARM_PATH_H
 #define KNHK_WARM_PATH_H
 
-#include "knhk/types.h"
+#include <stdint.h>
+#include <stddef.h>
+#include "knhk/eval.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/// Execute CONSTRUCT8 in warm path (≤500ms budget)
+/// Warm path execution result
+typedef struct {
+    int success;           // 1 if successful, 0 otherwise
+    uint64_t latency_ms;   // Execution time in milliseconds
+    size_t lanes_written;  // Number of triples constructed
+    uint64_t span_id;      // OTEL span ID for observability
+} knhk_warm_result_t;
+
+/// Execute CONSTRUCT8 operation in warm path
 /// 
-/// This function routes CONSTRUCT8 operations from hot path to warm path
-/// since CONSTRUCT8 performs emit work (SIMD loads, blending, stores) which
-/// exceeds the 8-tick hot path budget.
-///
-/// @param ctx Context with pinned run
-/// @param ir Hook IR with CONSTRUCT8 operation and output buffers
-/// @param rcpt Receipt to fill with execution results
-/// @return Number of lanes written (0 on error)
+/// This function routes CONSTRUCT8 operations to warm path when they exceed
+/// the 8-tick hot path budget but can complete within 500ms.
+/// 
+/// @param ctx Hot path context (SoA arrays)
+/// @param ir Hook IR with CONSTRUCT8 operation
+/// @param result Output result structure (must not be NULL)
+/// @return 0 on success, -1 on error
+/// 
+/// Performance: Target <500ms (p95)
+/// Guard constraints: Validates max_run_len ≤ 8
 int knhk_warm_execute_construct8(
     const knhk_context_t *ctx,
     knhk_hook_ir_t *ir,
-    knhk_receipt_t *rcpt
+    knhk_warm_result_t *result
 );
 
 #ifdef __cplusplus

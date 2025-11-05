@@ -5,97 +5,32 @@
 #![no_std]
 extern crate alloc;
 
+// Module declarations
+pub mod types;
+pub mod error;
 pub mod ingest;
 pub mod transform;
 pub mod load;
 pub mod reflex;
 pub mod emit;
-pub mod error;
+pub mod pipeline;
 
-pub mod integration;
-
-// Re-export public types
+// Re-exports for convenience
+pub use types::{PipelineStage, PipelineMetrics};
+pub use error::PipelineError;
 pub use ingest::{IngestStage, IngestResult, RawTriple};
 pub use transform::{TransformStage, TransformResult, TypedTriple};
 pub use load::{LoadStage, LoadResult, SoAArrays, PredRun};
 pub use reflex::{ReflexStage, ReflexResult, Action, Receipt};
 pub use emit::{EmitStage, EmitResult};
-pub use error::PipelineError;
-
-/// Pipeline stage identifier
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PipelineStage {
-    Ingest,
-    Transform,
-    Load,
-    Reflex,
-    Emit,
-}
-
-/// Pipeline metrics
-#[derive(Debug, Clone, Default)]
-pub struct PipelineMetrics {
-    pub stage: PipelineStage,
-    pub delta_count: usize,
-    pub triples_processed: usize,
-    pub ticks_elapsed: u32,
-    pub errors: usize,
-}
-
-/// Complete ETL pipeline
-pub struct Pipeline {
-    ingest: IngestStage,
-    transform: TransformStage,
-    load: LoadStage,
-    reflex: ReflexStage,
-    emit: EmitStage,
-}
-
-impl Pipeline {
-    pub fn new(
-        connectors: Vec<alloc::string::String>,
-        schema_iri: alloc::string::String,
-        lockchain_enabled: bool,
-        downstream_endpoints: Vec<alloc::string::String>,
-    ) -> Self {
-        Self {
-            ingest: IngestStage::new(connectors, "rdf/turtle".to_string()),
-            transform: TransformStage::new(schema_iri, true),
-            load: LoadStage::new(),
-            reflex: ReflexStage::new(),
-            emit: EmitStage::new(lockchain_enabled, downstream_endpoints),
-        }
-    }
-
-    /// Execute full pipeline
-    pub fn execute(&self) -> Result<EmitResult, PipelineError> {
-        // Stage 1: Ingest
-        let ingest_result = self.ingest.ingest()?;
-
-        // Stage 2: Transform
-        let transform_result = self.transform.transform(ingest_result)?;
-
-        // Stage 3: Load
-        let load_result = self.load.load(transform_result)?;
-
-        // Stage 4: Reflex
-        let reflex_result = self.reflex.reflex(load_result)?;
-
-        // Stage 5: Emit
-        let emit_result = self.emit.emit(reflex_result)?;
-
-        Ok(emit_result)
-    }
-}
+pub use pipeline::Pipeline;
 
 pub mod integration;
-pub mod path_selector;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use alloc::collections::BTreeMap;
-    use alloc::string::ToString;
 
     #[test]
     fn test_pipeline_creation() {

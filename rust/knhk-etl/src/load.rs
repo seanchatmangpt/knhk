@@ -5,8 +5,8 @@
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 
-use crate::transform::{TransformResult, TypedTriple};
 use crate::error::PipelineError;
+use crate::transform::{TransformResult, TypedTriple};
 
 /// Stage 3: Load
 /// SoA-aligned arrays in L1 cache
@@ -141,3 +141,4 @@ pub struct PredRun {
     pub off: u64,
     pub len: u64, // Must be ≤ 8
 }
+
