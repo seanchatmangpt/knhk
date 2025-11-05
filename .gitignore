@@ -55,3 +55,11 @@ tests/chicago_*
 
 # OS files
 .DS_Store
+
+# Vendor directories (track source, ignore build artifacts)
+vendors/*/node_modules/
+vendors/*/dist/
+vendors/*/coverage/
+vendors/*/.nyc_output/
+vendors/*/pnpm-lock.yaml
+vendors/*/.cache/

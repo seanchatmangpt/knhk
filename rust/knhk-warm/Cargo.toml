@@ -1,0 +1,27 @@
+[package]
+name = "knhk-warm"
+version = "0.5.0"
+edition = "2021"
+authors = ["KNHK Core Team"]
+description = "Warm path operations for KNHK (≤500ms budget)"
+license = "MIT"
+
+[lib]
+name = "knhk_warm"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+knhk-hot = { path = "../knhk-hot" }
+knhk-otel = { path = "../knhk-otel" }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "warm_path_bench"
+harness = false
+
+[features]
+default = ["std"]
+std = []
+

@@ -2,7 +2,7 @@
 
 ## Overview
 
-KNKHS follows a modular architecture with clear separation of concerns. Large files have been split into focused, maintainable components following core team best practices.
+KNHK follows a modular architecture with clear separation of concerns. Large files have been split into focused, maintainable components following core team best practices.
 
 ## Directory Structure
 

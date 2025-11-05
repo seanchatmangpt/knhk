@@ -1,6 +1,10 @@
 # Quick Start Guide
 
-**80/20 Focus**: This guide covers the essential 20% to get 80% of value.
+**Version**: 0.4.0  
+**Status**: ✅ Production Ready  
+**Quick Start**: Essential steps to get KNHK running.
+
+**See [v0.4.0 Status](v0.4.0-status.md) for complete status and limitations.**
 
 ## 5-Minute Setup
 

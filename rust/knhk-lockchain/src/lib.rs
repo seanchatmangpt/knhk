@@ -90,7 +90,11 @@ impl Lockchain {
         use std::io::Write;
         use std::path::Path;
         
-        let repo_path = Path::new(self.git_repo_path.as_ref().unwrap());
+        // git_repo_path is guaranteed to be Some() when this function is called
+        // (checked in append() before calling commit_to_git)
+        let repo_path = self.git_repo_path.as_ref()
+            .ok_or_else(|| LockchainError::ChainBroken)?;
+        let repo_path = Path::new(repo_path);
         let receipts_dir = repo_path.join("receipts");
         
         // Create receipts directory if it doesn't exist

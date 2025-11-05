@@ -2,7 +2,7 @@
 
 ## System Overview
 
-KNHK (v0.3.0) implements a multi-tier architecture with production-ready infrastructure:
+KNHK (v0.4.0) implements a multi-tier architecture with production-ready infrastructure:
 
 1. **Hot Path Engine** (C) - ≤8 tick query execution
 2. **Connector Framework** (Rust) - Enterprise data source integration
@@ -88,7 +88,7 @@ Triples are stored in Structure-of-Arrays format:
 
 All arrays are 64-byte aligned for optimal cache line access and SIMD operations.
 
-### 2. Connector Framework (v0.3.0)
+### 2. Connector Framework (v0.4.0)
 
 **Dark Matter 80/20 Connector Framework**:
 - Kafka connector with rdkafka integration
@@ -98,7 +98,7 @@ All arrays are 64-byte aligned for optimal cache line access and SIMD operations
 - Health checking and metrics
 - Guard validation (max_run_len ≤ 8, max_batch_size, max_lag_ms)
 
-### 3. ETL Pipeline (v0.3.0)
+### 3. ETL Pipeline (v0.4.0)
 
 **Five-Stage Pipeline**:
 - **Ingest**: Connector polling, RDF/Turtle parsing, JSON-LD support
@@ -130,7 +130,7 @@ All arrays are 64-byte aligned for optimal cache line access and SIMD operations
 - **SIMD Operations**: ARM NEON / x86 AVX2
 - **Receipts**: Timing, provenance, span IDs (OTEL-compatible)
 
-### 6. Reflexive Control Layer (v0.3.0)
+### 6. Reflexive Control Layer (v0.4.0)
 
 **Erlang Supervision Tree**:
 - **knhk_sigma**: Schema registry (Σ management)
@@ -218,7 +218,15 @@ typedef struct {
 
 Queries that exceed hot path constraints automatically fall back to full SPARQL engine execution.
 
-## Production Infrastructure (v0.3.0)
+## Production Infrastructure (v0.4.0)
+
+**v0.4.0 Status**: Production-ready critical path features complete. See [v0.4.0 Status](v0.4.0-status.md) for complete details.
+
+**Known Limitations**:
+- ⚠️ CONSTRUCT8 exceeds 8-tick budget (41-83 ticks) - Move to warm path in v0.5.0
+- ⚠️ Configuration management incomplete - Deferred to v0.5.0
+- ⚠️ CLI documentation pending - Deferred to v0.5.0
+- ⚠️ Examples directory missing - Deferred to v0.5.0
 
 ### Connector Framework
 - Real library integrations (rdkafka, reqwest)
