@@ -1,0 +1,11 @@
+[package]
+name = "knhk-warm"
+version = "0.5.0"
+edition = "2021"
+
+[lib]
+name = "knhk_warm"
+crate-type = ["lib"]
+
+[dependencies]
+knhk-hot = { path = "../knhk-hot" }

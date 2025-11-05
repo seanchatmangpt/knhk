@@ -2,15 +2,16 @@
 
 ## System Overview
 
-KNHK (v0.4.0) implements a multi-tier architecture with production-ready infrastructure:
+KNHK (v0.5.0) implements a multi-tier architecture with production-ready infrastructure:
 
-1. **Hot Path Engine** (C) - ≤8 tick query execution
-2. **Connector Framework** (Rust) - Enterprise data source integration
-3. **ETL Pipeline** (Rust) - Ingest → Transform → Load → Reflex → Emit
-4. **Reflexive Control Layer** (Erlang) - Schema, invariants, receipts, routing
-5. **Observability** (OTEL) - Metrics, tracing, span generation
+1. **Hot Path Engine** (C) - ≤8 tick query execution (ASK, COUNT, COMPARE, VALIDATE)
+2. **Warm Path Engine** (Rust) - ≤500ms emit operations (CONSTRUCT8)
+3. **Connector Framework** (Rust) - Enterprise data source integration
+4. **ETL Pipeline** (Rust) - Ingest → Transform → Load → Reflex → Emit
+5. **Reflexive Control Layer** (Erlang) - Schema, invariants, receipts, routing
+6. **Observability** (OTEL) - Metrics, tracing, span generation
 
-Queries route to either hot path (≤8 ticks) or cold path (full SPARQL engine) based on complexity and data characteristics.
+Queries route to hot path (≤8 ticks), warm path (≤500ms), or cold path (full SPARQL engine) based on operation type and complexity.
 
 ## Modular Code Organization
 
@@ -205,14 +206,30 @@ typedef struct {
 6. **Emit**: Write receipts to lockchain → Send actions to downstream APIs
 7. **Provenance**: hash(A) = hash(μ(O)) verified via receipts
 
-## Hot Path Requirements
+## Hot Path Requirements (v0.5.0)
 
+**Hot Path Operations** (≤8 ticks, ≤2ns):
+- ASK operations (ASK_SP, ASK_SPO, ASK_OP) - Existence checks
+- COUNT operations (COUNT_SP_GE/LE/EQ, COUNT_OP variants) - Cardinality validation
+- COMPARE operations (COMPARE_O_EQ/GT/LT/GE/LE) - Value comparisons
+- VALIDATION operations (UNIQUE_SP, VALIDATE_DATATYPE_SP/SPO) - Property validation
+
+**Warm Path Operations** (≤500ms):
+- CONSTRUCT8 operations (fixed-template emit) - Moved from hot path in v0.5.0
+
+**Path Selection**:
+- Hot path: Query operations that fit ≤8 tick budget
+- Warm path: Emit operations (CONSTRUCT8) that exceed 8-tick budget but complete in <500ms
+- Cold path: Complex queries requiring full SPARQL engine
+
+**Requirements**:
 - Predicate run size ≤8 elements (guard constraint enforced)
 - Simple operations (ASK, COUNT, triple match)
 - Data hot in L1 cache
 - Single predicate queries
 - Branchless operations (constant-time execution)
-- ≤8 ticks (Chatman Constant: 2ns = 8 ticks)
+- ≤8 ticks (Chatman Constant: 2ns = 8 ticks) for hot path
+- ≤500ms (p95) for warm path
 
 ## Cold Path Fallback
 
@@ -222,11 +239,16 @@ Queries that exceed hot path constraints automatically fall back to full SPARQL 
 
 **v0.4.0 Status**: Production-ready critical path features complete. See [v0.4.0 Status](v0.4.0-status.md) for complete details.
 
+**v0.5.0 Updates**:
+- ✅ CONSTRUCT8 moved to warm path (≤500ms budget)
+- ✅ Warm path engine implemented (`knhk-warm` crate)
+- ✅ Clear separation between hot path (query) and warm path (emit)
+- ✅ Warm path metrics and observability
+
 **Known Limitations**:
-- ⚠️ CONSTRUCT8 exceeds 8-tick budget (41-83 ticks) - Move to warm path in v0.5.0
-- ⚠️ Configuration management incomplete - Deferred to v0.5.0
-- ⚠️ CLI documentation pending - Deferred to v0.5.0
-- ⚠️ Examples directory missing - Deferred to v0.5.0
+- ⚠️ Configuration management incomplete - Deferred to v0.5.0 Phase 2
+- ⚠️ CLI documentation pending - Deferred to v0.5.0 Phase 3
+- ⚠️ Examples directory missing - Deferred to v0.5.0 Phase 3
 
 ### Connector Framework
 - Real library integrations (rdkafka, reqwest)
