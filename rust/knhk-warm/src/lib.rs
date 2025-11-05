@@ -10,6 +10,7 @@ pub mod warm_path;
 pub mod graph;
 pub mod query;
 pub mod executor;
+pub mod hot_path;
 
 pub use warm_path::*;
 pub use graph::WarmPathGraph;

@@ -57,9 +57,8 @@ impl WarmPathExecutor {
         
         match path {
             QueryPath::Hot => {
-                // Hot path queries should be handled by C hot path
-                // For now, route to warm path as fallback
-                self.execute_warm_path(sparql)
+                // Hot path queries: use C hot path for ≤2ns execution
+                self.execute_hot_path(sparql)
             }
             QueryPath::Warm => {
                 self.execute_warm_path(sparql)
@@ -77,6 +76,32 @@ impl WarmPathExecutor {
                     Err("unrdf feature not enabled - cannot execute cold path queries".to_string())
                 }
             }
+        }
+    }
+
+    /// Execute query via hot path (C, ≤2ns)
+    fn execute_hot_path(&self, sparql: &str) -> Result<QueryExecutionResult, String> {
+        let query_upper = sparql.trim().to_uppercase();
+        
+        if query_upper.starts_with("ASK") {
+            match crate::hot_path::execute_hot_path_ask(&self.graph, sparql) {
+                Ok(result) => Ok(QueryExecutionResult::Ask(result)),
+                Err(e) => {
+                    // Fall back to warm path if hot path fails
+                    self.execute_warm_path(sparql)
+                }
+            }
+        } else if query_upper.starts_with("SELECT") && query_upper.contains("COUNT") {
+            match crate::hot_path::execute_hot_path_select(&self.graph, sparql) {
+                Ok(result) => Ok(QueryExecutionResult::Select(result)),
+                Err(e) => {
+                    // Fall back to warm path if hot path fails
+                    self.execute_warm_path(sparql)
+                }
+            }
+        } else {
+            // Not a hot path query type - fall back to warm path
+            self.execute_warm_path(sparql)
         }
     }
 
