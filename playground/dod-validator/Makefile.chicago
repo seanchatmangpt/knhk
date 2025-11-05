@@ -1,8 +1,11 @@
 # Chicago TDD Tests Makefile
 
-TEST_DIR = playground/dod-validator
+TEST_DIR = .
 C_TEST = tests/chicago_autonomous_dod_validator.c
 C_TEST_BIN = tests/chicago_autonomous_dod_validator
+KNHK_ROOT = ../..
+C_INCLUDE = $(KNHK_ROOT)/c/include
+C_LIB = $(KNHK_ROOT)/c/libknhk.a
 
 .PHONY: test-chicago-autonomous test-chicago-autonomous-c test-chicago-autonomous-rust
 
@@ -14,11 +17,11 @@ test-chicago-autonomous-c: $(C_TEST_BIN)
 
 test-chicago-autonomous-rust:
 	@echo "Running Rust Chicago TDD tests..."
-	cd $(TEST_DIR)/rust/dod-validator-autonomous && cargo test --lib
+	cd rust/dod-validator-autonomous && cargo test --lib
 
-$(C_TEST_BIN): $(C_TEST)
+$(C_TEST_BIN): $(C_TEST) $(C_LIB)
 	@echo "Building C Chicago TDD test..."
-	$(CC) $(CFLAGS) -I../c/include -L../c -lknhk $(C_TEST) -o $(C_TEST_BIN)
+	$(CC) -std=c11 -O2 -I$(C_INCLUDE) -I$(KNHK_ROOT)/c/src -L$(KNHK_ROOT)/c $(C_TEST) -o $(C_TEST_BIN) -lknhk
 
 clean:
 	rm -f $(C_TEST_BIN)

@@ -5,6 +5,12 @@ pub mod error;
 pub mod ffi;
 pub mod hooks;
 pub mod query;
+#[cfg(feature = "native")]
+pub mod query_native;
+#[cfg(feature = "native")]
+pub mod canonicalize;
+#[cfg(feature = "native")]
+pub mod cache;
 pub mod script;
 pub mod serialize;
 pub mod shacl;

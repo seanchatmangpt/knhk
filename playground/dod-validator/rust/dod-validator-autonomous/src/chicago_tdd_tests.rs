@@ -128,7 +128,7 @@ fn main() {
         
         // Verify: Invariants preserved (if fixes were applied)
         if !receipts.is_empty() {
-            let result = validator.verify(&receipts);
+            let result = validator.verify(&receipts, &test_file);
             // Accept result (may fail if file still has violations after fix)
             let _ = result;
         }

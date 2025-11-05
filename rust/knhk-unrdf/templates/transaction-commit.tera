@@ -10,6 +10,7 @@ async function main() {
     const additions = {{ additions_json | safe }};
     const removals = {{ removals_json | safe }};
     const actor = '{{ actor | escape_js }}';
+    const transactionId = {{ transaction_id }};
 
     try {
         const additionsQuads = [];
@@ -31,14 +32,14 @@ async function main() {
         });
 
         console.log(JSON.stringify({
-            transaction_id: receipt.transaction_id || null,
+            transaction_id: transactionId,
             timestamp: receipt.timestamp || Date.now(),
             actor: receipt.actor || actor,
             success: true
         }));
     } catch (err) {
         console.error(JSON.stringify({
-            transaction_id: null,
+            transaction_id: transactionId,
             timestamp: Date.now(),
             actor: actor,
             success: false,

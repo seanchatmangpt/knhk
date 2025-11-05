@@ -43,66 +43,17 @@ pub fn execute_hook(hook_name: &str, hook_query: &str) -> UnrdfResult<HookResult
 pub fn execute_hook_with_data(hook_name: &str, hook_query: &str, turtle_data: &str) -> UnrdfResult<HookResult> {
     let state = get_state()?;
     
-    let escaped_query = hook_query.replace('`', "\\`").replace('$', "\\$");
-    let escaped_data = turtle_data.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
+    // Use Tera template engine
+    let template_engine = TemplateEngine::get()?;
+    let mut context = Context::new();
+    context.insert("hook_name", hook_name);
+    context.insert("hook_query", hook_query);
+    context.insert("turtle_data", turtle_data);
     
-    let script = format!(
-        r#"
-        import {{ createDarkMatterCore, defineHook, registerHook }} from './src/knowledge-engine/index.mjs';
-        import {{ evaluateHook }} from './src/knowledge-engine/hook-management.mjs';
-        import {{ parseTurtle }} from './src/knowledge-engine/parse.mjs';
-        
-        async function main() {{
-            const system = await createDarkMatterCore({{
-                enableKnowledgeHookManager: true,
-                enableLockchainWriter: false
-            }});
-        
-            // Store data first
-            const turtleData = `{}`;
-            const store = await parseTurtle(turtleData);
-            const quads = [];
-            store.forEach(q => quads.push(q));
-            await system.executeTransaction({{
-                additions: quads,
-                removals: [],
-                actor: 'knhk-rust'
-            }});
-        
-            // Then execute hook
-            const hook = defineHook({{
-                meta: {{
-                    name: '{}',
-                    description: 'KNHK hook'
-                }},
-                when: {{
-                    kind: 'sparql-ask',
-                    query: `{}`
-                }},
-                run: async (event) => {{
-                    return {{ result: event.result ? 'Hook fired' : 'Hook not fired' }};
-                }}
-            }});
-        
-            await registerHook(hook);
-            const receipt = await evaluateHook(hook, {{ persist: false }});
-        
-            console.log(JSON.stringify({{
-                fired: receipt.fired || false,
-                result: receipt.result || null,
-                receipt: receipt.receipt || null
-            }}));
-        }}
-        
-        main().catch(err => {{
-            console.error(JSON.stringify({{ fired: false, result: null, error: err.message }}));
-            process.exit(1);
-        }});
-        "#,
-        escaped_data,
-        hook_name,
-        escaped_query
-    );
+    let script = template_engine.lock()
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+        .render("hook-execute-with-data", &context)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render hook-execute-with-data template: {}", e)))?;
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;
@@ -138,32 +89,18 @@ pub fn register_hook(hook_json: &str) -> UnrdfResult<String> {
     
     hooks.insert(hook_id.clone(), entry);
     
-    // Register hook in unrdf system
-    let escaped_json = hook_json.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
-    let script = format!(
-        r#"
-        import {{ createDarkMatterCore, defineHook, registerHook }} from './src/knowledge-engine/index.mjs';
-        
-        async function main() {{
-            const system = await createDarkMatterCore({{
-                enableKnowledgeHookManager: true,
-                enableLockchainWriter: false
-            }});
-        
-            const hookDef = {};
-            const hook = defineHook(hookDef);
-            await registerHook(hook);
-        
-            console.log('SUCCESS');
-        }}
-        
-        main().catch(err => {{
-            console.error('ERROR:', err.message);
-            process.exit(1);
-        }});
-        "#,
-        escaped_json
-    );
+    // Use Tera template engine
+    let template_engine = TemplateEngine::get()?;
+    let mut context = Context::new();
+    // Parse hook_json as JSON value for safe insertion
+    let hook_json_value: serde_json::Value = serde_json::from_str(hook_json)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Invalid hook JSON: {}", e)))?;
+    context.insert("hook_json", &hook_json_value);
+    
+    let script = template_engine.lock()
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+        .render("hook-register", &context)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render hook-register template: {}", e)))?;
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;

@@ -2,7 +2,6 @@
 // Extracts code patterns (unwrap, expect, TODO, etc.) and converts to SoA arrays for KNHK hot path
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::Path;
 
 /// Pattern type for code validation
@@ -159,6 +158,7 @@ impl PatternExtractor {
 
     /// Convert patterns to SoA arrays for KNHK hot path
     /// Returns (S array, P array, O array) with up to 8 patterns
+    /// Stores triples: (code_hash, pattern_type, pattern_hash)
     pub fn to_soa_arrays(
         &self,
         extraction: &PatternExtractionResult,
@@ -183,10 +183,11 @@ impl PatternExtractor {
         let mut p_array = [0u64; 8];
         let mut o_array = [0u64; 8];
 
+        // Store triples: (code_hash, pattern_type, pattern_hash)
         for (i, pattern) in relevant_patterns.iter().enumerate() {
-            s_array[i] = pattern.pattern_hash;
+            s_array[i] = extraction.code_hash;
             p_array[i] = pattern_type.as_u32() as u64;
-            o_array[i] = extraction.code_hash;
+            o_array[i] = pattern.pattern_hash;
         }
 
         Ok((s_array, p_array, o_array))

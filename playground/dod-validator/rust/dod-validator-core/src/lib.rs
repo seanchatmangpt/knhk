@@ -5,11 +5,13 @@
 
 pub mod pattern_extractor;
 
-use pattern_extractor::PatternExtractor;
+use pattern_extractor::{PatternExtractor, PatternExtractionResult};
+use dod_validator_hot::{HotPathValidator, DodPattern};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
+use std::fs;
 
 // Re-export PatternType for compatibility
 pub use pattern_extractor::PatternType;
@@ -105,186 +107,178 @@ impl Default for ValidationReport {
 /// Validation engine orchestrating all DoD checks
 pub struct ValidationEngine {
     timing_measurer: TimingMeasurer,
+    pattern_extractor: PatternExtractor,
+    hot_path_validator: HotPathValidator,
 }
 
 impl ValidationEngine {
     /// Create a new validation engine
     pub fn new() -> Result<Self, String> {
         let timing_measurer = TimingMeasurer::new();
+        let pattern_extractor = PatternExtractor::new();
+        let hot_path_validator = HotPathValidator::new();
 
         Ok(Self {
             timing_measurer,
+            pattern_extractor,
+            hot_path_validator,
         })
     }
 
-    /// Validate code quality patterns
+    /// Validate code quality patterns using KNHK hot path
     pub fn validate_code_quality(
         &mut self,
-        _code_hash: u64,
-        patterns: &[u64],
-    ) -> Result<ValidationResult, String> {
-        // Simplified validation for testing
-        let passed = patterns.is_empty();
-        let message = if passed {
-            format!("No violations found")
-        } else {
-            format!("Found {} violations", patterns.len())
+        extraction: &PatternExtractionResult,
+        pattern_type: PatternType,
+    ) -> Result<Vec<ValidationResult>, String> {
+        let mut results = Vec::new();
+        
+        // Convert to SoA arrays
+        let (_s_array, _p_array, o_array) = self.pattern_extractor
+            .to_soa_arrays(extraction, pattern_type.clone())?;
+
+        // Extract pattern hashes (from O array)
+        let pattern_hashes: Vec<u64> = o_array.iter()
+            .take_while(|&&p| p != 0)
+            .copied()
+            .collect();
+
+        if pattern_hashes.is_empty() {
+            return Ok(results);
+        }
+
+        // Convert PatternType to DodPattern
+        let dod_pattern = match pattern_type {
+            PatternType::Unwrap => DodPattern::Unwrap,
+            PatternType::Expect => DodPattern::Expect,
+            PatternType::Todo => DodPattern::Todo,
+            PatternType::Placeholder => DodPattern::Placeholder,
+            PatternType::Panic => DodPattern::Panic,
+            PatternType::Result => DodPattern::Result,
         };
 
-        Ok(ValidationResult {
-            passed,
-            message,
-            file: None,
-            line: None,
-            span_id: Some(0x1234567890ABCDEF),
-            duration_ns: Some(1000), // Simulated timing
-        })
+        // Measure timing externally
+        let (duration, validation_result) = self.timing_measurer.measure(|| {
+            self.hot_path_validator.match_pattern(
+                &pattern_hashes,
+                dod_pattern,
+                extraction.code_hash,
+            )
+        });
+
+        match validation_result {
+            Ok(result) => {
+                if result.found != 0 {
+                    // Find matching patterns for detailed reporting
+                    for pattern in &extraction.patterns {
+                        if pattern.pattern_type == pattern_type {
+                            results.push(ValidationResult {
+                                passed: false,
+                                message: format!("Found {:?} pattern", pattern_type),
+                                file: Some(extraction.file_path.clone()),
+                                line: Some(pattern.line),
+                                span_id: Some(result.span_id),
+                                duration_ns: Some(duration.as_nanos() as u64),
+                            });
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(format!("Hot path validation failed: {}", e));
+            }
+        }
+
+        Ok(results)
     }
 
     /// Validate guard constraints
     pub fn validate_guard_constraints(&self, run_len: u32) -> ValidationResult {
-        // Guard constraint: max_run_len ≤ 8
-        let passed = run_len <= 8;
-        let message = if passed {
+        // Use hot path validator for guard constraint validation
+        let result = self.hot_path_validator.validate_guard_constraint(run_len);
+        
+        let message = if result.found != 0 {
             format!("Guard constraint satisfied: run_len {} ≤ 8", run_len)
         } else {
             format!("Guard constraint violated: run_len {} > 8", run_len)
         };
 
         ValidationResult {
-            passed,
+            passed: result.found != 0,
             message,
             file: None,
             line: None,
-            span_id: None,
+            span_id: Some(result.span_id),
             duration_ns: None,
         }
     }
 
-    /// Run full validation suite
+    /// Run full validation suite using KNHK hot path
     pub fn validate_all(&mut self, code_path: &PathBuf) -> Result<ValidationReport, String> {
         let start = Instant::now();
         let mut report = ValidationReport::new();
 
-        // Simplified validation for testing
-        // Check if file exists and contains violations
-        use std::fs;
-        
-        // Check if path is a file or directory
-        let metadata = fs::metadata(code_path);
-        if metadata.is_err() {
-            // Path doesn't exist, return empty report
-            return Ok(report);
-        }
-        
-        let metadata = metadata.unwrap();
-        
-        if metadata.is_file() {
-            // Single file validation
-            if let Ok(content) = fs::read_to_string(code_path) {
-                let has_unwrap = content.contains("unwrap()");
-                let has_todo = content.contains("TODO");
-                let has_panic = content.contains("panic!");
-                
-                if has_unwrap {
-                    report.add_result(
-                        ValidationCategory::CodeQuality,
-                        ValidationResult {
-                            passed: false,
-                            message: "Found unwrap() pattern".to_string(),
-                            file: Some(code_path.clone()),
-                            line: Some(1),
-                            span_id: Some(0x1234567890ABCDEF),
-                            duration_ns: Some(1000),
-                        },
-                    );
-                }
-                
-                if has_todo {
-                    report.add_result(
-                        ValidationCategory::CodeQuality,
-                        ValidationResult {
-                            passed: false,
-                            message: "Found TODO comment".to_string(),
-                            file: Some(code_path.clone()),
-                            line: Some(1),
-                            span_id: Some(0x1234567890ABCDEF),
-                            duration_ns: Some(1000),
-                        },
-                    );
-                }
-                
-                if has_panic {
-                    report.add_result(
-                        ValidationCategory::CodeQuality,
-                        ValidationResult {
-                            passed: false,
-                            message: "Found panic!() pattern".to_string(),
-                            file: Some(code_path.clone()),
-                            line: Some(1),
-                            span_id: Some(0x1234567890ABCDEF),
-                            duration_ns: Some(1000),
-                        },
-                    );
-                }
-            }
+        // Check if path exists
+        let metadata = fs::metadata(code_path)
+            .map_err(|e| format!("Failed to access path {}: {}", code_path.display(), e))?;
+
+        let files_to_validate: Vec<PathBuf> = if metadata.is_file() {
+            vec![code_path.clone()]
         } else if metadata.is_dir() {
-            // Directory validation - scan for .rs files
-            if let Ok(entries) = fs::read_dir(code_path) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rs") {
-                            if let Ok(content) = fs::read_to_string(&path) {
-                                let has_unwrap = content.contains("unwrap()");
-                                let has_todo = content.contains("TODO");
-                                let has_panic = content.contains("panic!");
-                                
-                                if has_unwrap {
-                                    report.add_result(
-                                        ValidationCategory::CodeQuality,
-                                        ValidationResult {
-                                            passed: false,
-                                            message: "Found unwrap() pattern".to_string(),
-                                            file: Some(path.clone()),
-                                            line: Some(1),
-                                            span_id: Some(0x1234567890ABCDEF),
-                                            duration_ns: Some(1000),
-                                        },
-                                    );
-                                }
-                                
-                                if has_todo {
-                                    report.add_result(
-                                        ValidationCategory::CodeQuality,
-                                        ValidationResult {
-                                            passed: false,
-                                            message: "Found TODO comment".to_string(),
-                                            file: Some(path.clone()),
-                                            line: Some(1),
-                                            span_id: Some(0x1234567890ABCDEF),
-                                            duration_ns: Some(1000),
-                                        },
-                                    );
-                                }
-                                
-                                if has_panic {
-                                    report.add_result(
-                                        ValidationCategory::CodeQuality,
-                                        ValidationResult {
-                                            passed: false,
-                                            message: "Found panic!() pattern".to_string(),
-                                            file: Some(path.clone()),
-                                            line: Some(1),
-                                            span_id: Some(0x1234567890ABCDEF),
-                                            duration_ns: Some(1000),
-                                        },
-                                    );
-                                }
-                            }
+            // Scan directory for Rust files
+            let mut files = Vec::new();
+            self.scan_directory(code_path, &mut files)?;
+            files
+        } else {
+            return Err(format!("Path {} is not a file or directory", code_path.display()));
+        };
+
+        // Validate each file using hot path
+        for file_path in &files_to_validate {
+            let extraction = self.pattern_extractor.extract_from_file(file_path)?;
+
+            // Validate each pattern type
+            let pattern_types = [
+                PatternType::Unwrap,
+                PatternType::Expect,
+                PatternType::Todo,
+                PatternType::Placeholder,
+                PatternType::Panic,
+            ];
+
+            for pattern_type in &pattern_types {
+                match self.validate_code_quality(&extraction, *pattern_type) {
+                    Ok(results) => {
+                        for result in results {
+                            report.add_result(ValidationCategory::CodeQuality, result);
                         }
                     }
+                    Err(e) => {
+                        report.add_warning(
+                            ValidationCategory::CodeQuality,
+                            format!("Validation error for {:?}: {}", pattern_type, e),
+                        );
+                    }
                 }
+            }
+
+            // Check for Result<T, E> pattern (positive validation)
+            let (s_array, _p_array, _o_array) = self.pattern_extractor
+                .to_soa_arrays(&extraction, PatternType::Result)?;
+            
+            let has_result_pattern = s_array.iter().any(|&p| p != 0);
+            if has_result_pattern {
+                report.add_result(
+                    ValidationCategory::ErrorHandling,
+                    ValidationResult {
+                        passed: true,
+                        message: "Found Result<T, E> pattern".to_string(),
+                        file: Some(file_path.clone()),
+                        line: None,
+                        span_id: None,
+                        duration_ns: None,
+                    },
+                );
             }
         }
 
@@ -296,6 +290,28 @@ impl ValidationEngine {
         report.duration_ms = duration.as_millis() as u64;
 
         Ok(report)
+    }
+
+    /// Scan directory recursively for Rust files
+    fn scan_directory(&self, dir: &PathBuf, files: &mut Vec<PathBuf>) -> Result<(), String> {
+        let entries = fs::read_dir(dir)
+            .map_err(|e| format!("Failed to read directory {}: {}", dir.display(), e))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+            let path = entry.path();
+
+            if path.is_file() {
+                if path.extension().and_then(|s| s.to_str()) == Some("rs") {
+                    files.push(path);
+                }
+            } else if path.is_dir() {
+                // Recursively scan subdirectories
+                self.scan_directory(&path, files)?;
+            }
+        }
+
+        Ok(())
     }
 }
 

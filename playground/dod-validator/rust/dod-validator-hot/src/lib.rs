@@ -76,7 +76,7 @@ pub struct KnhkReceipt {
 #[link(name = "knhk")]
 extern "C" {
     fn knhk_init_ctx(ctx: *mut KnhkContext, S: *const u64, P: *const u64, O: *const u64);
-    fn knhk_eval_bool(ctx: *const KnhkContext, ir: *const KnhkHookIr, rcpt: *mut KnhkReceipt) -> c_int;
+    fn knhk_core_eval_bool(ctx: *const KnhkContext, ir: *const KnhkHookIr) -> c_int;
     fn knhk_generate_span_id() -> u64;
 }
 
@@ -115,6 +115,7 @@ impl HotPathValidator {
         let pattern_type_val = pattern_type as u64;
         
         // Set up SoA arrays (must be 64-byte aligned)
+        // Store triples: (code_hash, pattern_type, pattern_hash)
         #[repr(align(64))]
         struct AlignedArray([u64; 8]);
         
@@ -122,11 +123,11 @@ impl HotPathValidator {
         let mut p_array = AlignedArray([0u64; 8]);
         let mut o_array = AlignedArray([0u64; 8]);
         
-        // Copy patterns to S array
-        for (i, &pattern) in patterns.iter().enumerate() {
-            s_array.0[i] = pattern;
+        // Store triples: for each pattern_hash, store (code_hash, pattern_type, pattern_hash)
+        for (i, &pattern_hash) in patterns.iter().enumerate() {
+            s_array.0[i] = code_hash;
             p_array.0[i] = pattern_type_val;
-            o_array.0[i] = code_hash;
+            o_array.0[i] = pattern_hash;
         }
 
         // Initialize KNHK context
@@ -144,14 +145,20 @@ impl HotPathValidator {
 
         unsafe {
             knhk_init_ctx(&mut ctx, s_array.0.as_ptr(), p_array.0.as_ptr(), o_array.0.as_ptr());
+            // knhk_init_ctx resets run to zero, so we need to set the run field directly
+            // (knhk_pin_run is static inline, so we set it directly)
+            ctx.run.pred = pattern_type_val;
+            ctx.run.off = 0;
+            ctx.run.len = pattern_count;
         }
 
         // Create hook IR for ASK_SP operation
+        // Check if code_hash has any pattern of this type (ASK_SP is faster than ASK_SPO)
         let ir = KnhkHookIr {
-            op: 1, // KNHK_OP_ASK_SP
+            op: 1, // KNHK_OP_ASK_SP - checks if (code_hash, pattern_type) exists
             s: code_hash,
             p: pattern_type_val,
-            o: 0,
+            o: 0, // Not used for ASK_SP
             k: 0,
             out_S: std::ptr::null_mut(),
             out_P: std::ptr::null_mut(),
@@ -162,26 +169,16 @@ impl HotPathValidator {
         };
 
         // Execute pattern matching (hot path, ≤8 ticks)
-        let mut receipt = KnhkReceipt {
-            lanes: 0,
-            span_id: 0,
-            a_hash: 0,
-        };
-
         let result = unsafe {
-            knhk_eval_bool(&ctx, &ir, &mut receipt)
+            knhk_core_eval_bool(&ctx, &ir)
         };
 
-        // Generate span ID if receipt doesn't have one
-        let span_id = if receipt.span_id != 0 {
-            receipt.span_id
-        } else {
-            unsafe { knhk_generate_span_id() }
-        };
+        // Generate span ID for provenance
+        let span_id = unsafe { knhk_generate_span_id() };
 
         Ok(DodValidationResult {
             found: if result != 0 { 1 } else { 0 },
-            count: if result != 0 { 1 } else { 0 },
+            count: if result != 0 { patterns.len() as u32 } else { 0 },
             span_id,
         })
     }
@@ -255,21 +252,13 @@ impl HotPathValidator {
             select_capacity: 0,
         };
 
-        let mut receipt = KnhkReceipt {
-            lanes: 0,
-            span_id: 0,
-            a_hash: 0,
-        };
-
+        // Execute COUNT_SP_GE operation
         let result = unsafe {
-            knhk_eval_bool(&ctx, &ir, &mut receipt)
+            knhk_core_eval_bool(&ctx, &ir)
         };
 
-        let span_id = if receipt.span_id != 0 {
-            receipt.span_id
-        } else {
-            unsafe { knhk_generate_span_id() }
-        };
+        // Generate span ID for provenance
+        let span_id = unsafe { knhk_generate_span_id() };
 
         Ok(DodValidationResult {
             found: if result != 0 { 1 } else { 0 },

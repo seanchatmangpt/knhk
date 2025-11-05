@@ -6,7 +6,7 @@ async function main() {
         enableLockchainWriter: false
     });
 
-    const hookDef = {{ hook_json }};
+    const hookDef = {{ hook_json | safe }};
     const hook = defineHook(hookDef);
     await registerHook(hook);
 

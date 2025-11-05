@@ -4,8 +4,10 @@
 use crate::error::{UnrdfError, UnrdfResult};
 use crate::script::execute_unrdf_script;
 use crate::state::get_state;
+use crate::template::TemplateEngine;
 use crate::types::{Transaction, TransactionReceipt, TransactionState};
 use std::collections::HashMap;
+use tera::Context;
 
 /// Begin a new transaction
 pub fn begin_transaction(actor: &str) -> UnrdfResult<u32> {
@@ -89,86 +91,22 @@ pub fn commit_transaction(transaction_id: u32) -> UnrdfResult<TransactionReceipt
             let removals = transaction.removals.clone();
             let actor = transaction.actor.clone();
             
-            // Escape turtle data
-            let escaped_additions: Vec<String> = additions.iter()
-                .map(|s| s.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$"))
-                .collect();
-            let escaped_removals: Vec<String> = removals.iter()
-                .map(|s| s.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$"))
-                .collect();
-            
-            // Build additions array
-            let additions_js = escaped_additions.iter()
-                .map(|s| format!("`{}`", s))
-                .collect::<Vec<_>>()
-                .join(",\n                ");
-            
-            // Build removals array
-            let removals_js = escaped_removals.iter()
-                .map(|s| format!("`{}`", s))
-                .collect::<Vec<_>>()
-                .join(",\n                ");
-            
-            let script = format!(
-                r#"
-                import {{ createDarkMatterCore }} from './src/knowledge-engine/knowledge-substrate-core.mjs';
-                import {{ parseTurtle }} from './src/knowledge-engine/parse.mjs';
-                
-                async function main() {{
-                    const system = await createDarkMatterCore({{
-                        enableKnowledgeHookManager: true,
-                        enableLockchainWriter: false
-                    }});
-                
-                    const additionsData = [
-                        {}
-                    ];
-                    const removalsData = [
-                        {}
-                    ];
-                
-                    const additionsQuads = [];
-                    for (const turtleData of additionsData) {{
-                        const store = await parseTurtle(turtleData);
-                        store.forEach(q => additionsQuads.push(q));
-                    }}
-                
-                    const removalsQuads = [];
-                    for (const turtleData of removalsData) {{
-                        const store = await parseTurtle(turtleData);
-                        store.forEach(q => removalsQuads.push(q));
-                    }}
-                
-                    const receipt = await system.executeTransaction({{
-                        additions: additionsQuads,
-                        removals: removalsQuads,
-                        actor: '{}'
-                    }});
-                
-                    console.log(JSON.stringify({{
-                        transaction_id: {},
-                        success: true,
-                        receipt: receipt ? JSON.stringify(receipt) : null
-                    }}));
-                }}
-                
-                main().catch(err => {{
-                    console.error(JSON.stringify({{
-                        transaction_id: {},
-                        success: false,
-                        error: err.message
-                    }}));
-                    process.exit(1);
-                }});
-                "#,
-                additions_js,
-                removals_js,
-                actor,
-                transaction_id,
-                transaction_id
-            );
-            
             drop(transactions); // Release lock before async operation
+            
+            // Use Tera template engine
+            let template_engine = TemplateEngine::get()?;
+            let mut context = Context::new();
+            context.insert("additions_json", &serde_json::to_string(&additions)
+                .map_err(|e| UnrdfError::InvalidInput(format!("Failed to serialize additions: {}", e)))?);
+            context.insert("removals_json", &serde_json::to_string(&removals)
+                .map_err(|e| UnrdfError::InvalidInput(format!("Failed to serialize removals: {}", e)))?);
+            context.insert("actor", &actor);
+            context.insert("transaction_id", &transaction_id);
+            
+            let script = template_engine.lock()
+                .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+                .render("transaction-commit", &context)
+                .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render transaction-commit template: {}", e)))?;
             
             let receipt_result = state.runtime.block_on(async {
                 let output = execute_unrdf_script(&script).await?;
