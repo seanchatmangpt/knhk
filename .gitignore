@@ -63,3 +63,4 @@ vendors/*/coverage/
 vendors/*/.nyc_output/
 vendors/*/pnpm-lock.yaml
 vendors/*/.cache/
+vendors/unrdf/knhk_unrdf_temp_*.mjs
