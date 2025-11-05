@@ -3,13 +3,14 @@
 // Reference connector for Dark Matter 80/20 framework
 // Production-ready implementation with proper error handling, guard validation, and metrics
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use crate::*;
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::format;
-use core::hash::{Hash, Hasher};
-use hashbrown::hash_map::DefaultHasher;
 
 #[cfg(feature = "kafka")]
 use rdkafka::{
@@ -264,7 +265,7 @@ impl KafkaConnector {
     /// Create a new Kafka connector
     pub fn new(name: ConnectorId, topic: String, format: DataFormat) -> Self {
         Self {
-            id: name,
+            id: name.clone(),
             schema: "urn:knhk:schema:kafka".to_string(),
             spec: ConnectorSpec {
                 name: name.clone(),
@@ -327,9 +328,13 @@ impl KafkaConnector {
                     if json_str.contains("\"s\"") && json_str.contains("\"p\"") && json_str.contains("\"o\"") {
                     // Extract hash values (simplified)
                     // For now, generate deterministic hash from payload
-                    let mut hasher = DefaultHasher::new();
-                    json_str.hash(&mut hasher);
-                    let hash = hasher.finish();
+                    // Use simple hash function (FNV-1a) for no_std compatibility
+                    let mut hash = 14695981039346656037u64; // FNV offset basis
+                    const FNV_PRIME: u64 = 1099511628211;
+                    for byte in json_str.as_bytes() {
+                        hash ^= *byte as u64;
+                        hash = hash.wrapping_mul(FNV_PRIME);
+                    }
                         
                         // Create triple with extracted values
                         // In production, parse JSON properly and apply mapping
@@ -360,9 +365,13 @@ impl KafkaConnector {
                 // In production, use proper RDF/Turtle parser
                 if turtle_str.contains(" <") && turtle_str.contains("> ") {
                     // Extract triple hashes (simplified)
-                    let mut hasher = DefaultHasher::new();
-                    turtle_str.hash(&mut hasher);
-                    let hash = hasher.finish();
+                    // Use simple hash function (FNV-1a) for no_std compatibility
+                    let mut hash = 14695981039346656037u64; // FNV offset basis
+                    const FNV_PRIME: u64 = 1099511628211;
+                    for byte in turtle_str.as_bytes() {
+                        hash ^= *byte as u64;
+                        hash = hash.wrapping_mul(FNV_PRIME);
+                    }
                     
                     triples.push(Triple {
                         subject: hash & 0xFFFFFFFFFFFF,

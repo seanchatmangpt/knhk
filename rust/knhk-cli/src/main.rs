@@ -312,10 +312,19 @@ fn use_context(id: String) {
     }
 }
 
-/// Hook noun - knowledge hook operations
+/// Config noun - configuration management
 #[noun]
-fn hook() {
-    // Hook commands registered via verbs
+fn config() {
+    // Config commands registered via verbs
+}
+
+/// Show current configuration
+#[verb]
+fn show_config() {
+    if let Err(e) = commands::config::show() {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
+    }
 }
 
 /// Create a hook
@@ -369,5 +378,6 @@ fn main() {
         .noun(coverage)
         .noun(hook)
         .noun(context)
+        .noun(config)
         .run();
 }

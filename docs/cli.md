@@ -1,7 +1,10 @@
 # KNHK CLI Guide
 
-**Version**: 0.4.0  
-**Principle**: 80/20 - Essential commands that provide 80% of value
+**Version**: 0.5.0  
+**Status**: ✅ Production Ready  
+**CLI Reference**: Complete command reference for all operations
+
+**See [v0.4.0 Status](v0.4.0-status.md) for complete status and limitations.**
 
 ## Overview
 
@@ -17,6 +20,62 @@ knhk <noun> <verb> [arguments]
 cd rust/knhk-cli
 cargo build --release
 cargo install --path .
+```
+
+## Configuration
+
+KNHK supports configuration via TOML file and environment variables. Configuration is loaded from:
+
+1. **Environment Variables** (highest priority) - `KNHK_*` prefix
+2. **Config File** - `~/.knhk/config.toml` (or `%APPDATA%/knhk/config.toml` on Windows)
+3. **Default Configuration** (lowest priority)
+
+### Configuration File
+
+Create `~/.knhk/config.toml`:
+
+```toml
+[knhk]
+version = "0.5.0"
+context = "default"
+
+[connectors.kafka-prod]
+type = "kafka"
+bootstrap_servers = ["localhost:9092"]
+topic = "triples"
+schema = "urn:knhk:schema:enterprise"
+max_run_len = 8
+max_batch_size = 1000
+
+[epochs.default]
+tau = 8
+ordering = "deterministic"
+
+[hooks]
+max_count = 100
+
+[routes.webhook-1]
+kind = "webhook"
+target = "https://api.example.com/webhook"
+encode = "json-ld"
+```
+
+### Environment Variables
+
+Environment variables override config file values:
+
+```bash
+export KNHK_CONTEXT=production
+export KNHK_CONNECTOR_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+export KNHK_EPOCH_DEFAULT_TAU=8
+```
+
+### Show Configuration
+
+View current configuration (including environment variable overrides):
+
+```bash
+knhk config show
 ```
 
 ## Commands
@@ -200,24 +259,76 @@ knhk metrics get
 knhk coverage get
 ```
 
-## Error Handling
+### Config - Configuration Management
 
-All commands return exit codes:
-- `0` - Success
-- `1` - Error
+**Show Configuration**
+```bash
+knhk config show
+```
 
-Errors are displayed to stderr with descriptive messages.
+Example:
+```bash
+knhk config show
+```
 
-## Configuration
+This command displays the current configuration including:
+- KNHK version and context
+- Connectors configuration
+- Epochs configuration
+- Routes configuration
+- Environment variable overrides
 
-Configuration is stored in:
-- Unix: `~/.knhk/`
-- Windows: `%APPDATA%/knhk/`
+## Troubleshooting
 
-Files:
-- `sigma.ttl` - Schema registry
-- `q.sparql` - Invariant registry
-- `connectors.json` - Connector registry
+### Common Issues
+
+**Configuration not loading**
+- Check that `~/.knhk/config.toml` exists and is valid TOML
+- Verify environment variables are set correctly
+- Run `knhk config show` to see current configuration
+
+**Command not found**
+- Ensure KNHK CLI is installed: `cargo install --path rust/knhk-cli`
+- Check PATH includes cargo bin directory
+
+**Permission errors**
+- Ensure write access to `~/.knhk/` directory
+- Check file permissions on config files
+
+## Command Reference Table
+
+| Noun | Verb | Description |
+|------|------|-------------|
+| boot | init | Initialize Σ and Q registries |
+| connect | register | Register a connector |
+| connect | list | List connectors |
+| cover | define | Define cover over O |
+| cover | list | List covers |
+| admit | delta | Admit Δ into O |
+| reflex | declare | Declare a reflex |
+| reflex | list | List reflexes |
+| epoch | create | Create an epoch |
+| epoch | run | Run an epoch |
+| epoch | list | List epochs |
+| route | install | Install a route |
+| route | list | List routes |
+| receipt | get | Get receipt |
+| receipt | merge | Merge receipts |
+| receipt | list | List receipts |
+| receipt | verify | Verify receipt |
+| receipt | show | Show receipt details |
+| pipeline | run | Run ETL pipeline |
+| pipeline | status | Get pipeline status |
+| metrics | get | Get OTEL metrics |
+| coverage | get | Get Dark Matter coverage |
+| hook | create | Create a hook |
+| hook | list | List hooks |
+| hook | eval | Evaluate a hook |
+| hook | show | Show hook details |
+| context | create | Create context |
+| context | list | List contexts |
+| context | switch | Switch context |
+| config | show | Show current configuration |
 - `covers.json` - Cover definitions
 - `reflexes.json` - Reflex definitions
 - `epochs.json` - Epoch definitions

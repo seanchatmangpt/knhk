@@ -2,12 +2,17 @@
 // OpenTelemetry Observability Integration
 // Provides metrics, traces, and spans for KNHKS operations
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::string::ToString;
 
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -459,13 +464,13 @@ impl Tracer {
 
     /// Start a new span
     pub fn start_span(&mut self, name: String, parent: Option<SpanContext>) -> SpanContext {
-        let trace_id = parent.map(|p| p.trace_id).unwrap_or_else(|| {
+        let trace_id = parent.as_ref().map(|p| p.trace_id).unwrap_or_else(|| {
             // Generate new trace ID (128-bit random)
             TraceId(generate_trace_id())
         });
 
         let span_id = SpanId(generate_span_id());
-        let parent_span_id = parent.map(|p| p.span_id);
+        let parent_span_id = parent.as_ref().map(|p| p.span_id);
 
         let context = SpanContext {
             trace_id,
@@ -475,7 +480,7 @@ impl Tracer {
         };
 
         let span = Span {
-            context,
+            context: context.clone(),
             name: name.clone(),
             start_time_ms: get_timestamp_ms(),
             end_time_ms: None,
@@ -650,17 +655,24 @@ fn generate_trace_id() -> u128 {
     {
         use rand::RngCore;
         let mut rng = rand::thread_rng();
-        rng.next_u128()
+        // Generate 128-bit ID from two 64-bit values
+        let high = rng.next_u64();
+        let low = rng.next_u64();
+        (high as u128) << 64 | (low as u128)
     }
     #[cfg(not(feature = "std"))]
     {
         // For no_std, use simple hash-based generation
         // In production, use hardware RNG or external source
         use core::hash::{Hash, Hasher};
-        use hashbrown::hash_map::DefaultHasher;
-        let mut hasher = DefaultHasher::new();
-        "trace".hash(&mut hasher);
-        hasher.finish() as u128 | ((hasher.finish() as u128) << 64)
+        // Use FNV-1a hash for no_std compatibility
+        let mut hash = 14695981039346656037u64; // FNV offset basis
+        const FNV_PRIME: u64 = 1099511628211;
+        for byte in "trace".as_bytes() {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+        hash as u128 | ((hash.wrapping_mul(FNV_PRIME) as u128) << 64)
     }
 }
 
@@ -675,13 +687,19 @@ pub fn generate_span_id() -> u64 {
     #[cfg(not(feature = "std"))]
     {
         // For no_std, use hash-based generation with timestamp
-        use core::hash::{Hash, Hasher};
-        use hashbrown::hash_map::DefaultHasher;
-        let mut hasher = DefaultHasher::new();
-        "span".hash(&mut hasher);
+        // Use FNV-1a hash for no_std compatibility
+        let mut hash = 14695981039346656037u64; // FNV offset basis
+        const FNV_PRIME: u64 = 1099511628211;
+        for byte in "span".as_bytes() {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
         let timestamp = get_timestamp_ms();
-        timestamp.hash(&mut hasher);
-        hasher.finish()
+        for byte in timestamp.to_le_bytes().iter() {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+        hash
     }
 }
 

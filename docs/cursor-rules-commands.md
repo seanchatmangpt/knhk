@@ -1,5 +1,9 @@
 # Cursor IDE Rules and Commands Guide
 
+**Purpose**: Reference guide for Cursor IDE configuration  
+**Status**: Active documentation  
+**Location**: `.cursor/rules/` and `.cursor/commands/` directories
+
 ## Overview
 
 Cursor IDE supports two main customization features:

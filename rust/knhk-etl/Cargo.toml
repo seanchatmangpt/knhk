@@ -11,9 +11,8 @@ knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = [
   "std",
 ] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0", optional = true }
-knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = [
-  "std",
-] }
+knhk-warm = { path = "../knhk-warm", version = "0.1.0", optional = true }
+knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", optional = true }
 knhk-otel = { path = "../knhk-otel", version = "0.1.0", optional = true }
 hashbrown = { version = "0.15", default-features = false }
 hex = { version = "0.4", default-features = false }
@@ -39,7 +38,9 @@ std = [
   "reqwest",
   "serde_json",
   "knhk-hot",
+  "knhk-warm",
   "knhk-otel",
+  "knhk-lockchain",
   "knhk-lockchain/std",
 ]
 kafka = ["std", "rdkafka"]

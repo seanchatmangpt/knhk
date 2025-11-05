@@ -3,6 +3,9 @@
 // Reference connector for Dark Matter 80/20 framework
 // Production-ready implementation with OAuth2, rate limiting, schema validation, and proper error handling
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use crate::*;
 use alloc::vec::Vec;
 use alloc::string::String;
@@ -313,7 +316,7 @@ impl SalesforceConnector {
         object_type: String,
     ) -> Self {
         Self {
-            id: name,
+            id: name.clone(),
             schema: "urn:knhk:schema:salesforce".to_string(),
             spec: ConnectorSpec {
                 name: name.clone(),

@@ -3,12 +3,17 @@
 // Merkle-linked receipt storage for audit trail
 // Production-ready implementation with proper hash computation and verification
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::string::ToString;
 
 /// Receipt hash (SHA-256 after URDNA2015 canonicalization)
 pub type ReceiptHash = [u8; 32];
