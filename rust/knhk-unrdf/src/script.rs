@@ -1,0 +1,45 @@
+// knhk-unrdf: Script execution helper
+// Execute Node.js scripts for unrdf integration
+
+use crate::error::{UnrdfError, UnrdfResult};
+use crate::state::get_state;
+use tokio::process::Command;
+
+/// Execute a script using Node.js and unrdf
+pub async fn execute_unrdf_script(script_content: &str) -> UnrdfResult<String> {
+    let state = get_state()?;
+    
+    // Write script to temporary file
+    let temp_file = std::env::temp_dir().join(format!("knhk_unrdf_{}.mjs", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    std::fs::write(&temp_file, script_content)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to write script: {}", e)))?;
+    
+    // Execute via Node.js
+    let output = Command::new("node")
+        .arg(&temp_file)
+        .current_dir(&state.unrdf_path)
+        .output()
+        .await
+        .map_err(|e| UnrdfError::QueryFailed(format!("Failed to execute node: {}", e)))?;
+    
+    // Cleanup
+    let _ = std::fs::remove_file(&temp_file);
+    
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(UnrdfError::QueryFailed(format!("Script failed: stderr={}, stdout={}", stderr, stdout)));
+    }
+    
+    let stdout = String::from_utf8(output.stdout)
+        .map_err(|e| UnrdfError::QueryFailed(format!("Invalid output: {}", e)))?;
+    
+    // Trim whitespace and check for error messages
+    let trimmed = stdout.trim();
+    if trimmed.starts_with("ERROR:") || trimmed.contains("Error:") {
+        return Err(UnrdfError::QueryFailed(format!("Script reported error: {}", trimmed)));
+    }
+    
+    Ok(trimmed.to_string())
+}
+

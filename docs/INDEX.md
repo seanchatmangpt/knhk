@@ -39,7 +39,6 @@
 - **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
 - **[v1.0 unrdf Integration Plan](v1.0-unrdf-integration-plan.md)** - unrdf integration requirements for v1.0
 - **[v1.0 unrdf Gap Analysis](v1.0-unrdf-gap-analysis.md)** - Comprehensive gap analysis: unrdf capabilities vs KNHK independent implementations
-- **[Lean Six Sigma Project Charter](LEAN_SIX_SIGMA_PROJECT_CHARTER.md)** - DMAIC project charter for KNHK v1.0 integration and optimization
 
 ## Archived Documentation
 
