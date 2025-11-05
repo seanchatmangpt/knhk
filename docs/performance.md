@@ -33,7 +33,7 @@ All supported operations achieve ≤2ns when measured externally:
 | **COMPARE(O <= value)** | ~0.9-1.1 ns | ✅ |
 | **VALIDATE_DATATYPE(SP)** | ~1.5 ns | ✅ |
 | **SELECT(S,P)** | ~1.0-1.4 ns | ✅ |
-| **CONSTRUCT8** | ~1.0-2.0 ns | ✅ |
+| **CONSTRUCT8** | ~41-83 ticks | ⚠️ Known limitation (exceeds 8-tick budget) |
 
 ## Measurement Methodology
 
@@ -69,7 +69,7 @@ All supported operations achieve ≤2ns when measured externally:
 | System | ASK Query Latency | Speedup |
 |--------|------------------|---------|
 | Traditional SPARQL | ~10-100 μs | Baseline |
-| KNKHS Hot Path | ~1.2 ns | **10,000-100,000x** |
+| KNHK Hot Path | ~1.2 ns | **10,000-100,000x** |
 
 ### Enterprise Use Cases
 
@@ -87,9 +87,11 @@ All supported operations achieve ≤2ns when measured externally:
 | Object Count | ~1.0-1.1 ns | ✅ |
 | Value Comparison | ~0.9 ns | ✅ |
 | Datatype Validation | ~1.5 ns | ✅ |
-| CONSTRUCT8 | ~1.0-2.0 ns | ✅ |
+| CONSTRUCT8 | ~41-83 ticks | ⚠️ Known limitation (exceeds 8-tick budget) |
 
-**All enterprise use cases qualify for hot path!**
+**18/19 enterprise use cases qualify for hot path!**
+
+**Known Limitation**: CONSTRUCT8 operations exceed the 8-tick budget (measured: 41-83 ticks). This is documented and will be addressed in v0.5.0 by moving CONSTRUCT8 to warm path. See [v0.4.0 Status](v0.4.0-status.md) for details.
 
 ## Performance Diagrams
 
