@@ -136,6 +136,7 @@ pub fn eval(hook_name: String) -> Result<(), String> {
     #[cfg(feature = "std")]
     {
         use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
+        use knhk_warm::warm_path::execute_construct8;
         
         // Create dummy SoA arrays for evaluation
         // In production, these would come from loaded ontology O
@@ -191,15 +192,19 @@ pub fn eval(hook_name: String) -> Result<(), String> {
         };
         
         // Create IR
+        let mut out_s = [0u64; 8];
+        let mut out_p = [0u64; 8];
+        let mut out_o = [0u64; 8];
+        
         let mut ir = Ir {
             op,
             s: hook.s.unwrap_or(0),
             p: hook.pred,
             o: hook.o.unwrap_or(0),
             k: hook.k.unwrap_or(0),
-            out_S: std::ptr::null_mut(),
-            out_P: std::ptr::null_mut(),
-            out_O: std::ptr::null_mut(),
+            out_S: out_s.as_mut_ptr(),
+            out_P: out_p.as_mut_ptr(),
+            out_O: out_o.as_mut_ptr(),
             out_mask: 0,
         };
         
@@ -207,19 +212,49 @@ pub fn eval(hook_name: String) -> Result<(), String> {
         let mut receipt = HotReceipt::default();
         
         if op == Op::Construct8 {
-            let lanes_written = engine.eval_construct8(&mut ir, &mut receipt);
-            println!("  ✓ Hook executed (lanes written: {})", lanes_written);
+            // Route CONSTRUCT8 to warm path (≤500ms budget)
+            println!("  Routing CONSTRUCT8 to warm path (≤500ms budget)");
+            let ctx = engine.ctx();
+            match execute_construct8(ctx, &mut ir) {
+                Ok(warm_result) => {
+                    println!("  ✓ Hook executed via warm path (lanes written: {})", warm_result.lanes_written);
+                    println!("  Warm path latency: {}µs", warm_result.latency_us);
+                    receipt.lanes = warm_result.receipt.lanes;
+                    receipt.span_id = warm_result.receipt.span_id;
+                    receipt.a_hash = warm_result.receipt.a_hash;
+                    receipt.ticks = 0; // Warm path doesn't use tick budget
+                    
+                    // Record warm path metrics
+                    #[cfg(feature = "otel")]
+                    {
+                        use knhk_otel::{Tracer, MetricsHelper};
+                        let mut tracer = Tracer::new();
+                        MetricsHelper::record_warm_path_latency(
+                            &mut tracer,
+                            warm_result.latency_us,
+                            "CONSTRUCT8"
+                        );
+                    }
+                }
+                Err(e) => return Err(format!("Warm path execution failed: {}", e)),
+            }
         } else {
+            // Hot path operations (≤8 ticks)
             let result = engine.eval_bool(&mut ir, &mut receipt);
-            println!("  ✓ Hook executed (result: {})", result);
+            println!("  ✓ Hook executed via hot path (result: {})", result);
         }
         
         println!("  Receipt:");
-        println!("    Ticks: {} (budget: ≤8)", receipt.ticks);
-        if receipt.ticks > 8 {
-            println!("    ⚠ Tick budget exceeded!");
+        if op == Op::Construct8 {
+            println!("    Path: Warm (≤500ms budget)");
         } else {
-            println!("    ✓ Within budget");
+            println!("    Path: Hot (≤8 ticks)");
+            println!("    Ticks: {} (budget: ≤8)", receipt.ticks);
+            if receipt.ticks > 8 {
+                println!("    ⚠ Tick budget exceeded!");
+            } else {
+                println!("    ✓ Within budget");
+            }
         }
         println!("    Lanes: {}", receipt.lanes);
         println!("    Span ID: 0x{:016x}", receipt.span_id);
