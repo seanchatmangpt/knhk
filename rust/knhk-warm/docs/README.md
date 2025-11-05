@@ -2,42 +2,78 @@
 
 Warm path operations (≤500ms budget) using oxigraph for SPARQL query execution.
 
-## Overview
+## File Structure
 
-The `knhk-warm` crate provides:
-- SPARQL query execution (SELECT, ASK, CONSTRUCT, DESCRIBE)
-- Query result caching (LRU cache, 1000 entries)
-- Query plan caching (parsed SPARQL queries)
+```
+rust/knhk-warm/
+├── src/
+│   ├── lib.rs              # Module exports and public API
+│   ├── graph.rs            # WarmPathGraph (oxigraph wrapper with caching)
+│   ├── query.rs            # SPARQL query execution (SELECT, ASK, CONSTRUCT, DESCRIBE)
+│   ├── executor.rs         # WarmPathExecutor with path selection
+│   ├── hot_path.rs         # Hot path integration (routes to C ≤2ns functions)
+│   ├── warm_path.rs        # Warm path operations (CONSTRUCT8)
+│   ├── ffi.rs              # FFI bindings
+│   ├── construct8.rs      # CONSTRUCT8 operations
+│   └── error.rs            # Error types
+├── tests/
+│   ├── executor.rs         # Executor tests (12 tests)
+│   ├── graph.rs            # Graph operations tests (12 tests)
+│   ├── query.rs            # Query module tests (11 tests)
+│   ├── errors.rs           # Error handling tests (11 tests)
+│   ├── edge_cases.rs       # Edge cases tests (13 tests)
+│   ├── cache.rs            # Cache behavior tests (12 tests)
+│   ├── performance.rs      # Performance tests (7 tests)
+│   └── warm_path_test.rs   # Warm path tests (5 tests)
+├── benches/
+│   └── query_bench.rs      # Criterion benchmarks
+├── examples/
+│   └── warm_path_query.rs  # Usage examples
+└── Cargo.toml
+```
+
+## Core Components
+
+### WarmPathGraph (`src/graph.rs`)
+- Wraps `oxigraph::store::Store`
+- LRU cache for query results (1000 entries)
+- Query plan cache (parsed SPARQL queries)
 - Epoch-based cache invalidation
-- Hot path integration (automatic routing to ≤2ns C hot path)
-- OTEL metrics and observability
+- OTEL metrics integration
 
-## Architecture
+### Query Module (`src/query.rs`)
+- `execute_select()` - SELECT query execution
+- `execute_ask()` - ASK query execution
+- `execute_construct()` - CONSTRUCT query execution
+- `execute_describe()` - DESCRIBE query execution
+- JSON conversion functions
 
-- **WarmPathGraph**: Main graph interface wrapping oxigraph Store
-- **WarmPathExecutor**: Executor with automatic path selection
-- **Hot Path Integration**: Routes simple queries to C hot path (≤2ns)
-- **Query Module**: High-level query execution functions
+### Executor (`src/executor.rs`)
+- `WarmPathExecutor` - Main executor with path selection
+- Routes queries to hot/warm/cold paths automatically
+- `execute_query()` - Unified query interface
 
-## Key Features
+### Hot Path Integration (`src/hot_path.rs`)
+- `execute_hot_path_ask()` - Routes to C `knhk_eval_bool`
+- `execute_hot_path_select()` - Routes to C hot path COUNT operations
+- Validates tick budget (≤8 ticks)
+- Automatic fallback to warm path
 
-- **Performance**: 10-14x faster than unrdf FFI (5-50ms vs 150-700ms)
-- **Caching**: LRU cache for query results and query plans
-- **Thread-safe**: Arc-based shared store for concurrent access
-- **Path Selection**: Automatic routing to hot/warm/cold paths
+## Dependencies
+
+- `oxigraph = "0.5"` - Rust-native RDF store and SPARQL engine
+- `lru = "0.16"` - LRU cache implementation
+- `knhk-hot` - Hot path FFI bindings
+- `knhk-etl` - Path selection logic
 
 ## Test Coverage
 
 83 Chicago TDD tests across 7 test files:
-- `tests/executor.rs` - Executor tests (12 tests)
-- `tests/graph.rs` - Graph operations (12 tests)
-- `tests/query.rs` - Query module (11 tests)
-- `tests/errors.rs` - Error handling (11 tests)
-- `tests/edge_cases.rs` - Edge cases (13 tests)
-- `tests/cache.rs` - Cache behavior (12 tests)
-- `tests/performance.rs` - Performance tests (7 tests)
-
-**Coverage**: ~80%+ overall
+- **Path Selector**: 100% coverage
+- **Query Module**: ~90% coverage  
+- **Graph Module**: ~80% coverage
+- **Executor**: ~80% coverage
+- **Overall**: ~80%+ coverage
 
 ## Usage
 
@@ -45,7 +81,7 @@ See [../../docs/ggen-integration-guide.md](../../docs/ggen-integration-guide.md)
 
 ## Related Documentation
 
-- [Architecture](../../docs/architecture.md) - System architecture
-- [Testing](../../docs/testing.md) - Testing documentation
-- [Performance](../../docs/performance.md) - Performance guide
+- [Architecture](../../../docs/architecture.md) - System architecture
+- [Testing](../../../docs/testing.md) - Testing documentation
+- [Performance](../../../docs/performance.md) - Performance guide
 
