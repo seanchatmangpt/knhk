@@ -1,0 +1,22 @@
+{
+    "sourceFile": "rust/knhk-integration-tests/Cargo.toml",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1762371363626,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1762376291810,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,25 @@\n+[package]\n+name = \"knhk-integration-tests\"\n+version = \"0.1.0\"\n+edition = \"2021\"\n+\n+[[bin]]\n+name = \"integration_test\"\n+path = \"src/main.rs\"\n+\n+[dependencies]\n+# Core testcontainers\n+testcontainers = \"0.16\"\n+testcontainers-modules = { version = \"0.16\", features = [\"kafka\", \"postgres\"] }\n+tokio = { version = \"1\", features = [\"full\"] }\n+\n+# KNHK components\n+knhk-connectors = { path = \"../knhk-connectors\", features = [\"std\"] }\n+knhk-etl = { path = \"../knhk-etl\", features = [\"std\"] }\n+knhk-hot = { path = \"../knhk-hot\", version = \"1.0.0\" }\n+knhk-otel = { path = \"../knhk-otel\" }\n+\n+# Utilities\n+anyhow = \"1.0\"\n+\n+[dev-dependencies]\n"
+                }
+            ],
+            "date": 1762371363626,
+            "name": "Commit-0",
+            "content": "[package]\nname = \"knhk-integration-tests\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"integration_test\"\npath = \"src/main.rs\"\n\n[dependencies]\n# Core testcontainers\ntestcontainers = \"0.16\"\ntestcontainers-modules = { version = \"0.16\", features = [\"kafka\", \"postgres\"] }\ntokio = { version = \"1\", features = [\"full\"] }\n\n# KNHK components\nknhk-connectors = { path = \"../knhk-connectors\", features = [\"std\"] }\nknhk-etl = { path = \"../knhk-etl\", features = [\"std\"] }\nknhk-hot = { path = \"../knhk-hot\", version = \"1.0.0\" }\nknhk-otel = { path = \"../knhk-otel\" }\n\n# Utilities\nanyhow = \"1.0\"\n\n[dev-dependencies]\n"
+        }
+    ]
+}

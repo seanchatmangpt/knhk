@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-aot/Cargo.toml",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762376291808,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762376291808,
+            "name": "Commit-0",
+            "content": "[package]\nname = \"knhk-aot\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[lib]\ncrate-type = [\"cdylib\", \"staticlib\"]\npath = \"src/lib.rs\"\n\n[dependencies]\nrio_turtle = { version = \"0.8.5\", default-features = false }\nrio_api = { version = \"0.8.5\", default-features = false }\n\n[features]\ndefault = []\nstd = []\n"
+        }
+    ]
+}
