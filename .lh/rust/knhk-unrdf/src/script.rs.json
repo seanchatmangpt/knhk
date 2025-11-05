@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1762384149575,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1762384561041,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,9 +8,9 @@\n /// Execute a script using Node.js and unrdf\n pub async fn execute_unrdf_script(script_content: &str) -> UnrdfResult<String> {\n     let state = get_state()?;\n     \n-    // Write script to temporary file\n+    // Write script to unrdf directory (so relative imports work)\n     // Generate unique filename using timestamp (handle clock skew errors gracefully)\n     let timestamp_nanos = std::time::SystemTime::now()\n         .duration_since(std::time::UNIX_EPOCH)\n         .map(|d| d.as_nanos())\n@@ -21,16 +21,18 @@\n             let mut hasher = DefaultHasher::new();\n             std::time::Instant::now().hash(&mut hasher);\n             hasher.finish() as u128\n         });\n-    let temp_file = std::env::temp_dir().join(format!(\"knhk_unrdf_{}.mjs\", timestamp_nanos));\n+    let script_filename = format!(\"knhk_unrdf_{}.mjs\", timestamp_nanos);\n+    let temp_file = std::path::Path::new(&state.unrdf_path).join(&script_filename);\n     std::fs::write(&temp_file, script_content)\n         .map_err(|e| UnrdfError::InvalidInput(format!(\"Failed to write script: {}\", e)))?;\n     \n-    // Execute via Node.js\n+    // Execute via Node.js with timeout\n     let output = Command::new(\"node\")\n-        .arg(&temp_file)\n+        .arg(&script_filename)\n         .current_dir(&state.unrdf_path)\n+        .kill_on_drop(true)\n         .output()\n         .await\n         .map_err(|e| UnrdfError::QueryFailed(format!(\"Failed to execute node: {}\", e)))?;\n     \n@@ -39,9 +41,11 @@\n     \n     if !output.status.success() {\n         let stderr = String::from_utf8_lossy(&output.stderr);\n         let stdout = String::from_utf8_lossy(&output.stdout);\n-        return Err(UnrdfError::QueryFailed(format!(\"Script failed: stderr={}, stdout={}\", stderr, stdout)));\n+        // Include exit code in error message\n+        let exit_code = output.status.code().unwrap_or(-1);\n+        return Err(UnrdfError::QueryFailed(format!(\"Script failed (exit code {}): stderr={}, stdout={}\", exit_code, stderr, stdout)));\n     }\n     \n     let stdout = String::from_utf8(output.stdout)\n         .map_err(|e| UnrdfError::QueryFailed(format!(\"Invalid output: {}\", e)))?;\n"
                 }
             ],
             "date": 1762384149575,
