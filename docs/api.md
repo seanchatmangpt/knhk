@@ -7,7 +7,7 @@
 
 ## Public API
 
-The KNKHS API is organized into modular headers for better maintainability:
+The KNHK API is organized into modular headers for better maintainability:
 
 ### Header Structure
 

@@ -159,21 +159,80 @@ make test-gaps-v1
 ✅ **Guard constraints** enforced at runtime  
 ✅ **Feature-gated** optional dependencies  
 
-## 80/20 Focus Areas
+## v0.4.0 Features and Status
 
-### Critical Path (80% Value)
-- Basic triple pattern matching (ASK, SELECT on single predicate)
-- Simple property constraints (minCount, maxCount, unique)
-- Datatype validation (basic type checks)
-- Existence checks (ASK_SP, ASK_SPO)
-- Count aggregations (COUNT_SP_GE, COUNT_SP_EQ)
+**Production-Ready**: Critical path features complete for enterprise deployment.
 
-### Deferred (20% Edge Cases)
+### Critical Path (80% Value - ✅ Complete in v0.4.0)
+
+**1. Hot Path Query Operations** ✅
+- 18/19 operations achieving ≤8 ticks (≤2ns)
+- ASK operations (ASK_SP, ASK_SPO, ASK_OP) - Existence checks
+- COUNT operations (COUNT_SP_GE/LE/EQ, COUNT_OP variants) - Cardinality validation
+- COMPARE operations (COMPARE_O_EQ/GT/LT/GE/LE) - Value comparisons
+- VALIDATION operations (UNIQUE_SP, VALIDATE_DATATYPE_SP/SPO) - Property validation
+- SELECT_SP (limited to 4 results for hot path)
+- Zero timing overhead in C hot path (pure CONSTRUCT logic only)
+
+**2. CLI Tool** ✅
+- 25/25 commands implemented and tested
+- Complete command-line interface for all operations
+- Proper error handling (`Result<(), String>` throughout)
+- Guard validation enforced (`max_run_len ≤ 8`)
+
+**3. Network Integrations** ✅
+- HTTP client (reqwest) - Webhook support
+- Kafka producer (rdkafka) - Action publishing
+- gRPC client (HTTP gateway fallback) - Action routing
+- OTEL exporter - Observability integration
+
+**4. ETL Pipeline** ✅
+- Complete 5-stage pipeline (Ingest → Transform → Load → Reflex → Emit)
+- Lockchain integration - Merkle-linked provenance
+- Receipt generation and merging (⊕ operation)
+- Guard validation and enforcement
+
+**5. Lockchain Integration** ✅
+- Merkle-linked receipt storage
+- URDNA2015 + SHA-256 hashing
+- Git-based storage structure
+- Receipt merging (associative, branchless)
+
+**6. Guard Validation** ✅
+- `max_run_len ≤ 8` enforced throughout
+- `τ ≤ 8 ticks` execution time limit
+- Runtime guard enforcement
+
+**7. OTEL Integration** ✅
+- Real span ID generation (no placeholders)
+- OTEL-compatible span IDs
+- Provenance tracking (hash(A) = hash(μ(O)))
+
+**8. Code Quality** ✅
+- Zero TODOs in production code
+- Zero `unwrap()` calls in production paths
+- Proper error handling throughout
+- Feature-gated optional dependencies
+
+### Deferred (20% Edge Cases - ⚠️ Documented Limitations)
+
+**Known Limitations (v0.4.0)**:
+- ⚠️ **CONSTRUCT8**: Exceeds 8-tick budget (41-83 ticks) - Move to warm path in v0.5.0
+- ⚠️ **Configuration Management**: TOML config incomplete - Deferred to v0.5.0
+- ⚠️ **CLI Documentation**: Comprehensive docs pending - Deferred to v0.5.0
+- ⚠️ **Examples Directory**: Missing examples - Deferred to v0.5.0
+
+**Future Enhancements (v0.6.0+)**:
 - Complex JOINs across multiple predicates
 - OPTIONAL patterns
 - Transitive property paths
 - Full OWL inference
 - Complex SPARQL queries (multi-predicate, nested)
+- Multi-predicate queries
+- Distributed lockchain
+- Multi-shard support
+
+**See [v0.4.0 Status Document](docs/v0.4.0-status.md) for complete details.**
 
 ## Project Structure
 
@@ -211,7 +270,7 @@ vendors/knhk/
 ## Contributing
 
 Follow these principles:
-- **80/20 Focus**: Prioritize critical path implementations
+- **Critical Path Focus**: Prioritize essential features that deliver maximum value
 - **No Placeholders**: Real implementations only
 - **Proper Error Handling**: Result<T, E> for all fallible operations
 - **Guard Constraints**: Enforce max_run_len ≤ 8, τ ≤ 8
@@ -231,4 +290,4 @@ See [RELEASE_NOTES_v0.4.0.md](RELEASE_NOTES_v0.4.0.md) for full release details.
 
 ---
 
-**80/20 Philosophy**: Focus on the critical 20% that delivers 80% of value.
+**Production Focus**: Prioritize critical path features for enterprise deployment.

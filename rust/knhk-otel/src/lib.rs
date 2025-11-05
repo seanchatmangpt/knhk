@@ -601,6 +601,64 @@ impl MetricsHelper {
         tracer.record_metric(metric);
     }
 
+    /// Record warm path operation latency
+    pub fn record_warm_path_latency(tracer: &mut Tracer, latency_us: u64, operation: &str) {
+        let metric = Metric {
+            name: "knhk.warm_path.operations.latency".to_string(),
+            value: MetricValue::Histogram(vec![latency_us]),
+            timestamp_ms: get_timestamp_ms(),
+            attributes: {
+                let mut attrs = BTreeMap::new();
+                attrs.insert("operation".to_string(), operation.to_string());
+                attrs
+            },
+        };
+        tracer.record_metric(metric);
+        
+        // Also record count
+        let count_metric = Metric {
+            name: "knhk.warm_path.operations.count".to_string(),
+            value: MetricValue::Counter(1),
+            timestamp_ms: get_timestamp_ms(),
+            attributes: {
+                let mut attrs = BTreeMap::new();
+                attrs.insert("operation".to_string(), operation.to_string());
+                attrs
+            },
+        };
+        tracer.record_metric(count_metric);
+    }
+
+    /// Record configuration load
+    pub fn record_config_load(tracer: &mut Tracer, source: &str) {
+        let metric = Metric {
+            name: "knhk.config.loads".to_string(),
+            value: MetricValue::Counter(1),
+            timestamp_ms: get_timestamp_ms(),
+            attributes: {
+                let mut attrs = BTreeMap::new();
+                attrs.insert("source".to_string(), source.to_string());
+                attrs
+            },
+        };
+        tracer.record_metric(metric);
+    }
+
+    /// Record configuration error
+    pub fn record_config_error(tracer: &mut Tracer, error_type: &str) {
+        let metric = Metric {
+            name: "knhk.config.errors".to_string(),
+            value: MetricValue::Counter(1),
+            timestamp_ms: get_timestamp_ms(),
+            attributes: {
+                let mut attrs = BTreeMap::new();
+                attrs.insert("error_type".to_string(), error_type.to_string());
+                attrs
+            },
+        };
+        tracer.record_metric(metric);
+    }
+
     /// Record connector throughput
     pub fn record_connector_throughput(tracer: &mut Tracer, connector_id: &str, triples: usize) {
         let metric = Metric {

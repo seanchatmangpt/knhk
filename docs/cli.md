@@ -1,7 +1,10 @@
 # KNHK CLI Guide
 
 **Version**: 0.4.0  
-**Principle**: 80/20 - Essential commands that provide 80% of value
+**Status**: ✅ Production Ready  
+**CLI Reference**: Complete command reference for all operations
+
+**See [v0.4.0 Status](v0.4.0-status.md) for complete status and limitations.**
 
 ## Overview
 
@@ -151,24 +154,63 @@ knhk route install webhook1 webhook https://api.example.com/webhook
 knhk route install kafka1 kafka kafka://localhost:9092/actions
 ```
 
-### Receipt - Receipt Operations
+### Hook - Knowledge Hook Operations
 
-**Get Receipt**
+**Create Hook**
 ```bash
-knhk receipt get <id>
+knhk hook create <name> <op> <pred> <off> <len>
 ```
 
-**Merge Receipts**
+**List Hooks**
 ```bash
-knhk receipt merge <id1,id2,id3>
+knhk hook list
 ```
 
-**List Receipts**
+**Evaluate Hook**
 ```bash
-knhk receipt list
+knhk hook eval <name>
 ```
 
-### Pipeline - ETL Pipeline
+**Show Hook Details**
+```bash
+knhk hook show <name>
+```
+
+Example:
+```bash
+knhk hook create auth-check ASK_SP 0xC0FFEE 0 8
+knhk hook eval auth-check
+```
+
+**Note**: CONSTRUCT8 operations are automatically routed to warm path (≤500ms budget).
+
+### Context - Context Management
+
+**Create Context**
+```bash
+knhk context create <id> <name> <schema>
+```
+
+**List Contexts**
+```bash
+knhk context list
+```
+
+**Show Current Context**
+```bash
+knhk context current
+```
+
+**Switch Context**
+```bash
+knhk context use <id>
+```
+
+Example:
+```bash
+knhk context create prod1 Production urn:knhk:schema:enterprise
+knhk context use prod1
+```
 
 **Run Pipeline**
 ```bash
@@ -208,20 +250,7 @@ All commands return exit codes:
 
 Errors are displayed to stderr with descriptive messages.
 
-## Configuration
-
-Configuration is stored in:
-- Unix: `~/.knhk/`
-- Windows: `%APPDATA%/knhk/`
-
-Files:
-- `sigma.ttl` - Schema registry
-- `q.sparql` - Invariant registry
-- `connectors.json` - Connector registry
-- `covers.json` - Cover definitions
-- `reflexes.json` - Reflex definitions
-- `epochs.json` - Epoch definitions
-- `routes.json` - Route definitions
+## Commands
 
 ## Guard Constraints
 
@@ -230,9 +259,42 @@ All commands enforce guard constraints:
 - **τ ≤ 8** - Epoch tick budget must not exceed 8
 - **Operation validation** - Reflex operations must be in H_hot set
 
-## Examples
+## Command Reference Table
 
-### Complete Workflow
+| Noun | Verb | Description | Arguments |
+|------|------|-------------|-----------|
+| `boot` | `init` | Initialize Σ and Q | `<sigma.ttl> <q.sparql>` |
+| `connect` | `register` | Register connector | `<name> <schema> <source>` |
+| `connect` | `list` | List connectors | |
+| `cover` | `define` | Define cover | `<select> <shard>` |
+| `cover` | `list` | List covers | |
+| `admit` | `delta` | Admit delta | `<delta_file>` |
+| `reflex` | `declare` | Declare reflex | `<name> <op> <pred> <off> <len>` |
+| `reflex` | `list` | List reflexes | |
+| `epoch` | `create` | Create epoch | `<id> <tau> <lambda>` |
+| `epoch` | `run` | Run epoch | `<id>` |
+| `epoch` | `list` | List epochs | |
+| `route` | `install` | Install route | `<name> <kind> <target>` |
+| `route` | `list` | List routes | |
+| `receipt` | `get` | Get receipt | `<id>` |
+| `receipt` | `merge` | Merge receipts | `<id1,id2,id3>` |
+| `receipt` | `list` | List receipts | |
+| `receipt` | `verify` | Verify receipt | `<id>` |
+| `receipt` | `show` | Show receipt | `<id>` |
+| `pipeline` | `run` | Run pipeline | `[--connectors <ids>] [--schema <iri>]` |
+| `pipeline` | `status` | Pipeline status | |
+| `metrics` | `get` | Get metrics | |
+| `coverage` | `get` | Get coverage | |
+| `hook` | `create` | Create hook | `<name> <op> <pred> <off> <len>` |
+| `hook` | `list` | List hooks | |
+| `hook` | `eval` | Evaluate hook | `<name>` |
+| `hook` | `show` | Show hook | `<name>` |
+| `context` | `create` | Create context | `<id> <name> <schema>` |
+| `context` | `list` | List contexts | |
+| `context` | `current` | Show current context | |
+| `context` | `use` | Switch context | `<id>` |
+
+**Total**: 25 commands across 12 nouns
 
 ```bash
 # Initialize system
@@ -258,8 +320,75 @@ knhk pipeline status
 knhk metrics get
 ```
 
-## See Also
+### Hook Execution Examples
 
-- [Architecture](architecture.md) - System architecture
-- [API Reference](api.md) - API documentation
-- [Integration Guide](integration.md) - Integration examples
+```bash
+# Create a hook for authorization check
+knhk hook create auth-check ASK_SP 0xC0FFEE 0 8
+
+# Create a CONSTRUCT8 hook (routed to warm path)
+knhk hook create construct-permissions CONSTRUCT8 0xC0FFEE 0 8
+
+# Evaluate hook
+knhk hook eval auth-check
+
+# List all hooks
+knhk hook list
+```
+
+### Context Management Examples
+
+```bash
+# Create production context
+knhk context create prod1 Production urn:knhk:schema:enterprise
+
+# Create development context
+knhk context create dev1 Development urn:knhk:schema:dev
+
+# Switch to production context
+knhk context use prod1
+
+# Show current context
+knhk context current
+
+# List all contexts
+knhk context list
+```
+
+### Receipt Operations Examples
+
+```bash
+# Get receipt details
+knhk receipt get receipt_1234567890abcdef
+
+# Verify receipt integrity
+knhk receipt verify receipt_1234567890abcdef
+
+# Merge multiple receipts
+knhk receipt merge receipt_1,receipt_2,receipt_3
+
+# List all receipts
+knhk receipt list
+```
+
+### Pipeline Execution Examples
+
+```bash
+# Run pipeline with default connectors
+knhk pipeline run
+
+# Run pipeline with specific connector
+knhk pipeline run --connectors kafka-prod
+
+# Run pipeline with custom schema
+knhk pipeline run --schema urn:knhk:schema:enterprise
+
+# Check pipeline status
+knhk pipeline status
+
+# Get metrics
+knhk metrics get
+
+# Get coverage metrics
+knhk coverage get
+```

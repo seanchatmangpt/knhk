@@ -2,13 +2,13 @@
 
 ## Overview
 
-KNKHS processes RDF data through a pipeline from file loading to query execution.
+KNHK processes RDF data through a pipeline from file loading to query execution.
 
 ## Data Flow Stages
 
 ### 1. RDF Loading
 - **Input**: RDF/Turtle file
-- **Parser**: Raptor library
+- **Parser**: RDF/Turtle parsing (rio_turtle or custom parser)
 - **Output**: Stream of triples (subject, predicate, object)
 
 ### 2. Term Hashing

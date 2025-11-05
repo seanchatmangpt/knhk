@@ -1,0 +1,18 @@
+[package]
+name = "knhk-warm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "knhk_warm"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
+knhk-otel = { path = "../knhk-otel", version = "0.1.0", optional = true }
+
+[features]
+default = []
+otel = ["knhk-otel"]
+std = []
+
