@@ -106,6 +106,31 @@ Structured book-formatted documentation is available in `book/src/`:
 - Integration guides
 - CLI documentation
 
+## Subproject Documentation
+
+Each subproject has its own `docs/` directory with project-specific documentation:
+
+### Rust Crates
+- **[knhk-warm](../rust/knhk-warm/docs/README.md)** - Warm path operations (oxigraph)
+- **[knhk-hot](../rust/knhk-hot/docs/README.md)** - Hot path operations (≤2ns)
+- **[knhk-etl](../rust/knhk-etl/docs/README.md)** - ETL pipeline
+- **[knhk-cli](../rust/knhk-cli/docs/README.md)** - CLI interface
+- **[knhk-unrdf](../rust/knhk-unrdf/docs/README.md)** - unrdf integration
+- **[knhk-lockchain](../rust/knhk-lockchain/docs/README.md)** - Lockchain
+- **[knhk-connectors](../rust/knhk-connectors/docs/README.md)** - Data connectors
+- **[knhk-otel](../rust/knhk-otel/docs/README.md)** - OpenTelemetry
+- **[knhk-aot](../rust/knhk-aot/docs/README.md)** - AOT compilation
+- **[knhk-config](../rust/knhk-config/docs/README.md)** - Configuration
+- **[knhk-integration-tests](../rust/knhk-integration-tests/docs/README.md)** - Integration tests
+- **[knhk-validation](../rust/knhk-validation/docs/README.md)** - Validation utilities
+
+### Language-Specific
+- **[C Hot Path](../c/docs/README.md)** - C hot path implementation
+- **[Erlang Cold Path](../erlang/docs/README.md)** - Erlang cold path
+
+### Playground Projects
+- **[DoD Validator](../playground/dod-validator/docs/README.md)** - Definition of Done validator
+
 ## Documentation Standards
 
 All documentation follows KNHK standards:

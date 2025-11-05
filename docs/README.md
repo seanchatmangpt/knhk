@@ -55,9 +55,13 @@ When adding new documentation:
 4. Link to related documentation
 5. Archive outdated versions appropriately
 
-## See Also
+## Subproject Documentation
 
-- [Documentation Organization](DOCUMENTATION_ORGANIZATION.md) - Detailed organization guide
-- [Book Documentation](../book/src/) - Book-formatted documentation
-- [Archived Docs](archived/) - Historical documentation
+Each subproject has its own `docs/` directory:
+- `rust/knhk-*/docs/` - Rust crate documentation
+- `c/docs/` - C hot path documentation
+- `erlang/docs/` - Erlang cold path documentation
+- `playground/*/docs/` - Playground project documentation
+
+See [INDEX.md](INDEX.md) for links to all subproject documentation.
 
