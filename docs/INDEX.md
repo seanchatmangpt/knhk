@@ -1,113 +1,132 @@
 # KNHK Documentation Index
 
-**Documentation Index**: Prioritizes essential documentation for getting started quickly.
+**Last Updated**: November 2024
 
-## Essential Documentation (Must Read)
+This index provides a comprehensive guide to all current KNHK documentation.
+
+## Essential Documentation (Start Here)
 
 ### Getting Started
-1. **[README.md](../README.md)** - Project overview and quick start
-2. **[Quick Start](QUICK_START.md)** - 5-minute setup guide
-3. **[CLI Guide](cli.md)** - Complete CLI command reference
+1. **[README.md](README.md)** - Documentation overview and structure
+2. **[QUICK_START.md](QUICK_START.md)** - 5-minute setup guide
+3. **[Architecture](architecture.md)** - System architecture overview
+   - Three-tier architecture (Hot/Warm/Cold paths)
+   - Component descriptions
+   - Performance characteristics
+   - Hot path routing (≤2ns execution)
 
-### Core Concepts
-4. **[Architecture](architecture.md)** - System architecture overview
-5. **[API Reference](api.md)** - API documentation
-6. **[Integration Guide](integration.md)** - Integration examples
-7. **[Deployment Guide](deployment.md)** - Deployment instructions
+### Core Reference
+4. **[API Reference](api.md)** - Complete API documentation
+   - C API (hot path)
+   - Rust API (warm path)
+   - Erlang API (cold path)
+5. **[CLI Guide](cli.md)** - Command-line interface reference
+6. **[Testing](testing.md)** - Testing documentation
+   - 83 Chicago TDD tests
+   - Coverage by module (~80%+ overall)
+   - Test categories and running instructions
 
-### Release Information
-8. **[Release Notes](../RELEASE_NOTES_v0.4.0.md)** - v0.4.0 release details
-9. **[Changelog](../CHANGELOG.md)** - Complete version history
-10. **[Definition of Done](../VERSION_0.4.0_DEFINITION_OF_DONE.md)** - Release criteria
-11. **[v0.4.0 Status](v0.4.0-status.md)** - v0.4.0 completion status and limitations
+## Integration & Deployment
 
-## Detailed Documentation
+### Integration Guides
+7. **[Integration Guide](integration.md)** - General integration examples
+8. **[ggen Integration Guide](ggen-integration-guide.md)** - oxigraph integration
+   - Warm path with oxigraph
+   - Path selection logic
+   - Performance tuning
+   - Migration guide
+9. **[unrdf Integration Status](unrdf-integration-status.md)** - unrdf integration status
+10. **[unrdf Integration DoD](unrdf-integration-dod.md)** - unrdf DoD validation
+11. **[Weaver Integration](weaver-integration.md)** - Weaver.ai integration
 
-### Implementation
-- **[CLI Implementation](../rust/knhk-cli/IMPLEMENTATION.md)** - CLI implementation details
+### Deployment & Operations
+12. **[Deployment Guide](deployment.md)** - Deployment instructions
+13. **[Configuration](configuration.md)** - Configuration reference
+14. **[Performance](performance.md)** - Performance guide
+    - Hot path: ≤2ns (≤8 ticks)
+    - Warm path: ≤500ms
+    - Optimization strategies
 
-### Performance & Optimization
-- **[Performance](performance.md)** - Performance characteristics
+## Advanced Topics
 
-### Integration
-- **[Weaver Integration](weaver-integration.md)** - Weaver.ai integration
-- **[Integration Guide](integration.md)** - Integration examples
+### Architecture & Design
+15. **[Code Organization](code-organization.md)** - Code structure and organization
+16. **[Data Flow](data-flow.md)** - Data flow diagrams and execution flow
+17. **[Autonomous Epistemology](autonomous-epistemology.md)** - Autonomous system design
 
-### Reference
-- **[Code Organization](code-organization.md)** - Code structure
-- **[Data Flow](data-flow.md)** - Data flow diagrams
-- **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
-- **[v1.0 Requirements](v1-requirements.md)** - Forward-looking v1.0 requirements
-- **[v1.0 unrdf Integration Plan](v1.0-unrdf-integration-plan.md)** - unrdf integration requirements for v1.0
-- **[v1.0 unrdf Gap Analysis](v1.0-unrdf-gap-analysis.md)** - Comprehensive gap analysis: unrdf capabilities vs KNHK independent implementations
-- **[Worktree Review](WORKTREE_REVIEW.md)** - Review of Git worktrees for integration opportunities
+### Planning & Requirements
+18. **[v1.0 Requirements](v1-requirements.md)** - Forward-looking v1.0 requirements
+19. **[v1.0 unrdf Integration Plan](v1.0-unrdf-integration-plan.md)** - unrdf integration requirements
+20. **[v1.0 unrdf Gap Analysis](v1.0-unrdf-gap-analysis.md)** - Comprehensive gap analysis
+
+### Research & Evaluation
+21. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
+22. **[ggen Integration Evaluation](ggen-integration-evaluation.md)** - Integration evaluation
+23. **[ggen Integration Validation](ggen-integration-validation.md)** - Integration validation
+
+### Specialized Topics
+24. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
+25. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
+26. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
+27. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
 
 ## Archived Documentation
 
-Historical and version-specific documentation has been archived:
-- **Version Docs**: `docs/archived/versions/`
-- **Analysis Docs**: `docs/archived/analysis/`
-- **Status Docs**: `docs/archived/status/`
+Historical and version-specific documentation is archived in `archived/`:
 
-## Quick Reference
+### Version-Specific
+- `archived/v0.4.0/` - Version 0.4.0 documentation
+- `archived/versions/` - Historical version docs (v0.2.0, v0.3.0, etc.)
 
-### CLI Commands
-```bash
-knhk boot init <sigma> <q>
-knhk connect register <name> <schema> <source>
-knhk cover define <select> <shard>
-knhk reflex declare <name> <op> <pred> <off> <len>
-knhk epoch create <id> <tau> <lambda>
-knhk pipeline run [--connectors] [--schema]
-```
+### Status Reports
+- `archived/status/` - Implementation status reports
+  - Implementation Complete
+  - Conceptual Tests Implemented
+  - Consolidation Complete
+  - Final Status
+  - Code Quality Audit
+  - Chicago TDD Validation
 
-### Key Concepts
-- **Hot Path**: ≤2ns operations (C, SIMD, pure CONSTRUCT logic)
-- **Warm Path**: Safe abstractions (Rust, handles timing)
-- **Cold Path**: Complex queries (Erlang)
-- **Lockchain**: Merkle-linked receipts
-- **Guard Constraints**: max_run_len ≤ 8, τ ≤ 2ns
-- **Timing**: Measured externally by Rust framework only
+### Planning Documents
+- `archived/planning/` - Project planning documents
+  - Archive Revision Plan
+  - Archive Summary
+  - JIRA Tickets
+  - Lean Six Sigma Project Charter
 
-## Documentation Structure
+### Analysis & Implementation Details
+- `archived/analysis/` - Analysis documents
+- `archived/implementation-details/` - Detailed implementation docs
 
-```
-docs/
-├── INDEX.md                      # This file
-├── QUICK_START.md                # Quick start guide
-├── cli.md                        # CLI documentation
-├── architecture.md               # Architecture overview
-├── api.md                        # API reference
-├── integration.md                # Integration guide
-├── deployment.md                 # Deployment guide
-├── performance.md                # Performance docs
-├── code-organization.md          # Code structure
-├── data-flow.md                 # Data flow
-├── weaver-integration.md         # Weaver integration
-├── DOCUMENTATION_GAPS.md         # Documentation gap analysis
-├── v0.4.0-status.md              # v0.4.0 status
-├── v1-requirements.md            # v1.0 requirements
-├── v1.0-unrdf-integration-plan.md # unrdf integration plan
-├── v1.0-unrdf-gap-analysis.md    # unrdf gap analysis
-└── archived/                     # Historical docs
-    ├── versions/                 # Version-specific docs
-    ├── analysis/                 # Analysis docs
-    ├── status/                   # Status reports
-    └── implementation-details/   # Implementation details
-```
+## Book Documentation
 
-## Contribution Guidelines
+Structured book-formatted documentation is available in `book/src/`:
+- Architecture chapters
+- API references
+- Integration guides
+- CLI documentation
 
-When adding documentation:
-1. **Essential First**: Prioritize critical information users need
-2. **No Redundancy**: Check existing docs first
-3. **Clear Structure**: Follow existing patterns
-4. **Update Index**: Add new docs to this index
-5. **Archive When Appropriate**: Move historical docs to `docs/archived/`
+## Documentation Standards
 
-See [Documentation Organization](DOCUMENTATION_ORGANIZATION.md) for detailed file organization guidelines.
+All documentation follows KNHK standards:
+- **Production-ready**: Real implementations, no placeholders
+- **Chicago TDD**: Test-driven development
+- **80/20 Focus**: Critical path emphasis
+- **Performance**: Hot path ≤2ns, warm path ≤500ms
 
----
+## Quick Links
 
-**Last Updated**: v0.4.0  
-**Maintained By**: Core Team
+- **Getting Started**: [QUICK_START.md](QUICK_START.md)
+- **Architecture**: [architecture.md](architecture.md)
+- **API**: [api.md](api.md)
+- **Testing**: [testing.md](testing.md)
+- **Performance**: [performance.md](performance.md)
+- **Integration**: [ggen-integration-guide.md](ggen-integration-guide.md)
+
+## Contributing
+
+When updating documentation:
+1. Update this index if adding new docs
+2. Follow existing documentation structure
+3. Archive outdated versions appropriately
+4. Maintain cross-references
