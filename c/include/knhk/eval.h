@@ -247,7 +247,9 @@ static inline int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t
 
 // Emit up to 8 triples using a fixed template (CONSTRUCT8)
 // Returns number of lanes written, fills rcpt with user knowledge only
-// Hot path: Pure CONSTRUCT logic only, no timing/framework overhead
+// WARM PATH: CONSTRUCT8 exceeds 8-tick budget (41-83 ticks), moved to warm path (≤500ms)
+// This function is kept for backward compatibility but should be routed through warm path API
+// Use knhk_warm_execute_construct8() from knhk/warm_path.h for warm path routing
 static inline int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
 {
   if (!ctx || !ir || ir->op != KNHK_OP_CONSTRUCT8)
