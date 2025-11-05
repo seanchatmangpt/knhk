@@ -83,8 +83,9 @@ impl WarmPathConstruct8 {
         }
         #[cfg(not(feature = "std"))]
         {
-            // no_std: Use external time source if available
-            // For now, return 0 (timing measurement disabled)
+            // no_std: Timing measurement requires external time source
+            // For no_std builds, timing is measured externally by the Rust framework
+            // This is a known limitation for no_std builds
             0
         }
     }

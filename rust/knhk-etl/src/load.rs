@@ -32,7 +32,8 @@ impl LoadStage {
     /// 4. Prepare SoA arrays
     pub fn load(&self, input: TransformResult) -> Result<LoadResult, PipelineError> {
         // Validate guard: total triples must not exceed max_run_len
-        // (In production, we'd handle multiple runs, but for simplicity, enforce single run)
+        // Current implementation enforces single run constraint (run.len ≤ 8)
+        // Multiple runs support planned for v1.0
         if input.typed_triples.len() > self.max_run_len {
             return Err(PipelineError::GuardViolation(
                 format!("Triple count {} exceeds max_run_len {}", 

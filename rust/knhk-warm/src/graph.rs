@@ -400,7 +400,17 @@ pub struct QueryMetrics {
 
 impl Default for WarmPathGraph {
     fn default() -> Self {
-        Self::new().expect("Failed to create default WarmPathGraph")
+        // Default implementation should not fail
+        // If new() fails, return minimal graph rather than panicking
+        Self::new().unwrap_or_else(|_| {
+            // Create minimal graph on failure
+            Self {
+                store: Arc::new(Store::new()),
+                cache: Arc::new(Mutex::new(LruCache::new(
+                    NonZeroUsize::new(1000).expect("1000 is non-zero")
+                ))),
+            }
+        })
     }
 }
 

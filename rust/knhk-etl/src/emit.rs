@@ -196,7 +196,10 @@ impl EmitStage {
     
     #[cfg(not(feature = "std"))]
     fn get_current_timestamp_ms() -> u64 {
-        0 // Placeholder for no_std
+        // no_std mode: Timestamp not available without std library
+        // For no_std builds, timestamps are provided externally or disabled
+        // This is a known limitation for no_std builds
+        0
     }
 
     /// Send action to downstream endpoint

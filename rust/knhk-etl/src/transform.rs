@@ -82,10 +82,11 @@ impl TransformStage {
 
     /// Validate triple against schema (O ⊨ Σ)
     /// 
-    /// In production, this would:
-    /// 1. Query schema registry for predicate validation
-    /// 2. Check object type constraints
-    /// 3. Validate cardinality constraints
+    /// Validates IRI format and schema namespace matching.
+    /// Uses cache for repeated validations.
+    /// 
+    /// Note: Full schema registry integration is planned for v1.0.
+    /// Current implementation validates IRI format and namespace matching.
     fn validate_schema(&self, subject: &str, predicate: &str) -> Result<(), String> {
         // Check schema IRI prefix match
         if !self.schema_iri.is_empty() {
@@ -97,8 +98,7 @@ impl TransformStage {
                         return Err(format!("Schema validation failed for {} {}", subject, predicate));
                     }
                 } else {
-                    // Basic validation: check if predicate matches expected schema namespace
-                    // In production, this would query a schema registry
+                    // Validate IRI format (must contain namespace separator)
                     let valid = predicate.contains(":") || subject.contains(":");
                     if !valid {
                         return Err(format!("Schema validation failed: invalid IRI format for {} {}", subject, predicate));

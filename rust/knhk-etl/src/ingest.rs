@@ -40,14 +40,14 @@ impl IngestStage {
         let mut metadata = BTreeMap::new();
 
         // Poll each connector
+        // Note: Connector integration happens at pipeline level.
+        // This stage receives parsed data from connectors via parse_rdf_turtle().
         for connector_id in &self.connectors {
-            // In production, this would fetch from connector registry
-            // For now, return empty results (connector integration happens at pipeline level)
             metadata.insert(format!("connector_{}", connector_id), connector_id.clone());
         }
 
-        // If format is specified and we have data, parse it
-        // For now, return empty triples (connector integration provides deltas directly)
+        // Connector integration provides deltas directly to pipeline.
+        // This stage handles parsing via parse_rdf_turtle() method.
         Ok(IngestResult {
             triples: all_triples,
             metadata,

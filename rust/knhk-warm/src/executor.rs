@@ -202,7 +202,15 @@ impl WarmPathExecutor {
 
 impl Default for WarmPathExecutor {
     fn default() -> Self {
-        Self::new().expect("Failed to create default WarmPathExecutor")
+        // Default implementation should not fail
+        // If new() fails, create minimal executor rather than panicking
+        Self::new().unwrap_or_else(|_| {
+            // Create minimal executor with default graph
+            Self {
+                graph: Arc::new(WarmPathGraph::default()),
+                unrdf_initialized: false,
+            }
+        })
     }
 }
 

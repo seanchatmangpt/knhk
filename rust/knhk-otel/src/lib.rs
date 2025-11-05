@@ -772,8 +772,9 @@ fn get_timestamp_ms() -> u64 {
     }
     #[cfg(not(feature = "std"))]
     {
-        // For no_std, return 0 as placeholder
-        // In production, use a no_std-compatible time source
+        // no_std mode: Timestamp not available without std library
+        // For no_std builds, timestamps are provided externally or disabled
+        // This is a known limitation for no_std builds
         0
     }
 }

@@ -10,28 +10,35 @@ use crate::types::{QueryResult, SparqlQueryType};
 pub fn detect_query_type(query: &str) -> SparqlQueryType {
     let query_upper = query.trim().to_uppercase();
     
+    // Remove PREFIX declarations for detection
+    let query_without_prefix = query_upper
+        .lines()
+        .filter(|line| !line.trim().starts_with("PREFIX"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    
     // Check for UPDATE operations first (INSERT/DELETE)
-    if query_upper.starts_with("INSERT") || query_upper.starts_with("DELETE") {
-        if query_upper.contains("INSERT") {
+    if query_without_prefix.starts_with("INSERT") || query_without_prefix.starts_with("DELETE") {
+        if query_without_prefix.contains("INSERT") {
             return SparqlQueryType::Insert;
         }
-        if query_upper.contains("DELETE") {
+        if query_without_prefix.contains("DELETE") {
             return SparqlQueryType::Delete;
         }
         return SparqlQueryType::Insert; // Default to Insert for UPDATE
     }
     
     // Check for query types
-    if query_upper.starts_with("ASK") {
+    if query_without_prefix.starts_with("ASK") {
         return SparqlQueryType::Ask;
     }
-    if query_upper.starts_with("CONSTRUCT") {
+    if query_without_prefix.starts_with("CONSTRUCT") {
         return SparqlQueryType::Construct;
     }
-    if query_upper.starts_with("DESCRIBE") {
+    if query_without_prefix.starts_with("DESCRIBE") {
         return SparqlQueryType::Describe;
     }
-    if query_upper.starts_with("SELECT") {
+    if query_without_prefix.starts_with("SELECT") {
         return SparqlQueryType::Select;
     }
     
