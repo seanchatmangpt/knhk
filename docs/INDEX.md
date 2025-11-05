@@ -1,6 +1,6 @@
 # KNHK Documentation Index
 
-**80/20 Principle**: This index prioritizes the 20% of documentation that provides 80% of value.
+**Documentation Index**: Prioritizes essential documentation for getting started quickly.
 
 ## Essential Documentation (Must Read)
 
@@ -19,21 +19,27 @@
 8. **[Release Notes](../RELEASE_NOTES_v0.4.0.md)** - v0.4.0 release details
 9. **[Changelog](../CHANGELOG.md)** - Complete version history
 10. **[Definition of Done](../VERSION_0.4.0_DEFINITION_OF_DONE.md)** - Release criteria
+11. **[v0.4.0 Status](v0.4.0-status.md)** - v0.4.0 completion status and limitations
 
 ## Detailed Documentation
 
 ### Implementation
 - **[CLI Implementation](../rust/knhk-cli/IMPLEMENTATION.md)** - CLI implementation details
-- **[Code Organization](code-organization.md)** - Code structure
-- **[Data Flow](data-flow.md)** - Data flow diagrams
 
 ### Performance & Optimization
 - **[Performance](performance.md)** - Performance characteristics
-- **[80/20 Analysis](../docs/archived/analysis/80_20_ANALYSIS.md)** - Development strategy
 
 ### Integration
 - **[Weaver Integration](weaver-integration.md)** - Weaver.ai integration
 - **[Integration Guide](integration.md)** - Integration examples
+
+### Reference
+- **[Code Organization](code-organization.md)** - Code structure
+- **[Data Flow](data-flow.md)** - Data flow diagrams
+- **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
+- **[v1.0 unrdf Integration Plan](v1.0-unrdf-integration-plan.md)** - unrdf integration requirements for v1.0
+- **[v1.0 unrdf Gap Analysis](v1.0-unrdf-gap-analysis.md)** - Comprehensive gap analysis: unrdf capabilities vs KNHK independent implementations
+- **[Lean Six Sigma Project Charter](LEAN_SIX_SIGMA_PROJECT_CHARTER.md)** - DMAIC project charter for KNHK v1.0 integration and optimization
 
 ## Archived Documentation
 
@@ -77,6 +83,7 @@ docs/
 ├── code-organization.md  # Code structure
 ├── data-flow.md          # Data flow
 ├── weaver-integration.md # Weaver integration
+├── DOCUMENTATION_GAPS.md  # Documentation gap analysis
 └── archived/             # Historical docs
     ├── versions/         # Version-specific docs
     ├── analysis/          # Analysis docs
@@ -86,7 +93,7 @@ docs/
 ## Contribution Guidelines
 
 When adding documentation:
-1. **80/20 Focus**: Prioritize essential information
+1. **Essential First**: Prioritize critical information users need
 2. **No Redundancy**: Check existing docs first
 3. **Clear Structure**: Follow existing patterns
 4. **Update Index**: Add new docs to this index
