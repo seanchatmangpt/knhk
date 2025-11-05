@@ -5,6 +5,38 @@
 mod commands;
 
 use clap_noun_verb::{noun, verb, CliBuilder};
+use knhk_config::load_config;
+
+// Global configuration (loaded at startup)
+static CONFIG: std::sync::OnceLock<knhk_config::KnhkConfig> = std::sync::OnceLock::new();
+
+fn get_config() -> &'static knhk_config::KnhkConfig {
+    CONFIG.get_or_init(|| {
+        match load_config() {
+            Ok(config) => {
+                // Record configuration load metric
+                #[cfg(feature = "otel")]
+                {
+                    use knhk_otel::{Tracer, MetricsHelper};
+                    let mut tracer = Tracer::new();
+                    MetricsHelper::record_config_load(&mut tracer, "file");
+                }
+                config
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to load configuration: {}. Using defaults.", e);
+                // Record configuration error metric
+                #[cfg(feature = "otel")]
+                {
+                    use knhk_otel::{Tracer, MetricsHelper};
+                    let mut tracer = Tracer::new();
+                    MetricsHelper::record_config_error(&mut tracer, "load_failed");
+                }
+                knhk_config::KnhkConfig::default()
+            }
+        }
+    })
+}
 
 /// Boot noun - system initialization
 #[noun]
@@ -364,6 +396,9 @@ fn show_hook(name: String) {
 }
 
 fn main() {
+    // Load configuration at startup
+    let _ = get_config();
+    
     CliBuilder::default()
         .noun(boot)
         .noun(connect)
