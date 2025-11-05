@@ -2,25 +2,33 @@
 
 Merkle-linked provenance storage for audit trails and deterministic receipts.
 
-## Overview
+## File Structure
 
-The `knhk-lockchain` crate provides:
-- Receipt storage with Merkle linking
+```
+rust/knhk-lockchain/
+├── src/
+│   └── lib.rs              # Lockchain implementation
+└── Cargo.toml
+```
+
+## Core Components
+
+### Receipt Storage
+- Merkle-linked chain of receipts
+- Cryptographic linking between receipts
 - Provenance tracking (hash(A) = hash(μ(O)))
+
+### Receipt Operations
 - Receipt merging (⊕ operation)
 - Deterministic receipt generation
-
-## Architecture
-
-- **Receipt Storage**: Merkle-linked chain of receipts
-- **Provenance**: Tracks action → observation relationships
-- **Merging**: Combines receipts with ⊕ operation
+- Provenance verification
 
 ## Key Features
 
 - **Merkle Linking**: Cryptographic chain of receipts
 - **Deterministic**: Same inputs produce same receipts
 - **Provenance**: Tracks μ(O) relationships
+- **Audit Trail**: Complete audit trail for all operations
 
 ## Related Documentation
 

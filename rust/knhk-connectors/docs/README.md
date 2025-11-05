@@ -2,21 +2,36 @@
 
 Enterprise data source connectors.
 
-## Overview
+## File Structure
 
-The `knhk-connectors` crate provides connectors for:
-- Kafka (rdkafka integration)
-- Salesforce (reqwest integration)
-- HTTP endpoints
-- File sources
-- SAP systems
+```
+rust/knhk-connectors/
+├── src/
+│   ├── lib.rs              # Connector trait and module exports
+│   ├── kafka.rs            # Kafka connector (rdkafka integration)
+│   └── salesforce.rs       # Salesforce connector (reqwest integration)
+└── Cargo.toml
+```
 
-## Architecture
+## Core Components
 
-- **Connector Trait**: Common interface for all connectors
-- **Circuit Breaker**: Resilience pattern for network failures
-- **Health Checking**: Connector health monitoring
-- **Metrics**: OTEL metrics integration
+### Connector Trait (`src/lib.rs`)
+- Common interface for all connectors
+- `fetch_delta()` - Fetch delta updates
+- `health_check()` - Health monitoring
+- Error handling and state management
+
+### Kafka Connector (`src/kafka.rs`)
+- Uses `rdkafka` for Kafka integration
+- Consumer/producer management
+- Message parsing and validation
+- Circuit breaker pattern
+
+### Salesforce Connector (`src/salesforce.rs`)
+- Uses `reqwest` for HTTP API calls
+- OAuth2 authentication
+- SOQL query execution
+- Data format conversion
 
 ## Key Features
 
@@ -24,6 +39,13 @@ The `knhk-connectors` crate provides connectors for:
 - **Circuit Breaker**: Automatic failure handling
 - **Health Checks**: Periodic health monitoring
 - **Guard Validation**: Enforces constraints (max_run_len ≤ 8)
+- **Error Handling**: Comprehensive error handling
+
+## Dependencies
+
+- `rdkafka` - Kafka client library
+- `reqwest` - HTTP client library
+- `hashbrown` - Hash maps
 
 ## Related Documentation
 
