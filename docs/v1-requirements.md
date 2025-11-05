@@ -1,6 +1,12 @@
 # KNHK v1.0 Requirements Document
 
-## 1. Core Foundation (KGC Axioms)
+**Status**: Forward-looking specification  
+**Current Version**: v0.4.0 (Production Ready)  
+**Target**: v1.0 (Future Release)
+
+**Note**: This document specifies requirements for v1.0. Current production release is v0.4.0. See [v0.4.0 Status](v0.4.0-status.md) for v0.4.0 completion status.
+
+## Overview
 
 ### 1.1 Chatman Equation
 

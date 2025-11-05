@@ -1,7 +1,10 @@
 # KNHK CLI Guide
 
 **Version**: 0.4.0  
-**Principle**: 80/20 - Essential commands that provide 80% of value
+**Status**: ✅ Production Ready  
+**CLI Reference**: Complete command reference for all operations
+
+**See [v0.4.0 Status](v0.4.0-status.md) for complete status and limitations.**
 
 ## Overview
 
