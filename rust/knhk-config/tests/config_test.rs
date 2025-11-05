@@ -197,11 +197,11 @@ max_run_len = 8
     // Verify: Connector configuration loaded
     assert!(config.connectors.contains_key("kafka-prod"));
     let connector = &config.connectors["kafka-prod"];
-    assert_eq!(connector.connector_type, "kafka");
+    assert_eq!(connector.r#type, "kafka");
     assert_eq!(connector.max_run_len, 8);
     
     println!("  ✓ Connector configuration loaded");
-    println!("  ✓ Connector type: {}", connector.connector_type);
+    println!("  ✓ Connector type: {}", connector.r#type);
     println!("  ✓ Max run len: {}", connector.max_run_len);
     
     // Cleanup

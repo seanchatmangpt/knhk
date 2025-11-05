@@ -205,10 +205,9 @@ pub extern "C" fn knhk_unrdf_query_with_data(
                     }
                 }
             }
-            (Err(e1), _) | (_, Err(e2)) => {
+            (Err(_), _) | (_, Err(_)) => {
                 // String conversion error
-                let error = if let Err(e) = q { e } else { data.unwrap_err() };
-                let error_msg = format!(r#"{{"success":false,"error":"Invalid input encoding: {}"}}"#, error);
+                let error_msg = r#"{"success":false,"error":"Invalid input encoding"}"#;
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
                 unsafe {

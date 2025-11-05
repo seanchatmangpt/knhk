@@ -128,10 +128,49 @@ pub fn query_sparql_with_data(query: &str, turtle_data: &str) -> UnrdfResult<Que
                         type: queryType
                     }});
                     const bindings = [];
-                    for await (const binding of results) {{
+                    // Handle async iterable results
+                    if (results && typeof results[Symbol.asyncIterator] === 'function') {{
+                        for await (const binding of results) {{
+                            const bindingObj = {{}};
+                            // Handle both Map and object formats
+                            if (binding instanceof Map) {{
+                                for (const [key, value] of binding) {{
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }} else if (typeof binding === 'object' && binding !== null) {{
+                                // Handle plain object format
+                                for (const key in binding) {{
+                                    const value = binding[key];
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }} else {{
+                                // Single value binding
+                                bindingObj.value = binding?.value || binding || '';
+                            }}
+                            bindings.push(bindingObj);
+                        }}
+                    }} else if (Array.isArray(results)) {{
+                        // Handle array results
+                        for (const binding of results) {{
+                            const bindingObj = {{}};
+                            if (binding instanceof Map) {{
+                                for (const [key, value] of binding) {{
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }} else if (typeof binding === 'object' && binding !== null) {{
+                                for (const key in binding) {{
+                                    const value = binding[key];
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }}
+                            bindings.push(bindingObj);
+                        }}
+                    }} else if (results && typeof results === 'object') {{
+                        // Single result object
                         const bindingObj = {{}};
-                        for (const [key, value] of binding) {{
-                            bindingObj[key] = value.value;
+                        for (const key in results) {{
+                            const value = results[key];
+                            bindingObj[key] = value?.value || value || '';
                         }}
                         bindings.push(bindingObj);
                     }}
@@ -246,10 +285,49 @@ pub fn query_sparql_with_type(query: &str, query_type: SparqlQueryType) -> Unrdf
                         type: queryType
                     }});
                     const bindings = [];
-                    for await (const binding of results) {{
+                    // Handle async iterable results
+                    if (results && typeof results[Symbol.asyncIterator] === 'function') {{
+                        for await (const binding of results) {{
+                            const bindingObj = {{}};
+                            // Handle both Map and object formats
+                            if (binding instanceof Map) {{
+                                for (const [key, value] of binding) {{
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }} else if (typeof binding === 'object' && binding !== null) {{
+                                // Handle plain object format
+                                for (const key in binding) {{
+                                    const value = binding[key];
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }} else {{
+                                // Single value binding
+                                bindingObj.value = binding?.value || binding || '';
+                            }}
+                            bindings.push(bindingObj);
+                        }}
+                    }} else if (Array.isArray(results)) {{
+                        // Handle array results
+                        for (const binding of results) {{
+                            const bindingObj = {{}};
+                            if (binding instanceof Map) {{
+                                for (const [key, value] of binding) {{
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }} else if (typeof binding === 'object' && binding !== null) {{
+                                for (const key in binding) {{
+                                    const value = binding[key];
+                                    bindingObj[key] = value?.value || value || '';
+                                }}
+                            }}
+                            bindings.push(bindingObj);
+                        }}
+                    }} else if (results && typeof results === 'object') {{
+                        // Single result object
                         const bindingObj = {{}};
-                        for (const [key, value] of binding) {{
-                            bindingObj[key] = value.value;
+                        for (const key in results) {{
+                            const value = results[key];
+                            bindingObj[key] = value?.value || value || '';
                         }}
                         bindings.push(bindingObj);
                     }}
