@@ -4,55 +4,24 @@
 use crate::error::{UnrdfError, UnrdfResult};
 use crate::script::execute_unrdf_script;
 use crate::state::get_state;
+use crate::template::TemplateEngine;
 use crate::types::{HookDefinition, HookRegistryEntry, HookResult};
+use tera::Context;
 
 /// Execute knowledge hook via unrdf
 pub fn execute_hook(hook_name: &str, hook_query: &str) -> UnrdfResult<HookResult> {
     let state = get_state()?;
     
-    let script = format!(
-        r#"
-        import {{ createDarkMatterCore, defineHook, registerHook }} from './src/knowledge-engine/index.mjs';
-        import {{ evaluateHook }} from './src/knowledge-engine/hook-management.mjs';
-        
-        async function main() {{
-            const system = await createDarkMatterCore({{
-                enableKnowledgeHookManager: true,
-                enableLockchainWriter: false
-            }});
-        
-            const hook = defineHook({{
-                meta: {{
-                    name: '{}',
-                    description: 'KNHK hook'
-                }},
-                when: {{
-                    kind: 'sparql-ask',
-                    query: `{}`
-                }},
-                run: async (event) => {{
-                    return {{ result: event.result ? 'Hook fired' : 'Hook not fired' }};
-                }}
-            }});
-        
-            await registerHook(hook);
-            const receipt = await evaluateHook(hook, {{ persist: false }});
-        
-            console.log(JSON.stringify({{
-                fired: receipt.fired || false,
-                result: receipt.result || null,
-                receipt: receipt.receipt || null
-            }}));
-        }}
-        
-        main().catch(err => {{
-            console.error(JSON.stringify({{ fired: false, result: null, error: err.message }}));
-            process.exit(1);
-        }});
-        "#,
-        hook_name,
-        hook_query.replace('`', "\\`").replace('$', "\\$")
-    );
+    // Use Tera template engine
+    let template_engine = TemplateEngine::get()?;
+    let mut context = Context::new();
+    context.insert("hook_name", hook_name);
+    context.insert("hook_query", hook_query);
+    
+    let script = template_engine.lock()
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+        .render("hook-execute", &context)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render hook-execute template: {}", e)))?;
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;

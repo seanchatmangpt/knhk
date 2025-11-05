@@ -1,0 +1,51 @@
+import { createDarkMatterCore, defineHook, registerHook } from './src/knowledge-engine/index.mjs';
+import { evaluateHook } from './src/knowledge-engine/hook-management.mjs';
+import { parseTurtle } from './src/knowledge-engine/parse.mjs';
+
+async function main() {
+    const system = await createDarkMatterCore({
+        enableKnowledgeHookManager: true,
+        enableLockchainWriter: false
+    });
+
+    // Store data first
+    const turtleData = `{{ turtle_data | escape_js }}`;
+    const store = await parseTurtle(turtleData);
+    const quads = [];
+    store.forEach(q => quads.push(q));
+    await system.executeTransaction({
+        additions: quads,
+        removals: [],
+        actor: 'knhk-rust'
+    });
+
+    // Then execute hook
+    const hook = defineHook({
+        meta: {
+            name: '{{ hook_name | escape_js }}',
+            description: 'KNHK hook'
+        },
+        when: {
+            kind: 'sparql-ask',
+            query: `{{ hook_query | escape_js }}`
+        },
+        run: async (event) => {
+            return { result: event.result ? 'Hook fired' : 'Hook not fired' };
+        }
+    });
+
+    await registerHook(hook);
+    const receipt = await evaluateHook(hook, { persist: false });
+
+    console.log(JSON.stringify({
+        fired: receipt.fired || false,
+        result: receipt.result || null,
+        receipt: receipt.receipt || null
+    }));
+}
+
+main().catch(err => {
+    console.error(JSON.stringify({ fired: false, result: null, error: err.message }));
+    process.exit(1);
+});
+

@@ -1,0 +1,58 @@
+import { createDarkMatterCore } from './src/knowledge-engine/knowledge-substrate-core.mjs';
+import { parseTurtle } from './src/knowledge-engine/parse.mjs';
+
+async function main() {
+    const system = await createDarkMatterCore({
+        enableKnowledgeHookManager: true,
+        enableLockchainWriter: false
+    });
+
+    const additions = {{ additions_json | safe }};
+    const removals = {{ removals_json | safe }};
+    const actor = '{{ actor | escape_js }}';
+
+    try {
+        const additionsQuads = [];
+        for (const turtleData of additions) {
+            const store = await parseTurtle(turtleData);
+            store.forEach(q => additionsQuads.push(q));
+        }
+
+        const removalsQuads = [];
+        for (const turtleData of removals) {
+            const store = await parseTurtle(turtleData);
+            store.forEach(q => removalsQuads.push(q));
+        }
+
+        const receipt = await system.executeTransaction({
+            additions: additionsQuads,
+            removals: removalsQuads,
+            actor: actor
+        });
+
+        console.log(JSON.stringify({
+            transaction_id: receipt.transaction_id || null,
+            timestamp: receipt.timestamp || Date.now(),
+            actor: receipt.actor || actor,
+            success: true
+        }));
+    } catch (err) {
+        console.error(JSON.stringify({
+            transaction_id: null,
+            timestamp: Date.now(),
+            actor: actor,
+            success: false,
+            error: err.message
+        }));
+        process.exit(1);
+    }
+}
+
+main().catch(err => {
+    console.error(JSON.stringify({
+        success: false,
+        error: err.message
+    }));
+    process.exit(1);
+});
+

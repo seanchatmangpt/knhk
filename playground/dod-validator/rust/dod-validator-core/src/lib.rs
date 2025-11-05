@@ -3,21 +3,16 @@
 //! This crate provides the warm path orchestration for DoD validation,
 //! leveraging KNHK's hot path for pattern matching and validation.
 
+pub mod pattern_extractor;
+
+use pattern_extractor::PatternExtractor;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
-/// Pattern type for code validation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum PatternType {
-    Unwrap = 1,
-    Expect = 2,
-    Todo = 3,
-    Placeholder = 4,
-    Panic = 5,
-    Result = 6,
-}
+// Re-export PatternType for compatibility
+pub use pattern_extractor::PatternType;
 
 /// Validation result for a single check
 #[derive(Debug, Clone, Serialize, Deserialize)]

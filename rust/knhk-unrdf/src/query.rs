@@ -4,7 +4,9 @@
 use crate::error::{UnrdfError, UnrdfResult};
 use crate::script::execute_unrdf_script;
 use crate::state::get_state;
+use crate::template::TemplateEngine;
 use crate::types::{QueryResult, SparqlQueryType};
+use tera::Context;
 
 /// Detect SPARQL query type from query string
 pub fn detect_query_type(query: &str) -> SparqlQueryType {
@@ -68,145 +70,17 @@ pub fn query_sparql_with_data(query: &str, turtle_data: &str) -> UnrdfResult<Que
         }
     };
     
-    let escaped_query = query.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
-    let escaped_data = turtle_data.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
+    // Use Tera template engine
+    let template_engine = TemplateEngine::get()?;
+    let mut context = Context::new();
+    context.insert("turtle_data", turtle_data);
+    context.insert("query", query);
+    context.insert("query_type", &query_type_str);
     
-    let script = format!(
-        r#"
-        import {{ createDarkMatterCore }} from './src/knowledge-engine/knowledge-substrate-core.mjs';
-        import {{ parseTurtle }} from './src/knowledge-engine/parse.mjs';
-        
-        async function main() {{
-            const system = await createDarkMatterCore({{
-                enableKnowledgeHookManager: true,
-                enableLockchainWriter: false
-            }});
-        
-            // Store data first
-            const turtleData = `{}`;
-            const store = await parseTurtle(turtleData);
-            const quads = [];
-            store.forEach(q => quads.push(q));
-            await system.executeTransaction({{
-                additions: quads,
-                removals: [],
-                actor: 'knhk-rust'
-            }});
-        
-            // Then query
-            const query = `{}`;
-            const queryType = '{}';
-        
-            let results;
-            let resultData = {{ success: true, query_type: queryType }};
-        
-            try {{
-                if (queryType === 'sparql-ask') {{
-                    results = await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    resultData.boolean = results;
-                }} else if (queryType === 'sparql-construct' || queryType === 'sparql-describe') {{
-                    results = await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    const triples = [];
-                    for await (const quad of results) {{
-                        triples.push({{
-                            subject: quad.subject.value,
-                            predicate: quad.predicate.value,
-                            object: quad.object.value,
-                            graph: quad.graph ? quad.graph.value : null
-                        }});
-                    }}
-                    resultData.triples = triples;
-                }} else if (queryType === 'sparql-update') {{
-                    await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    resultData.success = true;
-                }} else {{
-                    // SELECT query
-                    results = await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    const bindings = [];
-                    // Handle async iterable results
-                    if (results && typeof results[Symbol.asyncIterator] === 'function') {{
-                        for await (const binding of results) {{
-                            const bindingObj = {{}};
-                            // Handle both Map and object formats
-                            if (binding instanceof Map) {{
-                                for (const [key, value] of binding) {{
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }} else if (typeof binding === 'object' && binding !== null) {{
-                                // Handle plain object format
-                                for (const key in binding) {{
-                                    const value = binding[key];
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }} else {{
-                                // Single value binding
-                                bindingObj.value = binding?.value || binding || '';
-                            }}
-                            bindings.push(bindingObj);
-                        }}
-                    }} else if (Array.isArray(results)) {{
-                        // Handle array results
-                        for (const binding of results) {{
-                            const bindingObj = {{}};
-                            if (binding instanceof Map) {{
-                                for (const [key, value] of binding) {{
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }} else if (typeof binding === 'object' && binding !== null) {{
-                                for (const key in binding) {{
-                                    const value = binding[key];
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }}
-                            bindings.push(bindingObj);
-                        }}
-                    }} else if (results && typeof results === 'object') {{
-                        // Single result object
-                        const bindingObj = {{}};
-                        for (const key in results) {{
-                            const value = results[key];
-                            bindingObj[key] = value?.value || value || '';
-                        }}
-                        bindings.push(bindingObj);
-                    }}
-                    resultData.bindings = bindings;
-                }}
-        
-                console.log(JSON.stringify(resultData));
-            }} catch (err) {{
-                console.error(JSON.stringify({{
-                    success: false,
-                    query_type: queryType,
-                    error: err.message
-                }}));
-                process.exit(1);
-            }}
-        }}
-        
-        main().catch(err => {{
-            console.error(JSON.stringify({{
-                success: false,
-                error: err.message
-            }}));
-            process.exit(1);
-        }});
-        "#,
-        escaped_data,
-        escaped_query,
-        query_type_str
-    );
+    let script = template_engine.lock()
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+        .render("query-with-data", &context)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render query-with-data template: {}", e)))?;
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;
@@ -239,130 +113,16 @@ pub fn query_sparql_with_type(query: &str, query_type: SparqlQueryType) -> Unrdf
         }
     };
     
-    let escaped_query = query.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
+    // Use Tera template engine
+    let template_engine = TemplateEngine::get()?;
+    let mut context = Context::new();
+    context.insert("query", query);
+    context.insert("query_type", &query_type_str);
     
-    let script = format!(
-        r#"
-        import {{ createDarkMatterCore }} from './src/knowledge-engine/knowledge-substrate-core.mjs';
-        
-        async function main() {{
-            const system = await createDarkMatterCore({{
-                enableKnowledgeHookManager: true,
-                enableLockchainWriter: false
-            }});
-        
-            const query = `{}`;
-            const queryType = '{}';
-        
-            let results;
-            let resultData = {{ success: true, query_type: queryType }};
-        
-            try {{
-                if (queryType === 'sparql-ask') {{
-                    results = await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    resultData.boolean = results;
-                }} else if (queryType === 'sparql-construct' || queryType === 'sparql-describe') {{
-                    results = await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    const triples = [];
-                    for await (const quad of results) {{
-                        triples.push({{
-                            subject: quad.subject.value,
-                            predicate: quad.predicate.value,
-                            object: quad.object.value,
-                            graph: quad.graph ? quad.graph.value : null
-                        }});
-                    }}
-                    resultData.triples = triples;
-                }} else if (queryType === 'sparql-update') {{
-                    await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    resultData.success = true;
-                }} else {{
-                    // SELECT query
-                    results = await system.query({{
-                        query: query,
-                        type: queryType
-                    }});
-                    const bindings = [];
-                    // Handle async iterable results
-                    if (results && typeof results[Symbol.asyncIterator] === 'function') {{
-                        for await (const binding of results) {{
-                            const bindingObj = {{}};
-                            // Handle both Map and object formats
-                            if (binding instanceof Map) {{
-                                for (const [key, value] of binding) {{
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }} else if (typeof binding === 'object' && binding !== null) {{
-                                // Handle plain object format
-                                for (const key in binding) {{
-                                    const value = binding[key];
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }} else {{
-                                // Single value binding
-                                bindingObj.value = binding?.value || binding || '';
-                            }}
-                            bindings.push(bindingObj);
-                        }}
-                    }} else if (Array.isArray(results)) {{
-                        // Handle array results
-                        for (const binding of results) {{
-                            const bindingObj = {{}};
-                            if (binding instanceof Map) {{
-                                for (const [key, value] of binding) {{
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }} else if (typeof binding === 'object' && binding !== null) {{
-                                for (const key in binding) {{
-                                    const value = binding[key];
-                                    bindingObj[key] = value?.value || value || '';
-                                }}
-                            }}
-                            bindings.push(bindingObj);
-                        }}
-                    }} else if (results && typeof results === 'object') {{
-                        // Single result object
-                        const bindingObj = {{}};
-                        for (const key in results) {{
-                            const value = results[key];
-                            bindingObj[key] = value?.value || value || '';
-                        }}
-                        bindings.push(bindingObj);
-                    }}
-                    resultData.bindings = bindings;
-                }}
-        
-                console.log(JSON.stringify(resultData));
-            }} catch (err) {{
-                console.error(JSON.stringify({{
-                    success: false,
-                    query_type: queryType,
-                    error: err.message
-                }}));
-                process.exit(1);
-            }}
-        }}
-        
-        main().catch(err => {{
-            console.error(JSON.stringify({{
-                success: false,
-                error: err.message
-            }}));
-            process.exit(1);
-        }});
-        "#,
-        escaped_query,
-        query_type_str
-    );
+    let script = template_engine.lock()
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+        .render("query-only", &context)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render query-only template: {}", e)))?;
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;

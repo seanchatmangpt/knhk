@@ -3,6 +3,7 @@ members = [
     "dod-validator-core",
     "dod-validator-cli",
     "dod-validator-autonomous",
+    "dod-validator-hot",
 ]
 resolver = "2"
 

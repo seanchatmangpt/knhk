@@ -10,6 +10,7 @@ pub mod serialize;
 pub mod shacl;
 pub mod state;
 pub mod store;
+pub mod template;
 pub mod transaction;
 pub mod types;
 

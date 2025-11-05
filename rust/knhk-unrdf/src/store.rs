@@ -4,47 +4,22 @@
 use crate::error::{UnrdfError, UnrdfResult};
 use crate::script::execute_unrdf_script;
 use crate::state::get_state;
+use crate::template::TemplateEngine;
+use tera::Context;
 
 /// Store data in unrdf
 pub fn store_turtle_data(turtle_data: &str) -> UnrdfResult<()> {
     let state = get_state()?;
     
-    // Escape backticks and template literals in turtle data
-    let escaped_data = turtle_data.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
+    // Use Tera template engine
+    let template_engine = TemplateEngine::get()?;
+    let mut context = Context::new();
+    context.insert("turtle_data", turtle_data);
     
-    let script = format!(
-        r#"
-        import {{ createDarkMatterCore }} from './src/knowledge-engine/knowledge-substrate-core.mjs';
-        import {{ parseTurtle }} from './src/knowledge-engine/parse.mjs';
-        
-        async function main() {{
-            const system = await createDarkMatterCore({{
-                enableKnowledgeHookManager: true,
-                enableLockchainWriter: false
-            }});
-        
-            const turtleData = `{}`;
-            const store = await parseTurtle(turtleData);
-        
-            const quads = [];
-            store.forEach(q => quads.push(q));
-        
-            await system.executeTransaction({{
-                additions: quads,
-                removals: [],
-                actor: 'knhk-rust'
-            }});
-        
-            console.log('SUCCESS');
-        }}
-        
-        main().catch(err => {{
-            console.error('ERROR:', err.message);
-            process.exit(1);
-        }});
-        "#,
-        escaped_data
-    );
+    let script = template_engine.lock()
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire template engine lock: {}", e)))?
+        .render("store", &context)
+        .map_err(|e| UnrdfError::InvalidInput(format!("Failed to render store template: {}", e)))?;
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;
