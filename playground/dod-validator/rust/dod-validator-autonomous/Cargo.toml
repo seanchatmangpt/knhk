@@ -1,0 +1,14 @@
+[package]
+name = "dod-validator-autonomous"
+version = "2.0.0"
+edition = "2021"
+
+[dependencies]
+dod-validator-core = { path = "../dod-validator-core" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[lib]
+name = "dod_validator_autonomous"
+path = "src/lib.rs"
+

@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "dod-validator-core",
+    "dod-validator-cli",
+    "dod-validator-autonomous",
+]
+resolver = "2"
+
+[workspace.package]
+version = "2.0.0"
+edition = "2021"
+

@@ -15,8 +15,8 @@ pub mod types;
 
 // Re-export public API
 pub use error::{UnrdfError, UnrdfErrorCode, UnrdfResult};
-pub use hooks::{deregister_hook, execute_hook, list_hooks, register_hook};
-pub use query::{detect_query_type, query_sparql, query_sparql_with_type};
+pub use hooks::{deregister_hook, execute_hook, execute_hook_with_data, list_hooks, register_hook};
+pub use query::{detect_query_type, query_sparql, query_sparql_with_type, query_sparql_with_data};
 pub use serialize::serialize_rdf;
 pub use shacl::validate_shacl;
 pub use store::store_turtle_data;
@@ -67,8 +67,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_init() {
-        // Test would require unrdf path
-        // This is a placeholder for integration tests
+    fn test_init_path_validation() {
+        // Test path validation logic
+        let invalid_path = "/nonexistent/path/that/does/not/exist";
+        let result = init_unrdf(invalid_path);
+        assert!(result.is_err(), "Init should fail for non-existent path");
+        
+        // Verify error message contains path information
+        if let Err(UnrdfError::InitializationFailed(msg)) = result {
+            assert!(msg.contains("does not exist") || msg.contains("not found") || msg.contains("not a directory"), 
+                    "Error message should indicate path issue: {}", msg);
+        }
     }
 }

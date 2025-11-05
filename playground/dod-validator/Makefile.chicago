@@ -1,0 +1,34 @@
+# Chicago TDD Tests Makefile
+
+TEST_DIR = playground/dod-validator
+C_TEST = tests/chicago_autonomous_dod_validator.c
+C_TEST_BIN = tests/chicago_autonomous_dod_validator
+
+.PHONY: test-chicago-autonomous test-chicago-autonomous-c test-chicago-autonomous-rust
+
+test-chicago-autonomous: test-chicago-autonomous-c test-chicago-autonomous-rust
+
+test-chicago-autonomous-c: $(C_TEST_BIN)
+	@echo "Running C Chicago TDD tests..."
+	./$(C_TEST_BIN)
+
+test-chicago-autonomous-rust:
+	@echo "Running Rust Chicago TDD tests..."
+	cd $(TEST_DIR)/rust/dod-validator-autonomous && cargo test --lib
+
+$(C_TEST_BIN): $(C_TEST)
+	@echo "Building C Chicago TDD test..."
+	$(CC) $(CFLAGS) -I../c/include -L../c -lknhk $(C_TEST) -o $(C_TEST_BIN)
+
+clean:
+	rm -f $(C_TEST_BIN)
+
+help:
+	@echo "Chicago TDD Tests Makefile"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make test-chicago-autonomous     - Run all Chicago TDD tests"
+	@echo "  make test-chicago-autonomous-c  - Run C tests only"
+	@echo "  make test-chicago-autonomous-rust - Run Rust tests only"
+	@echo "  make clean                      - Clean test binaries"
+

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-unrdf/src/script.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762384149575,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762384149575,
+            "name": "Commit-0",
+            "content": "// knhk-unrdf: Script execution helper\n// Execute Node.js scripts for unrdf integration\n\nuse crate::error::{UnrdfError, UnrdfResult};\nuse crate::state::get_state;\nuse tokio::process::Command;\n\n/// Execute a script using Node.js and unrdf\npub async fn execute_unrdf_script(script_content: &str) -> UnrdfResult<String> {\n    let state = get_state()?;\n    \n    // Write script to temporary file\n    // Generate unique filename using timestamp (handle clock skew errors gracefully)\n    let timestamp_nanos = std::time::SystemTime::now()\n        .duration_since(std::time::UNIX_EPOCH)\n        .map(|d| d.as_nanos())\n        .unwrap_or_else(|_| {\n            // Fallback to random number if clock is before epoch (should never happen)\n            use std::collections::hash_map::DefaultHasher;\n            use std::hash::{Hash, Hasher};\n            let mut hasher = DefaultHasher::new();\n            std::time::Instant::now().hash(&mut hasher);\n            hasher.finish() as u128\n        });\n    let temp_file = std::env::temp_dir().join(format!(\"knhk_unrdf_{}.mjs\", timestamp_nanos));\n    std::fs::write(&temp_file, script_content)\n        .map_err(|e| UnrdfError::InvalidInput(format!(\"Failed to write script: {}\", e)))?;\n    \n    // Execute via Node.js\n    let output = Command::new(\"node\")\n        .arg(&temp_file)\n        .current_dir(&state.unrdf_path)\n        .output()\n        .await\n        .map_err(|e| UnrdfError::QueryFailed(format!(\"Failed to execute node: {}\", e)))?;\n    \n    // Cleanup\n    let _ = std::fs::remove_file(&temp_file);\n    \n    if !output.status.success() {\n        let stderr = String::from_utf8_lossy(&output.stderr);\n        let stdout = String::from_utf8_lossy(&output.stdout);\n        return Err(UnrdfError::QueryFailed(format!(\"Script failed: stderr={}, stdout={}\", stderr, stdout)));\n    }\n    \n    let stdout = String::from_utf8(output.stdout)\n        .map_err(|e| UnrdfError::QueryFailed(format!(\"Invalid output: {}\", e)))?;\n    \n    // Trim whitespace and check for error messages\n    let trimmed = stdout.trim();\n    if trimmed.starts_with(\"ERROR:\") || trimmed.contains(\"Error:\") {\n        return Err(UnrdfError::QueryFailed(format!(\"Script reported error: {}\", trimmed)));\n    }\n    \n    Ok(trimmed.to_string())\n}\n\n"
+        }
+    ]
+}

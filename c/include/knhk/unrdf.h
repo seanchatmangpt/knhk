@@ -28,6 +28,14 @@ int knhk_unrdf_store_turtle(const char *turtle_data);
 /// @return 0 on success, -1 on error
 int knhk_unrdf_query(const char *query, char *result_json, size_t result_size);
 
+/// Execute SPARQL query with data to store first (for stateful operations)
+/// @param query SPARQL query string
+/// @param turtle_data Turtle data to store before querying (NULL if none)
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_query_with_data(const char *query, const char *turtle_data, char *result_json, size_t result_size);
+
 /// Execute knowledge hook via Rust → unrdf integration layer
 /// @param hook_name Name of the hook
 /// @param hook_query SPARQL ASK query for hook condition
@@ -35,6 +43,15 @@ int knhk_unrdf_query(const char *query, char *result_json, size_t result_size);
 /// @param result_size Size of result_json buffer
 /// @return 0 on success, -1 on error
 int knhk_unrdf_execute_hook(const char *hook_name, const char *hook_query, char *result_json, size_t result_size);
+
+/// Execute knowledge hook with data to store first (for stateful operations)
+/// @param hook_name Name of the hook
+/// @param hook_query SPARQL ASK query for hook condition
+/// @param turtle_data Turtle data to store before hook execution (NULL if none)
+/// @param result_json Pre-allocated buffer for JSON result
+/// @param result_size Size of result_json buffer
+/// @return 0 on success, -1 on error
+int knhk_unrdf_execute_hook_with_data(const char *hook_name, const char *hook_query, const char *turtle_data, char *result_json, size_t result_size);
 
 // Transaction Management API
 

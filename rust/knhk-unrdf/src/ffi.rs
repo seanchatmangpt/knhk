@@ -2,7 +2,7 @@
 // C-compatible function exports for FFI
 
 use crate::error::UnrdfError;
-use crate::hooks::{deregister_hook, execute_hook, list_hooks, register_hook};
+use crate::hooks::{deregister_hook, execute_hook, execute_hook_with_data, list_hooks, register_hook};
 use crate::query::query_sparql;
 use crate::serialize::serialize_rdf;
 use crate::shacl::validate_shacl;
@@ -17,10 +17,15 @@ use std::os::raw::{c_char, c_int};
 
 #[no_mangle]
 pub extern "C" fn knhk_unrdf_init(unrdf_path: *const c_char) -> c_int {
+    // Validate NULL pointer
+    if unrdf_path.is_null() {
+        return -1;
+    }
+
     let path = unsafe {
         CStr::from_ptr(unrdf_path)
             .to_str()
-            .map_err(|_| UnrdfError::InvalidInput("Invalid path".to_string()))
+            .map_err(|_| UnrdfError::InvalidInput("Invalid path encoding".to_string()))
     };
     
     match path {
@@ -36,10 +41,15 @@ pub extern "C" fn knhk_unrdf_init(unrdf_path: *const c_char) -> c_int {
 
 #[no_mangle]
 pub extern "C" fn knhk_unrdf_store_turtle(turtle_data: *const c_char) -> c_int {
+    // Validate NULL pointer
+    if turtle_data.is_null() {
+        return -1;
+    }
+
     let data = unsafe {
         CStr::from_ptr(turtle_data)
             .to_str()
-            .map_err(|_| UnrdfError::InvalidInput("Invalid turtle data".to_string()))
+            .map_err(|_| UnrdfError::InvalidInput("Invalid turtle data encoding".to_string()))
     };
     
     match data {
@@ -55,10 +65,15 @@ pub extern "C" fn knhk_unrdf_store_turtle(turtle_data: *const c_char) -> c_int {
 
 #[no_mangle]
 pub extern "C" fn knhk_unrdf_query(query: *const c_char, result_json: *mut c_char, result_size: usize) -> c_int {
+    // Validate NULL pointers
+    if query.is_null() || result_json.is_null() {
+        return -1;
+    }
+
     let q = unsafe {
         CStr::from_ptr(query)
             .to_str()
-            .map_err(|_| UnrdfError::InvalidInput("Invalid query".to_string()))
+            .map_err(|_| UnrdfError::InvalidInput("Invalid query encoding".to_string()))
     };
     
     match q {
@@ -92,6 +107,72 @@ pub extern "C" fn knhk_unrdf_query(query: *const c_char, result_json: *mut c_cha
     }
 }
 
+/// Execute SPARQL query with data to store first (for stateful operations)
+#[no_mangle]
+pub extern "C" fn knhk_unrdf_query_with_data(
+    query: *const c_char,
+    turtle_data: *const c_char,
+    result_json: *mut c_char,
+    result_size: usize
+) -> c_int {
+    // Validate NULL pointers
+    if query.is_null() || result_json.is_null() {
+        return -1;
+    }
+    
+    // If turtle_data is provided, we need to combine store + query in a single script
+    // because each script creates a new system instance
+    if !turtle_data.is_null() {
+        // Use the query module's function that handles both store and query
+        use crate::query::query_sparql_with_data;
+        
+        let q = unsafe {
+            CStr::from_ptr(query)
+                .to_str()
+                .map_err(|_| UnrdfError::InvalidInput("Invalid query encoding".to_string()))
+        };
+        
+        let data = unsafe {
+            CStr::from_ptr(turtle_data)
+                .to_str()
+                .map_err(|_| UnrdfError::InvalidInput("Invalid turtle data encoding".to_string()))
+        };
+        
+        match (q, data) {
+            (Ok(query_str), Ok(data_str)) => {
+                match query_sparql_with_data(query_str, data_str) {
+                    Ok(result) => {
+                        match serde_json::to_string(&result) {
+                            Ok(json) => {
+                                let json_bytes = json.as_bytes();
+                                if json_bytes.len() < result_size {
+                                    unsafe {
+                                        std::ptr::copy_nonoverlapping(
+                                            json_bytes.as_ptr(),
+                                            result_json as *mut u8,
+                                            json_bytes.len()
+                                        );
+                                        *result_json.add(json_bytes.len()) = 0;
+                                    }
+                                    0
+                                } else {
+                                    -1
+                                }
+                            }
+                            Err(_) => -1,
+                        }
+                    }
+                    Err(_) => -1,
+                }
+            }
+            _ => -1,
+        }
+    } else {
+        // No data to store, just execute query
+        knhk_unrdf_query(query, result_json, result_size)
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn knhk_unrdf_execute_hook(
     hook_name: *const c_char,
@@ -99,16 +180,21 @@ pub extern "C" fn knhk_unrdf_execute_hook(
     result_json: *mut c_char,
     result_size: usize
 ) -> c_int {
+    // Validate NULL pointers
+    if hook_name.is_null() || hook_query.is_null() || result_json.is_null() {
+        return -1;
+    }
+    
     let name = unsafe {
         CStr::from_ptr(hook_name)
             .to_str()
-            .map_err(|_| UnrdfError::InvalidInput("Invalid hook name".to_string()))
+            .map_err(|_| UnrdfError::InvalidInput("Invalid hook name encoding".to_string()))
     };
     
     let query = unsafe {
         CStr::from_ptr(hook_query)
             .to_str()
-            .map_err(|_| UnrdfError::InvalidInput("Invalid hook query".to_string()))
+            .map_err(|_| UnrdfError::InvalidInput("Invalid hook query encoding".to_string()))
     };
     
     match (name, query) {
@@ -139,6 +225,103 @@ pub extern "C" fn knhk_unrdf_execute_hook(
             }
         }
         _ => -1,
+    }
+}
+
+/// Execute knowledge hook with data to store first (for stateful operations)
+#[no_mangle]
+pub extern "C" fn knhk_unrdf_execute_hook_with_data(
+    hook_name: *const c_char,
+    hook_query: *const c_char,
+    turtle_data: *const c_char,
+    result_json: *mut c_char,
+    result_size: usize
+) -> c_int {
+    // Validate NULL pointers
+    if hook_name.is_null() || hook_query.is_null() || result_json.is_null() {
+        return -1;
+    }
+    
+    let name = unsafe {
+        CStr::from_ptr(hook_name)
+            .to_str()
+            .map_err(|_| UnrdfError::InvalidInput("Invalid hook name encoding".to_string()))
+    };
+    
+    let query = unsafe {
+        CStr::from_ptr(hook_query)
+            .to_str()
+            .map_err(|_| UnrdfError::InvalidInput("Invalid hook query encoding".to_string()))
+    };
+    
+    // If turtle_data is provided, use execute_hook_with_data
+    if !turtle_data.is_null() {
+        let data = unsafe {
+            CStr::from_ptr(turtle_data)
+                .to_str()
+                .map_err(|_| UnrdfError::InvalidInput("Invalid turtle data encoding".to_string()))
+        };
+        
+        match (name, query, data) {
+            (Ok(n), Ok(q), Ok(d)) => {
+                match execute_hook_with_data(n, q, d) {
+                    Ok(result) => {
+                        match serde_json::to_string(&result) {
+                            Ok(json) => {
+                                let json_bytes = json.as_bytes();
+                                if json_bytes.len() < result_size {
+                                    unsafe {
+                                        std::ptr::copy_nonoverlapping(
+                                            json_bytes.as_ptr(),
+                                            result_json as *mut u8,
+                                            json_bytes.len()
+                                        );
+                                        *result_json.add(json_bytes.len()) = 0;
+                                    }
+                                    0
+                                } else {
+                                    -1
+                                }
+                            }
+                            Err(_) => -1,
+                        }
+                    }
+                    Err(_) => -1,
+                }
+            }
+            _ => -1,
+        }
+    } else {
+        // No data to store, just execute hook
+        match (name, query) {
+            (Ok(n), Ok(q)) => {
+                match execute_hook(n, q) {
+                    Ok(result) => {
+                        match serde_json::to_string(&result) {
+                            Ok(json) => {
+                                let json_bytes = json.as_bytes();
+                                if json_bytes.len() < result_size {
+                                    unsafe {
+                                        std::ptr::copy_nonoverlapping(
+                                            json_bytes.as_ptr(),
+                                            result_json as *mut u8,
+                                            json_bytes.len()
+                                        );
+                                        *result_json.add(json_bytes.len()) = 0;
+                                    }
+                                    0
+                                } else {
+                                    -1
+                                }
+                            }
+                            Err(_) => -1,
+                        }
+                    }
+                    Err(_) => -1,
+                }
+            }
+            _ => -1,
+        }
     }
 }
 

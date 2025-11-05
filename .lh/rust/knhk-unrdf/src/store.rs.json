@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-unrdf/src/store.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762384149573,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762384149573,
+            "name": "Commit-0",
+            "content": "// knhk-unrdf: Data storage operations\n// Store RDF data in unrdf\n\nuse crate::error::{UnrdfError, UnrdfResult};\nuse crate::script::execute_unrdf_script;\nuse crate::state::get_state;\n\n/// Store data in unrdf\npub fn store_turtle_data(turtle_data: &str) -> UnrdfResult<()> {\n    let state = get_state()?;\n    \n    // Escape backticks and template literals in turtle data\n    let escaped_data = turtle_data.replace('\\\\', \"\\\\\\\\\").replace('`', \"\\\\`\").replace('$', \"\\\\$\");\n    \n    let script = format!(\n        r#\"\n        import {{ createDarkMatterCore }} from './src/knowledge-engine/knowledge-substrate-core.mjs';\n        import {{ parseTurtle }} from './src/knowledge-engine/parse.mjs';\n        \n        async function main() {{\n            const system = await createDarkMatterCore({{\n                enableKnowledgeHookManager: true,\n                enableLockchainWriter: false\n            }});\n        \n            const turtleData = `{}`;\n            const store = await parseTurtle(turtleData);\n        \n            const quads = [];\n            store.forEach(q => quads.push(q));\n        \n            await system.executeTransaction({{\n                additions: quads,\n                removals: [],\n                actor: 'knhk-rust'\n            }});\n        \n            console.log('SUCCESS');\n        }}\n        \n        main().catch(err => {{\n            console.error('ERROR:', err.message);\n            process.exit(1);\n        }});\n        \"#,\n        escaped_data\n    );\n    \n    state.runtime.block_on(async {\n        let output = execute_unrdf_script(&script).await?;\n        // Check if output contains \"SUCCESS\" (unrdf may print initialization messages first)\n        if output.contains(\"SUCCESS\") {\n            Ok(())\n        } else {\n            Err(UnrdfError::StoreFailed(format!(\"Store operation failed. Output: {}\", output)))\n        }\n    })\n}\n\n"
+        }
+    ]
+}

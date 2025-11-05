@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-unrdf/src/lib.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762384149575,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762384149575,
+            "name": "Commit-0",
+            "content": "// knhk-unrdf: Rust integration layer for unrdf knowledge hook engine\n// Provides FFI-safe interface for cold path integration\n\npub mod error;\npub mod ffi;\npub mod hooks;\npub mod query;\npub mod script;\npub mod serialize;\npub mod shacl;\npub mod state;\npub mod store;\npub mod transaction;\npub mod types;\n\n// Re-export public API\npub use error::{UnrdfError, UnrdfErrorCode, UnrdfResult};\npub use hooks::{deregister_hook, execute_hook, execute_hook_with_data, list_hooks, register_hook};\npub use query::{detect_query_type, query_sparql, query_sparql_with_type, query_sparql_with_data};\npub use serialize::serialize_rdf;\npub use shacl::validate_shacl;\npub use store::store_turtle_data;\npub use transaction::{begin_transaction, commit_transaction, rollback_transaction, transaction_add, transaction_remove};\npub use types::{HookDefinition, HookResult, QueryResult, RdfFormat, ShaclValidationResult, ShaclViolation, SparqlQueryType, TransactionReceipt};\n\nuse state::init_state;\nuse std::collections::HashMap;\nuse std::sync::{Arc, Mutex};\nuse tokio::runtime::Runtime;\n\n/// Initialize unrdf integration layer\n/// Must be called before any other operations\npub fn init_unrdf(unrdf_path: &str) -> Result<(), UnrdfError> {\n    // Verify unrdf directory exists\n    let path = std::path::Path::new(unrdf_path);\n    if !path.exists() {\n        return Err(UnrdfError::InitializationFailed(format!(\"unrdf directory does not exist: {}\", unrdf_path)));\n    }\n    if !path.is_dir() {\n        return Err(UnrdfError::InitializationFailed(format!(\"unrdf path is not a directory: {}\", unrdf_path)));\n    }\n    \n    // Verify required files exist\n    let knowledge_engine = path.join(\"src/knowledge-engine/knowledge-substrate-core.mjs\");\n    if !knowledge_engine.exists() {\n        return Err(UnrdfError::InitializationFailed(format!(\"unrdf knowledge engine not found at: {}\", knowledge_engine.display())));\n    }\n    \n    let runtime = Runtime::new()\n        .map_err(|e| UnrdfError::InitializationFailed(format!(\"Failed to create runtime: {}\", e)))?;\n    \n    let state = state::UnrdfState {\n        runtime,\n        unrdf_path: unrdf_path.to_string(),\n        transactions: Arc::new(Mutex::new(HashMap::new())),\n        next_transaction_id: Arc::new(Mutex::new(1)),\n        hooks: Arc::new(Mutex::new(HashMap::new())),\n    };\n    \n    init_state(state)?;\n    \n    Ok(())\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn test_init_path_validation() {\n        // Test path validation logic\n        let invalid_path = \"/nonexistent/path/that/does/not/exist\";\n        let result = init_unrdf(invalid_path);\n        assert!(result.is_err(), \"Init should fail for non-existent path\");\n        \n        // Verify error message contains path information\n        if let Err(UnrdfError::InitializationFailed(msg)) = result {\n            assert!(msg.contains(\"does not exist\") || msg.contains(\"not found\") || msg.contains(\"not a directory\"), \n                    \"Error message should indicate path issue: {}\", msg);\n        }\n    }\n}\n"
+        }
+    ]
+}

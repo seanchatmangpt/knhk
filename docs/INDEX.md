@@ -37,8 +37,10 @@
 - **[Code Organization](code-organization.md)** - Code structure
 - **[Data Flow](data-flow.md)** - Data flow diagrams
 - **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
+- **[v1.0 Requirements](v1-requirements.md)** - Forward-looking v1.0 requirements
 - **[v1.0 unrdf Integration Plan](v1.0-unrdf-integration-plan.md)** - unrdf integration requirements for v1.0
 - **[v1.0 unrdf Gap Analysis](v1.0-unrdf-gap-analysis.md)** - Comprehensive gap analysis: unrdf capabilities vs KNHK independent implementations
+- **[Worktree Review](WORKTREE_REVIEW.md)** - Review of Git worktrees for integration opportunities
 
 ## Archived Documentation
 
@@ -71,22 +73,27 @@ knhk pipeline run [--connectors] [--schema]
 
 ```
 docs/
-├── INDEX.md              # This file
-├── QUICK_START.md        # Quick start guide
-├── cli.md                # CLI documentation
-├── architecture.md       # Architecture overview
-├── api.md                # API reference
-├── integration.md        # Integration guide
-├── deployment.md         # Deployment guide
-├── performance.md        # Performance docs
-├── code-organization.md  # Code structure
-├── data-flow.md          # Data flow
-├── weaver-integration.md # Weaver integration
-├── DOCUMENTATION_GAPS.md  # Documentation gap analysis
-└── archived/             # Historical docs
-    ├── versions/         # Version-specific docs
-    ├── analysis/          # Analysis docs
-    └── status/           # Status reports
+├── INDEX.md                      # This file
+├── QUICK_START.md                # Quick start guide
+├── cli.md                        # CLI documentation
+├── architecture.md               # Architecture overview
+├── api.md                        # API reference
+├── integration.md                # Integration guide
+├── deployment.md                 # Deployment guide
+├── performance.md                # Performance docs
+├── code-organization.md          # Code structure
+├── data-flow.md                 # Data flow
+├── weaver-integration.md         # Weaver integration
+├── DOCUMENTATION_GAPS.md         # Documentation gap analysis
+├── v0.4.0-status.md              # v0.4.0 status
+├── v1-requirements.md            # v1.0 requirements
+├── v1.0-unrdf-integration-plan.md # unrdf integration plan
+├── v1.0-unrdf-gap-analysis.md    # unrdf gap analysis
+└── archived/                     # Historical docs
+    ├── versions/                 # Version-specific docs
+    ├── analysis/                 # Analysis docs
+    ├── status/                   # Status reports
+    └── implementation-details/   # Implementation details
 ```
 
 ## Contribution Guidelines
@@ -96,6 +103,9 @@ When adding documentation:
 2. **No Redundancy**: Check existing docs first
 3. **Clear Structure**: Follow existing patterns
 4. **Update Index**: Add new docs to this index
+5. **Archive When Appropriate**: Move historical docs to `docs/archived/`
+
+See [Documentation Organization](DOCUMENTATION_ORGANIZATION.md) for detailed file organization guidelines.
 
 ---
 

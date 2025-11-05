@@ -10,7 +10,19 @@ pub async fn execute_unrdf_script(script_content: &str) -> UnrdfResult<String> {
     let state = get_state()?;
     
     // Write script to temporary file
-    let temp_file = std::env::temp_dir().join(format!("knhk_unrdf_{}.mjs", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    // Generate unique filename using timestamp (handle clock skew errors gracefully)
+    let timestamp_nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or_else(|_| {
+            // Fallback to random number if clock is before epoch (should never happen)
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            let mut hasher = DefaultHasher::new();
+            std::time::Instant::now().hash(&mut hasher);
+            hasher.finish() as u128
+        });
+    let temp_file = std::env::temp_dir().join(format!("knhk_unrdf_{}.mjs", timestamp_nanos));
     std::fs::write(&temp_file, script_content)
         .map_err(|e| UnrdfError::InvalidInput(format!("Failed to write script: {}", e)))?;
     

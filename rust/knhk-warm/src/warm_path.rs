@@ -81,6 +81,10 @@ pub enum WarmPathError {
     InvalidOperation,
     InvalidOutputBuffers,
     ExecutionFailed,
+    QueryParseError(String),
+    QueryExecutionError(String),
+    PathSelectionError(String),
+    CacheError(String),
 }
 
 impl core::fmt::Display for WarmPathError {
@@ -90,6 +94,10 @@ impl core::fmt::Display for WarmPathError {
             WarmPathError::InvalidOperation => write!(f, "Invalid operation for warm path"),
             WarmPathError::InvalidOutputBuffers => write!(f, "Invalid output buffers"),
             WarmPathError::ExecutionFailed => write!(f, "Warm path execution failed"),
+            WarmPathError::QueryParseError(msg) => write!(f, "Query parse error: {}", msg),
+            WarmPathError::QueryExecutionError(msg) => write!(f, "Query execution error: {}", msg),
+            WarmPathError::PathSelectionError(msg) => write!(f, "Path selection error: {}", msg),
+            WarmPathError::CacheError(msg) => write!(f, "Cache error: {}", msg),
         }
     }
 }

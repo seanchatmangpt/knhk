@@ -1,5 +1,6 @@
 // rust/knhk-etl/src/integration.rs
 // Integration layer connecting ETL pipeline with connectors, lockchain, and OTEL
+// Includes warm path query execution integration
 
 #![no_std]
 extern crate alloc;
@@ -17,6 +18,21 @@ pub struct IntegratedPipeline {
     schema_iri: String,
     lockchain_enabled: bool,
     downstream_endpoints: Vec<String>,
+    #[cfg(feature = "std")]
+    warm_path_executor: Option<alloc::boxed::Box<dyn WarmPathQueryExecutor>>,
+}
+
+/// Trait for warm path query execution (abstracted for no_std compatibility)
+#[cfg(feature = "std")]
+pub trait WarmPathQueryExecutor: Send + Sync {
+    fn execute_query(&self, sparql: &str) -> Result<WarmPathQueryResult, String>;
+}
+
+#[cfg(feature = "std")]
+pub enum WarmPathQueryResult {
+    Boolean(bool),
+    Solutions(Vec<BTreeMap<String, String>>),
+    Graph(Vec<String>),
 }
 
 impl IntegratedPipeline {
@@ -31,7 +47,15 @@ impl IntegratedPipeline {
             schema_iri,
             lockchain_enabled,
             downstream_endpoints,
+            #[cfg(feature = "std")]
+            warm_path_executor: None,
         }
+    }
+
+    /// Set warm path executor for SPARQL query execution
+    #[cfg(feature = "std")]
+    pub fn set_warm_path_executor(&mut self, executor: alloc::boxed::Box<dyn WarmPathQueryExecutor>) {
+        self.warm_path_executor = Some(executor);
     }
 
     /// Execute pipeline with full integration
@@ -93,7 +117,19 @@ impl IntegratedPipeline {
             actions_sent: result.actions_sent,
             lockchain_hashes: result.lockchain_hashes,
             metrics_recorded,
+            warm_path_queries_executed: 0,
         })
+    }
+
+    /// Execute warm path query if executor is available
+    #[cfg(feature = "std")]
+    pub fn execute_warm_path_query(&self, sparql: &str) -> Result<WarmPathQueryResult, PipelineError> {
+        if let Some(ref executor) = self.warm_path_executor {
+            executor.execute_query(sparql)
+                .map_err(|e| PipelineError::ReflexError(format!("Warm path query failed: {}", e)))
+        } else {
+            Err(PipelineError::ReflexError("Warm path executor not configured".to_string()))
+        }
     }
 }
 
@@ -102,4 +138,5 @@ pub struct IntegratedResult {
     pub actions_sent: usize,
     pub lockchain_hashes: Vec<String>,
     pub metrics_recorded: usize,
+    pub warm_path_queries_executed: usize,
 }

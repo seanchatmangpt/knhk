@@ -1279,6 +1279,7 @@ impl Pipeline {
 }
 
 pub mod integration;
+pub mod path_selector;
 
 #[cfg(test)]
 mod tests {

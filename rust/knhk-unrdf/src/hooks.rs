@@ -56,8 +56,96 @@ pub fn execute_hook(hook_name: &str, hook_query: &str) -> UnrdfResult<HookResult
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;
-        let result: HookResult = serde_json::from_str(&output)
-            .map_err(|e| UnrdfError::HookFailed(format!("Failed to parse result: {}", e)))?;
+        // Extract JSON from output (unrdf prints initialization messages to stdout)
+        let json_line = output
+            .lines()
+            .rev()
+            .find(|line| line.trim().starts_with('{') || line.trim().starts_with('['))
+            .ok_or_else(|| UnrdfError::HookFailed(format!("No JSON found in output. Full output: {}", output)))?;
+        
+        let result: HookResult = serde_json::from_str(json_line.trim())
+            .map_err(|e| UnrdfError::HookFailed(format!("Failed to parse result: {} - JSON line: {}", e, json_line)))?;
+        Ok(result)
+    })
+}
+
+/// Execute knowledge hook with data to store first (for stateful operations)
+/// This combines store and hook execution in a single script so data persists
+pub fn execute_hook_with_data(hook_name: &str, hook_query: &str, turtle_data: &str) -> UnrdfResult<HookResult> {
+    let state = get_state()?;
+    
+    let escaped_query = hook_query.replace('`', "\\`").replace('$', "\\$");
+    let escaped_data = turtle_data.replace('\\', "\\\\").replace('`', "\\`").replace('$', "\\$");
+    
+    let script = format!(
+        r#"
+        import {{ createDarkMatterCore, defineHook, registerHook }} from './src/knowledge-engine/index.mjs';
+        import {{ evaluateHook }} from './src/knowledge-engine/hook-management.mjs';
+        import {{ parseTurtle }} from './src/knowledge-engine/parse.mjs';
+        
+        async function main() {{
+            const system = await createDarkMatterCore({{
+                enableKnowledgeHookManager: true,
+                enableLockchainWriter: false
+            }});
+        
+            // Store data first
+            const turtleData = `{}`;
+            const store = await parseTurtle(turtleData);
+            const quads = [];
+            store.forEach(q => quads.push(q));
+            await system.executeTransaction({{
+                additions: quads,
+                removals: [],
+                actor: 'knhk-rust'
+            }});
+        
+            // Then execute hook
+            const hook = defineHook({{
+                meta: {{
+                    name: '{}',
+                    description: 'KNHK hook'
+                }},
+                when: {{
+                    kind: 'sparql-ask',
+                    query: `{}`
+                }},
+                run: async (event) => {{
+                    return {{ result: event.result ? 'Hook fired' : 'Hook not fired' }};
+                }}
+            }});
+        
+            await registerHook(hook);
+            const receipt = await evaluateHook(hook, {{ persist: false }});
+        
+            console.log(JSON.stringify({{
+                fired: receipt.fired || false,
+                result: receipt.result || null,
+                receipt: receipt.receipt || null
+            }}));
+        }}
+        
+        main().catch(err => {{
+            console.error(JSON.stringify({{ fired: false, result: null, error: err.message }}));
+            process.exit(1);
+        }});
+        "#,
+        escaped_data,
+        hook_name,
+        escaped_query
+    );
+    
+    state.runtime.block_on(async {
+        let output = execute_unrdf_script(&script).await?;
+        // Extract JSON from output (unrdf prints initialization messages to stdout)
+        let json_line = output
+            .lines()
+            .rev()
+            .find(|line| line.trim().starts_with('{') || line.trim().starts_with('['))
+            .ok_or_else(|| UnrdfError::HookFailed(format!("No JSON found in output. Full output: {}", output)))?;
+        
+        let result: HookResult = serde_json::from_str(json_line.trim())
+            .map_err(|e| UnrdfError::HookFailed(format!("Failed to parse result: {} - JSON line: {}", e, json_line)))?;
         Ok(result)
     })
 }

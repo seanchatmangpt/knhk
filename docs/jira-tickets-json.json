@@ -1,0 +1,266 @@
+[
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Epic"
+      },
+      "summary": "KNHK v1.0 Integration & Cold Path Optimization",
+      "description": "h2. Problem Statement\n\nKNHK v0.4.0 is production-ready for hot path operations (≤8 ticks) but has critical gaps in cold path integration with unrdf. To achieve v1.0 readiness, we must eliminate integration gaps, optimize query routing, and ensure seamless hot/warm/cold path coordination.\n\nh3. Current State\n* ✅ Hot path: 18/19 operations achieving ≤8 ticks\n* ⚠️ 9 critical integration gaps identified\n* ⚠️ Cold path queries unoptimized (no caching, batching)\n* ⚠️ Separate implementations (lockchain, OTEL) create technical debt\n\nh3. Desired State\n* ✅ Full SPARQL 1.1 support via unrdf cold path integration\n* ✅ Complete SHACL validation wrapper\n* ✅ ACID transaction management\n* ✅ RDF serialization (Turtle, JSON-LD, N-Quads)\n* ✅ Complete hook management lifecycle\n* ✅ Unified lockchain with aligned hash algorithms\n* ✅ Unified OTEL observability\n* ✅ Optimized query routing with caching and batching\n\nh2. Success Criteria\n\n* 9/9 critical gaps resolved (100%)\n* Hot path maintains ≤8 ticks (0% degradation)\n* Cold path p95 latency ≤500ms (50% improvement)\n* 100% of unrdf features wrapped/accessible\n* 90%+ integration test coverage\n* Query cache hit rate ≥50%\n* Zero integration errors in production\n\nh2. Business Value\n\nEnable 80% of enterprise use cases through unified hot/cold path architecture. ROI: 3:1 (value:cost ratio).\n\nh2. Timeline\n\n* Sprint 1 (Weeks 5-6): Critical Features (P0)\n* Sprint 2 (Week 7): High Priority Features (P1)\n* Sprint 3 (Week 8): Optimization & Polish (P2)\n* Sprint 4 (Weeks 9-10): Control & Deployment",
+      "priority": {
+        "name": "Highest"
+      },
+      "labels": ["v1.0", "integration", "unrdf", "dmaic", "performance"],
+      "components": [
+        {"name": "integration"},
+        {"name": "cold-path"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 100,
+      "fixVersions": [{"name": "v1.0"}]
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "SHACL Validation Wrapper (P0)",
+      "description": "h2. Description\n\nKNHK currently has micro-shape validation in hot path (limited to datatype checks), but lacks full SHACL validation wrapper for cold path operations. unrdf provides complete SHACL Core specification via rdf-validate-shacl.\n\nh3. Current Gap\n* KNHK: Micro-shapes only (VALIDATE_DATATYPE_SP/SPO)\n* unrdf: Full SHACL validation with all constraint types\n* Missing: Wrapper function to access unrdf SHACL validation\n\nh3. Implementation\n\n1. Wrap unrdf's {{validateShacl()}} function\n2. Implement shape graph loading and management\n3. Add validation result serialization (JSON format)\n4. Add error handling and validation\n\nh3. API Design\n\n{code:c}\nint knhk_unrdf_validate_shacl(\n    const char *data_turtle,\n    const char *shapes_turtle,\n    char *result_json,\n    size_t result_size\n);\n{code}\n\nh2. Acceptance Criteria\n\n* {{knhk_unrdf_validate_shacl()}} function implemented\n* Shape graph loading works correctly\n* Validation results serialized to JSON\n* Error handling for invalid inputs\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "Highest"
+      },
+      "labels": ["p0", "shacl", "validation", "critical"],
+      "components": [
+        {"name": "integration"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 13,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Transaction Management Integration (P0)",
+      "description": "h2. Description\n\nKNHK lacks ACID transaction support for cold path operations. unrdf provides TransactionManager with ACID guarantees, rollback support, and hook lifecycle integration.\n\nh3. Current Gap\n* KNHK: No transaction management (hot path is atomic by design)\n* unrdf: Full ACID transaction support\n* Missing: Transaction wrapper functions\n\nh3. Implementation\n\n1. Wrap unrdf's {{executeTransaction()}} function\n2. Implement transaction begin/commit/rollback\n3. Add transaction state management\n4. Integrate with hook lifecycle\n\nh3. API Design\n\n{code:c}\nint knhk_unrdf_transaction_begin(void);\nint knhk_unrdf_transaction_commit(int transaction_id, char *receipt_json, size_t receipt_size);\nint knhk_unrdf_transaction_rollback(int transaction_id);\nint knhk_unrdf_transaction_add(int transaction_id, const char *turtle_data);\nint knhk_unrdf_transaction_remove(int transaction_id, const char *turtle_data);\n{code}\n\nh2. Acceptance Criteria\n\n* Transaction begin/commit/rollback functions implemented\n* ACID guarantees verified\n* Rollback works correctly on errors\n* Transaction state persists across operations\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "Highest"
+      },
+      "labels": ["p0", "transaction", "acid", "critical"],
+      "components": [
+        {"name": "integration"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 13,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Full SPARQL Query Type Support (P0)",
+      "description": "h2. Description\n\nCurrently only basic SELECT queries are routed to unrdf. Need to expand query routing to support all SPARQL 1.1 query types.\n\nh3. Current Gap\n* KNHK: Only basic SELECT queries wrapped\n* unrdf: Full SPARQL 1.1 support (SELECT, ASK, CONSTRUCT, DESCRIBE, UPDATE)\n* Missing: Query type detection and routing for all types\n\nh3. Implementation\n\n1. Implement query type detection (parse SPARQL to determine type)\n2. Expand {{knhk_unrdf_query()}} to handle all query types\n3. Add result parsing for each query type\n4. Implement query-specific error handling\n\nh3. API Design\n\n{code:c}\nint knhk_unrdf_query_ask(const char *query, int *result);\nint knhk_unrdf_query_construct(const char *query, char *result_json, size_t result_size);\nint knhk_unrdf_query_describe(const char *query, char *result_json, size_t result_size);\nint knhk_unrdf_query_update(const char *query, char *result_json, size_t result_size);\n{code}\n\nh2. Acceptance Criteria\n\n* Query type detection works correctly\n* All SPARQL query types supported (ASK, CONSTRUCT, DESCRIBE, UPDATE)\n* Result parsing works for each query type\n* Error handling for invalid queries\n* Integration tests for each query type\n* Documentation updated",
+      "priority": {
+        "name": "Highest"
+      },
+      "labels": ["p0", "sparql", "query", "critical"],
+      "components": [
+        {"name": "integration"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 13,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Architecture Refactoring (P0)",
+      "description": "h2. Description\n\nCurrent implementation creates new unrdf instances per operation (script-based). Need to implement persistent instance with connection pooling.\n\nh3. Current Gap\n* Current: Script-based execution (temporary files, new instances)\n* Desired: Persistent unrdf instance with connection pooling\n* Missing: Instance management, connection pooling\n\nh3. Implementation\n\n1. Implement persistent unrdf system instance\n2. Add connection pooling for Node.js processes\n3. Enhance error handling with detailed error types\n4. Refactor from script execution to direct API calls (if possible)\n\nh2. Acceptance Criteria\n\n* Persistent unrdf instance implemented\n* Connection pooling works correctly\n* Error handling improved\n* Performance improved (50% reduction in overhead)\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "Highest"
+      },
+      "labels": ["p0", "architecture", "refactoring", "critical"],
+      "components": [
+        {"name": "integration"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 13,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "RDF Serialization (P1)",
+      "description": "h2. Description\n\nKNHK can parse RDF data but cannot serialize it. unrdf provides serialization functions (toTurtle, toJsonLd, toNQuads).\n\nh3. Current Gap\n* KNHK: Can parse Turtle/N-Quads (Raptor, rio_turtle)\n* unrdf: Can serialize to Turtle, JSON-LD, N-Quads\n* Missing: Serialization wrapper functions\n\nh3. Implementation\n\nOption A: Wrap unrdf serialization functions\nOption B: Implement independent serialization (recommended for Turtle)\n\nh3. API Design\n\n{code:c}\nint knhk_unrdf_to_turtle(char *turtle_output, size_t output_size);\nint knhk_unrdf_to_jsonld(char *jsonld_output, size_t output_size);\nint knhk_unrdf_to_nquads(char *nquads_output, size_t output_size);\n{code}\n\nh2. Acceptance Criteria\n\n* Turtle serialization works correctly\n* JSON-LD serialization works correctly\n* N-Quads serialization works correctly\n* Output formats match unrdf standards\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "High"
+      },
+      "labels": ["p1", "rdf", "serialization", "high-priority"],
+      "components": [
+        {"name": "integration"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 8,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Hook Management Lifecycle (P1)",
+      "description": "h2. Description\n\nCurrently only basic hook execution is available. Need to add full hook lifecycle management (register, deregister, list, persist).\n\nh3. Current Gap\n* KNHK: Basic hook execution only ({{knhk_unrdf_execute_hook()}})\n* unrdf: Full hook management (register, deregister, list, lifecycle)\n* Missing: Hook management wrapper functions\n\nh3. Implementation\n\n1. Wrap unrdf's hook registration/deregistration functions\n2. Implement hook persistence\n3. Add hook listing functionality\n4. Support all hook types (SHACL, delta, threshold, count, window)\n\nh3. API Design\n\n{code:c}\nint knhk_unrdf_register_hook(const char *hook_json, char *hook_id, size_t id_size);\nint knhk_unrdf_deregister_hook(const char *hook_id);\nint knhk_unrdf_list_hooks(char *hooks_json, size_t hooks_size);\n{code}\n\nh2. Acceptance Criteria\n\n* Hook registration works correctly\n* Hook deregistration works correctly\n* Hook listing works correctly\n* Hook persistence works\n* All hook types supported\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "High"
+      },
+      "labels": ["p1", "hooks", "lifecycle", "high-priority"],
+      "components": [
+        {"name": "integration"},
+        {"name": "unrdf-wrapper"}
+      ],
+      "customfield_10000": 8,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Lockchain Hash Algorithm Alignment (P1)",
+      "description": "h2. Description\n\nKNHK uses SHA-256 for lockchain, unrdf uses SHA3-256. Need to decide on unified approach and implement alignment.\n\nh3. Current Gap\n* KNHK: SHA-256 hashing (URDNA2015 canonicalization)\n* unrdf: SHA3-256 hashing (Git-based lockchain)\n* Issue: Cannot cross-reference receipts\n\nh3. Decision Required\n\nOption A: Migrate KNHK to SHA3-256\nOption B: Migrate unrdf to SHA-256\nOption C: Support both with adapter pattern\n\nh3. Implementation\n\n1. Decide on unified hash algorithm\n2. Implement hash algorithm conversion/adapter\n3. Unify receipt format\n4. Update lockchain implementations\n\nh2. Acceptance Criteria\n\n* Unified hash algorithm decision made\n* Receipt format unified\n* Cross-referencing works correctly\n* Migration path documented\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "High"
+      },
+      "labels": ["p1", "lockchain", "hash", "high-priority"],
+      "components": [
+        {"name": "integration"},
+        {"name": "lockchain"}
+      ],
+      "customfield_10000": 8,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Unified OTEL Observability (P2)",
+      "description": "h2. Description\n\nKNHK and unrdf have separate OTEL implementations. Need to unify spans/metrics for end-to-end observability.\n\nh3. Current Gap\n* KNHK: Independent OTEL integration (knhk-otel crate)\n* unrdf: Independent OTEL integration (ObservabilityManager)\n* Issue: Separate spans/metrics, no unified view\n\nh3. Implementation\n\n1. Integrate unrdf Observability class\n2. Unify span creation across paths\n3. Aggregate performance metrics\n4. Ensure span linking works correctly\n\nh2. Acceptance Criteria\n\n* Unified OTEL spans across paths\n* Metrics aggregated correctly\n* Span linking works end-to-end\n* Performance metrics visible\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "Medium"
+      },
+      "labels": ["p2", "otel", "observability", "medium-priority"],
+      "components": [
+        {"name": "integration"},
+        {"name": "observability"}
+      ],
+      "customfield_10000": 5,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Query Optimization Exposure (P2)",
+      "description": "h2. Description\n\nunrdf provides Dark Matter 80/20 optimizations (caching, batching) but they're not exposed via KNHK API.\n\nh3. Current Gap\n* unrdf: Query caching, hook batching, parallel execution\n* KNHK: No access to optimization features\n* Missing: Optimization API exposure\n\nh3. Implementation\n\n1. Expose query caching configuration\n2. Enable hook batching\n3. Add performance metrics collection\n4. Document optimization usage\n\nh2. Acceptance Criteria\n\n* Query caching configurable\n* Hook batching enabled\n* Performance metrics collected\n* Cache hit rate ≥50%\n* Integration tests passing\n* Documentation updated",
+      "priority": {
+        "name": "Medium"
+      },
+      "labels": ["p2", "optimization", "caching", "medium-priority"],
+      "components": [
+        {"name": "integration"},
+        {"name": "performance"}
+      ],
+      "customfield_10000": 5,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  },
+  {
+    "fields": {
+      "project": {
+        "key": "KNHK"
+      },
+      "issuetype": {
+        "name": "Story"
+      },
+      "summary": "Integration Test Suite (P0)",
+      "description": "h2. Description\n\nNeed comprehensive integration tests covering all unrdf integration features to ensure 90%+ coverage.\n\nh3. Test Coverage\n\n* SHACL validation tests\n* Transaction management tests\n* SPARQL query type tests (all types)\n* RDF serialization tests\n* Hook management tests\n* Lockchain integration tests\n* OTEL observability tests\n* Performance tests\n\nh2. Acceptance Criteria\n\n* Test suite covers all integration features\n* Test coverage ≥90%\n* Performance tests included\n* Tests run in CI/CD pipeline\n* Test documentation complete",
+      "priority": {
+        "name": "Highest"
+      },
+      "labels": ["p0", "testing", "integration-tests", "critical"],
+      "components": [
+        {"name": "testing"},
+        {"name": "integration"}
+      ],
+      "customfield_10000": 8,
+      "parent": {
+        "key": "KNHK-EPIC-001"
+      }
+    }
+  }
+]
+

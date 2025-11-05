@@ -48,10 +48,11 @@ pub fn store_turtle_data(turtle_data: &str) -> UnrdfResult<()> {
     
     state.runtime.block_on(async {
         let output = execute_unrdf_script(&script).await?;
+        // Check if output contains "SUCCESS" (unrdf may print initialization messages first)
         if output.contains("SUCCESS") {
             Ok(())
         } else {
-            Err(UnrdfError::StoreFailed(output))
+            Err(UnrdfError::StoreFailed(format!("Store operation failed. Output: {}", output)))
         }
     })
 }
