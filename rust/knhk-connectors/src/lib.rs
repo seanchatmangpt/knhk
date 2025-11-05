@@ -3,11 +3,16 @@
 // Provides typed, validated connectors for enterprise data sources
 
 #![no_std]
+#[cfg(feature = "std")]
+extern crate std;
 extern crate alloc;
 
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::boxed::Box;
+use alloc::string::ToString;
 
 #[cfg(feature = "std")]
 use hashbrown::HashMap;
@@ -353,7 +358,7 @@ impl ConnectorRegistry {
 
     /// Get mutable connector by ID
     pub fn get_mut(&mut self, id: &ConnectorId) -> Option<&mut dyn Connector> {
-        self.connectors.get_mut(id).map(|c| c.as_mut())
+        self.connectors.get_mut(id).map(|c| c.as_mut() as &mut dyn Connector)
     }
 
     /// List all connector IDs

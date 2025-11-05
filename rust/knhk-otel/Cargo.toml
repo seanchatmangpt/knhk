@@ -19,5 +19,5 @@ serde_json = { version = "1.0", optional = true }
 
 [features]
 default = []
-std = ["rand", "opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "opentelemetry-http", "hashbrown/std", "reqwest", "serde_json"]
+std = ["rand/std", "rand/std_rng", "opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "opentelemetry-http", "reqwest", "serde_json"]
 
