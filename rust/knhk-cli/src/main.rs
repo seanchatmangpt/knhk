@@ -4,6 +4,7 @@
 
 mod commands;
 mod error;
+mod tracing;
 
 // Import all noun modules so their verbs are auto-discovered
 mod boot;
@@ -56,6 +57,11 @@ fn get_config() -> &'static knhk_config::KnhkConfig {
 }
 
 fn main() -> CnvResult<()> {
+    // Initialize tracing first (before any other operations)
+    if let Err(e) = tracing::init_tracing() {
+        eprintln!("Warning: Failed to initialize tracing: {}", e);
+    }
+
     // Load configuration at startup
     let _ = get_config();
     

@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1762387020592,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1762388472823,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,8 +3,9 @@\n // Noun-Verb Command Interface based on CONVO.txt API\n \n mod commands;\n mod error;\n+mod tracing;\n \n // Import all noun modules so their verbs are auto-discovered\n mod boot;\n mod connect;\n@@ -55,8 +56,13 @@\n     })\n }\n \n fn main() -> CnvResult<()> {\n+    // Initialize tracing first (before any other operations)\n+    if let Err(e) = tracing::init_tracing() {\n+        eprintln!(\"Warning: Failed to initialize tracing: {}\", e);\n+    }\n+\n     // Load configuration at startup\n     let _ = get_config();\n     \n     // Auto-discover all registered commands and run\n"
                 }
             ],
             "date": 1762387020592,

@@ -151,6 +151,16 @@ All arrays are 64-byte aligned for optimal cache line access and SIMD operations
 - Full SPARQL compliance
 - Lockchain integration
 
+**Cold Path** (Rust-native hooks engine):
+- Single hook execution (2ns target)
+- Batch hook evaluation (parallel execution)
+- Guard function: μ ⊣ H (partial)
+- Provenance: hash(A) = hash(μ(O))
+- Invariant preservation: preserve(Q)
+- SPARQL ASK query execution via oxigraph
+- Cryptographic receipt generation (SHA-256)
+- Thread-safe hook registry
+
 ### 5. Evaluation Layer
 
 - **Hook IR**: Lightweight query representation
@@ -168,6 +178,44 @@ All arrays are 64-byte aligned for optimal cache line access and SIMD operations
 - **knhk_hooks**: Hook installation and management
 - **knhk_epoch**: Epoch scheduling (Λ ≺-total, τ ≤ 8)
 - **knhk_route**: Action routing to downstream systems
+
+### 7. Hooks Engine (Rust-native)
+
+**Rust-native hooks engine** (`rust/knhk-unrdf/src/hooks_native.rs`):
+
+**Architecture**:
+- **Native Store**: oxigraph-based RDF storage
+- **Hook Registry**: Thread-safe registry (`Arc<Mutex<HashMap>>`)
+- **Guard Function**: `μ ⊣ H` (partial) - Validates `O ⊨ Σ` before `A = μ(O)`
+- **Batch Execution**: Parallel evaluation via Rayon
+- **Receipt Generation**: SHA-256 cryptographic receipts
+
+**Use Cases**:
+1. **Single Hook Execution** (2ns target): Guard validation before canonicalization
+2. **Batch Hook Evaluation** (Cold Path): Parallel execution for multiple hooks
+
+**Key Laws Implemented**:
+- `Guard: μ ⊣ H` (partial)
+- `Invariant: preserve(Q)`
+- `Provenance: hash(A) = hash(μ(O))`
+- `Order: Λ` is `≺`-total
+- `Idempotence: μ ∘ μ = μ`
+- `Merge: Π` is `⊕`-monoid
+- `Typing: O ⊨ Σ`
+
+**Components**:
+- `hooks_native.rs`: Core hooks engine implementation
+- `query_native.rs`: SPARQL query execution (oxigraph)
+- `canonicalize.rs`: RDF canonicalization and hashing
+- `cache.rs`: Query result caching (LRU)
+- `hooks_native_ffi.rs`: FFI exports for C integration
+
+**Test Coverage**: 31 tests
+- 14 Chicago TDD tests (laws)
+- 17 error validation tests
+- 7 stress tests
+
+See [Hooks Engine: 2ns Use Cases](hooks-engine-2ns-use-cases.md) for complete documentation.
 
 ## Architecture Diagram
 
