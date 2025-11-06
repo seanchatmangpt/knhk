@@ -296,19 +296,22 @@ impl Lockchain {
         for entry in &self.entries {
             let computed_hash = Self::compute_hash(entry);
             if computed_hash != entry.receipt_hash {
-                return Err(LockchainError::InvalidHash(
-                    format!("Receipt {} hash mismatch: computed {} != stored {}", 
-                        entry.receipt_id,
-                        #[cfg(feature = "std")]
-                        hex::encode(&computed_hash),
-                        #[cfg(not(feature = "std"))]
-                        "hash",
-                        #[cfg(feature = "std")]
-                        hex::encode(&entry.receipt_hash),
-                        #[cfg(not(feature = "std"))]
-                        "hash"
-                    )
-                ));
+                #[cfg(feature = "std")]
+                {
+                    return Err(LockchainError::InvalidHash(
+                        format!("Receipt {} hash mismatch: computed {} != stored {}", 
+                            entry.receipt_id,
+                            hex::encode(&computed_hash),
+                            hex::encode(&entry.receipt_hash)
+                        )
+                    ));
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    return Err(LockchainError::InvalidHash(
+                        format!("Receipt {} hash mismatch", entry.receipt_id)
+                    ));
+                }
             }
             
             // Verify parent chain
