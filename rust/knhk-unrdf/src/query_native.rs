@@ -6,7 +6,7 @@ use crate::error::{UnrdfError, UnrdfResult};
 #[cfg(feature = "native")]
 use crate::types::{QueryResult, SparqlQueryType};
 #[cfg(feature = "native")]
-use oxigraph::model::{NamedNode, Quad, Term};
+use oxigraph::model::{NamedNode, Quad, Term, Triple};
 #[cfg(feature = "native")]
 use oxigraph::sparql::QueryResults;
 #[cfg(feature = "native")]
@@ -97,16 +97,16 @@ impl NativeStore {
             }
             SparqlQueryType::Construct | SparqlQueryType::Describe => {
                 match results {
-                    QueryResults::Graph(quads_iter) => {
+                    QueryResults::Graph(triples_iter) => {
                         let mut triples = Vec::new();
-                        for quad_result in quads_iter {
-                            let quad = quad_result
-                                .map_err(|e| UnrdfError::QueryFailed(format!("Quad error: {}", e)))?;
+                        for triple_result in triples_iter {
+                            let triple = triple_result
+                                .map_err(|e| UnrdfError::QueryFailed(format!("Triple error: {}", e)))?;
                             let mut triple_obj = serde_json::Map::new();
-                            triple_obj.insert("subject".to_string(), serde_json::Value::String(quad.subject.to_string()));
-                            triple_obj.insert("predicate".to_string(), serde_json::Value::String(quad.predicate.to_string()));
-                            triple_obj.insert("object".to_string(), serde_json::Value::String(quad.object.to_string()));
-                            // Quad doesn't have graph_name field in CONSTRUCT results
+                            triple_obj.insert("subject".to_string(), serde_json::Value::String(triple.subject.to_string()));
+                            triple_obj.insert("predicate".to_string(), serde_json::Value::String(triple.predicate.to_string()));
+                            triple_obj.insert("object".to_string(), serde_json::Value::String(triple.object.to_string()));
+                            // CONSTRUCT/DESCRIBE queries return triples, not quads
                             triples.push(serde_json::Value::Object(triple_obj));
                         }
                         Ok(QueryResult {

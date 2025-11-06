@@ -63,21 +63,18 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - Migration guide
 9. **[unrdf Integration Status](unrdf-integration-status.md)** - unrdf integration status
 10. **[unrdf Integration DoD](unrdf-integration-dod.md)** - unrdf DoD validation
-11. **[Weaver Integration](weaver-integration.md)** - Weaver.ai integration
+11. **[Weaver Integration](weaver-integration.md)** - Weaver.ai integration guide
 12. **[Weaver Analysis and Learnings](WEAVER_ANALYSIS_AND_LEARNINGS.md)** - Architectural patterns learned from Weaver
     - Policy engine patterns
     - Schema management patterns
     - Error handling improvements
     - Streaming processing patterns
     - Implementation recommendations
-13. **[Weaver Insights Implementation](WEAVER_INSIGHTS_IMPLEMENTATION.md)** - Implementation summary of Weaver insights
-    - Phase 1: Error diagnostics, policy engine, streaming ingester
-    - Architecture patterns applied
-    - Integration points and next steps
-14. **[Weaver Insights Chicago TDD Validation](WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md)** - Chicago TDD tests for Weaver insights
-    - 31 tests covering error diagnostics, policy engine, ingester pattern
-    - Behavior-focused testing methodology
-    - Test execution and results
+    - See [Weaver Learnings Integration](weaver-learnings-integration-complete.md) for implementation status
+13. **[Weaver Learnings Integration](weaver-learnings-integration-complete.md)** - Integration status and implementation details
+    - Policy engine integration with ETL and AOT
+    - Diagnostics integration
+    - Feature flags and configuration
 
 ### Deployment & Operations
 12. **[Deployment Guide](deployment.md)** - Deployment instructions
@@ -134,9 +131,8 @@ This index provides a comprehensive guide to all current KNHK documentation.
 30. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Documentation status and gaps (all READMEs complete, enhancements applied)
 31. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
 32. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
-33. **[Chicago TDD Complete](chicago-tdd-complete.md)** - Final status report for Chicago TDD verification
-   - Runtime classes and SLOs implementation complete
-   - Compilation fixes applied
+33. **[Chicago TDD Verification Report](chicago-tdd-verification-report.md)** - Chicago TDD verification status
+   - Runtime classes and SLOs implementation
    - Test coverage summary
    - Production-ready status
 34. **[Performance Compliance Report](performance-compliance-report.md)** - 8-tick performance compliance verification
@@ -145,6 +141,7 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - OTEL metrics integration
    - Performance compliance status
    - Failure actions on budget exceeded
+35. **[False Positives Fixed](false-positives-fixed.md)** - Current state of false positives and unfinished work
 
 ## Archived Documentation
 
@@ -156,12 +153,19 @@ Historical and version-specific documentation is archived in `archived/`:
 
 ### Status Reports
 - `archived/status/` - Implementation status reports
-  - Implementation Complete
-  - Conceptual Tests Implemented
-  - Consolidation Complete
-  - Final Status
-  - Code Quality Audit
-  - Chicago TDD Validation
+  - Chicago TDD completion reports
+  - False positives summaries
+  - Capability validation reports
+  - Orchestration final reports
+  - Performance validation reports
+  - Historical status documents
+
+### Weaver Documentation
+- `archived/weaver/` - Weaver learnings implementation summaries
+  - Phase completion reports
+  - Implementation summaries
+  - Chicago TDD validation reports
+  - Historical status documents
 
 ### Planning Documents
 - `archived/planning/` - Project planning documents
@@ -173,6 +177,7 @@ Historical and version-specific documentation is archived in `archived/`:
 ### Analysis & Implementation Details
 - `archived/analysis/` - Analysis documents
 - `archived/implementation-details/` - Detailed implementation docs
+- `archived/implementation/` - Integration analysis and deliverables summaries
 
 ## Book Documentation
 

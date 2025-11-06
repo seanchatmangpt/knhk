@@ -29,21 +29,21 @@ pub fn canonicalize_rdf(turtle_data: &str) -> UnrdfResult<String> {
         .map_err(|e| UnrdfError::InvalidInput(format!("Failed to parse Turtle: {}", e)))?;
     
     // Serialize to N-Quads (canonical form)
-    // Collect quads and convert to N-Quads format
+    // Collect triples from CONSTRUCT query and convert to N-Quads format
     // Note: oxigraph Store doesn't have a direct iterator, we'll use a query approach
-    // For now, use a simple CONSTRUCT query to get all triples
+    // CONSTRUCT queries return triples, which we convert to N-Quads format
     let query = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }";
     let results: QueryResults = store.query(query)
         .map_err(|e| UnrdfError::InvalidInput(format!("Failed to query store: {}", e)))?;
     
     let mut quads: Vec<String> = Vec::new();
-    if let QueryResults::Graph(quads_iter) = results {
-        for quad_result in quads_iter {
-            let quad = quad_result.map_err(|e| UnrdfError::InvalidInput(format!("Failed to get quad: {}", e)))?;
+    if let QueryResults::Graph(triples_iter) = results {
+        for triple_result in triples_iter {
+            let triple = triple_result.map_err(|e| UnrdfError::InvalidInput(format!("Failed to get triple: {}", e)))?;
             let quad_str = format!("{} {} {} .\n",
-                quad.subject.to_string(),
-                quad.predicate.to_string(),
-                quad.object.to_string()
+                triple.subject.to_string(),
+                triple.predicate.to_string(),
+                triple.object.to_string()
             );
             quads.push(quad_str);
         }

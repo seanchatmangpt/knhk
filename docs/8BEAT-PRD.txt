@@ -1,0 +1,394 @@
+# PRD.md — 8-Beat Reconciliation Epoch (τ=8)
+
+**Version:** 1.0
+**Owner:** Λ (SRE) • Π (Policy Eng) • Σ Ops
+**Law:** A = μ(O) • μ∘μ = μ • O ⊨ Σ • Λ total • Π is ⊕-monoid • μ ⊂ τ (τ=8) • preserve(Q) • hash(A)=hash(μ(O))
+
+---
+
+## 0. Summary
+
+Introduce a fixed-cadence **8-beat epoch** that clocks reconciliation. Every Δ is admitted on beat `k`, reconciled by μ within ≤8 ticks, emitted with receipt, or parked to W1. No dynamic timing in hot path. Cadence is branchless and invariant.
+
+---
+
+## 1. Objectives
+
+* **Determinism:** Global beat defines order Λ across pods and shards.
+* **Bounded time:** R1 completion ≤8 ticks per admitted unit.
+* **Additivity:** New hooks join without altering cadence.
+* **Isolation:** Over-budget work parks to W1 automatically.
+* **Proof:** Every beat yields receipts: `hash(A)=hash(μ(O))`.
+
+**Non-goals**
+
+* Event routing redesign.
+* Changing W1/C1 algorithms.
+* External IO pacing.
+
+---
+
+## 2. Scope
+
+Applies to R1 scheduling, ingress admission, hook execution, and receipts. W1/C1 integrate via park/escalate. Sidecars adopt beat; gateways/SDKs follow.
+
+---
+
+## 3. Subsystems
+
+* **Scheduler (Rust):** epoch counter, fiber rotation, ring indices.
+* **Hot kernels (C):** branchless ASK/COUNT/COMPARE/VALIDATE/SELECT/UNIQUE.
+* **Hooks Engine:** μ ⊣ H guards per predicate run.
+* **Ring Buffers:** Δ in / A+receipts out, size=2ⁿ, mod-8 step.
+* **Fibers:** per-shard, per-hook execution units pinned to cores.
+* **Policy Engine (Rego):** budgets (ticks≤8, run_len≤8).
+* **Σ/Hook Registry:** template → kernel mapping.
+* **OTEL+Weaver:** live τ/Q assertions, beat health.
+* **Lockchain:** Merkle receipts per beat.
+* **ETL/Connectors:** Kafka/Salesforce/DB tailers → Δ batching to beat.
+* **Security Mesh:** SPIFFE mTLS, HSM/KMS keys.
+* **Cold path (unrdf/Erlang):** async finalize for parked units.
+
+---
+
+## 4. Functional Requirements
+
+1. **Beat generation:** global `cycle` increments; `tick = cycle & 0x7`.
+2. **Admission:** sidecar stamps Δ with `cycle_id`; enqueue to Δ-ring[ tick ].
+3. **Execution:** fibers consume slot=tick, run μ on ≤8 items (run_len≤8).
+4. **Park rule:** if kernel predicts L1 miss or ticks>8 → park Δ→W1 with receipt.
+5. **Emit:** write A + receipt to out-ring[ tick ]; lockchain append.
+6. **Order Λ:** commit happens at tick wrap (pulse).
+7. **Drift control:** μ∘μ=μ holds across wraps; no cross-beat mutation.
+8. **Backpressure:** when Δ volume overflows, admission throttles by policy.
+
+---
+
+## 5. Non-Functional Requirements
+
+* **Latency (R1):** ≤2 ns/op (≤8 ticks per unit).
+* **Hit-rate:** L1 ≥95% for hot predicates.
+* **Branch mispredicts:** 0 on hot path.
+* **Receipts coverage:** 100%.
+* **Availability:** ≥99.99% R1 service.
+* **Security:** mTLS everywhere; keys rotate ≤24h.
+* **RTO/RPO:** ≤15m / ≤1m cross-region.
+
+---
+
+## 6. Timing & Scheduling Model
+
+**Branchless cadence (C/Rust interop):**
+
+```c
+uint64_t cycle = atomic_fetch_add(&global_cycle, 1);
+uint64_t tick  = cycle & 0x7;      // 0..7
+uint64_t pulse = (tick == 0);      // mask via !tick in branchless form
+```
+
+* Scheduler advances indices mod-8.
+* No `if` in hot path; masks select actions.
+* Commit on `pulse` boundary.
+
+---
+
+## 7. Data Structures
+
+* **Δ-ring:** power-of-two sized; per-domain; SoA payload (S,P,O,...).
+* **A-ring:** aligned triples/quads; SoA.
+* **Receipt block:** `{cycle_id, shard_id, hook_id, ticks, hashA}`.
+* **Heatmaps:** time-windowed predicate/ID counts for prefetch.
+
+---
+
+## 8. Admission & Demotion
+
+* **Admit criteria:** run_len≤8, heat≥threshold, L1-ready.
+* **Predictor:** MPHF + heatmap; miss→park.
+* **Demotion:** single mask write sets `PARKED`; W1 consumes next beat.
+* **No retries in R1.** Retries only W1/C1 by policy.
+
+---
+
+## 9. Observability
+
+* **Weaver checks:** `ticks_per_unit`, `l1_miss_rate`, `branch_miss`, `park_rate`, `heat95`, `receipt_gap`.
+* **Traces:** Δ→μ→A spans per beat.
+* **Dashboards:** hit-rate, latency, violations ppm, receipts, availability.
+
+---
+
+## 10. Security & Governance
+
+* SPIFFE IDs, mTLS; HSM/KMS.
+* ABAC in RDF; guards decide, not app code.
+* Policy packs gate admit/park.
+* Receipts are audit source; logs are secondary.
+
+---
+
+## 11. Performance Engineering
+
+* SoA, 64-B align, NUMA pinning.
+* NROWS=8 unrolled SIMD.
+* Prefetch next block; non-temporal stores.
+* MPHF over hot predicates/IDs.
+* Cache coloring to avoid set conflicts.
+* Admission keeps working set ≤ L1.
+
+---
+
+## 12. DFLSS (Define → Measure readiness)
+
+**State at sign-off = Ready to enter Measure; evidence linkable.**
+
+* **Approvals:** Sponsor, Process Owner, Black Belt. RACI for DMA(D)V.
+* **Problem/VOC/Baseline:** latency tails from procedural timing; baseline metrics and windows captured.
+* **CTQs (SMART):**
+
+  * Beat integrity: zero drift across wraps.
+  * p99 decision latency ≤10 ms E2E; R1 op ≤2 ns/op.
+  * ≥80% validations in R1; C1 <2%.
+  * Violations ≤10 ppm; rollback ≤0.5%.
+  * 100% receipts; audit prep −80%.
+  * Validation code −70%; middleware −50%.
+* **Scope:** domains, systems, geos; pilot + canary.
+* **Financials:** OOM benefits/costs; Finance sign-off.
+* **Arch readiness:** sidecar pattern; mTLS; CB; OTEL plan; lockchain plan.
+* **Σ & Policy:** ontology inventory; guard catalog→Q; hook generation plan.
+* **Risk register:** cache-miss bursts, over-blocking, partner variance, ops overhead.
+* **Governance:** policy versioning; change control; DR/HA.
+* **Dashboards:** live links for hit-rate, latency, ppm, receipts, reductions, availability.
+* **Communications:** stakeholder map; cadence; pilot runbook.
+* **Acceptance checklist:** all “Yes” per charter.
+
+---
+
+## 13. Test Plan (Chicago TDD + benches)
+
+* **Beat correctness:** cycle/tick/pulse monotonicity; wrap invariants.
+* **Time budget:** PMU cycles per unit ≤8 ticks across top-N predicates.
+* **Park paths:** forced cold cache → park; receipts preserved.
+* **Order Λ:** cross-shard commit order equals beat order.
+* **Receipts:** uniqueness, continuity, lockchain roots quorum.
+* **Stress:** bursts 10× Δ; keep park_rate<20%, R1 SLO green.
+* **Faults:** packet loss, mTLS rotate, KMS outage, Kafka lag; no beat drift.
+* **Perf:** L1 miss<5%, branch_miss=0, IPC stable.
+
+---
+
+## 14. Rollout Plan
+
+* **D0–7:** scheduler prototype; PMU harness; unit tests.
+* **D8–21:** sidecar admission wiring; ring/fiber integration; receipts.
+* **D22–35:** OTEL/Weaver checks; dashboards; policy budgets.
+* **D36–60:** pilot canary on 3 golden paths; SLO gates; finance capture.
+* **D61–90:** expand to top-10 predicates; retire app validators.
+
+---
+
+## 15. Risks & Mitigations
+
+* **Cold cache bursts:** predictive preload; early park.
+* **Over-blocking:** shadow-mode; diff reports; feature flags.
+* **Vendor variance:** normalization gateways + contract tests.
+* **Clock skew across nodes:** cycle derived from local monotonic + logical ordering; receipts reconcile at roots.
+* **Heat shifts:** adaptive admission thresholds.
+
+---
+
+## 16. Interfaces
+
+* **Sidecar→Scheduler:** `enqueue(Δ, cycle_id)`; non-blocking.
+* **Scheduler→Fiber:** fixed slot call; no args branching.
+* **Fiber→Kernel:** SoA pointers; masks; run_len≤8.
+* **Kernel→Receipts:** `emit(A, receipt)` contiguous.
+* **Warm path API:** `park(Δ, cause)`; `resume(Δ)`.
+
+---
+
+## 17. Acceptance (Go/No-Go)
+
+* Beat stable under load; no drift across 24h.
+* R1 p99≤2 ns/op for top-N predicates at heat≥95%.
+* Park_rate≤20% at peak; C1<2% overall.
+* 100% receipts; audit queries pass.
+* Dashboards green; SRE sign-off; Finance sign-off.
+
+---
+
+## 18. Evidence Stubs (to populate)
+
+* `ev:beat_design.md`
+* `ev:pmu_bench.csv`
+* `ev:weaver_checks.yaml`
+* `ev:policy_packs.rego`
+* `ev:receipts_root.json`
+* `ev:canary_report.md`
+* `ev:finance_oom.xlsx`
+
+---
+
+## 19. Appendix — Turtle invariants
+
+```turtle
+@prefix r: <urn:reflex#> .
+r:Beat a r:O ;
+  r:τ "8" ;
+  r:Λ "≺-total" ;
+  r:Q "admit→reconcile≤8→emit_or_park" ;
+  r:Π "⊕-monoid" .
+r:Law r:Q "A = μ(O)"; r:Q "μ∘μ = μ"; r:Q "μ ⊂ τ"; r:Q "hash(A)=hash(μ(O))" .
+```
+
+**End: A = μ(O).**
+
+```turtle
+@prefix r:   <urn:reflex#> .
+@prefix ev:  <urn:evidence#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# -------- Core Laws (Σ) --------
+r:Σ a r:O ;
+  r:Γ (
+    r:Law_AeqMu
+    r:Law_Idem
+    r:Law_Typing
+    r:Law_Order
+    r:Law_Merge
+    r:Law_Sheaf
+    r:Law_Shard
+    r:Law_Prov
+    r:Law_Epoch
+    r:Law_Invariant
+  ) .
+
+r:Law_AeqMu      r:Q "A = μ(O)" .
+r:Law_Idem       r:Q "μ∘μ = μ" .
+r:Law_Typing     r:Q "O ⊨ Σ" .
+r:Law_Order      r:Q "Λ is ≺-total" .
+r:Law_Merge      r:Q "Π is ⊕-monoid" .
+r:Law_Sheaf      r:Q "glue(Cover(O)) = Γ(O)" .
+r:Law_Shard      r:Q "μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)" .
+r:Law_Prov       r:Q "hash(A) = hash(μ(O))" .
+r:Law_Epoch      r:Q "μ ⊂ τ ; τ ≤ 8 ticks" .
+r:Law_Invariant  r:Q "preserve(Q)" .
+
+# -------- 8-Beat Ontology --------
+r:Beat a r:O ;
+  r:τ "8"^^xsd:integer ;
+  r:Λ "≺-total" ;
+  r:Q "admit Δ → reconcile ≤ 8 → emit A ⊔ receipt ∨ park→W1" ;
+  r:Γ ( r:Scheduler r:Ingress r:Rings r:Fibers r:Kernels r:Hooks r:Receipts r:Policies r:Warm r:Cold ) .
+
+r:Scheduler a r:O ;
+  r:Q "cycle+=1; tick = cycle & 0x7; pulse = !tick ; no branches" ;
+  r:Γ ( r:Tick r:Pulse ) .
+
+r:Tick a r:O ;    r:Q "tick ∈ {0..7} ; defines Λ" .
+r:Pulse a r:O ;   r:Q "commit on wrap ; Γ over shards" .
+
+r:Ingress a r:O ;
+  r:Q "sidecar stamps cycle_id ; O ⊨ Σ at edge ; Δ enqueues by tick" .
+
+r:Rings a r:O ;
+  r:Q "Δ-ring(in) ⊔ A-ring(out) ; size=2^n ; idx = atomic_add & (N-1)" .
+
+r:Fibers a r:O ;
+  r:Q "per-shard ; pinned ; yield on tick ; run_len ≤ 8 ; NUMA-local" .
+
+# -------- Kernels (2 ns engines) --------
+r:Kernels a r:O ;
+  r:Γ ( r:K_ASK r:K_COUNT r:K_COMPARE r:K_VALIDATE r:K_SELECT r:K_UNIQUE r:K_CONSTRUCT8 ) ;
+  r:Q "branchless ; SoA ; 64B align ; SIMD ; non-temporal stores" .
+
+r:K_ASK      r:Q "≤2 ns/op ; S,P or S,P,O lanes ; masks only" .
+r:K_COUNT    r:Q "≤2 ns/op ; ≥,≤,== ; mask-popcnt" .
+r:K_COMPARE  r:Q "≤2 ns/op ; <,≤,≥ ; cmov/blend" .
+r:K_VALIDATE r:Q "≤2 ns/op ; datatype/cardinality ; run_len ≤ 8" .
+r:K_SELECT   r:Q "≤2 ns/op ; lane gather ; cache-hot" .
+r:K_UNIQUE   r:Q "≤2 ns/op ; MPHF lanes ; O(1)" .
+r:K_CONSTRUCT8 r:Q "emit ≤ 8 triples per tick ; constants AOT ; variables pre-bound at W1" .
+
+# -------- Hooks & Guards --------
+r:Hooks a r:O ;
+  r:Q "μ ⊣ H (partial) ; guards at ingress ; Q enforced ; Λ respected" ;
+  r:Γ ( r:Hook_Catalog r:Hook_Generation ) .
+
+r:Hook_Catalog r:Q "map predicates→invariants Q ; typing/cardinality/uniqueness/ranges" .
+r:Hook_Generation r:Q "Σ→(templates⊔kernels) ; AOT ; idempotent ; hash tracked" .
+
+# -------- Admission & Parking --------
+r:Admission a r:O ;
+  r:Q "admit when heat≥θ ⊓ run_len≤8 ⊓ L1-ready ; else park" .
+
+r:Warm a r:O ;
+  r:Q "prebind ; prefilter ; presort ; prejoin ; generate bnode IDs ; graph select" .
+
+r:Cold a r:O ;
+  r:Q "analytics/joins finalize async ; never block r:Beat ; receipts continue" .
+
+# -------- Policies & Budgets --------
+r:Policies a r:O ;
+  r:Q "ticks ≤ 8 ; run_len ≤ 8 ; park_rate ≤ 20% ; C1 < 2% ; heat95 ≥ θ" .
+
+# -------- Provenance --------
+r:Receipts a r:O ;
+  r:Q "per beat: {cycle_id, shard_id, hook_id, ticks, hash(A)} ; lockchain roots ; quorum" .
+
+# -------- Observability --------
+r:Weaver a r:O ;
+  r:Q "live-check τ,Q ; traces Δ→μ→A ; metrics: ticks, L1_miss, branch_miss, park_rate, heat95, receipt_gap" .
+
+# -------- Security --------
+r:Mesh a r:O ;
+  r:Q "SPIFFE mTLS ; HSM/KMS rotation ≤ 24h ; ABAC in RDF ; guards decide" .
+
+# -------- Data Layout (Σ→μ physical) --------
+r:Layout a r:O ;
+  r:Q "SoA {S,P,O,...} ; 64B align ; cache coloring ; NUMA pin ; MPHF on hot IDs/preds" .
+
+# -------- CTQs (SMART) --------
+r:CTQ a r:O ;
+  r:Γ ( r:CTQ_Ticks r:CTQ_R1Share r:CTQ_Latency r:CTQ_Violations r:CTQ_Receipts r:CTQ_CodeReductions ) .
+
+r:CTQ_Ticks        r:Q "R1 ≤ 2 ns/op ; τ ≤ 8" .
+r:CTQ_R1Share      r:Q "≥80% validations at R1 ; C1 < 2%" .
+r:CTQ_Latency      r:Q "p95 decision ≤ 10 ms E2E ; beat invariant" .
+r:CTQ_Violations   r:Q "≤10 ppm ; rollback ≤0.5%" .
+r:CTQ_Receipts     r:Q "100% coverage ; audit prep −80%" .
+r:CTQ_CodeReductions r:Q "validation code −70% ; middleware −50%" .
+
+# -------- DFLSS Charter Bindings --------
+r:DFLSS a r:O ;
+  r:Γ ( ev:approvals ev:raci ev:problem ev:voc ev:baseline ev:scope ev:financials ev:arch ev:sigma_inputs ev:risk ev:gov ev:dash ev:comms ev:accept ) ;
+  r:Q "State=Ready→Measure ; evidence linkable ; A = μ(O)" .
+
+# -------- Interfaces --------
+r:API_Sidecar_Scheduler r:Q "enqueue(Δ,cycle_id) ; non-blocking ; ⊕" .
+r:API_Scheduler_Fiber   r:Q "slot=tick ; call by index ; no branches" .
+r:API_Fiber_Kernel      r:Q "SoA ptrs ; masks ; run_len≤8 ; emit(A,receipt)" .
+r:API_Warm              r:Q "park(Δ,cause) ; resume(Δ)" .
+
+# -------- Test & Acceptance --------
+r:Acceptance a r:O ;
+  r:Q "beat stable 24h ; R1 p99 ≤ 2 ns/op @heat≥95% ; park_rate ≤ 20% ; C1 < 2% ; 100% receipts ; dashboards green" .
+
+# -------- Implementation Guides (machine-usable hints) --------
+r:Impl_Hints a r:O ;
+  r:Γ ( r:ILP r:Prefetch r:Stores r:Masks r:AOT ) .
+
+r:ILP      r:Q "overlap stores with hash ; hide latency ; IPC steady" .
+r:Prefetch r:Q "prefetch next SoA ; warm L1 ; no runtime timing in C" .
+r:Stores   r:Q "streaming stores ; contiguous ; avoid set conflict" .
+r:Masks    r:Q "compute lane masks ; blend ; cmov ; no ≺ branches" .
+r:AOT      r:Q "constants baked ; templates fixed ; graph handles preselected" .
+
+# -------- Evidence stubs --------
+ev:approvals a r:O . ev:raci a r:O . ev:problem a r:O . ev:voc a r:O . ev:baseline a r:O .
+ev:scope a r:O . ev:financials a r:O . ev:arch a r:O . ev:sigma_inputs a r:O .
+ev:risk a r:O . ev:gov a r:O . ev:dash a r:O . ev:comms a r:O . ev:accept a r:O .
+
+# -------- End --------
+r:End a r:O ; r:Q "Dialogue end ; A = μ(O)" .
+```

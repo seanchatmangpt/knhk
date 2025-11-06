@@ -1,103 +1,46 @@
-# Reflex Enterprise™ - Complete Documentation Index
+# KNHK Documentation
 
-## Overview
+**Last Updated**: December 2024  
+**Focus**: 80/20 principle - critical documentation providing maximum value
 
-This documentation suite covers the complete implementation of Reflex Enterprise™, a 2-ns law-driven compute fabric built on the KNHK kernel, with comprehensive Weaver live-check integration for telemetry validation.
+## Quick Start
 
-## Core Documentation
+1. **[QUICK_START.md](QUICK_START.md)** - 5-minute setup guide
+2. **[architecture.md](architecture.md)** - System architecture overview
+3. **[api.md](api.md)** - Complete API reference
 
-### 1. [Fortune-5 Blueprint](./reflex-enterprise-blueprint-fortune5.md)
-**Enterprise-grade architecture blueprint**
+## Essential Documentation
 
-- 20-section comprehensive blueprint
-- Multi-region zero-trust architecture
-- Performance engineering at scale
-- Enterprise bill of materials
-- Acceptance criteria
+### Getting Started
+- **[QUICK_START.md](QUICK_START.md)** - Quick setup and first steps
+- **[architecture.md](architecture.md)** - Three-tier architecture (Hot/Warm/Cold paths)
+- **[api.md](api.md)** - C, Rust, and Erlang API documentation
 
-### 2. [Definition of Done](./reflex-enterprise-dod.md)
-**Acceptance criteria for Define phase**
+### Core Reference
+- **[integration-guide.md](integration-guide.md)** - Integration examples and patterns
+- **[v1.0-unrdf-integration-plan.md](v1.0-unrdf-integration-plan.md)** - unrdf integration roadmap
+- **[lockchain-unrdf-compatibility-check.md](lockchain-unrdf-compatibility-check.md)** - Lockchain compatibility analysis
 
-- Complete checklist for entering Measure phase
-- Evidence requirements and links
-- Sign-off process
-- KGC invariants verification
+### Implementation & Patterns
+- **[WEAVER_ANALYSIS_AND_LEARNINGS.md](WEAVER_ANALYSIS_AND_LEARNINGS.md)** - Architectural patterns from Weaver
+- **[WEAVER_IMPLEMENTATION_PLAN.md](WEAVER_IMPLEMENTATION_PLAN.md)** - Active Weaver insights implementation
+- **[weaver-integration.md](weaver-integration.md)** - Weaver integration guide
 
-### 3. [DFLSS Project Charter](./reflex-enterprise-dflss-charter.md)
-**DMADV methodology for Reflex Enterprise rollout**
+### Project Management
+- **[FALSE_POSITIVES_AND_UNFINISHED_WORK.md](FALSE_POSITIVES_AND_UNFINISHED_WORK.md)** - Known issues and unfinished work
+- **[DEFINITION_OF_DONE.md](DEFINITION_OF_DONE.md)** - Acceptance criteria
+- **[DOCUMENTATION_GAPS.md](DOCUMENTATION_GAPS.md)** - Documentation status
 
-- Project charter and scope
-- CTQ definitions and targets
-- DMADV phase plan
-- Risk register and mitigations
-- Governance structure
+## Archived Documentation
 
-### 4. [DMADV Phase Tracking](./reflex-enterprise-dmadv-tracking.md)
-**Progress tracking through DMADV phases**
+Historical documentation, validation reports, and status updates have been archived. See **[ARCHIVE_INDEX.md](ARCHIVE_INDEX.md)** for details.
 
-- Phase status and deliverables
-- CTQ dashboard and metrics
-- Risk register
-- Governance and tollgate sign-offs
+## Documentation Organization
 
-### 5. [Metrics Dashboard Specification](./reflex-enterprise-metrics-dashboard.md)
-**Comprehensive metrics and dashboard design**
-
-- CTQ metrics definitions
-- Prometheus queries
-- Grafana dashboard JSON
-- Alert rules
-- Weaver live-check integration
-
-### 6. [Press Release](./reflex-enterprise-press-release.md)
-**Reflex Enterprise™ launches: a 2-ns, law-driven compute fabric**
-
-- Product announcement and positioning
-- Customer outcomes and value proposition
-- PR-FAQ addressing common questions
-- Key metrics and goals
-
-### 7. [Weaver Live-Check Integration](./reflex-enterprise-weaver-integration.md)
-**Telemetry validation for Reflex Enterprise**
-
-- Architecture integration diagrams
-- Reflex map validation workflow
-- Hot/warm/cold path telemetry semantics
-- Semantic convention compliance rules
-- Integration with Reflex Enterprise tenets
-- CI/CD and production monitoring
-
-### 8. [Weaver Live-Check Diagrams](./weaver-live-check-diagrams.md)
-**Comprehensive visual documentation**
-
-- Architecture diagram
-- Live-check workflow sequence diagram
-- Component interaction diagram
-- Data flow diagram
-- State machine diagram
-- Integration points diagram
-- Validation process diagram
-- Error handling flow diagram
-- CI/CD integration diagram
-
-### 9. [Weaver Implementation Summary](./weaver-implementation-summary.md)
-**Implementation details and usage**
-
-- Implementation features
-- Usage examples
-- Testing information
-- Next steps
-
-### 10. [OTEL/Weaver Integration Summary](./otel-weaver-integration-summary.md)
-**OpenTelemetry integration details**
-
-- OTEL setup and configuration
-- Tracing integration
-- Metrics recording
-- Weaver live-check commands
-
-### 11. [Chicago TDD Weaver Tests](./chicago-tdd-weaver-tests.md)
-**Test methodology and coverage**
+This documentation follows the 80/20 principle:
+- **20% critical docs** providing **80% of value**
+- Historical and validation reports archived
+- Focus on actionable, current information
 
 - Chicago TDD testing approach
 - Test suite documentation
