@@ -74,6 +74,10 @@ This index provides a comprehensive guide to all current KNHK documentation.
     - Phase 1: Error diagnostics, policy engine, streaming ingester
     - Architecture patterns applied
     - Integration points and next steps
+14. **[Weaver Insights Chicago TDD Validation](WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md)** - Chicago TDD tests for Weaver insights
+    - 31 tests covering error diagnostics, policy engine, ingester pattern
+    - Behavior-focused testing methodology
+    - Test execution and results
 
 ### Deployment & Operations
 12. **[Deployment Guide](deployment.md)** - Deployment instructions

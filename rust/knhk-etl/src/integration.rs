@@ -66,44 +66,41 @@ impl IntegratedPipeline {
         
         // Record OTEL metrics using proper API
         let metrics_recorded = {
-            #[cfg(feature = "knhk-otel")]
-            {
-                use knhk_otel::{Tracer, Metric, MetricValue, MetricsHelper};
-                use std::time::{SystemTime, UNIX_EPOCH};
+            use knhk_otel::{Tracer, Metric, MetricValue, MetricsHelper};
+            use std::time::{SystemTime, UNIX_EPOCH};
 
-                let mut tracer = Tracer::new();
-                
-                // Record pipeline execution metrics using MetricsHelper
-                MetricsHelper::record_connector_throughput(&mut tracer, "pipeline", result.actions_sent);
-                
-                // Record receipt generation
-                if result.receipts_written > 0 {
-                    MetricsHelper::record_receipt(&mut tracer, &format!("pipeline_batch_{}", result.receipts_written));
-                }
-                
-                // Record lockchain writes
-                let timestamp_ms = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_millis() as u64)
-                    .unwrap_or(0);
-                
-                for hash in &result.lockchain_hashes {
-                    let metric = Metric {
-                        name: "knhk.lockchain.entry".to_string(),
-                        value: MetricValue::Counter(1),
-                        timestamp_ms,
-                        attributes: {
-                            let mut attrs = alloc::collections::BTreeMap::new();
-                            attrs.insert("hash".to_string(), hash.clone());
-                            attrs
-                        },
-                    };
-                    tracer.record_metric(metric);
-                }
-                
-                tracer.metrics().len()
+            let mut tracer = Tracer::new();
+            
+            // Record pipeline execution metrics using MetricsHelper
+            MetricsHelper::record_connector_throughput(&mut tracer, "pipeline", result.actions_sent);
+            
+            // Record receipt generation
+            if result.receipts_written > 0 {
+                MetricsHelper::record_receipt(&mut tracer, &format!("pipeline_batch_{}", result.receipts_written));
             }
-            {
+            
+            // Record lockchain writes
+            let timestamp_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            
+            for hash in &result.lockchain_hashes {
+                let metric = Metric {
+                    name: "knhk.lockchain.entry".to_string(),
+                    value: MetricValue::Counter(1),
+                    timestamp_ms,
+                    attributes: {
+                        let mut attrs = alloc::collections::BTreeMap::new();
+                        attrs.insert("hash".to_string(), hash.clone());
+                        attrs
+                    },
+                };
+                tracer.record_metric(metric);
+            }
+            
+            tracer.metrics().len()
+        };
                 0
             }
         };

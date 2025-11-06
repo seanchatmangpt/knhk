@@ -186,14 +186,9 @@ pub fn create_tls_client_config(config: &TlsConfig) -> SidecarResult<tonic::tran
             let ca = tonic::transport::Certificate::from_pem(ca_cert);
             client_config = client_config.ca_certificate(ca);
         }
-    } else {
-        // Use system root certificates
-        client_config = client_config.ca_certificate(
-            tonic::transport::Certificate::from_pem(
-                include_bytes!("../../certs/ca.pem").as_slice()
-            )
-        );
     }
+    // When mTLS is not enabled, tonic uses system root certificates by default
+    // No need to explicitly load CA certificate
 
     Ok(client_config)
 }

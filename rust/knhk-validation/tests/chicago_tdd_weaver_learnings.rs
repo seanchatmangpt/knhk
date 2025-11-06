@@ -5,12 +5,14 @@
 #[cfg(test)]
 mod tests {
     use knhk_validation::policy_engine::{PolicyEngine, PolicyViolation, ViolationLevel};
+    #[cfg(feature = "diagnostics")]
     use knhk_validation::diagnostics::{
         DiagnosticMessage, DiagnosticMessages, DiagnosticSeverity, DiagnosticLocation,
         DiagnosticFormat,
     };
+    #[cfg(feature = "schema-resolution")]
     use knhk_validation::resolved_schema::{
-        ResolvedRdfSchema, SchemaVersion, SchemaDependency, SchemaCatalog,
+        ResolvedRdfSchema, SchemaVersion, SchemaCatalog,
     };
 
     // ============================================================================
@@ -164,6 +166,7 @@ mod tests {
 
     /// Test: Diagnostic message creation with correct severity
     /// Chicago TDD: Verify state (message structure) not implementation
+    #[cfg(feature = "diagnostics")]
     #[test]
     fn test_diagnostic_message_creation() {
         // Act: Create diagnostic message
@@ -183,6 +186,7 @@ mod tests {
 
     /// Test: Diagnostic message with location
     /// Chicago TDD: Verify state (location set correctly) not implementation
+    #[cfg(feature = "diagnostics")]
     #[test]
     fn test_diagnostic_message_with_location() {
         // Act: Create diagnostic with location
@@ -207,6 +211,7 @@ mod tests {
 
     /// Test: Diagnostic message with context
     /// Chicago TDD: Verify state (context added) not implementation
+    #[cfg(feature = "diagnostics")]
     #[test]
     fn test_diagnostic_message_with_context() {
         // Act: Create diagnostic with context
@@ -225,6 +230,7 @@ mod tests {
 
     /// Test: Diagnostic messages collection counts correctly
     /// Chicago TDD: Verify state (counts are correct) not implementation
+    #[cfg(feature = "diagnostics")]
     #[test]
     fn test_diagnostic_messages_collection() {
         let mut diags = DiagnosticMessages::new();
@@ -257,6 +263,7 @@ mod tests {
 
     /// Test: Diagnostic messages JSON serialization
     /// Chicago TDD: Verify output (JSON format) not implementation
+    #[cfg(feature = "diagnostics")]
     #[test]
     fn test_diagnostic_messages_json() {
         let mut diags = DiagnosticMessages::new();
@@ -277,6 +284,7 @@ mod tests {
 
     /// Test: Diagnostic format options work correctly
     /// Chicago TDD: Verify output (format) not implementation
+    #[cfg(feature = "diagnostics")]
     #[test]
     fn test_diagnostic_format_options() {
         let mut diags = DiagnosticMessages::new();
@@ -308,6 +316,7 @@ mod tests {
 
     /// Test: Schema version parsing and formatting
     /// Chicago TDD: Verify state (version structure) not implementation
+    #[cfg(feature = "schema-resolution")]
     #[test]
     fn test_schema_version() {
         // Act: Create and parse version
@@ -324,6 +333,7 @@ mod tests {
 
     /// Test: Resolved schema creation and metadata
     /// Chicago TDD: Verify state (schema structure) not implementation
+    #[cfg(feature = "schema-resolution")]
     #[test]
     fn test_resolved_schema_creation() {
         // Act: Create resolved schema
@@ -344,6 +354,7 @@ mod tests {
 
     /// Test: Schema compatibility checking
     /// Chicago TDD: Verify state (compatibility result) not implementation
+    #[cfg(feature = "schema-resolution")]
     #[test]
     fn test_schema_compatibility() {
         // Act: Create schema and check compatibility
@@ -362,6 +373,7 @@ mod tests {
 
     /// Test: Schema identifier generation
     /// Chicago TDD: Verify output (identifier format) not implementation
+    #[cfg(feature = "schema-resolution")]
     #[test]
     fn test_schema_identifier() {
         // Act: Create schema and get identifier
@@ -378,6 +390,7 @@ mod tests {
 
     /// Test: Schema catalog operations
     /// Chicago TDD: Verify state (catalog state) not implementation
+    #[cfg(feature = "schema-resolution")]
     #[test]
     fn test_schema_catalog() {
         // Act: Create catalog and add entries
@@ -396,6 +409,7 @@ mod tests {
 
     /// Test: Schema resolution result success
     /// Chicago TDD: Verify state (resolution result) not implementation
+    #[cfg(feature = "schema-resolution")]
     #[test]
     fn test_schema_resolution_success() {
         // Act: Create successful resolution result
@@ -422,6 +436,7 @@ mod tests {
 
     /// Test: Policy violations produce diagnostics
     /// Chicago TDD: Verify behavior (integration) not implementation
+    #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
     #[test]
     fn test_policy_violation_to_diagnostic() {
         let engine = PolicyEngine::new();
@@ -444,6 +459,7 @@ mod tests {
 
     /// Test: Complete validation workflow
     /// Chicago TDD: Verify behavior (end-to-end) not implementation
+    #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
     #[test]
     fn test_complete_validation_workflow() {
         let engine = PolicyEngine::new();

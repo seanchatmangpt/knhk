@@ -11,12 +11,9 @@ knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = [
   "std",
 ] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
-knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = [
-  "std",
-], optional = true }
-knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = [
-  "std",
-], optional = true }
+knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = ["std"], optional = true }
+knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = ["std"], optional = true }
+knhk-validation = { path = "../knhk-validation", version = "0.1.0", features = ["policy-engine", "diagnostics"], optional = true }
 hashbrown = { version = "0.15", default-features = false }
 hex = { version = "0.4", default-features = false }
 oxigraph = { version = "0.5", default-features = false }
@@ -25,12 +22,12 @@ serde_json = { version = "1.0" }
 rdkafka = { version = "0.36", optional = true }
 
 [features]
-default = ["std", "knhk-lockchain", "knhk-otel"]
+default = ["std", "knhk-otel", "knhk-lockchain"]
 std = ["dep:reqwest"]
 grpc = []
 kafka = ["dep:rdkafka"]
-knhk-lockchain = ["dep:knhk-lockchain"]
 knhk-otel = ["dep:knhk-otel"]
+knhk-lockchain = ["dep:knhk-lockchain"]
 [dev-dependencies]
 # Test dependencies
 knhk-unrdf = { path = "../knhk-unrdf" }

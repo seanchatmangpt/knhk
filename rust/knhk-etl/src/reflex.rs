@@ -302,20 +302,8 @@ impl ReflexStage {
 
     /// Generate OTEL-compatible span ID (deterministic in no_std mode)
     fn generate_span_id() -> u64 {
-        #[cfg(feature = "knhk-otel")]
-        {
-            use knhk_otel::generate_span_id;
-            generate_span_id()
-        }
-        #[cfg(not(feature = "knhk-otel"))]
-        {
-            // Fallback: use timestamp-based span ID
-            use std::time::{SystemTime, UNIX_EPOCH};
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_nanos() as u64)
-                .unwrap_or(0)
-        }
+        use knhk_otel::generate_span_id;
+        generate_span_id()
     }
     
     /// Generate deterministic span ID from SoA data (no_std fallback)

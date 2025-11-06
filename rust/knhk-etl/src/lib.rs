@@ -5,16 +5,16 @@
 extern crate alloc;
 extern crate std;
 
-// Silence unused crate warnings (proper feature gating)
-// Note: These crates are always available when features are enabled
-#[cfg(feature = "knhk-otel")]
+// All dependencies always available
 use knhk_otel as _;
-#[cfg(feature = "knhk-lockchain")]
 use knhk_lockchain as _;
 
 // Module declarations
 pub mod types;
 pub mod error;
+
+#[cfg(feature = "std")]
+pub mod diagnostics;
 pub mod ingest;
 pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod transform;
@@ -38,6 +38,7 @@ pub use reflex::{ReflexStage, ReflexResult, Action, Receipt};
 pub use reflex_map::{ReflexMap, ReflexMapResult};
 pub use emit::{EmitStage, EmitResult};
 pub use pipeline::Pipeline;
+pub use ingester::{Ingester, StreamingIngester, FileIngester, StdinIngester, DataFormat, StreamingHandle};
 
 pub mod integration;
 

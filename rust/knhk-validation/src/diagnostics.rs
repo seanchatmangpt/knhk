@@ -1,273 +1,301 @@
 // rust/knhk-validation/src/diagnostics.rs
-// Diagnostic System - Inspired by Weaver's diagnostic architecture
-// Structured diagnostics with rich context and multiple output formats
+// Structured Diagnostics System (inspired by Weaver)
+// Provides rich error context, OTEL integration, and JSON output for CI/CD
 
-use alloc::string::String;
+#![cfg(feature = "diagnostics")]
+
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
-use serde::{Deserialize, Serialize};
 
-/// Diagnostic severity level
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DiagnosticSeverity {
-    /// Information - useful context
-    Info,
-    /// Warning - potential issue
-    Warning,
-    /// Error - validation failure
-    Error,
-    /// Fatal - unrecoverable error
-    Fatal,
-}
+#[cfg(feature = "diagnostics")]
+use miette::{Diagnostic, SourceSpan};
 
 /// Diagnostic message with rich context
-/// Inspired by Weaver's DiagnosticMessage
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct DiagnosticMessage {
-    /// Severity level
-    pub severity: DiagnosticSeverity,
-    /// Message code (e.g., "E001", "W042")
+    /// Error code (e.g., "E001", "GUARD_VIOLATION")
     pub code: String,
     /// Human-readable message
     pub message: String,
-    /// Source location (file, line, column)
-    pub location: Option<DiagnosticLocation>,
-    /// Additional context
+    /// Severity level
+    pub severity: Severity,
+    /// Additional context (key-value pairs)
     pub context: BTreeMap<String, String>,
+    /// OTEL span ID for tracing
+    pub span_id: Option<String>,
+    /// Source location (file:line:column)
+    pub source_location: Option<SourceLocation>,
     /// Related diagnostics
     pub related: Vec<DiagnosticMessage>,
 }
 
-/// Source location for diagnostics
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiagnosticLocation {
-    /// File path
+/// Severity level for diagnostics
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Severity {
+    /// Information - useful context without action needed
+    Info,
+    /// Warning - something that should be addressed but doesn't break functionality
+    Warning,
+    /// Error - something that breaks functionality
+    Error,
+    /// Critical - system-level failure
+    Critical,
+}
+
+/// Source location information
+#[derive(Debug, Clone)]
+pub struct SourceLocation {
     pub file: String,
-    /// Line number (1-based)
-    pub line: Option<u32>,
-    /// Column number (1-based)
-    pub column: Option<u32>,
+    pub line: u32,
+    pub column: u32,
 }
 
 impl DiagnosticMessage {
-    /// Create a new diagnostic message
-    pub fn new(severity: DiagnosticSeverity, code: String, message: String) -> Self {
+    pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
-            severity,
-            code,
-            message,
-            location: None,
+            code: code.into(),
+            message: message.into(),
+            severity: Severity::Error,
             context: BTreeMap::new(),
+            span_id: None,
+            source_location: None,
             related: Vec::new(),
         }
     }
     
-    /// Add source location
-    pub fn with_location(mut self, location: DiagnosticLocation) -> Self {
-        self.location = Some(location);
+    pub fn with_severity(mut self, severity: Severity) -> Self {
+        self.severity = severity;
         self
     }
     
-    /// Add context key-value pair
-    pub fn with_context(mut self, key: String, value: String) -> Self {
-        self.context.insert(key, value);
+    pub fn with_context(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.context.insert(key.into(), value.into());
         self
     }
     
-    /// Add related diagnostic
+    pub fn with_span_id(mut self, span_id: impl Into<String>) -> Self {
+        self.span_id = Some(span_id.into());
+        self
+    }
+    
+    pub fn with_source_location(mut self, file: impl Into<String>, line: u32, column: u32) -> Self {
+        self.source_location = Some(SourceLocation {
+            file: file.into(),
+            line,
+            column,
+        });
+        self
+    }
+    
     pub fn with_related(mut self, related: DiagnosticMessage) -> Self {
         self.related.push(related);
         self
     }
-    
-    /// Format as ANSI string (for terminal output)
-    pub fn format_ansi(&self) -> String {
-        use alloc::format;
-        
-        let severity_str = match self.severity {
-            DiagnosticSeverity::Info => "ℹ",
-            DiagnosticSeverity::Warning => "⚠",
-            DiagnosticSeverity::Error => "✗",
-            DiagnosticSeverity::Fatal => "✗",
-        };
-        
-        let mut output = format!("{} [{}] {}", severity_str, self.code, self.message);
-        
-        if let Some(ref location) = self.location {
-            output.push_str(&format!("\n  at {}:{}:{}", 
-                location.file,
-                location.line.map(|l| l.to_string()).unwrap_or_else(|| "?".to_string()),
-                location.column.map(|c| c.to_string()).unwrap_or_else(|| "?".to_string())
-            ));
-        }
-        
-        if !self.context.is_empty() {
-            output.push_str("\n  context:");
-            for (key, value) in &self.context {
-                output.push_str(&format!("\n    {}: {}", key, value));
-            }
-        }
-        
-        if !self.related.is_empty() {
-            output.push_str("\n  related:");
-            for related in &self.related {
-                output.push_str(&format!("\n    {}", related.format_ansi()));
-            }
-        }
-        
-        output
-    }
-    
-    /// Format as JSON string
-    pub fn format_json(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string_pretty(self)
-    }
 }
 
 /// Collection of diagnostic messages
-/// Inspired by Weaver's DiagnosticMessages
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiagnosticMessages {
-    /// Diagnostic messages
-    pub messages: Vec<DiagnosticMessage>,
-    /// Total count by severity
-    pub counts: DiagnosticCounts,
+#[derive(Debug, Clone)]
+pub struct Diagnostics {
+    messages: Vec<DiagnosticMessage>,
 }
 
-/// Counts of diagnostics by severity
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiagnosticCounts {
-    pub info: usize,
-    pub warning: usize,
-    pub error: usize,
-    pub fatal: usize,
-}
-
-impl DiagnosticCounts {
-    pub fn new() -> Self {
-        Self {
-            info: 0,
-            warning: 0,
-            error: 0,
-            fatal: 0,
-        }
-    }
-    
-    pub fn total(&self) -> usize {
-        self.info + self.warning + self.error + self.fatal
-    }
-}
-
-impl Default for DiagnosticCounts {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl DiagnosticMessages {
-    /// Create new diagnostic messages collection
+impl Diagnostics {
     pub fn new() -> Self {
         Self {
             messages: Vec::new(),
-            counts: DiagnosticCounts::new(),
         }
     }
     
-    /// Add a diagnostic message
     pub fn add(&mut self, message: DiagnosticMessage) {
-        match message.severity {
-            DiagnosticSeverity::Info => self.counts.info += 1,
-            DiagnosticSeverity::Warning => self.counts.warning += 1,
-            DiagnosticSeverity::Error => self.counts.error += 1,
-            DiagnosticSeverity::Fatal => self.counts.fatal += 1,
-        }
         self.messages.push(message);
     }
     
-    /// Check if there are any errors or fatal diagnostics
+    pub fn messages(&self) -> &[DiagnosticMessage] {
+        &self.messages
+    }
+    
     pub fn has_errors(&self) -> bool {
-        self.counts.error > 0 || self.counts.fatal > 0
+        self.messages.iter().any(|m| {
+            matches!(m.severity, Severity::Error | Severity::Critical)
+        })
     }
     
-    /// Format all messages as ANSI string
-    pub fn format_ansi(&self) -> String {
-        use alloc::format;
-        
-        let mut output = String::new();
-        
-        if !self.messages.is_empty() {
-            output.push_str("Diagnostic Report:\n\n");
-            
-            for message in &self.messages {
-                output.push_str(&message.format_ansi());
-                output.push_str("\n\n");
-            }
-            
-            output.push_str(&format!(
-                "Total: {} ({} info, {} warnings, {} errors, {} fatal)",
-                self.counts.total(),
-                self.counts.info,
-                self.counts.warning,
-                self.counts.error,
-                self.counts.fatal
-            ));
-        }
-        
-        output
+    pub fn has_warnings(&self) -> bool {
+        self.messages.iter().any(|m| matches!(m.severity, Severity::Warning))
     }
     
-    /// Format all messages as JSON string
-    pub fn format_json(&self) -> Result<String, serde_json::Error> {
+    /// Convert to JSON for CI/CD integration
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
     }
 }
 
-impl Default for DiagnosticMessages {
+impl Default for Diagnostics {
     fn default() -> Self {
         Self::new()
     }
 }
 
-/// Diagnostic format options
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DiagnosticFormat {
-    /// ANSI formatted (for terminal)
-    Ansi,
-    /// JSON formatted (for CI/CD)
-    Json,
-    /// GitHub workflow command format
-    GitHubWorkflow,
+// Serialization for JSON output
+#[cfg(feature = "std")]
+impl serde::Serialize for DiagnosticMessage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("DiagnosticMessage", 7)?;
+        state.serialize_field("code", &self.code)?;
+        state.serialize_field("message", &self.message)?;
+        state.serialize_field("severity", &format!("{:?}", self.severity))?;
+        state.serialize_field("context", &self.context)?;
+        state.serialize_field("span_id", &self.span_id)?;
+        state.serialize_field("source_location", &self.source_location)?;
+        state.serialize_field("related", &self.related)?;
+        state.end()
+    }
 }
 
-impl DiagnosticFormat {
-    /// Format diagnostics according to format
-    pub fn format(&self, diagnostics: &DiagnosticMessages) -> Result<String, serde_json::Error> {
-        match self {
-            DiagnosticFormat::Ansi => Ok(diagnostics.format_ansi()),
-            DiagnosticFormat::Json => diagnostics.format_json(),
-            DiagnosticFormat::GitHubWorkflow => {
-                // Format as GitHub workflow commands
-                let mut output = String::new();
-                for message in &diagnostics.messages {
-                    if let Some(ref location) = message.location {
-                        let level = match message.severity {
-                            DiagnosticSeverity::Info | DiagnosticSeverity::Warning => "warning",
-                            DiagnosticSeverity::Error | DiagnosticSeverity::Fatal => "error",
-                        };
-                        output.push_str(&format!(
-                            "::{} file={},line={},col={}::[{}] {}\n",
-                            level,
-                            location.file,
-                            location.line.unwrap_or(0),
-                            location.column.unwrap_or(0),
-                            message.code,
-                            message.message
-                        ));
-                    }
-                }
-                Ok(output)
+#[cfg(feature = "std")]
+impl serde::Serialize for SourceLocation {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("SourceLocation", 3)?;
+        state.serialize_field("file", &self.file)?;
+        state.serialize_field("line", &self.line)?;
+        state.serialize_field("column", &self.column)?;
+        state.end()
+    }
+}
+
+#[cfg(feature = "std")]
+impl serde::Serialize for Diagnostics {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("Diagnostics", 1)?;
+        state.serialize_field("messages", &self.messages)?;
+        state.end()
+    }
+}
+
+/// Helper functions for common diagnostic patterns
+
+/// Create a guard constraint violation diagnostic
+pub fn guard_constraint_violation(actual: u64, max: u64) -> DiagnosticMessage {
+    DiagnosticMessage::new(
+        "GUARD_CONSTRAINT_VIOLATION",
+        format!("Run length {} exceeds maximum allowed {}", actual, max),
+    )
+    .with_severity(Severity::Error)
+    .with_context("actual_run_len", actual.to_string())
+    .with_context("max_run_len", max.to_string())
+    .with_context("constraint", "Chatman Constant (max_run_len ≤ 8)")
+}
+
+/// Create a performance budget violation diagnostic
+pub fn performance_budget_violation(actual_ticks: u32, max_ticks: u32) -> DiagnosticMessage {
+    DiagnosticMessage::new(
+        "PERFORMANCE_BUDGET_VIOLATION",
+        format!("Tick count {} exceeds budget {}", actual_ticks, max_ticks),
+    )
+    .with_severity(Severity::Error)
+    .with_context("actual_ticks", actual_ticks.to_string())
+    .with_context("max_ticks", max_ticks.to_string())
+    .with_context("budget", "8 ticks (Chatman Constant)")
+}
+
+/// Create an SLO violation diagnostic
+pub fn slo_violation(runtime_class: &str, actual_latency_ns: u64, slo_ns: u64) -> DiagnosticMessage {
+    DiagnosticMessage::new(
+        "SLO_VIOLATION",
+        format!("{} latency {} ns exceeds SLO {} ns", runtime_class, actual_latency_ns, slo_ns),
+    )
+    .with_severity(Severity::Warning)
+    .with_context("runtime_class", runtime_class.to_string())
+    .with_context("actual_latency_ns", actual_latency_ns.to_string())
+    .with_context("slo_ns", slo_ns.to_string())
+}
+
+/// Create a receipt validation error diagnostic
+pub fn receipt_validation_error(receipt_id: &str, reason: &str) -> DiagnosticMessage {
+    DiagnosticMessage::new(
+        "RECEIPT_VALIDATION_ERROR",
+        format!("Receipt {} validation failed: {}", receipt_id, reason),
+    )
+    .with_severity(Severity::Error)
+    .with_context("receipt_id", receipt_id.to_string())
+    .with_context("reason", reason.to_string())
+}
+
+/// Create a policy violation diagnostic
+pub fn policy_violation(policy_name: &str, violation: &str) -> DiagnosticMessage {
+    DiagnosticMessage::new(
+        "POLICY_VIOLATION",
+        format!("Policy {} violation: {}", policy_name, violation),
+    )
+    .with_severity(Severity::Error)
+    .with_context("policy_name", policy_name.to_string())
+    .with_context("violation", violation.to_string())
+}
+
+/// Format diagnostics for human-readable output (using miette)
+#[cfg(feature = "std")]
+pub fn format_diagnostics(diagnostics: &Diagnostics) -> String {
+    use alloc::format;
+    
+    let mut output = String::new();
+    
+    for (i, msg) in diagnostics.messages().iter().enumerate() {
+        if i > 0 {
+            output.push_str("\n");
+        }
+        
+        output.push_str(&format!("[{}] {}: {}\n", 
+            match msg.severity {
+                Severity::Info => "INFO",
+                Severity::Warning => "WARN",
+                Severity::Error => "ERROR",
+                Severity::Critical => "CRITICAL",
+            },
+            msg.code,
+            msg.message
+        ));
+        
+        if !msg.context.is_empty() {
+            output.push_str("  Context:\n");
+            for (key, value) in &msg.context {
+                output.push_str(&format!("    {}: {}\n", key, value));
+            }
+        }
+        
+        if let Some(ref span_id) = msg.span_id {
+            output.push_str(&format!("  Span ID: {}\n", span_id));
+        }
+        
+        if let Some(ref loc) = msg.source_location {
+            output.push_str(&format!("  Location: {}:{}:{}\n", loc.file, loc.line, loc.column));
+        }
+        
+        if !msg.related.is_empty() {
+            output.push_str("  Related:\n");
+            for related in &msg.related {
+                output.push_str(&format!("    - {}: {}\n", related.code, related.message));
             }
         }
     }
+    
+    output
+}
+
+/// Format diagnostics as JSON for CI/CD
+#[cfg(feature = "std")]
+pub fn format_diagnostics_json(diagnostics: &Diagnostics) -> Result<String, serde_json::Error> {
+    diagnostics.to_json()
 }
