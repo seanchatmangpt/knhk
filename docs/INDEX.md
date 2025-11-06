@@ -104,15 +104,15 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - Sign-off criteria for Measure phase entry
 
 ### Research & Evaluation
-24. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
-25. **[ggen Integration Evaluation](ggen-integration-evaluation.md)** - Integration evaluation
-26. **[ggen Integration Validation](ggen-integration-validation.md)** - Integration validation
+25. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
+26. **[ggen Integration Evaluation](ggen-integration-evaluation.md)** - Integration evaluation
+27. **[ggen Integration Validation](ggen-integration-validation.md)** - Integration validation
 
 ### Specialized Topics
-27. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
-28. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
-29. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
-30. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
+28. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
+29. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
+30. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
+31. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
 
 ## Archived Documentation
 
