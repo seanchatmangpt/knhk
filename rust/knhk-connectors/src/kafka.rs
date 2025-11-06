@@ -260,6 +260,60 @@ impl Connector for KafkaConnector {
             ),
         }
     }
+
+    fn start(&mut self) -> Result<(), ConnectorError> {
+        // Ensure consumer is subscribed and ready
+        if self.state != KafkaConnectionState::Connected {
+            return Err(ConnectorError::NetworkError(
+                format!("Cannot start connector in state: {:?}", self.state)
+            ));
+        }
+
+        #[cfg(feature = "kafka")]
+        {
+            if let Some(ref consumer) = self.consumer {
+                // Verify subscription is active
+                consumer.subscribe(&[&self.topic])
+                    .map_err(|e| ConnectorError::NetworkError(
+                        format!("Failed to subscribe to topic {}: {}", self.topic, e)
+                    ))?;
+            } else {
+                // Consumer not initialized, try to create it
+                match self.create_kafka_consumer() {
+                    Ok(consumer) => {
+                        self.consumer = Some(Arc::new(consumer));
+                        self.state = KafkaConnectionState::Connected;
+                    }
+                    Err(e) => {
+                        self.state = KafkaConnectionState::Error(e.clone());
+                        return Err(ConnectorError::NetworkError(e));
+                    }
+                }
+            }
+        }
+
+        self.state = KafkaConnectionState::Connected;
+        Ok(())
+    }
+
+    fn stop(&mut self) -> Result<(), ConnectorError> {
+        #[cfg(feature = "kafka")]
+        {
+            if let Some(ref consumer) = self.consumer {
+                // Unsubscribe from topics
+                consumer.unsubscribe()
+                    .map_err(|e| ConnectorError::NetworkError(
+                        format!("Failed to unsubscribe: {}", e)
+                    ))?;
+            }
+            // Clear consumer reference
+            self.consumer = None;
+        }
+
+        self.state = KafkaConnectionState::Disconnected;
+        self.reconnect_attempts = 0;
+        Ok(())
+    }
 }
 
 impl KafkaConnector {

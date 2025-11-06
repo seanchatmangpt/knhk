@@ -60,7 +60,56 @@ let delta = registry.fetch_delta(&"kafka-prod".to_string())?;
 - **Schema Validation**: Validates deltas against schema IRIs (O ⊨ Σ)
 - **SoA Transformation**: Converts triples to Structure-of-Arrays layout for hot path
 - **Health Monitoring**: Connector health checks and metrics
+- **Lifecycle Management**: `start()` and `stop()` methods for proper resource management
 - **Multiple Sources**: Kafka, Salesforce, HTTP, File, SAP connectors
+
+## Connector Lifecycle
+
+All connectors implement lifecycle methods for proper resource management:
+
+### Initialization
+
+```rust
+let mut connector = KafkaConnector::new(name, topic, format);
+connector.initialize(spec)?;
+```
+
+### Starting
+
+The `start()` method ensures the connector is ready to fetch data:
+
+```rust
+// Kafka: Verifies subscription, creates consumer if needed
+// Salesforce: Validates authentication, refreshes token if expired
+connector.start()?;
+```
+
+### Fetching Deltas
+
+```rust
+let delta = connector.fetch_delta()?;
+let soa = connector.transform_to_soa(&delta)?;
+```
+
+### Stopping
+
+The `stop()` method cleans up resources:
+
+```rust
+// Kafka: Unsubscribes from topics, cleans up consumer
+// Salesforce: Cleans up HTTP client, clears tokens
+connector.stop()?;
+```
+
+### Health Checks
+
+```rust
+match connector.health() {
+    ConnectorHealth::Healthy => println!("Connector is healthy"),
+    ConnectorHealth::Degraded(msg) => println!("Degraded: {}", msg),
+    ConnectorHealth::Unhealthy(msg) => println!("Unhealthy: {}", msg),
+}
+```
 
 ## Supported Connectors
 
@@ -69,12 +118,14 @@ let delta = registry.fetch_delta(&"kafka-prod".to_string())?;
 - Message parsing and validation
 - Circuit breaker protection
 - Offset management
+- **Lifecycle**: `start()` verifies subscription, `stop()` unsubscribes and cleans up
 
 ### Salesforce Connector (`salesforce` feature)
 - OAuth2 authentication
 - SOQL query execution via HTTP API
 - Data format conversion (JSON → RDF)
 - Rate limiting
+- **Lifecycle**: `start()` validates/refreshes tokens, `stop()` cleans up HTTP client
 
 ## Dependencies
 

@@ -305,6 +305,88 @@ impl Connector for SalesforceConnector {
             ),
         }
     }
+
+    fn start(&mut self) -> Result<(), ConnectorError> {
+        // Ensure authentication is valid and token is fresh
+        match &self.state {
+            SalesforceConnectionState::Authenticated => {
+                // Check if token needs refresh
+                if let Some(ref token) = self.token {
+                    let current_time_ms = Self::get_current_timestamp_ms();
+                    if current_time_ms >= token.expires_at_ms {
+                        // Token expired, refresh it
+                        self.refresh_token()?;
+                    }
+                } else {
+                    // No token, need to authenticate
+                    self.state = SalesforceConnectionState::Authenticating;
+                    #[cfg(feature = "salesforce")]
+                    {
+                        match self.authenticate() {
+                            Ok(()) => {
+                                self.state = SalesforceConnectionState::Authenticated;
+                                self.http_client = Some(Client::new());
+                            }
+                            Err(e) => {
+                                self.state = SalesforceConnectionState::Error(e.clone());
+                                return Err(ConnectorError::NetworkError(e));
+                            }
+                        }
+                    }
+                    #[cfg(not(feature = "salesforce"))]
+                    {
+                        self.state = SalesforceConnectionState::Authenticated;
+                    }
+                }
+            }
+            SalesforceConnectionState::Disconnected => {
+                // Need to authenticate first
+                self.state = SalesforceConnectionState::Authenticating;
+                #[cfg(feature = "salesforce")]
+                {
+                    match self.authenticate() {
+                        Ok(()) => {
+                            self.state = SalesforceConnectionState::Authenticated;
+                            self.http_client = Some(Client::new());
+                        }
+                        Err(e) => {
+                            self.state = SalesforceConnectionState::Error(e.clone());
+                            return Err(ConnectorError::NetworkError(e));
+                        }
+                    }
+                }
+                #[cfg(not(feature = "salesforce"))]
+                {
+                    self.state = SalesforceConnectionState::Authenticated;
+                }
+            }
+            SalesforceConnectionState::RateLimited { .. } => {
+                return Err(ConnectorError::NetworkError(
+                    "Cannot start connector while rate limited".to_string()
+                ));
+            }
+            _ => {
+                return Err(ConnectorError::NetworkError(
+                    format!("Cannot start connector in state: {:?}", self.state)
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    fn stop(&mut self) -> Result<(), ConnectorError> {
+        #[cfg(feature = "salesforce")]
+        {
+            // Clean up HTTP client
+            self.http_client = None;
+        }
+
+        // Clear token (but keep credentials for restart)
+        self.token = None;
+        self.state = SalesforceConnectionState::Disconnected;
+        Ok(())
+    }
 }
 
 impl SalesforceConnector {

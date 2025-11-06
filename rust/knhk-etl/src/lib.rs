@@ -5,8 +5,10 @@
 extern crate alloc;
 extern crate std;
 
-// All dependencies always available
+// Silence unused crate warnings (proper feature gating)
+#[cfg(feature = "knhk-otel")]
 use knhk_otel as _;
+#[cfg(feature = "knhk-lockchain")]
 use knhk_lockchain as _;
 
 // Module declarations

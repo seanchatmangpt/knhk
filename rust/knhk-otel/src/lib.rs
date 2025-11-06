@@ -160,9 +160,75 @@ impl WeaverLiveCheck {
         self
     }
 
+    /// Check if Weaver binary is available in PATH
+    pub fn check_weaver_available() -> Result<(), String> {
+        use std::process::Command;
+        
+        // Try to run weaver --version to check if it exists
+        match Command::new("weaver").arg("--version").output() {
+            Ok(output) => {
+                if output.status.success() {
+                    Ok(())
+                } else {
+                    Err("Weaver binary found but --version failed".to_string())
+                }
+            }
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    Err("Weaver binary not found in PATH. Install with: ./scripts/install-weaver.sh or cargo install weaver".to_string())
+                } else {
+                    Err(format!("Failed to check Weaver binary: {}", e))
+                }
+            }
+        }
+    }
+
+    /// Check Weaver health by querying the admin endpoint
+    pub fn check_health(&self) -> Result<bool, String> {
+        use reqwest::blocking::Client;
+        use std::time::Duration;
+        
+        let client = Client::builder()
+            .timeout(Duration::from_secs(2))
+            .build()
+            .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+        
+        // Try common health check endpoints
+        let health_endpoints = vec![
+            format!("http://{}:{}/health", self.otlp_grpc_address, self.admin_port),
+            format!("http://{}:{}/status", self.otlp_grpc_address, self.admin_port),
+            format!("http://{}:{}/", self.otlp_grpc_address, self.admin_port),
+        ];
+        
+        for url in health_endpoints {
+            match client.get(&url).send() {
+                Ok(response) => {
+                    if response.status().is_success() || response.status().as_u16() == 404 {
+                        // 404 might mean endpoint doesn't exist but server is running
+                        // Try to verify by checking if we can connect
+                        return Ok(true);
+                    }
+                }
+                Err(_) => {
+                    // Try next endpoint
+                    continue;
+                }
+            }
+        }
+        
+        // If all endpoints failed, check if port is listening
+        // This is a basic connectivity check
+        match std::net::TcpStream::connect(format!("{}:{}", self.otlp_grpc_address, self.admin_port)) {
+            Ok(_) => Ok(true), // Port is open, assume Weaver is running
+            Err(_) => Err(format!("Weaver admin endpoint not responding on {}:{}", self.otlp_grpc_address, self.admin_port)),
+        }
+    }
+
     /// Run live-check and return the process handle
     /// The caller should send telemetry to the configured OTLP endpoint
     pub fn start(&self) -> Result<std::process::Child, String> {
+        // Check Weaver binary availability first
+        Self::check_weaver_available()?;
         use std::process::Command;
         
         let mut cmd = Command::new("weaver");
@@ -184,7 +250,13 @@ impl WeaverLiveCheck {
         }
         
         cmd.spawn()
-            .map_err(|e| format!("Failed to start Weaver live-check: {}", e))
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    "Weaver binary not found in PATH. Install with: ./scripts/install-weaver.sh or cargo install weaver".to_string()
+                } else {
+                    format!("Failed to start Weaver live-check: {}. Ensure Weaver is installed and in PATH.", e)
+                }
+            })
     }
 
     /// Stop the live-check process via HTTP admin endpoint

@@ -4,11 +4,9 @@
 
 extern crate alloc;
 extern crate std;
-extern crate knhk_otel;
 
 use alloc::string::{String, ToString};
 use alloc::format;
-use alloc::collections::BTreeMap;
 use crate::reflex::{Receipt, Action};
 use crate::load::LoadResult;
 
@@ -68,10 +66,11 @@ pub fn handle_r1_failure(
     
     // Escalate if budget exceeded - record OTEL event
     if budget_exceeded {
+        #[cfg(feature = "knhk-otel")]
         {
             use knhk_otel::{Tracer, Metric, MetricValue};
             use std::time::{SystemTime, UNIX_EPOCH};
-            
+
             let mut tracer = Tracer::new();
             let timestamp_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)

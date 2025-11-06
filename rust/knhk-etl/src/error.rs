@@ -36,7 +36,7 @@ impl PipelineError {
             PipelineError::GuardViolation(msg) => msg,
             PipelineError::ParseError(msg) => msg,
             PipelineError::RuntimeClassError(msg) => msg,
-            PipelineError::SloViolation(v) => {
+            PipelineError::SloViolation(_v) => {
                 // Return violation message (requires allocation)
                 // For no_std compatibility, return static string
                 "SLO violation"

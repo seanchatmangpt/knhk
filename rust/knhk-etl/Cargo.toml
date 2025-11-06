@@ -7,19 +7,29 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = ["std"] }
+knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = [
+  "std",
+] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
-knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = ["std"] }
-knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = ["std"] }
+knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = [
+  "std",
+], optional = true }
+knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = [
+  "std",
+], optional = true }
 hashbrown = { version = "0.15", default-features = false }
 hex = { version = "0.4", default-features = false }
 oxigraph = { version = "0.5", default-features = false }
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json", "blocking"], optional = true }
 serde_json = { version = "1.0" }
-rdkafka = { version = "0.36" }
+rdkafka = { version = "0.36", optional = true }
 
 [features]
-default = []
+default = ["std"]
+std = ["dep:reqwest"]
 grpc = []
+kafka = ["dep:rdkafka"]
+knhk-lockchain = ["dep:knhk-lockchain"]
+knhk-otel = ["dep:knhk-otel"]
 [dev-dependencies]
 # Test dependencies

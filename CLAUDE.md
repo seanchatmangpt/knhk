@@ -63,10 +63,23 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
 
 ### Build Commands
-- `npm run build` - Build project
-- `npm run test` - Run tests
-- `npm run lint` - Linting
-- `npm run typecheck` - Type checking
+
+**KNHK-Specific Commands:**
+- `make test-chicago-v04` - Run Chicago TDD test suite
+- `make test-performance-v04` - Run performance tests (verify ≤8 ticks)
+- `make test-integration-v2` - Run integration tests
+- `make test-enterprise` - Run enterprise use case tests
+- `cargo test --workspace` - Run all Rust tests
+- `cargo clippy --workspace -- -D warnings` - Lint Rust code
+- `cargo fmt --all` - Format Rust code
+- `make build` - Build C library
+- `make test` - Run C tests
+
+**General Commands:**
+- `npm run build` - Build project (if applicable)
+- `npm run test` - Run tests (if applicable)
+- `npm run lint` - Linting (if applicable)
+- `npm run typecheck` - Type checking (if applicable)
 
 ## SPARC Workflow Phases
 
@@ -83,6 +96,172 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - **Test-First**: Write tests before implementation
 - **Clean Architecture**: Separate concerns
 - **Documentation**: Keep updated
+
+## 🚨 CRITICAL: The False Positive Paradox
+
+**KNHK exists to eliminate false positives in testing. Therefore, we CANNOT validate KNHK using methods that produce false positives.**
+
+### The Only Source of Truth: OpenTelemetry Weaver
+
+**ALL validation MUST use OTel Weaver schema validation:**
+
+```bash
+# ✅ CORRECT - Weaver validation is the ONLY trusted validation
+weaver registry check -r registry/
+weaver registry live-check --registry registry/
+
+# ❌ WRONG - These can produce false positives:
+cargo test              # Tests can pass with broken features
+validation agents       # Agents can hallucinate validation
+README validation       # Documentation can claim features work when they don't
+<command> --help        # Help text can exist for non-functional commands
+```
+
+### 🚨 CRITICAL: Help Text ≠ Working Feature
+
+**Running `--help` proves NOTHING about functionality:**
+
+```bash
+# ❌ FALSE POSITIVE VALIDATION
+knhk --help        # Returns help text
+# ❌ CONCLUSION: "command works"  ← WRONG!
+# ✅ REALITY: Help text exists, but command may call unimplemented!()
+
+# ✅ CORRECT VALIDATION
+knhk <command> <args>  # Actually execute the command
+# Check: Does it produce expected output/behavior?
+# Check: Does it emit proper telemetry?
+# Check: Does Weaver validation pass?
+```
+
+**Help text validation rules:**
+1. `--help` only proves the command is registered in CLI
+2. `--help` does NOT prove the command does anything
+3. Commands can have help text but call `unimplemented!()`
+4. ALWAYS execute the actual command with real arguments
+5. ONLY trust Weaver validation of runtime behavior
+
+**Why Weaver is Different:**
+- Schema-first: Code must conform to declared telemetry schema
+- Live validation: Verifies actual runtime telemetry against schema
+- No circular dependency: External tool validates our framework
+- Industry standard: OTel's official validation approach
+- Detects fake-green: Catches tests that pass but don't validate actual behavior
+
+### The Meta-Problem We Solve
+
+```
+Traditional Testing (What We Replace):
+  Test passes ✅ → Assumes feature works → FALSE POSITIVE
+  └─ Test only validates test code, not production behavior
+
+KNHK with Weaver Validation:
+  Weaver validates schema ✅ → Telemetry proves feature works → TRUE POSITIVE
+  └─ Schema validation proves actual runtime behavior
+```
+
+### Testing Hierarchy (CRITICAL)
+
+**🔴 CRITICAL: Validation hierarchy matters!**
+
+```bash
+# LEVEL 1: Weaver Schema Validation (MANDATORY - Source of Truth)
+weaver registry check -r registry/                    # Validate schema definition
+weaver registry live-check --registry registry/       # Validate runtime telemetry
+
+# LEVEL 2: Compilation & Code Quality (Baseline)
+cargo build --release                                 # Must compile
+cargo clippy --workspace -- -D warnings               # Zero warnings
+make build                                            # C library compiles
+
+# LEVEL 3: Traditional Tests (Supporting Evidence - Can Have False Positives)
+cargo test --workspace                                # Rust unit tests
+make test-chicago-v04                                 # C Chicago TDD tests
+make test-performance-v04                             # Performance tests
+make test-integration-v2                              # Integration tests
+```
+
+**⚠️ Test Passes ≠ Feature Works:**
+- Tests can pass even when features don't work (false positives)
+- Only Weaver validation proves runtime behavior matches schema
+- Traditional tests provide supporting evidence, not proof
+
+**If Weaver validation fails, the feature DOES NOT WORK, regardless of test results.**
+
+## 🚀 CRITICAL: USE ADVANCED AGENTS FIRST
+
+**ALWAYS use specialized advanced agents instead of basic agents when the task matches their expertise.**
+
+### ⚡ Advanced Agents (PRIORITY - Use These First!)
+
+| Agent | Use Case | When to Use |
+|-------|----------|-------------|
+| **`production-validator`** | Production readiness validation | Validating deployments, infrastructure, dependencies, release readiness, final certification |
+| **`code-analyzer`** | Advanced code quality analysis | Deep code review, technical debt analysis, architecture assessment, instrumentation |
+| **`system-architect`** | System architecture design | Designing systems, integration patterns, architectural decisions, infrastructure design |
+| **`performance-benchmarker`** | Performance measurement & optimization | Benchmarking, performance analysis, bottleneck identification, profiling |
+| **`backend-dev`** | Backend implementation | Docker, containers, APIs, databases, infrastructure code, OTLP setup |
+| **`task-orchestrator`** | Complex workflow orchestration | Multi-phase workflows, coordination, dependency management |
+| **`code-review-swarm`** | Comprehensive code reviews | Multi-agent code review, validation, quality assessment |
+| **`tdd-london-swarm`** | Test-driven development | Mock-driven development, comprehensive test suites |
+| **`cicd-engineer`** | CI/CD pipeline creation | GitHub Actions, workflow automation, deployment pipelines |
+| **`security-manager`** | Security analysis | Security audits, vulnerability assessment, compliance checks |
+
+### 🔴 Basic Agents (Use Only for Simple Tasks)
+
+| Agent | Use Case | When to Use |
+|-------|----------|-------------|
+| `coder` | Simple implementation | ONLY when task is straightforward and doesn't require specialized expertise |
+| `reviewer` | Basic code review | ONLY for simple, localized reviews |
+| `tester` | Basic testing | ONLY for simple test cases |
+| `planner` | Simple planning | ONLY for basic task breakdowns |
+| `researcher` | Basic research | ONLY for simple information gathering |
+
+### 🎯 Decision Matrix: Which Agent to Use?
+
+**Task: Production Validation** → ✅ Use `production-validator` (NOT `tester`)
+**Task: Code Quality Review** → ✅ Use `code-analyzer` (NOT `reviewer`)
+**Task: Architecture Design** → ✅ Use `system-architect` (NOT `planner`)
+**Task: Docker/OTLP Setup** → ✅ Use `backend-dev` (NOT `coder`)
+**Task: Performance Analysis** → ✅ Use `performance-benchmarker` (NOT `researcher`)
+**Task: Complex Workflow** → ✅ Use `task-orchestrator` (NOT `planner`)
+**Task: TDD Implementation** → ✅ Use `tdd-london-swarm` (NOT `tester`)
+**Task: CI/CD Pipeline** → ✅ Use `cicd-engineer` (NOT `coder`)
+
+### ❌ Common Mistakes to Avoid
+
+```yaml
+# ❌ WRONG - Using basic agents for specialized work
+Task("Research patterns", "...", "researcher")  # TOO BASIC
+Task("Write code", "...", "coder")              # TOO BASIC
+Task("Run tests", "...", "tester")              # TOO BASIC
+
+# ✅ CORRECT - Using specialized agents
+Task("Analyze architecture patterns", "...", "system-architect")
+Task("Implement backend infrastructure", "...", "backend-dev")
+Task("Validate production readiness", "...", "production-validator")
+```
+
+**Why Advanced Agents Are Better:**
+- ✅ **5x more comprehensive output** (178KB vs 20KB from basic agents)
+- ✅ **Domain-specific expertise** and best practices
+- ✅ **Production-grade deliverables** (FAANG-level quality)
+- ✅ **Automated workflows** and coordination
+- ✅ **Better architecture** and design decisions
+
+### 🚫 Agents That Don't Exist (Common Mistakes)
+
+**These agent types do NOT exist** - use the correct alternatives:
+
+| ❌ Wrong Agent | ✅ Correct Alternative | Why |
+|---------------|----------------------|-----|
+| `analyst` | `code-analyzer` or `system-architect` | Analysis requires specialized agent |
+| `validator` | `production-validator` | Use full name |
+| `architect` | `system-architect` | Use full name |
+| `developer` | `backend-dev` or `coder` | Be specific about type |
+| `engineer` | `cicd-engineer` or `backend-dev` | Be specific about domain |
+| `tdd` | `tdd-london-swarm` | Use full name |
+| `benchmark` | `performance-benchmarker` | Use full name |
 
 ## 🚀 Available Agents (54 Total)
 
@@ -333,6 +512,80 @@ Message 4: Write "file.js"
 5. Train patterns from success
 6. Enable hooks automation
 7. Use GitHub tools first
+
+## KNHK Project-Specific Guidelines
+
+### Definition of Done (CRITICAL: Weaver Validation Required)
+
+Before ANY code is production-ready, ALL must be true:
+
+#### Build & Code Quality (Baseline)
+- [ ] `cargo build --workspace` succeeds with zero warnings
+- [ ] `cargo clippy --workspace -- -D warnings` shows zero issues
+- [ ] `make build` succeeds (C library)
+- [ ] No `.unwrap()` or `.expect()` in production code paths
+- [ ] All traits remain `dyn` compatible (no async trait methods)
+- [ ] Proper `Result<T, E>` error handling
+- [ ] No `println!` in production code (use `tracing` macros)
+- [ ] No fake `Ok(())` returns from incomplete implementations
+
+#### Weaver Validation (MANDATORY - Source of Truth)
+- [ ] **`weaver registry check -r registry/` passes** (schema is valid)
+- [ ] **`weaver registry live-check --registry registry/` passes** (runtime telemetry conforms to schema)
+- [ ] All claimed OTEL spans/metrics/logs defined in schema
+- [ ] Schema documents exact telemetry behavior
+- [ ] Live telemetry matches schema declarations
+
+#### Functional Validation (MANDATORY - Must Actually Execute)
+- [ ] **Command executed with REAL arguments** (not just `--help`)
+- [ ] **Command produces expected output/behavior**
+- [ ] **Command emits proper telemetry** (validated by Weaver)
+- [ ] **End-to-end workflow tested** (not just unit tests)
+- [ ] **Performance constraints met** (≤8 ticks for hot path)
+
+#### Traditional Testing (Supporting Evidence Only)
+- [ ] `cargo test --workspace` passes completely
+- [ ] `make test-chicago-v04` passes
+- [ ] `make test-performance-v04` passes (verifies ≤8 ticks)
+- [ ] `make test-integration-v2` passes
+- [ ] Tests follow AAA pattern with descriptive names
+
+**⚠️ CRITICAL HIERARCHY:**
+1. **Weaver validation** = Source of truth (proves feature works)
+2. **Compilation + Clippy** = Code quality baseline (proves code is valid)
+3. **Traditional tests** = Supporting evidence (can have false positives)
+
+### Key Principles
+
+1. **Schema-First Validation**: OTel Weaver validation is the ONLY source of truth
+2. **No False Positives**: Tests can lie; telemetry schemas don't
+3. **Performance Compliance**: Hot path operations ≤8 ticks (Chatman Constant)
+4. **80/20 Focus**: Critical path implementations first, no placeholders
+5. **Never Trust the Text**: Only trust test results and OTEL validation
+6. **No Fake Implementations**: Incomplete features must call `unimplemented!()`
+7. **Trait Design**: Never use async trait methods (breaks dyn compatibility)
+8. **Behavior-Focused Testing**: Test what code does, not how it does it
+
+### The Meta-Principle: Don't Trust Tests, Trust Schemas
+
+**Problem KNHK Solves:**
+```
+Traditional Testing:
+  assert(result == expected) ✅  ← Can pass even when feature is broken
+  └─ Tests validate test logic, not production behavior
+
+KNHK Solution:
+  Schema defines behavior → Weaver validates runtime telemetry ✅
+  └─ Schema validation proves actual runtime behavior matches specification
+```
+
+**Why This Matters:**
+- A test can pass because it tests the wrong thing
+- A test can pass because it's mocked incorrectly
+- A test can pass because it doesn't test the actual feature
+- **A Weaver schema validation can only pass if the actual runtime telemetry matches the declared schema**
+
+This is why KNHK uses Weaver validation as the source of truth.
 
 ## Support
 

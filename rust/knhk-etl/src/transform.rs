@@ -8,7 +8,7 @@ use alloc::string::String;
 use alloc::format;
 
 use crate::error::PipelineError;
-use crate::ingest::{IngestResult, RawTriple};
+use crate::ingest::IngestResult;
 
 /// Stage 2: Transform
 /// Typed by Σ, constrained by Q

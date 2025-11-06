@@ -122,6 +122,33 @@ See `src/proto/kgc.proto` for complete protocol buffer definitions.
 
 ### Basic Usage
 
+The recommended way to run the sidecar is using the `run()` function:
+
+```rust
+use knhk_sidecar::{run, SidecarConfig};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load configuration from environment variables
+    let config = SidecarConfig::from_env();
+    
+    // Run the sidecar (handles all initialization and startup)
+    run(config).await
+}
+```
+
+The `run()` function automatically:
+- Initializes tracing
+- Starts Weaver live-check if enabled (requires `otel` feature)
+- Creates metrics collector and health checker
+- Configures client with retry and circuit breaker settings
+- Starts the gRPC server
+- Handles graceful shutdown
+
+### Advanced Usage (Manual Setup)
+
+For more control, you can manually create and configure components:
+
 ```rust
 use knhk_sidecar::{SidecarServer, SidecarClient, SidecarConfig, MetricsCollector, HealthChecker};
 use std::sync::Arc;
@@ -129,7 +156,7 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load configuration
-    let config = SidecarConfig::from_file("knhk-sidecar.toml")?;
+    let config = SidecarConfig::from_env();
     
     // Create metrics collector
     let metrics = Arc::new(MetricsCollector::new(1000));
@@ -137,18 +164,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create health checker
     let health = Arc::new(HealthChecker::new());
     
+    // Create client configuration
+    let mut client_config = crate::client::ClientConfig::default();
+    client_config.warm_orchestrator_url = std::env::var("KGC_SIDECAR_CLIENT_WARM_ORCHESTRATOR_URL")
+        .unwrap_or_else(|_| "http://localhost:50052".to_string());
+    client_config.request_timeout_ms = config.request_timeout_ms;
+    client_config.retry_config.max_retries = config.retry_max_attempts;
+    client_config.retry_config.initial_delay_ms = config.retry_initial_delay_ms;
+    client_config.retry_config.max_delay_ms = config.retry_max_delay_ms;
+    client_config.circuit_breaker_threshold = config.circuit_breaker_failure_threshold;
+    client_config.circuit_breaker_reset_ms = config.circuit_breaker_reset_timeout_ms;
+    
     // Create client
-    let client = SidecarClient::new(config.to_client_config(), Arc::clone(&metrics)).await?;
+    let client = SidecarClient::new(client_config, Arc::clone(&metrics)).await?;
+    
+    // Create server configuration
+    let server_config = ServerConfig {
+        bind_address: config.listen_address.clone(),
+        batch_config: BatchConfig {
+            max_size: config.batch_size,
+            timeout: config.batch_timeout(),
+        },
+        tls_config: TlsConfig {
+            enabled: config.tls_enabled,
+            cert_file: config.tls_cert_path.clone().unwrap_or_default(),
+            key_file: config.tls_key_path.clone().unwrap_or_default(),
+            ca_file: config.tls_ca_path.clone(),
+        },
+    };
     
     // Create server
     let server = SidecarServer::new(
-        config.to_server_config(),
+        server_config,
         client,
         Arc::clone(&metrics),
         Arc::clone(&health),
     ).await?;
     
-    // Start server
+    // Start server (this blocks until shutdown)
     server.start().await?;
     
     Ok(())

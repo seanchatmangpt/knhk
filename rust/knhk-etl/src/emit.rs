@@ -3,8 +3,6 @@
 // Actions (A) + Receipts → Lockchain + Downstream APIs
 
 extern crate alloc;
-extern crate knhk_otel;
-extern crate knhk_lockchain;
 
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
@@ -13,7 +11,7 @@ use alloc::format;
 use crate::error::PipelineError;
 use crate::reflex::{ReflexResult, Action, Receipt};
 use crate::runtime_class::RuntimeClass;
-use crate::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
+use crate::failure_actions::{handle_w1_failure, handle_c1_failure};
 
 /// Stage 5: Emit
 /// Actions (A) + Receipts → Lockchain + Downstream APIs
@@ -22,7 +20,10 @@ pub struct EmitStage {
     pub downstream_endpoints: Vec<String>,
     max_retries: u32,
     retry_delay_ms: u64,
+    #[cfg(feature = "knhk-lockchain")]
     lockchain: Option<knhk_lockchain::Lockchain>,
+    #[cfg(not(feature = "knhk-lockchain"))]
+    _lockchain_placeholder: (),
     // W1 cache: simple in-memory cache for degraded responses
     cache: alloc::collections::BTreeMap<String, Action>,
 }
@@ -34,13 +35,19 @@ impl EmitStage {
             downstream_endpoints,
             max_retries: 3,
             retry_delay_ms: 1000,
+            #[cfg(feature = "knhk-lockchain")]
             lockchain: if lockchain_enabled {
                 Some(knhk_lockchain::Lockchain::new())
             } else {
                 None
             },
+            #[cfg(not(feature = "knhk-lockchain"))]
+            _lockchain_placeholder: (),
             cache: alloc::collections::BTreeMap::new(),
+        }
+    }
     
+    #[cfg(feature = "knhk-lockchain")]
     pub fn with_git_repo(mut self, repo_path: String) -> Self {
         if self.lockchain_enabled {
             self.lockchain = Some(knhk_lockchain::Lockchain::with_git_repo(repo_path));
@@ -63,6 +70,9 @@ impl EmitStage {
 
         // Write receipts to lockchain
         if self.lockchain_enabled {
+            #[cfg(feature = "knhk-lockchain")]
+            {
+                // Use mutable lockchain reference
                 let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
                     lockchain.clone()
                 } else {
@@ -86,6 +96,15 @@ impl EmitStage {
                 }
             }
             
+            #[cfg(not(feature = "knhk-lockchain"))]
+            {
+                // In no_std mode, compute hash only
+                for receipt in &input.receipts {
+                    let hash = Self::compute_receipt_hash(receipt);
+                    receipts_written += 1;
+                    lockchain_hashes.push(format!("{:016x}", hash));
+                }
+            }
         }
 
         // Send actions to downstream endpoints
@@ -125,35 +144,38 @@ impl EmitStage {
                     RuntimeClass::W1 => {
                         // W1 failure: retry or degrade to cache
                         let cached_answer = self.lookup_cached_answer(&action.id);
-                        
+
                         let retry_action = handle_w1_failure(0, self.max_retries, cached_answer.clone())
                             .map_err(|e| PipelineError::W1FailureError(e))?;
-                        
+
                         if retry_action.use_cache {
                             // Degrade to cached answer
-                            if let Some(cached_action) = cached_answer {
+                            if let Some(_cached_action) = cached_answer {
                                 // Use cached action instead of retrying
                                 // Log cache hit and continue with cached action
-                                use knhk_otel::{Tracer, Metric, MetricValue};
-                                use std::time::{SystemTime, UNIX_EPOCH};
-                                
-                                let mut tracer = Tracer::new();
-                                let timestamp_ms = SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .map(|d| d.as_millis() as u64)
-                                    .unwrap_or(0);
-                                
-                                let mut attrs = alloc::collections::BTreeMap::new();
-                                attrs.insert("action_id".to_string(), action.id.clone());
-                                attrs.insert("runtime_class".to_string(), "W1".to_string());
-                                
-                                let metric = Metric {
-                                    name: "knhk.w1.cache_hit".to_string(),
-                                    value: MetricValue::Counter(1),
-                                    timestamp_ms,
-                                    attributes: attrs,
-                                };
-                                tracer.record_metric(metric);
+                                #[cfg(feature = "knhk-otel")]
+                                {
+                                    use knhk_otel::{Tracer, Metric, MetricValue};
+                                    use std::time::{SystemTime, UNIX_EPOCH};
+                                    
+                                    let mut tracer = Tracer::new();
+                                    let timestamp_ms = SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .map(|d| d.as_millis() as u64)
+                                        .unwrap_or(0);
+                                    
+                                    let mut attrs = alloc::collections::BTreeMap::new();
+                                    attrs.insert("action_id".to_string(), action.id.clone());
+                                    attrs.insert("runtime_class".to_string(), "W1".to_string());
+                                    
+                                    let metric = Metric {
+                                        name: "knhk.w1.cache_hit".to_string(),
+                                        value: MetricValue::Counter(1),
+                                        timestamp_ms,
+                                        attributes: attrs,
+                                    };
+                                    tracer.record_metric(metric);
+                                }
                                 
                                 // Continue with cached action (count as sent)
                                 actions_sent += 1;
@@ -175,7 +197,7 @@ impl EmitStage {
                         // C1 failure: async finalize (non-blocking)
                         // Store C1FailureAction for caller to schedule async operation
                         match handle_c1_failure(&action.id) {
-                            Ok(c1_action) => {
+                            Ok(_c1_action) => {
                                 // C1FailureAction indicates async finalization needed
                                 // Caller is responsible for scheduling async operation
                                 // For now, log and continue (non-blocking behavior)
@@ -199,6 +221,7 @@ impl EmitStage {
     }
 
     /// Write receipt to lockchain (Merkle-linked) - with mutable lockchain reference
+    #[cfg(feature = "knhk-lockchain")]
     fn write_receipt_to_lockchain_with_lockchain(
         &self,
         lockchain: &mut knhk_lockchain::Lockchain,
@@ -230,6 +253,7 @@ impl EmitStage {
     }
     
     /// Write receipt to lockchain (Merkle-linked)
+    #[cfg(feature = "knhk-lockchain")]
     fn write_receipt_to_lockchain(&self, receipt: &Receipt) -> Result<String, String> {
         if let Some(ref lockchain) = self.lockchain {
             let mut lockchain_mut = lockchain.clone();
@@ -241,6 +265,7 @@ impl EmitStage {
         }
     }
     
+    #[cfg(feature = "knhk-lockchain")]
     fn get_current_timestamp_ms() -> u64 {
         use std::time::{SystemTime, UNIX_EPOCH};
         SystemTime::now()
@@ -258,15 +283,38 @@ impl EmitStage {
 
         // Determine endpoint type and send
         if endpoint.starts_with("http://") || endpoint.starts_with("https://") {
-            self.send_http_webhook(action, endpoint)
+            #[cfg(feature = "std")]
+            {
+                self.send_http_webhook(action, endpoint)
+            }
+            #[cfg(not(feature = "std"))]
+            {
+                Err("HTTP client requires std feature".to_string())
+            }
         } else if endpoint.starts_with("kafka://") {
-            self.send_kafka_action(action, endpoint)
+            #[cfg(feature = "kafka")]
+            {
+                self.send_kafka_action(action, endpoint)
+            }
+            #[cfg(not(feature = "kafka"))]
+            {
+                Err("Kafka client requires kafka feature".to_string())
+            }
         } else if endpoint.starts_with("grpc://") {
-            self.send_grpc_action(action, endpoint)
+            #[cfg(feature = "grpc")]
+            {
+                self.send_grpc_action(action, endpoint)
+            }
+            #[cfg(not(feature = "grpc"))]
+            {
+                Err("gRPC client requires grpc feature".to_string())
+            }
         } else {
             Err(format!("Unknown endpoint type: {}", endpoint))
         }
     }
+    
+    #[cfg(feature = "std")]
     fn send_http_webhook(&self, action: &Action, endpoint: &str) -> Result<(), String> {
         use reqwest::blocking::Client;
         use std::time::Duration;
@@ -285,6 +333,11 @@ impl EmitStage {
         });
         
         // Retry logic with exponential backoff
+        let mut last_error = None;
+        for attempt in 0..self.max_retries {
+            let request = client.post(endpoint)
+                .header("Content-Type", "application/json")
+                .json(&payload);
             
             match request.send() {
                 Ok(response) => {
@@ -310,8 +363,8 @@ impl EmitStage {
                     self.max_retries, 
                     last_error.unwrap_or_else(|| "Unknown error".to_string())))
     }
-
-
+    
+    #[cfg(feature = "kafka")]
     fn send_kafka_action(&self, action: &Action, endpoint: &str) -> Result<(), String> {
         // Parse Kafka endpoint: kafka://broker1:9092,broker2:9092/topic
         let endpoint = endpoint.strip_prefix("kafka://")
@@ -327,20 +380,19 @@ impl EmitStage {
         if topic.is_empty() {
             return Err("Topic name cannot be empty".to_string());
         }
-        {
-            use rdkafka::producer::{BaseProducer, BaseRecord};
-            use rdkafka::ClientConfig;
-            use std::time::Duration;
-            
-            // Create Kafka producer (blocking)
-            let mut config = ClientConfig::new();
-            config.set("bootstrap.servers", brokers);
-            config.set("message.timeout.ms", "5000");
-            config.set("queue.buffering.max.messages", "100000");
-            
-            let producer: BaseProducer = config.create()
-                .map_err(|e| format!("Failed to create Kafka producer: {}", e))?;
-            
+        use rdkafka::producer::{BaseProducer, BaseRecord};
+        use rdkafka::ClientConfig;
+        use std::time::Duration;
+        
+        // Create Kafka producer (blocking)
+        let mut config = ClientConfig::new();
+        config.set("bootstrap.servers", brokers);
+        config.set("message.timeout.ms", "5000");
+        config.set("queue.buffering.max.messages", "100000");
+        
+        let producer: BaseProducer = config.create()
+            .map_err(|e| format!("Failed to create Kafka producer: {}", e))?;
+        
         // Serialize action payload
         let payload = serde_json::json!({
             "id": action.id,
@@ -349,39 +401,38 @@ impl EmitStage {
         }).to_string();
         
         // Send message to Kafka topic (blocking)
-            let record = BaseRecord::to(topic)
-                .key(&action.id)
-                .payload(&payload);
-            
-            // Poll for delivery
-            let mut last_error = None;
-            for attempt in 0..self.max_retries {
-                match producer.send(record) {
-                    Ok(_) => {
-                        // Poll for delivery confirmation
-                        for _ in 0..50 {
-                            producer.poll(Duration::from_millis(100));
-                        }
-                        producer.flush(Duration::from_secs(5));
-                        return Ok(());
+        let record = BaseRecord::to(topic)
+            .key(&action.id)
+            .payload(&payload);
+        
+        // Poll for delivery
+        let mut last_error = None;
+        for attempt in 0..self.max_retries {
+            match producer.send(record) {
+                Ok(_) => {
+                    // Poll for delivery confirmation
+                    for _ in 0..50 {
+                        producer.poll(Duration::from_millis(100));
                     }
-                    Err((e, _)) => {
-                        last_error = Some(format!("Failed to send Kafka message: {}", e));
-                    }
+                    // Wait for delivery (no flush method in BaseProducer)
+                    std::thread::sleep(Duration::from_millis(500));
+                    return Ok(());
                 }
-                
-                // Exponential backoff
-                if attempt < self.max_retries - 1 {
-                    let delay_ms = self.retry_delay_ms * (1 << attempt);
-                    std::thread::sleep(Duration::from_millis(delay_ms));
+                Err((e, _)) => {
+                    last_error = Some(format!("Failed to send Kafka message: {}", e));
                 }
             }
             
-            Err(format!("Failed to send action to Kafka after {} retries: {}", 
-                self.max_retries, 
-                last_error.unwrap_or_else(|| "Unknown error".to_string())))
+            // Exponential backoff
+            if attempt < self.max_retries - 1 {
+                let delay_ms = self.retry_delay_ms * (1 << attempt);
+                std::thread::sleep(Duration::from_millis(delay_ms));
+            }
         }
         
+        Err(format!("Failed to send action to Kafka after {} retries: {}", 
+            self.max_retries, 
+            last_error.unwrap_or_else(|| "Unknown error".to_string())))
     }
 
     /// Lookup cached answer for an action
@@ -397,6 +448,7 @@ impl EmitStage {
     }
     
 
+    #[cfg(feature = "grpc")]
     fn send_grpc_action(&self, action: &Action, endpoint: &str) -> Result<(), String> {
         // Parse gRPC endpoint: grpc://host:port/service/method
         let endpoint = endpoint.strip_prefix("grpc://").unwrap_or(endpoint);

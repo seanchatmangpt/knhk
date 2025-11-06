@@ -11,8 +11,8 @@ use std::io::BufRead;
 
 use oxigraph::store::Store;
 use oxigraph::io::RdfFormat;
-use oxigraph::model::{Term, Quad, NamedOrBlankNode};
-use oxigraph::sparql::Query;
+use oxigraph::model::{Term, NamedOrBlankNode};
+use oxigraph::sparql::{QueryResults, Query};
 
 use crate::error::PipelineError;
 
@@ -36,7 +36,7 @@ impl IngestStage {
     /// 3. Validate basic structure
     /// 4. Return raw triples
     pub fn ingest(&self) -> Result<IngestResult, PipelineError> {
-        let mut all_triples = Vec::new();
+        let all_triples = Vec::new();
         let mut metadata = BTreeMap::new();
 
         // Poll each connector
@@ -55,7 +55,7 @@ impl IngestStage {
     }
 
     /// Parse RDF/Turtle content into raw triples using oxigraph Store
-    /// 
+    ///
     /// Full Turtle syntax support including:
     /// - Prefix resolution
     /// - Blank nodes
@@ -65,75 +65,85 @@ impl IngestStage {
         // Create temporary store for parsing
         let store = Store::new()
             .map_err(|e| PipelineError::IngestError(format!("Failed to create oxigraph store: {}", e)))?;
-        
+
         // Load Turtle data into store
         store.load_from_reader(RdfFormat::Turtle, content.as_bytes())
             .map_err(|e| PipelineError::IngestError(format!("Failed to load Turtle data: {}", e)))?;
-        
+
         // Extract all quads from store using CONSTRUCT query
-        // Parse query first to avoid deprecated string-based query API
+        // Note: Query::parse() and store.query() are deprecated in favor of SparqlEvaluator,
+        // but SparqlEvaluator::parse_query() returns PreparedSparqlQuery which cannot be
+        // converted to Query, and there's no non-deprecated evaluation API yet.
+        // Using deprecated APIs is necessary until oxigraph provides a complete migration path.
+        #[allow(deprecated)]
         let query = Query::parse("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }", None)
             .map_err(|e| PipelineError::IngestError(format!("Failed to parse query: {}", e)))?;
-        
+
+        #[allow(deprecated)]
         let results = store.query(query)
             .map_err(|e| PipelineError::IngestError(format!("Failed to query store: {}", e)))?;
-        
+
         let mut triples = Vec::new();
-        if let oxigraph::sparql::QueryResults::Graph(quads_iter) = results {
-            for quad_result in quads_iter {
-                let quad = quad_result
-                    .map_err(|e| PipelineError::IngestError(format!("Failed to read quad: {}", e)))?;
-                
-                let raw = Self::convert_quad(&quad)?;
+        if let QueryResults::Graph(triples_iter) = results {
+            for triple_result in triples_iter {
+                let triple = triple_result
+                    .map_err(|e| PipelineError::IngestError(format!("Failed to read triple: {}", e)))?;
+
+                let raw = Self::convert_triple(&triple)?;
                 triples.push(raw);
             }
         }
-        
+
         Ok(triples)
     }
 
     /// Parse RDF/Turtle from a BufRead stream (memory-efficient for large files)
         pub fn parse_rdf_turtle_stream<R: BufRead>(
         reader: R,
-        base_uri: Option<&str>
+        _base_uri: Option<&str>
     ) -> Result<Vec<RawTriple>, PipelineError> {
         // Create temporary store for parsing
         let store = Store::new()
             .map_err(|e| PipelineError::IngestError(format!("Failed to create oxigraph store: {}", e)))?;
-        
+
         // Load Turtle data from reader into store
         store.load_from_reader(RdfFormat::Turtle, reader)
             .map_err(|e| PipelineError::IngestError(format!("Failed to load Turtle data from stream: {}", e)))?;
-        
+
         // Extract all quads from store using CONSTRUCT query
-        // Parse query first to avoid deprecated string-based query API
+        // Note: Query::parse() and store.query() are deprecated in favor of SparqlEvaluator,
+        // but SparqlEvaluator::parse_query() returns PreparedSparqlQuery which cannot be
+        // converted to Query, and there's no non-deprecated evaluation API yet.
+        // Using deprecated APIs is necessary until oxigraph provides a complete migration path.
+        #[allow(deprecated)]
         let query = Query::parse("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }", None)
             .map_err(|e| PipelineError::IngestError(format!("Failed to parse query: {}", e)))?;
-        
+
+        #[allow(deprecated)]
         let results = store.query(query)
             .map_err(|e| PipelineError::IngestError(format!("Failed to query store: {}", e)))?;
-        
+
         let mut triples = Vec::new();
-        if let oxigraph::sparql::QueryResults::Graph(quads_iter) = results {
-            for quad_result in quads_iter {
-                let quad = quad_result
-                    .map_err(|e| PipelineError::IngestError(format!("Failed to read quad: {}", e)))?;
-                
-                let raw = Self::convert_quad(&quad)?;
+        if let QueryResults::Graph(triples_iter) = results {
+            for triple_result in triples_iter {
+                let triple = triple_result
+                    .map_err(|e| PipelineError::IngestError(format!("Failed to read triple: {}", e)))?;
+
+                let raw = Self::convert_triple(&triple)?;
                 triples.push(raw);
             }
         }
-        
+
         Ok(triples)
     }
 
-    /// Convert oxigraph::model::Quad to RawTriple
-    fn convert_quad(quad: &Quad) -> Result<RawTriple, PipelineError> {
+    /// Convert oxigraph::model::Triple to RawTriple
+    fn convert_triple(triple: &oxigraph::model::Triple) -> Result<RawTriple, PipelineError> {
         Ok(RawTriple {
-            subject: Self::named_or_blank_to_string(&quad.subject)?,
-            predicate: quad.predicate.as_str().to_string(),
-            object: Self::term_to_string(&quad.object)?,
-            graph: Some(Self::graph_name_to_string(&quad.graph_name)?),
+            subject: Self::named_or_blank_to_string(&triple.subject)?,
+            predicate: triple.predicate.as_str().to_string(),
+            object: Self::term_to_string(&triple.object)?,
+            graph: None,
         })
     }
 

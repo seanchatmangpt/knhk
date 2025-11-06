@@ -6,7 +6,6 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
-use std::format;
 use alloc::format;
 use crate::error::PipelineError;
 use crate::load::{LoadResult, SoAArrays, PredRun};
@@ -237,21 +236,22 @@ impl ReflexMap {
             let mu_hash = self.compute_mu_hash_for_run(soa, run);
             
             // Create receipt
-            Ok(Receipt {
+            return Ok(Receipt {
                 id: format!("receipt_{}", hot_receipt.span_id),
                 ticks: hot_receipt.ticks,
                 lanes: hot_receipt.lanes,
                 span_id: hot_receipt.span_id,
                 a_hash: hot_receipt.a_hash,
                 mu_hash,
-            })
+            });
         }
-        
-                {
+
+        #[cfg(not(feature = "std"))]
+        {
             // No-op implementation for no_std
-            Err(PipelineError::ReflexError(
+            return Err(PipelineError::ReflexError(
                 "Hot path execution requires std feature".to_string()
-            ))
+            ));
         }
     }
 
