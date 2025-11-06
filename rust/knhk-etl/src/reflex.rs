@@ -315,7 +315,7 @@ impl ReflexStage {
 
     /// Generate OTEL-compatible span ID (deterministic in no_std mode)
     fn generate_span_id() -> u64 {
-        #[cfg(feature = "std")]
+        #[cfg(feature = "knhk-otel")]
         {
             use knhk_otel::generate_span_id;
             generate_span_id()

@@ -37,10 +37,12 @@ impl EmitStage {
             } else {
                 None
             },
+            #[cfg(not(feature = "std"))]
+            lockchain: None,
         }
     }
     
-    #[cfg(feature = "std")]
+    #[cfg(feature = "knhk-lockchain")]
     pub fn with_git_repo(mut self, repo_path: String) -> Self {
         if self.lockchain_enabled {
             self.lockchain = Some(knhk_lockchain::Lockchain::with_git_repo(repo_path));
@@ -62,7 +64,7 @@ impl EmitStage {
 
         // Write receipts to lockchain
         if self.lockchain_enabled {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "knhk-lockchain")]
             {
                 // Use mutable lockchain reference
                 let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
@@ -166,7 +168,7 @@ impl EmitStage {
     }
 
     /// Write receipt to lockchain (Merkle-linked) - with mutable lockchain reference
-    #[cfg(feature = "std")]
+    #[cfg(feature = "knhk-lockchain")]
     fn write_receipt_to_lockchain_with_lockchain(
         &self,
         lockchain: &mut knhk_lockchain::Lockchain,

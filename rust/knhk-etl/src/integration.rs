@@ -74,7 +74,7 @@ impl IntegratedPipeline {
         let result = pipeline.execute()?;
         
         // Record OTEL metrics using proper API
-        #[cfg(all(feature = "std", feature = "knhk-otel"))]
+        #[cfg(feature = "knhk-otel")]
         let metrics_recorded = {
             use knhk_otel::{Tracer, Metric, MetricValue, MetricsHelper};
             use std::time::{SystemTime, UNIX_EPOCH};
