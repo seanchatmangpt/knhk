@@ -4,6 +4,8 @@
 
 extern crate alloc;
 extern crate std;
+#[cfg(feature = "knhk-otel")]
+extern crate knhk_otel;
 
 use alloc::string::{String, ToString};
 use alloc::format;
@@ -66,20 +68,22 @@ pub fn handle_r1_failure(
     
     // Escalate if budget exceeded - record OTEL event
     if budget_exceeded {
-        use knhk_otel::{Tracer, Metric, MetricValue};
-        use std::time::{SystemTime, UNIX_EPOCH};
+        #[cfg(feature = "knhk-otel")]
+        {
+            use knhk_otel::{Tracer, Metric, MetricValue};
+            use std::time::{SystemTime, UNIX_EPOCH};
 
-        let mut tracer = Tracer::new();
-        let timestamp_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-        
-        // Record escalation event
-        let mut attrs = alloc::collections::BTreeMap::new();
-        attrs.insert("runtime_class".to_string(), "R1".to_string());
-        attrs.insert("receipt_id".to_string(), receipt.id.clone());
-        attrs.insert("ticks".to_string(), receipt.ticks.to_string());
+            let mut tracer = Tracer::new();
+            let timestamp_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            
+            // Record escalation event
+            let mut attrs = alloc::collections::BTreeMap::new();
+            attrs.insert("runtime_class".to_string(), "R1".to_string());
+            attrs.insert("receipt_id".to_string(), receipt.id.clone());
+            attrs.insert("ticks".to_string(), receipt.ticks.to_string());
             attrs.insert("budget".to_string(), "8".to_string());
             
             let metric = Metric {
@@ -90,18 +94,12 @@ pub fn handle_r1_failure(
             };
             tracer.record_metric(metric);
         }
-        
-        return Ok(R1FailureAction {
-            delta,
-            receipt,
-            escalate: true,
-        });
     }
-
+    
     Ok(R1FailureAction {
         delta,
         receipt,
-        escalate: false,
+        escalate: budget_exceeded,
     })
 }
 

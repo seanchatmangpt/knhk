@@ -8,7 +8,9 @@ crate-type = ["cdylib", "staticlib"]
 path = "src/lib.rs"
 
 [dependencies]
+knhk-validation = { path = "../knhk-validation", version = "0.1.0", features = ["policy-engine"], optional = true }
 
 [features]
 default = []
 std = []
+validation = ["dep:knhk-validation"]

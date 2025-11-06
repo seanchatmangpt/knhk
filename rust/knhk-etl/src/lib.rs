@@ -6,7 +6,9 @@ extern crate alloc;
 extern crate std;
 
 // All dependencies always available
+#[cfg(feature = "knhk-otel")]
 use knhk_otel as _;
+#[cfg(feature = "knhk-lockchain")]
 use knhk_lockchain as _;
 
 // Module declarations
@@ -14,7 +16,7 @@ pub mod types;
 pub mod error;
 
 #[cfg(feature = "std")]
-pub mod diagnostics;
+// pub mod diagnostics;  // Disabled - requires knhk-validation (circular dependency)
 pub mod ingest;
 pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod transform;

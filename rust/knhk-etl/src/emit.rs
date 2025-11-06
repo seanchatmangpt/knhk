@@ -5,6 +5,7 @@
 extern crate alloc;
 #[cfg(feature = "knhk-lockchain")]
 extern crate knhk_lockchain;
+#[cfg(feature = "knhk-otel")]
 extern crate knhk_otel;
 
 use alloc::vec::Vec;
@@ -79,26 +80,39 @@ impl EmitStage {
 
         // Write receipts to lockchain
         if self.lockchain_enabled {
-            // Use mutable lockchain reference
-            let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
-                lockchain.clone()
-            } else {
-                return Err(PipelineError::EmitError(
-                    "Lockchain enabled but not initialized".to_string()
-                ));
-            };
+            #[cfg(feature = "knhk-lockchain")]
+            {
+                // Use mutable lockchain reference
+                let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
+                    lockchain.clone()
+                } else {
+                    return Err(PipelineError::EmitError(
+                        "Lockchain enabled but not initialized".to_string()
+                    ));
+                };
+                
+                for receipt in &input.receipts {
+                    match self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_ref, receipt) {
+                        Ok(hash) => {
+                            receipts_written += 1;
+                            lockchain_hashes.push(hash);
+                        }
+                        Err(e) => {
+                            return Err(PipelineError::EmitError(
+                                format!("Failed to write receipt {} to lockchain: {}", receipt.id, e)
+                            ));
+                        }
+                    }
+                }
+            }
             
-            for receipt in &input.receipts {
-                match self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_ref, receipt) {
-                    Ok(hash) => {
-                        receipts_written += 1;
-                        lockchain_hashes.push(hash);
-                    }
-                    Err(e) => {
-                        return Err(PipelineError::EmitError(
-                            format!("Failed to write receipt {} to lockchain: {}", receipt.id, e)
-                        ));
-                    }
+            #[cfg(not(feature = "knhk-lockchain"))]
+            {
+                // Lockchain feature not enabled, compute hash only
+                for receipt in &input.receipts {
+                    let hash = Self::compute_receipt_hash(receipt);
+                    receipts_written += 1;
+                    lockchain_hashes.push(format!("{:016x}", hash));
                 }
             }
         }
@@ -248,18 +262,19 @@ impl EmitStage {
     }
     
     /// Write receipt to lockchain (Merkle-linked)
-    
     fn write_receipt_to_lockchain(&self, receipt: &Receipt) -> Result<String, String> {
-        if let Some(ref lockchain) = self.lockchain {
-            let mut lockchain_mut = lockchain.clone();
-            self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_mut, receipt)
-        } else {
-            // Lockchain disabled - compute hash only
-            let hash = Self::compute_receipt_hash(receipt);
-            Ok(format!("{:016x}", hash))
+        #[cfg(feature = "knhk-lockchain")]
+        {
+            if let Some(ref lockchain) = self.lockchain {
+                let mut lockchain_mut = lockchain.clone();
+                return self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_mut, receipt);
+            }
         }
+
+        // Lockchain disabled or feature not enabled - compute hash only
+        let hash = Self::compute_receipt_hash(receipt);
+        Ok(format!("{:016x}", hash))
     }
-    
     
     fn get_current_timestamp_ms() -> u64 {
         use std::time::{SystemTime, UNIX_EPOCH};

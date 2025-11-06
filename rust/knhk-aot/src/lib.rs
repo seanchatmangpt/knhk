@@ -8,6 +8,9 @@ extern crate alloc;
 
 use alloc::string::String;
 
+#[cfg(feature = "validation")]
+use knhk_validation::policy_engine::{PolicyEngine, PolicyViolation};
+
 // Module declarations - all modules included
 pub mod template;
 pub mod template_analyzer;
@@ -37,9 +40,20 @@ impl AotGuard {
     /// Validate hook IR before execution
     /// Returns Ok(()) if valid, Err(ValidationResult) if invalid
     pub fn validate_ir(op: u32, run_len: u64, k: u64) -> Result<(), ValidationResult> {
-        // Check run length ≤ 8 (Chatman Constant constraint)
-        if run_len > 8 {
-            return Err(ValidationResult::InvalidRunLength);
+        #[cfg(feature = "validation")]
+        {
+            // Use policy engine for guard constraint validation
+            let policy_engine = PolicyEngine::new();
+            if let Err(violation) = policy_engine.validate_guard_constraint(run_len) {
+                return Err(ValidationResult::InvalidRunLength);
+            }
+        }
+        #[cfg(not(feature = "validation"))]
+        {
+            // Check run length ≤ 8 (Chatman Constant constraint)
+            if run_len > 8 {
+                return Err(ValidationResult::InvalidRunLength);
+            }
         }
         
         // Validate operation is in hot path set

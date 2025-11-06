@@ -15,6 +15,10 @@ use crate::runtime_class::RuntimeClass;
 use crate::slo_monitor::SloMonitor;
 use crate::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
 
+// Note: Validation feature disabled to avoid circular dependency with knhk-validation
+// #[cfg(feature = "validation")]
+// use knhk_validation::policy_engine::PolicyEngine;
+
 use std::cell::RefCell;
 
 /// Stage 4: Reflex
@@ -31,9 +35,9 @@ impl ReflexStage {
     pub fn new() -> Self {
         Self {
             tick_budget: 8,
-                        r1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::R1, 1000))),
-                        w1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::W1, 1000))),
-                        c1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::C1, 1000))),
+            r1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::R1, 1000))),
+            w1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::W1, 1000))),
+            c1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::C1, 1000))),
         }
     }
 
@@ -62,6 +66,7 @@ impl ReflexStage {
         // Execute hooks for each predicate run
         for run in &input.runs {
             // Validate run length ≤ 8 (Chatman Constant guard - defense in depth)
+            // Note: Validation feature disabled to avoid circular dependency with knhk-validation
             if run.len > 8 {
                 return Err(PipelineError::GuardViolation(
                     format!("Run length {} exceeds max_run_len 8", run.len)
@@ -141,29 +146,22 @@ impl ReflexStage {
             // Check tick budget violation
             if receipt.ticks > self.tick_budget {
                 // Handle R1 failure for budget exceeded
-                                {
-                    let failure_action = handle_r1_failure(
-                        LoadResult {
-                            soa_arrays: input.soa_arrays.clone(),
-                            runs: vec![run.clone()],
-                        },
-                        receipt.clone(),
-                        true, // Budget exceeded
-                    ).map_err(|e| PipelineError::R1FailureError(e))?;
-                    
-                    // Escalation is always true for budget exceeded
-                    if failure_action.escalate {
-                        return Err(PipelineError::R1FailureError(
-                            format!("Hook execution {} ticks exceeds budget {} ticks. Receipt {} emitted, Δ parked",
-                                receipt.ticks, self.tick_budget, receipt.id)
-                        ));
-                }
-                }
-                                {
-                return Err(PipelineError::R1FailureError(
-                    format!("Hook execution {} ticks exceeds budget {} ticks", 
-                        receipt.ticks, self.tick_budget)
-                ));
+                // Note: Validation feature disabled to avoid circular dependency with knhk-validation
+                let failure_action = handle_r1_failure(
+                    LoadResult {
+                        soa_arrays: input.soa_arrays.clone(),
+                        runs: vec![run.clone()],
+                    },
+                    receipt.clone(),
+                    true, // Budget exceeded
+                ).map_err(|e| PipelineError::R1FailureError(e))?;
+                
+                // Escalation is always true for budget exceeded
+                if failure_action.escalate {
+                    return Err(PipelineError::R1FailureError(
+                        format!("Hook execution {} ticks exceeds budget {} ticks. Receipt {} emitted, Δ parked",
+                            receipt.ticks, self.tick_budget, receipt.id)
+                    ));
                 }
             }
 
