@@ -1,0 +1,307 @@
+syntax = "proto3";
+
+package kgc;
+
+// KGC Service - Main service for enterprise app interactions
+service KgcService {
+    // Execute RDF transaction with hooks
+    rpc ExecuteTransaction(TransactionRequest) returns (TransactionResponse);
+    
+    // Validate RDF graph against schema
+    rpc ValidateGraph(GraphValidationRequest) returns (GraphValidationResponse);
+    
+    // Evaluate a single hook
+    rpc EvaluateHook(HookEvaluationRequest) returns (HookEvaluationResponse);
+    
+    // Query policy packs
+    rpc QueryPolicy(PolicyQueryRequest) returns (PolicyQueryResponse);
+    
+    // Health check endpoint
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+    
+    // Get sidecar metrics
+    rpc GetMetrics(MetricsRequest) returns (MetricsResponse);
+}
+
+// Transaction request
+message TransactionRequest {
+    // RDF deltas (Turtle format)
+    string rdf_delta = 1;
+    
+    // SPARQL query (optional)
+    string query = 2;
+    
+    // Validation options
+    ValidationOptions validation = 3;
+    
+    // Transaction metadata
+    map<string, string> metadata = 4;
+}
+
+// Transaction response
+message TransactionResponse {
+    // Actions (A = μ(O))
+    repeated Action actions = 1;
+    
+    // Receipts (hash(A) = hash(μ(O)))
+    repeated Receipt receipts = 2;
+    
+    // Errors (if any)
+    repeated string errors = 3;
+    
+    // Execution metadata
+    ExecutionMetadata metadata = 4;
+}
+
+// Graph validation request
+message GraphValidationRequest {
+    // RDF graph to validate (Turtle format)
+    string rdf_graph = 1;
+    
+    // Schema IRI
+    string schema_iri = 2;
+    
+    // Validation options
+    ValidationOptions options = 3;
+}
+
+// Graph validation response
+message GraphValidationResponse {
+    // Validation result
+    bool valid = 1;
+    
+    // Validation errors (if any)
+    repeated string errors = 2;
+    
+    // Validation warnings (if any)
+    repeated string warnings = 3;
+}
+
+// Hook evaluation request
+message HookEvaluationRequest {
+    // Hook ID
+    string hook_id = 1;
+    
+    // Input data (Turtle format)
+    string input_data = 2;
+    
+    // Evaluation options
+    map<string, string> options = 3;
+}
+
+// Hook evaluation response
+message HookEvaluationResponse {
+    // Hook execution result
+    bool success = 1;
+    
+    // Result data (if any)
+    string result_data = 2;
+    
+    // Receipt
+    Receipt receipt = 3;
+    
+    // Errors (if any)
+    repeated string errors = 4;
+}
+
+// Policy query request
+message PolicyQueryRequest {
+    // Policy pack ID
+    string policy_pack_id = 1;
+    
+    // Query parameters
+    map<string, string> parameters = 2;
+}
+
+// Policy query response
+message PolicyQueryResponse {
+    // Policy results
+    repeated PolicyResult results = 1;
+    
+    // Errors (if any)
+    repeated string errors = 2;
+}
+
+// Health check request
+message HealthCheckRequest {
+    // Check type (liveness, readiness)
+    string check_type = 1;
+}
+
+// Health check response
+message HealthCheckResponse {
+    // Health status
+    bool healthy = 1;
+    
+    // Status message
+    string message = 2;
+    
+    // Component statuses
+    map<string, bool> components = 3;
+}
+
+// Metrics request
+message MetricsRequest {
+    // Metrics filter (optional)
+    map<string, string> filters = 1;
+}
+
+// Metrics response
+message MetricsResponse {
+    // Request counts
+    RequestCounts request_counts = 1;
+    
+    // Latency metrics
+    LatencyMetrics latency = 2;
+    
+    // Batch metrics
+    BatchMetrics batch = 3;
+    
+    // Circuit breaker metrics
+    CircuitBreakerMetrics circuit_breaker = 4;
+    
+    // Retry metrics
+    RetryMetrics retry = 5;
+}
+
+// Validation options
+message ValidationOptions {
+    // Validate against schema
+    bool validate_schema = 1;
+    
+    // Validate invariants
+    bool validate_invariants = 2;
+    
+    // Guard constraints
+    GuardConstraints guards = 3;
+}
+
+// Guard constraints
+message GuardConstraints {
+    // Max run length (≤8)
+    uint32 max_run_len = 1;
+    
+    // Max batch size
+    uint32 max_batch_size = 2;
+    
+    // Tick budget (≤8)
+    uint32 tick_budget = 3;
+}
+
+// Action (A = μ(O))
+message Action {
+    // Action type
+    string action_type = 1;
+    
+    // Action data (JSON)
+    string data = 2;
+    
+    // Action metadata
+    map<string, string> metadata = 3;
+}
+
+// Receipt (hash(A) = hash(μ(O)))
+message Receipt {
+    // Ticks (≤8)
+    uint32 ticks = 1;
+    
+    // Lanes (SIMD width)
+    uint32 lanes = 2;
+    
+    // Span ID (OTEL-compatible)
+    uint64 span_id = 3;
+    
+    // Action hash fragment
+    uint64 a_hash = 4;
+    
+    // Receipt hash
+    string receipt_hash = 5;
+}
+
+// Execution metadata
+message ExecutionMetadata {
+    // Execution time (ms)
+    uint64 execution_time_ms = 1;
+    
+    // Path used (hot, warm, cold)
+    string path = 2;
+    
+    // Batch size (if batched)
+    uint32 batch_size = 3;
+    
+    // Retry count
+    uint32 retry_count = 4;
+}
+
+// Policy result
+message PolicyResult {
+    // Policy ID
+    string policy_id = 1;
+    
+    // Policy result
+    bool result = 2;
+    
+    // Result data
+    string data = 3;
+}
+
+// Request counts
+message RequestCounts {
+    // Total requests
+    uint64 total = 1;
+    
+    // Successful requests
+    uint64 success = 2;
+    
+    // Failed requests
+    uint64 failure = 3;
+}
+
+// Latency metrics
+message LatencyMetrics {
+    // P50 latency (ms)
+    uint64 p50_ms = 1;
+    
+    // P95 latency (ms)
+    uint64 p95_ms = 2;
+    
+    // P99 latency (ms)
+    uint64 p99_ms = 3;
+}
+
+// Batch metrics
+message BatchMetrics {
+    // Total batches
+    uint64 total_batches = 1;
+    
+    // Average batch size
+    double avg_batch_size = 2;
+    
+    // Max batch size
+    uint32 max_batch_size = 3;
+}
+
+// Circuit breaker metrics
+message CircuitBreakerMetrics {
+    // Current state (closed, open, half_open)
+    string state = 1;
+    
+    // Failure count
+    uint32 failure_count = 2;
+    
+    // Success count
+    uint32 success_count = 3;
+}
+
+// Retry metrics
+message RetryMetrics {
+    // Total retries
+    uint64 total_retries = 1;
+    
+    // Successful retries
+    uint64 successful_retries = 2;
+    
+    // Failed retries
+    uint64 failed_retries = 3;
+}
+
