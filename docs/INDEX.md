@@ -97,6 +97,11 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - DMADV tollgates (Define, Measure, Analyze, Design, Verify)
    - Risk mitigation strategies
    - Acceptance criteria and governance
+24. **[DFLSS Project Charter DoD](DFLSS_PROJECT_CHARTER_DOD.md)** - Definition of Done for project charter
+   - 12-section acceptance checklist
+   - Evidence requirements for each item
+   - KGC invariants verification
+   - Sign-off criteria for Measure phase entry
 
 ### Research & Evaluation
 24. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling

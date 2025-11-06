@@ -248,3 +248,24 @@ Process Owner: _____ Date: ____
 
 Black Belt: ________ Date: ____
 
+---
+
+## Definition of Done
+
+Before entering the Measure phase, all items in the [Definition of Done for DFLSS Project Charter](DFLSS_PROJECT_CHARTER_DOD.md) must be completed and verified.
+
+**Key Requirements**:
+- All approvals signed and dated
+- Problem/VOC/Baseline documented with evidence
+- CTQs defined with SMART criteria and metrics owners
+- Scope, financials, and risks approved
+- Architecture readiness documented
+- Ontology and policy inputs cataloged
+- Risk register with mitigations
+- Governance and controls established
+- Dashboards and evidence paths provisioned
+- Communications and training plans ready
+- Acceptance checklist complete
+
+See [Definition of Done](DFLSS_PROJECT_CHARTER_DOD.md) for complete checklist.
+
