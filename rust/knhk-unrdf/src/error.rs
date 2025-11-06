@@ -20,6 +20,16 @@ pub enum UnrdfError {
     SerializationFailed(String),
     #[error("Invalid input: {0}")]
     InvalidInput(String),
+    #[error("Constitution violation: {0}")]
+    ConstitutionViolation(String),
+    #[error("Typing violation: {0}")]
+    TypingViolation(String),
+    #[error("Order violation: {0}")]
+    OrderViolation(String),
+    #[error("Guard violation: {0}")]
+    GuardViolation(String),
+    #[error("Invariant violation: {0}")]
+    InvariantViolation(String),
 }
 
 /// Error code enumeration for FFI
@@ -48,6 +58,11 @@ impl From<&UnrdfError> for UnrdfErrorCode {
             UnrdfError::ValidationFailed(_) => UnrdfErrorCode::ValidationFailed,
             UnrdfError::SerializationFailed(_) => UnrdfErrorCode::SerializationFailed,
             UnrdfError::InvalidInput(_) => UnrdfErrorCode::InvalidInput,
+            UnrdfError::ConstitutionViolation(_) => UnrdfErrorCode::ValidationFailed,
+            UnrdfError::TypingViolation(_) => UnrdfErrorCode::ValidationFailed,
+            UnrdfError::OrderViolation(_) => UnrdfErrorCode::ValidationFailed,
+            UnrdfError::GuardViolation(_) => UnrdfErrorCode::ValidationFailed,
+            UnrdfError::InvariantViolation(_) => UnrdfErrorCode::ValidationFailed,
         }
     }
 }

@@ -1,15 +1,26 @@
 //! Path selection logic for routing queries to hot/warm/cold paths
 //! Analyzes query complexity and data size to determine optimal execution path
 
+use crate::runtime_class::RuntimeClass;
+
 /// Query execution path
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QueryPath {
     /// Hot path: ≤8 ticks, simple operations, data size ≤8
     Hot,
-    /// Warm path: ≤500ms, SPARQL queries, data size ≤10K
+    /// Warm path: ≤500µs budget, ≤1ms SLO, SPARQL queries, data size ≤10K
     Warm,
-    /// Cold path: >500ms, complex operations, SHACL, reasoning
+    /// Cold path: ≤200ms budget, ≤500ms SLO, complex operations, SHACL, reasoning
     Cold,
+}
+
+/// Path selection result with runtime class
+#[derive(Debug, Clone)]
+pub struct PathSelectionResult {
+    /// Query execution path
+    pub path: QueryPath,
+    /// Runtime class (R1/W1/C1)
+    pub runtime_class: RuntimeClass,
 }
 
 /// Select execution path based on query and data characteristics
@@ -33,6 +44,32 @@ pub fn select_path(query: &str, data_size: usize) -> QueryPath {
     
     // Otherwise, use cold path (unrdf)
     QueryPath::Cold
+}
+
+/// Select execution path with runtime class classification
+/// 
+/// # Arguments
+/// * `query` - SPARQL query string
+/// * `data_size` - Estimated data size (number of triples)
+/// * `operation_type` - Operation type (e.g., "ASK_SP", "CONSTRUCT8", "SPARQL_SELECT")
+/// 
+/// # Returns
+/// `PathSelectionResult` with path and runtime class
+pub fn select_path_with_class(query: &str, data_size: usize, operation_type: &str) -> Result<PathSelectionResult, String> {
+    // Classify operation using RuntimeClass
+    let runtime_class = RuntimeClass::classify_operation(operation_type, data_size)?;
+    
+    // Map runtime class to query path
+    let path = match runtime_class {
+        RuntimeClass::R1 => QueryPath::Hot,
+        RuntimeClass::W1 => QueryPath::Warm,
+        RuntimeClass::C1 => QueryPath::Cold,
+    };
+    
+    Ok(PathSelectionResult {
+        path,
+        runtime_class,
+    })
 }
 
 /// Check if query fits hot path constraints

@@ -25,7 +25,7 @@ pub struct WarmReceipt {
     pub a_hash: u64,
 }
 
-/// Execute CONSTRUCT8 in warm path (≤500ms budget)
+/// Execute CONSTRUCT8 in warm path (≤500µs budget, ≤1ms SLO)
 /// 
 /// This function routes CONSTRUCT8 operations from hot path to warm path
 /// since CONSTRUCT8 performs emit work (SIMD loads, blending, stores) which
@@ -63,7 +63,7 @@ pub fn execute_construct8(
         a_hash: receipt.a_hash,
     };
 
-    // Record execution time (warm path has ≤500ms budget)
+    // Record execution time (warm path has ≤500µs budget, ≤1ms SLO)
     // Note: Actual timing measurement happens at Rust level, not in C hot path
     let latency_us = 0; // Will be measured externally
 

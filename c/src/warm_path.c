@@ -38,19 +38,19 @@ int knhk_warm_execute_construct8(
 
     clock_gettime(CLOCK_MONOTONIC, &end);
 
-    // Calculate latency in milliseconds
-    uint64_t start_ms = (uint64_t)(start.tv_sec * 1000 + start.tv_nsec / 1000000);
-    uint64_t end_ms = (uint64_t)(end.tv_sec * 1000 + end.tv_nsec / 1000000);
-    uint64_t latency_ms = end_ms - start_ms;
+    // Calculate latency in microseconds (for W1 budget: ≤500µs)
+    uint64_t start_us = (uint64_t)(start.tv_sec * 1000000 + start.tv_nsec / 1000);
+    uint64_t end_us = (uint64_t)(end.tv_sec * 1000000 + end.tv_nsec / 1000);
+    uint64_t latency_us = end_us - start_us;
 
-    // Check timeout (500ms budget)
-    if (latency_ms > 500) {
+    // Check timeout (500µs budget)
+    if (latency_us > 500) {
         return -1;
     }
 
     // Fill result structure
     result->success = (lanes_written > 0) ? 1 : 0;
-    result->latency_ms = latency_ms;
+    result->latency_ms = latency_us / 1000; // Convert to milliseconds for result
     result->lanes_written = (size_t)lanes_written;
     result->span_id = rcpt.span_id;
 

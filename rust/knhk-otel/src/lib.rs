@@ -17,6 +17,9 @@ use alloc::string::ToString;
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+// Module declarations
+pub mod runtime_class;
+
 /// Trace ID (128-bit)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TraceId(pub u128);

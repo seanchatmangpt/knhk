@@ -10,6 +10,8 @@ use alloc::format;
 
 use crate::error::PipelineError;
 use crate::reflex::{ReflexResult, Action, Receipt};
+use crate::runtime_class::RuntimeClass;
+use crate::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
 
 /// Stage 5: Emit
 /// Actions (A) + Receipts → Lockchain + Downstream APIs
@@ -116,11 +118,43 @@ impl EmitStage {
             }
 
             if !success {
-                // All endpoints failed
-                return Err(PipelineError::EmitError(
-                    format!("Failed to send action {} to all endpoints: {:?}", 
-                        action.id, last_error)
-                ));
+                // All endpoints failed - handle based on runtime class
+                // For now, classify as W1 (warm path operations)
+                let runtime_class = RuntimeClass::classify_operation("CONSTRUCT8", 0)
+                    .unwrap_or(RuntimeClass::W1);
+                
+                match runtime_class {
+                    RuntimeClass::R1 => {
+                        // R1 failure: escalate
+                        return Err(PipelineError::R1FailureError(
+                            format!("Failed to send action {} to all endpoints: {:?}", 
+                                action.id, last_error)
+                        ));
+                    },
+                    RuntimeClass::W1 => {
+                        // W1 failure: retry or degrade
+                        let retry_action = handle_w1_failure(0, self.max_retries, None)
+                            .map_err(|e| PipelineError::W1FailureError(e))?;
+                        
+                        if retry_action.use_cache {
+                            // Degrade to cached answer (not implemented yet)
+                            return Err(PipelineError::W1FailureError(
+                                "Max retries exceeded, cache degradation not available".to_string()
+                            ));
+                        }
+                        // Retry logic handled by caller
+                        return Err(PipelineError::W1FailureError(
+                            format!("Failed to send action {}, retry count: {}", 
+                                action.id, retry_action.retry_count)
+                        ));
+                    },
+                    RuntimeClass::C1 => {
+                        // C1 failure: async finalize
+                        let _ = handle_c1_failure(&action.id)
+                            .map_err(|e| PipelineError::C1FailureError(e))?;
+                        // Continue processing other actions (non-blocking)
+                    },
+                }
             }
         }
 

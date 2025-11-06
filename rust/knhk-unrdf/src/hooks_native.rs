@@ -11,6 +11,8 @@ use crate::query_native::NativeStore;
 #[cfg(feature = "native")]
 use crate::canonicalize::get_canonical_hash;
 #[cfg(feature = "native")]
+use crate::constitution::{validate_constitution, Schema, Invariants};
+#[cfg(feature = "native")]
 use sha2::{Sha256, Digest};
 #[cfg(feature = "native")]
 use rayon::prelude::*;
@@ -23,8 +25,11 @@ use serde_json::Value as JsonValue;
 
 #[cfg(feature = "native")]
 /// Hook registry for native Rust hooks
+/// Enforces constitution constraints: ∧(Typing, Order, Guard, Invariant)
 pub struct NativeHookRegistry {
     hooks: Arc<Mutex<HashMap<String, HookDefinition>>>,
+    schema: Arc<Mutex<Option<Schema>>>,
+    invariants: Arc<Mutex<Option<Invariants>>>,
 }
 
 #[cfg(feature = "native")]
@@ -33,13 +38,59 @@ impl NativeHookRegistry {
     pub fn new() -> Self {
         Self {
             hooks: Arc::new(Mutex::new(HashMap::new())),
+            schema: Arc::new(Mutex::new(None)),
+            invariants: Arc::new(Mutex::new(None)),
         }
     }
 
-    /// Register a hook
+    /// Create a new hook registry with schema and invariants
+    pub fn with_constraints(schema: Option<Schema>, invariants: Option<Invariants>) -> Self {
+        Self {
+            hooks: Arc::new(Mutex::new(HashMap::new())),
+            schema: Arc::new(Mutex::new(schema)),
+            invariants: Arc::new(Mutex::new(invariants)),
+        }
+    }
+
+    /// Set schema for constitution validation
+    pub fn set_schema(&self, schema: Schema) -> UnrdfResult<()> {
+        let mut s = self.schema.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire schema lock: {}", e)))?;
+        *s = Some(schema);
+        Ok(())
+    }
+
+    /// Set invariants for constitution validation
+    pub fn set_invariants(&self, invariants: Invariants) -> UnrdfResult<()> {
+        let mut i = self.invariants.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire invariants lock: {}", e)))?;
+        *i = Some(invariants);
+        Ok(())
+    }
+
+    /// Register a hook with constitution validation
+    /// Enforces: ∧(Typing, Order, Guard, Invariant)
     pub fn register(&self, hook: HookDefinition) -> UnrdfResult<()> {
+        // Get schema and invariants for validation
+        let schema = self.schema.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire schema lock: {}", e)))?
+            .as_ref();
+        let invariants = self.invariants.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire invariants lock: {}", e)))?
+            .as_ref();
+        
+        // Validate constitution constraints before registration
+        validate_constitution(&hook, schema, invariants)?;
+        
         let mut hooks = self.hooks.lock()
             .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire hooks lock: {}", e)))?;
+        
+        // Check for duplicate hook ID (Order constraint: ≺-total)
+        if hooks.contains_key(&hook.id) {
+            return Err(UnrdfError::OrderViolation(
+                format!("Hook ID '{}' already registered, violates ≺-total ordering", hook.id)
+            ));
+        }
         
         hooks.insert(hook.id.clone(), hook);
         Ok(())
@@ -68,6 +119,41 @@ impl NativeHookRegistry {
             .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire hooks lock: {}", e)))?;
         
         Ok(hooks.get(hook_id).cloned())
+    }
+
+    /// Select hooks by epoch order (Λ)
+    /// Lambda is a ≺-total ordered list of hook IDs
+    /// Returns hooks in the specified order, skipping missing hooks
+    pub fn select_by_epoch_order(&self, lambda: &[String]) -> UnrdfResult<Vec<HookDefinition>> {
+        let hooks = self.hooks.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire hooks lock: {}", e)))?;
+        
+        let mut selected = Vec::new();
+        for hook_id in lambda {
+            if let Some(hook) = hooks.get(hook_id) {
+                selected.push(hook.clone());
+            }
+        }
+        
+        Ok(selected)
+    }
+
+    /// Validate epoch order (Λ) is ≺-total
+    /// Checks for duplicates and ensures deterministic order
+    pub fn validate_epoch_order(lambda: &[String]) -> UnrdfResult<()> {
+        use std::collections::HashSet;
+        let mut seen = HashSet::new();
+        
+        for hook_id in lambda {
+            if seen.contains(hook_id) {
+                return Err(UnrdfError::InvalidInput(
+                    format!("Epoch order contains duplicate hook '{}' (must be ≺-total)", hook_id)
+                ));
+            }
+            seen.insert(hook_id.clone());
+        }
+        
+        Ok(())
     }
 }
 

@@ -10,17 +10,36 @@ use alloc::format;
 
 use crate::error::PipelineError;
 use crate::load::{LoadResult, SoAArrays, PredRun};
+use crate::runtime_class::RuntimeClass;
+use crate::slo_monitor::SloMonitor;
+use crate::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
+
+#[cfg(feature = "std")]
+use std::cell::RefCell;
 
 /// Stage 4: Reflex
 /// μ executes in ≤8 ticks per Δ
 pub struct ReflexStage {
     pub tick_budget: u32, // Must be ≤ 8
+    /// SLO monitors per runtime class (using RefCell for interior mutability)
+    #[cfg(feature = "std")]
+    r1_monitor: Option<RefCell<SloMonitor>>,
+    #[cfg(feature = "std")]
+    w1_monitor: Option<RefCell<SloMonitor>>,
+    #[cfg(feature = "std")]
+    c1_monitor: Option<RefCell<SloMonitor>>,
 }
 
 impl ReflexStage {
     pub fn new() -> Self {
         Self {
             tick_budget: 8,
+            #[cfg(feature = "std")]
+            r1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::R1, 1000))),
+            #[cfg(feature = "std")]
+            w1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::W1, 1000))),
+            #[cfg(feature = "std")]
+            c1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::C1, 1000))),
         }
     }
 
@@ -60,12 +79,76 @@ impl ReflexStage {
                 ));
             }
 
+            // Classify operation (R1/W1/C1)
+            let operation_type = "ASK_SP"; // Default operation type
+            let runtime_class = RuntimeClass::classify_operation(operation_type, run.len as usize)
+                .map_err(|e| PipelineError::RuntimeClassError(e))?;
+
             // Execute hook via C hot path API (FFI)
             let receipt = self.execute_hook(&input.soa_arrays, run)?;
 
+            // Record latency and check SLO (only for std builds, no overhead on hot path)
+            #[cfg(feature = "std")]
+            {
+                // Convert ticks to nanoseconds (approximate: 1 tick ≈ 0.25ns at 4GHz)
+                let latency_ns = (receipt.ticks as u64) * 250;
+                
+                match runtime_class {
+                    RuntimeClass::R1 => {
+                        if let Some(ref monitor) = self.r1_monitor {
+                            monitor.borrow_mut().record_latency(latency_ns);
+                            if let Err(violation) = monitor.borrow().check_slo_violation() {
+                                // Handle R1 failure: drop/park Δ, emit receipt, escalate
+                                let _ = handle_r1_failure(
+                                    LoadResult {
+                                        soa_arrays: input.soa_arrays.clone(),
+                                        runs: vec![run.clone()],
+                                    },
+                                    receipt.clone(),
+                                    receipt.ticks > self.tick_budget,
+                                );
+                                return Err(PipelineError::SloViolation(violation));
+                            }
+                        }
+                    },
+                    RuntimeClass::W1 => {
+                        if let Some(ref monitor) = self.w1_monitor {
+                            monitor.borrow_mut().record_latency(latency_ns);
+                            if let Err(violation) = monitor.borrow().check_slo_violation() {
+                                // Handle W1 failure: retry/degrade
+                                let _ = handle_w1_failure(0, 3, None);
+                                return Err(PipelineError::SloViolation(violation));
+                            }
+                        }
+                    },
+                    RuntimeClass::C1 => {
+                        if let Some(ref monitor) = self.c1_monitor {
+                            monitor.borrow_mut().record_latency(latency_ns);
+                            if let Err(violation) = monitor.borrow().check_slo_violation() {
+                                // Handle C1 failure: async finalize
+                                let _ = handle_c1_failure(&receipt.id);
+                                return Err(PipelineError::SloViolation(violation));
+                            }
+                        }
+                    },
+                }
+            }
+
             // Check tick budget violation
             if receipt.ticks > self.tick_budget {
-                return Err(PipelineError::ReflexError(
+                // Handle R1 failure for budget exceeded
+                #[cfg(feature = "std")]
+                {
+                    let _ = handle_r1_failure(
+                        LoadResult {
+                            soa_arrays: input.soa_arrays.clone(),
+                            runs: vec![run.clone()],
+                        },
+                        receipt.clone(),
+                        true, // Budget exceeded
+                    );
+                }
+                return Err(PipelineError::R1FailureError(
                     format!("Hook execution {} ticks exceeds budget {} ticks", 
                         receipt.ticks, self.tick_budget)
                 ));

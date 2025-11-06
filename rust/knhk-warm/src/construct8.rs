@@ -21,7 +21,8 @@ impl WarmPathConstruct8 {
     /// * `Err(WarmPathError)` - Error with descriptive message
     /// 
     /// # Performance
-    /// * Target: <500ms (p95)
+    /// * Budget: ≤500 µs
+    /// * SLO: ≤1 ms (p99)
     /// * Validates guard constraints (max_run_len ≤ 8)
     /// * Measures execution time for observability
     pub fn execute(
@@ -42,8 +43,8 @@ impl WarmPathConstruct8 {
             ));
         }
 
-        // Measure execution time
-        let start_time = Self::get_current_time_ms();
+        // Measure execution time (in microseconds for W1 budget)
+        let start_time = Self::get_current_time_us();
         
         // Execute CONSTRUCT8 via hot path C code
         // Note: CONSTRUCT8 exceeds 8-tick budget but is still fast enough for warm path
@@ -52,33 +53,32 @@ impl WarmPathConstruct8 {
             knhk_hot::knhk_eval_construct8(ctx, ir, &mut rcpt)
         };
 
-        let end_time = Self::get_current_time_ms();
-        let latency_ms = end_time.saturating_sub(start_time);
+        let end_time = Self::get_current_time_us();
+        let latency_us = end_time.saturating_sub(start_time);
 
-        // Check timeout (500ms budget)
-        if latency_ms > 500 {
+        // Check timeout (500µs budget)
+        if latency_us > 500 {
             return Err(WarmPathError::TimeoutExceeded(
-                format!("CONSTRUCT8 exceeded 500ms budget: {}ms", latency_ms)
+                format!("CONSTRUCT8 exceeded 500µs budget: {}µs", latency_us)
             ));
         }
 
         Ok(WarmPathResult::new(
             result > 0,
-            latency_ms,
+            latency_us / 1000, // Convert to milliseconds for result
             result as usize,
             rcpt.span_id,
         ))
     }
 
-    fn get_current_time_ms() -> u64 {
+    fn get_current_time_us() -> u64 {
         #[cfg(feature = "std")]
         {
-            use core::time::Duration;
             // For timing measurements, use high-resolution timer if available
             // Fallback to system time
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_millis() as u64)
+                .map(|d| d.as_micros() as u64)
                 .unwrap_or(0)
         }
         #[cfg(not(feature = "std"))]
