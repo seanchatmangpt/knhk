@@ -99,14 +99,14 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - Acceptance criteria and governance
 
 ### Research & Evaluation
-23. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
-24. **[ggen Integration Evaluation](ggen-integration-evaluation.md)** - Integration evaluation
-25. **[ggen Integration Validation](ggen-integration-validation.md)** - Integration validation
+24. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
+25. **[ggen Integration Evaluation](ggen-integration-evaluation.md)** - Integration evaluation
+26. **[ggen Integration Validation](ggen-integration-validation.md)** - Integration validation
 
 ### Specialized Topics
-24. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
-25. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
-26. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
+27. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
+28. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
+29. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
 27. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
 
 ## Archived Documentation
