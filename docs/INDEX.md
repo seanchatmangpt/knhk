@@ -107,7 +107,7 @@ This index provides a comprehensive guide to all current KNHK documentation.
 27. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
 28. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
 29. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
-27. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
+30. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
 
 ## Archived Documentation
 
