@@ -6,6 +6,10 @@ A high-performance knowledge graph engine optimized for hot path operations (≤
 
 KNHK is a production-ready knowledge graph engine designed for real-time graph operations with strict performance constraints. The system implements guard functions, invariant preservation, and cryptographic provenance through a hooks-based architecture.
 
+**Formal Foundation**: KNHK's behavior is defined through 17 foundational laws (the Constitution) that give rise to emergent properties enabling safe parallelism, cryptographic verification, and deterministic execution. See [Formal Mathematical Foundations](docs/formal-foundations.md) for complete treatment.
+
+**Key Insight**: At the end of each cycle: **A = μ(O)** - The enterprise's current state of action (A) is a verified, deterministic projection of its knowledge (O), within 2ns per rule check.
+
 **Key Features**:
 - **Hot Path**: ≤2ns latency (8 ticks) for critical operations
 - **Rust-Native RDF**: Pure Rust SPARQL execution via oxigraph
@@ -13,6 +17,15 @@ KNHK is a production-ready knowledge graph engine designed for real-time graph o
 - **Cold Path Integration**: unrdf JavaScript integration for complex queries
 - **Chicago TDD**: Comprehensive test coverage (31 tests)
 - **Error Validation**: Complete error handling and boundary testing
+
+**Formal Properties**:
+- **Idempotence** (μ∘μ = μ): Safe retry semantics without coordination
+- **Shard Distributivity** (μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)): Parallel evaluation equivalence
+- **Sheaf Property** (glue(Cover(O)) = Γ(O)): Local-to-global consistency
+- **Provenance** (hash(A) = hash(μ(O))): Cryptographic verification
+- **Epoch Containment** (μ ⊂ τ): Time-bounded execution
+
+See [Repository Overview](REPOSITORY_OVERVIEW.md) for complete system overview.
 
 ## Architecture
 
@@ -49,7 +62,8 @@ Rust-native hooks engine implementing the Guard law `μ ⊣ H` (partial):
 - **Single Hook Execution**: Guard validation before canonicalization `A = μ(O)`
 - **Batch Hook Evaluation**: Parallel execution for multiple hooks
 
-**Key Laws**:
+**Key Laws** (from the Constitution):
+- `Law: A = μ(O)` - Action equals hook projection of observation
 - `Guard: μ ⊣ H` (partial) - Validates `O ⊨ Σ` before `A = μ(O)`
 - `Invariant: preserve(Q)` - Enforces schema and ordering constraints
 - `Provenance: hash(A) = hash(μ(O))` - Cryptographic receipts
@@ -57,6 +71,11 @@ Rust-native hooks engine implementing the Guard law `μ ⊣ H` (partial):
 - `Idempotence: μ ∘ μ = μ` - Canonicalization is idempotent
 - `Merge: Π` is `⊕`-monoid - Merge operations are associative
 - `Typing: O ⊨ Σ` - Operations satisfy schema
+- `Shard: μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)` - Hook distributes over disjoint union
+- `Sheaf: glue(Cover(O)) = Γ(O)` - Local patches glue to global state
+- `Epoch: μ ⊂ τ` - Hook evaluation contained in time bound
+
+See [Formal Mathematical Foundations](docs/formal-foundations.md) for complete treatment of all 17 laws and their emergent properties.
 
 ### 2. Query Engine (`rust/knhk-unrdf/src/query_native.rs`)
 
@@ -127,6 +146,8 @@ cargo bench --features native
 
 ### Architecture Documentation
 
+- **[Repository Overview](REPOSITORY_OVERVIEW.md)** - Complete system overview with formal insights
+- **[Formal Mathematical Foundations](docs/formal-foundations.md)** - Deep formal insights and emergent properties
 - **[Architecture Overview](docs/architecture.md)** - System architecture
 - **[unrdf Integration](docs/unrdf-integration-dod.md)** - Cold path integration status
 - **[Chicago TDD Validation](docs/unrdf-chicago-tdd-validation.md)** - Integration test results
