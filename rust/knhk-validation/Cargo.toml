@@ -12,7 +12,8 @@ path = "src/main.rs"
 
 [dependencies]
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
-knhk-etl = { path = "../knhk-etl", version = "0.1.0", features = ["std"] }
+# knhk-etl removed to avoid circular dependency
+# Use knhk-etl types directly when needed, or refactor to break circular dependency
 knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = ["std"] }
 knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = ["std"] }
