@@ -2,7 +2,7 @@
 //! Implements ggen's Graph wrapper pattern with caching
 
 use oxigraph::io::RdfFormat;
-use oxigraph::model::{GraphName, NamedNode, NamedOrBlankNode, Quad, Term};
+use oxigraph::model::{GraphName, NamedNode, NamedOrBlankNode, Quad, Term, Triple};
 use oxigraph::sparql::{Query, QueryResults};
 use oxigraph::store::Store;
 use serde_json::Value as JsonValue;
@@ -151,9 +151,9 @@ impl WarmPathGraph {
                 }
                 Ok(CachedResult::Solutions(rows))
             }
-            QueryResults::Graph(quads) => {
-                let triples: Result<Vec<String>, String> = quads
-                    .map(|q| q.map(|quad| quad.to_string()).map_err(|e| e.to_string()))
+            QueryResults::Graph(triples_iter) => {
+                let triples: Result<Vec<String>, String> = triples_iter
+                    .map(|t| t.map(|triple| triple.to_string()).map_err(|e| e.to_string()))
                     .collect();
                 Ok(CachedResult::Graph(triples.map_err(|e| format!("Graph query error: {}", e))?))
             }

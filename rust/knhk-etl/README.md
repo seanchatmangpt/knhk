@@ -61,6 +61,9 @@ let emit_result = emit.emit(reflex_result)?;
 ## Key Features
 
 - **Pipeline Stages**: Ingest, Transform, Load, Reflex, Emit
+- **Ingester Pattern**: Unified interface for multiple input sources (file, stdin, memory, streaming)
+  - Inspired by OpenTelemetry Weaver's ingester architecture
+  - See `ingester` module for details
 - **Path Selection**: Automatic routing based on query complexity
 - **Guard Validation**: Enforces max_run_len ≤ 8 (Chatman Constant)
 - **Schema Validation**: Validates observations against schema (O ⊨ Σ)
@@ -118,4 +121,5 @@ For detailed documentation, see [docs/README.md](docs/README.md).
 - [Architecture](../../docs/architecture.md) - System architecture
 - [Integration](../../docs/integration.md) - Integration guide
 - [Performance](../../docs/performance.md) - Performance guide
+- [Weaver Integration](../../docs/WEAVER_INTEGRATION.md) - Weaver patterns integration (Ingester pattern)
 - [Dependency Configuration](../../docs/dependency-configuration.md) - Feature flags and optional dependencies

@@ -31,8 +31,15 @@ if report.is_success() {
 - **Release Validation**: Comprehensive v0.4.0+ validation
 - **DoD Checking**: Definition of Done validation
 - **Guard Constraints**: Enforces max_run_len ≤ 8
+- **Advisor Pattern**: Pluggable validation advisors (Guard, Performance, Receipt)
+  - Inspired by OpenTelemetry Weaver's advisor architecture
+  - See `advisor` module for details
+- **Diagnostic System**: Structured diagnostics with rich context and multiple output formats
+  - ANSI, JSON, and GitHub Workflow formats
+  - See `diagnostics` module for details
 - **CLI Validation**: Binary and command validation
 - **Property Validation**: Mathematical property checks
+- **Policy Engine**: Rego-based policy engine for custom validation rules (optional)
 
 ## Documentation
 
@@ -43,4 +50,4 @@ For detailed documentation, see [docs/README.md](docs/README.md).
 - [Definition of Done](../../docs/DEFINITION_OF_DONE.md) - DoD criteria
 - [Architecture](../../docs/architecture.md) - System architecture
 - [Testing](../../docs/testing.md) - Testing documentation
-- [Weaver Analysis and Learnings](../../docs/WEAVER_ANALYSIS_AND_LEARNINGS.md) - Policy engine patterns and validation improvements
+- [Weaver Integration](../../docs/WEAVER_INTEGRATION.md) - Weaver patterns integration (Advisor & Diagnostic patterns)

@@ -94,9 +94,9 @@ pub fn execute_construct(graph: &WarmPathGraph, sparql: &str) -> Result<Construc
         .map_err(|e| QueryError::ExecutionError(e))?;
 
     match results {
-        QueryResults::Graph(quads) => {
-            let triples: Result<Vec<String>, String> = quads
-                .map(|q| q.map(|quad| quad.to_string()).map_err(|e| e.to_string()))
+        QueryResults::Graph(triples_iter) => {
+            let triples: Result<Vec<String>, String> = triples_iter
+                .map(|t| t.map(|triple| triple.to_string()).map_err(|e| e.to_string()))
                 .collect();
             
             Ok(ConstructResult {
@@ -113,9 +113,9 @@ pub fn execute_describe(graph: &WarmPathGraph, sparql: &str) -> Result<DescribeR
         .map_err(|e| QueryError::ExecutionError(e))?;
 
     match results {
-        QueryResults::Graph(quads) => {
-            let triples: Result<Vec<String>, String> = quads
-                .map(|q| q.map(|quad| quad.to_string()).map_err(|e| e.to_string()))
+        QueryResults::Graph(triples_iter) => {
+            let triples: Result<Vec<String>, String> = triples_iter
+                .map(|t| t.map(|triple| triple.to_string()).map_err(|e| e.to_string()))
                 .collect();
             
             Ok(DescribeResult {

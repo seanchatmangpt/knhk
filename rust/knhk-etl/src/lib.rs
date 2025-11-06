@@ -23,6 +23,10 @@ pub mod pipeline;
 pub mod runtime_class;
 pub mod slo_monitor;
 pub mod failure_actions;
+pub mod ring_buffer; // Lock-free ring buffers for 8-beat epoch
+pub mod fiber; // Cooperative fibers for deterministic execution
+pub mod park; // Park/escalate mechanism for over-budget work
+pub mod beat_scheduler; // 8-beat epoch scheduler
 
 // Re-exports for convenience
 pub use types::{PipelineStage, PipelineMetrics};

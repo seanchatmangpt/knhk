@@ -3,6 +3,7 @@
 // Power-of-two sized, atomic indices, branchless enqueue/dequeue
 
 use core::sync::atomic::{AtomicU64, Ordering};
+use core::cell::UnsafeCell;
 use alloc::vec::Vec;
 
 /// Ring buffer error types
@@ -23,8 +24,8 @@ pub struct RingBuffer<T> {
     tail: AtomicU64,
     /// Capacity mask (capacity - 1, must be power-of-two)
     mask: u64,
-    /// Fixed-size buffer
-    buffer: Vec<Option<T>>,
+    /// Fixed-size buffer (UnsafeCell for interior mutability in lock-free context)
+    buffer: UnsafeCell<Vec<Option<T>>>,
     /// Capacity (must be power-of-two)
     capacity: usize,
 }
@@ -45,7 +46,7 @@ impl<T> RingBuffer<T> {
             head: AtomicU64::new(0),
             tail: AtomicU64::new(0),
             mask: (capacity - 1) as u64,
-            buffer,
+            buffer: UnsafeCell::new(buffer),
             capacity,
         })
     }
@@ -64,7 +65,9 @@ impl<T> RingBuffer<T> {
 
         // Store item at head position
         let slot = (head & self.mask) as usize;
-        self.buffer[slot] = Some(item);
+        unsafe {
+            (*self.buffer.get())[slot] = Some(item);
+        }
 
         // Advance head (release semantics for consumer visibility)
         self.head.store(head + 1, Ordering::Release);
@@ -85,7 +88,9 @@ impl<T> RingBuffer<T> {
 
         // Load item from tail position
         let slot = (tail & self.mask) as usize;
-        let item = self.buffer[slot].take()?;
+        let item = unsafe {
+            (*self.buffer.get())[slot].take()
+        }?;
 
         // Advance tail (release semantics for producer visibility)
         self.tail.store(tail + 1, Ordering::Release);
@@ -126,8 +131,10 @@ impl<T> RingBuffer<T> {
     pub fn clear(&mut self) {
         self.head.store(0, Ordering::Relaxed);
         self.tail.store(0, Ordering::Relaxed);
-        for slot in &mut self.buffer {
-            *slot = None;
+        unsafe {
+            for slot in (*self.buffer.get()).iter_mut() {
+                *slot = None;
+            }
         }
     }
 }
