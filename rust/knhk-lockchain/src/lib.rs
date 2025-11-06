@@ -66,14 +66,15 @@ impl Lockchain {
     }
 
     /// Append receipt to lockchain
-    pub fn append(&mut self, entry: LockchainEntry) -> Result<ReceiptHash, LockchainError> {
-        // Calculate hash
+    pub fn append(&mut self, mut entry: LockchainEntry) -> Result<ReceiptHash, LockchainError> {
+        // Link to previous entry (set parent before computing hash)
+        entry.parent_hash = self.merkle_root;
+        
+        // Calculate hash (excludes receipt_hash itself to avoid circular dependency)
         let hash = Self::compute_hash(&entry);
 
-        // Link to previous entry
-        let mut entry = entry;
+        // Set receipt hash
         entry.receipt_hash = hash;
-        entry.parent_hash = self.merkle_root;
 
         // Update merkle root
         self.merkle_root = Some(hash);
@@ -194,10 +195,12 @@ impl Lockchain {
     }
 
     /// Compute hash for entry using URDNA2015 canonicalization + SHA-256
+    /// Note: receipt_hash is NOT included in the hash computation to avoid circular dependency
     fn compute_hash(entry: &LockchainEntry) -> ReceiptHash {
         use sha2::{Sha256, Digest};
         
         // Build canonical representation using URDNA2015-like ordering
+        // Exclude receipt_hash from canonicalization (it's computed from other fields)
         let canonical = Self::canonicalize_entry(entry);
         
         // Hash with SHA-256
@@ -211,12 +214,13 @@ impl Lockchain {
     }
     
     /// Canonicalize entry using URDNA2015-like ordering
+    /// Note: receipt_hash is NOT included (it's computed from other fields)
     fn canonicalize_entry(entry: &LockchainEntry) -> Vec<u8> {
         let mut canonical = Vec::new();
         
-        // Order: receipt_id, receipt_hash, parent_hash (if present), timestamp, metadata (sorted)
+        // Order: receipt_id, parent_hash (if present), timestamp, metadata (sorted)
+        // receipt_hash is excluded - it's computed from these fields
         canonical.extend_from_slice(entry.receipt_id.as_bytes());
-        canonical.extend_from_slice(&entry.receipt_hash);
         
         if let Some(parent) = entry.parent_hash {
             canonical.push(1); // Marker for parent hash present
@@ -250,7 +254,7 @@ impl Lockchain {
         let entry = self.get_receipt(receipt_id)
             .ok_or_else(|| LockchainError::NotFound(receipt_id.to_string()))?;
 
-        // Verify hash
+        // Verify hash (compute from entry fields, excluding receipt_hash)
         let computed_hash = Self::compute_hash(entry);
         if computed_hash != entry.receipt_hash {
             return Ok(false);
@@ -288,12 +292,22 @@ impl Lockchain {
             return Ok(true);
         }
         
-        // Verify all entries
+        // Verify all entries (compute hash excluding receipt_hash field)
         for entry in &self.entries {
             let computed_hash = Self::compute_hash(entry);
             if computed_hash != entry.receipt_hash {
                 return Err(LockchainError::InvalidHash(
-                    format!("Receipt {} hash mismatch", entry.receipt_id)
+                    format!("Receipt {} hash mismatch: computed {} != stored {}", 
+                        entry.receipt_id,
+                        #[cfg(feature = "std")]
+                        hex::encode(&computed_hash),
+                        #[cfg(not(feature = "std"))]
+                        "hash",
+                        #[cfg(feature = "std")]
+                        hex::encode(&entry.receipt_hash),
+                        #[cfg(not(feature = "std"))]
+                        "hash"
+                    )
                 ));
             }
             
@@ -495,7 +509,10 @@ mod tests {
             metadata: BTreeMap::new(),
         };
 
-        let hash = chain.append(entry).unwrap();
+        let hash = match chain.append(entry) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to append entry: {}", e),
+        };
         assert_eq!(chain.entries().len(), 1);
         assert_eq!(chain.len(), 1);
         assert!(!chain.is_empty());
@@ -513,9 +530,20 @@ mod tests {
             metadata: BTreeMap::new(),
         };
 
-        chain.append(entry).unwrap();
-        assert!(chain.verify("receipt1").unwrap());
-        assert!(chain.verify_chain().unwrap());
+        match chain.append(entry) {
+            Ok(_) => {},
+            Err(e) => panic!("Failed to append entry: {}", e),
+        };
+        match chain.verify("receipt1") {
+            Ok(true) => {},
+            Ok(false) => panic!("Receipt verification failed"),
+            Err(e) => panic!("Verification error: {}", e),
+        }
+        match chain.verify_chain() {
+            Ok(true) => {},
+            Ok(false) => panic!("Chain verification failed"),
+            Err(e) => panic!("Chain verification error: {}", e),
+        }
     }
     
     #[test]
@@ -530,7 +558,10 @@ mod tests {
             timestamp_ms: 1000,
             metadata: BTreeMap::new(),
         };
-        let hash1 = chain.append(entry1).unwrap();
+        let hash1 = match chain.append(entry1) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to append entry1: {}", e),
+        };
         
         // Add second entry (linked to first)
         let entry2 = LockchainEntry {
@@ -540,20 +571,37 @@ mod tests {
             timestamp_ms: 2000,
             metadata: BTreeMap::new(),
         };
-        let hash2 = chain.append(entry2).unwrap();
+        let hash2 = match chain.append(entry2) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to append entry2: {}", e),
+        };
         
         assert_eq!(chain.len(), 2);
         assert_eq!(chain.merkle_root(), Some(hash2));
         
         // Verify chain
-        assert!(chain.verify_chain().unwrap());
-        assert!(chain.verify("receipt1").unwrap());
-        assert!(chain.verify("receipt2").unwrap());
+        match chain.verify_chain() {
+            Ok(true) => {},
+            Ok(false) => panic!("Chain verification failed"),
+            Err(e) => panic!("Chain verification error: {}", e),
+        }
+        match chain.verify("receipt1") {
+            Ok(true) => {},
+            Ok(false) => panic!("Receipt1 verification failed"),
+            Err(e) => panic!("Receipt1 verification error: {}", e),
+        }
+        match chain.verify("receipt2") {
+            Ok(true) => {},
+            Ok(false) => panic!("Receipt2 verification failed"),
+            Err(e) => panic!("Receipt2 verification error: {}", e),
+        }
         
         // Check parent relationship
         let parent = chain.get_parent("receipt2");
         assert!(parent.is_some());
-        assert_eq!(parent.unwrap().receipt_id, "receipt1");
+        if let Some(p) = parent {
+            assert_eq!(p.receipt_id, "receipt1");
+        }
         
         // Check chain path
         let path = chain.get_chain_path("receipt2");
@@ -573,7 +621,10 @@ mod tests {
             timestamp_ms: 1000,
             metadata: BTreeMap::new(),
         };
-        let hash1 = chain.append(entry1).unwrap();
+        let hash1 = match chain.append(entry1) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to append entry1: {}", e),
+        };
         
         let entry2 = LockchainEntry {
             receipt_id: "receipt2".to_string(),
@@ -582,10 +633,16 @@ mod tests {
             timestamp_ms: 2000,
             metadata: BTreeMap::new(),
         };
-        let hash2 = chain.append(entry2).unwrap();
+        let hash2 = match chain.append(entry2) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to append entry2: {}", e),
+        };
         
         // Merge receipts
-        let merged = chain.merge_receipts(&["receipt1".to_string(), "receipt2".to_string()]).unwrap();
+        let merged = match chain.merge_receipts(&["receipt1".to_string(), "receipt2".to_string()]) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to merge receipts: {}", e),
+        };
         assert_ne!(merged, hash1);
         assert_ne!(merged, hash2);
     }
@@ -600,11 +657,16 @@ mod tests {
             timestamp_ms: 1000,
             metadata: BTreeMap::new(),
         };
-        let hash = chain.append(entry).unwrap();
+        let hash = match chain.append(entry) {
+            Ok(h) => h,
+            Err(e) => panic!("Failed to append entry: {}", e),
+        };
         
         let found = chain.get_receipt_by_hash(&hash);
         assert!(found.is_some());
-        assert_eq!(found.unwrap().receipt_id, "receipt1");
+        if let Some(f) = found {
+            assert_eq!(f.receipt_id, "receipt1");
+        }
     }
 }
 

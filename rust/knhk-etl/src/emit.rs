@@ -231,6 +231,7 @@ impl EmitStage {
     }
 
     /// Write receipt to lockchain (Merkle-linked) - with mutable lockchain reference
+    #[cfg(feature = "knhk-lockchain")]
     fn write_receipt_to_lockchain_with_lockchain(
         &self,
         lockchain: &mut knhk_lockchain::Lockchain,
@@ -261,21 +262,7 @@ impl EmitStage {
         }
     }
     
-    /// Write receipt to lockchain (Merkle-linked)
-    fn write_receipt_to_lockchain(&self, receipt: &Receipt) -> Result<String, String> {
-        #[cfg(feature = "knhk-lockchain")]
-        {
-            if let Some(ref lockchain) = self.lockchain {
-                let mut lockchain_mut = lockchain.clone();
-                return self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_mut, receipt);
-            }
-        }
-
-        // Lockchain disabled or feature not enabled - compute hash only
-        let hash = Self::compute_receipt_hash(receipt);
-        Ok(format!("{:016x}", hash))
-    }
-    
+    #[cfg(feature = "knhk-lockchain")]
     fn get_current_timestamp_ms() -> u64 {
         use std::time::{SystemTime, UNIX_EPOCH};
         SystemTime::now()

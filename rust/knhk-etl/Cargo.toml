@@ -21,7 +21,7 @@ serde_json = { version = "1.0" }
 rdkafka = { version = "0.36", optional = true }
 
 [features]
-default = ["std", "knhk-otel", "knhk-lockchain"]
+default = ["std", "knhk-otel"]
 std = ["dep:reqwest"]
 grpc = []
 kafka = ["dep:rdkafka"]
