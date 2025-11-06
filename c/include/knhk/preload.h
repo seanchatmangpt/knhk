@@ -10,6 +10,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#if defined(_MSC_VER) && defined(_M_X64)
+#include <mmintrin.h>
+#endif
+
 // Prefetch hint for next delta
 typedef struct {
   uint64_t next_predicate;  // Next predicate to prefetch
@@ -160,7 +164,6 @@ static inline void knhk_prefetch_cache_line(const void *addr, int locality) {
   __builtin_prefetch(addr, 0, locality);
 #elif defined(_MSC_VER) && defined(_M_X64)
   // MSVC prefetch intrinsic (x64 only)
-  #include <mmintrin.h>
   _mm_prefetch((const char *)addr, _MM_HINT_T0);
 #else
   // No-op for other architectures
