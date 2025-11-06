@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knhk-core
+  namespace: kgc
+  labels:
+    app: knhk
+    component: core
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: knhk
+      component: core
+  template:
+    metadata:
+      labels:
+        app: knhk
+        component: core
+    spec:
+      containers:
+        # Warm Orchestrator container
+        - name: knhk-warm
+          image: knhk-warm:latest
+          ports:
+            - containerPort: 50052
+              name: grpc
+          env:
+            - name: LISTEN_ADDR
+              value: "0.0.0.0:50052"
+            - name: HOT_PATH_LIB_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: HOT_PATH_LIB_PATH
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: OTEL_EXPORTER_OTLP_ENDPOINT
+          volumeMounts:
+            - name: hot-path-lib
+              mountPath: /usr/local/lib
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            tcpSocket:
+              port: 50052
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 50052
+            initialDelaySeconds: 10
+            periodSeconds: 10
+        
+        # Hot Path library (init container pattern)
+        - name: knhk-hot
+          image: knhk-hot:latest
+          command: ["/bin/sh", "-c", "cp /lib/libknhk.so /shared/libknhk.so && sleep infinity"]
+          volumeMounts:
+            - name: hot-path-lib
+              mountPath: /shared
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+        
+        # Cold Reasoner container
+        - name: knhk-cold
+          image: knhk-cold:latest
+          ports:
+            - containerPort: 50053
+              name: rpc
+          env:
+            - name: LISTEN_ADDR
+              value: "0.0.0.0:50053"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: OTEL_EXPORTER_OTLP_ENDPOINT
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            tcpSocket:
+              port: 50053
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 50053
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      
+      volumes:
+        - name: hot-path-lib
+          emptyDir: {}
+

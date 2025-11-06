@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knhk-config
+  namespace: kgc
+data:
+  # Sidecar configuration
+  SIDECAR_LISTEN_ADDR: "0.0.0.0:50051"
+  SIDECAR_BATCH_SIZE: "8"
+  SIDECAR_BATCH_TIMEOUT_MS: "100"
+  
+  # Warm orchestrator configuration
+  WARM_ORCHESTRATOR_ENDPOINT: "http://knhk-warm:50052"
+  
+  # Hot path configuration
+  HOT_PATH_LIB_PATH: "/usr/local/lib/libknhk.so"
+  
+  # Cold reasoner configuration
+  COLD_REASONER_ENDPOINT: "http://knhk-cold:50053"
+  
+  # OTEL configuration
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+
