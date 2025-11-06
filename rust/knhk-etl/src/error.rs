@@ -1,6 +1,12 @@
 // rust/knhk-etl/src/error.rs
 // Pipeline error types
 
+extern crate alloc;
+
+use alloc::string::String;
+use crate::runtime_class::RuntimeClass;
+use crate::slo_monitor::SloViolation;
+
 /// Pipeline error
 #[derive(Debug)]
 pub enum PipelineError {
@@ -11,6 +17,11 @@ pub enum PipelineError {
     EmitError(String),
     GuardViolation(String),
     ParseError(String), // RDF parsing errors from rio_turtle
+    RuntimeClassError(String), // Runtime class classification failures
+    SloViolation(SloViolation), // SLO threshold exceeded
+    R1FailureError(String), // R1 failure handling errors
+    W1FailureError(String), // W1 failure handling errors
+    C1FailureError(String), // C1 failure handling errors
 }
 
 impl PipelineError {
@@ -23,6 +34,15 @@ impl PipelineError {
             PipelineError::EmitError(msg) => msg,
             PipelineError::GuardViolation(msg) => msg,
             PipelineError::ParseError(msg) => msg,
+            PipelineError::RuntimeClassError(msg) => msg,
+            PipelineError::SloViolation(v) => {
+                // Return violation message (requires allocation)
+                // For no_std compatibility, return static string
+                "SLO violation"
+            },
+            PipelineError::R1FailureError(msg) => msg,
+            PipelineError::W1FailureError(msg) => msg,
+            PipelineError::C1FailureError(msg) => msg,
         }
     }
 }

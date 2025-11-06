@@ -15,6 +15,9 @@ pub mod reflex;
 pub mod reflex_map;
 pub mod emit;
 pub mod pipeline;
+pub mod runtime_class;
+pub mod slo_monitor;
+pub mod failure_actions;
 
 // Re-exports for convenience
 pub use types::{PipelineStage, PipelineMetrics};
