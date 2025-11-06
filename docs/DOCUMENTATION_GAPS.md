@@ -25,121 +25,40 @@ This document identifies undocumented components and areas requiring documentati
 - ✅ rust/knhk-cli/README.md - CLI tool documentation
 - ✅ rust/knhk-cli/IMPLEMENTATION.md - CLI implementation details
 
-## Undocumented Components ⚠️
+## Documentation Status Summary
 
-### Rust Crates (Missing README files)
+### Rust Crates Documentation Status
 
-#### 1. knhk-aot
-**Location**: `rust/knhk-aot/`  
-**Purpose**: Ahead-of-Time compilation guard for IR validation  
-**Dependencies**: rio_turtle, rio_api  
-**Status**: ⚠️ No README  
-**Priority**: Medium
+#### ✅ Complete Documentation (docs/README.md exists)
+1. **knhk-connectors** - ✅ Complete (has root-level README.md + docs/README.md)
+2. **knhk-etl** - ✅ Complete (has docs/README.md)
+3. **knhk-hot** - ✅ Complete (has docs/README.md)
+4. **knhk-lockchain** - ✅ Complete (has docs/README.md)
+5. **knhk-otel** - ✅ Complete (has docs/README.md)
+6. **knhk-validation** - ✅ Complete (has docs/README.md)
+7. **knhk-aot** - ✅ Complete (has docs/README.md)
+8. **knhk-cli** - ✅ Complete (has root-level README.md + docs/README.md)
+9. **knhk-warm** - ✅ Complete (has docs/README.md)
+10. **knhk-config** - ✅ Complete (has docs/README.md)
+11. **knhk-sidecar** - ✅ Complete (has root-level README.md + docs/README.md)
+12. **knhk-unrdf** - ✅ Complete (has docs/README.md)
+13. **knhk-integration-tests** - ✅ Complete (has docs/README.md)
 
-**Suggested Documentation**:
-- Purpose: AOT guard validation
-- Usage: IR validation before execution
-- Integration: Used by ETL pipeline
+#### ⚠️ Enhancement Needed
+Some READMEs exist but are minimal and could be enhanced with more detail:
+- **knhk-validation/docs/README.md** - Needs expansion with usage examples and API overview
+- **knhk-aot/docs/README.md** - Needs expansion with purpose, usage examples, and integration details
+- **knhk-lockchain/docs/README.md** - Needs expansion with operations details and usage examples
+- **knhk-otel/docs/README.md** - Needs expansion with examples and integration details
 
-#### 2. knhk-connectors
-**Location**: `rust/knhk-connectors/`  
-**Purpose**: Connector framework for data sources  
-**Dependencies**: rdkafka (optional), reqwest (optional)  
-**Status**: ⚠️ No README  
-**Priority**: High
-
-**Suggested Documentation**:
-- Connector framework overview
-- Supported connectors (Kafka, Salesforce)
-- Circuit breaker pattern
-- Guard validation
-
-#### 3. knhk-etl
-**Location**: `rust/knhk-etl/`  
-**Purpose**: ETL pipeline implementation  
-**Dependencies**: knhk-connectors, knhk-hot, knhk-lockchain  
-**Status**: ⚠️ No README  
-**Priority**: High
-
-**Suggested Documentation**:
-- Pipeline stages (Ingest, Transform, Load, Reflex, Emit)
-- Usage examples
-- Integration with connectors and lockchain
-
-#### 4. knhk-hot
-**Location**: `rust/knhk-hot/`  
-**Purpose**: FFI-safe wrapper for C hot path  
-**Dependencies**: None (links to C library)  
-**Status**: ⚠️ No README  
-**Priority**: High
-
-**Suggested Documentation**:
-- FFI wrapper purpose
-- Safe abstractions over C hot path
-- Timing measurement (external)
-- Usage examples
-
-#### 5. knhk-lockchain
-**Location**: `rust/knhk-lockchain/`  
-**Purpose**: Merkle-linked receipt storage  
-**Dependencies**: sha2, sha3, urdna2015 (optional)  
-**Status**: ⚠️ No README  
-**Priority**: Medium
-
-**Suggested Documentation**:
-- Lockchain purpose
-- Receipt structure
-- Merkle linking
-- Git integration
-
-#### 6. knhk-otel
-**Location**: `rust/knhk-otel/`  
-**Purpose**: OpenTelemetry integration  
-**Dependencies**: None  
-**Status**: ⚠️ No README (has examples/)  
-**Priority**: Medium
-
-**Suggested Documentation**:
-- OTEL integration overview
-- Span ID generation
-- Metrics export
-- Example usage (weaver_live_check.rs)
-
-#### 7. knhk-unrdf
-**Location**: `rust/knhk-unrdf/`  
-**Purpose**: UNRDF integration (cold path)  
-**Dependencies**: Various  
-**Status**: ⚠️ No README  
-**Priority**: Low (cold path)
-
-**Suggested Documentation**:
-- UNRDF integration purpose
-- Cold path operations
-- SPARQL engine integration
-
-#### 8. knhk-validation
-**Location**: `rust/knhk-validation/`  
-**Purpose**: Validation framework  
-**Dependencies**: Various  
-**Status**: ⚠️ No README  
-**Priority**: Medium
-
-**Suggested Documentation**:
-- Validation framework overview
-- Guard validation
-- Schema validation
-- Usage examples
-
-#### 9. knhk-integration-tests
-**Location**: `rust/knhk-integration-tests/`  
-**Purpose**: Integration test suite  
-**Status**: ⚠️ No README  
-**Priority**: Low (test suite)
-
-**Suggested Documentation**:
-- Test suite overview
-- Running tests
-- Test structure
+#### 📝 Root-Level READMEs Needed
+Some crates have detailed docs/README.md but lack root-level READMEs for better discoverability:
+- **knhk-etl** - Needs root-level README.md
+- **knhk-hot** - Needs root-level README.md
+- **knhk-lockchain** - Needs root-level README.md
+- **knhk-otel** - Needs root-level README.md
+- **knhk-validation** - Needs root-level README.md
+- **knhk-aot** - Needs root-level README.md
 
 ### Erlang Modules (Missing Documentation)
 
@@ -286,35 +205,31 @@ tests/
 
 ## Priority Recommendations
 
-### High Priority
-1. **knhk-connectors** - Core framework, needs documentation
-2. **knhk-etl** - Core pipeline, needs documentation
-3. **knhk-hot** - FFI wrapper, needs documentation
+### High Priority (Enhancement)
+1. **Enhance minimal READMEs** - Expand knhk-validation, knhk-aot, knhk-lockchain, knhk-otel docs with more detail
+2. **Create root-level READMEs** - Add root-level READMEs for better discoverability (knhk-etl, knhk-hot, knhk-lockchain, knhk-otel, knhk-validation, knhk-aot)
 
 ### Medium Priority
-4. **knhk-lockchain** - Receipt storage, useful documentation
-5. **knhk-otel** - Observability, useful documentation
-6. **knhk-validation** - Validation framework, useful documentation
-7. **Erlang modules** - Cold path components, useful documentation
-8. **Test structure** - Helpful for contributors
+3. **Erlang modules** - Cold path components, useful documentation
+4. **Test structure** - Helpful for contributors
 
 ### Low Priority
-9. **knhk-aot** - Internal component, low priority
-10. **knhk-unrdf** - Cold path, low priority
-11. **knhk-integration-tests** - Test suite, low priority
-12. **Tools** - Development tools, low priority
-13. **C components** - API docs exist, low priority
+5. **Tools** - Development tools, low priority
+6. **C components** - API docs exist in headers, low priority
 
 ## Next Steps
 
-1. Create README files for high-priority Rust crates
-2. Create Erlang module overview documentation
-3. Expand test structure documentation
-4. Review and update documentation index
-5. Ensure consistency across all documentation
+1. ✅ Create README files for high-priority Rust crates - **COMPLETE**
+2. ✅ Create README files for medium-priority Rust crates - **COMPLETE**
+3. 🔄 **Enhance minimal READMEs** - Expand with usage examples, API overview, integration details
+4. 🔄 **Create root-level READMEs** - Add concise root-level READMEs that link to detailed docs
+5. Review and update documentation index
+6. Ensure consistency across all documentation
+7. Create Erlang module overview documentation
+8. Expand test structure documentation
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: January 2025  
 **Next Review**: After v0.5.0 release
 

@@ -1,6 +1,6 @@
 # KNHK Documentation Index
 
-**Last Updated**: November 2024
+**Last Updated**: January 2025
 
 This index provides a comprehensive guide to all current KNHK documentation.
 
@@ -117,9 +117,20 @@ This index provides a comprehensive guide to all current KNHK documentation.
 
 ### Specialized Topics
 29. **[Definition of Done](DEFINITION_OF_DONE.md)** - DoD criteria
-30. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components
+30. **[Documentation Gaps](DOCUMENTATION_GAPS.md)** - Undocumented components (README files complete)
 31. **[Documentation Organization](DOCUMENTATION_ORGANIZATION.md)** - Documentation structure guide
 32. **[Unrdf Chicago TDD Validation](unrdf-chicago-tdd-validation.md)** - TDD validation results
+33. **[Chicago TDD Complete](chicago-tdd-complete.md)** - Final status report for Chicago TDD verification
+   - Runtime classes and SLOs implementation complete
+   - Compilation fixes applied
+   - Test coverage summary
+   - Production-ready status
+34. **[Performance Compliance Report](performance-compliance-report.md)** - 8-tick performance compliance verification
+   - Tick budget enforcement (≤8 ticks)
+   - SLO monitoring (p99 ≤2ns)
+   - OTEL metrics integration
+   - Performance compliance status
+   - Failure actions on budget exceeded
 
 ## Archived Documentation
 
@@ -162,18 +173,19 @@ Structured book-formatted documentation is available in `book/src/`:
 Each subproject has its own `docs/` directory with project-specific documentation:
 
 ### Rust Crates
+Each crate has a README.md in its root directory with quick start and overview:
 - **[knhk-warm](../rust/knhk-warm/docs/README.md)** - Warm path operations (oxigraph)
-- **[knhk-hot](../rust/knhk-hot/docs/README.md)** - Hot path operations (≤2ns)
-- **[knhk-etl](../rust/knhk-etl/docs/README.md)** - ETL pipeline
+- **[knhk-hot](../rust/knhk-hot/README.md)** - Hot path operations (≤2ns) | [Technical Docs](../rust/knhk-hot/docs/README.md)
+- **[knhk-etl](../rust/knhk-etl/README.md)** - ETL pipeline | [Technical Docs](../rust/knhk-etl/docs/README.md)
 - **[knhk-cli](../rust/knhk-cli/docs/README.md)** - CLI interface
 - **[knhk-unrdf](../rust/knhk-unrdf/docs/README.md)** - unrdf integration
-- **[knhk-lockchain](../rust/knhk-lockchain/docs/README.md)** - Lockchain
-- **[knhk-connectors](../rust/knhk-connectors/docs/README.md)** - Data connectors
-- **[knhk-otel](../rust/knhk-otel/docs/README.md)** - OpenTelemetry
-- **[knhk-aot](../rust/knhk-aot/docs/README.md)** - AOT compilation
+- **[knhk-lockchain](../rust/knhk-lockchain/README.md)** - Lockchain | [Technical Docs](../rust/knhk-lockchain/docs/README.md)
+- **[knhk-connectors](../rust/knhk-connectors/README.md)** - Data connectors | [Technical Docs](../rust/knhk-connectors/docs/README.md)
+- **[knhk-otel](../rust/knhk-otel/README.md)** - OpenTelemetry | [Technical Docs](../rust/knhk-otel/docs/README.md)
+- **[knhk-aot](../rust/knhk-aot/README.md)** - AOT compilation | [Technical Docs](../rust/knhk-aot/docs/README.md)
 - **[knhk-config](../rust/knhk-config/docs/README.md)** - Configuration
 - **[knhk-integration-tests](../rust/knhk-integration-tests/docs/README.md)** - Integration tests
-- **[knhk-validation](../rust/knhk-validation/docs/README.md)** - Validation utilities
+- **[knhk-validation](../rust/knhk-validation/README.md)** - Validation utilities | [Technical Docs](../rust/knhk-validation/docs/README.md)
 
 ### Language-Specific
 - **[C Hot Path](../c/docs/README.md)** - C hot path implementation
