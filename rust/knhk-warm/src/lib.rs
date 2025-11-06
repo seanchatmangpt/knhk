@@ -11,9 +11,11 @@ pub mod graph;
 pub mod query;
 pub mod executor;
 pub mod hot_path;
+pub mod mphf_cache;
 
 pub use warm_path::*;
 pub use graph::WarmPathGraph;
 pub use query::*;
 pub use executor::WarmPathExecutor;
+pub use mphf_cache::{MPHFCache, MPHFCacheStats};
 

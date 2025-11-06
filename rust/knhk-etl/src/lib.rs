@@ -12,6 +12,7 @@ pub mod ingest;
 pub mod transform;
 pub mod load;
 pub mod reflex;
+pub mod reflex_map;
 pub mod emit;
 pub mod pipeline;
 
@@ -22,6 +23,8 @@ pub use ingest::{IngestStage, IngestResult, RawTriple};
 pub use transform::{TransformStage, TransformResult, TypedTriple};
 pub use load::{LoadStage, LoadResult, SoAArrays, PredRun};
 pub use reflex::{ReflexStage, ReflexResult, Action, Receipt};
+// ReflexMap types are exported separately to avoid conflicts with reflex::Action/Receipt
+pub use reflex_map::{ReflexMap, ReflexMapResult};
 pub use emit::{EmitStage, EmitResult};
 pub use pipeline::Pipeline;
 
