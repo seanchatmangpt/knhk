@@ -196,3 +196,11 @@ Customer inquiries: [hello@reflex-enterprise.example](mailto:hello@reflex-enterp
 
 **Reflex Enterprise™** — When your business runs on laws, not code.
 
+---
+
+## Related Documentation
+
+* **[DFLSS Project Charter](DFLSS_PROJECT_CHARTER.md)** - DMADV methodology for Reflex Enterprise rollout
+* **[Formal Mathematical Foundations](formal-foundations.md)** - Complete formal treatment of KNHK's mathematical structure
+* **[KNHK Architecture](architecture.md)** - System architecture overview
+

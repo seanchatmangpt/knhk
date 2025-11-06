@@ -92,6 +92,11 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - ≤2ns hot path guards
    - Law-driven compute fabric
    - Customer outcomes and metrics
+23. **[DFLSS Project Charter](DFLSS_PROJECT_CHARTER.md)** - DMADV project charter for Reflex Enterprise rollout
+   - CTQs (Critical-to-Quality metrics)
+   - DMADV tollgates (Define, Measure, Analyze, Design, Verify)
+   - Risk mitigation strategies
+   - Acceptance criteria and governance
 
 ### Research & Evaluation
 23. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
