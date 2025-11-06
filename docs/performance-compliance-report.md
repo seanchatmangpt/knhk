@@ -8,18 +8,32 @@
 
 ### Tick Budget Validation
 ✅ **Implemented in `reflex.rs`**:
-- `tick_budget: u32 = 8` (hardcoded Chatman Constant)
+- `tick_budget: u32` initialized to 8 in `new()` (Chatman Constant)
 - Validation: `receipt.ticks > self.tick_budget` triggers R1 failure action
 - Guard check: `run.len > self.tick_budget` prevents oversized operations
 
 ```rust
-// rust/knhk-etl/src/reflex.rs:36
-pub tick_budget: u32, // Must be ≤ 8
+// rust/knhk-etl/src/reflex.rs:22-23
+pub struct ReflexStage {
+    pub tick_budget: u32, // Must be ≤ 8
+    // ...
+}
+
+// rust/knhk-etl/src/reflex.rs:34-36
+pub fn new() -> Self {
+    Self {
+        tick_budget: 8,
+        // ...
+    }
+}
 
 // rust/knhk-etl/src/reflex.rs:138
 if receipt.ticks > self.tick_budget {
     // Handle R1 failure: drop/park Δ, emit receipt, escalate
-    return Err(PipelineError::R1FailureError(...));
+    return Err(PipelineError::R1FailureError(
+        format!("Hook execution {} ticks exceeds budget {} ticks", 
+            receipt.ticks, self.tick_budget)
+    ));
 }
 ```
 
@@ -35,21 +49,26 @@ if receipt.ticks > self.tick_budget {
 ### p99 Latency Tracking
 ✅ **Implemented in `slo_monitor.rs`**:
 - Rolling window: 1000 samples
-- p99 calculation: `(sorted.len() * 0.99).ceil()`
+- p99 calculation: `((sorted.len() as f64) * 0.99) as usize` (truncated, then clamped to valid index)
 - SLO violation detection: `p99_latency > slo_threshold`
 - R1 SLO threshold: 2ns (8 ticks × 0.25ns/tick)
 
 ```rust
 // rust/knhk-etl/src/slo_monitor.rs
-pub fn calculate_p99_latency(&self) -> u64 {
-    let p99_index = (sorted.len() as f64 * 0.99).ceil() as usize;
-    sorted[index]
+pub fn get_p99_latency(&self) -> u64 {
+    let mut sorted: Vec<u64> = self.latency_samples.iter().copied().collect();
+    sorted.sort();
+    let p99_index = ((sorted.len() as f64) * 0.99) as usize;
+    let p99_index = p99_index.min(sorted.len() - 1);
+    sorted[p99_index]
 }
 
 pub fn check_slo_violation(&self) -> Result<(), SloViolation> {
-    let p99_latency = self.calculate_p99_latency();
-    if p99_latency > self.slo_threshold_ns {
-        Err(SloViolation::new(...))
+    let p99_latency_ns = self.get_p99_latency();
+    if p99_latency_ns > self.slo_threshold_ns {
+        Err(SloViolation::new(self.class, p99_latency_ns, self.slo_threshold_ns))
+    } else {
+        Ok(())
     }
 }
 ```
