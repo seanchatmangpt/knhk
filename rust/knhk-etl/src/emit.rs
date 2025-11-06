@@ -131,7 +131,7 @@ impl EmitStage {
                         // W1 failure: retry or degrade to cache
                         let cached_answer = self.lookup_cached_answer(&action.id);
 
-                        let retry_action = handle_w1_failure(0, self.max_retries, cached_answer.clone())
+                        let retry_action = handle_w1_failure(0, self.max_retries, cached_answer.as_ref())
                             .map_err(|e| PipelineError::W1FailureError(e))?;
 
                         if retry_action.use_cache {
@@ -300,9 +300,9 @@ impl EmitStage {
             }
         }
         
-                    Err(format!("Failed to send action after {} retries: {}", 
-                    self.max_retries, 
-                    last_error.unwrap_or_else(|| "Unknown error".to_string())))
+        Err(format!("Failed to send action after {} retries: {}", 
+            self.max_retries, 
+            last_error.unwrap_or_else(|| "Unknown error".to_string())))
     }
     
     fn send_kafka_action(&self, action: &Action, endpoint: &str) -> Result<(), String> {
@@ -320,9 +320,6 @@ impl EmitStage {
         if topic.is_empty() {
             return Err("Topic name cannot be empty".to_string());
         }
-        use rdkafka::producer::{BaseProducer, BaseRecord};
-        use rdkafka::ClientConfig;
-        use std::time::Duration;
         
         // Create Kafka producer (blocking)
         let mut config = ClientConfig::new();
@@ -387,8 +384,6 @@ impl EmitStage {
         self.cache.insert(action.id.clone(), action.clone());
     }
     
-
-    #[cfg(feature = "grpc")]
     fn send_grpc_action(&self, action: &Action, endpoint: &str) -> Result<(), String> {
         // Parse gRPC endpoint: grpc://host:port/service/method
         let endpoint = endpoint.strip_prefix("grpc://").unwrap_or(endpoint);
