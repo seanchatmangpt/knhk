@@ -158,9 +158,14 @@ static inline void knhk_prefetch_cache_line(const void *addr, int locality) {
   // Prefetch for read, with specified locality
   // locality: 0 = no temporal locality, 1 = low, 2 = moderate, 3 = high
   __builtin_prefetch(addr, 0, locality);
-#elif defined(_MSC_VER)
-  // MSVC prefetch intrinsic
+#elif defined(_MSC_VER) && defined(_M_X64)
+  // MSVC prefetch intrinsic (x64 only)
+  #include <mmintrin.h>
   _mm_prefetch((const char *)addr, _MM_HINT_T0);
+#else
+  // No-op for other architectures
+  (void)addr;
+  (void)locality;
 #endif
 }
 
