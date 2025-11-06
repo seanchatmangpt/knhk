@@ -320,7 +320,7 @@ impl ReflexStage {
             use knhk_otel::generate_span_id;
             generate_span_id()
         }
-        #[cfg(not(feature = "std"))]
+        #[cfg(not(feature = "knhk-otel"))]
         {
             let timestamp = Self::get_timestamp_ms();
             timestamp.wrapping_mul(0x9e3779b9u64).wrapping_add(0x517cc1b7u64)

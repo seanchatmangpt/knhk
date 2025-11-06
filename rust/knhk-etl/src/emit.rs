@@ -42,7 +42,7 @@ impl EmitStage {
         }
     }
     
-    #[cfg(feature = "knhk-lockchain")]
+    #[cfg(feature = "std")]
     pub fn with_git_repo(mut self, repo_path: String) -> Self {
         if self.lockchain_enabled {
             self.lockchain = Some(knhk_lockchain::Lockchain::with_git_repo(repo_path));
@@ -64,7 +64,7 @@ impl EmitStage {
 
         // Write receipts to lockchain
         if self.lockchain_enabled {
-            #[cfg(feature = "knhk-lockchain")]
+            #[cfg(feature = "std")]
             {
                 // Use mutable lockchain reference
                 let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
@@ -168,7 +168,7 @@ impl EmitStage {
     }
 
     /// Write receipt to lockchain (Merkle-linked) - with mutable lockchain reference
-    #[cfg(feature = "knhk-lockchain")]
+    #[cfg(feature = "std")]
     fn write_receipt_to_lockchain_with_lockchain(
         &self,
         lockchain: &mut knhk_lockchain::Lockchain,
@@ -201,7 +201,7 @@ impl EmitStage {
     
     /// Write receipt to lockchain (Merkle-linked)
     fn write_receipt_to_lockchain(&self, receipt: &Receipt) -> Result<String, String> {
-        #[cfg(feature = "std")]
+        #[cfg(feature = "knhk-lockchain")]
         {
             if let Some(ref lockchain) = self.lockchain {
                 let mut lockchain_mut = lockchain.clone();
@@ -213,7 +213,7 @@ impl EmitStage {
             }
         }
         
-        #[cfg(not(feature = "std"))]
+        #[cfg(not(feature = "knhk-lockchain"))]
         {
             // In no_std mode, compute hash only
             let hash = Self::compute_receipt_hash(receipt);

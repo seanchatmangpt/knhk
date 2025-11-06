@@ -8,6 +8,12 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "knhk-lockchain")]
+extern crate knhk_lockchain;
+
+#[cfg(feature = "knhk-otel")]
+extern crate knhk_otel;
+
 // Module declarations
 pub mod types;
 pub mod error;

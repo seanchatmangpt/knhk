@@ -17,8 +17,8 @@ use crate::emit::{EmitStage, EmitResult};
 pub struct Pipeline {
     ingest: IngestStage,
     transform: TransformStage,
-    load: LoadStage,
-    reflex: ReflexStage,
+    pub load: LoadStage,  // Public for tests
+    pub reflex: ReflexStage,  // Public for tests
     emit: EmitStage,
 }
 
