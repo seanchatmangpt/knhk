@@ -1,6 +1,11 @@
 // rust/knhk-etl/src/pipeline.rs
 // Complete ETL pipeline orchestrator
 
+extern crate alloc;
+
+use alloc::vec::Vec;
+use alloc::string::{String, ToString};
+
 use crate::error::PipelineError;
 use crate::ingest::IngestStage;
 use crate::transform::TransformStage;

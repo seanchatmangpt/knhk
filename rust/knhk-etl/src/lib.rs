@@ -2,8 +2,11 @@
 // ETL Pipeline Stages
 // Implements: Ingest → Transform → Load → Reflex → Emit
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 // Module declarations
 pub mod types;
@@ -37,6 +40,8 @@ pub mod integration;
 mod tests {
     use super::*;
     use alloc::collections::BTreeMap;
+    use alloc::vec;
+    use alloc::string::ToString;
 
     #[test]
     fn test_pipeline_creation() {

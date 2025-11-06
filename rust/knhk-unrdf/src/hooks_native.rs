@@ -72,15 +72,14 @@ impl NativeHookRegistry {
     /// Enforces: ∧(Typing, Order, Guard, Invariant)
     pub fn register(&self, hook: HookDefinition) -> UnrdfResult<()> {
         // Get schema and invariants for validation
-        let schema = self.schema.lock()
-            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire schema lock: {}", e)))?
-            .as_ref();
-        let invariants = self.invariants.lock()
-            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire invariants lock: {}", e)))?
-            .as_ref();
+        let schema_guard = self.schema.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire schema lock: {}", e)))?;
+        let invariants_guard = self.invariants.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire invariants lock: {}", e)))?;
         
         // Validate constitution constraints before registration
-        validate_constitution(&hook, schema, invariants)?;
+        // Guards must stay alive for the entire function call
+        validate_constitution(&hook, schema_guard.as_ref(), invariants_guard.as_ref())?;
         
         let mut hooks = self.hooks.lock()
             .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire hooks lock: {}", e)))?;
@@ -426,7 +425,14 @@ mod tests {
             id: "test-hook".to_string(),
             name: "Test Hook".to_string(),
             hook_type: "sparql-ask".to_string(),
-            definition: JsonValue::Object(serde_json::Map::new()),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String("ASK { ?s ?p ?o }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
         };
         
         // Register hook
@@ -1087,26 +1093,43 @@ mod tests {
             id: "duplicate-id".to_string(),
             name: "Hook 1".to_string(),
             hook_type: "sparql-ask".to_string(),
-            definition: JsonValue::Object(serde_json::Map::new()),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String("ASK { ?s ?p ?o }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
         };
         
         let hook2 = HookDefinition {
             id: "duplicate-id".to_string(),
             name: "Hook 2".to_string(),
             hook_type: "sparql-ask".to_string(),
-            definition: JsonValue::Object(serde_json::Map::new()),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String("ASK { ?s ?p ?o }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
         };
         
         // Register first hook
         registry.register(hook1).unwrap();
         
-        // Register second hook with same ID - should overwrite
-        registry.register(hook2).unwrap();
+        // Register second hook with same ID - should fail (Order constraint: ≺-total)
+        let result = registry.register(hook2);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("already registered") || error.to_string().contains("≺-total"));
         
-        // Verify latest hook is stored
+        // Verify first hook is still stored
         let retrieved = registry.get("duplicate-id").unwrap();
         assert!(retrieved.is_some());
-        assert_eq!(retrieved.unwrap().name, "Hook 2"); // Latest hook wins
+        assert_eq!(retrieved.unwrap().name, "Hook 1"); // First hook remains
     }
 
     #[test]

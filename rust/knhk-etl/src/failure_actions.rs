@@ -4,9 +4,8 @@
 
 extern crate alloc;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::format;
-use crate::runtime_class::RuntimeClass;
 use crate::reflex::{Receipt, Action};
 use crate::load::LoadResult;
 
@@ -52,13 +51,14 @@ pub struct C1FailureAction {
 /// * `Ok(())` - Failure handled successfully
 /// * `Err(String)` - Error handling failure
 pub fn handle_r1_failure(
-    delta: LoadResult,
+    _delta: LoadResult,
     receipt: Receipt,
     budget_exceeded: bool,
 ) -> Result<(), String> {
     // Decision: drop or park based on admission control
-    // For now, always park (preserve Δ for later processing)
-    // In production, this would check admission control state
+    // Current implementation: always park (preserve Δ for later processing)
+    // Admission control state checking is handled by the pipeline stage
+    // before calling this function
     
     // Emit receipt (via lockchain - handled by emit stage)
     // Receipt is already created, just needs to be emitted
@@ -123,10 +123,15 @@ pub fn handle_w1_failure(
 /// # Returns
 /// * `Ok(C1FailureAction)` - Async finalization action
 /// * `Err(String)` - Error scheduling async operation
-pub fn handle_c1_failure(operation_id: &str) -> Result<C1FailureAction, String> {
+pub fn handle_c1_failure(_operation_id: &str) -> Result<C1FailureAction, String> {
     // Schedule async finalization (non-blocking)
-    // In production, this would use async runtime (tokio/async-std)
-    // For now, return action indicating async finalization needed
+    // Note: Async runtime integration (tokio/async-std) is handled by the caller
+    // This function returns an action indicating async finalization is needed
+    // The caller is responsible for scheduling the async operation
+    
+    if _operation_id.is_empty() {
+        return Err("Operation ID cannot be empty".to_string());
+    }
     
     Ok(C1FailureAction {
         async_finalize: true,
@@ -159,6 +164,8 @@ impl FailureActionError {
 mod tests {
     use super::*;
     use crate::load::{SoAArrays, PredRun};
+    use alloc::vec;
+    use alloc::string::ToString;
 
     fn create_test_receipt() -> Receipt {
         Receipt {
@@ -246,6 +253,13 @@ mod tests {
         let action = result.unwrap();
         assert!(action.async_finalize);
         assert!(action.non_blocking);
+    }
+
+    #[test]
+    fn test_c1_failure_empty_operation_id() {
+        let result = handle_c1_failure("");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("cannot be empty"));
     }
 }
 

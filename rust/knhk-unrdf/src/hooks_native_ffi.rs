@@ -332,7 +332,7 @@ pub extern "C" fn knhk_unrdf_register_hook_native(
 
     let registry = get_native_hook_registry();
     match registry.lock() {
-        Ok(mut reg) => {
+        Ok(reg) => {
             match reg.register(hook) {
                 Ok(_) => 0,
                 Err(_) => -1,
@@ -361,7 +361,7 @@ pub extern "C" fn knhk_unrdf_deregister_hook_native(
 
     let registry = get_native_hook_registry();
     match registry.lock() {
-        Ok(mut reg) => {
+        Ok(reg) => {
             match reg.deregister(hook_id_str) {
                 Ok(_) => 0,
                 Err(_) => -1,

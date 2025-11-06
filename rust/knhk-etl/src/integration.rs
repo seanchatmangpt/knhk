@@ -2,8 +2,11 @@
 // Integration layer connecting ETL pipeline with connectors, lockchain, and OTEL
 // Includes warm path query execution integration
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 use super::*;
 use alloc::string::String;

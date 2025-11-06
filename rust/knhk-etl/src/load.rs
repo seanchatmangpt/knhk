@@ -2,8 +2,11 @@
 // Stage 3: Load
 // SoA-aligned arrays in L1 cache
 
+extern crate alloc;
+
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
+use alloc::format;
 
 use crate::error::PipelineError;
 use crate::transform::{TransformResult, TypedTriple};
@@ -114,6 +117,7 @@ impl LoadStage {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct LoadResult {
     pub soa_arrays: SoAArrays,
     pub runs: Vec<PredRun>,
@@ -121,6 +125,7 @@ pub struct LoadResult {
 
 /// SoA arrays for hot path (64-byte aligned)
 #[repr(align(64))]
+#[derive(Debug, Clone)]
 pub struct SoAArrays {
     pub s: [u64; 8],
     pub p: [u64; 8],
@@ -137,6 +142,7 @@ impl SoAArrays {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct PredRun {
     pub pred: u64,
     pub off: u64,

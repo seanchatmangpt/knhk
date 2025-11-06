@@ -1,6 +1,10 @@
 // rust/knhk-etl/tests/failure_actions_test.rs
 // Tests for failure actions per runtime class
 
+extern crate alloc;
+use alloc::string::ToString;
+use alloc::vec;
+
 use knhk_etl::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
 use knhk_etl::load::{LoadResult, SoAArrays, PredRun};
 use knhk_etl::reflex::Receipt;
@@ -94,6 +98,13 @@ fn test_c1_failure_async() {
     let action = result.unwrap();
     assert!(action.async_finalize);
     assert!(action.non_blocking);
+}
+
+#[test]
+fn test_c1_failure_empty_operation_id() {
+    let result = handle_c1_failure("");
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("cannot be empty"));
 }
 
 #[test]

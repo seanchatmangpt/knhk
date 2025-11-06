@@ -115,12 +115,13 @@ pub fn check_order(hooks: &[HookDefinition]) -> UnrdfResult<()> {
     // Check for duplicate hook IDs (violates ≺-total ordering)
     let mut seen_ids = HashSet::new();
     for hook in hooks {
-        if seen_ids.contains(&hook.id) {
+        let hook_id = hook.id.clone();
+        if seen_ids.contains(&hook_id) {
             return Err(UnrdfError::OrderViolation(
-                format!("Duplicate hook ID '{}' violates ≺-total ordering", hook.id)
+                format!("Duplicate hook ID '{}' violates ≺-total ordering", hook_id)
             ));
         }
-        seen_ids.insert(&hook.id.clone());
+        seen_ids.insert(hook_id);
     }
     
     // In production, would also check:

@@ -4,7 +4,7 @@
 
 extern crate alloc;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::format;
 
 /// Runtime class for operation classification

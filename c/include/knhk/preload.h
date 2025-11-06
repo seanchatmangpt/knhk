@@ -118,7 +118,6 @@ static inline knhk_prefetch_hint_t knhk_heatmap_get_prefetch_hint(
   // Find hottest predicate in time window
   uint64_t max_count = 0;
   uint64_t hottest_predicate = 0;
-  uint64_t hottest_addr = 0;
   
   for (size_t i = 0; i < KNHK_HEATMAP_SIZE; i++) {
     const knhk_heatmap_entry_t *entry = &heatmap->entries[i];
@@ -138,7 +137,6 @@ static inline knhk_prefetch_hint_t knhk_heatmap_get_prefetch_hint(
     if (weight > max_count) {
       max_count = weight;
       hottest_predicate = entry->predicate;
-      hottest_addr = entry->cache_line_addr;
     }
   }
   
@@ -161,7 +159,24 @@ static inline void knhk_prefetch_cache_line(const void *addr, int locality) {
 #if defined(__GNUC__) || defined(__clang__)
   // Prefetch for read, with specified locality
   // locality: 0 = no temporal locality, 1 = low, 2 = moderate, 3 = high
-  __builtin_prefetch(addr, 0, locality);
+  // Use switch to ensure compile-time constant for __builtin_prefetch
+  switch (locality) {
+    case 0:
+      __builtin_prefetch(addr, 0, 0);
+      break;
+    case 1:
+      __builtin_prefetch(addr, 0, 1);
+      break;
+    case 2:
+      __builtin_prefetch(addr, 0, 2);
+      break;
+    case 3:
+      __builtin_prefetch(addr, 0, 3);
+      break;
+    default:
+      __builtin_prefetch(addr, 0, 0);
+      break;
+  }
 #elif defined(_MSC_VER) && defined(_M_X64)
   // MSVC prefetch intrinsic (x64 only)
   _mm_prefetch((const char *)addr, _MM_HINT_T0);

@@ -5,7 +5,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::format;
 
 use crate::error::PipelineError;
@@ -81,7 +81,7 @@ impl ReflexStage {
 
             // Classify operation (R1/W1/C1)
             let operation_type = "ASK_SP"; // Default operation type
-            let runtime_class = RuntimeClass::classify_operation(operation_type, run.len as usize)
+            let _runtime_class = RuntimeClass::classify_operation(operation_type, run.len as usize)
                 .map_err(|e| PipelineError::RuntimeClassError(e))?;
 
             // Execute hook via C hot path API (FFI)
@@ -93,7 +93,7 @@ impl ReflexStage {
                 // Convert ticks to nanoseconds (approximate: 1 tick ≈ 0.25ns at 4GHz)
                 let latency_ns = (receipt.ticks as u64) * 250;
                 
-                match runtime_class {
+                match _runtime_class {
                     RuntimeClass::R1 => {
                         if let Some(ref monitor) = self.r1_monitor {
                             monitor.borrow_mut().record_latency(latency_ns);
@@ -328,7 +328,7 @@ impl ReflexStage {
     }
     
     /// Generate deterministic span ID from SoA data (no_std fallback)
-    fn generate_span_id_deterministic(soa: &SoAArrays, run: &PredRun) -> u64 {
+    fn generate_span_id_deterministic(_soa: &SoAArrays, run: &PredRun) -> u64 {
         const FNV_OFFSET_BASIS: u64 = 1469598103934665603;
         const FNV_PRIME: u64 = 1099511628211;
         
@@ -429,6 +429,7 @@ pub struct Action {
     pub receipt_id: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct Receipt {
     pub id: String,
     pub ticks: u32,

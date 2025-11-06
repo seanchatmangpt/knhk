@@ -5,9 +5,10 @@
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
-use alloc::string::String;
+use alloc::vec::Vec;
+use alloc::string::{String, ToString};
 use alloc::format;
-use crate::{Tracer, Metric, MetricValue, SpanStatus, Span};
+use crate::{Tracer, Metric, MetricValue, SpanStatus};
 
 /// Record runtime class operation count
 /// 

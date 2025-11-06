@@ -25,39 +25,39 @@ LIB = libknhk.a
 
 # Targets
 BENCH = tools/knhk_bench
-TEST_ENTERPRISE = tests/chicago_enterprise_use_cases
-TEST_V1 = tests/chicago_v1_test
-TEST_RECEIPTS = tests/chicago_receipts
-TEST_CONSTRUCT8 = tests/chicago_construct8
-TEST_CONSTRUCT8_PIPELINE = tests/chicago_construct8_pipeline
-TEST_BATCH = tests/chicago_batch
-TEST_GUARDS = tests/chicago_guards
-TEST_INTEGRATION = tests/chicago_integration
-TEST_INTEGRATION_V2 = tests/chicago_integration_v2
-TEST_INTEGRATION_DOCKER = tests/integration/docker_test.sh
-TEST_KAFKA_INTEGRATION = tests/integration/test_kafka_integration
-TEST_LOCKCHAIN_INTEGRATION = tests/integration/test_lockchain_integration
-TEST_ETL_INTEGRATION = tests/integration/test_etl_integration
-TEST_GAPS_V1 = tests/chicago_gaps_v1
-TEST_CLI_BOOT = tests/chicago_cli_boot
-TEST_CLI_CONNECT = tests/chicago_cli_connect
-TEST_CLI_COVER = tests/chicago_cli_cover
-TEST_CLI_ADMIT = tests/chicago_cli_admit
-TEST_CLI_REFLEX = tests/chicago_cli_reflex
-TEST_CLI_EPOCH = tests/chicago_cli_epoch
-TEST_CLI_ROUTE = tests/chicago_cli_route
-TEST_CLI_RECEIPT = tests/chicago_cli_receipt
-TEST_CLI_METRICS = tests/chicago_cli_metrics
-TEST_CLI_COVERAGE = tests/chicago_cli_coverage
-TEST_V04 = tests/chicago_v04_test
-TEST_E2E = tests/chicago_integration_e2e
-TEST_NETWORK = tests/chicago_network_integration
-TEST_CLI = tests/chicago_cli_integration
-TEST_CONFIG = tests/chicago_configuration
-TEST_LOCKCHAIN_INT = tests/chicago_lockchain_integration
-TEST_PERF_V04 = tests/chicago_performance_v04
-TEST_WARM_PATH = tests/chicago_warm_path
-TEST_CONFIG_V05 = tests/chicago_config
+TEST_ENTERPRISE = ../tests/chicago_enterprise_use_cases
+TEST_V1 = ../tests/chicago_v1_test
+TEST_RECEIPTS = ../tests/chicago_receipts
+TEST_CONSTRUCT8 = ../tests/chicago_construct8
+TEST_CONSTRUCT8_PIPELINE = ../tests/chicago_construct8_pipeline
+TEST_BATCH = ../tests/chicago_batch
+TEST_GUARDS = ../tests/chicago_guards
+TEST_INTEGRATION = ../tests/chicago_integration
+TEST_INTEGRATION_V2 = ../tests/chicago_integration_v2
+TEST_INTEGRATION_DOCKER = ../tests/integration/docker_test.sh
+TEST_KAFKA_INTEGRATION = ../tests/integration/test_kafka_integration
+TEST_LOCKCHAIN_INTEGRATION = ../tests/integration/test_lockchain_integration
+TEST_ETL_INTEGRATION = ../tests/integration/test_etl_integration
+TEST_GAPS_V1 = ../tests/chicago_gaps_v1
+TEST_CLI_BOOT = ../tests/chicago_cli_boot
+TEST_CLI_CONNECT = ../tests/chicago_cli_connect
+TEST_CLI_COVER = ../tests/chicago_cli_cover
+TEST_CLI_ADMIT = ../tests/chicago_cli_admit
+TEST_CLI_REFLEX = ../tests/chicago_cli_reflex
+TEST_CLI_EPOCH = ../tests/chicago_cli_epoch
+TEST_CLI_ROUTE = ../tests/chicago_cli_route
+TEST_CLI_RECEIPT = ../tests/chicago_cli_receipt
+TEST_CLI_METRICS = ../tests/chicago_cli_metrics
+TEST_CLI_COVERAGE = ../tests/chicago_cli_coverage
+TEST_V04 = ../tests/chicago_v04_test
+TEST_E2E = ../tests/chicago_integration_e2e
+TEST_NETWORK = ../tests/chicago_network_integration
+TEST_CLI = ../tests/chicago_cli_integration
+TEST_CONFIG = ../tests/chicago_configuration
+TEST_LOCKCHAIN_INT = ../tests/chicago_lockchain_integration
+TEST_PERF_V04 = ../tests/chicago_performance_v04
+TEST_WARM_PATH = ../tests/chicago_warm_path
+TEST_CONFIG_V05 = ../tests/chicago_config
 TEST_COLD_PATH_UNRDF = chicago_cold_path_unrdf_integration
 
 # Rust unrdf integration library
@@ -82,8 +82,8 @@ $(BENCH): tools/knhk_bench.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) $< -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 # Enterprise Chicago TDD test suite
-$(TEST_ENTERPRISE): tests/chicago_enterprise_use_cases.c tests/chicago_basic_operations.c tests/chicago_cardinality.c tests/chicago_object_operations.c tests/chicago_advanced.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_enterprise_use_cases.c tests/chicago_basic_operations.c tests/chicago_cardinality.c tests/chicago_object_operations.c tests/chicago_advanced.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_ENTERPRISE): ../tests/chicago_enterprise_use_cases.c ../tests/chicago_basic_operations.c ../tests/chicago_cardinality.c ../tests/chicago_object_operations.c ../tests/chicago_advanced.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_enterprise_use_cases.c ../tests/chicago_basic_operations.c ../tests/chicago_cardinality.c ../tests/chicago_object_operations.c ../tests/chicago_advanced.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 # v1.0 Chicago TDD test suites
 $(TEST_V1): tests/chicago_v1_test.c tests/chicago_v1_receipts.c tests/chicago_v1_operations.c tests/chicago_v1_validation.c $(LIB)

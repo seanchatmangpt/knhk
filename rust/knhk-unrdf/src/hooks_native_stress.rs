@@ -122,7 +122,14 @@ mod stress_tests {
                             id: hook_id.clone(),
                             name: format!("Hook {}", hook_id),
                             hook_type: "sparql-ask".to_string(),
-                            definition: JsonValue::Object(serde_json::Map::new()),
+                            definition: {
+                                let mut def = serde_json::Map::new();
+                                let mut when = serde_json::Map::new();
+                                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                                when.insert("query".to_string(), JsonValue::String("ASK { ?s ?p ?o }".to_string()));
+                                def.insert("when".to_string(), JsonValue::Object(when));
+                                JsonValue::Object(def)
+                            },
                         };
                         reg.register(hook).unwrap();
                     }

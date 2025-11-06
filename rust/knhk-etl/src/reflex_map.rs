@@ -5,7 +5,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 #[cfg(feature = "std")]
 use std::format;
 #[cfg(not(feature = "std"))]
@@ -66,11 +66,13 @@ impl ReflexMap {
     }
 
     /// Create a new reflex map with custom tick budget
-    pub fn with_tick_budget(tick_budget: u32) -> Self {
+    pub fn with_tick_budget(tick_budget: u32) -> Result<Self, PipelineError> {
         if tick_budget > 8 {
-            panic!("Tick budget cannot exceed 8 (Chatman Constant)");
+            return Err(PipelineError::GuardViolation(
+                format!("Tick budget {} exceeds Chatman Constant (8)", tick_budget)
+            ));
         }
-        Self { tick_budget }
+        Ok(Self { tick_budget })
     }
 
     /// Apply reflex map: A = μ(O)
