@@ -275,9 +275,39 @@ impl SidecarError {
         }
     }
 
-    pub fn validation_failed(msg: impl Into<String>) -> Self {
-        SidecarError::ValidationFailed {
-            context: ErrorContext::new("SIDECAR_VALIDATION_FAILED", msg),
+    pub fn tls_error(msg: impl Into<String>) -> Self {
+        SidecarError::TlsError {
+            context: ErrorContext::new("SIDECAR_TLS_ERROR", msg),
+        }
+    }
+
+    pub fn config_error(msg: impl Into<String>) -> Self {
+        SidecarError::ConfigError {
+            context: ErrorContext::new("SIDECAR_CONFIG_ERROR", msg),
+        }
+    }
+
+    pub fn internal_error(msg: impl Into<String>) -> Self {
+        SidecarError::InternalError {
+            context: ErrorContext::new("SIDECAR_INTERNAL_ERROR", msg),
+        }
+    }
+
+    pub fn retry_exhausted(msg: impl Into<String>) -> Self {
+        SidecarError::RetryExhausted {
+            context: ErrorContext::new("SIDECAR_RETRY_EXHAUSTED", msg),
+        }
+    }
+
+    pub fn circuit_breaker_open(msg: impl Into<String>) -> Self {
+        SidecarError::CircuitBreakerOpen {
+            context: ErrorContext::new("SIDECAR_CIRCUIT_BREAKER_OPEN", msg),
+        }
+    }
+
+    pub fn timeout_error(msg: impl Into<String>) -> Self {
+        SidecarError::TimeoutError {
+            context: ErrorContext::new("SIDECAR_TIMEOUT_ERROR", msg),
         }
     }
 }

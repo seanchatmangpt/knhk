@@ -131,7 +131,7 @@ impl EmitStage {
                         // W1 failure: retry or degrade to cache
                         let cached_answer = self.lookup_cached_answer(&action.id);
 
-                        let retry_action = handle_w1_failure(0, self.max_retries, cached_answer.as_ref())
+                        let retry_action = handle_w1_failure(0, self.max_retries, cached_answer.clone())
                             .map_err(|e| PipelineError::W1FailureError(e))?;
 
                         if retry_action.use_cache {

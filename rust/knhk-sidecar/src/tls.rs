@@ -68,12 +68,12 @@ impl TlsConfig {
         // Validate certificate file exists
         if let Some(ref cert_file) = self.cert_file {
             if !Path::new(cert_file).exists() {
-                return Err(SidecarError::TlsError(
+                return Err(SidecarError::tls_error(
                     format!("Certificate file not found: {}", cert_file)
                 ));
             }
         } else {
-            return Err(SidecarError::TlsError(
+            return Err(SidecarError::tls_error(
                 "Certificate file required when TLS is enabled".to_string()
             ));
         }
@@ -81,12 +81,12 @@ impl TlsConfig {
         // Validate key file exists
         if let Some(ref key_file) = self.key_file {
             if !Path::new(key_file).exists() {
-                return Err(SidecarError::TlsError(
+                return Err(SidecarError::tls_error(
                     format!("Key file not found: {}", key_file)
                 ));
             }
         } else {
-            return Err(SidecarError::TlsError(
+            return Err(SidecarError::tls_error(
                 "Key file required when TLS is enabled".to_string()
             ));
         }
@@ -95,12 +95,12 @@ impl TlsConfig {
         if self.mtls_enabled {
             if let Some(ref ca_file) = self.ca_file {
                 if !Path::new(ca_file).exists() {
-                    return Err(SidecarError::TlsError(
+                    return Err(SidecarError::tls_error(
                         format!("CA certificate file not found: {}", ca_file)
                     ));
                 }
             } else {
-                return Err(SidecarError::TlsError(
+                return Err(SidecarError::tls_error(
                     "CA certificate file required when mTLS is enabled".to_string()
                 ));
             }
@@ -113,11 +113,11 @@ impl TlsConfig {
     pub fn load_cert(&self) -> SidecarResult<Vec<u8>> {
         if let Some(ref cert_file) = self.cert_file {
             fs::read(cert_file)
-                .map_err(|e| SidecarError::TlsError(
+                .map_err(|e| SidecarError::tls_error(
                     format!("Failed to read certificate file {}: {}", cert_file, e)
                 ))
         } else {
-            Err(SidecarError::TlsError("Certificate file not configured".to_string()))
+            Err(SidecarError::tls_error("Certificate file not configured".to_string()))
         }
     }
 
@@ -125,11 +125,11 @@ impl TlsConfig {
     pub fn load_key(&self) -> SidecarResult<Vec<u8>> {
         if let Some(ref key_file) = self.key_file {
             fs::read(key_file)
-                .map_err(|e| SidecarError::TlsError(
+                .map_err(|e| SidecarError::tls_error(
                     format!("Failed to read key file {}: {}", key_file, e)
                 ))
         } else {
-            Err(SidecarError::TlsError("Key file not configured".to_string()))
+            Err(SidecarError::tls_error("Key file not configured".to_string()))
         }
     }
 
@@ -137,11 +137,11 @@ impl TlsConfig {
     pub fn load_ca(&self) -> SidecarResult<Vec<u8>> {
         if let Some(ref ca_file) = self.ca_file {
             fs::read(ca_file)
-                .map_err(|e| SidecarError::TlsError(
+                .map_err(|e| SidecarError::tls_error(
                     format!("Failed to read CA certificate file {}: {}", ca_file, e)
                 ))
         } else {
-            Err(SidecarError::TlsError("CA certificate file not configured".to_string()))
+            Err(SidecarError::tls_error("CA certificate file not configured".to_string()))
         }
     }
 }

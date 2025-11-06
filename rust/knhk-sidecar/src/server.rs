@@ -92,7 +92,7 @@ impl SidecarServer {
     /// Start server
     pub async fn start(&self) -> SidecarResult<()> {
         let addr = self.config.bind_address.parse()
-            .map_err(|e| SidecarError::ConfigError(format!("Invalid bind address: {}", e)))?;
+            .map_err(|e| SidecarError::config_error(format!("Invalid bind address: {}", e)))?;
 
         // Create gRPC server builder
         let mut server_builder = tonic::transport::Server::builder();
@@ -101,13 +101,13 @@ impl SidecarServer {
         if self.config.tls_config.enabled {
             let tls_config = create_tls_server_config(&self.config.tls_config)?;
             server_builder = server_builder.tls_config(tls_config)
-                .map_err(|e| SidecarError::TlsError(format!("Failed to configure TLS: {}", e)))?;
+                .map_err(|e| SidecarError::tls_error(format!("Failed to configure TLS: {}", e)))?;
         }
 
         // TODO: Re-enable when service.rs is fixed
         // For now, just return an error indicating service is not implemented
         tracing::error!("Sidecar server service implementation is not available - service.rs needs to be fixed");
-        Err(SidecarError::InternalError("Service implementation not available - under construction".to_string()))
+        Err(SidecarError::internal_error("Service implementation not available - under construction".to_string()))
     }
 
     /// Handle execute transaction request

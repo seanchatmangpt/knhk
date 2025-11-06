@@ -38,7 +38,7 @@ impl WarmClient {
     /// Create new warm orchestrator client
     pub async fn new(config: WarmClientConfig) -> Result<Self> {
         let endpoint = config.endpoint.parse()
-            .map_err(|e| SidecarError::NetworkError(
+            .map_err(|e| SidecarError::network_error(
                 format!("Invalid endpoint: {}", e)
             ))?;
         
@@ -72,7 +72,7 @@ impl WarmClient {
         // 2. Call the warm orchestrator gRPC service
         // 3. Return the BatchTransactionResponse
         
-        Err(SidecarError::InternalError(
+        Err(SidecarError::internal_error(
             "Warm orchestrator gRPC service not yet implemented. \
              This will be implemented when knhk-warm exposes a gRPC service.".to_string()
         ))
@@ -85,7 +85,7 @@ impl WarmClient {
         schema: Option<&str>,
     ) -> Result<Vec<u8>> { // Serialized QueryResponse protobuf
         // Planned for v1.0 when warm orchestrator gRPC service is available
-        Err(SidecarError::InternalError(
+        Err(SidecarError::internal_error(
             "Warm orchestrator gRPC service not yet implemented. \
              This will be implemented when knhk-warm exposes a gRPC service.".to_string()
         ))
@@ -99,7 +99,7 @@ impl WarmClient {
     /// Reconnect to warm orchestrator
     pub async fn reconnect(&mut self) -> Result<()> {
         let endpoint = self.config.endpoint.parse()
-            .map_err(|e| SidecarError::NetworkError(
+            .map_err(|e| SidecarError::network_error(
                 format!("Invalid endpoint: {}", e)
             ))?;
         

@@ -365,7 +365,7 @@ impl KgcSidecar for KgcSidecarService {
                         "<http://example.org/s> <http://example.org/p> <http://example.org/o> ."
                     );
                     let triples = ingest.parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::QueryFailed(format!("Parse failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(format!("Parse failed: {}", e)))?;
 
                     let ingest_result = knhk_etl::IngestResult {
                         triples,
@@ -375,15 +375,15 @@ impl KgcSidecar for KgcSidecarService {
                     // Transform and execute
                     let transform = knhk_etl::TransformStage::new("urn:knhk:schema:query".to_string(), false);
                     let transform_result = transform.transform(ingest_result)
-                        .map_err(|e| SidecarError::QueryFailed(format!("Transform failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(format!("Transform failed: {}", e)))?;
 
                     let load = knhk_etl::LoadStage::new();
                     let load_result = load.load(transform_result)
-                        .map_err(|e| SidecarError::QueryFailed(format!("Load failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(format!("Load failed: {}", e)))?;
 
                     let reflex = knhk_etl::ReflexStage::new();
                     let reflex_result = reflex.reflex(load_result)
-                        .map_err(|e| SidecarError::QueryFailed(format!("Reflex failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(format!("Reflex failed: {}", e)))?;
 
                     // Return boolean result based on receipts
                     let has_results = !reflex_result.receipts.is_empty();
@@ -400,7 +400,7 @@ impl KgcSidecar for KgcSidecarService {
                         .map_err(|e| SidecarError::QueryFailed(format!("Invalid UTF-8: {}", e)))?;
 
                     let triples = ingest.parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::QueryFailed(format!("Parse failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(format!("Parse failed: {}", e)))?;
 
                     // Return triple subjects as results
                     Ok(triples.iter().map(|t| t.subject.clone()).collect())
@@ -415,7 +415,7 @@ impl KgcSidecar for KgcSidecarService {
                         .map_err(|e| SidecarError::QueryFailed(format!("Invalid UTF-8: {}", e)))?;
 
                     let triples = ingest.parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::QueryFailed(format!("Parse failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(format!("Parse failed: {}", e)))?;
 
                     // Return constructed triples as N-Triples format
                     Ok(triples.iter().map(|t| {
@@ -423,7 +423,7 @@ impl KgcSidecar for KgcSidecarService {
                     }).collect())
                 }
                 _ => {
-                    Err(SidecarError::QueryFailed("Unsupported query type".to_string()))
+                    Err(SidecarError::query_failed("Unsupported query type".to_string()))
                 }
             }
         })();
@@ -492,12 +492,12 @@ impl KgcSidecar for KgcSidecarService {
         let result: Result<(), SidecarError> = (|| {
             // Convert RDF data to string
             let turtle_data = String::from_utf8(req.rdf_data.clone())
-                .map_err(|e| SidecarError::ValidationFailed(format!("Invalid UTF-8: {}", e)))?;
+                .map_err(|e| SidecarError::validation_failed(format!("Invalid UTF-8: {}", e)))?;
 
             // 1. Ingest RDF
             let ingest = knhk_etl::IngestStage::new(vec!["validation".to_string()], "turtle".to_string());
             let triples = ingest.parse_rdf_turtle(&turtle_data)
-                .map_err(|e| SidecarError::ValidationFailed(format!("Parse failed: {}", e)))?;
+                .map_err(|e| SidecarError::validation_failed(format!("Parse failed: {}", e)))?;
 
             let ingest_result = knhk_etl::IngestResult {
                 triples,
@@ -507,11 +507,11 @@ impl KgcSidecar for KgcSidecarService {
             // 2. Transform with schema validation enabled
             let transform = knhk_etl::TransformStage::new(req.schema_iri.clone(), true);
             let transform_result = transform.transform(ingest_result)
-                .map_err(|e| SidecarError::ValidationFailed(format!("Schema validation failed: {}", e)))?;
+                .map_err(|e| SidecarError::validation_failed(format!("Schema validation failed: {}", e)))?;
 
             // Check for validation errors
             if !transform_result.validation_errors.is_empty() {
-                return Err(SidecarError::ValidationFailed(
+                return Err(SidecarError::validation_failed(
                     format!("Validation errors: {}", transform_result.validation_errors.join(", "))
                 ));
             }
@@ -586,23 +586,23 @@ impl KgcSidecar for KgcSidecarService {
             // 2. Transform to typed triples
             let transform = knhk_etl::TransformStage::new("urn:knhk:schema:hook".to_string(), false);
             let transform_result = transform.transform(ingest_result)
-                .map_err(|e| SidecarError::HookEvaluationFailed(format!("Transform failed: {}", e)))?;
+                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Transform failed: {}", e)))?;
 
             // 3. Load into SoA arrays
             let load = knhk_etl::LoadStage::new();
             let load_result = load.load(transform_result)
-                .map_err(|e| SidecarError::HookEvaluationFailed(format!("Load failed: {}", e)))?;
+                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Load failed: {}", e)))?;
 
             // 4. Execute hook via Reflex stage (≤8 ticks)
             // This is where the actual hook evaluation happens
             let reflex = knhk_etl::ReflexStage::new();
             let reflex_result = reflex.reflex(load_result)
-                .map_err(|e| SidecarError::HookEvaluationFailed(format!("Reflex failed: {}", e)))?;
+                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Reflex failed: {}", e)))?;
 
             // Return first receipt from hook execution
             reflex_result.receipts.first()
                 .cloned()
-                .ok_or_else(|| SidecarError::HookEvaluationFailed("No receipt generated".to_string()))
+                .ok_or_else(|| SidecarError::hook_evaluation_failed("No receipt generated".to_string()))
         })();
 
         let success = result.is_ok();

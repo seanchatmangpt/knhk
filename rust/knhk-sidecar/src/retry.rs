@@ -65,7 +65,7 @@ impl RetryExecutor {
 
                     // Don't retry if we've exhausted retries
                     if attempt >= self.config.max_retries {
-                        return Err(SidecarError::RetryExhausted(
+                        return Err(SidecarError::retry_exhausted(
                             format!("Max retries ({}) exceeded. Last error: {}", self.config.max_retries, e)
                         ));
                     }
@@ -84,7 +84,7 @@ impl RetryExecutor {
 
         // Should never reach here, but handle it anyway
         Err(last_error.unwrap_or_else(|| {
-            SidecarError::InternalError("Retry execution failed without error".to_string())
+            SidecarError::internal_error("Retry execution failed without error".to_string())
         }))
     }
 
@@ -111,7 +111,7 @@ impl RetryExecutor {
 
                     // Don't retry if we've exhausted retries
                     if attempt >= self.config.max_retries {
-                        return Err(SidecarError::RetryExhausted(
+                        return Err(SidecarError::retry_exhausted(
                             format!("Max retries ({}) exceeded. Last error: {}", self.config.max_retries, e)
                         ));
                     }
@@ -130,7 +130,7 @@ impl RetryExecutor {
 
         // Should never reach here, but handle it anyway
         Err(last_error.unwrap_or_else(|| {
-            SidecarError::InternalError("Retry execution failed without error".to_string())
+            SidecarError::internal_error("Retry execution failed without error".to_string())
         }))
     }
 }

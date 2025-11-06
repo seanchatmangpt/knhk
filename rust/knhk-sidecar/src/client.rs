@@ -60,13 +60,13 @@ impl SidecarClient {
         
         // Create channel with timeout
         let endpoint = tonic::transport::Endpoint::from_shared(url.clone())
-            .map_err(|e| SidecarError::ConfigError(format!("Invalid URL: {}", e)))?
+            .map_err(|e| SidecarError::config_error(format!("Invalid URL: {}", e)))?
             .timeout(Duration::from_millis(config.connection_timeout_ms))
             .connect_timeout(Duration::from_millis(config.connection_timeout_ms));
 
         let channel = endpoint.connect()
             .await
-            .map_err(|e| SidecarError::NetworkError(format!("Failed to connect to warm orchestrator: {}", e)))?;
+            .map_err(|e| SidecarError::network_error(format!("Failed to connect to warm orchestrator: {}", e)))?;
 
         // Create circuit breaker
         let circuit_breaker = SidecarCircuitBreaker::new(
@@ -96,14 +96,14 @@ impl SidecarClient {
         let result = self.retry_executor.execute(|| async {
             // Check circuit breaker before making call
             if self.circuit_breaker.is_open()? {
-                return Err(SidecarError::CircuitBreakerOpen(
+                return Err(SidecarError::circuit_breaker_open(
                     "Circuit breaker is open".to_string()
                 ));
             }
             
             // Note: gRPC call pending warm orchestrator service implementation
             // This will be implemented when knhk-warm exposes gRPC service
-            Err(SidecarError::InternalError(
+            Err(SidecarError::internal_error(
                 "Warm orchestrator gRPC service not yet implemented".to_string()
             ))
         })
@@ -129,13 +129,13 @@ impl SidecarClient {
         let result = self.retry_executor.execute(|| async {
             // Check circuit breaker before making call
             if self.circuit_breaker.is_open()? {
-                return Err(SidecarError::CircuitBreakerOpen(
+                return Err(SidecarError::circuit_breaker_open(
                     "Circuit breaker is open".to_string()
                 ));
             }
             
             // Note: gRPC call pending warm orchestrator service implementation
-            Err(SidecarError::InternalError(
+            Err(SidecarError::internal_error(
                 "Warm orchestrator gRPC service not yet implemented".to_string()
             ))
         })
@@ -161,13 +161,13 @@ impl SidecarClient {
         let result = self.retry_executor.execute(|| async {
             // Check circuit breaker before making call
             if self.circuit_breaker.is_open()? {
-                return Err(SidecarError::CircuitBreakerOpen(
+                return Err(SidecarError::circuit_breaker_open(
                     "Circuit breaker is open".to_string()
                 ));
             }
             
             // Note: gRPC call pending warm orchestrator service implementation
-            Err(SidecarError::InternalError(
+            Err(SidecarError::internal_error(
                 format!("Warm orchestrator gRPC service not yet implemented for hook {}", hook_id)
             ))
         })

@@ -36,7 +36,7 @@ where
 
     pub fn add(&self, item: T) -> Result<(), crate::error::SidecarError> {
         let mut batch = self.current_batch.lock()
-            .map_err(|e| crate::error::SidecarError::Internal(
+            .map_err(|e| crate::error::SidecarError::internal_error(
                 format!("Failed to acquire batch lock: {}", e)
             ))?;
 
@@ -81,7 +81,7 @@ where
 
     pub fn flush(&self) -> Result<(), crate::error::SidecarError> {
         let mut batch = self.current_batch.lock()
-            .map_err(|e| crate::error::SidecarError::Internal(
+            .map_err(|e| crate::error::SidecarError::internal_error(
                 format!("Failed to acquire batch lock: {}", e)
             ))?;
 

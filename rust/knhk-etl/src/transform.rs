@@ -43,7 +43,7 @@ impl TransformStage {
             let s = Self::hash_iri(&raw.subject);
             let p = Self::hash_iri(&raw.predicate);
             let o = Self::hash_iri(&raw.object);
-            let g = raw.graph.map(|g| Self::hash_iri(&g));
+            let g = raw.graph.as_ref().map(|g| Self::hash_iri(g));
 
             // Schema validation (O ⊨ Σ check)
             if self.validation_enabled {

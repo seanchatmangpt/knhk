@@ -136,9 +136,12 @@ where
     pub async fn process_batch(&self, requests: Vec<T>) -> SidecarResult<Vec<R>> {
         // Validate batch size
         if requests.len() > self.config.max_batch_size {
-            return Err(SidecarError::BatchError(
-                format!("Batch size {} exceeds maximum {}", requests.len(), self.config.max_batch_size)
-            ));
+            return Err(SidecarError::BatchError {
+                context: crate::error::ErrorContext::new(
+                    "SIDECAR_BATCH_SIZE_EXCEEDED",
+                    format!("Batch size {} exceeds maximum {}", requests.len(), self.config.max_batch_size)
+                ),
+            });
         }
 
         // Process batch
