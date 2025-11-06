@@ -561,7 +561,7 @@ mod tests {
             timestamp_ms: 1000,
             metadata: BTreeMap::new(),
         };
-        let hash1 = match chain.append(entry1) {
+        let _hash1 = match chain.append(entry1) {
             Ok(h) => h,
             Err(e) => panic!("Failed to append entry1: {}", e),
         };
