@@ -1,17 +1,19 @@
-// rust/knhk-sidecar/src/lib.rs
-// KGC Sidecar - Local proxy service for enterprise apps
+// knhk-sidecar: KGC Sidecar Service
+// gRPC proxy for enterprise apps with batching, retries, circuit-breaking, and TLS
 
 pub mod error;
-pub mod batching;
+pub mod batch;
 pub mod retry;
 pub mod circuit_breaker;
-pub mod warm_client;
+pub mod tls;
+pub mod metrics;
+pub mod health;
+pub mod client;
 pub mod server;
+pub mod config;
 
-pub use error::{SidecarError, Result};
-pub use batching::{BatchConfig, BatchManager};
-pub use retry::{RetryConfig, RetryExecutor};
-pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState};
-pub use warm_client::{WarmClient, WarmClientConfig};
-pub use server::{ServerConfig, KgcSidecarService, start_server};
+pub use error::{SidecarError, SidecarResult};
+pub use server::SidecarServer;
+pub use client::SidecarClient;
+pub use config::SidecarConfig;
 

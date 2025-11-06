@@ -1,12 +1,29 @@
 // rust/knhk-aot/src/lib.rs
 // Ahead-Of-Time (AOT) Compilation Guard
 // Validates IR before execution to enforce Chatman Constant (≤8 ticks)
+// Includes template analysis, prebinding, and MPHF generation
 
 #![no_std]
 extern crate alloc;
 
 use alloc::vec::Vec;
 use alloc::string::String;
+
+<<<<<<< Current (Your changes)
+pub mod template_analyzer;
+pub mod prebinding;
+pub mod mphf;
+pub mod specialization;
+pub mod pattern;
+=======
+pub mod template;
+pub mod prebinding;
+pub mod mphf;
+
+pub use template::ConstructTemplate;
+pub use prebinding::PreboundIr;
+pub use mphf::{Mphf, MphfCache};
+>>>>>>> Incoming (Background Agent changes)
 
 /// Hook IR validation result
 #[derive(Debug, Clone, PartialEq, Eq)]

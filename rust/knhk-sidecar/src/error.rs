@@ -1,42 +1,43 @@
-// rust/knhk-sidecar/src/error.rs
-// Error types for KGC Sidecar
+// knhk-sidecar: Error types
 
-use std::fmt;
+use thiserror::Error;
+
+/// Sidecar result type
+pub type SidecarResult<T> = Result<T, SidecarError>;
 
 /// Sidecar error types
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum SidecarError {
-    /// Validation error (guard violation, invalid input)
-    ValidationFailed(String),
-    /// Network error (connection failed, timeout)
+    #[error("Network error: {0}")]
     NetworkError(String),
-    /// gRPC error
-    GrpcError(String),
-    /// Batch error (batch full, flush failed)
+
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
+    #[error("Request timeout: {0}")]
+    TimeoutError(String),
+
+    #[error("Circuit breaker is open: {0}")]
+    CircuitBreakerOpen(String),
+
+    #[error("TLS error: {0}")]
+    TlsError(String),
+
+    #[error("Batch error: {0}")]
     BatchError(String),
-    /// Circuit breaker open
-    CircuitBreakerOpen,
-    /// Retry exhausted
+
+    #[error("Retry exhausted: {0}")]
     RetryExhausted(String),
-    /// Internal error
+
+    #[error("Configuration error: {0}")]
+    ConfigError(String),
+
+    #[error("gRPC error: {0}")]
+    GrpcError(String),
+
+    #[error("Internal error: {0}")]
     InternalError(String),
 }
-
-impl fmt::Display for SidecarError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SidecarError::ValidationFailed(msg) => write!(f, "Validation failed: {}", msg),
-            SidecarError::NetworkError(msg) => write!(f, "Network error: {}", msg),
-            SidecarError::GrpcError(msg) => write!(f, "gRPC error: {}", msg),
-            SidecarError::BatchError(msg) => write!(f, "Batch error: {}", msg),
-            SidecarError::CircuitBreakerOpen => write!(f, "Circuit breaker is open"),
-            SidecarError::RetryExhausted(msg) => write!(f, "Retry exhausted: {}", msg),
-            SidecarError::InternalError(msg) => write!(f, "Internal error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for SidecarError {}
 
 impl From<tonic::Status> for SidecarError {
     fn from(status: tonic::Status) -> Self {
@@ -50,6 +51,22 @@ impl From<tonic::transport::Error> for SidecarError {
     }
 }
 
-/// Result type alias
-pub type Result<T> = std::result::Result<T, SidecarError>;
+/// Check if error is retryable (transient)
+pub fn is_retryable_error(err: &SidecarError) -> bool {
+    matches!(
+        err,
+        SidecarError::NetworkError(_)
+            | SidecarError::TimeoutError(_)
+            | SidecarError::CircuitBreakerOpen(_)
+            | SidecarError::GrpcError(_)
+    )
+}
+
+/// Check if error is a guard violation (non-retryable)
+pub fn is_guard_violation(err: &SidecarError) -> bool {
+    matches!(
+        err,
+        SidecarError::ValidationError(_) | SidecarError::BatchError(_)
+    )
+}
 

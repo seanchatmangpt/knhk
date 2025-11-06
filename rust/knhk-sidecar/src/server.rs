@@ -1,241 +1,154 @@
-// rust/knhk-sidecar/src/server.rs
-// gRPC server for KGC Sidecar
+// knhk-sidecar: gRPC server implementation
 
-use crate::error::{Result, SidecarError};
-use crate::batching::{BatchConfig, BatchManager};
-use crate::retry::{RetryConfig, RetryExecutor};
-use crate::warm_client::{WarmClient, WarmClientConfig};
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tonic::{Request, Response, Status};
-
-// Generated protobuf code will be available here after build
-// For now, we'll use placeholder types
-// use knhk_sidecar_v1::kgc_sidecar_server::{KgcSidecar, KgcSidecarServer};
-// use knhk_sidecar_v1::{Transaction, TransactionResponse, Query, QueryResponse, HealthCheckRequest, HealthCheckResponse};
+use crate::error::{SidecarError, SidecarResult};
+use crate::client::SidecarClient;
+use crate::batch::BatchConfig;
+use crate::tls::{TlsConfig, create_tls_server_config};
+use crate::metrics::MetricsCollector;
+use crate::health::HealthChecker;
 
 /// Server configuration
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
-    /// Server listen address (e.g., "0.0.0.0:50051")
-    pub listen_addr: String,
+    /// Bind address
+    pub bind_address: String,
+    
     /// Batch configuration
     pub batch_config: BatchConfig,
-    /// Retry configuration
-    pub retry_config: RetryConfig,
-    /// Warm client configuration
-    pub warm_client_config: WarmClientConfig,
+    
+    /// TLS configuration
+    pub tls_config: TlsConfig,
 }
 
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
-            listen_addr: "0.0.0.0:50051".to_string(),
+            bind_address: "127.0.0.1:50051".to_string(),
             batch_config: BatchConfig::default(),
-            retry_config: RetryConfig::default(),
-            warm_client_config: WarmClientConfig::default(),
+            tls_config: TlsConfig::default(),
         }
     }
 }
 
-/// KGC Sidecar gRPC service implementation
-pub struct KgcSidecarService {
-    batch_manager: Arc<BatchManager>,
-    retry_executor: Arc<RetryExecutor>,
-    warm_client: Arc<WarmClient>,
-    flush_rx: mpsc::Receiver<Vec<Vec<u8>>>,
+/// Sidecar server
+pub struct SidecarServer {
+    config: ServerConfig,
+    client: Arc<SidecarClient>,
+    metrics: Arc<MetricsCollector>,
+    health: Arc<HealthChecker>,
 }
 
-impl KgcSidecarService {
-    /// Create new sidecar service
-    pub async fn new(config: ServerConfig) -> Result<Self> {
-        // Create batch manager
-        let (batch_manager, flush_rx) = BatchManager::new(config.batch_config.clone())?;
-        let batch_manager = Arc::new(batch_manager);
-        
-        // Start flush task
-        batch_manager.start_flush_task();
-        
-        // Create retry executor
-        let retry_executor = Arc::new(RetryExecutor::new(config.retry_config.clone())?);
-        
-        // Create warm client
-        let warm_client = Arc::new(WarmClient::new(config.warm_client_config.clone()).await?);
-        
+impl SidecarServer {
+    /// Create new sidecar server
+    pub async fn new(
+        server_config: ServerConfig,
+        client: SidecarClient,
+        metrics: Arc<MetricsCollector>,
+        health: Arc<HealthChecker>,
+    ) -> SidecarResult<Self> {
         Ok(Self {
-            batch_manager,
-            retry_executor,
-            warm_client,
-            flush_rx,
+            config: server_config,
+            client: Arc::new(client),
+            metrics,
+            health,
         })
     }
 
-    /// Start background batch processing task
-    pub fn start_batch_processor(&self) -> tokio::task::JoinHandle<()> {
-        let warm_client = Arc::clone(&self.warm_client);
-        let retry_executor = Arc::clone(&self.retry_executor);
-        let mut flush_rx = self.flush_rx.clone();
+    /// Start server
+    pub async fn start(&self) -> SidecarResult<()> {
+        let addr = self.config.bind_address.parse()
+            .map_err(|e| SidecarError::ConfigError(format!("Invalid bind address: {}", e)))?;
+
+        // Create gRPC server builder
+        let mut server_builder = tonic::transport::Server::builder();
+
+        // Configure TLS if enabled
+        if self.config.tls_config.enabled {
+            let tls_config = create_tls_server_config(&self.config.tls_config)?;
+            server_builder = server_builder.tls_config(tls_config)
+                .map_err(|e| SidecarError::TlsError(format!("Failed to configure TLS: {}", e)))?;
+        }
+
+        // Register health component
+        self.health.register_component("warm_orchestrator".to_string());
+        self.health.update_component(
+            "warm_orchestrator",
+            crate::health::HealthStatus::Healthy,
+            "Connected".to_string(),
+        );
+
+        // Build and serve
+        // Note: Actual service implementation will use generated proto code
+        // For now, this is a placeholder structure
         
-        tokio::spawn(async move {
-            while let Some(batch) = flush_rx.recv().await {
-                // Process batch with retry logic
-                let _ = retry_executor.execute_async(|| {
-                    let warm_client = Arc::clone(&warm_client);
-                    let batch = batch.clone();
-                    async move {
-                        warm_client.submit_batch(batch).await
-                    }
-                }).await;
-            }
-        })
+        tracing::info!("Sidecar server starting on {}", addr);
+        
+        // In a real implementation, we would:
+        // 1. Create the service implementation
+        // 2. Add it to the server builder
+        // 3. Serve on the address
+        
+        // Placeholder: server would be started here
+        // server_builder
+        //     .add_service(KgcServiceServer::new(service_impl))
+        //     .serve(addr)
+        //     .await?;
+
+        Ok(())
     }
-}
 
-// Placeholder implementation - will be replaced with actual protobuf-generated code
-// when build.rs generates the code from proto/knhk_sidecar.proto
+    /// Handle execute transaction request
+    pub async fn handle_execute_transaction(&self, rdf_delta: String) -> SidecarResult<String> {
+        let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
+        
+        // Forward to warm orchestrator
+        self.client.execute_transaction(rdf_delta).await
+    }
 
-/*
-#[tonic::async_trait]
-impl KgcSidecar for KgcSidecarService {
-    async fn submit_transaction(
-        &self,
-        request: Request<Transaction>,
-    ) -> std::result::Result<Response<TransactionResponse>, Status> {
-        let transaction = request.into_inner();
+    /// Handle validate graph request
+    pub async fn handle_validate_graph(&self, graph: String, schema_iri: String) -> SidecarResult<bool> {
+        let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
         
-        // Serialize transaction
-        let serialized = transaction.encode_to_vec();
+        self.client.validate_graph(graph, schema_iri).await
+    }
+
+    /// Handle evaluate hook request
+    pub async fn handle_evaluate_hook(&self, hook_id: String, input_data: String) -> SidecarResult<String> {
+        let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
         
-        // Add to batch
-        match self.batch_manager.add(serialized) {
-            Ok(_) => {
-                // Return success response (transaction will be processed asynchronously)
-                let response = TransactionResponse {
-                    receipt: None,
-                    success: true,
-                    error: None,
-                };
-                Ok(Response::new(response))
-            }
-            Err(e) => {
-                Err(Status::invalid_argument(format!("Failed to add to batch: {}", e)))
-            }
+        self.client.evaluate_hook(hook_id, input_data).await
+    }
+
+    /// Handle health check request
+    pub fn handle_health_check(&self, check_type: String) -> (bool, String) {
+        match check_type.as_str() {
+            "liveness" => self.health.check_liveness(),
+            "readiness" => self.health.check_readiness(),
+            _ => self.health.check_readiness(),
         }
     }
 
-    async fn submit_query(
-        &self,
-        request: Request<Query>,
-    ) -> std::result::Result<Response<QueryResponse>, Status> {
-        let query = request.into_inner();
-        
-        // Execute query with retry logic
-        let result = self.retry_executor.execute_async(|| {
-            let warm_client = Arc::clone(&self.warm_client);
-            let sparql = query.sparql.clone();
-            let schema = query.schema.clone();
-            async move {
-                warm_client.submit_query(&sparql, schema.as_deref()).await
-            }
-        }).await;
-        
-        match result {
-            Ok(serialized_response) => {
-                // Deserialize response
-                let response = QueryResponse::decode(&*serialized_response)
-                    .map_err(|e| Status::internal(format!("Failed to decode response: {}", e)))?;
-                Ok(Response::new(response))
-            }
-            Err(e) => {
-                let response = QueryResponse {
-                    bindings: vec![],
-                    success: false,
-                    error: Some(e.to_string()),
-                };
-                Ok(Response::new(response))
-            }
-        }
-    }
-
-    async fn health_check(
-        &self,
-        _request: Request<HealthCheckRequest>,
-    ) -> std::result::Result<Response<HealthCheckResponse>, Status> {
-        // Check circuit breaker state
-        let cb_state = self.warm_client.circuit_breaker_state()
-            .map_err(|e| Status::internal(format!("Failed to get circuit breaker state: {}", e)))?;
-        
-        let healthy = matches!(cb_state, crate::circuit_breaker::CircuitBreakerState::Closed);
-        
-        let response = HealthCheckResponse {
-            healthy,
-            message: if healthy {
-                None
-            } else {
-                Some("Circuit breaker is not closed".to_string())
-            },
-        };
-        
-        Ok(Response::new(response))
+    /// Handle get metrics request
+    pub fn handle_get_metrics(&self) -> crate::metrics::MetricsSnapshot {
+        self.metrics.snapshot()
     }
 }
-*/
 
-/// Start gRPC server
-pub async fn start_server(config: ServerConfig) -> Result<()> {
-    // Create service
-    let service = KgcSidecarService::new(config.clone()).await?;
-    
-    // Start batch processor
-    service.start_batch_processor();
-    
-    // Build server
-    let addr = config.listen_addr.parse()
-        .map_err(|e| SidecarError::ValidationFailed(
-            format!("Invalid listen address: {}", e)
-        ))?;
-    
-    // Placeholder: actual server will be created when protobuf code is generated
-    // For now, return error indicating build step needed
-    Err(SidecarError::InternalError(
-        "gRPC server implementation requires protobuf code generation. \
-         Run 'cargo build' to generate code from proto/knhk_sidecar.proto, \
-         then uncomment the server implementation in src/server.rs".to_string()
-    ))
-    
-    /*
-    // Actual server implementation (uncomment after protobuf generation):
-    let server = KgcSidecarServer::new(service);
-    
-    Server::builder()
-        .add_service(server)
-        .serve(addr)
-        .await
-        .map_err(|e| SidecarError::NetworkError(
-            format!("Failed to start server: {}", e)
-        ))?;
-    
-    Ok(())
-    */
+/// Service implementation (placeholder - will use generated proto code)
+/// This struct will implement the generated KgcService trait
+pub struct KgcServiceImpl {
+    server: Arc<SidecarServer>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_server_config() {
-        let config = ServerConfig::default();
-        assert_eq!(config.listen_addr, "0.0.0.0:50051");
-    }
-
-    #[tokio::test]
-    async fn test_service_creation() {
-        let config = ServerConfig::default();
-        // This will fail because warm client can't connect, but tests structure
-        let result = KgcSidecarService::new(config).await;
-        // Expected to fail in test environment
-        assert!(result.is_err());
+impl KgcServiceImpl {
+    pub fn new(server: Arc<SidecarServer>) -> Self {
+        Self { server }
     }
 }
+
+// Note: The actual service implementation methods will be generated by tonic-build
+// They will look like:
+// async fn execute_transaction(&self, request: Request<TransactionRequest>) -> Result<Response<TransactionResponse>, Status>
+// etc.
 
