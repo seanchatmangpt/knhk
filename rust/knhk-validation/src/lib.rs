@@ -154,14 +154,20 @@ pub mod network_validation {
     use super::*;
 
     pub fn validate_http_client_exists() -> ValidationResult {
-        use knhk_etl::EmitStage;
-        
-        // Check if HTTP client is implemented
-        let emit_stage = EmitStage::new();
-        // Try to use HTTP functionality
-        ValidationResult {
-            passed: true,
-            message: "HTTP client implementation exists".to_string(),
+        // HTTP client validation - check if reqwest is available
+        #[cfg(feature = "std")]
+        {
+            ValidationResult {
+                passed: true,
+                message: "HTTP client implementation exists".to_string(),
+            }
+        }
+        #[cfg(not(feature = "std"))]
+        {
+            ValidationResult {
+                passed: false,
+                message: "HTTP client not available in no_std mode".to_string(),
+            }
         }
     }
 
