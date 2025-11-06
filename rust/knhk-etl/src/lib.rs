@@ -40,7 +40,7 @@ pub use reflex::{ReflexStage, ReflexResult, Action, Receipt};
 pub use reflex_map::{ReflexMap, ReflexMapResult};
 pub use emit::{EmitStage, EmitResult};
 pub use pipeline::Pipeline;
-pub use ingester::{Ingester, StreamingIngester, FileIngester, StdinIngester, DataFormat, StreamingHandle};
+pub use ingester::{Ingester, FileIngester, StdinIngester};
 
 pub mod integration;
 

@@ -21,12 +21,10 @@ serde_json = { version = "1.0" }
 rdkafka = { version = "0.36", optional = true }
 
 [features]
-default = ["std", "knhk-otel"]
+default = ["std", "knhk-otel", "knhk-lockchain"]
 std = ["dep:reqwest"]
 grpc = []
 kafka = ["dep:rdkafka"]
-knhk-otel = ["dep:knhk-otel"]
-knhk-lockchain = ["dep:knhk-lockchain"]
 validation = []
 [dev-dependencies]
 # Test dependencies

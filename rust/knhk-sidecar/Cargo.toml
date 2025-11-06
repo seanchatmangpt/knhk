@@ -11,7 +11,7 @@ tokio = { version = "1.0", features = ["full"] }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 prost = "0.12"
 prost-types = "0.12"
-knhk-etl = { path = "../knhk-etl" }
+knhk-etl = { path = "../knhk-etl", features = ["std", "knhk-otel", "knhk-lockchain"] }
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }

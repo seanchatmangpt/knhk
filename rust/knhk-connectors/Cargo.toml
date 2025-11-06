@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 path = "src/lib.rs"
 
 [dependencies]
@@ -21,7 +21,7 @@ serde_json = { version = "1.0", optional = true, default-features = false }
 [dev-dependencies]
 
 [features]
-default = []
+default = ["std"]
 std = []
 kafka = ["std", "rdkafka"]
 salesforce = ["std", "reqwest", "serde", "serde_json"]

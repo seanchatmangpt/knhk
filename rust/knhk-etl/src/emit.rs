@@ -3,10 +3,6 @@
 // Actions (A) + Receipts → Lockchain + Downstream APIs
 
 extern crate alloc;
-#[cfg(feature = "knhk-lockchain")]
-extern crate knhk_lockchain;
-#[cfg(feature = "knhk-otel")]
-extern crate knhk_otel;
 
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
@@ -163,7 +159,7 @@ impl EmitStage {
                             if let Some(_cached_action) = cached_answer {
                                 // Use cached action instead of retrying
                                 // Log cache hit and continue with cached action
-                                
+                                #[cfg(feature = "knhk-otel")]
                                 {
                                     use knhk_otel::{Tracer, Metric, MetricValue};
                                     use std::time::{SystemTime, UNIX_EPOCH};

@@ -4,8 +4,6 @@
 
 extern crate alloc;
 extern crate std;
-#[cfg(feature = "knhk-otel")]
-extern crate knhk_otel;
 
 use alloc::string::{String, ToString};
 use alloc::format;
