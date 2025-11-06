@@ -41,8 +41,8 @@ This document identifies undocumented components and areas requiring documentati
 9. **knhk-warm** - ✅ Complete (has docs/README.md)
 10. **knhk-config** - ✅ Complete (has docs/README.md)
 11. **knhk-sidecar** - ✅ Complete (has root-level README.md + docs/README.md)
-12. **knhk-unrdf** - ✅ Complete (has docs/README.md)
-13. **knhk-integration-tests** - ✅ Complete (has docs/README.md)
+12. **knhk-unrdf** - ✅ Complete (has root-level README.md + docs/README.md)
+13. **knhk-integration-tests** - ✅ Complete (has root-level README.md + docs/README.md)
 
 #### ⚠️ Enhancement Needed
 Some READMEs exist but are minimal and could be enhanced with more detail:
@@ -51,19 +51,21 @@ Some READMEs exist but are minimal and could be enhanced with more detail:
 - **knhk-lockchain/docs/README.md** - Needs expansion with operations details and usage examples
 - **knhk-otel/docs/README.md** - Needs expansion with examples and integration details
 
-#### 📝 Root-Level READMEs Needed
-Some crates have detailed docs/README.md but lack root-level READMEs for better discoverability:
-- **knhk-etl** - Needs root-level README.md
-- **knhk-hot** - Needs root-level README.md
-- **knhk-lockchain** - Needs root-level README.md
-- **knhk-otel** - Needs root-level README.md
-- **knhk-validation** - Needs root-level README.md
-- **knhk-aot** - Needs root-level README.md
+#### ✅ Root-Level READMEs Complete
+All high and medium priority crates now have root-level READMEs:
+- ✅ **knhk-etl** - Root-level README.md complete
+- ✅ **knhk-hot** - Root-level README.md complete
+- ✅ **knhk-lockchain** - Root-level README.md complete
+- ✅ **knhk-otel** - Root-level README.md complete
+- ✅ **knhk-validation** - Root-level README.md complete
+- ✅ **knhk-aot** - Root-level README.md complete
+- ✅ **knhk-unrdf** - Root-level README.md complete
+- ✅ **knhk-integration-tests** - Root-level README.md complete
 
-### Erlang Modules (Missing Documentation)
+### Erlang Modules
 
 **Location**: `erlang/knhk_rc/src/`  
-**Status**: ⚠️ No module-level documentation
+**Status**: ✅ Documentation enhanced with API details
 
 **Modules**:
 - `knhk_rc.erl` - Main application module
@@ -81,10 +83,11 @@ Some crates have detailed docs/README.md but lack root-level READMEs for better 
 
 **Priority**: Medium
 
-**Suggested Documentation**:
-- Erlang module overview document
-- API documentation for each module
-- Supervision tree structure
+**Documentation**:
+- ✅ Erlang module overview document
+- ✅ API documentation for each module
+- ✅ Supervision tree structure
+- ✅ Usage examples
 
 ### C Components (Partially Documented)
 
@@ -104,41 +107,38 @@ Some crates have detailed docs/README.md but lack root-level READMEs for better 
 - SIMD optimization guide
 - AOT guard usage
 
-### Tools (Missing Documentation)
+### Tools
 
 #### 1. knhk_bench
 **Location**: `tools/knhk_bench.c`  
 **Purpose**: Performance benchmarking tool  
-**Status**: ⚠️ No documentation  
+**Status**: ✅ Documentation complete  
 **Priority**: Low
 
-**Suggested Documentation**:
-- Usage instructions
-- Benchmark methodology
-- Output interpretation
+**Documentation**:
+- ✅ Usage instructions
+- ✅ Benchmark methodology
+- ✅ Output interpretation
+- ✅ Performance targets
 
-### Test Structure (Limited Documentation)
+### Test Structure
 
 **Location**: `tests/`  
-**Status**: ⚠️ Limited documentation
+**Status**: ✅ Documentation complete
 
 **Existing**:
 - `tests/integration/README.md` - Basic integration test docs
 - `tests/integration/QUICKSTART.md` - Quick start for integration tests
+- `tests/README.md` - Overall test structure documentation
 
-**Missing**:
-- Overall test structure documentation
-- Test naming conventions
-- How to add new tests
-- Test execution guide
-
-**Priority**: Medium
-
-**Suggested Documentation**:
-- Test suite overview
-- Chicago TDD methodology
-- Test organization
-- Running tests
+**Documentation**:
+- ✅ Test suite overview
+- ✅ Chicago TDD methodology
+- ✅ Test organization
+- ✅ Running tests
+- ✅ Test naming conventions
+- ✅ How to add new tests
+- ✅ Test execution guide
 
 ### Book Structure
 
@@ -221,12 +221,13 @@ tests/
 
 1. ✅ Create README files for high-priority Rust crates - **COMPLETE**
 2. ✅ Create README files for medium-priority Rust crates - **COMPLETE**
-3. 🔄 **Enhance minimal READMEs** - Expand with usage examples, API overview, integration details
-4. 🔄 **Create root-level READMEs** - Add concise root-level READMEs that link to detailed docs
-5. Review and update documentation index
-6. Ensure consistency across all documentation
-7. Create Erlang module overview documentation
-8. Expand test structure documentation
+3. ✅ Create root-level READMEs for all priority crates - **COMPLETE**
+4. ✅ Create Erlang module API documentation - **COMPLETE**
+5. ✅ Create test structure documentation - **COMPLETE**
+6. ✅ Create tools documentation - **COMPLETE**
+7. ✅ Create knhk-unrdf and knhk-integration-tests READMEs - **COMPLETE**
+8. Review and update documentation index
+9. Ensure consistency across all documentation
 
 ---
 

@@ -67,14 +67,11 @@ impl WarmClient {
         &self,
         transactions: Vec<Vec<u8>>, // Serialized Transaction protobuf messages
     ) -> Result<Vec<u8>> { // Serialized TransactionResponse protobuf
-        // For now, this is a placeholder that will be implemented when
-        // the warm orchestrator gRPC service is available.
-        // The actual implementation will:
+        // Planned for v1.0 when warm orchestrator gRPC service is available:
         // 1. Create a BatchTransactionRequest from the transactions
         // 2. Call the warm orchestrator gRPC service
         // 3. Return the BatchTransactionResponse
         
-        // Placeholder: return error indicating service not yet implemented
         Err(SidecarError::InternalError(
             "Warm orchestrator gRPC service not yet implemented. \
              This will be implemented when knhk-warm exposes a gRPC service.".to_string()
@@ -87,7 +84,7 @@ impl WarmClient {
         sparql: &str,
         schema: Option<&str>,
     ) -> Result<Vec<u8>> { // Serialized QueryResponse protobuf
-        // Placeholder: return error indicating service not yet implemented
+        // Planned for v1.0 when warm orchestrator gRPC service is available
         Err(SidecarError::InternalError(
             "Warm orchestrator gRPC service not yet implemented. \
              This will be implemented when knhk-warm exposes a gRPC service.".to_string()

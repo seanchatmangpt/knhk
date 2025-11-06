@@ -6,24 +6,20 @@
 #![no_std]
 extern crate alloc;
 
-use alloc::vec::Vec;
 use alloc::string::String;
 
-<<<<<<< Current (Your changes)
+// Module declarations - all modules included
+pub mod template;
 pub mod template_analyzer;
 pub mod prebinding;
 pub mod mphf;
 pub mod specialization;
 pub mod pattern;
-=======
-pub mod template;
-pub mod prebinding;
-pub mod mphf;
 
+// Re-exports for convenience
 pub use template::ConstructTemplate;
 pub use prebinding::PreboundIr;
 pub use mphf::{Mphf, MphfCache};
->>>>>>> Incoming (Background Agent changes)
 
 /// Hook IR validation result
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -5,6 +5,9 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
+use alloc::string::String;
+use alloc::format;
+use alloc::string::ToString;
 
 /// Input pattern analysis
 #[derive(Debug, Clone)]

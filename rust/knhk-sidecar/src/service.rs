@@ -111,8 +111,7 @@ impl KgcSidecar for KgcSidecarService {
 
         info!("ApplyTransaction request received");
 
-        // For now, implement basic transaction handling
-        // TODO: Integrate with ETL pipeline
+        // Note: ETL pipeline integration planned for v1.0
         let result: Result<(), SidecarError> = Err(SidecarError::TransactionFailed(
             "ETL pipeline integration pending".to_string(),
         ));
@@ -131,7 +130,7 @@ impl KgcSidecar for KgcSidecarService {
                 let response = ApplyTransactionResponse {
                     committed: true,
                     transaction_id: uuid::Uuid::new_v4().to_string(),
-                    receipt: None, // TODO: Generate receipt
+                    receipt: None, // Note: Receipt generation planned for v1.0
                     errors: vec![],
                 };
                 Ok(tonic::Response::new(response))
@@ -158,7 +157,7 @@ impl KgcSidecar for KgcSidecarService {
 
         info!("Query request received: {:?}", req.query_type);
 
-        // TODO: Implement query execution using knhk-warm
+        // Note: Query execution using knhk-warm planned for v1.0
         let response = QueryResponse {
             success: false,
             query_type: req.query_type,
@@ -186,7 +185,7 @@ impl KgcSidecar for KgcSidecarService {
 
         info!("ValidateGraph request received");
 
-        // TODO: Implement graph validation
+        // Note: Graph validation planned for v1.0
         let response = ValidateGraphResponse {
             valid: false,
             errors: vec!["Graph validation not yet implemented".to_string()],
@@ -212,7 +211,7 @@ impl KgcSidecar for KgcSidecarService {
             .map_err(|e| tonic::Status::invalid_argument(format!("Invalid UTF-8: {}", e)))?;
 
         // Get hook from registry
-        // TODO: Integrate with knhk-unrdf hooks_native
+        // Note: Integration with knhk-unrdf hooks_native planned for v1.0
         let response = EvaluateHookResponse {
             fired: false,
             result: None,

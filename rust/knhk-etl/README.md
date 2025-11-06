@@ -66,6 +66,49 @@ let emit_result = emit.emit(reflex_result)?;
 - **Schema Validation**: Validates observations against schema (O ⊨ Σ)
 - **Receipt Generation**: Creates provenance receipts
 
+## Dependencies
+
+### Required Dependencies
+- `hashbrown` - Hash maps (no_std compatible)
+- `hex` - Hex encoding
+
+### Optional Dependencies (enabled via `std` feature)
+- `oxigraph` - RDF parsing and SPARQL query engine
+- `knhk-hot` - Hot path operations (requires C library `libknhk.a`)
+- `knhk-lockchain` - Receipt storage (Merkle-linked chain)
+- `knhk-otel` - OpenTelemetry observability
+- `reqwest` - HTTP client for downstream APIs
+- `serde_json` - JSON serialization
+
+## Feature Flags
+
+The crate supports conditional compilation via feature flags:
+
+- **`std`** (default: disabled) - Enables standard library support and optional dependencies
+  - Enables: `oxigraph`, `knhk-hot`, `knhk-lockchain`, `knhk-otel`, `reqwest`, `serde_json`
+- **`kafka`** - Enables Kafka connector support (requires `std`)
+- **`grpc`** - Enables gRPC support (requires `std`)
+
+### Building with Features
+
+```bash
+# Build with std features (enables all optional dependencies)
+cargo build --features std
+
+# Build with specific features
+cargo build --features std,kafka
+
+# Build without std (no_std mode)
+cargo build --no-default-features
+```
+
+### Build Requirements
+
+When building with `knhk-hot` feature:
+1. Build the C library first: `cd c && make lib`
+2. Ensure `libknhk.a` exists in `c/` directory
+3. The `knhk-hot` build script will link against it automatically
+
 ## Documentation
 
 For detailed documentation, see [docs/README.md](docs/README.md).
@@ -75,3 +118,4 @@ For detailed documentation, see [docs/README.md](docs/README.md).
 - [Architecture](../../docs/architecture.md) - System architecture
 - [Integration](../../docs/integration.md) - Integration guide
 - [Performance](../../docs/performance.md) - Performance guide
+- [Dependency Configuration](../../docs/dependency-configuration.md) - Feature flags and optional dependencies

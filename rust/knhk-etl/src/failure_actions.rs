@@ -3,9 +3,12 @@
 // Implements drop/park/escalate for R1, retry/degrade for W1, async finalize for C1
 
 extern crate alloc;
+extern crate std;
+extern crate knhk_otel;
 
 use alloc::string::{String, ToString};
 use alloc::format;
+use alloc::collections::BTreeMap;
 use crate::reflex::{Receipt, Action};
 use crate::load::LoadResult;
 
@@ -48,33 +51,61 @@ pub struct C1FailureAction {
 /// * `budget_exceeded` - Whether budget was exceeded (triggers escalation)
 /// 
 /// # Returns
-/// * `Ok(())` - Failure handled successfully
+/// * `Ok(R1FailureAction)` - Failure action taken (park/drop decision)
 /// * `Err(String)` - Error handling failure
 pub fn handle_r1_failure(
-    _delta: LoadResult,
+    delta: LoadResult,
     receipt: Receipt,
     budget_exceeded: bool,
-) -> Result<(), String> {
+) -> Result<R1FailureAction, String> {
     // Decision: drop or park based on admission control
     // Current implementation: always park (preserve Δ for later processing)
     // Admission control state checking is handled by the pipeline stage
     // before calling this function
     
-    // Emit receipt (via lockchain - handled by emit stage)
-    // Receipt is already created, just needs to be emitted
+    // Record receipt emission (receipt will be emitted by emit stage)
+    // This function tracks that receipt needs to be emitted
     
-    // Escalate if budget exceeded
+    // Escalate if budget exceeded - record OTEL event
     if budget_exceeded {
-        // Escalation: record OTEL event + metrics
-        // This will be handled by OTEL integration
-        return Err(format!(
-            "R1 budget exceeded: {} ticks > 8 ticks. Receipt {} emitted, Δ parked",
-            receipt.ticks,
-            receipt.id
-        ));
+        {
+            use knhk_otel::{Tracer, Metric, MetricValue};
+            use std::time::{SystemTime, UNIX_EPOCH};
+            
+            let mut tracer = Tracer::new();
+            let timestamp_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            
+            // Record escalation event
+            let mut attrs = alloc::collections::BTreeMap::new();
+            attrs.insert("runtime_class".to_string(), "R1".to_string());
+            attrs.insert("receipt_id".to_string(), receipt.id.clone());
+            attrs.insert("ticks".to_string(), receipt.ticks.to_string());
+            attrs.insert("budget".to_string(), "8".to_string());
+            
+            let metric = Metric {
+                name: "knhk.r1.budget_exceeded".to_string(),
+                value: MetricValue::Counter(1),
+                timestamp_ms,
+                attributes: attrs,
+            };
+            tracer.record_metric(metric);
+        }
+        
+        return Ok(R1FailureAction {
+            delta,
+            receipt,
+            escalate: true,
+        });
     }
 
-    Ok(())
+    Ok(R1FailureAction {
+        delta,
+        receipt,
+        escalate: false,
+    })
 }
 
 /// Handle W1 failure: retry ×N, degrade to cached answer
@@ -160,7 +191,6 @@ impl FailureActionError {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::load::{SoAArrays, PredRun};
@@ -194,8 +224,10 @@ mod tests {
         let receipt = create_test_receipt();
         
         let result = handle_r1_failure(delta, receipt.clone(), true);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("budget exceeded"));
+        assert!(result.is_ok());
+        let action = result.unwrap();
+        assert!(action.escalate);
+        assert_eq!(action.receipt.id, receipt.id);
     }
 
     #[test]

@@ -6,9 +6,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
-#[cfg(feature = "std")]
 use std::format;
-#[cfg(not(feature = "std"))]
 use alloc::format;
 use crate::error::PipelineError;
 use crate::load::{LoadResult, SoAArrays, PredRun};
@@ -174,12 +172,11 @@ impl ReflexMap {
 
     /// Execute a single hook using C hot path API via FFI
     fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
-        #[cfg(feature = "std")]
-        {
+                {
             use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
             
             // Initialize engine with SoA arrays
-            let engine = Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr());
+            let mut engine = Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr());
             
             // Guard: validate run length ≤ 8
             if run.len > 8 {
@@ -230,8 +227,11 @@ impl ReflexMap {
             
             // Execute hook
             let mut hot_receipt = HotReceipt::default();
-            let result = engine.eval_bool(&mut ir, &mut hot_receipt)
-                .map_err(|e| PipelineError::ReflexError(format!("Hook execution failed: {}", e)))?;
+            let result = engine.eval_bool(&mut ir, &mut hot_receipt);
+            // eval_bool returns bool, not Result - check result directly
+            if !result {
+                return Err(PipelineError::ReflexError("Hook execution returned false".to_string()));
+            }
             
             // Compute mu_hash for this hook
             let mu_hash = self.compute_mu_hash_for_run(soa, run);
@@ -247,8 +247,7 @@ impl ReflexMap {
             })
         }
         
-        #[cfg(not(feature = "std"))]
-        {
+                {
             // No-op implementation for no_std
             Err(PipelineError::ReflexError(
                 "Hot path execution requires std feature".to_string()

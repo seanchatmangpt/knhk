@@ -4,7 +4,6 @@
 extern crate alloc;
 
 use alloc::string::String;
-use crate::runtime_class::RuntimeClass;
 use crate::slo_monitor::SloViolation;
 
 /// Pipeline error
@@ -16,13 +15,15 @@ pub enum PipelineError {
     ReflexError(String),
     EmitError(String),
     GuardViolation(String),
-    ParseError(String), // RDF parsing errors from rio_turtle
+    ParseError(String), // RDF parsing errors from oxigraph
     RuntimeClassError(String), // Runtime class classification failures
     SloViolation(SloViolation), // SLO threshold exceeded
     R1FailureError(String), // R1 failure handling errors
     W1FailureError(String), // W1 failure handling errors
     C1FailureError(String), // C1 failure handling errors
 }
+
+// Error conversion handled inline in parsing code
 
 impl PipelineError {
     pub fn message(&self) -> &str {

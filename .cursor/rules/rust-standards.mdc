@@ -34,6 +34,47 @@ alwaysApply: false
 - Use `pub` sparingly - only expose what's necessary
 - Document public APIs with `///` doc comments
 - Group related functionality together
+- Use proper module structure with clear hierarchy
+- Avoid wildcard imports in production code (`use crate::*`)
+
+## Async/Sync Patterns
+
+### ❌ NEVER make trait methods async - breaks dyn compatibility
+```rust
+// ❌ Bad: Async trait methods break dyn compatibility
+pub trait ServicePlugin: Send + Sync {
+    async fn start(&self) -> Result<ServiceHandle>; // BREAKS dyn ServicePlugin!
+}
+
+// ✅ Good: Keep trait methods sync, use async in implementations
+pub trait ServicePlugin: Send + Sync {
+    fn start(&self) -> Result<ServiceHandle>; // dyn compatible
+}
+
+// Implementation can still be async internally
+impl ServicePlugin for MyPlugin {
+    fn start(&self) -> Result<ServiceHandle> {
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(async {
+                // Async operations here
+                Ok(ServiceHandle::new())
+            })
+        })
+    }
+}
+```
+
+### ✅ Use async for I/O and long-running operations
+- Use `async` for file operations, network, containers, database queries
+- Use `sync` for pure computation and simple operations
+- Never block async contexts with `std::thread::sleep` - use `tokio::time::sleep` instead
+
+## Trait Design
+
+- Keep traits `dyn` compatible - never use async trait methods
+- Use sync methods in traits, implement async internally if needed
+- Prefer composition over complex trait hierarchies
+- Maintain backward compatibility - add new methods instead of changing existing ones
 
 ## Testing
 
@@ -41,6 +82,11 @@ alwaysApply: false
 - Test error paths
 - Test guard constraint violations
 - Use property-based testing where appropriate
+- **Test behaviors, not implementation details** - Focus on what code does, not how
+- Use AAA pattern (Arrange, Act, Assert) for clarity
+- Use descriptive test names that explain what is being tested
+- Use proper async test functions (`#[tokio::test]`) for async operations
+- Prefer real collaborators over mocks when possible
 
 ## Examples
 

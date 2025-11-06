@@ -14,6 +14,7 @@ use alloc::string::String;
 use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::ToString;
+use alloc::boxed::Box;
 
 /// Receipt hash (SHA-256 after URDNA2015 canonicalization)
 pub type ReceiptHash = [u8; 32];
@@ -82,7 +83,7 @@ impl Lockchain {
 
         // Commit to Git if configured
         #[cfg(feature = "std")]
-        if let Some(ref repo_path) = self.git_repo_path {
+        if let Some(ref _repo_path) = self.git_repo_path {
             self.commit_to_git(&entry, hash)?;
         }
 
@@ -200,7 +201,7 @@ impl Lockchain {
 
         // Verify parent chain
         if let Some(parent_hash) = entry.parent_hash {
-            if let Some(parent) = self.entries.iter().find(|e| e.receipt_hash == parent_hash) {
+            if let Some(_parent) = self.entries.iter().find(|e| e.receipt_hash == parent_hash) {
                 // Parent exists - chain is valid
                 return Ok(true);
             }

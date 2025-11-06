@@ -2,17 +2,12 @@
 // ETL Pipeline Stages
 // Implements: Ingest → Transform → Load → Reflex → Emit
 
-#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
-
-#[cfg(feature = "std")]
 extern crate std;
 
-#[cfg(feature = "knhk-lockchain")]
-extern crate knhk_lockchain;
-
-#[cfg(feature = "knhk-otel")]
-extern crate knhk_otel;
+// All dependencies always available
+use knhk_otel as _;
+use knhk_lockchain as _;
 
 // Module declarations
 pub mod types;
@@ -329,6 +324,7 @@ mod tests {
             ],
             receipts: vec![receipt],
             max_ticks: 4,
+            c1_failure_actions: Vec::new(),
         };
         
         let result = emit.emit(reflex_result);

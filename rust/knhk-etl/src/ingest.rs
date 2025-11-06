@@ -4,15 +4,15 @@
 
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::format;
 
-#[cfg(feature = "std")]
 use std::io::BufRead;
 
-use rio_api::parser::TriplesParser;
-use rio_api::model::{Term, NamedNode, BlankNode, Literal, Triple};
-use rio_turtle::TurtleParser;
+use oxigraph::store::Store;
+use oxigraph::io::RdfFormat;
+use oxigraph::model::{Term, Quad, NamedOrBlankNode};
+use oxigraph::sparql::Query;
 
 use crate::error::PipelineError;
 
@@ -54,95 +54,124 @@ impl IngestStage {
         })
     }
 
-    /// Parse RDF/Turtle content into raw triples using rio_turtle
+    /// Parse RDF/Turtle content into raw triples using oxigraph Store
     /// 
     /// Full Turtle syntax support including:
     /// - Prefix resolution
     /// - Blank nodes
     /// - Base URI resolution
     /// - Literals (simple, typed, language-tagged)
-    pub fn parse_rdf_turtle(&self, content: &str) -> Result<Vec<RawTriple>, PipelineError> {
-        let mut triples = Vec::new();
-        let mut parser = TurtleParser::new(content.as_bytes(), None)
-            .map_err(|e| PipelineError::IngestError(format!("Failed to create Turtle parser: {}", e)))?;
+        pub fn parse_rdf_turtle(&self, content: &str) -> Result<Vec<RawTriple>, PipelineError> {
+        // Create temporary store for parsing
+        let store = Store::new()
+            .map_err(|e| PipelineError::IngestError(format!("Failed to create oxigraph store: {}", e)))?;
         
-        parser.parse_all(&mut |triple| {
-            let raw = Self::convert_triple(triple)
-                .map_err(|e| PipelineError::IngestError(format!("Failed to convert triple: {}", e)))?;
-            triples.push(raw);
-            Ok(())
-        })
-        .map_err(|e| {
-            PipelineError::IngestError(format!(
-                "RDF parse error at line {}: {}",
-                e.location().line(),
-                e.message()
-            ))
-        })?;
-
+        // Load Turtle data into store
+        store.load_from_reader(RdfFormat::Turtle, content.as_bytes())
+            .map_err(|e| PipelineError::IngestError(format!("Failed to load Turtle data: {}", e)))?;
+        
+        // Extract all quads from store using CONSTRUCT query
+        // Parse query first to avoid deprecated string-based query API
+        let query = Query::parse("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }", None)
+            .map_err(|e| PipelineError::IngestError(format!("Failed to parse query: {}", e)))?;
+        
+        let results = store.query(query)
+            .map_err(|e| PipelineError::IngestError(format!("Failed to query store: {}", e)))?;
+        
+        let mut triples = Vec::new();
+        if let oxigraph::sparql::QueryResults::Graph(quads_iter) = results {
+            for quad_result in quads_iter {
+                let quad = quad_result
+                    .map_err(|e| PipelineError::IngestError(format!("Failed to read quad: {}", e)))?;
+                
+                let raw = Self::convert_quad(&quad)?;
+                triples.push(raw);
+            }
+        }
+        
         Ok(triples)
     }
 
     /// Parse RDF/Turtle from a BufRead stream (memory-efficient for large files)
-    #[cfg(feature = "std")]
-    pub fn parse_rdf_turtle_stream<R: BufRead>(
+        pub fn parse_rdf_turtle_stream<R: BufRead>(
         reader: R,
         base_uri: Option<&str>
     ) -> Result<Vec<RawTriple>, PipelineError> {
+        // Create temporary store for parsing
+        let store = Store::new()
+            .map_err(|e| PipelineError::IngestError(format!("Failed to create oxigraph store: {}", e)))?;
+        
+        // Load Turtle data from reader into store
+        store.load_from_reader(RdfFormat::Turtle, reader)
+            .map_err(|e| PipelineError::IngestError(format!("Failed to load Turtle data from stream: {}", e)))?;
+        
+        // Extract all quads from store using CONSTRUCT query
+        // Parse query first to avoid deprecated string-based query API
+        let query = Query::parse("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }", None)
+            .map_err(|e| PipelineError::IngestError(format!("Failed to parse query: {}", e)))?;
+        
+        let results = store.query(query)
+            .map_err(|e| PipelineError::IngestError(format!("Failed to query store: {}", e)))?;
+        
         let mut triples = Vec::new();
-        let base = base_uri.and_then(|u| {
-            NamedNode::new(u).ok()
-        });
+        if let oxigraph::sparql::QueryResults::Graph(quads_iter) = results {
+            for quad_result in quads_iter {
+                let quad = quad_result
+                    .map_err(|e| PipelineError::IngestError(format!("Failed to read quad: {}", e)))?;
+                
+                let raw = Self::convert_quad(&quad)?;
+                triples.push(raw);
+            }
+        }
         
-        let mut parser = TurtleParser::new(reader, base.as_ref())
-            .map_err(|e| PipelineError::IngestError(format!("Failed to create Turtle parser: {}", e)))?;
-        
-        parser.parse_all(&mut |triple| {
-            let raw = Self::convert_triple(triple)
-                .map_err(|e| PipelineError::IngestError(format!("Failed to convert triple: {}", e)))?;
-            triples.push(raw);
-            Ok(())
-        })
-        .map_err(|e| {
-            PipelineError::IngestError(format!(
-                "RDF parse error at line {}: {}",
-                e.location().line(),
-                e.message()
-            ))
-        })?;
-
         Ok(triples)
     }
 
-    /// Convert rio_api::Triple to RawTriple
-    fn convert_triple(triple: &Triple) -> Result<RawTriple, String> {
+    /// Convert oxigraph::model::Quad to RawTriple
+    fn convert_quad(quad: &Quad) -> Result<RawTriple, PipelineError> {
         Ok(RawTriple {
-            subject: Self::term_to_string(triple.subject)?,
-            predicate: Self::term_to_string(triple.predicate)?,
-            object: Self::term_to_string(triple.object)?,
-            graph: None, // N-Quads support can be added later if needed
+            subject: Self::named_or_blank_to_string(&quad.subject)?,
+            predicate: quad.predicate.as_str().to_string(),
+            object: Self::term_to_string(&quad.object)?,
+            graph: Some(Self::graph_name_to_string(&quad.graph_name)?),
         })
     }
 
-    /// Convert rio_api::Term to String representation
+    /// Convert oxigraph::model::NamedOrBlankNode to String representation
+        fn named_or_blank_to_string(node: &NamedOrBlankNode) -> Result<String, PipelineError> {
+        match node {
+            NamedOrBlankNode::NamedNode(named) => Ok(named.as_str().to_string()),
+            NamedOrBlankNode::BlankNode(blank) => Ok(format!("_:{}", blank.as_str())),
+        }
+    }
+
+    /// Convert oxigraph::model::GraphName to String representation
+        fn graph_name_to_string(graph_name: &oxigraph::model::GraphName) -> Result<String, PipelineError> {
+        match graph_name {
+            oxigraph::model::GraphName::NamedNode(named) => Ok(named.as_str().to_string()),
+            oxigraph::model::GraphName::BlankNode(blank) => Ok(format!("_:{}", blank.as_str())),
+            oxigraph::model::GraphName::DefaultGraph => Ok("".to_string()),
+        }
+    }
+
+    /// Convert oxigraph::model::Term to String representation
     /// 
     /// Handles:
     /// - NamedNode: Returns IRI string
     /// - BlankNode: Returns `_:id` format
     /// - Literal: Returns quoted string with type/language tags
-    fn term_to_string(term: &Term) -> Result<String, String> {
+        fn term_to_string(term: &Term) -> Result<String, PipelineError> {
         match term {
-            Term::NamedNode(named) => Ok(named.iri.to_string()),
-            Term::BlankNode(blank) => Ok(format!("_:{}", blank.id)),
+            Term::NamedNode(named) => Ok(named.as_str().to_string()),
+            Term::BlankNode(blank) => Ok(format!("_:{}", blank.as_str())),
             Term::Literal(literal) => {
-                match literal {
-                    Literal::Simple { value } => Ok(format!("\"{}\"", Self::escape_string(value))),
-                    Literal::LanguageTaggedString { value, language } => {
-                        Ok(format!("\"{}\"@{}", Self::escape_string(value), language))
-                    }
-                    Literal::Typed { value, datatype } => {
-                        Ok(format!("\"{}\"^^{}", Self::escape_string(value), datatype.iri))
-                    }
+                let value = literal.value();
+                let escaped_value = Self::escape_string(value);
+                
+                if let Some(language) = literal.language() {
+                    Ok(format!("\"{}\"@{}", escaped_value, language))
+                } else {
+                    Ok(format!("\"{}\"^^{}", escaped_value, literal.datatype().as_str()))
                 }
             }
         }
@@ -171,4 +200,3 @@ pub struct RawTriple {
     pub object: String,
     pub graph: Option<String>,
 }
-

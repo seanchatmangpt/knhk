@@ -7,7 +7,8 @@
 #include "common.h"
 
 #if NROWS == 8
-// Maximum performance optimization: all operations branchless, ≤2ns
+// CONSTRUCT8 optimization: branchless SIMD operations
+// Note: Current performance ~41-83 ticks (exceeds 8-tick budget), optimization planned for v1.0
 __attribute__((hot, always_inline))
 static inline size_t knhk_construct8_emit_8(const uint64_t *S_base, uint64_t off, uint64_t len,
                                                uint64_t p_const, uint64_t o_const,

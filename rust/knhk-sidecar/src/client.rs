@@ -87,7 +87,8 @@ impl SidecarClient {
         })
     }
 
-    /// Execute transaction (placeholder - will use generated proto types)
+    /// Execute transaction
+    /// Note: Requires warm orchestrator gRPC service (planned for v1.0)
     pub async fn execute_transaction(&self, request: String) -> SidecarResult<String> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
         
@@ -100,9 +101,11 @@ impl SidecarClient {
                 ));
             }
             
-            // TODO: Replace with actual gRPC call once proto is generated
-            // For now, simulate the call
-            Ok("Transaction executed".to_string())
+            // Note: gRPC call pending warm orchestrator service implementation
+            // This will be implemented when knhk-warm exposes gRPC service
+            Err(SidecarError::InternalError(
+                "Warm orchestrator gRPC service not yet implemented".to_string()
+            ))
         })
         .await;
 
@@ -118,7 +121,8 @@ impl SidecarClient {
         }
     }
 
-    /// Validate graph (placeholder)
+    /// Validate graph
+    /// Note: Requires warm orchestrator gRPC service (planned for v1.0)
     pub async fn validate_graph(&self, _graph: String, _schema_iri: String) -> SidecarResult<bool> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
         
@@ -130,8 +134,10 @@ impl SidecarClient {
                 ));
             }
             
-            // TODO: Replace with actual gRPC call
-            Ok(true)
+            // Note: gRPC call pending warm orchestrator service implementation
+            Err(SidecarError::InternalError(
+                "Warm orchestrator gRPC service not yet implemented".to_string()
+            ))
         })
         .await;
 
@@ -147,7 +153,8 @@ impl SidecarClient {
         }
     }
 
-    /// Evaluate hook (placeholder)
+    /// Evaluate hook
+    /// Note: Requires warm orchestrator gRPC service (planned for v1.0)
     pub async fn evaluate_hook(&self, hook_id: String, _input_data: String) -> SidecarResult<String> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
         
@@ -159,8 +166,10 @@ impl SidecarClient {
                 ));
             }
             
-            // TODO: Replace with actual gRPC call
-            Ok(format!("Hook {} evaluated", hook_id))
+            // Note: gRPC call pending warm orchestrator service implementation
+            Err(SidecarError::InternalError(
+                format!("Warm orchestrator gRPC service not yet implemented for hook {}", hook_id)
+            ))
         })
         .await;
 

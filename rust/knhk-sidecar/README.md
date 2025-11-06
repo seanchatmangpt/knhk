@@ -62,5 +62,5 @@ The sidecar integrates with:
 - Retry logic with exponential backoff
 - Health checks
 - Metrics collection
-- No placeholders or TODOs in production code paths
+- Feature-gated implementations: Some gRPC integrations pending warm orchestrator service
 

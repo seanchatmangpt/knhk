@@ -23,7 +23,7 @@ See [Formal Mathematical Foundations](formal-foundations.md) for complete treatm
 
 ## Current Performance Metrics
 
-All supported operations achieve ≤2ns when measured externally:
+All supported hot path operations except CONSTRUCT8 achieve ≤2ns when measured externally:
 
 | Operation | Performance | Status |
 |-----------|-------------|--------|

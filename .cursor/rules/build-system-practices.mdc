@@ -1,0 +1,80 @@
+---
+description: Build system and development workflow practices
+globs:
+  - "**/Makefile"
+  - "**/Cargo.toml"
+  - "**/Makefile.toml"
+alwaysApply: false
+---
+
+# Build System and Development Workflow Practices
+
+## Build Commands
+
+### Preferred Approach
+- Use `make` commands when available for consistency
+- Use `cargo` commands directly when no make wrapper exists
+- Document build workflows in Makefiles or scripts
+
+### Make Targets
+- `make test-*` - Run test suites
+- `make test-performance-*` - Run performance tests
+- `make test-chicago-*` - Run Chicago TDD tests
+- `make test-integration-*` - Run integration tests
+- `make bench` - Run benchmarks
+- `make lint` - Run linters
+- `make fmt` - Format code
+
+### Cargo Commands
+- `cargo test --workspace` - Run all Rust tests
+- `cargo clippy --workspace -- -D warnings` - Lint Rust code
+- `cargo fmt --all` - Format Rust code
+- `cargo build --release` - Build release binaries
+
+## Determinism Requirements
+
+- Same inputs → identical outputs
+- Use fixed seeds for tests when needed
+- Avoid non-deterministic operations in tests
+- Use deterministic RNG seeds for reproducible tests
+- Validate outputs with snapshots when appropriate
+
+## SLOs (Service Level Objectives)
+
+### Build Performance
+- First build ≤ 15s (Rust workspace)
+- Incremental builds ≤ 2s
+- Test execution ≤ 30s for full suite
+
+### Runtime Performance
+- Hot path operations: ≤8 ticks (Chatman Constant)
+- RDF processing: ≤ 5s for 1k+ triples
+- Memory usage: ≤ 100MB for generation operations
+
+## CI/CD Practices
+
+- Run all tests before merging
+- Check performance SLOs in CI
+- Validate deterministic outputs
+- Run linting and formatting checks
+- Cross-platform validation when applicable
+
+## Development Workflow
+
+1. **Before committing:**
+   - Run `make test-*` or `cargo test`
+   - Run `make lint` or `cargo clippy`
+   - Run `make fmt` or `cargo fmt`
+   - Verify no warnings or errors
+
+2. **Before release:**
+   - Run full test suite
+   - Run performance benchmarks
+   - Verify SLO compliance
+   - Check documentation completeness
+   - Run validation scripts
+
+3. **During development:**
+   - Use incremental builds for fast iteration
+   - Run specific test suites for focused testing
+   - Use debug builds for development, release builds for validation

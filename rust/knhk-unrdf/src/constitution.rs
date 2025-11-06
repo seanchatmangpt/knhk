@@ -5,8 +5,8 @@ use crate::error::{UnrdfError, UnrdfResult};
 use crate::types::HookDefinition;
 use std::collections::{HashMap, HashSet};
 
-/// Schema representation (simplified for now)
-/// In production, this would integrate with knhk_sigma (Erlang schema registry)
+/// Schema representation
+/// Note: Full integration with knhk_sigma (Erlang schema registry) planned for v1.0
 pub struct Schema {
     pub predicates: HashSet<String>,
     pub classes: HashSet<String>,
@@ -21,8 +21,8 @@ impl Default for Schema {
     }
 }
 
-/// Invariants representation (simplified for now)
-/// In production, this would integrate with knhk_q (Erlang invariant registry)
+/// Invariants representation
+/// Note: Full integration with knhk_q (Erlang invariant registry) planned for v1.0
 pub struct Invariants {
     pub constraints: Vec<String>,
 }
@@ -66,7 +66,7 @@ pub fn check_guard(hook: &HookDefinition) -> UnrdfResult<()> {
     
     // Check if query references predicates that could exceed run_len
     // For now, we validate that the query structure is valid
-    // In production, this would analyze the query to ensure it doesn't exceed 8 triples
+    // Note: Full query analysis to ensure ≤8 triples planned for v1.0
     
     // Basic validation: ensure query is not empty
     if query.trim().is_empty() {
@@ -90,9 +90,8 @@ pub fn check_guard(hook: &HookDefinition) -> UnrdfResult<()> {
 pub fn check_typing(hook: &HookDefinition, schema: &Schema) -> UnrdfResult<()> {
     let query = extract_query_from_hook(hook)?;
     
-    // Extract predicates from query (simplified - in production would use SPARQL parser)
-    // For now, we do basic validation that query structure is valid
-    // In production, this would parse SPARQL and validate all predicates against schema
+    // Extract predicates from query (basic validation for now)
+    // Note: Full SPARQL parsing and predicate validation against schema planned for v1.0
     
     // Basic check: ensure query is well-formed
     if query.contains("?") && !query.contains("WHERE") {
@@ -101,10 +100,10 @@ pub fn check_typing(hook: &HookDefinition, schema: &Schema) -> UnrdfResult<()> {
         ));
     }
     
-    // In production, would validate:
-    // - All predicates in query exist in schema.predicates
-    // - All classes referenced exist in schema.classes
-    // - Variable bindings are type-safe
+    // Planned for v1.0:
+    // - Validate all predicates in query exist in schema.predicates
+    // - Validate all classes referenced exist in schema.classes
+    // - Validate variable bindings are type-safe
     
     Ok(())
 }
@@ -124,9 +123,9 @@ pub fn check_order(hooks: &[HookDefinition]) -> UnrdfResult<()> {
         seen_ids.insert(hook_id);
     }
     
-    // In production, would also check:
-    // - Hook dependencies form a DAG (no cycles)
-    // - Ordering is deterministic (same hooks always produce same order)
+    // Planned for v1.0:
+    // - Verify hook dependencies form a DAG (no cycles)
+    // - Verify ordering is deterministic (same hooks always produce same order)
     
     Ok(())
 }
@@ -134,10 +133,10 @@ pub fn check_order(hooks: &[HookDefinition]) -> UnrdfResult<()> {
 /// Check Invariant constraint: preserve(Q)
 /// Validates that hook preserves invariants
 pub fn check_invariant(hook: &HookDefinition, invariants: &Invariants) -> UnrdfResult<()> {
-    // In production, would validate:
-    // - Hook query doesn't violate any invariants
-    // - Hook execution preserves invariant predicates
-    // - Hook doesn't introduce contradictions
+    // Planned for v1.0:
+    // - Validate hook query doesn't violate any invariants
+    // - Validate hook execution preserves invariant predicates
+    // - Validate hook doesn't introduce contradictions
     
     // For now, basic validation that hook is well-formed
     let query = extract_query_from_hook(hook)?;

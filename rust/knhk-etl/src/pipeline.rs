@@ -39,7 +39,7 @@ impl Pipeline {
     }
 
     /// Execute full pipeline
-    pub fn execute(&self) -> Result<EmitResult, PipelineError> {
+    pub fn execute(&mut self) -> Result<EmitResult, PipelineError> {
         // Stage 1: Ingest
         let ingest_result = self.ingest.ingest()?;
 

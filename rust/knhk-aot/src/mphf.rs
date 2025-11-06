@@ -16,8 +16,8 @@ impl Mphf {
     pub fn new(predicates: Vec<u64>) -> Self {
         let mut hash_table = BTreeMap::new();
         
-        // Simple hash table construction
-        // In production, would use proper MPHF algorithm (e.g., CHD)
+        // Hash table construction using BTreeMap (O(log n) lookup)
+        // Note: Perfect hash (CHD algorithm) planned for v1.0 for O(1) lookup
         for (idx, &pred) in predicates.iter().enumerate() {
             hash_table.insert(pred, idx);
         }
@@ -74,7 +74,7 @@ impl MphfCache {
             self.cache.insert(key.clone(), mphf);
         }
 
-        self.cache.get(&key).unwrap()
+        self.cache.get(&key).expect("MPHF cache entry should exist after insertion")
     }
 
     /// Clear cache

@@ -27,24 +27,24 @@ impl HealthChecker {
     }
 
     pub fn status(&self) -> HealthStatus {
-        self.status.lock().unwrap().clone()
+        self.status.lock().expect("Health status mutex poisoned - unrecoverable state").clone()
     }
 
     pub fn set_healthy(&self) {
-        *self.status.lock().unwrap() = HealthStatus::Healthy;
+        *self.status.lock().expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Healthy;
     }
 
     pub fn set_degraded(&self, reason: String) {
-        *self.status.lock().unwrap() = HealthStatus::Degraded(reason);
+        *self.status.lock().expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Degraded(reason);
     }
 
     pub fn set_unhealthy(&self, reason: String) {
-        *self.status.lock().unwrap() = HealthStatus::Unhealthy(reason);
+        *self.status.lock().expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Unhealthy(reason);
     }
 
     pub async fn check(&self) -> HealthStatus {
         let now = Instant::now();
-        let mut last_check = self.last_check.lock().unwrap();
+        let mut last_check = self.last_check.lock().expect("Health last_check mutex poisoned - unrecoverable state");
 
         if let Some(last) = *last_check {
             if now.duration_since(last) < self.check_interval {
@@ -56,11 +56,11 @@ impl HealthChecker {
 
         // Perform health checks
         // For now, just return current status
-        // In production, this would check:
-        // - ETL pipeline health
-        // - Warm path availability
-        // - Hook registry availability
-        // - Circuit breaker states
+        // Planned for v1.0:
+        // - ETL pipeline health check
+        // - Warm path availability check
+        // - Hook registry availability check
+        // - Circuit breaker state monitoring
 
         self.status()
     }

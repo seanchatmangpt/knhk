@@ -98,8 +98,8 @@ async fn test_otel_collector_integration() -> Result<()> {
     let mut tracer = Tracer::new();
     let span = tracer.start_span("test_span".to_string(), None);
     
-    // Verify span was created
-    assert_eq!(span.span_id.0, 0); // Placeholder - real implementation generates IDs
+    // Verify span was created with non-zero span ID (real implementation generates IDs)
+    assert_ne!(span.span_id.0, 0, "Span ID should be non-zero - real implementation generates IDs");
     
     Ok(())
 }

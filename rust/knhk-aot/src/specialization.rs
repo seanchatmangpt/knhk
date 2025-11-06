@@ -4,8 +4,9 @@
 #![no_std]
 extern crate alloc;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use alloc::format;
 
 /// Specialization pattern
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,21 +70,29 @@ pub fn specialize(pattern: SpecializationPattern, len: usize) -> SpecializationR
     };
     
     let hints = match pattern {
-        SpecializationPattern::AllNonZero => vec![
-            "Skip mask generation".to_string(),
-            "Use all-ones mask constant".to_string(),
-        ],
-        SpecializationPattern::AllZero => vec![
-            "Early return".to_string(),
-            "Set out_mask to 0".to_string(),
-        ],
-        SpecializationPattern::Sparse => vec![
-            "Use sparse computation path".to_string(),
-            "Optimize for zero lanes".to_string(),
-        ],
-        SpecializationPattern::Dense => vec![
-            "Use standard computation".to_string(),
-        ],
+        SpecializationPattern::AllNonZero => {
+            let mut v = Vec::new();
+            v.push("Skip mask generation".to_string());
+            v.push("Use all-ones mask constant".to_string());
+            v
+        },
+        SpecializationPattern::AllZero => {
+            let mut v = Vec::new();
+            v.push("Early return".to_string());
+            v.push("Set out_mask to 0".to_string());
+            v
+        },
+        SpecializationPattern::Sparse => {
+            let mut v = Vec::new();
+            v.push("Use sparse computation path".to_string());
+            v.push("Optimize for zero lanes".to_string());
+            v
+        },
+        SpecializationPattern::Dense => {
+            let mut v = Vec::new();
+            v.push("Use standard computation".to_string());
+            v
+        },
     };
     
     SpecializationResult {

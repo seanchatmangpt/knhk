@@ -40,7 +40,7 @@ impl ConstructTemplate {
         let mut template = Self::new();
 
         // Parse template triples
-        // For now, basic parsing - in production would use full SPARQL parser
+        // Note: Full SPARQL parser integration planned for v1.0
         let triples = Self::parse_template_triples(template_str)?;
 
         for triple in triples {
@@ -68,8 +68,8 @@ impl ConstructTemplate {
     }
 
     fn parse_template_triples(_template_str: &str) -> Result<Vec<TemplateTriple>, String> {
-        // Basic parsing - in production would use full SPARQL parser
-        // For now, return empty vector
+        // Note: Full SPARQL parser integration planned for v1.0
+        // For now, return empty vector (basic structure only)
         Ok(Vec::new())
     }
 

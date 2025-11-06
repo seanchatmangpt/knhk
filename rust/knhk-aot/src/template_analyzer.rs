@@ -6,7 +6,9 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use alloc::string::String;
+use alloc::string::ToString;
 use alloc::collections::BTreeMap;
+use alloc::format;
 
 /// Template triple pattern
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -51,7 +51,7 @@ rust/knhk-etl/
 
 ## Dependencies
 
-- `rio_turtle` - RDF parsing
+- `oxigraph` - RDF parsing and SPARQL query engine (optional, via `std` feature)
 - `knhk-hot` - Hot path operations
 - `knhk-lockchain` - Receipt storage
 - `knhk-otel` - Observability (optional)

@@ -3,6 +3,8 @@
 // μ executes in ≤8 ticks per Δ
 
 extern crate alloc;
+extern crate std;
+extern crate knhk_otel;
 
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
@@ -14,7 +16,6 @@ use crate::runtime_class::RuntimeClass;
 use crate::slo_monitor::SloMonitor;
 use crate::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
 
-#[cfg(feature = "std")]
 use std::cell::RefCell;
 
 /// Stage 4: Reflex
@@ -22,24 +23,18 @@ use std::cell::RefCell;
 pub struct ReflexStage {
     pub tick_budget: u32, // Must be ≤ 8
     /// SLO monitors per runtime class (using RefCell for interior mutability)
-    #[cfg(feature = "std")]
-    r1_monitor: Option<RefCell<SloMonitor>>,
-    #[cfg(feature = "std")]
-    w1_monitor: Option<RefCell<SloMonitor>>,
-    #[cfg(feature = "std")]
-    c1_monitor: Option<RefCell<SloMonitor>>,
+        r1_monitor: Option<RefCell<SloMonitor>>,
+        w1_monitor: Option<RefCell<SloMonitor>>,
+        c1_monitor: Option<RefCell<SloMonitor>>,
 }
 
 impl ReflexStage {
     pub fn new() -> Self {
         Self {
             tick_budget: 8,
-            #[cfg(feature = "std")]
-            r1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::R1, 1000))),
-            #[cfg(feature = "std")]
-            w1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::W1, 1000))),
-            #[cfg(feature = "std")]
-            c1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::C1, 1000))),
+                        r1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::R1, 1000))),
+                        w1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::W1, 1000))),
+                        c1_monitor: Some(RefCell::new(SloMonitor::new(RuntimeClass::C1, 1000))),
         }
     }
 
@@ -56,12 +51,14 @@ impl ReflexStage {
                 actions: Vec::new(),
                 receipts: Vec::new(),
                 max_ticks: 0,
+                c1_failure_actions: Vec::new(),
             });
         }
 
         let mut actions = Vec::new();
         let mut receipts = Vec::new();
         let mut max_ticks = 0u32;
+        let mut c1_failure_actions = Vec::new();
 
         // Execute hooks for each predicate run
         for run in &input.runs {
@@ -80,34 +77,39 @@ impl ReflexStage {
             }
 
             // Classify operation (R1/W1/C1)
-            let operation_type = "ASK_SP"; // Default operation type
-            let _runtime_class = RuntimeClass::classify_operation(operation_type, run.len as usize)
+            // Extract operation type from IR (defaults to ASK_SP for hot path operations)
+            let operation_type = Self::extract_operation_type(run);
+            let runtime_class = RuntimeClass::classify_operation(&operation_type, run.len as usize)
                 .map_err(|e| PipelineError::RuntimeClassError(e))?;
 
             // Execute hook via C hot path API (FFI)
             let receipt = self.execute_hook(&input.soa_arrays, run)?;
 
             // Record latency and check SLO (only for std builds, no overhead on hot path)
-            #[cfg(feature = "std")]
-            {
+                        {
                 // Convert ticks to nanoseconds (approximate: 1 tick ≈ 0.25ns at 4GHz)
                 let latency_ns = (receipt.ticks as u64) * 250;
                 
-                match _runtime_class {
+                match runtime_class {
                     RuntimeClass::R1 => {
                         if let Some(ref monitor) = self.r1_monitor {
                             monitor.borrow_mut().record_latency(latency_ns);
                             if let Err(violation) = monitor.borrow().check_slo_violation() {
                                 // Handle R1 failure: drop/park Δ, emit receipt, escalate
-                                let _ = handle_r1_failure(
+                                let failure_action = handle_r1_failure(
                                     LoadResult {
                                         soa_arrays: input.soa_arrays.clone(),
                                         runs: vec![run.clone()],
                                     },
                                     receipt.clone(),
                                     receipt.ticks > self.tick_budget,
-                                );
+                                ).map_err(|e| PipelineError::R1FailureError(e))?;
+                                
+                                // If escalation is needed, return error
+                                if failure_action.escalate {
                                 return Err(PipelineError::SloViolation(violation));
+                                }
+                                // Otherwise, continue (Δ is parked)
                             }
                         }
                     },
@@ -126,7 +128,10 @@ impl ReflexStage {
                             monitor.borrow_mut().record_latency(latency_ns);
                             if let Err(violation) = monitor.borrow().check_slo_violation() {
                                 // Handle C1 failure: async finalize
-                                let _ = handle_c1_failure(&receipt.id);
+                                // Store C1FailureAction for caller to schedule async operation
+                                if let Ok(c1_action) = handle_c1_failure(&receipt.id) {
+                                    c1_failure_actions.push(c1_action);
+                                }
                                 return Err(PipelineError::SloViolation(violation));
                             }
                         }
@@ -137,21 +142,30 @@ impl ReflexStage {
             // Check tick budget violation
             if receipt.ticks > self.tick_budget {
                 // Handle R1 failure for budget exceeded
-                #[cfg(feature = "std")]
-                {
-                    let _ = handle_r1_failure(
+                                {
+                    let failure_action = handle_r1_failure(
                         LoadResult {
                             soa_arrays: input.soa_arrays.clone(),
                             runs: vec![run.clone()],
                         },
                         receipt.clone(),
                         true, // Budget exceeded
-                    );
+                    ).map_err(|e| PipelineError::R1FailureError(e))?;
+                    
+                    // Escalation is always true for budget exceeded
+                    if failure_action.escalate {
+                        return Err(PipelineError::R1FailureError(
+                            format!("Hook execution {} ticks exceeds budget {} ticks. Receipt {} emitted, Δ parked",
+                                receipt.ticks, self.tick_budget, receipt.id)
+                        ));
                 }
+                }
+                                {
                 return Err(PipelineError::R1FailureError(
                     format!("Hook execution {} ticks exceeds budget {} ticks", 
                         receipt.ticks, self.tick_budget)
                 ));
+                }
             }
 
             max_ticks = max_ticks.max(receipt.ticks);
@@ -178,104 +192,78 @@ impl ReflexStage {
             actions,
             receipts,
             max_ticks,
+            c1_failure_actions,
         })
     }
 
     /// Execute a single hook using C hot path API via FFI
     fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
-        #[cfg(feature = "std")]
-        {
-            use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
-            
-            // Initialize engine with SoA arrays
-            let engine = Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr());
-            
-            // Pin run (validates len ≤ 8 via C API)
-            // Additional guard validation before pinning (defense in depth)
-            if run.len > 8 {
-                return Err(PipelineError::GuardViolation(
-                    format!("Run length {} exceeds max_run_len 8", run.len)
-                ));
-            }
-            
-            // Validate offset bounds
-            if run.off >= 8 {
-                return Err(PipelineError::GuardViolation(
-                    format!("Run offset {} exceeds SoA array capacity 8", run.off)
-                ));
-            }
-            
-            let hot_run = HotRun {
-                pred: run.pred,
-                off: run.off,
-                len: run.len,
-            };
-            engine.pin_run(hot_run).map_err(|e| {
-                PipelineError::ReflexError(format!("Failed to pin run: {}", e))
-            })?;
-            
-            // Create hook IR (default to ASK_SP operation)
-            // Validate bounds before array access
-            let s_val = if run.len > 0 && run.off < 8 {
-                soa.s[run.off as usize]
-            } else {
-                0
-            };
-            let o_val = if run.len > 0 && run.off < 8 {
-                soa.o[run.off as usize]
-            } else {
-                0
-            };
-            
-            let mut ir = Ir {
-                op: Op::AskSp,
-                s: s_val,
-                p: run.pred,
-                o: o_val,
-                k: 0,
-                out_S: core::ptr::null_mut(),
-                out_P: core::ptr::null_mut(),
-                out_O: core::ptr::null_mut(),
-                out_mask: 0,
-            };
-            
-            // Execute hook via C FFI
-            let mut hot_receipt = HotReceipt::default();
-            let result = engine.eval_bool(&mut ir, &mut hot_receipt);
-            
-            // Convert to ETL receipt format
-            Ok(Receipt {
-                id: format!("receipt_{}", hot_receipt.span_id),
-                ticks: hot_receipt.ticks,
-                lanes: hot_receipt.lanes,
-                span_id: hot_receipt.span_id,
-                a_hash: hot_receipt.a_hash,
-            })
+        use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
+        
+        // Initialize engine with SoA arrays
+        let mut engine = Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr());
+        
+        // Pin run (validates len ≤ 8 via C API)
+        // Additional guard validation before pinning (defense in depth)
+        if run.len > 8 {
+            return Err(PipelineError::GuardViolation(
+                format!("Run length {} exceeds max_run_len 8", run.len)
+            ));
         }
         
-        #[cfg(not(feature = "std"))]
-        {
-            // In no_std mode, compute receipt deterministically from SoA data
-            // This provides functional correctness without C FFI
-            let lanes = run.len as u32;
-            
-            // Generate deterministic span_id from SoA data
-            let span_id = Self::generate_span_id_deterministic(soa, run);
-            
-            // Compute a_hash (hash(A) = hash(μ(O)) fragment)
-            let a_hash = Self::compute_a_hash(soa, run);
-            
-            // Estimate ticks based on run length (conservative estimate)
-            let ticks = if run.len <= 4 { 4 } else { 6 };
-            
-            Ok(Receipt {
-                id: format!("receipt_{}", span_id),
-                ticks,
-                lanes,
-                span_id,
-                a_hash,
-            })
+        // Validate offset bounds
+        if run.off >= 8 {
+            return Err(PipelineError::GuardViolation(
+                format!("Run offset {} exceeds SoA array capacity 8", run.off)
+            ));
         }
+        
+        let hot_run = HotRun {
+            pred: run.pred,
+            off: run.off,
+            len: run.len,
+        };
+        engine.pin_run(hot_run).map_err(|e| {
+            PipelineError::ReflexError(format!("Failed to pin run: {}", e))
+        })?;
+        
+        // Create hook IR (default to ASK_SP operation)
+        // Validate bounds before array access
+        let s_val = if run.len > 0 && run.off < 8 {
+            soa.s[run.off as usize]
+        } else {
+            0
+        };
+        let o_val = if run.len > 0 && run.off < 8 {
+            soa.o[run.off as usize]
+        } else {
+            0
+        };
+        
+        let mut ir = Ir {
+            op: Op::AskSp,
+            s: s_val,
+            p: run.pred,
+            o: o_val,
+            k: 0,
+            out_S: core::ptr::null_mut(),
+            out_P: core::ptr::null_mut(),
+            out_O: core::ptr::null_mut(),
+            out_mask: 0,
+        };
+        
+        // Execute hook via C FFI
+        let mut hot_receipt = HotReceipt::default();
+        let _result = engine.eval_bool(&mut ir, &mut hot_receipt);
+        
+        // Convert to ETL receipt format
+        Ok(Receipt {
+            id: format!("receipt_{}", hot_receipt.span_id),
+            ticks: hot_receipt.ticks,
+            lanes: hot_receipt.lanes,
+            span_id: hot_receipt.span_id,
+            a_hash: hot_receipt.a_hash,
+        })
     }
 
     /// Merge receipts via ⊕ operation (associative, branchless)
@@ -315,16 +303,8 @@ impl ReflexStage {
 
     /// Generate OTEL-compatible span ID (deterministic in no_std mode)
     fn generate_span_id() -> u64 {
-        #[cfg(feature = "knhk-otel")]
-        {
-            use knhk_otel::generate_span_id;
-            generate_span_id()
-        }
-        #[cfg(not(feature = "knhk-otel"))]
-        {
-            let timestamp = Self::get_timestamp_ms();
-            timestamp.wrapping_mul(0x9e3779b9u64).wrapping_add(0x517cc1b7u64)
-        }
+        use knhk_otel::generate_span_id;
+        generate_span_id()
     }
     
     /// Generate deterministic span ID from SoA data (no_std fallback)
@@ -402,17 +382,35 @@ impl ReflexStage {
     }
 
     fn get_timestamp_ms() -> u64 {
-        #[cfg(feature = "std")]
-        {
-            use std::time::{SystemTime, UNIX_EPOCH};
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_millis() as u64)
-                .unwrap_or(0)
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            0
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
+
+    /// Extract operation type from predicate run
+    /// 
+    /// Determines operation type based on run characteristics:
+    /// - Single predicate with small data → ASK_SP
+    /// - Multiple predicates or larger data → CONSTRUCT8 or SPARQL_SELECT
+    /// 
+    /// # Arguments
+    /// * `run` - Predicate run to analyze
+    /// 
+    /// # Returns
+    /// Operation type string (e.g., "ASK_SP", "CONSTRUCT8", "SPARQL_SELECT")
+    fn extract_operation_type(run: &PredRun) -> String {
+        // For hot path operations (≤8 items), default to ASK_SP
+        // This matches the default IR operation type in execute_hook
+        if run.len <= 8 {
+            "ASK_SP".to_string()
+        } else if run.len <= 100 {
+            // Medium-sized operations → CONSTRUCT8
+            "CONSTRUCT8".to_string()
+        } else {
+            // Large operations → SPARQL_SELECT
+            "SPARQL_SELECT".to_string()
         }
     }
 }
@@ -421,6 +419,8 @@ pub struct ReflexResult {
     pub actions: Vec<Action>,
     pub receipts: Vec<Receipt>,
     pub max_ticks: u32,
+    /// C1 failure actions that require async finalization
+    pub c1_failure_actions: Vec<crate::failure_actions::C1FailureAction>,
 }
 
 pub struct Action {

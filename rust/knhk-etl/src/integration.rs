@@ -1,18 +1,14 @@
 // rust/knhk-etl/src/integration.rs
 // Integration layer connecting ETL pipeline with connectors, lockchain, and OTEL
+
 // Includes warm path query execution integration
 
-#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
-
-#[cfg(feature = "std")]
 extern crate std;
 
 use super::*;
 use alloc::string::String;
-use alloc::string::ToString;
 use alloc::vec::Vec;
-use alloc::format;
 use alloc::collections::BTreeMap;
 
 /// Integrated pipeline with all components wired together
@@ -21,17 +17,14 @@ pub struct IntegratedPipeline {
     schema_iri: String,
     lockchain_enabled: bool,
     downstream_endpoints: Vec<String>,
-    #[cfg(feature = "std")]
-    warm_path_executor: Option<alloc::boxed::Box<dyn WarmPathQueryExecutor>>,
+        warm_path_executor: Option<alloc::boxed::Box<dyn WarmPathQueryExecutor>>,
 }
 
 /// Trait for warm path query execution (abstracted for no_std compatibility)
-#[cfg(feature = "std")]
 pub trait WarmPathQueryExecutor: Send + Sync {
     fn execute_query(&self, sparql: &str) -> Result<WarmPathQueryResult, String>;
 }
 
-#[cfg(feature = "std")]
 pub enum WarmPathQueryResult {
     Boolean(bool),
     Solutions(Vec<BTreeMap<String, String>>),
@@ -50,21 +43,19 @@ impl IntegratedPipeline {
             schema_iri,
             lockchain_enabled,
             downstream_endpoints,
-            #[cfg(feature = "std")]
-            warm_path_executor: None,
+                        warm_path_executor: None,
         }
     }
 
     /// Set warm path executor for SPARQL query execution
-    #[cfg(feature = "std")]
-    pub fn set_warm_path_executor(&mut self, executor: alloc::boxed::Box<dyn WarmPathQueryExecutor>) {
+        pub fn set_warm_path_executor(&mut self, executor: alloc::boxed::Box<dyn WarmPathQueryExecutor>) {
         self.warm_path_executor = Some(executor);
     }
 
     /// Execute pipeline with full integration
     pub fn execute(&mut self) -> Result<IntegratedResult, PipelineError> {
         // Use the base Pipeline for execution
-        let pipeline = Pipeline::new(
+        let mut pipeline = Pipeline::new(
             self.connectors.clone(),
             self.schema_iri.clone(),
             self.lockchain_enabled,
@@ -74,46 +65,47 @@ impl IntegratedPipeline {
         let result = pipeline.execute()?;
         
         // Record OTEL metrics using proper API
-        #[cfg(feature = "knhk-otel")]
         let metrics_recorded = {
-            use knhk_otel::{Tracer, Metric, MetricValue, MetricsHelper};
-            use std::time::{SystemTime, UNIX_EPOCH};
-            
-            let mut tracer = Tracer::new();
-            
-            // Record pipeline execution metrics using MetricsHelper
-            MetricsHelper::record_connector_throughput(&mut tracer, "pipeline", result.actions_sent);
-            
-            // Record receipt generation
-            if result.receipts_written > 0 {
-                MetricsHelper::record_receipt(&mut tracer, &format!("pipeline_batch_{}", result.receipts_written));
+            {
+                use knhk_otel::{Tracer, Metric, MetricValue, MetricsHelper};
+                use std::time::{SystemTime, UNIX_EPOCH};
+                
+                let mut tracer = Tracer::new();
+                
+                // Record pipeline execution metrics using MetricsHelper
+                MetricsHelper::record_connector_throughput(&mut tracer, "pipeline", result.actions_sent);
+                
+                // Record receipt generation
+                if result.receipts_written > 0 {
+                    MetricsHelper::record_receipt(&mut tracer, &format!("pipeline_batch_{}", result.receipts_written));
+                }
+                
+                // Record lockchain writes
+                let timestamp_ms = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+                
+                for hash in &result.lockchain_hashes {
+                    let metric = Metric {
+                        name: "knhk.lockchain.entry".to_string(),
+                        value: MetricValue::Counter(1),
+                        timestamp_ms,
+                        attributes: {
+                            let mut attrs = alloc::collections::BTreeMap::new();
+                            attrs.insert("hash".to_string(), hash.clone());
+                            attrs
+                        },
+                    };
+                    tracer.record_metric(metric);
+                }
+                
+                tracer.metrics().len()
             }
-            
-            // Record lockchain writes
-            let timestamp_ms = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_millis() as u64)
-                .unwrap_or(0);
-            
-            for hash in &result.lockchain_hashes {
-                let metric = Metric {
-                    name: "knhk.lockchain.entry".to_string(),
-                    value: MetricValue::Counter(1),
-                    timestamp_ms,
-                    attributes: {
-                        let mut attrs = alloc::collections::BTreeMap::new();
-                        attrs.insert("hash".to_string(), hash.clone());
-                        attrs
-                    },
-                };
-                tracer.record_metric(metric);
+            {
+                0
             }
-            
-            tracer.metrics().len()
         };
-        
-        #[cfg(not(all(feature = "std", feature = "knhk-otel")))]
-        let metrics_recorded = 0;
         
         Ok(IntegratedResult {
             receipts_written: result.receipts_written,
@@ -125,8 +117,7 @@ impl IntegratedPipeline {
     }
 
     /// Execute warm path query if executor is available
-    #[cfg(feature = "std")]
-    pub fn execute_warm_path_query(&self, sparql: &str) -> Result<WarmPathQueryResult, PipelineError> {
+        pub fn execute_warm_path_query(&self, sparql: &str) -> Result<WarmPathQueryResult, PipelineError> {
         if let Some(ref executor) = self.warm_path_executor {
             executor.execute_query(sparql)
                 .map_err(|e| PipelineError::ReflexError(format!("Warm path query failed: {}", e)))

@@ -50,7 +50,7 @@ impl<T> BatchCollector<T> {
     pub fn add_request(&self, request: T) -> oneshot::Receiver<SidecarResult<T>> {
         let (tx, rx) = oneshot::channel();
         
-        let mut pending = self.pending.lock().unwrap();
+        let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
         pending.push(BatchedRequest {
             request,
             response_tx: tx,
@@ -61,7 +61,7 @@ impl<T> BatchCollector<T> {
 
     /// Collect batch (non-blocking, returns immediately if batch is ready)
     pub fn collect_batch(&self) -> Option<Vec<BatchedRequest<T>>> {
-        let mut pending = self.pending.lock().unwrap();
+        let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
         
         if pending.is_empty() {
             return None;
@@ -89,7 +89,7 @@ impl<T> BatchCollector<T> {
 
             // Check if timeout reached
             if start.elapsed() >= timeout {
-                let mut pending = self.pending.lock().unwrap();
+                let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
                 if !pending.is_empty() {
                     return std::mem::take(&mut *pending);
                 }
@@ -103,7 +103,7 @@ impl<T> BatchCollector<T> {
 
     /// Get current pending count
     pub fn pending_count(&self) -> usize {
-        self.pending.lock().unwrap().len()
+        self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state").len()
     }
 }
 

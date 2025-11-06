@@ -118,7 +118,8 @@ static inline int knhk_mphf_insert(
   }
   
   // Collision: MPHF requires perfect hash, but we handle collisions by chaining
-  // For simplicity, we use linear probing (in production, use perfect hash)
+  // Note: Perfect hash (CHD algorithm) planned for v1.0
+  // For now, use linear probing
   for (size_t i = 1; i < KNHK_MPHF_CACHE_SIZE; i++) {
     size_t probe_idx = (idx + i) % KNHK_MPHF_CACHE_SIZE;
     knhk_mphf_entry_t *probe_entry = &cache->entries[probe_idx];
