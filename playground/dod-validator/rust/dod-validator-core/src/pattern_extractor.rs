@@ -1,17 +1,48 @@
-// Pattern extraction for DoD validator
-// Extracts code patterns (unwrap, expect, TODO, etc.) and converts to SoA arrays for KNHK hot path
+//! Pattern extraction for DoD validator
+//!
+//! Extracts code patterns (unwrap, expect, TODO, etc.) and converts to SoA arrays
+//! for KNHK hot path validation.
+//!
+//! # Usage
+//!
+//! ```rust
+//! use dod_validator_core::pattern_extractor::PatternExtractor;
+//! use std::path::PathBuf;
+//!
+//! let extractor = PatternExtractor::new();
+//! let result = extractor.extract_from_file(&PathBuf::from("src/main.rs"))?;
+//!
+//! for pattern in &result.patterns {
+//!     println!("Found {:?} at line {}", pattern.pattern_type, pattern.line);
+//! }
+//! # Ok::<(), String>(())
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Pattern type for code validation
+///
+/// Represents different types of code patterns that can be detected:
+/// - **Unwrap**: `.unwrap()` calls
+/// - **Expect**: `.expect()` calls
+/// - **Todo**: TODO comments
+/// - **Placeholder**: Placeholder text
+/// - **Panic**: `panic!()` calls
+/// - **Result**: `Result<T, E>` type usage (positive validation)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PatternType {
+    /// `.unwrap()` pattern
     Unwrap = 1,
+    /// `.expect()` pattern
     Expect = 2,
+    /// TODO comment pattern
     Todo = 3,
+    /// Placeholder text pattern
     Placeholder = 4,
+    /// `panic!()` pattern
     Panic = 5,
+    /// `Result<T, E>` pattern (positive validation)
     Result = 6,
 }
 
@@ -69,6 +100,21 @@ impl PatternExtractor {
     }
 
     /// Extract patterns from code content
+    ///
+    /// Analyzes code content and extracts all matching patterns.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - Source code content to analyze
+    /// * `file_path` - Path to the file (for metadata)
+    ///
+    /// # Returns
+    ///
+    /// Pattern extraction result with all found patterns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if content cannot be parsed.
     pub fn extract_from_content<P: AsRef<Path>>(
         &self,
         content: &str,
@@ -146,6 +192,48 @@ impl PatternExtractor {
                     column: 0,
                     context: line.trim().to_string(),
                 });
+            }
+
+            // Advanced patterns: Closures with unwrap
+            if line.contains("|") && line.contains(".unwrap()") {
+                let col = Self::find_pattern(line, ".unwrap()").unwrap_or(0);
+                patterns.push(PatternMatch {
+                    pattern_type: PatternType::Unwrap,
+                    pattern_hash: Self::hash_pattern(".unwrap()"),
+                    line: line_num,
+                    column: col as u32,
+                    context: line.trim().to_string(),
+                });
+            }
+
+            // Advanced patterns: Macros
+            if line.contains("macro_rules!") || (line.contains("macro!") && !line.contains("macro_rules!")) {
+                let col = Self::find_pattern(line, "macro_rules!")
+                    .or_else(|| Self::find_pattern(line, "macro!"))
+                    .unwrap_or(0);
+                patterns.push(PatternMatch {
+                    pattern_type: PatternType::Placeholder,
+                    pattern_hash: Self::hash_pattern("macro"),
+                    line: line_num,
+                    column: col as u32,
+                    context: line.trim().to_string(),
+                });
+            }
+
+            // Advanced patterns: Async/await error handling
+            if line.contains("async") && line.contains(".await") {
+                if let Some(col) = Self::find_pattern(line, ".await") {
+                    // Check if await is used with unwrap or expect
+                    if line.contains(".unwrap()") || line.contains(".expect(") {
+                        patterns.push(PatternMatch {
+                            pattern_type: PatternType::Unwrap,
+                            pattern_hash: Self::hash_pattern(".await.unwrap()"),
+                            line: line_num,
+                            column: col as u32,
+                            context: line.trim().to_string(),
+                        });
+                    }
+                }
             }
         }
 

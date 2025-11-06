@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-cli/src/coverage.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762387286160,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762387286160,
+            "name": "Commit-0",
+            "content": "//! Coverage commands - Coverage operations\n\nuse clap_noun_verb::Result;\nuse clap_noun_verb_macros::verb;\nuse serde::Serialize;\nuse crate::commands::coverage as coverage_impl;\n\n#[derive(Serialize, Debug)]\nstruct CoverageResult {\n    coverage: String,\n}\n\n/// Get coverage\n#[verb] // Noun \"coverage\" auto-inferred from filename \"coverage.rs\"\nfn get() -> Result<CoverageResult> {\n    coverage_impl::get()\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to get coverage: {}\", e)))\n        .map(|coverage| CoverageResult { coverage })\n}\n\n"
+        }
+    ]
+}

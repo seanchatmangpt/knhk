@@ -92,25 +92,10 @@ pub fn declare(name: String, op: String, pred: u64, off: u64, len: u64) -> Resul
 }
 
 /// List reflexes
-pub fn list() -> Result<(), String> {
+pub fn list() -> Result<Vec<String>, String> {
     let storage = load_reflexes()?;
     
-    if storage.reflexes.is_empty() {
-        println!("No reflexes installed");
-        return Ok(());
-    }
-    
-    println!("Installed reflexes:");
-    for (i, reflex) in storage.reflexes.iter().enumerate() {
-        println!("  {}. {} (id: {})", i + 1, reflex.name, reflex.id);
-        println!("     Operation: {}", reflex.op);
-        println!("     Run: pred={}, off={}, len={}", reflex.pred, reflex.off, reflex.len);
-        if let Some(ref epoch) = reflex.epoch {
-            println!("     Epoch: {}", epoch);
-        }
-    }
-    
-    Ok(())
+    Ok(storage.reflexes.iter().map(|r| r.name.clone()).collect())
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

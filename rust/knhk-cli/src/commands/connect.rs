@@ -82,43 +82,28 @@ pub fn register(name: String, schema: String, source: String) -> Result<(), Stri
 
 /// List connectors
 /// Loads from TOML config if available, falls back to JSON
-pub fn list() -> Result<(), String> {
+pub fn list() -> Result<Vec<String>, String> {
     // Try to load from TOML config first
     if let Ok(config) = ConfigLoader::load() {
         if config.connectors.is_empty() {
-            println!("No connectors registered");
-            return Ok(());
+            return Ok(Vec::new());
         }
         
-        println!("Registered connectors (from TOML config):");
-        for (name, connector) in &config.connectors {
-            println!("  • {} (type: {})", name, connector.r#type);
-            println!("    Schema: {}", connector.schema);
-            if !connector.bootstrap_servers.is_empty() {
-                println!("    Bootstrap servers: {:?}", connector.bootstrap_servers);
-            }
-            if !connector.topic.is_empty() {
-                println!("    Topic: {}", connector.topic);
-            }
+        let mut connectors = Vec::new();
+        for (name, _connector) in &config.connectors {
+            connectors.push(name.clone());
         }
-        return Ok(());
+        return Ok(connectors);
     }
     
     // Fall back to JSON storage
     let storage = load_connectors()?;
     
     if storage.connectors.is_empty() {
-        println!("No connectors registered");
-        return Ok(());
+        return Ok(Vec::new());
     }
     
-    println!("Registered connectors (from JSON storage):");
-    for (i, connector) in storage.connectors.iter().enumerate() {
-        println!("  {}. {} (schema: {})", i + 1, connector.name, connector.schema);
-        println!("     Source: {}", connector.source);
-    }
-    
-    Ok(())
+    Ok(storage.connectors.iter().map(|c| c.name.clone()).collect())
 }
 
 fn parse_source(source: &str) -> Result<SourceType, String> {

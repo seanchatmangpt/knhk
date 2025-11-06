@@ -7,7 +7,7 @@ use std::io::Write;
 
 /// Initialize Σ and Q
 /// boot(#{sigma => SigmaTTL, q => QTTL})
-pub fn init(sigma: String, q: String) -> Result<(), String> {
+pub fn init(sigma: String, q: String) -> Result<PathBuf, String> {
     println!("Initializing system with Σ and Q...");
     
     // Get config directory
@@ -60,7 +60,7 @@ pub fn init(sigma: String, q: String) -> Result<(), String> {
     println!("  ✓ Config directory: {}", config_dir.display());
     println!("✓ System initialized");
     
-    Ok(())
+    Ok(config_dir)
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

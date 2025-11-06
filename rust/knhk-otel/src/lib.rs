@@ -565,7 +565,11 @@ impl MetricsHelper {
     pub fn record_hook_latency(tracer: &mut Tracer, ticks: u32, operation: &str) {
         let metric = Metric {
             name: "knhk.hook.latency.ticks".to_string(),
-            value: MetricValue::Histogram(vec![ticks as u64]),
+            value: MetricValue::Histogram({
+                let mut v = Vec::new();
+                v.push(ticks as u64);
+                v
+            }),
             timestamp_ms: get_timestamp_ms(),
             attributes: {
                 let mut attrs = BTreeMap::new();
@@ -610,7 +614,11 @@ impl MetricsHelper {
     pub fn record_warm_path_latency(tracer: &mut Tracer, latency_us: u64, operation: &str) {
         let metric = Metric {
             name: "knhk.warm_path.operations.latency".to_string(),
-            value: MetricValue::Histogram(vec![latency_us]),
+            value: MetricValue::Histogram({
+                let mut v = Vec::new();
+                v.push(latency_us);
+                v
+            }),
             timestamp_ms: get_timestamp_ms(),
             attributes: {
                 let mut attrs = BTreeMap::new();

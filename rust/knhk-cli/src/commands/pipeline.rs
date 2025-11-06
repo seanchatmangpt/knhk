@@ -100,25 +100,21 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
 }
 
 /// Show pipeline execution status and metrics
-pub fn status() -> Result<(), String> {
+pub fn status() -> Result<String, String> {
     let status = load_pipeline_status()?;
     
     if let Some(ref result) = status.last_result {
-        println!("Pipeline Status:");
-        println!("  Last execution: {} ms ago", 
-                 get_current_timestamp_ms().saturating_sub(result.timestamp_ms));
-        println!("  Receipts written: {}", result.receipts_written);
-        println!("  Actions sent: {}", result.actions_sent);
-        println!("  Lockchain hashes: {}", result.lockchain_hashes.len());
-        
-        if let Some(latest_hash) = result.lockchain_hashes.last() {
-            println!("  Latest hash: {}", latest_hash);
-        }
+        let status_str = format!(
+            "Last execution: {} ms ago\nReceipts written: {}\nActions sent: {}\nLockchain hashes: {}",
+            get_current_timestamp_ms().saturating_sub(result.timestamp_ms),
+            result.receipts_written,
+            result.actions_sent,
+            result.lockchain_hashes.len()
+        );
+        Ok(status_str)
     } else {
-        println!("Pipeline Status: No executions recorded");
+        Ok("Pipeline Status: No executions recorded".to_string())
     }
-    
-    Ok(())
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

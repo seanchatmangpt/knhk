@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-cli/src/context.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762387286160,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762387286160,
+            "name": "Commit-0",
+            "content": "//! Context commands - Context management\n\nuse clap_noun_verb::Result;\nuse clap_noun_verb_macros::verb;\nuse serde::Serialize;\nuse crate::commands::context as context_impl;\n\n#[derive(Serialize, Debug)]\nstruct ContextList {\n    contexts: Vec<String>,\n}\n\n/// List contexts\n#[verb] // Noun \"context\" auto-inferred from filename \"context.rs\"\nfn list() -> Result<ContextList> {\n    context_impl::list()\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to list contexts: {}\", e)))\n        .map(|contexts| ContextList { contexts })\n}\n\n#[derive(Serialize, Debug)]\nstruct CurrentContextResult {\n    context: String,\n}\n\n/// Show current context\n#[verb] // Noun \"context\" auto-inferred\nfn current() -> Result<CurrentContextResult> {\n    context_impl::current()\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to get current context: {}\", e)))\n        .map(|context| CurrentContextResult { context })\n}\n\n#[derive(Serialize, Debug)]\nstruct CreateContextResult {\n    id: String,\n    name: String,\n    schema: String,\n}\n\n/// Create context\n#[verb] // Noun \"context\" auto-inferred\nfn create(id: String, name: String, schema: String) -> Result<CreateContextResult> {\n    context_impl::create(id.clone(), name.clone(), schema.clone())\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to create context: {}\", e)))\n        .map(|_| CreateContextResult { id, name, schema })\n}\n\n#[derive(Serialize, Debug)]\nstruct UseContextResult {\n    id: String,\n}\n\n/// Use context\n#[verb] // Noun \"context\" auto-inferred\nfn use_context(id: String) -> Result<UseContextResult> {\n    context_impl::use_context(id.clone())\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to use context: {}\", e)))\n        .map(|_| UseContextResult { id })\n}\n\n"
+        }
+    ]
+}

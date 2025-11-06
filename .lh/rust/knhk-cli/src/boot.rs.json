@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-cli/src/boot.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762387286160,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762387286160,
+            "name": "Commit-0",
+            "content": "//! Boot commands - System initialization\n\nuse clap_noun_verb::Result;\nuse clap_noun_verb_macros::verb;\nuse serde::Serialize;\nuse crate::commands::boot as boot_impl;\n\n#[derive(Serialize, Debug)]\nstruct InitResult {\n    sigma: String,\n    q: String,\n    config_dir: String,\n}\n\n/// Initialize Σ and Q\n#[verb] // Noun \"boot\" auto-inferred from filename \"boot.rs\"\nfn init(sigma: String, q: String) -> Result<InitResult> {\n    let config_dir = boot_impl::init(sigma.clone(), q.clone())\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to initialize: {}\", e)))?;\n    \n    Ok(InitResult {\n        sigma,\n        q,\n        config_dir: config_dir.to_string_lossy().to_string(),\n    })\n}\n\n"
+        }
+    ]
+}

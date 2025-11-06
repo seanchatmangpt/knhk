@@ -160,49 +160,14 @@ pub fn run(id: String) -> Result<(), String> {
 }
 
 /// List epochs
-pub fn list() -> Result<(), String> {
-    println!("Listing epochs...");
-    
+pub fn list() -> Result<Vec<String>, String> {
     // Load epochs from storage
     let storage = match load_epochs() {
         Ok(s) => s,
-        Err(_) => {
-            println!("  (no epochs scheduled)");
-            return Ok(());
-        }
+        Err(_) => return Ok(Vec::new()),
     };
     
-    if storage.epochs.is_empty() {
-        println!("  (no epochs scheduled)");
-        return Ok(());
-    }
-    
-    // Also try to get from Erlang RC layer
-    let output = Command::new("erl")
-        .args(&["-noshell", "-eval"])
-        .arg("io:format(\"~p~n\", [knhk_epoch:list()]).")
-        .arg("-s")
-        .arg("init")
-        .arg("stop")
-        .output();
-    
-    if let Ok(result) = output {
-        if result.status.success() {
-            let epochs = String::from_utf8_lossy(&result.stdout);
-            if !epochs.trim().is_empty() && !epochs.contains("no epochs") {
-                println!("  {}", epochs.trim());
-                return Ok(());
-            }
-        }
-    }
-    
-    // Fallback to local storage
-    for (i, epoch) in storage.epochs.iter().enumerate() {
-        println!("  {}. {} (τ={}, status={})", i + 1, epoch.id, epoch.tau, epoch.status);
-        println!("     Λ: {}", epoch.lambda.join(", "));
-    }
-    
-    Ok(())
+    Ok(storage.epochs.iter().map(|e| e.id.clone()).collect())
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

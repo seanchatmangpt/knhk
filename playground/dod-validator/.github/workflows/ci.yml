@@ -1,0 +1,78 @@
+name: DoD Validator CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Build KNHK C Library
+        run: |
+          cd c
+          make lib
+      
+      - name: Build DoD Validator
+        run: |
+          cd playground/dod-validator/rust
+          cargo build --release
+      
+      - name: Run Tests
+        run: |
+          cd playground/dod-validator/rust
+          cargo test --release --all
+      
+      - name: Run C Tests
+        run: |
+          cd playground/dod-validator
+          make -f Makefile.chicago test-chicago-autonomous-c
+
+  validate:
+    name: Validate Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Build KNHK C Library
+        run: |
+          cd c
+          make lib
+      
+      - name: Build DoD Validator
+        run: |
+          cd playground/dod-validator/rust
+          cargo build --release
+      
+      - name: Validate Code Quality
+        run: |
+          cd playground/dod-validator
+          ./rust/target/release/dod-validator validate rust/ --format json > validation_report.json || true
+          cat validation_report.json
+      
+      - name: Check for Violations
+        run: |
+          if grep -q '"passed": false' validation_report.json; then
+            echo "Code quality violations found!"
+            exit 1
+          else
+            echo "No violations found!"
+          fi
+

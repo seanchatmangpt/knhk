@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-cli/src/config.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762387286160,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762387286160,
+            "name": "Commit-0",
+            "content": "//! Config commands - Configuration management\n\nuse clap_noun_verb::Result;\nuse clap_noun_verb_macros::verb;\nuse serde::Serialize;\nuse crate::commands::config as config_impl;\n\n#[derive(Serialize, Debug)]\nstruct ConfigResult {\n    config: String,\n}\n\n/// Show current configuration\n#[verb] // Noun \"config\" auto-inferred from filename \"config.rs\"\nfn show() -> Result<ConfigResult> {\n    config_impl::show()\n        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!(\"Failed to show config: {}\", e)))\n        .map(|config| ConfigResult { config })\n}\n\n"
+        }
+    ]
+}

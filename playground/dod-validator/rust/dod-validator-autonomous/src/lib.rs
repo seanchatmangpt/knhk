@@ -100,11 +100,11 @@ impl AutonomousValidator {
         })
     }
 
-    /// Autonomics loop: O → μ → A
-    pub fn autonomics_loop(&mut self) -> Result<(), String> {
+    /// Autonomics loop: O → μ → A (continuous monitoring)
+    pub fn autonomics_loop(&mut self, path: &PathBuf) -> Result<(), String> {
         loop {
             // 1. Observe (O)
-            let observation = self.observe()?;
+            let observation = self.observe_path(path)?;
             
             // 2. Reflect (μ)
             let action = self.reflect(&observation)?;
@@ -113,7 +113,9 @@ impl AutonomousValidator {
             let receipts = self.act(&action)?;
             
             // 4. Verify (preserve(Q))
-            self.verify(&receipts)?;
+            if !receipts.is_empty() {
+                self.verify(&receipts, path)?;
+            }
             
             // 5. Loop (continuous monitoring)
             std::thread::sleep(Duration::from_millis(100));
@@ -206,20 +208,11 @@ impl AutonomousValidator {
     }
 
     /// Verify: Check invariants preserved
-    pub fn verify(&self, receipts: &[FixReceipt]) -> Result<(), String> {
+    pub fn verify(&self, receipts: &[FixReceipt], path: &PathBuf) -> Result<(), String> {
         // Re-validate after fixes
         let mut detector = ValidationEngine::new()?;
         
-        // Get the path from first receipt if available, otherwise use current directory
-        let path = if receipts.is_empty() {
-            PathBuf::from(".")
-        } else {
-            // Extract path from first receipt's observation hash
-            // In production, would decode receipt to get file path
-            PathBuf::from(".")
-        };
-        
-        let report = detector.validate_all(&path)?;
+        let report = detector.validate_all(path)?;
         
         // Verify no violations remain
         if !report.is_success() {
@@ -491,6 +484,9 @@ impl AutonomousValidator {
 
 /// Knowledge graph for storing violation and fix patterns
 pub struct KnowledgeGraph {
+    #[cfg(feature = "unrdf")]
+    unrdf_initialized: bool,
+    #[cfg(not(feature = "unrdf"))]
     // Store violation patterns in memory (would use unrdf in production)
     // For now, use simple in-memory storage until unrdf integration is complete
     violation_patterns: std::collections::HashMap<String, ViolationPattern>,
@@ -498,39 +494,102 @@ pub struct KnowledgeGraph {
 
 impl KnowledgeGraph {
     pub fn new() -> Result<Self, String> {
-        Ok(Self {
-            violation_patterns: std::collections::HashMap::new(),
-        })
+        #[cfg(feature = "unrdf")]
+        {
+            // Initialize unrdf if available
+            use knhk_unrdf::init_unrdf;
+            let unrdf_path = std::env::var("UNRDF_PATH").unwrap_or_else(|_| "vendors/unrdf".to_string());
+            init_unrdf(&unrdf_path).map_err(|e| format!("Failed to initialize unrdf: {}", e))?;
+            Ok(Self {
+                unrdf_initialized: true,
+            })
+        }
+        
+        #[cfg(not(feature = "unrdf"))]
+        {
+            Ok(Self {
+                violation_patterns: std::collections::HashMap::new(),
+            })
+        }
     }
 
     /// Store violation pattern in knowledge graph
     pub fn store_violation_pattern(&mut self, violation: &Violation) -> Result<(), String> {
-        // Store violation pattern in memory
-        // In production, this would use unrdf store_turtle_data
-        let key = format!("{:?}:{}", violation.pattern, violation.line);
-        self.violation_patterns.insert(key, violation.pattern);
-        Ok(())
+        #[cfg(feature = "unrdf")]
+        {
+            use knhk_unrdf::store_turtle_data;
+            // Store violation as RDF triple in unrdf
+            let turtle = format!(
+                r#"@prefix dod: <https://knhk.org/ontology#> .
+<> dod:hasViolationType "{}" ;
+   dod:hasFile "{}" ;
+   dod:hasLine {} .
+"#,
+                format!("{:?}", violation.pattern),
+                violation.file.to_string_lossy(),
+                violation.line
+            );
+            store_turtle_data(&turtle).map_err(|e| format!("Failed to store violation: {}", e))?;
+            Ok(())
+        }
+        
+        #[cfg(not(feature = "unrdf"))]
+        {
+            // Store violation pattern in memory
+            let key = format!("{:?}:{}", violation.pattern, violation.line);
+            self.violation_patterns.insert(key, violation.pattern);
+            Ok(())
+        }
     }
 
     /// Query knowledge graph for fix pattern
     pub fn query_fix_pattern(&self, violation: &Violation) -> Result<String, String> {
-        // Query in-memory storage for fix pattern
-        // In production, this would use unrdf SPARQL queries
-        let key = format!("{:?}:{}", violation.pattern, violation.line);
+        #[cfg(feature = "unrdf")]
+        {
+            use knhk_unrdf::{query_sparql, SparqlQueryType};
+            // Query unrdf for fix pattern using SPARQL
+            let query = format!(
+                r#"SELECT ?fixPattern WHERE {{
+    ?violation dod:hasViolationType "{}" ;
+               dod:hasFixPattern ?fixPattern .
+}}"#,
+                format!("{:?}", violation.pattern)
+            );
+            let result = query_sparql(&query, SparqlQueryType::Select).map_err(|e| format!("Failed to query unrdf: {}", e))?;
+            // Parse SPARQL results (simplified)
+            // QueryResult has bindings as Option<Vec<Value>>, so we need to handle it properly
+            if let Some(ref bindings) = result.bindings {
+                if !bindings.is_empty() {
+                    // Extract first binding's fixPattern value
+                    if let Some(first_binding) = bindings.first() {
+                        if let Some(fix_pattern) = first_binding.get("fixPattern") {
+                            return Ok(fix_pattern.as_str().unwrap_or("").to_string());
+                        }
+                    }
+                }
+            }
+            Err("Fix pattern not found".to_string())
+        }
         
-        if self.violation_patterns.contains_key(&key) {
-            // Return fix pattern based on violation type
-            Ok(match violation.pattern {
-                ViolationPattern::Unwrap => ".unwrap()".to_string(),
-                ViolationPattern::Expect => ".expect(".to_string(),
-                ViolationPattern::Todo => "// TODO".to_string(),
-                ViolationPattern::Placeholder => "placeholder".to_string(),
-                ViolationPattern::Panic => "panic!(".to_string(),
-                ViolationPattern::MissingErrorHandling => "missing error handling".to_string(),
-                ViolationPattern::GuardConstraintViolation => "guard constraint".to_string(),
-            })
-        } else {
-            Err(format!("Fix pattern not found for violation: {:?}", violation.pattern))
+        #[cfg(not(feature = "unrdf"))]
+        {
+            // Query in-memory storage for fix pattern
+            let key = format!("{:?}:{}", violation.pattern, violation.line);
+            
+            if self.violation_patterns.contains_key(&key) {
+                // Return fix pattern based on violation type
+                Ok(match violation.pattern {
+                    ViolationPattern::Unwrap => ".unwrap()".to_string(),
+                    ViolationPattern::Expect => ".expect(".to_string(),
+                    ViolationPattern::Todo => "// TODO".to_string(),
+                    ViolationPattern::Placeholder => "placeholder".to_string(),
+                    ViolationPattern::Panic => "panic!(".to_string(),
+                    ViolationPattern::MissingErrorHandling => "missing error handling".to_string(),
+                    ViolationPattern::GuardConstraintViolation => "guard constraint".to_string(),
+                })
+            } else {
+                Err(format!("Fix pattern not found for violation: {:?}", violation.pattern))
+            }
         }
     }
 }

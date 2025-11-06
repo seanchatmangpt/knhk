@@ -62,21 +62,10 @@ pub fn define(select: String, shard: String) -> Result<(), String> {
 }
 
 /// List covers
-pub fn list() -> Result<(), String> {
+pub fn list() -> Result<Vec<String>, String> {
     let storage = load_covers()?;
     
-    if storage.covers.is_empty() {
-        println!("No covers defined");
-        return Ok(());
-    }
-    
-    println!("Defined covers:");
-    for (i, cover) in storage.covers.iter().enumerate() {
-        println!("  {}. {} (id: {})", i + 1, cover.select, cover.id);
-        println!("     Shard: {}", cover.shard);
-    }
-    
-    Ok(())
+    Ok(storage.covers.iter().map(|c| c.id.clone()).collect())
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

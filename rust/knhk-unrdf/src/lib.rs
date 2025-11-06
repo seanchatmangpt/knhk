@@ -4,6 +4,13 @@
 pub mod error;
 pub mod ffi;
 pub mod hooks;
+#[cfg(feature = "native")]
+pub mod hooks_native;
+#[cfg(feature = "native")]
+pub mod hooks_native_ffi;
+#[cfg(test)]
+#[cfg(feature = "native")]
+mod hooks_native_stress;
 pub mod query;
 #[cfg(feature = "native")]
 pub mod query_native;

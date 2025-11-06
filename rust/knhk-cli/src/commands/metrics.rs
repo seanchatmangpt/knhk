@@ -27,37 +27,18 @@ struct MetricsStorage {
 
 /// Get metrics
 /// metrics() -> OTEL-friendly map
-pub fn get() -> Result<(), String> {
-    println!("Getting metrics...");
-    
+pub fn get() -> Result<std::collections::HashMap<String, String>, String> {
     // Load metrics from storage
     let storage = load_metrics()?;
     
-    println!("OTEL Metrics:");
-    println!("  Hook Latency:");
-    println!("    p50: {:.1} ticks", storage.hook_latency_p50);
-    println!("    p95: {:.1} ticks", storage.hook_latency_p95);
+    let mut metrics = std::collections::HashMap::new();
+    metrics.insert("hook_latency_p50".to_string(), format!("{:.1}", storage.hook_latency_p50));
+    metrics.insert("hook_latency_p95".to_string(), format!("{:.1}", storage.hook_latency_p95));
+    metrics.insert("drift_violations".to_string(), storage.drift_violations.to_string());
+    metrics.insert("connector_throughput".to_string(), storage.connector_throughput.to_string());
+    metrics.insert("receipt_generation_rate".to_string(), storage.receipt_generation_rate.to_string());
     
-    println!("  Drift Violations: {}", storage.drift_violations);
-    if storage.drift_violations > 0 {
-        println!("    ⚠ Some hooks exceed 8-tick budget");
-    } else {
-        println!("    ✓ All hooks within budget");
-    }
-    
-    println!("  Connector Throughput: {} triples/s", storage.connector_throughput);
-    println!("  Receipt Generation Rate: {} receipts/s", storage.receipt_generation_rate);
-    
-    if !storage.metrics.is_empty() {
-        println!("  Recent Metrics:");
-        for (i, metric) in storage.metrics.iter().take(10).enumerate() {
-            println!("    {}. {}: {:.2}", i + 1, metric.name, metric.value);
-        }
-    }
-    
-    println!("✓ Metrics retrieved");
-    
-    Ok(())
+    Ok(metrics)
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

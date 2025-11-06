@@ -32,4 +32,10 @@ unrdf = []  # Keep existing JavaScript integration
 
 [dev-dependencies]
 # Test dependencies
+criterion = { version = "0.5", features = ["html_reports"] }
+rand = "0.8"
+
+[[bench]]
+name = "hooks_native_bench"
+harness = false
 

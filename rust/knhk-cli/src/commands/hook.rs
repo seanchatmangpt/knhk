@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 /// Hook storage entry
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct HookEntry {
     id: String,
     name: String,
@@ -91,38 +91,14 @@ pub fn create(
 }
 
 /// List hooks
-pub fn list() -> Result<(), String> {
+pub fn list() -> Result<Vec<String>, String> {
     let storage = load_hooks()?;
     
-    if storage.hooks.is_empty() {
-        println!("No hooks created");
-        return Ok(());
-    }
-    
-    println!("Created hooks:");
-    for (i, hook) in storage.hooks.iter().enumerate() {
-        println!("  {}. {} (id: {})", i + 1, hook.name, hook.id);
-        println!("     Operation: {}", hook.op);
-        println!("     Run: pred={}, off={}, len={}", hook.pred, hook.off, hook.len);
-        if let Some(s) = hook.s {
-            println!("     S: 0x{:016x}", s);
-        }
-        if let Some(p) = hook.p {
-            println!("     P: 0x{:016x}", p);
-        }
-        if let Some(o) = hook.o {
-            println!("     O: 0x{:016x}", o);
-        }
-        if let Some(k) = hook.k {
-            println!("     K: {}", k);
-        }
-    }
-    
-    Ok(())
+    Ok(storage.hooks.iter().map(|h| h.name.clone()).collect())
 }
 
 /// Evaluate a hook using knhk-hot FFI
-pub fn eval(hook_name: String) -> Result<(), String> {
+pub fn eval(hook_name: String) -> Result<String, String> {
     println!("Evaluating hook: {}", hook_name);
     
     // Load hooks
@@ -165,10 +141,8 @@ pub fn eval(hook_name: String) -> Result<(), String> {
             len: hook.len,
         };
         
-        match engine.pin_run(hot_run) {
-            Ok(_) => println!("  ✓ Run pinned"),
-            Err(e) => return Err(format!("Failed to pin run: {}", e)),
-        }
+        engine.pin_run(hot_run)
+            .map_err(|e| format!("Failed to pin run: {}", e))?;
         
         // Parse operation
         let op = match hook.op.to_uppercase().as_str() {
@@ -224,71 +198,37 @@ pub fn eval(hook_name: String) -> Result<(), String> {
                     receipt.span_id = warm_result.span_id;
                     receipt.a_hash = 0; // Warm path doesn't track a_hash
                     receipt.ticks = 0; // Warm path doesn't use tick budget
+                    
+                    Ok(format!("Warm path: {} lanes written, {}ms latency", warm_result.lanes_written, warm_result.latency_ms))
                 }
-                Err(e) => return Err(format!("Warm path execution failed: {}", e.message())),
+                Err(e) => Err(format!("Warm path execution failed: {}", e.message())),
             }
         } else {
             // Hot path operations (≤8 ticks)
             let result = engine.eval_bool(&mut ir, &mut receipt);
             println!("  ✓ Hook executed via hot path (result: {})", result);
-        }
-        
-        println!("  Receipt:");
-        if op == Op::Construct8 {
-            println!("    Path: Warm (≤500ms budget)");
-        } else {
-            println!("    Path: Hot (≤8 ticks)");
             println!("    Ticks: {} (budget: ≤8)", receipt.ticks);
-            if receipt.ticks > 8 {
-                println!("    ⚠ Tick budget exceeded!");
-            } else {
-                println!("    ✓ Within budget");
-            }
+            
+            Ok(format!("Hot path: result={}, ticks={}, lanes={}", result, receipt.ticks, receipt.lanes))
         }
-        println!("    Lanes: {}", receipt.lanes);
-        println!("    Span ID: 0x{:016x}", receipt.span_id);
-        println!("    A hash: 0x{:016x}", receipt.a_hash);
     }
     
     #[cfg(not(feature = "std"))]
     {
-        return Err("Hook evaluation requires std feature".to_string());
+        Err("Hook evaluation requires std feature".to_string())
     }
-    
-    println!("✓ Hook evaluated");
-    
-    Ok(())
 }
 
 /// Show hook details
-pub fn show(hook_name: String) -> Result<(), String> {
+pub fn show(hook_name: String) -> Result<HookEntry, String> {
     let storage = load_hooks()?;
     
     let hook = storage.hooks.iter()
         .find(|h| h.name == hook_name)
-        .ok_or_else(|| format!("Hook '{}' not found", hook_name))?;
+        .ok_or_else(|| format!("Hook '{}' not found", hook_name))?
+        .clone();
     
-    println!("Hook: {}", hook.name);
-    println!("  ID: {}", hook.id);
-    println!("  Operation: {}", hook.op);
-    println!("  Run:");
-    println!("    Predicate: 0x{:016x}", hook.pred);
-    println!("    Offset: {}", hook.off);
-    println!("    Length: {} (max: 8)", hook.len);
-    if let Some(s) = hook.s {
-        println!("  Subject: 0x{:016x}", s);
-    }
-    if let Some(p) = hook.p {
-        println!("  Predicate (IR): 0x{:016x}", p);
-    }
-    if let Some(o) = hook.o {
-        println!("  Object: 0x{:016x}", o);
-    }
-    if let Some(k) = hook.k {
-        println!("  K (threshold): {}", k);
-    }
-    
-    Ok(())
+    Ok(hook)
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

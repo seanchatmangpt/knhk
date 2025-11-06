@@ -23,45 +23,25 @@ struct ContextStorage {
 }
 
 /// List all contexts
-pub fn list() -> Result<(), String> {
+pub fn list() -> Result<Vec<String>, String> {
     let storage = load_contexts()?;
     
-    if storage.contexts.is_empty() {
-        println!("No contexts defined");
-        return Ok(());
-    }
-    
-    println!("Contexts:");
-    for (i, ctx) in storage.contexts.iter().enumerate() {
-        let marker = if ctx.id == storage.current_context.as_ref().unwrap_or(&"".to_string()) {
-            "*"
-        } else {
-            " "
-        };
-        println!("  {}{}. {} (id: {})", marker, i + 1, ctx.name, ctx.id);
-        println!("     Schema: {}", ctx.schema_iri);
-    }
-    
-    Ok(())
+    Ok(storage.contexts.iter().map(|c| c.id.clone()).collect())
 }
 
 /// Show current context
-pub fn current() -> Result<(), String> {
+pub fn current() -> Result<String, String> {
     let storage = load_contexts()?;
     
     if let Some(ref current_id) = storage.current_context {
         if let Some(ctx) = storage.contexts.iter().find(|c| c.id == *current_id) {
-            println!("Current context: {}", ctx.name);
-            println!("  ID: {}", ctx.id);
-            println!("  Schema: {}", ctx.schema_iri);
+            Ok(ctx.name.clone())
         } else {
-            println!("Current context ID '{}' not found", current_id);
+            Err(format!("Current context ID '{}' not found", current_id))
         }
     } else {
-        println!("No current context set");
+        Err("No current context set".to_string())
     }
-    
-    Ok(())
 }
 
 /// Create new context

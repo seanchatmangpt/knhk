@@ -1,0 +1,18 @@
+{
+    "sourceFile": "rust/knhk-cli/src/main.rs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1762387020592,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1762387020592,
+            "name": "Commit-0",
+            "content": "// rust/knhk-cli/src/main.rs\n// KNHKS CLI - Main Entry Point\n// Noun-Verb Command Interface based on CONVO.txt API\n\nmod commands;\nmod error;\n\n// Import all noun modules so their verbs are auto-discovered\nmod boot;\nmod connect;\nmod cover;\nmod admit;\nmod reflex;\nmod epoch;\nmod route;\nmod receipt;\nmod pipeline;\nmod metrics;\nmod coverage;\nmod context;\nmod config;\nmod hook;\n\nuse clap_noun_verb::Result as CnvResult;\nuse knhk_config::load_config;\n\n// Global configuration (loaded at startup)\nstatic CONFIG: std::sync::OnceLock<knhk_config::KnhkConfig> = std::sync::OnceLock::new();\n\nfn get_config() -> &'static knhk_config::KnhkConfig {\n    CONFIG.get_or_init(|| {\n        match load_config() {\n            Ok(config) => {\n                // Record configuration load metric\n                #[cfg(feature = \"otel\")]\n                {\n                    use knhk_otel::{Tracer, MetricsHelper};\n                    let mut tracer = Tracer::new();\n                    MetricsHelper::record_config_load(&mut tracer, \"file\");\n                }\n                config\n            }\n            Err(e) => {\n                eprintln!(\"Warning: Failed to load configuration: {}. Using defaults.\", e);\n                // Record configuration error metric\n                #[cfg(feature = \"otel\")]\n                {\n                    use knhk_otel::{Tracer, MetricsHelper};\n                    let mut tracer = Tracer::new();\n                    MetricsHelper::record_config_error(&mut tracer, \"load_failed\");\n                }\n                knhk_config::KnhkConfig::default()\n            }\n        }\n    })\n}\n\nfn main() -> CnvResult<()> {\n    // Load configuration at startup\n    let _ = get_config();\n    \n    // Auto-discover all registered commands and run\n    // CNV v3.3.0 automatically discovers all #[verb] functions\n    // Nouns are auto-inferred from filenames (boot.rs → \"boot\", etc.)\n    clap_noun_verb::run()\n}\n"
+        }
+    ]
+}

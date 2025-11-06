@@ -15,35 +15,18 @@ struct CoverageStorage {
 
 /// Get coverage
 /// coverage() -> Dark Matter coverage metrics
-pub fn get() -> Result<(), String> {
-    println!("Getting coverage...");
-    
+pub fn get() -> Result<String, String> {
     // Load coverage metrics from storage
     let storage = load_coverage()?;
     
-    println!("Dark Matter 80/20 Coverage:");
-    println!("  Hook set size: {} hooks", storage.hook_set_size);
-    println!("  Coverage: {:.1}%", storage.coverage_percentage);
+    let coverage_str = format!(
+        "Hook set size: {} hooks\nCoverage: {:.1}%\nUncovered queries: {}",
+        storage.hook_set_size,
+        storage.coverage_percentage,
+        storage.uncovered_queries.len()
+    );
     
-    if storage.coverage_percentage >= 80.0 {
-        println!("  ✓ Coverage target met (≥80%)");
-    } else {
-        println!("  ⚠ Coverage below target (<80%)");
-    }
-    
-    if !storage.uncovered_queries.is_empty() {
-        println!("  Uncovered queries (routed to cold path): {}", storage.uncovered_queries.len());
-        for (i, query) in storage.uncovered_queries.iter().take(5).enumerate() {
-            println!("    {}. {}", i + 1, query);
-        }
-        if storage.uncovered_queries.len() > 5 {
-            println!("    ... and {} more", storage.uncovered_queries.len() - 5);
-        }
-    }
-    
-    println!("✓ Coverage retrieved");
-    
-    Ok(())
+    Ok(coverage_str)
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

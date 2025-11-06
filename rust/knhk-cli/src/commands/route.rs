@@ -87,25 +87,10 @@ pub fn install(name: String, kind: String, target: String) -> Result<(), String>
 }
 
 /// List routes
-pub fn list() -> Result<(), String> {
+pub fn list() -> Result<Vec<String>, String> {
     let storage = load_routes()?;
     
-    if storage.routes.is_empty() {
-        println!("No routes installed");
-        return Ok(());
-    }
-    
-    println!("Installed routes:");
-    for (i, route) in storage.routes.iter().enumerate() {
-        println!("  {}. {} (id: {})", i + 1, route.name, route.id);
-        println!("     Kind: {}", route.kind);
-        println!("     Target: {}", route.target);
-        if let Some(ref encode) = route.encode {
-            println!("     Encode: {}", encode);
-        }
-    }
-    
-    Ok(())
+    Ok(storage.routes.iter().map(|r| r.name.clone()).collect())
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

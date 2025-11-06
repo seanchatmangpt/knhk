@@ -1,5 +1,20 @@
 # Architecture
 
+## Formal Mathematical Foundations
+
+KNHK's architecture is grounded in formal mathematical laws that define its behavior. These laws give rise to emergent properties that enable safe parallelism, cryptographic verification, and deterministic execution.
+
+**Key Formal Properties**:
+- **Idempotence** (μ∘μ = μ): Safe retry semantics without coordination
+- **Shard Distributivity** (μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)): Parallel evaluation equivalence
+- **Sheaf Property** (glue(Cover(O)) = Γ(O)): Local-to-global consistency
+- **Provenance** (hash(A) = hash(μ(O))): Cryptographic verification
+- **Epoch Containment** (μ ⊂ τ): Time-bounded execution
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete formal treatment.
+
+---
+
 ## System Overview
 
 KNHK (v0.5.0) implements a multi-tier architecture with production-ready infrastructure:
