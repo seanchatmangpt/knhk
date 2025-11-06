@@ -14,10 +14,7 @@ use alloc::format;
 use alloc::boxed::Box;
 use alloc::string::ToString;
 
-#[cfg(feature = "std")]
-use hashbrown::HashMap;
-#[cfg(not(feature = "std"))]
-use alloc::collections::BTreeMap as HashMap;
+// HashMap not currently used - reserved for future use
 
 /// Connector identifier
 pub type ConnectorId = String;

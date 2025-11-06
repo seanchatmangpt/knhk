@@ -230,7 +230,7 @@ impl Connector for SalesforceConnector {
         }
 
         // Query Salesforce API for changed records
-        let mut additions = Vec::new();
+        let additions = Vec::new();
         
         #[cfg(feature = "salesforce")]
         {
