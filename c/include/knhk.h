@@ -12,6 +12,9 @@
 #include "knhk/utils.h"      // Context initialization, RDF loading, clock utilities
 #include "knhk/receipts.h"   // Receipt operations
 #include "knhk/eval.h"       // Query evaluation functions
+#include "knhk/admission.h"  // Admission control (R1/W1/C1 routing)
+#include "knhk/mphf.h"       // Minimal Perfect Hash Function cache
+#include "knhk/preload.h"    // Predictive preloading for L1 cache
 
 #include "aot/aot_guard.h"
 
