@@ -147,7 +147,18 @@ int knhk_load_rdf(knhk_context_t *ctx, const char *filename);
 ### Query Evaluation
 
 #### knhk_eval_bool
-Evaluate boolean query (inline, hot path):
+Evaluates a boolean query operation (ASK, COUNT, COMPARE, VALIDATE).
+
+**Formal Law**: Implements hook evaluation μ: O → A where A ∈ {0, 1}
+
+**Performance**: ≤8 ticks (≤2ns) when measured externally
+
+**Properties**:
+- **Idempotence**: μ∘μ = μ - Re-evaluation produces identical results
+- **Determinism**: Same inputs O always produce same output A
+- **Epoch Containment**: μ ⊂ τ - Execution terminates within τ ≤ 8 ticks
+
+**Signature**:
 ```c
 static inline int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t *ir, knhk_receipt_t *rcpt);
 ```
@@ -178,7 +189,17 @@ static inline int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t
   - `KNHK_OP_VALIDATE_DATATYPE_SPO`: Validate datatype for (s, p, o)
 
 #### knhk_eval_construct8
-Emit up to 8 triples using a fixed template (CONSTRUCT8):
+Emit up to 8 triples using a fixed template (CONSTRUCT8).
+
+**Formal Law**: Implements **A = μ(O)** - Actions are deterministic projections of observations
+
+**Performance**: ≤8 ticks (≤2ns) when measured externally (hot path). Note: CONSTRUCT8 currently exceeds 8-tick budget (41-83 ticks) and is moved to warm path in v0.5.0.
+
+**Properties**:
+- **Determinism**: Same inputs O always produce same output A
+- **Epoch Containment**: μ ⊂ τ - Execution terminates within time bound (warm path: ≤500ms)
+
+**Signature**:
 ```c
 static inline int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t *ir, knhk_receipt_t *rcpt);
 ```
@@ -188,7 +209,15 @@ static inline int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t
 - Hot path operation: ≤2ns (pure CONSTRUCT logic)
 
 #### knhk_eval_batch8
-Batch execution with deterministic order Λ:
+Batch execution with deterministic order Λ.
+
+**Formal Law**: Implements **Order** (Λ is ≺-total) - Batch results maintain deterministic order
+
+**Properties**:
+- **Order Preservation**: Λ is ≺-total - Results maintain deterministic order
+- **Shard Distributivity**: μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ) - Parallel evaluation equivalence
+
+**Signature**:
 ```c
 int knhk_eval_batch8(const knhk_context_t *ctx, knhk_hook_ir_t *irs, size_t n, knhk_receipt_t *rcpts);
 ```
