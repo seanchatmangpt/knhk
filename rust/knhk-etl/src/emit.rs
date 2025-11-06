@@ -203,14 +203,12 @@ impl EmitStage {
     }
 
     /// Write receipt to lockchain (Merkle-linked) - with mutable lockchain reference
-    #[cfg(feature = "knhk-lockchain")]
     fn write_receipt_to_lockchain_with_lockchain(
         &self,
         lockchain: &mut knhk_lockchain::Lockchain,
         receipt: &Receipt,
     ) -> Result<String, String> {
         use knhk_lockchain::{LockchainEntry, LockchainError};
-        use alloc::collections::BTreeMap;
         
         // Create lockchain entry
         let mut metadata = BTreeMap::new();
@@ -234,9 +232,7 @@ impl EmitStage {
         }
     }
     
-    #[cfg(feature = "knhk-lockchain")]
     fn get_current_timestamp_ms() -> u64 {
-        use std::time::{SystemTime, UNIX_EPOCH};
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
@@ -252,41 +248,17 @@ impl EmitStage {
 
         // Determine endpoint type and send
         if endpoint.starts_with("http://") || endpoint.starts_with("https://") {
-            #[cfg(feature = "std")]
-            {
-                self.send_http_webhook(action, endpoint)
-            }
-            #[cfg(not(feature = "std"))]
-            {
-                Err("HTTP client requires std feature".to_string())
-            }
+            self.send_http_webhook(action, endpoint)
         } else if endpoint.starts_with("kafka://") {
-            #[cfg(feature = "kafka")]
-            {
-                self.send_kafka_action(action, endpoint)
-            }
-            #[cfg(not(feature = "kafka"))]
-            {
-                Err("Kafka client requires kafka feature".to_string())
-            }
+            self.send_kafka_action(action, endpoint)
         } else if endpoint.starts_with("grpc://") {
-            #[cfg(feature = "grpc")]
-            {
-                self.send_grpc_action(action, endpoint)
-            }
-            #[cfg(not(feature = "grpc"))]
-            {
-                Err("gRPC client requires grpc feature".to_string())
-            }
+            self.send_grpc_action(action, endpoint)
         } else {
             Err(format!("Unknown endpoint type: {}", endpoint))
         }
     }
     
-    #[cfg(feature = "std")]
     fn send_http_webhook(&self, action: &Action, endpoint: &str) -> Result<(), String> {
-        use reqwest::blocking::Client;
-        use std::time::Duration;
         
         // Create HTTP client with timeout
         let client = Client::builder()
@@ -328,12 +300,11 @@ impl EmitStage {
             }
         }
         
-        Err(format!("Failed to send action after {} retries: {}", 
+                    Err(format!("Failed to send action after {} retries: {}", 
                     self.max_retries, 
                     last_error.unwrap_or_else(|| "Unknown error".to_string())))
     }
     
-    #[cfg(feature = "kafka")]
     fn send_kafka_action(&self, action: &Action, endpoint: &str) -> Result<(), String> {
         // Parse Kafka endpoint: kafka://broker1:9092,broker2:9092/topic
         let endpoint = endpoint.strip_prefix("kafka://")

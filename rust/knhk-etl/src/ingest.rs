@@ -11,7 +11,8 @@ use std::io::BufRead;
 
 use oxigraph::store::Store;
 use oxigraph::io::RdfFormat;
-use oxigraph::model::{Term, Quad, NamedOrBlankNode, Triple};
+use oxigraph::model::{Term, Quad, NamedOrBlankNode};
+#[allow(deprecated)]
 use oxigraph::sparql::{QueryResults, Query};
 
 use crate::error::PipelineError;
