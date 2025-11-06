@@ -17,7 +17,11 @@ KNHK is a production-ready knowledge graph engine designed for real-time graph o
 - **Rust-Native RDF**: Pure Rust SPARQL execution via oxigraph
 - **Knowledge Hooks**: Policy-driven automation triggers
 - **Cold Path Integration**: unrdf JavaScript integration for complex queries
-- **Chicago TDD**: Comprehensive test coverage (31 tests)
+- **Weaver Integration**: OpenTelemetry live-check validation for telemetry
+- **Policy Engine**: Rego-based policy validation for guard constraints and performance budgets
+- **Streaming Processing**: Real-time ingestion with unified ingester pattern
+- **Structured Diagnostics**: Enhanced error handling with error codes and retryability
+- **Chicago TDD**: Comprehensive test coverage (62+ tests including Weaver insights validation)
 - **Error Validation**: Complete error handling and boundary testing
 
 **Formal Properties**:
@@ -74,7 +78,7 @@ Rust-native hooks engine implementing the Guard law `μ ⊣ H` (partial):
 - `Merge: Π` is `⊕`-monoid - Merge operations are associative
 - `Typing: O ⊨ Σ` - Operations satisfy schema
 - `Shard: μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)` - Hook distributes over disjoint union
-- `Sheaf: glue(Cover(O)) = Γ(O)` - Local patches glue to global state
+- `Sheaf: glue(Cover(O)) = Γ(O))` - Local patches glue to global state
 - `Epoch: μ ⊂ τ` - Hook evaluation contained in time bound
 
 See [Formal Mathematical Foundations](docs/formal-foundations.md) for complete treatment of all 17 laws and their emergent properties.
@@ -99,6 +103,44 @@ Query result caching with LRU eviction:
 - Key: hash(query + data)
 - Thread-safe operation
 - Performance metrics
+
+### 5. Policy Engine (`rust/knhk-validation/src/policy_engine.rs`)
+
+Rego-based policy engine for validation (inspired by Weaver):
+- **Built-in Policies**: Guard constraints, performance budgets, receipt validation
+- **Rego Support**: Custom Rego policies (when `rego` feature enabled)
+- **Unified Evaluation**: `evaluate_all()` method for comprehensive policy checking
+- **Policy Context**: Structured context for policy evaluation
+
+**Policies**:
+- Guard constraint validation (`max_run_len ≤ 8`)
+- Performance budget validation (`ticks ≤ 8`)
+- Receipt validation (`hash(A) = hash(μ(O))`)
+
+### 6. Connector Framework (`rust/knhk-connectors/`)
+
+Enterprise data source connectors with structured diagnostics:
+- **Unified Interface**: `Connector` trait for all data sources
+- **Structured Errors**: Error codes, messages, retryability checking
+- **Lifecycle Management**: `start()` and `stop()` methods for proper resource management
+- **Circuit Breaker**: Automatic failure handling and recovery
+- **Supported Sources**: Kafka, Salesforce, HTTP, File, SAP
+
+### 7. ETL Pipeline (`rust/knhk-etl/`)
+
+ETL pipeline with streaming support:
+- **Ingester Pattern**: Unified interface for multiple input sources (inspired by Weaver)
+- **Streaming Support**: Real-time ingestion with `StreamingIngester` trait
+- **Pipeline Stages**: Ingest → Transform → Load → Reflex → Emit
+- **Runtime Classes**: R1 (hot), W1 (warm), C1 (cold) with SLO monitoring
+
+### 8. Sidecar Service (`rust/knhk-sidecar/`)
+
+gRPC proxy service with Weaver integration:
+- **Weaver Live-Check**: Automatic telemetry validation
+- **Request Batching**: Groups multiple RDF operations
+- **Circuit Breaker**: Prevents cascading failures
+- **Retry Logic**: Exponential backoff with idempotence support
 
 ## Getting Started
 
@@ -156,6 +198,13 @@ cargo bench --features native
 - **[API Reference](docs/api.md)** - Complete API documentation
 - **[CLI Guide](docs/cli.md)** - Command-line interface reference
 
+### Weaver Integration & Insights
+
+- **[Weaver Integration](docs/weaver-integration.md)** - OpenTelemetry Weaver live-check integration
+- **[Weaver Analysis and Learnings](docs/WEAVER_ANALYSIS_AND_LEARNINGS.md)** - Architectural patterns learned from Weaver
+- **[Weaver Insights Implementation](docs/WEAVER_INSIGHTS_IMPLEMENTATION.md)** - Implementation summary of Weaver insights
+- **[Weaver Insights Chicago TDD Validation](docs/WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md)** - Test validation for Weaver insights
+
 ## Test Coverage
 
 ### Hooks Engine Tests: 31 tests (all passing ✅)
@@ -185,6 +234,30 @@ cargo bench --features native
 - Receipt uniqueness (1000 receipts)
 - Query complexity variation
 - Error handling under load
+
+### Weaver Insights Tests: 31 tests (all passing ✅)
+
+**Error Diagnostics Tests: 9 tests**
+- Error code extraction and consistency
+- Error message extraction
+- Retryability checking
+- All error types coverage
+
+**Policy Engine Tests: 10 tests**
+- Policy context creation and defaults
+- Unified policy evaluation (`evaluate_all()`)
+- Multiple violation detection
+- Custom policy configuration
+- Partial context handling
+
+**Ingester Pattern Tests: 12 tests**
+- File and stdin ingester creation
+- Streaming support (start/stop)
+- Trait consistency
+- Data format support (RDF, JSON-LD, JSON, CSV)
+- Ingester readiness checking
+
+See [Weaver Insights Chicago TDD Validation](docs/WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md) for complete test documentation.
 
 ## Performance
 
@@ -239,11 +312,40 @@ knhk/
 │   │   │   └── hooks_native_ffi.rs  # FFI exports
 │   │   └── benches/
 │   │       └── hooks_native_bench.rs # Performance benchmarks
+│   ├── knhk-etl/            # ETL pipeline with streaming support
+│   │   ├── src/
+│   │   │   ├── ingester.rs          # Ingester pattern (Weaver-inspired)
+│   │   │   ├── pipeline.rs          # ETL pipeline stages
+│   │   │   └── ...
+│   │   └── tests/
+│   │       └── ingester_pattern_test.rs  # Chicago TDD tests
+│   ├── knhk-connectors/     # Enterprise data connectors
+│   │   ├── src/
+│   │   │   ├── kafka.rs             # Kafka connector
+│   │   │   ├── salesforce.rs        # Salesforce connector
+│   │   │   └── lib.rs               # Connector trait with diagnostics
+│   │   └── tests/
+│   │       └── error_diagnostics_test.rs  # Chicago TDD tests
+│   ├── knhk-validation/     # Validation framework
+│   │   ├── src/
+│   │   │   ├── policy_engine.rs     # Policy engine (Rego support)
+│   │   │   └── diagnostics.rs      # Structured diagnostics
+│   │   └── tests/
+│   │       └── policy_engine_enhanced_test.rs  # Chicago TDD tests
+│   ├── knhk-sidecar/        # gRPC proxy service
+│   │   ├── src/
+│   │   │   ├── server.rs            # gRPC server (fixed startup)
+│   │   │   └── service.rs           # Service implementation
+│   │   └── docs/
+│   │       └── WEAVER_INTEGRATION.md  # Weaver live-check integration
 │   └── knhk-cli/            # Command-line interface
-├── c/                        # C core layer
+├── c/                        # C core layer (hot path)
 ├── vendors/
 │   └── unrdf/               # unrdf JavaScript integration
 └── docs/                     # Documentation
+    ├── WEAVER_ANALYSIS_AND_LEARNINGS.md
+    ├── WEAVER_INSIGHTS_IMPLEMENTATION.md
+    └── WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md
 ```
 
 ## Contributing
@@ -252,9 +354,12 @@ knhk/
 
 - **80/20 Principle**: Focus on critical 20% features
 - **No Placeholders**: Production-ready implementations only
-- **Chicago TDD**: State-based tests, real collaborators
-- **Error Handling**: Proper `Result<T, E>` propagation
-- **Performance**: Hot path ≤2ns constraint
+- **Chicago TDD**: State-based tests, real collaborators (62+ tests)
+- **Error Handling**: Proper `Result<T, E>` propagation with structured diagnostics
+- **Performance**: Hot path ≤2ns constraint (8 ticks)
+- **Weaver Patterns**: Architectural patterns from OpenTelemetry Weaver
+- **Policy-Based Validation**: Rego-based policies for guard constraints and performance budgets
+- **Streaming Support**: Real-time processing with unified ingester pattern
 
 ### Code Review Checklist
 
@@ -284,9 +389,15 @@ knhk/
 **Current Status**:
 - ✅ Rust-native hooks engine complete
 - ✅ Cold path integration with unrdf complete
-- ✅ Chicago TDD test coverage complete
+- ✅ Chicago TDD test coverage complete (62+ tests)
 - ✅ Error validation tests complete
 - ✅ Stress tests and benchmarks complete
+- ✅ Weaver insights implementation complete
+- ✅ Policy engine with Rego support preparation
+- ✅ Streaming ingester pattern implemented
+- ✅ Enhanced error diagnostics with structured codes
+- ✅ Sidecar server startup implementation fixed
+- ✅ Connector lifecycle methods implemented
 - ✅ Documentation complete
 
 ---
