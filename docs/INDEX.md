@@ -25,6 +25,32 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - 83 Chicago TDD tests
    - Coverage by module (~80%+ overall)
    - Test categories and running instructions
+7. **[Formal Mathematical Foundations](formal-foundations.md)** - Formal laws and emergent properties
+   - 17 foundational laws (Constitution)
+   - 10 emergent computational properties
+   - Mathematical rigor and verification
+   - Connection to implementation
+
+### Hooks Engine Documentation
+7. **[Hooks Engine: 2ns Use Cases](hooks-engine-2ns-use-cases.md)** - Complete hooks engine architecture and laws
+   - Guard function: μ ⊣ H (partial)
+   - Use Case 1: Single hook execution (2ns target)
+   - Use Case 2: Batch hook evaluation (cold path)
+   - Mathematical foundations and laws
+8. **[Hooks Engine: Chicago TDD Coverage](hooks-engine-chicago-tdd-coverage.md)** - Test coverage by law and use case
+   - 14 Chicago TDD tests covering all laws
+   - Coverage mapping by law
+   - Use case validation
+9. **[Hooks Engine: Error Validation Tests](hooks-engine-error-validation-tests.md)** - What works and what doesn't
+   - 17 error validation tests
+   - Query type validation
+   - Hook definition validation
+   - Success/failure boundaries
+10. **[Hooks Engine: Stress Tests & Benchmarks](hooks-engine-stress-tests.md)** - Performance validation
+    - 7 stress tests
+    - Performance benchmarks
+    - Concurrent execution tests
+    - Memory pressure tests
 
 ## Integration & Deployment
 
@@ -52,7 +78,8 @@ This index provides a comprehensive guide to all current KNHK documentation.
 ### Architecture & Design
 15. **[Code Organization](code-organization.md)** - Code structure and organization
 16. **[Data Flow](data-flow.md)** - Data flow diagrams and execution flow
-17. **[Autonomous Epistemology](autonomous-epistemology.md)** - Autonomous system design
+17. **[Formal Mathematical Foundations](formal-foundations.md)** - Deep formal insights and emergent properties
+18. **[Autonomous Epistemology](autonomous-epistemology.md)** - Autonomous system design
 
 ### Planning & Requirements
 18. **[v1.0 Requirements](v1-requirements.md)** - Forward-looking v1.0 requirements
