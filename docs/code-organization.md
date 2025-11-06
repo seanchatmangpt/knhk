@@ -1,8 +1,15 @@
 # Code Organization
 
+**Formal Foundation**: Code organization reflects formal structure:
+- **Hot Path**: Implements hook evaluation μ: O → A with **Epoch Containment** (μ ⊂ τ)
+- **Warm Path**: Implements **Shard Distributivity** (μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)) for parallel evaluation
+- **Cold Path**: Implements **Sheaf Property** (glue(Cover(O)) = Γ(O)) for consistency
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Overview
 
-KNHK follows a modular architecture with clear separation of concerns. Large files have been split into focused, maintainable components following core team best practices.
+KNHK follows a modular architecture with clear separation of concerns. Large files have been split into focused, maintainable components following core team best practices. The organization reflects the formal mathematical structure defined by the Constitution.
 
 ## Directory Structure
 

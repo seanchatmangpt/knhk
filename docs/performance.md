@@ -3,6 +3,13 @@
 **Version**: v0.4.0  
 **Performance Target**: ≤2ns (Chatman Constant)
 
+**Formal Foundation**: Performance constraints are enforced through formal laws:
+- **Epoch Containment**: μ ⊂ τ, τ ≤ 8 ticks - All hook evaluations terminate within time bound
+- **Sparsity**: μ → S (80/20) - Optimization justified through mathematical property
+- **Provenance**: hash(A) = hash(μ(O)) - Performance verification through cryptographic receipts
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Performance Architecture
 
 **Critical Design Decision**: C hot path contains **zero timing code**. All timing measurements are performed externally by the Rust framework to keep the C hot path pure and optimized.

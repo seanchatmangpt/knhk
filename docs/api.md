@@ -5,6 +5,14 @@
 
 **Critical Design**: C hot path contains **zero timing code**. All timing measurements are performed externally by the Rust framework.
 
+**Formal Foundation**: All API operations satisfy the Constitution laws:
+- **Law**: A = μ(O) - Actions are deterministic projections of observations
+- **Epoch Containment**: μ ⊂ τ - All operations terminate within τ ≤ 8 ticks
+- **Provenance**: hash(A) = hash(μ(O)) - Cryptographic receipts enable verification
+- **Guard**: μ ⊣ H - Guard constraints enforced before evaluation
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Public API
 
 The KNHK API is organized into modular headers for better maintainability:
@@ -332,4 +340,111 @@ SIMD operations are organized in `src/simd/`:
 - `src/simd/construct.h`: CONSTRUCT8 operations
 
 All SIMD functions are included via `src/simd.h` umbrella header.
+
+
+## Rust-Native Hooks Engine API
+
+**Location**: `rust/knhk-unrdf/src/hooks_native_ffi.rs`  
+**Header**: `c/include/knhk/unrdf_native_hooks.h`
+
+### Hook Execution Functions
+
+#### knhk_unrdf_execute_hook_native
+
+Execute a single hook by name (native Rust implementation).
+
+```c
+int knhk_unrdf_execute_hook_native(
+    const char *hook_name,
+    const char *hook_query,
+    const char *turtle_data,
+    char *result_json,
+    size_t result_size
+);
+```
+
+**Parameters**:
+- `hook_name`: Hook identifier/name
+- `hook_query`: SPARQL ASK query string
+- `turtle_data`: Turtle format RDF data
+- `result_json`: Buffer to write JSON result
+- `result_size`: Size of result buffer
+
+**Returns**:
+- `0` on success
+- Negative value on error (error details in `result_json`)
+
+**Use Case**: Single hook execution (2ns target)
+
+**Example**:
+```c
+char result[4096];
+int ret = knhk_unrdf_execute_hook_native(
+    "my-hook",
+    "ASK { ?s ?p ?o }",
+    "@prefix ex: <http://example.org/> . ex:alice ex:name \"Alice\" .",
+    result,
+    sizeof(result)
+);
+// result contains: {"fired":true,"result":{...},"receipt":"..."}
+```
+
+#### knhk_unrdf_execute_hooks_batch_native
+
+Execute multiple hooks in batch (parallel execution).
+
+```c
+int knhk_unrdf_execute_hooks_batch_native(
+    const char *hooks_json,
+    const char *turtle_data,
+    char *result_json,
+    size_t result_size
+);
+```
+
+**Parameters**:
+- `hooks_json`: JSON array of hook definitions
+- `turtle_data`: Turtle format RDF data
+- `result_json`: Buffer to write JSON result
+- `result_size`: Size of result buffer
+
+**Returns**:
+- `0` on success
+- Negative value on error (error details in `result_json`)
+
+**Use Case**: Batch hook evaluation (cold path, parallel execution)
+
+### Hook Registry Functions
+
+#### knhk_unrdf_register_hook_native
+
+Register a hook in the native registry.
+
+```c
+int knhk_unrdf_register_hook_native(const char *hook_json);
+```
+
+#### knhk_unrdf_deregister_hook_native
+
+Deregister a hook from the native registry.
+
+```c
+int knhk_unrdf_deregister_hook_native(const char *hook_id);
+```
+
+### Performance Characteristics
+
+- **Single Hook**: <2ns target (hot path)
+- **Batch Execution**: Parallel via Rayon (scales with CPU cores)
+- **Receipt Generation**: <10μs per hook
+- **Registry Operations**: <1μs (get, register, deregister)
+
+### Constraints
+
+- **Query Type**: Hooks MUST use ASK queries (SELECT, CONSTRUCT, DESCRIBE rejected)
+- **Query Validation**: SPARQL syntax validated before execution
+- **Data Format**: Turtle format RDF data required
+- **Thread Safety**: Registry operations are thread-safe
+
+See [Hooks Engine: 2ns Use Cases](hooks-engine-2ns-use-cases.md) for complete documentation.
 

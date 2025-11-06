@@ -3,6 +3,14 @@
 **Version**: 0.4.0  
 **Integration Guide**: Essential patterns for integrating KNHK into your system
 
+**Formal Foundation**: Integration patterns leverage formal properties:
+- **Idempotence** (μ∘μ = μ): Safe retry semantics without coordination
+- **Shard Distributivity** (μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)): Parallel evaluation equivalence
+- **Sheaf Property** (glue(Cover(O)) = Γ(O)): Local-to-global consistency
+- **Provenance** (hash(A) = hash(μ(O))): Cryptographic verification
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Overview
 
 This guide explains how to integrate KNHK into your system. The integration focuses on the critical path features that deliver 80% of enterprise value.
@@ -27,6 +35,8 @@ Full pipeline: Connector → ETL → Hot Path → Lockchain → OTEL
 ```
 
 ## Connector Integration
+
+**Formal Property**: Connector retry logic relies on **Idempotence** (μ∘μ = μ) to safely retry failed operations without duplicate detection or coordination overhead.
 
 ### Supported Connectors (v0.4.0)
 

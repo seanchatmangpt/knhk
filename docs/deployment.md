@@ -3,9 +3,16 @@
 **Version**: 0.4.0  
 **Deployment Guide**: Essential steps for production deployment
 
+**Formal Foundation**: Deployment leverages formal properties:
+- **Idempotence** (μ∘μ = μ): Safe deployment retries
+- **Shard Distributivity** (μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)): Horizontal scaling
+- **Provenance** (hash(A) = hash(μ(O))): Deployment verification
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Overview
 
-This guide covers production deployment of KNHK v0.4.0. The deployment focuses on the critical path features that deliver 80% of enterprise value.
+This guide covers production deployment of KNHK v0.4.0. The deployment focuses on the critical path features that deliver 80% of enterprise value, enabled by formal mathematical properties that guarantee deterministic behavior and safe parallelism.
 
 ## Prerequisites
 

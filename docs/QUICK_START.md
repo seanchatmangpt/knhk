@@ -4,6 +4,8 @@
 **Status**: ✅ Production Ready  
 **Quick Start**: Essential steps to get KNHK running.
 
+**Formal Foundation**: KNHK's behavior is defined through 17 foundational laws (the Constitution) ensuring deterministic execution, safe parallelism, and cryptographic verification. See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 **See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for complete status and limitations.**
 
 ## 5-Minute Setup
@@ -59,7 +61,9 @@ knhk metrics get
 - [CLI Guide](cli.md) - Complete command reference
 - [Architecture](architecture.md) - System architecture
 - [Integration Guide](integration.md) - Integration examples
+- [Formal Mathematical Foundations](formal-foundations.md) - Deep formal insights and emergent properties
+- [Repository Overview](../REPOSITORY_OVERVIEW.md) - Complete system overview
 
 ---
 
-**Principle**: Start with these essentials, expand as needed.
+**Formal Guarantee**: All operations satisfy **A = μ(O)** - Actions are deterministic projections of observations, verified through formal laws and test validation.

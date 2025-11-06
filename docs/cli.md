@@ -4,6 +4,14 @@
 **Status**: ✅ Production Ready  
 **CLI Reference**: Complete command reference for all operations
 
+**Formal Foundation**: CLI commands enforce formal laws:
+- **Typing**: O ⊨ Σ - Schema validation before operations
+- **Law**: A = μ(O) - Actions are deterministic projections
+- **Epoch Containment**: μ ⊂ τ - Time bounds enforced
+- **Provenance**: hash(A) = hash(μ(O)) - Receipt generation
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Overview
 
 The KNHK CLI provides a noun-verb interface based on the CONVO.txt API specification. All commands follow the pattern:

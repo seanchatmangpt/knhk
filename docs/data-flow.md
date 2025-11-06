@@ -1,8 +1,15 @@
 # Data Flow
 
+**Formal Foundation**: Data flow implements formal laws ensuring:
+- **Law**: A = μ(O) - Actions are deterministic projections of observations
+- **Epoch Containment**: μ ⊂ τ - All operations terminate within time bounds
+- **Provenance**: hash(A) = hash(μ(O)) - Cryptographic verification enabled
+
+See [Formal Mathematical Foundations](formal-foundations.md) for complete treatment.
+
 ## Overview
 
-KNHK processes RDF data through a pipeline from file loading to query execution.
+KNHK processes RDF data through a pipeline from file loading to query execution. The pipeline implements formal laws that guarantee deterministic behavior, safe parallelism, and cryptographic verification.
 
 ## Data Flow Stages
 
@@ -38,11 +45,14 @@ KNHK processes RDF data through a pipeline from file loading to query execution.
   - Operation complexity
   - Predicate run size (≤8 for hot path)
   - Data availability
+- **Formal Property**: Path selection enforces **Epoch Containment** (μ ⊂ τ) - operations that cannot meet τ ≤ 8 ticks route to warm/cold path
 
 ### 7. Evaluation
 - **Hot Path**: Branchless SIMD execution
 - **Cold Path**: Full SPARQL engine fallback
 - **Output**: Query result (boolean or count)
+- **Formal Law**: Implements **A = μ(O)** - Actions are deterministic projections of observations
+- **Formal Property**: **Idempotence** (μ∘μ = μ) ensures re-evaluation produces identical results
 
 ## Data Flow Diagram
 
