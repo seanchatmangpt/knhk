@@ -31,8 +31,8 @@ This guide covers production deployment of KNHK v0.4.0. The deployment focuses o
 
 **Rust Crates**:
 - `clap-noun-verb` - CLI framework
-- `rdkafka` - Kafka integration (optional, feature-gated)
-- `reqwest` - HTTP client (optional, feature-gated)
+- `rdkafka` - Kafka integration (always enabled)
+- `reqwest` - HTTP client (always enabled)
 - `sha2` - SHA-256 hashing
 - `serde_json` - JSON serialization
 

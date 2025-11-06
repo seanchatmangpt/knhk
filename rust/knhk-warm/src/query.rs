@@ -3,6 +3,7 @@
 
 use crate::graph::WarmPathGraph;
 use oxigraph::sparql::QueryResults;
+use oxigraph::model::Triple;
 use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;
 

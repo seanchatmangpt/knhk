@@ -10,6 +10,8 @@ use oxigraph::io::RdfFormat;
 #[cfg(feature = "native")]
 use oxigraph::sparql::QueryResults;
 #[cfg(feature = "native")]
+use oxigraph::model::Triple;
+#[cfg(feature = "native")]
 use sha2::{Sha256, Digest};
 #[cfg(feature = "native")]
 use blake3;

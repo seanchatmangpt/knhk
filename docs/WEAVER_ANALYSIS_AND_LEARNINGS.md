@@ -4,6 +4,8 @@
 
 Weaver is OpenTelemetry's "Observability by Design" platform that treats telemetry as a first-class public API. KNHK already integrates Weaver for live-check validation, but there are valuable architectural patterns and design principles we can learn from Weaver's codebase.
 
+**Implementation Status**: See [Weaver Learnings Integration](weaver-learnings-integration-complete.md) for current integration status and implementation details.
+
 ## Key Learnings
 
 ### 1. Architecture Patterns
