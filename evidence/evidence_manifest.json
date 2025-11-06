@@ -1,0 +1,260 @@
+{
+  "evidence_manifest_version": "1.0",
+  "project": "KNHK v1.0",
+  "prd_version": "8-Beat PRD v1.0",
+  "generated": "2025-11-06T23:28:00Z",
+  "evidence_artifacts": [
+    {
+      "id": "ev:beat_design",
+      "name": "Beat Scheduler Design",
+      "status": "complete",
+      "location": "docs/8BEAT-PRD.txt",
+      "format": "text/turtle",
+      "machine_readable": true,
+      "prd_section": "0, 1, 4, 6, 19",
+      "dflss_section": "12",
+      "collection_date": "2024-11-01",
+      "description": "8-beat epoch specification with formal Turtle ontology defining laws (A = μ(O), μ∘μ = μ, μ ⊂ τ, hash(A) = hash(μ(O)))",
+      "validation_status": "complete"
+    },
+    {
+      "id": "ev:pmu_bench",
+      "name": "PMU Benchmark Results",
+      "status": "pending",
+      "location": "evidence/pmu_bench/benchmark_results.csv",
+      "format": "text/csv",
+      "machine_readable": true,
+      "prd_section": "5, 11, 13",
+      "dflss_section": "12 (CTQ-1)",
+      "collection_procedure": "evidence/pmu_bench/collection_procedure.md",
+      "description": "Performance measurement unit (PMU) cycle counts per operation (ASK, COUNT, COMPARE, VALIDATE, SELECT)",
+      "required_fields": [
+        "operation",
+        "data_size",
+        "cycles",
+        "latency_ns",
+        "cache_misses",
+        "branch_misses",
+        "ipc"
+      ],
+      "validation_criteria": "All operations ≤8 ticks (≤2ns @ 4GHz)"
+    },
+    {
+      "id": "ev:weaver_checks",
+      "name": "Weaver Validation Results",
+      "status": "complete",
+      "location": "evidence/weaver_checks/",
+      "format": "text/yaml",
+      "machine_readable": true,
+      "prd_section": "9, 13",
+      "dflss_section": "12 (Observability)",
+      "collection_date": "2025-11-06",
+      "validation_command": "weaver registry check -r registry/",
+      "description": "Weaver semantic convention validation: registry schema + live telemetry checks",
+      "files": [
+        "registry_validation.txt",
+        "live_check_results.yaml",
+        "otel_metrics_sample.txt"
+      ],
+      "validation_status": "passed"
+    },
+    {
+      "id": "ev:policy_packs",
+      "name": "Policy Budget Configurations",
+      "status": "complete",
+      "location": "rust/knhk-validation/policies/",
+      "format": "text/rego",
+      "machine_readable": true,
+      "prd_section": "5, 8, 12",
+      "dflss_section": "12 (CTQ-1, CTQ-4)",
+      "files": [
+        "performance_budget.rego",
+        "receipt_validation.rego",
+        "guard_constraints.rego"
+      ],
+      "description": "Rego policy definitions: tick budget (8 ticks), SLO thresholds (R1/W1/C1), receipt validation",
+      "policy_definitions": {
+        "tick_budget": 8,
+        "r1_slo_ns": 1000,
+        "w1_slo_ns": 1000000,
+        "c1_slo_ns": 100000000
+      },
+      "validation_status": "enforced"
+    },
+    {
+      "id": "ev:receipts_root",
+      "name": "Lockchain Receipt Roots",
+      "status": "stub",
+      "location": "evidence/receipts_root/",
+      "format": "application/json",
+      "machine_readable": true,
+      "prd_section": "7, 9, 12",
+      "dflss_section": "12 (CTQ-5)",
+      "collection_procedure": "evidence/receipts_root/collection_procedure.md",
+      "description": "Sample receipts, Merkle roots, provenance validation: hash(A) = hash(μ(O))",
+      "required_files": [
+        "sample_receipts.json",
+        "merkle_roots.json",
+        "verification_logs.txt"
+      ],
+      "validation_criteria": "100% receipt coverage, continuous chain, no gaps"
+    },
+    {
+      "id": "ev:canary_report",
+      "name": "Canary Deployment Report",
+      "status": "future",
+      "location": "evidence/canary_report/",
+      "format": "text/markdown",
+      "machine_readable": false,
+      "prd_section": "14, 17",
+      "dflss_section": "12 (Acceptance)",
+      "depends_on": "production_deployment",
+      "description": "Canary deployment: shadow mode → staged enforce → production validation",
+      "required_sections": [
+        "Golden path selection",
+        "Shadow mode results",
+        "Staged enforce metrics",
+        "Go/No-Go decision",
+        "SLO compliance",
+        "Error budget tracking"
+      ]
+    },
+    {
+      "id": "ev:finance_oom",
+      "name": "Financial OOM Analysis",
+      "status": "future",
+      "location": "evidence/finance_oom/",
+      "format": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "machine_readable": true,
+      "prd_section": "12",
+      "dflss_section": "12 (Financials)",
+      "depends_on": "measure_phase_baseline",
+      "description": "Order of magnitude financial analysis: baseline costs, savings projections, NPV, payback period",
+      "required_worksheets": [
+        "Baseline Metrics",
+        "Savings Projections",
+        "Implementation Costs",
+        "NPV Calculation",
+        "Sensitivity Analysis"
+      ],
+      "target_savings": {
+        "middleware": "-50%",
+        "validation_code": "-70%",
+        "audit_prep": "-80%",
+        "incidents": "-60%"
+      }
+    }
+  ],
+  "dflss_charter_compliance": {
+    "approvals": {
+      "status": "pending",
+      "required": [
+        "Sponsor (EVP, AI Studio)",
+        "Process Owner (CIO)",
+        "Black Belt (Principal AI Engineer)"
+      ]
+    },
+    "problem_voc_baseline": {
+      "status": "partial",
+      "problem": "complete",
+      "voc": "complete",
+      "baseline": "pending_measure_phase"
+    },
+    "ctqs": {
+      "status": "complete",
+      "ctqs_defined": 7,
+      "smart_criteria": true,
+      "metric_owners": true,
+      "measurement_methods": true
+    },
+    "scope": {
+      "status": "complete",
+      "in_scope": [
+        "ERP/Order management",
+        "CRM entitlements",
+        "ATS gating",
+        "Supply chain",
+        "Data ingestion DQ",
+        "Identity/authorization",
+        "Finance controls"
+      ],
+      "out_of_scope": [
+        "Complex multi-domain joins",
+        "Heavy analytics",
+        "Long-running workflows"
+      ]
+    },
+    "financials": {
+      "status": "pending",
+      "framework_defined": true,
+      "baseline_required": true
+    },
+    "architecture_readiness": {
+      "status": "complete",
+      "sidecar": true,
+      "mtls": true,
+      "circuit_breaker": true,
+      "otel": true,
+      "lockchain": true
+    },
+    "ontology_policy_inputs": {
+      "status": "complete",
+      "schema_inventory": true,
+      "invariants_catalog": true,
+      "hook_generation": true
+    },
+    "risk_register": {
+      "status": "complete",
+      "risks_identified": 5,
+      "mitigations_defined": true
+    },
+    "governance": {
+      "status": "complete",
+      "change_control": true,
+      "approval_process": true,
+      "dr_ha": true
+    },
+    "dashboards": {
+      "status": "partial",
+      "metrics_defined": true,
+      "live_dashboards": "pending_production"
+    },
+    "communications": {
+      "status": "pending",
+      "stakeholder_map": false,
+      "cadence_defined": false,
+      "pilot_runbook": false,
+      "training_plan": false
+    },
+    "acceptance_checklist": {
+      "status": "defined",
+      "criteria_defined": true,
+      "validation_pending": true
+    }
+  },
+  "collection_priority": {
+    "week_1": [
+      "ev:pmu_bench",
+      "ev:receipts_root",
+      "Weaver live-check"
+    ],
+    "weeks_2_4": [
+      "Baseline measurements (Measure phase)",
+      "Canary deployment plan",
+      "Financial OOM framework"
+    ],
+    "post_deployment": [
+      "ev:canary_report",
+      "ev:finance_oom",
+      "Acceptance validation"
+    ]
+  },
+  "references": {
+    "evidence_inventory": "docs/V1-EVIDENCE-INVENTORY.md",
+    "prd": "docs/8BEAT-PRD.txt",
+    "dflss_charter": "docs/DFLSS_PROJECT_CHARTER.md",
+    "performance_compliance": "docs/performance-compliance-report.md",
+    "weaver_registry": "registry/",
+    "policy_packs": "rust/knhk-validation/policies/"
+  }
+}

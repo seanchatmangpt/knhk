@@ -19,7 +19,7 @@ endif
 INCLUDES = -Iinclude -Isrc
 
 # Library sources
-LIB_SRCS = src/knhk.c src/simd.c src/rdf.c src/core.c src/clock.c src/aot/aot_guard.c
+LIB_SRCS = src/knhk.c src/simd.c src/rdf.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB = libknhk.a
 
@@ -31,6 +31,7 @@ TEST_RECEIPTS = ../tests/chicago_receipts
 TEST_CONSTRUCT8 = ../tests/chicago_construct8
 TEST_CONSTRUCT8_PIPELINE = ../tests/chicago_construct8_pipeline
 TEST_BATCH = ../tests/chicago_batch
+TEST_BRANCHLESS = ../tests/chicago_branchless_test
 TEST_GUARDS = ../tests/chicago_guards
 TEST_INTEGRATION = ../tests/chicago_integration
 TEST_INTEGRATION_V2 = ../tests/chicago_integration_v2
@@ -59,11 +60,12 @@ TEST_PERF_V04 = ../tests/chicago_performance_v04
 TEST_WARM_PATH = ../tests/chicago_warm_path
 TEST_CONFIG_V05 = ../tests/chicago_config
 TEST_COLD_PATH_UNRDF = chicago_cold_path_unrdf_integration
+TEST_8BEAT = ../tests/chicago_8beat_test
 
 # Rust unrdf integration library
 RUST_UNRDF_LIB = ../rust/knhk-unrdf/target/release/libknhk_unrdf.a
 
-.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-warm-path test-config-v05 test-cold-path-unrdf validate-v0.4.0 lib bench
+.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-warm-path test-config-v05 test-cold-path-unrdf test-8beat validate-v0.4.0 lib bench
 
 all: $(BENCH)
 
@@ -100,6 +102,9 @@ $(TEST_CONSTRUCT8_PIPELINE): tests/chicago_construct8_pipeline.c $(LIB)
 
 $(TEST_BATCH): tests/chicago_batch.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) $< -o $@ -L. -lknhk $(RAPTOR_LIBS)
+
+$(TEST_BRANCHLESS): ../tests/chicago_branchless_test.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_branchless_test.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 $(TEST_GUARDS): tests/chicago_guards.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) $< -o $@ -L. -lknhk $(RAPTOR_LIBS)
@@ -157,6 +162,10 @@ $(TEST_WARM_PATH): tests/chicago_warm_path.c $(LIB)
 # v0.5.0 Configuration tests
 $(TEST_CONFIG_V05): tests/chicago_config.c
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
+
+# 8-Beat Epoch System tests
+$(TEST_8BEAT): tests/chicago_8beat_test.c tests/chicago_8beat_beat.c tests/chicago_8beat_ring.c tests/chicago_8beat_fiber.c tests/chicago_8beat_integration.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_8beat_test.c tests/chicago_8beat_beat.c tests/chicago_8beat_ring.c tests/chicago_8beat_fiber.c tests/chicago_8beat_integration.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 # CLI noun Chicago TDD tests
 $(TEST_CLI_BOOT): tests/chicago_cli_boot.c $(LIB)
@@ -293,6 +302,10 @@ test-config: $(TEST_CONFIG)
 test-config-v05: $(TEST_CONFIG_V05)
 	@echo "Running v0.5.0 Configuration Tests..."
 	@./$(TEST_CONFIG_V05)
+
+test-8beat: $(TEST_8BEAT)
+	@echo "Running 8-Beat Epoch System Tests..."
+	@./$(TEST_8BEAT)
 
 test-warm-path: $(TEST_WARM_PATH)
 	@echo "Running Warm Path Tests..."

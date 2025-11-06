@@ -136,7 +136,7 @@ impl EmitStage {
 
                         if retry_action.use_cache {
                             // Degrade to cached answer
-                            if let Some(cached_action) = cached_answer {
+                            if let Some(_cached_action) = cached_answer {
                                 // Use cached action instead of retrying
                                 // Log cache hit and continue with cached action
                                 use knhk_otel::{Tracer, Metric, MetricValue};
@@ -179,11 +179,11 @@ impl EmitStage {
                         // C1 failure: async finalize (non-blocking)
                         // Store C1FailureAction for caller to schedule async operation
                         match handle_c1_failure(&action.id) {
-                            Ok(c1_action) => {
+                            Ok(_c1_action) => {
                                 // C1FailureAction indicates async finalization needed
                                 // Caller is responsible for scheduling async operation
+                                // Note: Async queue processing planned for v1.0
                                 // For now, log and continue (non-blocking behavior)
-                                // In production, this would be queued for async processing
                             }
                             Err(e) => {
                                 return Err(PipelineError::C1FailureError(e));

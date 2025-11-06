@@ -221,6 +221,7 @@ pub struct IngestResult {
     pub metadata: BTreeMap<String, String>,
 }
 
+#[derive(Clone)]
 pub struct RawTriple {
     pub subject: String,
     pub predicate: String,

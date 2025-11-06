@@ -15,6 +15,9 @@
 #include "knhk/admission.h"  // Admission control (R1/W1/C1 routing)
 #include "knhk/mphf.h"       // Minimal Perfect Hash Function cache
 #include "knhk/preload.h"    // Predictive preloading for L1 cache
+#include "knhk/beat.h"       // 8-beat epoch scheduler
+#include "knhk/ring.h"       // Ring buffers (Δ-ring input, A-ring output)
+#include "knhk/fiber.h"      // Fiber execution interface
 
 #include "aot/aot_guard.h"
 

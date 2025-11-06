@@ -11,17 +11,16 @@ pub mod health;
 pub mod client;
 pub mod server;
 pub mod config;
-// TODO: Fix service.rs - has proto schema mismatches and missing dependencies
-// pub mod service;
+pub mod beat_admission; // Beat-driven admission for 8-beat epoch
+pub mod service; // gRPC service with beat-driven admission
 
 pub use error::{SidecarError, SidecarResult};
 pub use server::SidecarServer;
 pub use client::SidecarClient;
 pub use config::SidecarConfig;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::process::Child;
-use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
 /// Run the sidecar server with Weaver live-check integration
@@ -266,6 +265,62 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     // Create health checker
     let health = Arc::new(HealthChecker::new());
 
+    // Create beat scheduler for 8-beat epoch system
+    use knhk_etl::beat_scheduler::BeatScheduler;
+    let beat_scheduler = Arc::new(Mutex::new(
+        BeatScheduler::new(
+            config.beat_shard_count,
+            config.beat_domain_count,
+            config.beat_ring_capacity,
+        )
+        .map_err(|e| format!("Failed to create beat scheduler: {:?}", e))?
+    ));
+    
+    // Start beat advancement task (runs continuously)
+    // Note: Uses spawn_blocking since beat scheduler uses std::sync::Mutex
+    let beat_scheduler_clone = Arc::clone(&beat_scheduler);
+    let beat_interval = Duration::from_millis(config.beat_advance_interval_ms);
+    tokio::spawn(async move {
+        loop {
+            let (tick, pulse) = tokio::task::spawn_blocking({
+                let scheduler = Arc::clone(&beat_scheduler_clone);
+                move || {
+                    match scheduler.lock() {
+                        Ok(mut scheduler) => scheduler.advance_beat(),
+                        Err(e) => {
+                            error!(error = %e, "Failed to lock beat scheduler");
+                            (0, false)
+                        }
+                    }
+                }
+            }).await.unwrap_or_else(|e| {
+                error!(error = %e, "Beat advancement task panicked");
+                (0, false)
+            });
+            
+            if pulse {
+                info!(cycle = tick / 8, "Beat pulse - cycle commit boundary");
+            }
+            
+            // Sleep for beat interval (in production, would use precise timing)
+            sleep(beat_interval).await;
+        }
+    });
+    
+    info!(
+        shards = config.beat_shard_count,
+        domains = config.beat_domain_count,
+        ring_capacity = config.beat_ring_capacity,
+        "Beat scheduler initialized"
+    );
+
+    // Create beat admission manager
+    use crate::beat_admission::BeatAdmission;
+    let beat_admission = Arc::new(BeatAdmission::new(
+        Arc::clone(&beat_scheduler),
+        0, // default_domain_id
+    ));
+
     // Create client
     let mut client_config = crate::client::ClientConfig::default();
     client_config.warm_orchestrator_url = std::env::var("KGC_SIDECAR_CLIENT_WARM_ORCHESTRATOR_URL")
@@ -292,15 +347,18 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             cert_file: config.tls_cert_path.clone().unwrap_or_default(),
             key_file: config.tls_key_path.clone().unwrap_or_default(),
             ca_file: config.tls_ca_path.clone(),
+            mtls_enabled: false, // mTLS not enabled by default
         },
     };
 
-    // Create and start server
-    let server = SidecarServer::new(
+    // Create and start server with beat admission
+    let server = SidecarServer::new_with_weaver(
         server_config,
         client,
         Arc::clone(&metrics),
         Arc::clone(&health),
+        weaver_endpoint.clone(),
+        Some(beat_admission),
     ).await
         .map_err(|e| format!("Failed to create sidecar server: {}", e))?;
 
@@ -409,6 +467,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             cert_file: config.tls_cert_path.clone().unwrap_or_default(),
             key_file: config.tls_key_path.clone().unwrap_or_default(),
             ca_file: config.tls_ca_path.clone(),
+            mtls_enabled: false, // mTLS not enabled by default
         },
     };
 

@@ -193,6 +193,9 @@ mod tests {
     fn create_test_receipt() -> Receipt {
         Receipt {
             id: "test_receipt".to_string(),
+            cycle_id: 0,
+            shard_id: 0,
+            hook_id: 0,
             ticks: 10, // Exceeds R1 budget
             lanes: 8,
             span_id: 12345,
@@ -228,6 +231,9 @@ mod tests {
         let delta = create_test_delta();
         let receipt = Receipt {
             id: "test_receipt".to_string(),
+            cycle_id: 0,
+            shard_id: 0,
+            hook_id: 0,
             ticks: 5, // Within budget
             lanes: 8,
             span_id: 12345,

@@ -1,7 +1,9 @@
 // core.c
 // Core evaluation logic (v1.0)
+// Updated to use branchless dispatch table
 
 #include "core.h"
+#include "knhk/eval.h"  // For knhk_eval_bool (branchless dispatch)
 #include "simd.h"
 #include "clock.h"
 #include <string.h>
@@ -22,46 +24,13 @@ void knhk_init_ctx(knhk_context_t *ctx, const uint64_t *S, const uint64_t *P, co
 }
 
 // Evaluate boolean query (ASK, COUNT>=k, ASK_SPO)
+// Now uses branchless dispatch table (zero branch mispredicts)
 int knhk_core_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t *ir)
 {
-  // cost model ≤2 atoms: (filter by p-run) + (reduce eq S==s)
-  if (ir->p != ctx->run.pred)
-    return 0;
-
-#if NROWS == 8
-  // Use specialized unrolled versions for NROWS=8
-  // For ASK SP queries, use optimized existence check
-  if (ir->op == KNHK_OP_ASK_SP)
-    return knhk_eq64_exists_8(ctx->S, ctx->run.off, ir->s);
-
-  // For ASK SPO queries, check both S and O
-  if (ir->op == KNHK_OP_ASK_SPO)
-    return knhk_eq64_spo_exists_8(ctx->S, ctx->O, ctx->run.off, ir->s, ir->o);
-
-  // For COUNT queries, use optimized count
-  if (ir->op == KNHK_OP_COUNT_SP_GE)
-  {
-    uint64_t cnt = knhk_eq64_count_8(ctx->S, ctx->run.off, ir->s);
-    return cnt >= ir->k;
-  }
-#else
-  // For ASK SP queries, use optimized existence check
-  if (ir->op == KNHK_OP_ASK_SP)
-    return knhk_eq64_exists_run(ctx->S, ctx->run.off, ctx->run.len, ir->s);
-
-  // For ASK SPO queries, check both S and O
-  if (ir->op == KNHK_OP_ASK_SPO)
-    return knhk_eq64_spo_exists_run(ctx->S, ctx->O, ctx->run.off, ctx->run.len, ir->s, ir->o);
-
-  // For COUNT queries, use optimized count
-  if (ir->op == KNHK_OP_COUNT_SP_GE)
-  {
-    uint64_t cnt = knhk_eq64_count_run(ctx->S, ctx->run.off, ctx->run.len, ir->s);
-    return cnt >= ir->k;
-  }
-#endif
-
-  return 0;
+  // Use branchless dispatch table via knhk_eval_bool()
+  // This eliminates if-else chains and achieves zero branch mispredicts
+  knhk_receipt_t rcpt = {0};
+  return knhk_eval_bool(ctx, ir, &rcpt);
 }
 
 // CONSTRUCT8: Fixed-template emit (≤8 triples)

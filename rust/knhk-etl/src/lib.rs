@@ -23,7 +23,8 @@ pub mod pipeline;
 pub mod runtime_class;
 pub mod slo_monitor;
 pub mod failure_actions;
-pub mod ring_buffer; // Lock-free ring buffers for 8-beat epoch
+pub mod ring_buffer;
+pub mod ring_conversion; // Lock-free ring buffers for 8-beat epoch
 pub mod fiber; // Cooperative fibers for deterministic execution
 pub mod park; // Park/escalate mechanism for over-budget work
 pub mod beat_scheduler; // 8-beat epoch scheduler
@@ -286,6 +287,9 @@ mod tests {
     fn test_receipt_merging() {
         let receipt1 = Receipt {
             id: "r1".to_string(),
+            cycle_id: 1,
+            shard_id: 1,
+            hook_id: 1,
             ticks: 4,
             lanes: 8,
             span_id: 0x1234,
@@ -294,6 +298,9 @@ mod tests {
         
         let receipt2 = Receipt {
             id: "r2".to_string(),
+            cycle_id: 2,
+            shard_id: 2,
+            hook_id: 2,
             ticks: 6,
             lanes: 8,
             span_id: 0x5678,
@@ -314,6 +321,9 @@ mod tests {
 
         let receipt = Receipt {
             id: "receipt1".to_string(),
+            cycle_id: 1,
+            shard_id: 1,
+            hook_id: 1,
             ticks: 4,
             lanes: 8,
             span_id: 0x1234,

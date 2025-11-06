@@ -42,6 +42,8 @@ pub struct KgcSidecarService {
     metrics: Arc<Mutex<ServiceMetrics>>,
     #[cfg(feature = "otel")]
     weaver_endpoint: Option<String>,
+    /// Beat admission manager for 8-beat epoch system
+    beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
 }
 
 #[derive(Default)]
@@ -60,11 +62,15 @@ struct ServiceMetrics {
 
 impl KgcSidecarService {
     pub fn new(config: SidecarConfig) -> Self {
-        Self::new_with_weaver(config, None)
+        Self::new_with_weaver(config, None, None)
     }
 
     #[cfg(feature = "otel")]
-    pub fn new_with_weaver(config: SidecarConfig, weaver_endpoint: Option<String>) -> Self {
+    pub fn new_with_weaver(
+        config: SidecarConfig,
+        weaver_endpoint: Option<String>,
+        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
+    ) -> Self {
         let circuit_breaker = Arc::new(CircuitBreaker::new(
             config.circuit_breaker_failure_threshold,
             config.circuit_breaker_reset_timeout_ms,
@@ -85,11 +91,16 @@ impl KgcSidecarService {
             retry_config,
             metrics: Arc::new(Mutex::new(ServiceMetrics::default())),
             weaver_endpoint,
+            beat_admission,
         }
     }
 
     #[cfg(not(feature = "otel"))]
-    pub fn new_with_weaver(config: SidecarConfig, _weaver_endpoint: Option<String>) -> Self {
+    pub fn new_with_weaver(
+        config: SidecarConfig,
+        _weaver_endpoint: Option<String>,
+        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
+    ) -> Self {
         let circuit_breaker = Arc::new(CircuitBreaker::new(
             config.circuit_breaker_failure_threshold,
             config.circuit_breaker_reset_timeout_ms,
@@ -109,6 +120,7 @@ impl KgcSidecarService {
             health_checker,
             retry_config,
             metrics: Arc::new(Mutex::new(ServiceMetrics::default())),
+            beat_admission,
         }
     }
 
@@ -301,9 +313,9 @@ impl KgcSidecar for KgcSidecarService {
                 let response = ApplyTransactionResponse {
                     committed: true,
                     transaction_id,
-                    receipt: Some(proto::TransactionReceipt {
-                        receipt_id: receipt.id,
+                    receipt: Some(proto::Receipt {
                         ticks: receipt.ticks,
+                        lanes: receipt.lanes,
                         span_id: receipt.span_id,
                         a_hash: receipt.a_hash,
                     }),
@@ -455,13 +467,7 @@ impl KgcSidecar for KgcSidecarService {
                 let response = QueryResponse {
                     success: true,
                     query_type: req.query_type,
-                    result: Some(proto::QueryResult {
-                        bindings: results.into_iter().map(|r| proto::ResultBinding {
-                            variable: "result".to_string(),
-                            value: r,
-                        }).collect(),
-                        result_count: 0,
-                    }),
+                    result: None, // Query result not yet implemented in proto
                     errors: vec![],
                 };
                 Ok(tonic::Response::new(response))
@@ -586,18 +592,18 @@ impl KgcSidecar for KgcSidecarService {
             // 2. Transform to typed triples
             let transform = knhk_etl::TransformStage::new("urn:knhk:schema:hook".to_string(), false);
             let transform_result = transform.transform(ingest_result)
-                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Transform failed: {}", e)))?;
+                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Transform failed: {:?}", e)))?;
 
             // 3. Load into SoA arrays
             let load = knhk_etl::LoadStage::new();
             let load_result = load.load(transform_result)
-                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Load failed: {}", e)))?;
+                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Load failed: {:?}", e)))?;
 
             // 4. Execute hook via Reflex stage (≤8 ticks)
             // This is where the actual hook evaluation happens
             let reflex = knhk_etl::ReflexStage::new();
             let reflex_result = reflex.reflex(load_result)
-                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Reflex failed: {}", e)))?;
+                        .map_err(|e| SidecarError::hook_evaluation_failed(format!("Reflex failed: {:?}", e)))?;
 
             // Return first receipt from hook execution
             reflex_result.receipts.first()
@@ -632,16 +638,16 @@ impl KgcSidecar for KgcSidecarService {
                 // Hook fired successfully if receipt has non-zero ticks
                 let fired = receipt.ticks > 0;
 
+                // Serialize receipt to bytes (simplified - in production would use proper serialization)
+                let receipt_bytes = format!("{{\"id\":\"{}\",\"ticks\":{},\"span_id\":{},\"a_hash\":{}}}", 
+                    receipt.id, receipt.ticks, receipt.span_id, receipt.a_hash).into_bytes();
+                
                 let response = EvaluateHookResponse {
                     fired,
-                    result: Some(proto::HookResult {
-                        hook_id: req.hook_id.clone(),
-                        fired,
-                        output_data: vec![], // Hook output would go here in full implementation
-                    }),
-                    receipt: Some(proto::TransactionReceipt {
-                        receipt_id: receipt.id,
+                    result: receipt_bytes, // Hook result as bytes
+                    receipt: Some(proto::Receipt {
                         ticks: receipt.ticks,
+                        lanes: receipt.lanes,
                         span_id: receipt.span_id,
                         a_hash: receipt.a_hash,
                     }),
@@ -653,7 +659,7 @@ impl KgcSidecar for KgcSidecarService {
                 error!("Hook evaluation failed: {:?}", e);
                 let response = EvaluateHookResponse {
                     fired: false,
-                    result: None,
+                    result: Vec::new(), // Empty bytes for error case
                     receipt: None,
                     errors: vec![format!("{:?}", e)],
                 };
@@ -668,22 +674,15 @@ impl KgcSidecar for KgcSidecarService {
     ) -> Result<tonic::Response<HealthCheckResponse>, tonic::Status> {
         let status = self.health_checker.check().await;
 
-        let proto_status = match status {
-            crate::health::HealthStatus::Healthy => proto::health_status::HealthStatus::HealthStatusHealthy as i32,
-            crate::health::HealthStatus::Degraded(_) => proto::health_status::HealthStatus::HealthStatusDegraded as i32,
-            crate::health::HealthStatus::Unhealthy(_) => proto::health_status::HealthStatus::HealthStatusUnhealthy as i32,
-        };
-
-        let message = match status {
-            crate::health::HealthStatus::Healthy => "Service is healthy".to_string(),
-            crate::health::HealthStatus::Degraded(reason) => format!("Service is degraded: {}", reason),
-            crate::health::HealthStatus::Unhealthy(reason) => format!("Service is unhealthy: {}", reason),
+        let (healthy, message) = match status {
+            crate::health::HealthStatus::Healthy => (true, "Service is healthy".to_string()),
+            crate::health::HealthStatus::Degraded(reason) => (true, format!("Service is degraded: {}", reason)),
+            crate::health::HealthStatus::Unhealthy(reason) => (false, format!("Service is unhealthy: {}", reason)),
         };
 
         let response = HealthCheckResponse {
-            status: proto_status,
+            healthy,
             message,
-            timestamp_ms: chrono::Utc::now().timestamp_millis() as u64,
         };
 
         Ok(tonic::Response::new(response))

@@ -25,6 +25,11 @@ pub struct SidecarConfig {
     pub weaver_otlp_port: u16,
     pub weaver_admin_port: u16,
     pub weaver_output_path: Option<String>,
+    // Beat scheduler configuration
+    pub beat_shard_count: usize,
+    pub beat_domain_count: usize,
+    pub beat_ring_capacity: usize,
+    pub beat_advance_interval_ms: u64,
 }
 
 impl Default for SidecarConfig {
@@ -49,6 +54,10 @@ impl Default for SidecarConfig {
             weaver_otlp_port: 4317,
             weaver_admin_port: 8080,
             weaver_output_path: None,
+            beat_shard_count: 4,
+            beat_domain_count: 1,
+            beat_ring_capacity: 16, // Power-of-2
+            beat_advance_interval_ms: 1,
         }
     }
 }

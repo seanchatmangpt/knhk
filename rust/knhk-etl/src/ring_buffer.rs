@@ -66,7 +66,7 @@ impl<T> RingBuffer<T> {
         // Store item at head position
         let slot = (head & self.mask) as usize;
         unsafe {
-            (*self.buffer.get())[slot] = Some(item);
+            (&mut *self.buffer.get())[slot] = Some(item);
         }
 
         // Advance head (release semantics for consumer visibility)
@@ -89,7 +89,7 @@ impl<T> RingBuffer<T> {
         // Load item from tail position
         let slot = (tail & self.mask) as usize;
         let item = unsafe {
-            (*self.buffer.get())[slot].take()
+            (&mut *self.buffer.get())[slot].take()
         }?;
 
         // Advance tail (release semantics for producer visibility)
@@ -132,7 +132,7 @@ impl<T> RingBuffer<T> {
         self.head.store(0, Ordering::Relaxed);
         self.tail.store(0, Ordering::Relaxed);
         unsafe {
-            for slot in (*self.buffer.get()).iter_mut() {
+            for slot in (&mut *self.buffer.get()).iter_mut() {
                 *slot = None;
             }
         }

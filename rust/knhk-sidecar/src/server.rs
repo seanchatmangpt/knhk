@@ -42,6 +42,8 @@ pub struct SidecarServer {
     health: Arc<HealthChecker>,
     #[cfg(feature = "otel")]
     weaver_endpoint: Option<String>,
+    /// Beat admission manager for 8-beat epoch system
+    beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
 }
 
 impl SidecarServer {
@@ -52,10 +54,10 @@ impl SidecarServer {
         metrics: Arc<MetricsCollector>,
         health: Arc<HealthChecker>,
     ) -> SidecarResult<Self> {
-        Self::new_with_weaver(server_config, client, metrics, health, None).await
+        Self::new_with_weaver(server_config, client, metrics, health, None, None).await
     }
 
-    /// Create new sidecar server with Weaver endpoint
+    /// Create new sidecar server with Weaver endpoint and beat admission
     #[cfg(feature = "otel")]
     pub async fn new_with_weaver(
         server_config: ServerConfig,
@@ -63,6 +65,7 @@ impl SidecarServer {
         metrics: Arc<MetricsCollector>,
         health: Arc<HealthChecker>,
         weaver_endpoint: Option<String>,
+        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
     ) -> SidecarResult<Self> {
         Ok(Self {
             config: server_config,
@@ -70,6 +73,7 @@ impl SidecarServer {
             metrics,
             health,
             weaver_endpoint,
+            beat_admission,
         })
     }
 
@@ -80,12 +84,14 @@ impl SidecarServer {
         metrics: Arc<MetricsCollector>,
         health: Arc<HealthChecker>,
         _weaver_endpoint: Option<String>,
+        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
     ) -> SidecarResult<Self> {
         Ok(Self {
             config: server_config,
             client: Arc::new(client),
             metrics,
             health,
+            beat_admission,
         })
     }
 
@@ -104,10 +110,22 @@ impl SidecarServer {
                 .map_err(|e| SidecarError::tls_error(format!("Failed to configure TLS: {}", e)))?;
         }
 
-        // TODO: Re-enable when service.rs is fixed
-        // For now, just return an error indicating service is not implemented
-        tracing::error!("Sidecar server service implementation is not available - service.rs needs to be fixed");
-        Err(SidecarError::internal_error("Service implementation not available - under construction".to_string()))
+        // Create service with beat admission
+        use crate::service::KgcSidecarService;
+        let service = KgcSidecarService::new_with_weaver(
+            crate::config::SidecarConfig::default(), // TODO: Pass actual config
+            self.weaver_endpoint.clone(),
+            self.beat_admission.clone(),
+        );
+
+        // Add service to server
+        server_builder
+            .add_service(crate::service::proto::kgc_sidecar_server::KgcSidecarServer::new(service))
+            .serve(addr)
+            .await
+            .map_err(|e| SidecarError::internal_error(format!("Server failed to start: {}", e)))?;
+
+        Ok(())
     }
 
     /// Handle execute transaction request

@@ -19,7 +19,11 @@ serde_json = { version = "1.0" }
 rdkafka = { version = "0.36" }
 
 [features]
-default = []
+default = ["std"]
+std = []
+grpc = []
+knhk-otel = []
+knhk-lockchain = []
 [dev-dependencies]
 # Test dependencies
 knhk-unrdf = { path = "../knhk-unrdf" }

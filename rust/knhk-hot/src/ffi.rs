@@ -68,20 +68,42 @@ pub struct Ir {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Receipt {
-    pub ticks: u32,    // ≤ 8
-    pub lanes: u32,    // SIMD lanes used
-    pub span_id: u64,  // OTEL-compatible id
-    pub a_hash: u64,   // fragment toward hash(A) = hash(μ(O))
+    pub cycle_id: u64,   // Beat cycle ID (from knhk_beat_next())
+    pub shard_id: u64,   // Shard identifier
+    pub hook_id: u64,    // Hook identifier
+    pub ticks: u32,      // Actual ticks used (≤8)
+    pub lanes: u32,      // SIMD lanes used
+    pub span_id: u64,    // OTEL-compatible span ID
+    pub a_hash: u64,     // hash(A) = hash(μ(O)) fragment
 }
 
 // FFI (μ-hot in C)
 #[link(name = "knhk")]
 extern "C" {
+    // Core evaluation functions
     pub fn knhk_init_ctx(ctx: *mut Ctx, S: *const u64, P: *const u64, O: *const u64);
     pub fn knhk_pin_run(ctx: *mut Ctx, run: Run);
     pub fn knhk_eval_bool(ctx: *const Ctx, ir: *mut Ir, rcpt: *mut Receipt) -> i32;
     pub fn knhk_eval_construct8(ctx: *const Ctx, ir: *mut Ir, rcpt: *mut Receipt) -> i32;
     pub fn knhk_eval_batch8(ctx: *const Ctx, irs: *mut Ir, n: usize, rcpts: *mut Receipt) -> i32;
+    
+    // 8-Beat system functions
+    pub fn knhk_beat_init();
+    pub fn knhk_beat_next() -> u64;
+    pub fn knhk_beat_tick(cycle: u64) -> u64;
+    pub fn knhk_beat_pulse(cycle: u64) -> u64;
+    pub fn knhk_beat_current() -> u64;
+    
+    // Fiber execution functions
+    pub fn knhk_fiber_execute(
+        ctx: *const Ctx,
+        ir: *mut Ir,
+        tick: u64,
+        cycle_id: u64,
+        shard_id: u64,
+        hook_id: u64,
+        receipt: *mut Receipt,
+    ) -> i32; // Returns knhk_fiber_result_t: 0=SUCCESS, 1=PARKED, -1=ERROR
 }
 
 // Safe wrapper (Σ, Λ, τ, H guards)
@@ -139,14 +161,111 @@ impl Engine {
     }
 }
 
+// 8-Beat system safe wrappers
+pub mod beat {
+    use super::*;
+    
+    /// Initialize beat scheduler (call once at startup)
+    pub fn init() {
+        unsafe {
+            knhk_beat_init();
+        }
+    }
+    
+    /// Advance to next cycle and return cycle value
+    /// Branchless: single atomic operation
+    pub fn next() -> u64 {
+        unsafe {
+            knhk_beat_next()
+        }
+    }
+    
+    /// Extract tick from cycle (0..7)
+    /// Branchless: bitwise mask operation
+    pub fn tick(cycle: u64) -> u64 {
+        unsafe {
+            knhk_beat_tick(cycle)
+        }
+    }
+    
+    /// Compute pulse signal (1 when tick==0, else 0)
+    /// Branchless: mask-based, no conditional branches
+    pub fn pulse(cycle: u64) -> u64 {
+        unsafe {
+            knhk_beat_pulse(cycle)
+        }
+    }
+    
+    /// Get current cycle without incrementing
+    pub fn current() -> u64 {
+        unsafe {
+            knhk_beat_current()
+        }
+    }
+}
+
+// Fiber execution safe wrappers
+pub mod fiber {
+    use super::*;
+    
+    /// Fiber execution result
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub enum FiberResult {
+        Success,
+        Parked,
+        Error,
+    }
+    
+    impl From<i32> for FiberResult {
+        fn from(value: i32) -> Self {
+            match value {
+                0 => FiberResult::Success,
+                1 => FiberResult::Parked,
+                _ => FiberResult::Error,
+            }
+        }
+    }
+    
+    /// Execute μ on ≤8 items at tick slot
+    /// Returns FiberResult and fills receipt with provenance information
+    pub fn execute(
+        ctx: &Ctx,
+        ir: &mut Ir,
+        tick: u64,
+        cycle_id: u64,
+        shard_id: u64,
+        hook_id: u64,
+        receipt: &mut Receipt,
+    ) -> FiberResult {
+        unsafe {
+            let result = knhk_fiber_execute(
+                ctx as *const Ctx,
+                ir as *mut Ir,
+                tick,
+                cycle_id,
+                shard_id,
+                hook_id,
+                receipt as *mut Receipt,
+            );
+            result.into()
+        }
+    }
+}
+
 // Receipt merge (Π ⊕)
 impl Receipt {
     pub fn merge(a: Receipt, b: Receipt) -> Receipt {
         Receipt {
-            ticks: a.ticks.max(b.ticks), // max ticks
-            lanes: a.lanes + b.lanes,     // sum lanes
-            span_id: a.span_id ^ b.span_id, // XOR merge
-            a_hash: a.a_hash ^ b.a_hash,  // ⊕ merge (XOR)
+            // Preserve identifiers from first receipt (deterministic ordering)
+            cycle_id: a.cycle_id,
+            shard_id: a.shard_id,
+            hook_id: a.hook_id,
+            // Merge metrics: max ticks, sum lanes
+            ticks: a.ticks.max(b.ticks),
+            lanes: a.lanes + b.lanes,
+            // Merge provenance: XOR (⊕ monoid)
+            span_id: a.span_id ^ b.span_id,
+            a_hash: a.a_hash ^ b.a_hash,
         }
     }
 }
@@ -157,9 +276,14 @@ mod tests {
 
     #[test]
     fn test_receipt_merge() {
-        let a = Receipt { ticks: 4, lanes: 8, span_id: 0x1234, a_hash: 0x5678, ..Default::default() };
-        let b = Receipt { ticks: 6, lanes: 8, span_id: 0xabcd, a_hash: 0xef00, ..Default::default() };
+        let a = Receipt { cycle_id: 42, shard_id: 1, hook_id: 100, ticks: 4, lanes: 8, span_id: 0x1234, a_hash: 0x5678 };
+        let b = Receipt { cycle_id: 43, shard_id: 2, hook_id: 200, ticks: 6, lanes: 8, span_id: 0xabcd, a_hash: 0xef00 };
         let merged = Receipt::merge(a, b);
+        // Preserve IDs from first receipt
+        assert_eq!(merged.cycle_id, 42);
+        assert_eq!(merged.shard_id, 1);
+        assert_eq!(merged.hook_id, 100);
+        // Merge metrics
         assert_eq!(merged.ticks, 6);
         assert_eq!(merged.lanes, 16);
         assert_eq!(merged.span_id, 0x1234 ^ 0xabcd);

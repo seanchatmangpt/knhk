@@ -256,6 +256,9 @@ impl ReflexStage {
         // Convert to ETL receipt format
         Ok(Receipt {
             id: format!("receipt_{}", hot_receipt.span_id),
+            cycle_id: hot_receipt.cycle_id,
+            shard_id: hot_receipt.shard_id,
+            hook_id: hot_receipt.hook_id,
             ticks: hot_receipt.ticks,
             lanes: hot_receipt.lanes,
             span_id: hot_receipt.span_id,
@@ -269,6 +272,9 @@ impl ReflexStage {
         if receipts.is_empty() {
             return Receipt {
                 id: "merged_receipt".to_string(),
+                cycle_id: 0,
+                shard_id: 0,
+                hook_id: 0,
                 ticks: 0,
                 lanes: 0,
                 span_id: 0,
@@ -278,6 +284,10 @@ impl ReflexStage {
 
         let mut merged = Receipt {
             id: "merged_receipt".to_string(),
+            // Preserve identifiers from first receipt (deterministic ordering)
+            cycle_id: receipts[0].cycle_id,
+            shard_id: receipts[0].shard_id,
+            hook_id: receipts[0].hook_id,
             ticks: receipts[0].ticks,
             lanes: receipts[0].lanes,
             span_id: receipts[0].span_id,
@@ -444,8 +454,11 @@ pub struct Action {
 #[derive(Debug, Clone)]
 pub struct Receipt {
     pub id: String,
-    pub ticks: u32,
-    pub lanes: u32,
-    pub span_id: u64,
-    pub a_hash: u64,
+    pub cycle_id: u64,   // Beat cycle ID (from knhk_beat_next())
+    pub shard_id: u64,   // Shard identifier
+    pub hook_id: u64,    // Hook identifier
+    pub ticks: u32,      // Actual ticks used (≤8)
+    pub lanes: u32,      // SIMD lanes used
+    pub span_id: u64,    // OTEL-compatible span ID
+    pub a_hash: u64,     // hash(A) = hash(μ(O)) fragment
 }

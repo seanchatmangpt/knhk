@@ -33,7 +33,7 @@ impl ParkCause {
 }
 
 /// Execution result from fiber
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum ExecutionResult {
     /// Execution completed successfully
     Completed {
@@ -90,12 +90,6 @@ pub struct ParkedDelta {
 }
 
 impl ParkManager {
-    /// Create new park manager
-    pub fn new() -> Self {
-        Self {
-            parked_deltas: Vec::new(),
-        }
-    }
 
     /// Park a delta (demote to W1)
     pub fn park(&mut self, delta: Vec<RawTriple>, receipt: Receipt, cause: ParkCause, cycle_id: u64, tick: u64) {
@@ -121,9 +115,12 @@ impl ParkManager {
     }
 }
 
-impl Default for ParkManager {
-    fn default() -> Self {
-        Self::new()
+impl ParkManager {
+    /// Create new park manager (replaces Default)
+    pub fn new() -> Self {
+        Self {
+            parked_deltas: Vec::new(),
+        }
     }
 }
 
@@ -147,6 +144,9 @@ mod tests {
     fn test_execution_result_completed() {
         let receipt = Receipt {
             id: "test".to_string(),
+            cycle_id: 0,
+            shard_id: 0,
+            hook_id: 0,
             ticks: 5,
             lanes: 1,
             span_id: 0,
@@ -167,6 +167,9 @@ mod tests {
     fn test_execution_result_parked() {
         let receipt = Receipt {
             id: "test".to_string(),
+            cycle_id: 0,
+            shard_id: 0,
+            hook_id: 0,
             ticks: 10,
             lanes: 1,
             span_id: 0,
@@ -190,6 +193,9 @@ mod tests {
 
         let receipt = Receipt {
             id: "test".to_string(),
+            cycle_id: 0,
+            shard_id: 0,
+            hook_id: 0,
             ticks: 10,
             lanes: 1,
             span_id: 0,
