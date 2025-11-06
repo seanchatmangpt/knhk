@@ -191,8 +191,10 @@ pub trait Connector {
     }
 }
 
-/// Connector errors
+/// Connector errors with structured diagnostics
+/// Inspired by Weaver's diagnostic system
 #[derive(Debug)]
+#[non_exhaustive] // Allow extensibility without breaking changes
 pub enum ConnectorError {
     ValidationFailed(String),
     SchemaMismatch(String),
@@ -200,6 +202,53 @@ pub enum ConnectorError {
     ParseError(String),
     IoError(String),
     NetworkError(String),
+    /// Authentication error (for connectors requiring auth)
+    AuthenticationError(String),
+    /// Rate limit error (for connectors with rate limits)
+    RateLimitError {
+        message: String,
+        retry_after_ms: Option<u64>,
+    },
+}
+
+impl ConnectorError {
+    /// Get error code for structured diagnostics
+    pub fn code(&self) -> &'static str {
+        match self {
+            ConnectorError::ValidationFailed(_) => "CONNECTOR_VALIDATION_FAILED",
+            ConnectorError::SchemaMismatch(_) => "CONNECTOR_SCHEMA_MISMATCH",
+            ConnectorError::GuardViolation(_) => "CONNECTOR_GUARD_VIOLATION",
+            ConnectorError::ParseError(_) => "CONNECTOR_PARSE_ERROR",
+            ConnectorError::IoError(_) => "CONNECTOR_IO_ERROR",
+            ConnectorError::NetworkError(_) => "CONNECTOR_NETWORK_ERROR",
+            ConnectorError::AuthenticationError(_) => "CONNECTOR_AUTHENTICATION_ERROR",
+            ConnectorError::RateLimitError { .. } => "CONNECTOR_RATE_LIMIT_ERROR",
+        }
+    }
+
+    /// Get error message
+    pub fn message(&self) -> &str {
+        match self {
+            ConnectorError::ValidationFailed(msg)
+            | ConnectorError::SchemaMismatch(msg)
+            | ConnectorError::GuardViolation(msg)
+            | ConnectorError::ParseError(msg)
+            | ConnectorError::IoError(msg)
+            | ConnectorError::NetworkError(msg)
+            | ConnectorError::AuthenticationError(msg) => msg,
+            ConnectorError::RateLimitError { message, .. } => message,
+        }
+    }
+
+    /// Check if error is retryable
+    pub fn is_retryable(&self) -> bool {
+        matches!(
+            self,
+            ConnectorError::NetworkError(_)
+                | ConnectorError::IoError(_)
+                | ConnectorError::RateLimitError { .. }
+        )
+    }
 }
 
 /// Circuit breaker state

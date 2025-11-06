@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = [
@@ -25,7 +25,7 @@ serde_json = { version = "1.0" }
 rdkafka = { version = "0.36", optional = true }
 
 [features]
-default = ["std"]
+default = ["std", "knhk-lockchain", "knhk-otel"]
 std = ["dep:reqwest"]
 grpc = []
 kafka = ["dep:rdkafka"]
@@ -33,3 +33,4 @@ knhk-lockchain = ["dep:knhk-lockchain"]
 knhk-otel = ["dep:knhk-otel"]
 [dev-dependencies]
 # Test dependencies
+knhk-unrdf = { path = "../knhk-unrdf" }

@@ -1,0 +1,108 @@
+# KNHK Warm Path Operation Telemetry Schema (W1 Operations)
+# Defines telemetry for operations with higher latency tolerance and cache degradation
+
+groups:
+  # Warm path attributes
+  - id: knhk.warm.attributes
+    type: attribute_group
+    brief: "W1 (warm path) specific attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.warm.cache_hit
+        type: boolean
+        stability: experimental
+        brief: "Whether cached result was used (W1 degradation)"
+        examples: [true, false]
+      - id: knhk.warm.retry_count
+        type: int
+        stability: experimental
+        brief: "Number of retry attempts"
+        examples: [0, 1, 3]
+      - id: knhk.warm.result_size
+        type: int
+        stability: experimental
+        brief: "Number of triples in result"
+        examples: [10, 100, 1000]
+
+  # CONSTRUCT8 span
+  - id: knhk.warm.construct
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "CONSTRUCT8 query (graph construction, W1 operation)"
+    note: "W1 operation with cache degradation on failure"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.operation.ticks
+      - ref: knhk.operation.success
+      - ref: knhk.warm.cache_hit
+      - ref: knhk.warm.retry_count
+      - ref: knhk.warm.result_size
+      - id: knhk.warm.pattern
+        type: string
+        stability: experimental
+        brief: "CONSTRUCT pattern template"
+        examples: ["CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }"]
+
+  # SELECT span
+  - id: knhk.warm.select
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "SELECT query (result set retrieval, W1 operation)"
+    note: "W1 operation with cache degradation on failure"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.operation.ticks
+      - ref: knhk.operation.success
+      - ref: knhk.warm.cache_hit
+      - ref: knhk.warm.retry_count
+      - ref: knhk.warm.result_size
+      - id: knhk.warm.variables
+        type: string
+        stability: experimental
+        brief: "SELECT variables (comma-separated)"
+        examples: ["?s,?p,?o"]
+      - id: knhk.warm.limit
+        type: int
+        stability: experimental
+        brief: "LIMIT clause value"
+        examples: [10, 100]
+
+  # Metrics
+  - id: metric.knhk.warm.latency
+    type: metric
+    metric_name: knhk.warm.latency
+    stability: experimental
+    brief: "Warm path operation latency"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: knhk.operation.name
+
+  - id: metric.knhk.warm.cache_hits
+    type: metric
+    metric_name: knhk.warm.cache_hits
+    stability: experimental
+    brief: "W1 cache hits (degradation to cached responses)"
+    instrument: counter
+    unit: "1"
+    attributes:
+      - ref: knhk.operation.name
+
+  - id: metric.knhk.w1.cache_hit
+    type: metric
+    metric_name: knhk.w1.cache_hit
+    stability: experimental
+    brief: "W1 cache hit from ETL emit stage"
+    instrument: counter
+    unit: "1"
+    note: "Recorded when W1 operation degrades to cached response"
+    attributes:
+      - id: knhk.w1.action_id
+        type: string
+        stability: experimental
+        brief: "Action ID that used cached response"
+        examples: ["action_123", "webhook_action_456"]

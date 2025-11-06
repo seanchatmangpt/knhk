@@ -400,14 +400,14 @@ impl EmitStage {
             "payload": action.payload,
         }).to_string();
         
-        // Send message to Kafka topic (blocking)
-        let record = BaseRecord::to(topic)
-            .key(&action.id)
-            .payload(&payload);
-        
         // Poll for delivery
         let mut last_error = None;
         for attempt in 0..self.max_retries {
+            // Recreate record for each retry attempt (BaseRecord doesn't implement Copy)
+            let record = BaseRecord::to(topic)
+                .key(&action.id)
+                .payload(&payload);
+            
             match producer.send(record) {
                 Ok(_) => {
                     // Poll for delivery confirmation

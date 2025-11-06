@@ -11,7 +11,7 @@ use std::io::BufRead;
 
 use oxigraph::store::Store;
 use oxigraph::io::RdfFormat;
-use oxigraph::model::{Term, NamedOrBlankNode};
+use oxigraph::model::{Term, Quad, NamedOrBlankNode, Triple};
 use oxigraph::sparql::{QueryResults, Query};
 
 use crate::error::PipelineError;
@@ -88,8 +88,16 @@ impl IngestStage {
             for triple_result in triples_iter {
                 let triple = triple_result
                     .map_err(|e| PipelineError::IngestError(format!("Failed to read triple: {}", e)))?;
-
-                let raw = Self::convert_triple(&triple)?;
+                
+                // Convert Triple to Quad (add default graph)
+                let quad = Quad {
+                    subject: triple.subject.clone(),
+                    predicate: triple.predicate.clone(),
+                    object: triple.object.clone(),
+                    graph_name: oxigraph::model::GraphName::DefaultGraph,
+                };
+                
+                let raw = Self::convert_quad(&quad)?;
                 triples.push(raw);
             }
         }
@@ -128,8 +136,16 @@ impl IngestStage {
             for triple_result in triples_iter {
                 let triple = triple_result
                     .map_err(|e| PipelineError::IngestError(format!("Failed to read triple: {}", e)))?;
-
-                let raw = Self::convert_triple(&triple)?;
+                
+                // Convert Triple to Quad (add default graph)
+                let quad = Quad {
+                    subject: triple.subject.clone(),
+                    predicate: triple.predicate.clone(),
+                    object: triple.object.clone(),
+                    graph_name: oxigraph::model::GraphName::DefaultGraph,
+                };
+                
+                let raw = Self::convert_quad(&quad)?;
                 triples.push(raw);
             }
         }
@@ -137,13 +153,13 @@ impl IngestStage {
         Ok(triples)
     }
 
-    /// Convert oxigraph::model::Triple to RawTriple
-    fn convert_triple(triple: &oxigraph::model::Triple) -> Result<RawTriple, PipelineError> {
+    /// Convert oxigraph::model::Quad to RawTriple
+    fn convert_quad(quad: &Quad) -> Result<RawTriple, PipelineError> {
         Ok(RawTriple {
-            subject: Self::named_or_blank_to_string(&triple.subject)?,
-            predicate: triple.predicate.as_str().to_string(),
-            object: Self::term_to_string(&triple.object)?,
-            graph: None,
+            subject: Self::named_or_blank_to_string(&quad.subject)?,
+            predicate: quad.predicate.as_str().to_string(),
+            object: Self::term_to_string(&quad.object)?,
+            graph: Some(Self::graph_name_to_string(&quad.graph_name)?),
         })
     }
 

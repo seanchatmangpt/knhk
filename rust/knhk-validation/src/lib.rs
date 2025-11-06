@@ -7,6 +7,21 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+#[cfg(feature = "policy-engine")]
+pub mod policy_engine;
+
+#[cfg(feature = "policy-engine")]
+pub mod policy;
+
+#[cfg(feature = "diagnostics")]
+pub mod diagnostics;
+
+#[cfg(feature = "schema-resolution")]
+pub mod resolved_schema;
+
+#[cfg(feature = "streaming")]
+pub mod streaming;
+
 pub struct ValidationResult {
     pub passed: bool,
     pub message: String,
@@ -210,6 +225,12 @@ pub mod property_validation {
 pub mod performance_validation {
     use super::*;
 
+    #[cfg(feature = "policy-engine")]
+    use crate::policy_engine::{PolicyEngine, PolicyViolation};
+
+    #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
+    use crate::diagnostics::{Diagnostic, performance_budget_violation};
+
     pub fn validate_hot_path_performance() -> ValidationResult {
         use knhk_hot::{Engine, Op, Ir, Receipt, Run};
         
@@ -221,11 +242,97 @@ pub mod performance_validation {
         }
     }
 
+    #[cfg(feature = "policy-engine")]
+    pub fn validate_hot_path_performance_with_policy(ticks: u32) -> ValidationResult {
+        let engine = PolicyEngine::new();
+        match engine.validate_performance_budget(ticks) {
+            Ok(()) => ValidationResult {
+                passed: true,
+                message: format!("Hot path performance validated: {} ticks ≤ 8", ticks),
+            },
+            Err(violation) => ValidationResult {
+                passed: false,
+                message: violation.message().to_string(),
+            },
+        }
+    }
+
+    #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
+    pub fn validate_hot_path_performance_with_diagnostics(ticks: u32) -> (ValidationResult, Option<Diagnostic>) {
+        let engine = PolicyEngine::new();
+        match engine.validate_performance_budget(ticks) {
+            Ok(()) => (
+                ValidationResult {
+                    passed: true,
+                    message: format!("Hot path performance validated: {} ticks ≤ 8", ticks),
+                },
+                None,
+            ),
+            Err(violation) => {
+                let diagnostic = performance_budget_violation(ticks, 8);
+                (
+                    ValidationResult {
+                        passed: false,
+                        message: violation.message().to_string(),
+                    },
+                    Some(diagnostic),
+                )
+            }
+        }
+    }
+
     pub fn validate_cli_latency() -> ValidationResult {
         // CLI commands should complete in <100ms
         ValidationResult {
             passed: true,
             message: "CLI latency validated".to_string(),
+        }
+    }
+}
+
+#[cfg(feature = "policy-engine")]
+pub mod guard_validation {
+    use super::*;
+    use crate::policy_engine::{PolicyEngine, PolicyViolation};
+
+    #[cfg(feature = "diagnostics")]
+    use crate::diagnostics::{Diagnostic, Diagnostics, guard_constraint_violation};
+
+    pub fn validate_guard_constraint(run_len: u64) -> ValidationResult {
+        let engine = PolicyEngine::new();
+        match engine.validate_guard_constraint(run_len) {
+            Ok(()) => ValidationResult {
+                passed: true,
+                message: format!("Guard constraint validated: run_len {} ≤ 8", run_len),
+            },
+            Err(violation) => ValidationResult {
+                passed: false,
+                message: violation.message().to_string(),
+            },
+        }
+    }
+
+    #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
+    pub fn validate_guard_constraint_with_diagnostics(run_len: u64) -> (ValidationResult, Option<Diagnostic>) {
+        let engine = PolicyEngine::new();
+        match engine.validate_guard_constraint(run_len) {
+            Ok(()) => (
+                ValidationResult {
+                    passed: true,
+                    message: format!("Guard constraint validated: run_len {} ≤ 8", run_len),
+                },
+                None,
+            ),
+            Err(violation) => {
+                let diagnostic = guard_constraint_violation(run_len, 8);
+                (
+                    ValidationResult {
+                        passed: false,
+                        message: violation.message().to_string(),
+                    },
+                    Some(diagnostic),
+                )
+            }
         }
     }
 }

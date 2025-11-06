@@ -2,6 +2,8 @@
 
 This document describes the integration of [OpenTelemetry Weaver](https://github.com/open-telemetry/weaver) live-check functionality into the KNHK OTEL crate.
 
+> **See also**: [Weaver Analysis and Learnings](WEAVER_ANALYSIS_AND_LEARNINGS.md) - Architectural patterns and design principles learned from Weaver's codebase
+
 ## Overview
 
 Weaver live-check validates telemetry data against semantic conventions, ensuring compliance with OpenTelemetry standards and custom schemas. This integration allows KNHK to:

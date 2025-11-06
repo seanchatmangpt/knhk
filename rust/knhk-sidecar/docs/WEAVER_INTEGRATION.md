@@ -4,6 +4,8 @@
 
 The KNHK Sidecar integrates with Weaver.ai live-check for semantic convention validation of OpenTelemetry telemetry. This ensures that all telemetry emitted by the sidecar conforms to OpenTelemetry semantic conventions.
 
+> **See also**: [Weaver Analysis and Learnings](../../../docs/WEAVER_ANALYSIS_AND_LEARNINGS.md) - Architectural patterns and design principles learned from Weaver's codebase
+
 The integration includes:
 - **Automatic binary availability checking** - Verifies Weaver is installed before starting
 - **Process health monitoring** - Background task monitors Weaver process health every 5 seconds

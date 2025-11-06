@@ -1,10 +1,6 @@
 // rust/knhk-etl/tests/failure_actions_test.rs
 // Tests for failure actions per runtime class
 
-extern crate alloc;
-use alloc::string::ToString;
-use alloc::vec;
-
 use knhk_etl::failure_actions::{handle_r1_failure, handle_w1_failure, handle_c1_failure};
 use knhk_etl::load::{LoadResult, SoAArrays, PredRun};
 use knhk_etl::reflex::Receipt;

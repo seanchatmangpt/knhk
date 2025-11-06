@@ -1168,7 +1168,7 @@ pub fn generate_span_id() -> u64 {
 }
 
 /// Get current timestamp in milliseconds
-fn get_timestamp_ms() -> u64 {
+pub fn get_timestamp_ms() -> u64 {
     #[cfg(feature = "std")]
     {
         SystemTime::now()

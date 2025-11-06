@@ -7,7 +7,8 @@ use crate::batch::BatchConfig;
 use crate::tls::{TlsConfig, create_tls_server_config};
 use crate::metrics::{MetricsCollector, LatencyTimer};
 use crate::health::HealthChecker;
-use crate::service::KgcSidecarService;
+// TODO: Re-enable when service.rs is fixed
+// use crate::service::KgcSidecarService;
 use crate::config::SidecarConfig;
 
 /// Server configuration
@@ -103,36 +104,10 @@ impl SidecarServer {
                 .map_err(|e| SidecarError::TlsError(format!("Failed to configure TLS: {}", e)))?;
         }
 
-        // Register health component
-        self.health.register_component("warm_orchestrator".to_string());
-        self.health.update_component(
-            "warm_orchestrator",
-            crate::health::HealthStatus::Healthy,
-            "Connected".to_string(),
-        );
-
-        // Create service implementation
-        // Use default config for service (can be enhanced to pass config)
-        let service_config = SidecarConfig::default();
-        #[cfg(feature = "otel")]
-        let service = KgcSidecarService::new_with_weaver(service_config, self.weaver_endpoint.clone());
-        #[cfg(not(feature = "otel"))]
-        let service = KgcSidecarService::new(service_config);
-
-        // Include generated proto code
-        use crate::service::proto::kgc_sidecar_server::KgcSidecarServer;
-
-        tracing::info!("Sidecar server starting on {}", addr);
-        
-        // Start the gRPC server
-        server_builder
-            .add_service(KgcSidecarServer::new(service))
-            .serve(addr)
-            .await
-            .map_err(|e| SidecarError::NetworkError(format!("Failed to start server: {}", e)))?;
-
-        tracing::info!("Sidecar server started successfully on {}", addr);
-        Ok(())
+        // TODO: Re-enable when service.rs is fixed
+        // For now, just return an error indicating service is not implemented
+        tracing::error!("Sidecar server service implementation is not available - service.rs needs to be fixed");
+        Err(SidecarError::InternalError("Service implementation not available - under construction".to_string()))
     }
 
     /// Handle execute transaction request
@@ -159,10 +134,18 @@ impl SidecarServer {
 
     /// Handle health check request
     pub fn handle_health_check(&self, check_type: String) -> (bool, String) {
-        match check_type.as_str() {
+        use crate::health::HealthStatus;
+
+        let status = match check_type.as_str() {
             "liveness" => self.health.check_liveness(),
             "readiness" => self.health.check_readiness(),
             _ => self.health.check_readiness(),
+        };
+
+        match status {
+            HealthStatus::Healthy => (true, "Service is healthy".to_string()),
+            HealthStatus::Degraded(reason) => (true, format!("Service is degraded: {}", reason)),
+            HealthStatus::Unhealthy(reason) => (false, format!("Service is unhealthy: {}", reason)),
         }
     }
 

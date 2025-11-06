@@ -168,3 +168,37 @@ impl Clone for SidecarCircuitBreaker {
     }
 }
 
+/// Simple circuit breaker for service use (without endpoint tracking)
+pub struct CircuitBreaker {
+    inner: Arc<Mutex<ConnectorCircuitBreaker>>,
+}
+
+impl CircuitBreaker {
+    /// Create new circuit breaker
+    pub fn new(failure_threshold: u32, reset_timeout_ms: u64) -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(
+                ConnectorCircuitBreaker::new(failure_threshold, reset_timeout_ms)
+            )),
+        }
+    }
+
+    /// Check if circuit breaker allows calls
+    pub fn is_open(&self) -> bool {
+        if let Ok(cb) = self.inner.lock() {
+            matches!(cb.state(), CircuitBreakerState::Open)
+        } else {
+            false // Assume closed if lock fails
+        }
+    }
+
+    /// Get current circuit breaker state
+    pub fn state(&self) -> CircuitBreakerState {
+        if let Ok(cb) = self.inner.lock() {
+            cb.state().clone()
+        } else {
+            CircuitBreakerState::Closed // Default to closed if lock fails
+        }
+    }
+}
+

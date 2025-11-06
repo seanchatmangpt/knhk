@@ -1,0 +1,95 @@
+# KNHK Hot Path Operation Telemetry Schema (R1 Operations)
+# Defines telemetry for operations that MUST complete within 8 ticks (Chatman Constant)
+
+groups:
+  # Hot path attributes
+  - id: knhk.operation.r1.attributes
+    type: attribute_group
+    brief: "R1 (hot path) specific attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.operation.pattern
+        type: string
+        stability: experimental
+        brief: "SPARQL pattern being queried"
+        examples: ["?s rdf:type ex:Person"]
+
+  # ASK query span
+  - id: knhk.operation.ask
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "ASK query (boolean query, R1 operation ≤8 ticks)"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.operation.ticks
+      - ref: knhk.operation.success
+      - ref: knhk.operation.pattern
+      - id: knhk.operation.result
+        type: boolean
+        stability: experimental
+        brief: "ASK query result (true/false)"
+        examples: [true, false]
+
+  # COUNT query span
+  - id: knhk.operation.count
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "COUNT query (count matching patterns, R1 operation ≤8 ticks)"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.operation.ticks
+      - ref: knhk.operation.success
+      - ref: knhk.operation.pattern
+      - id: knhk.operation.count_result
+        type: int
+        stability: experimental
+        brief: "Number of matches found"
+        examples: [0, 42, 1000]
+
+  # Compare span
+  - id: knhk.operation.compare
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Entity comparison operation (R1 operation ≤8 ticks)"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.operation.ticks
+      - ref: knhk.operation.success
+      - id: knhk.operation.entity1
+        type: string
+        stability: experimental
+        brief: "First entity being compared"
+        examples: ["ex:Entity1"]
+      - id: knhk.operation.entity2
+        type: string
+        stability: experimental
+        brief: "Second entity being compared"
+        examples: ["ex:Entity2"]
+
+  # Metrics
+  - id: metric.knhk.operation.duration
+    type: metric
+    metric_name: knhk.operation.duration
+    stability: experimental
+    brief: "Operation duration in ticks (R1 MUST be ≤8)"
+    instrument: histogram
+    unit: "ticks"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+
+  - id: metric.knhk.operation.r1_violations
+    type: metric
+    metric_name: knhk.operation.r1_violations
+    stability: experimental
+    brief: "R1 operations exceeding 8 ticks (Chatman Constant violations)"
+    instrument: counter
+    unit: "1"
+    attributes:
+      - ref: knhk.operation.name

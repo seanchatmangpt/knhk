@@ -1,0 +1,30 @@
+# KNHK Common Attributes
+# Shared attributes used across all KNHK telemetry schemas
+
+groups:
+  # Common operation attributes
+  - id: knhk.common.attributes
+    type: attribute_group
+    brief: "Common attributes for all KNHK operations"
+    stability: experimental
+    attributes:
+      - id: knhk.operation.name
+        type: string
+        stability: experimental
+        brief: "Name of the operation being performed"
+        examples: ["apply_transaction", "query", "ASK", "CONSTRUCT8"]
+      - id: knhk.operation.type
+        type: string
+        stability: experimental
+        brief: "Type/category of operation"
+        examples: ["sidecar", "etl", "warm", "hot", "R1", "W1", "C1"]
+      - id: knhk.operation.success
+        type: boolean
+        stability: experimental
+        brief: "Whether the operation succeeded"
+      - id: knhk.operation.ticks
+        type: int
+        stability: experimental
+        brief: "Operation duration in ticks"
+        note: "R1 operations MUST be ≤8 ticks per Chatman Constant"
+        examples: [1, 5, 8]

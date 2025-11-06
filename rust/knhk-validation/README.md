@@ -43,3 +43,4 @@ For detailed documentation, see [docs/README.md](docs/README.md).
 - [Definition of Done](../../docs/DEFINITION_OF_DONE.md) - DoD criteria
 - [Architecture](../../docs/architecture.md) - System architecture
 - [Testing](../../docs/testing.md) - Testing documentation
+- [Weaver Analysis and Learnings](../../docs/WEAVER_ANALYSIS_AND_LEARNINGS.md) - Policy engine patterns and validation improvements

@@ -1,0 +1,46 @@
+# Weaver Registry Manifest for KNHK Telemetry
+# This manifest defines the telemetry groups for KNHK's schema-first validation
+
+name: knhk
+registry_uri: urn:knhk:registry
+version: 1.0.0
+semconv_version: 1.27.0
+schema_base_url: https://github.com/seanchatmangpt/knhk/registry/
+description: OpenTelemetry schema registry for KNHK (Knowledge Graph Consistency) framework
+
+groups:
+  - id: knhk.sidecar
+    type: span
+    brief: "KNHK Sidecar gRPC service telemetry"
+    note: |
+      Telemetry for the KGC Sidecar service, which provides gRPC APIs for
+      transaction processing, graph validation, and hook evaluation.
+
+  - id: knhk.operation
+    type: span
+    brief: "KNHK hot path operation telemetry (R1 operations ≤8 ticks)"
+    note: |
+      Hot path operations (Runtime Class R1) that must complete within 8 ticks
+      according to the Chatman Constant. Includes ASK, COUNT, and comparison operations.
+
+  - id: knhk.warm
+    type: span
+    brief: "KNHK warm path operation telemetry (W1 operations)"
+    note: |
+      Warm path operations (Runtime Class W1) that have higher latency tolerance.
+      Includes CONSTRUCT8 and SELECT operations. W1 operations can degrade to
+      cached responses on failure.
+
+  - id: knhk.etl
+    type: span
+    brief: "KNHK ETL pipeline telemetry"
+    note: |
+      Telemetry for the 5-stage ETL pipeline: Ingest, Normalize, Reflex,
+      FailureActions, and Emit.
+
+  - id: knhk.metrics
+    type: metric
+    brief: "KNHK operational metrics"
+    note: |
+      Counters, histograms, and gauges for KNHK operations, latency,
+      and resource usage.

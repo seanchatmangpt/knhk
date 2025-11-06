@@ -6,6 +6,7 @@ extern crate alloc;
 extern crate std;
 
 // Silence unused crate warnings (proper feature gating)
+// Note: These crates are always available when features are enabled
 #[cfg(feature = "knhk-otel")]
 use knhk_otel as _;
 #[cfg(feature = "knhk-lockchain")]
@@ -15,6 +16,7 @@ use knhk_lockchain as _;
 pub mod types;
 pub mod error;
 pub mod ingest;
+pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod transform;
 pub mod load;
 pub mod reflex;
@@ -306,8 +308,8 @@ mod tests {
 
     #[test]
     fn test_emit_stage() {
-        let emit = EmitStage::new(true, vec!["https://webhook.example.com".to_string()]);
-        
+        let mut emit = EmitStage::new(true, vec!["https://webhook.example.com".to_string()]);
+
         let receipt = Receipt {
             id: "receipt1".to_string(),
             ticks: 4,
@@ -315,7 +317,7 @@ mod tests {
             span_id: 0x1234,
             a_hash: 0xABCD,
         };
-        
+
         let reflex_result = ReflexResult {
             actions: vec![
                 Action {
@@ -328,7 +330,7 @@ mod tests {
             max_ticks: 4,
             c1_failure_actions: Vec::new(),
         };
-        
+
         let result = emit.emit(reflex_result);
         assert!(result.is_ok());
         

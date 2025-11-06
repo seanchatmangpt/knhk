@@ -64,6 +64,22 @@ impl HealthChecker {
 
         self.status()
     }
+
+    /// Check liveness (is service alive?)
+    pub fn check_liveness(&self) -> HealthStatus {
+        // Service is alive if we can acquire the lock
+        self.status()
+    }
+
+    /// Check readiness (is service ready to handle requests?)
+    pub fn check_readiness(&self) -> HealthStatus {
+        // For now, readiness is same as liveness
+        // In production, would check:
+        // - Database connections
+        // - External service availability
+        // - Critical dependencies
+        self.status()
+    }
 }
 
 impl Default for HealthChecker {

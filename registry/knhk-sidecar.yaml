@@ -1,0 +1,123 @@
+# KNHK Sidecar gRPC Service Telemetry Schema
+# Defines spans, metrics, and attributes for the KGC Sidecar service
+
+groups:
+  # Sidecar-specific attributes
+  - id: knhk.sidecar.attributes
+    type: attribute_group
+    brief: "Sidecar-specific attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.sidecar.success
+        type: boolean
+        stability: experimental
+        brief: "Whether the sidecar operation succeeded"
+      - id: knhk.sidecar.latency_ms
+        type: int
+        stability: experimental
+        brief: "Operation latency in milliseconds"
+      - id: knhk.sidecar.method
+        type: string
+        stability: experimental
+        brief: "gRPC method name"
+        examples: ["ApplyTransaction", "Query", "ValidateGraph", "EvaluateHook"]
+
+  # Transaction span
+  - id: knhk.sidecar.transaction
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Apply transaction to the knowledge graph"
+    note: |
+      Processes a transaction (add/update/delete operations) and integrates
+      with the ETL pipeline.
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.sidecar.success
+      - ref: knhk.sidecar.latency_ms
+      - ref: knhk.sidecar.method
+      - id: knhk.sidecar.transaction_id
+        type: string
+        stability: experimental
+        brief: "Unique transaction identifier (UUID)"
+        examples: ["550e8400-e29b-41d4-a716-446655440000"]
+
+  # Query span
+  - id: knhk.sidecar.query
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute query on the knowledge graph"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.sidecar.success
+      - ref: knhk.sidecar.latency_ms
+      - ref: knhk.sidecar.method
+      - id: knhk.sidecar.query_type
+        type: string
+        stability: experimental
+        brief: "Type of query being executed"
+        examples: ["ASK", "COUNT", "SELECT", "CONSTRUCT8"]
+
+  # Validate graph span
+  - id: knhk.sidecar.validate_graph
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Validate knowledge graph against schema"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.sidecar.success
+      - ref: knhk.sidecar.latency_ms
+      - ref: knhk.sidecar.method
+      - id: knhk.sidecar.schema_iri
+        type: string
+        stability: experimental
+        brief: "IRI of the schema being validated against"
+        examples: ["https://example.org/schema/v1"]
+
+  # Evaluate hook span
+  - id: knhk.sidecar.evaluate_hook
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Evaluate reactive hook on RDF data"
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.sidecar.success
+      - ref: knhk.sidecar.latency_ms
+      - ref: knhk.sidecar.method
+      - id: knhk.sidecar.hook_id
+        type: string
+        stability: experimental
+        brief: "Unique hook identifier"
+        examples: ["hook_validation_01"]
+      - id: knhk.sidecar.rdf_data_size
+        type: int
+        stability: experimental
+        brief: "Size of RDF data in bytes"
+
+  # Metrics
+  - id: metric.knhk.sidecar.requests
+    type: metric
+    metric_name: knhk.sidecar.requests
+    stability: experimental
+    brief: "Total number of sidecar requests"
+    instrument: counter
+    unit: "1"
+    attributes:
+      - ref: knhk.sidecar.method
+
+  - id: metric.knhk.sidecar.latency
+    type: metric
+    metric_name: knhk.sidecar.latency
+    stability: experimental
+    brief: "Sidecar request latency"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: knhk.sidecar.method

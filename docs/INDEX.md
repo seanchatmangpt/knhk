@@ -64,6 +64,16 @@ This index provides a comprehensive guide to all current KNHK documentation.
 9. **[unrdf Integration Status](unrdf-integration-status.md)** - unrdf integration status
 10. **[unrdf Integration DoD](unrdf-integration-dod.md)** - unrdf DoD validation
 11. **[Weaver Integration](weaver-integration.md)** - Weaver.ai integration
+12. **[Weaver Analysis and Learnings](WEAVER_ANALYSIS_AND_LEARNINGS.md)** - Architectural patterns learned from Weaver
+    - Policy engine patterns
+    - Schema management patterns
+    - Error handling improvements
+    - Streaming processing patterns
+    - Implementation recommendations
+13. **[Weaver Insights Implementation](WEAVER_INSIGHTS_IMPLEMENTATION.md)** - Implementation summary of Weaver insights
+    - Phase 1: Error diagnostics, policy engine, streaming ingester
+    - Architecture patterns applied
+    - Integration points and next steps
 
 ### Deployment & Operations
 12. **[Deployment Guide](deployment.md)** - Deployment instructions

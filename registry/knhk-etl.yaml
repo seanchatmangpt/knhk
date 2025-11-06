@@ -1,0 +1,118 @@
+# KNHK ETL Pipeline Telemetry Schema
+# Defines telemetry for the 5-stage ETL pipeline
+
+groups:
+  # ETL attributes
+  - id: knhk.etl.attributes
+    type: attribute_group
+    brief: "ETL pipeline attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.etl.stage
+        type: string
+        stability: experimental
+        brief: "ETL stage name"
+        requirement_level: required
+        examples: ["ingest", "normalize", "reflex", "failure_actions", "emit"]
+      - id: knhk.etl.latency_ms
+        type: int
+        stability: experimental
+        brief: "Stage processing latency in milliseconds"
+
+  # Ingest span
+  - id: knhk.etl.ingest
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "ETL Stage 1: Ingest raw data"
+    note: "Parse RDF/Turtle data from connectors"
+    attributes:
+      - ref: knhk.etl.stage
+      - ref: knhk.etl.latency_ms
+      - id: knhk.etl.connector_id
+        type: string
+        stability: experimental
+        brief: "Source connector identifier"
+        examples: ["kafka_connector_1"]
+      - id: knhk.etl.triples_count
+        type: int
+        stability: experimental
+        brief: "Number of triples ingested"
+
+  # Normalize span
+  - id: knhk.etl.normalize
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "ETL Stage 2: Normalize and validate triples"
+    attributes:
+      - ref: knhk.etl.stage
+      - ref: knhk.etl.latency_ms
+      - id: knhk.etl.triples_count_normalized
+        type: int
+        stability: experimental
+        brief: "Number of triples normalized"
+
+  # Reflex span
+  - id: knhk.etl.reflex
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "ETL Stage 3: Pattern matching and action generation"
+    attributes:
+      - ref: knhk.etl.stage
+      - ref: knhk.etl.latency_ms
+      - id: knhk.etl.actions_generated
+        type: int
+        stability: experimental
+        brief: "Number of actions generated"
+
+  # Failure actions span
+  - id: knhk.etl.failure_actions
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "ETL Stage 4: Handle R1/W1/C1 failures"
+    attributes:
+      - ref: knhk.etl.stage
+      - ref: knhk.etl.latency_ms
+      - id: knhk.etl.runtime_class
+        type: string
+        stability: experimental
+        brief: "Runtime class of failed operation"
+        examples: ["R1", "W1", "C1"]
+
+  # Emit span
+  - id: knhk.etl.emit
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "ETL Stage 5: Write to lockchain and downstream APIs"
+    attributes:
+      - ref: knhk.etl.stage
+      - ref: knhk.etl.latency_ms
+      - id: knhk.etl.receipts_written
+        type: int
+        stability: experimental
+        brief: "Number of receipts written to lockchain"
+
+  # Metrics
+  - id: metric.knhk.etl.stage_duration
+    type: metric
+    metric_name: knhk.etl.stage_duration
+    stability: experimental
+    brief: "ETL stage processing duration"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: knhk.etl.stage
+
+  - id: metric.knhk.etl.triples_processed
+    type: metric
+    metric_name: knhk.etl.triples_processed
+    stability: experimental
+    brief: "Total triples processed"
+    instrument: counter
+    unit: "1"
+    attributes:
+      - ref: knhk.etl.stage

@@ -11,7 +11,8 @@ pub mod health;
 pub mod client;
 pub mod server;
 pub mod config;
-pub mod service;
+// TODO: Fix service.rs - has proto schema mismatches and missing dependencies
+// pub mod service;
 
 pub use error::{SidecarError, SidecarResult};
 pub use server::SidecarServer;

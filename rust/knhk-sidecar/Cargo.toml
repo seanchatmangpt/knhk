@@ -12,7 +12,7 @@ tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 prost = "0.12"
 prost-types = "0.12"
 knhk-etl = { path = "../knhk-etl" }
-knhk-connectors = { path = "../knhk-connectors" }
+knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
 serde = { version = "1.0", features = ["derive"] }
@@ -22,6 +22,8 @@ thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 toml = "0.8"
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
 
 [features]
 default = ["otel"]
@@ -32,3 +34,4 @@ tonic-build = "0.10"
 
 [dev-dependencies]
 tokio-test = "0.4"
+futures = "0.3"
