@@ -2,6 +2,8 @@
 
 A high-performance knowledge graph engine optimized for hot path operations (≤2ns latency), implementing the Dark Matter 80/20 architecture with Rust-native RDF capabilities and knowledge hook automation.
 
+**Built for Reflex Enterprise™**: KNHK powers Reflex Enterprise™, a 2-ns, law-driven compute fabric that replaces procedural software. See [Reflex Enterprise Press Release](docs/REFLEX_ENTERPRISE_PRESS_RELEASE.md) for product details.
+
 ## Overview
 
 KNHK is a production-ready knowledge graph engine designed for real-time graph operations with strict performance constraints. The system implements guard functions, invariant preservation, and cryptographic provenance through a hooks-based architecture.
