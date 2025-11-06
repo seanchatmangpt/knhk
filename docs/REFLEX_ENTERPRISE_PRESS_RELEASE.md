@@ -200,7 +200,9 @@ Customer inquiries: [hello@reflex-enterprise.example](mailto:hello@reflex-enterp
 
 ## Related Documentation
 
+* **[Reflex Enterprise Blueprint](REFLEX_ENTERPRISE_BLUEPRINT.md)** - Fortune-5 enterprise-grade specification
 * **[DFLSS Project Charter](DFLSS_PROJECT_CHARTER.md)** - DMADV methodology for Reflex Enterprise rollout
+* **[DFLSS Project Charter DoD](DFLSS_PROJECT_CHARTER_DOD.md)** - Definition of Done for project charter
 * **[Formal Mathematical Foundations](formal-foundations.md)** - Complete formal treatment of KNHK's mathematical structure
 * **[KNHK Architecture](architecture.md)** - System architecture overview
 

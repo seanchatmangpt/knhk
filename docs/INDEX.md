@@ -102,6 +102,13 @@ This index provides a comprehensive guide to all current KNHK documentation.
    - Evidence requirements for each item
    - KGC invariants verification
    - Sign-off criteria for Measure phase entry
+25. **[Reflex Enterprise Blueprint](REFLEX_ENTERPRISE_BLUEPRINT.md)** - Fortune-5 enterprise-grade specification
+   - Runtime classes and SLOs (R1/W1/C1)
+   - Multi-region, zero-trust topology
+   - Performance engineering (AOT, MPHF, preloading)
+   - Security, reliability, governance
+   - ERP/CRM/ATS replacement path
+   - Acceptance criteria and rollout plan
 
 ### Research & Evaluation
 25. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling

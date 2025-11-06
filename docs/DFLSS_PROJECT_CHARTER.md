@@ -269,3 +269,15 @@ Before entering the Measure phase, all items in the [Definition of Done for DFLS
 
 See [Definition of Done](DFLSS_PROJECT_CHARTER_DOD.md) for complete checklist.
 
+---
+
+## Enterprise Blueprint
+
+For Fortune-5-grade deployment specifications, see [Reflex Enterprise Blueprint](REFLEX_ENTERPRISE_BLUEPRINT.md):
+- Runtime classes and SLOs (R1/W1/C1)
+- Multi-region, zero-trust topology
+- Performance engineering strategies
+- Security, reliability, and governance models
+- ERP/CRM/ATS replacement path
+- Acceptance criteria and rollout plan
+
