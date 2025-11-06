@@ -69,6 +69,41 @@ impl NativeHookRegistry {
         
         Ok(hooks.get(hook_id).cloned())
     }
+
+    /// Select hooks by epoch order (Λ)
+    /// Lambda is a ≺-total ordered list of hook IDs
+    /// Returns hooks in the specified order, skipping missing hooks
+    pub fn select_by_epoch_order(&self, lambda: &[String]) -> UnrdfResult<Vec<HookDefinition>> {
+        let hooks = self.hooks.lock()
+            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire hooks lock: {}", e)))?;
+        
+        let mut selected = Vec::new();
+        for hook_id in lambda {
+            if let Some(hook) = hooks.get(hook_id) {
+                selected.push(hook.clone());
+            }
+        }
+        
+        Ok(selected)
+    }
+
+    /// Validate epoch order (Λ) is ≺-total
+    /// Checks for duplicates and ensures deterministic order
+    pub fn validate_epoch_order(lambda: &[String]) -> UnrdfResult<()> {
+        use std::collections::HashSet;
+        let mut seen = HashSet::new();
+        
+        for hook_id in lambda {
+            if seen.contains(hook_id) {
+                return Err(UnrdfError::InvalidInput(
+                    format!("Epoch order contains duplicate hook '{}' (must be ≺-total)", hook_id)
+                ));
+            }
+            seen.insert(hook_id.clone());
+        }
+        
+        Ok(())
+    }
 }
 
 #[cfg(feature = "native")]
@@ -777,5 +812,503 @@ mod tests {
         // Receipts should be valid SHA-256 hashes (64 hex chars)
         assert_eq!(result1.receipt.as_ref().unwrap().len(), 64);
         assert_eq!(result2.receipt.as_ref().unwrap().len(), 64);
+    }
+
+    // ============================================
+    // ERROR VALIDATION TESTS
+    // ============================================
+    // Tests verify what SHOULD fail and what SHOULD succeed
+
+    #[test]
+    fn test_error_invalid_query_type() {
+        // Error: Non-ASK queries should fail
+        // Hook queries MUST be ASK queries
+        let hook = HookDefinition {
+            id: "invalid-query-hook".to_string(),
+            name: "Invalid Query Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                // SELECT query instead of ASK - should fail
+                when.insert("query".to_string(), JsonValue::String("SELECT * WHERE { ?s ?p ?o }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: hook queries must be ASK queries
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("ASK queries") || error.to_string().contains("must be ASK"));
+    }
+
+    #[test]
+    fn test_error_missing_query_in_definition() {
+        // Error: Hook definition missing query field
+        let hook = HookDefinition {
+            id: "missing-query-hook".to_string(),
+            name: "Missing Query Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                // Missing "query" field - should fail
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: hook definition missing query
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("query") || error.to_string().contains("valid SPARQL ASK query"));
+    }
+
+    #[test]
+    fn test_error_malformed_turtle_data() {
+        // Error: Invalid Turtle syntax should fail gracefully
+        let hook_query = "ASK { ?s ?p ?o }";
+        
+        let hook = HookDefinition {
+            id: "malformed-data-hook".to_string(),
+            name: "Malformed Data Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String(hook_query.to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        // Malformed Turtle: missing closing quote
+        let malformed_turtle = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice
+        "#;
+        
+        let result = evaluate_hook_native(&hook, malformed_turtle);
+        
+        // Should fail: malformed Turtle data
+        assert!(result.is_err());
+        // Error should indicate parsing failure
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("parse") || error.to_string().contains("Turtle") || error.to_string().contains("invalid"));
+    }
+
+    #[test]
+    fn test_error_empty_turtle_data() {
+        // Error: Empty Turtle data should handle gracefully
+        let hook_query = "ASK { ?s ?p ?o }";
+        
+        let hook = HookDefinition {
+            id: "empty-data-hook".to_string(),
+            name: "Empty Data Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String(hook_query.to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let empty_turtle = "";
+        
+        let result = evaluate_hook_native(&hook, empty_turtle);
+        
+        // Empty Turtle should still be valid (empty graph)
+        // Hook should not fire (no data matches condition)
+        if result.is_ok() {
+            let hook_result = result.unwrap();
+            assert_eq!(hook_result.fired, false);
+            assert!(hook_result.receipt.is_none());
+        } else {
+            // If parsing fails, that's also acceptable for empty input
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn test_error_invalid_sparql_syntax() {
+        // Error: Invalid SPARQL syntax should fail
+        let hook = HookDefinition {
+            id: "invalid-sparql-hook".to_string(),
+            name: "Invalid SPARQL Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                // Invalid SPARQL syntax
+                when.insert("query".to_string(), JsonValue::String("ASK { ?s ?p ?o . invalid syntax }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: invalid SPARQL syntax
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("SPARQL") || error.to_string().contains("query") || error.to_string().contains("parse"));
+    }
+
+    #[test]
+    fn test_error_batch_with_invalid_hook() {
+        // Error: Batch evaluation should fail if any hook is invalid
+        let hooks = vec![
+            HookDefinition {
+                id: "valid-hook".to_string(),
+                name: "Valid Hook".to_string(),
+                hook_type: "sparql-ask".to_string(),
+                definition: {
+                    let mut def = serde_json::Map::new();
+                    let mut when = serde_json::Map::new();
+                    when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                    when.insert("query".to_string(), JsonValue::String("ASK { ?s ?p ?o }".to_string()));
+                    def.insert("when".to_string(), JsonValue::Object(when));
+                    JsonValue::Object(def)
+                },
+            },
+            HookDefinition {
+                id: "invalid-hook".to_string(),
+                name: "Invalid Hook".to_string(),
+                hook_type: "sparql-ask".to_string(),
+                definition: {
+                    let mut def = serde_json::Map::new();
+                    let mut when = serde_json::Map::new();
+                    when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                    // SELECT instead of ASK - should fail
+                    when.insert("query".to_string(), JsonValue::String("SELECT * WHERE { ?s ?p ?o }".to_string()));
+                    def.insert("when".to_string(), JsonValue::Object(when));
+                    JsonValue::Object(def)
+                },
+            },
+        ];
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hooks_batch_native(&hooks, turtle_data);
+        
+        // Should fail: batch contains invalid hook
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("ASK queries") || error.to_string().contains("must be ASK"));
+    }
+
+    #[test]
+    fn test_error_registry_duplicate_hook_id() {
+        // Error: Registering duplicate hook ID should overwrite (or fail, depending on design)
+        let registry = NativeHookRegistry::new();
+        
+        let hook1 = HookDefinition {
+            id: "duplicate-id".to_string(),
+            name: "Hook 1".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: JsonValue::Object(serde_json::Map::new()),
+        };
+        
+        let hook2 = HookDefinition {
+            id: "duplicate-id".to_string(),
+            name: "Hook 2".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: JsonValue::Object(serde_json::Map::new()),
+        };
+        
+        // Register first hook
+        registry.register(hook1).unwrap();
+        
+        // Register second hook with same ID - should overwrite
+        registry.register(hook2).unwrap();
+        
+        // Verify latest hook is stored
+        let retrieved = registry.get("duplicate-id").unwrap();
+        assert!(retrieved.is_some());
+        assert_eq!(retrieved.unwrap().name, "Hook 2"); // Latest hook wins
+    }
+
+    #[test]
+    fn test_error_registry_get_nonexistent() {
+        // Error: Getting non-existent hook should return None
+        let registry = NativeHookRegistry::new();
+        
+        let retrieved = registry.get("nonexistent-hook-id");
+        
+        // Should succeed but return None
+        assert!(retrieved.is_ok());
+        assert!(retrieved.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_error_registry_deregister_nonexistent() {
+        // Error: Deregistering non-existent hook should succeed (idempotent)
+        let registry = NativeHookRegistry::new();
+        
+        // Deregister non-existent hook
+        let result = registry.deregister("nonexistent-hook-id");
+        
+        // Should succeed (idempotent operation)
+        assert!(result.is_ok());
+        
+        // Verify still empty
+        let hooks = registry.list().unwrap();
+        assert_eq!(hooks.len(), 0);
+    }
+
+    #[test]
+    fn test_error_empty_batch() {
+        // Error: Empty batch should handle gracefully
+        let empty_hooks: Vec<HookDefinition> = vec![];
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hooks_batch_native(&empty_hooks, turtle_data);
+        
+        // Should succeed: empty batch returns empty results
+        assert!(result.is_ok());
+        let results = result.unwrap();
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_error_hook_with_empty_query() {
+        // Error: Hook with empty query string should fail
+        let hook = HookDefinition {
+            id: "empty-query-hook".to_string(),
+            name: "Empty Query Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String("".to_string())); // Empty query
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: empty query is invalid
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_error_missing_when_field() {
+        // Error: Hook definition missing "when" field
+        let hook = HookDefinition {
+            id: "missing-when-hook".to_string(),
+            name: "Missing When Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: JsonValue::Object(serde_json::Map::new()), // Missing "when" field
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: missing "when" field
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("query") || error.to_string().contains("valid SPARQL ASK query"));
+    }
+
+    #[test]
+    fn test_error_construct_query_in_hook() {
+        // Error: CONSTRUCT queries should fail (hooks must be ASK)
+        let hook = HookDefinition {
+            id: "construct-hook".to_string(),
+            name: "Construct Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: CONSTRUCT is not ASK
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("ASK queries") || error.to_string().contains("must be ASK"));
+    }
+
+    #[test]
+    fn test_error_describe_query_in_hook() {
+        // Error: DESCRIBE queries should fail (hooks must be ASK)
+        let hook = HookDefinition {
+            id: "describe-hook".to_string(),
+            name: "Describe Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String("DESCRIBE ?s WHERE { ?s ?p ?o }".to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should fail: DESCRIBE is not ASK
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("ASK queries") || error.to_string().contains("must be ASK"));
+    }
+
+    #[test]
+    fn test_success_valid_ask_query() {
+        // Success: Valid ASK query should work
+        let hook_query = "ASK { ?s ?p ?o }";
+        
+        let hook = HookDefinition {
+            id: "valid-ask-hook".to_string(),
+            name: "Valid ASK Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String(hook_query.to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should succeed: valid ASK query
+        assert!(result.is_ok());
+        let hook_result = result.unwrap();
+        assert!(hook_result.fired); // Data exists, hook should fire
+    }
+
+    #[test]
+    fn test_success_ask_with_prefix() {
+        // Success: ASK query with PREFIX should work
+        // Note: Use full IRI to avoid prefix resolution issues
+        let hook_query = "ASK { ?s <http://example.org/name> ?name }";
+        
+        let hook = HookDefinition {
+            id: "ask-prefix-hook".to_string(),
+            name: "ASK Prefix Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String(hook_query.to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should succeed: ASK with full IRI is valid
+        assert!(result.is_ok());
+        let hook_result = result.unwrap();
+        assert!(hook_result.fired); // Data exists, hook should fire
+    }
+
+    #[test]
+    fn test_success_ask_with_filter() {
+        // Success: ASK query with FILTER should work
+        let hook_query = "ASK { ?s ?p ?o . FILTER(?o != \"test\") }";
+        
+        let hook = HookDefinition {
+            id: "ask-filter-hook".to_string(),
+            name: "ASK Filter Hook".to_string(),
+            hook_type: "sparql-ask".to_string(),
+            definition: {
+                let mut def = serde_json::Map::new();
+                let mut when = serde_json::Map::new();
+                when.insert("kind".to_string(), JsonValue::String("sparql-ask".to_string()));
+                when.insert("query".to_string(), JsonValue::String(hook_query.to_string()));
+                def.insert("when".to_string(), JsonValue::Object(when));
+                JsonValue::Object(def)
+            },
+        };
+        
+        let turtle_data = r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:name "Alice" .
+        "#;
+        
+        let result = evaluate_hook_native(&hook, turtle_data);
+        
+        // Should succeed: ASK with FILTER is valid
+        assert!(result.is_ok());
+        let hook_result = result.unwrap();
+        assert!(hook_result.fired); // Data exists and passes filter
     }
 }

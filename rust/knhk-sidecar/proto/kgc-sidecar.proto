@@ -1,0 +1,194 @@
+syntax = "proto3";
+
+package kgc.sidecar.v1;
+
+// KGC Sidecar gRPC Service
+// Provides local proxy for apps with batching, retries, and circuit-breaking
+
+service KgcSidecar {
+    // Apply transaction with RDF delta and hooks
+    rpc ApplyTransaction(ApplyTransactionRequest) returns (ApplyTransactionResponse);
+    
+    // Execute query (ASK/SELECT/CONSTRUCT)
+    rpc Query(QueryRequest) returns (QueryResponse);
+    
+    // Validate RDF graph against schema
+    rpc ValidateGraph(ValidateGraphRequest) returns (ValidateGraphResponse);
+    
+    // Evaluate single hook
+    rpc EvaluateHook(EvaluateHookRequest) returns (EvaluateHookResponse);
+    
+    // Health check
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+    
+    // Get telemetry metrics
+    rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+}
+
+// Transaction request
+message ApplyTransactionRequest {
+    Delta delta = 1;
+    string actor = 2;
+    TransactionOptions options = 3;
+}
+
+// Transaction response
+message ApplyTransactionResponse {
+    bool committed = 1;
+    string transaction_id = 2;
+    Receipt receipt = 3;
+    repeated string errors = 4;
+}
+
+// Delta (additions and removals)
+message Delta {
+    repeated Triple additions = 1;
+    repeated Triple removals = 2;
+}
+
+// RDF Triple
+message Triple {
+    string subject = 1;
+    string predicate = 2;
+    string object = 3;
+    string graph = 4; // Optional graph context
+}
+
+// Transaction options
+message TransactionOptions {
+    bool strict_mode = 1;
+    bool enable_hooks = 2;
+    uint32 timeout_ms = 3;
+}
+
+// Receipt for provenance
+message Receipt {
+    uint32 ticks = 1;
+    uint32 lanes = 2;
+    uint64 span_id = 3;
+    bytes a_hash = 4; // hash(A) = hash(μ(O))
+    string transaction_id = 5;
+    bool committed = 6;
+}
+
+// Query request
+message QueryRequest {
+    QueryType query_type = 1;
+    string query = 2; // SPARQL query string
+    string data_format = 3; // "turtle", "json-ld", etc.
+    bytes data = 4; // Optional RDF data
+}
+
+// Query type
+enum QueryType {
+    QUERY_TYPE_UNSPECIFIED = 0;
+    QUERY_TYPE_ASK = 1;
+    QUERY_TYPE_SELECT = 2;
+    QUERY_TYPE_CONSTRUCT = 3;
+    QUERY_TYPE_DESCRIBE = 4;
+}
+
+// Query response
+message QueryResponse {
+    bool success = 1;
+    QueryType query_type = 2;
+    oneof result {
+        AskResult ask_result = 3;
+        SelectResult select_result = 4;
+        ConstructResult construct_result = 5;
+    }
+    repeated string errors = 6;
+}
+
+// ASK query result
+message AskResult {
+    bool result = 1;
+}
+
+// SELECT query result
+message SelectResult {
+    repeated BindingSet binding_sets = 1;
+}
+
+// CONSTRUCT query result
+message ConstructResult {
+    bytes rdf_data = 1; // RDF data in requested format
+    string format = 2;
+}
+
+// Binding set for SELECT results
+message BindingSet {
+    map<string, string> bindings = 1; // Variable name -> value
+}
+
+// Validate graph request
+message ValidateGraphRequest {
+    bytes rdf_data = 1;
+    string data_format = 2;
+    string schema_iri = 3; // Schema IRI for validation
+}
+
+// Validate graph response
+message ValidateGraphResponse {
+    bool valid = 1;
+    repeated string errors = 2;
+    repeated string warnings = 3;
+}
+
+// Evaluate hook request
+message EvaluateHookRequest {
+    string hook_id = 1;
+    bytes rdf_data = 2;
+    string data_format = 3;
+}
+
+// Evaluate hook response
+message EvaluateHookResponse {
+    bool fired = 1;
+    bytes result = 2; // Optional action result
+    Receipt receipt = 3;
+    repeated string errors = 4;
+}
+
+// Health check request
+message HealthCheckRequest {
+}
+
+// Health check response
+message HealthCheckResponse {
+    HealthStatus status = 1;
+    string message = 2;
+    uint64 timestamp_ms = 3;
+}
+
+// Health status
+enum HealthStatus {
+    HEALTH_STATUS_UNSPECIFIED = 0;
+    HEALTH_STATUS_HEALTHY = 1;
+    HEALTH_STATUS_DEGRADED = 2;
+    HEALTH_STATUS_UNHEALTHY = 3;
+}
+
+// Get metrics request
+message GetMetricsRequest {
+}
+
+// Get metrics response
+message GetMetricsResponse {
+    SidecarMetrics metrics = 1;
+}
+
+// Sidecar metrics
+message SidecarMetrics {
+    uint64 total_requests = 1;
+    uint64 successful_requests = 2;
+    uint64 failed_requests = 3;
+    uint64 total_transactions = 4;
+    uint64 total_queries = 5;
+    uint64 total_hooks_evaluated = 6;
+    uint64 circuit_breaker_open_count = 7;
+    uint64 retry_count = 8;
+    double average_latency_ms = 9;
+    uint64 last_request_time_ms = 10;
+}
+

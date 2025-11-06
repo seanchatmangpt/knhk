@@ -8,6 +8,8 @@ pub mod hooks;
 pub mod hooks_native;
 #[cfg(feature = "native")]
 pub mod hooks_native_ffi;
+#[cfg(feature = "native")]
+pub mod scheduler;
 #[cfg(test)]
 #[cfg(feature = "native")]
 mod hooks_native_stress;
