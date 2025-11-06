@@ -181,7 +181,7 @@ impl Connector for KafkaConnector {
         }
 
         // Fetch messages from Kafka
-        let mut additions = Vec::new();
+        let additions = Vec::new();
         
         #[cfg(feature = "kafka")]
         {

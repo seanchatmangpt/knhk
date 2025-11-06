@@ -3,15 +3,23 @@
 // Actions (A) + Receipts → Lockchain + Downstream APIs
 
 extern crate alloc;
+extern crate knhk_otel;
+extern crate knhk_lockchain;
 
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
 use alloc::format;
+use alloc::collections::BTreeMap;
 
 use crate::error::PipelineError;
 use crate::reflex::{ReflexResult, Action, Receipt};
 use crate::runtime_class::RuntimeClass;
 use crate::failure_actions::{handle_w1_failure, handle_c1_failure};
+
+use reqwest::blocking::Client;
+use rdkafka::producer::{BaseProducer, BaseRecord};
+use rdkafka::ClientConfig;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Stage 5: Emit
 /// Actions (A) + Receipts → Lockchain + Downstream APIs
@@ -20,12 +28,9 @@ pub struct EmitStage {
     pub downstream_endpoints: Vec<String>,
     max_retries: u32,
     retry_delay_ms: u64,
-    #[cfg(feature = "knhk-lockchain")]
     lockchain: Option<knhk_lockchain::Lockchain>,
-    #[cfg(not(feature = "knhk-lockchain"))]
-    _lockchain_placeholder: (),
     // W1 cache: simple in-memory cache for degraded responses
-    cache: alloc::collections::BTreeMap<String, Action>,
+    cache: BTreeMap<String, Action>,
 }
 
 impl EmitStage {
@@ -35,29 +40,19 @@ impl EmitStage {
             downstream_endpoints,
             max_retries: 3,
             retry_delay_ms: 1000,
-            #[cfg(feature = "knhk-lockchain")]
             lockchain: if lockchain_enabled {
                 Some(knhk_lockchain::Lockchain::new())
             } else {
                 None
             },
-            #[cfg(not(feature = "knhk-lockchain"))]
-            _lockchain_placeholder: (),
-            cache: alloc::collections::BTreeMap::new(),
+            cache: BTreeMap::new(),
         }
     }
     
-    #[cfg(feature = "knhk-lockchain")]
     pub fn with_git_repo(mut self, repo_path: String) -> Self {
         if self.lockchain_enabled {
             self.lockchain = Some(knhk_lockchain::Lockchain::with_git_repo(repo_path));
         }
-        self
-    }
-    
-    #[cfg(not(feature = "knhk-lockchain"))]
-    pub fn with_git_repo(mut self, _repo_path: String) -> Self {
-        // Lockchain feature not enabled, ignore
         self
     }
     
@@ -76,39 +71,26 @@ impl EmitStage {
 
         // Write receipts to lockchain
         if self.lockchain_enabled {
-            #[cfg(feature = "knhk-lockchain")]
-            {
-                // Use mutable lockchain reference
-                let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
-                    lockchain.clone()
-                } else {
-                    return Err(PipelineError::EmitError(
-                        "Lockchain enabled but not initialized".to_string()
-                    ));
-                };
-                
-                for receipt in &input.receipts {
-                    match self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_ref, receipt) {
-                        Ok(hash) => {
-                            receipts_written += 1;
-                            lockchain_hashes.push(hash);
-                        }
-                        Err(e) => {
-                            return Err(PipelineError::EmitError(
-                                format!("Failed to write receipt {} to lockchain: {}", receipt.id, e)
-                            ));
-                        }
-                    }
-                }
-            }
+            // Use mutable lockchain reference
+            let mut lockchain_ref = if let Some(ref lockchain) = self.lockchain {
+                lockchain.clone()
+            } else {
+                return Err(PipelineError::EmitError(
+                    "Lockchain enabled but not initialized".to_string()
+                ));
+            };
             
-            #[cfg(not(feature = "knhk-lockchain"))]
-            {
-                // Lockchain feature not enabled, compute hash only
-                for receipt in &input.receipts {
-                    let hash = Self::compute_receipt_hash(receipt);
-                    receipts_written += 1;
-                    lockchain_hashes.push(format!("{:016x}", hash));
+            for receipt in &input.receipts {
+                match self.write_receipt_to_lockchain_with_lockchain(&mut lockchain_ref, receipt) {
+                    Ok(hash) => {
+                        receipts_written += 1;
+                        lockchain_hashes.push(hash);
+                    }
+                    Err(e) => {
+                        return Err(PipelineError::EmitError(
+                            format!("Failed to write receipt {} to lockchain: {}", receipt.id, e)
+                        ));
+                    }
                 }
             }
         }
@@ -122,10 +104,8 @@ impl EmitStage {
                 match self.send_action_to_endpoint(action, endpoint) {
                     Ok(_) => {
                         success = true;
-                        actions_sent += 1;
-                        // Cache successful action for W1 degradation (cache implementation planned for v1.0)
-                        // Self::cache_action(action);
-                        break;
+                        self.cache_action(action); // Cache on successful send
+                        break; // Action sent successfully to at least one endpoint
                     }
                     Err(e) => {
                         last_error = Some(e);
@@ -156,32 +136,28 @@ impl EmitStage {
 
                         if retry_action.use_cache {
                             // Degrade to cached answer
-                            if let Some(_cached_action) = cached_answer {
+                            if let Some(cached_action) = cached_answer {
                                 // Use cached action instead of retrying
                                 // Log cache hit and continue with cached action
-                                #[cfg(feature = "knhk-otel")]
-                                {
-                                    use knhk_otel::{Tracer, Metric, MetricValue};
-                                    use std::time::{SystemTime, UNIX_EPOCH};
-                                    
-                                    let mut tracer = Tracer::new();
-                                    let timestamp_ms = SystemTime::now()
-                                        .duration_since(UNIX_EPOCH)
-                                        .map(|d| d.as_millis() as u64)
-                                        .unwrap_or(0);
-                                    
-                                    let mut attrs = alloc::collections::BTreeMap::new();
-                                    attrs.insert("action_id".to_string(), action.id.clone());
-                                    attrs.insert("runtime_class".to_string(), "W1".to_string());
-                                    
-                                    let metric = Metric {
-                                        name: "knhk.w1.cache_hit".to_string(),
-                                        value: MetricValue::Counter(1),
-                                        timestamp_ms,
-                                        attributes: attrs,
-                                    };
-                                    tracer.record_metric(metric);
-                                }
+                                use knhk_otel::{Tracer, Metric, MetricValue};
+                                
+                                let mut tracer = Tracer::new();
+                                let timestamp_ms = SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .map(|d| d.as_millis() as u64)
+                                    .unwrap_or(0);
+                                
+                                let mut attrs = BTreeMap::new();
+                                attrs.insert("action_id".to_string(), action.id.clone());
+                                attrs.insert("runtime_class".to_string(), "W1".to_string());
+                                
+                                let metric = Metric {
+                                    name: "knhk.w1.cache_hit".to_string(),
+                                    value: MetricValue::Counter(1),
+                                    timestamp_ms,
+                                    attributes: attrs,
+                                };
+                                tracer.record_metric(metric);
                                 
                                 // Continue with cached action (count as sent)
                                 actions_sent += 1;
@@ -203,11 +179,11 @@ impl EmitStage {
                         // C1 failure: async finalize (non-blocking)
                         // Store C1FailureAction for caller to schedule async operation
                         match handle_c1_failure(&action.id) {
-                            Ok(_c1_action) => {
+                            Ok(c1_action) => {
                                 // C1FailureAction indicates async finalization needed
                                 // Caller is responsible for scheduling async operation
                                 // For now, log and continue (non-blocking behavior)
-                                // Planned for v1.0: Queue for async processing
+                                // In production, this would be queued for async processing
                             }
                             Err(e) => {
                                 return Err(PipelineError::C1FailureError(e));
