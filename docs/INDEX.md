@@ -86,6 +86,13 @@ This index provides a comprehensive guide to all current KNHK documentation.
 19. **[v1.0 unrdf Integration Plan](v1.0-unrdf-integration-plan.md)** - unrdf integration requirements
 20. **[v1.0 unrdf Gap Analysis](v1.0-unrdf-gap-analysis.md)** - Comprehensive gap analysis
 
+### Product Information
+21. **[Reflex Enterprise Press Release](REFLEX_ENTERPRISE_PRESS_RELEASE.md)** - Product launch announcement for Reflex Enterprise™
+   - Built on KNHK and unrdf
+   - ≤2ns hot path guards
+   - Law-driven compute fabric
+   - Customer outcomes and metrics
+
 ### Research & Evaluation
 21. **[ggen RDF Research](ggen-rdf-research.md)** - Research on ggen RDF handling
 22. **[ggen Integration Evaluation](ggen-integration-evaluation.md)** - Integration evaluation
