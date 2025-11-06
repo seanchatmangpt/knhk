@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package knhk.sidecar.v1;
+
+// KGC Sidecar Service - Local proxy for enterprise apps
+service KgcSidecar {
+  // Submit a transaction (RDF delta)
+  rpc SubmitTransaction(Transaction) returns (TransactionResponse);
+  
+  // Submit a query (SPARQL)
+  rpc SubmitQuery(Query) returns (QueryResponse);
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Transaction - RDF delta with triples
+message Transaction {
+  repeated Triple additions = 1;
+  repeated Triple removals = 2;
+  string actor = 3;
+  uint64 timestamp_ms = 4;
+}
+
+// Triple - RDF triple (S, P, O, G)
+message Triple {
+  uint64 subject = 1;
+  uint64 predicate = 2;
+  uint64 object = 3;
+  optional uint64 graph = 4;
+}
+
+// Query - SPARQL query request
+message Query {
+  string sparql = 1;
+  optional string schema = 2;
+}
+
+// TransactionResponse - Response with receipt
+message TransactionResponse {
+  Receipt receipt = 1;
+  bool success = 2;
+  optional string error = 3;
+}
+
+// QueryResponse - SPARQL query result
+message QueryResponse {
+  repeated BindingSet bindings = 1;
+  bool success = 2;
+  optional string error = 3;
+}
+
+// BindingSet - SPARQL query result bindings
+message BindingSet {
+  map<string, Value> bindings = 1;
+}
+
+// Value - RDF value (IRI, literal, blank node)
+message Value {
+  oneof value {
+    string iri = 1;
+    string literal = 2;
+    string blank_node = 3;
+  }
+}
+
+// Receipt - Cryptographic receipt
+message Receipt {
+  uint64 span_id = 1;
+  uint64 a_hash = 2;
+  uint32 ticks = 3;
+  uint32 lanes = 4;
+}
+
+// HealthCheckRequest - Health check request
+message HealthCheckRequest {}
+
+// HealthCheckResponse - Health check response
+message HealthCheckResponse {
+  bool healthy = 1;
+  optional string message = 2;
+}
+

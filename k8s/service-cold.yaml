@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: knhk-cold
+  namespace: kgc
+  labels:
+    app: knhk
+    component: cold
+spec:
+  type: ClusterIP
+  ports:
+    - name: rpc
+      port: 50053
+      targetPort: 50053
+      protocol: TCP
+  selector:
+    app: knhk
+    component: cold
+

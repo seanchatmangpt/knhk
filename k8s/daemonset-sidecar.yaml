@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: knhk-sidecar
+  namespace: kgc
+  labels:
+    app: knhk
+    component: sidecar
+spec:
+  selector:
+    matchLabels:
+      app: knhk
+      component: sidecar
+  template:
+    metadata:
+      labels:
+        app: knhk
+        component: sidecar
+    spec:
+      containers:
+        - name: knhk-sidecar
+          image: knhk-sidecar:latest
+          ports:
+            - containerPort: 50051
+              name: grpc
+          env:
+            - name: LISTEN_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: SIDECAR_LISTEN_ADDR
+            - name: WARM_ORCHESTRATOR_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: WARM_ORCHESTRATOR_ENDPOINT
+            - name: BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: SIDECAR_BATCH_SIZE
+            - name: BATCH_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: SIDECAR_BATCH_TIMEOUT_MS
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
