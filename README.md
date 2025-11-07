@@ -13,7 +13,10 @@ KNHK is a production-ready knowledge graph engine designed for real-time graph o
 **Key Insight**: At the end of each cycle: **A = μ(O)** - The enterprise's current state of action (A) is a verified, deterministic projection of its knowledge (O), within 2ns per rule check.
 
 **Key Features**:
+- **8-Beat Epoch System**: Fixed-cadence reconciliation with branchless cycle/tick/pulse generation (τ=8)
 - **Hot Path**: ≤2ns latency (8 ticks) for critical operations
+- **Fiber Execution**: Per-shard execution units with tick-based rotation and park/escalate
+- **Ring Buffers**: SoA-optimized Δ-ring (input) and A-ring (output) with per-tick isolation
 - **Rust-Native RDF**: Pure Rust SPARQL execution via oxigraph
 - **Knowledge Hooks**: Policy-driven automation triggers
 - **Cold Path Integration**: unrdf JavaScript integration for complex queries
@@ -37,16 +40,35 @@ See [Repository Overview](REPOSITORY_OVERVIEW.md) for complete system overview.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    C Layer (Cold Path)                      │
-│                   knhk_unrdf Erlang Stub                    │
+│                    C Layer (Hot Path)                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │ Beat Scheduler│ │ Ring Buffers │ │ Eval Dispatch │       │
+│  │ (branchless) │ │  (SoA layout) │ │  (hot kernels)│       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│  ┌──────────────┐  ┌──────────────┐                         │
+│  │   Fiber      │  │   Receipts    │                         │
+│  │  Execution   │  │  (provenance) │                         │
+│  └──────────────┘  └──────────────┘                         │
+└─────────────────────┬───────────────────────────────────────┘
+                      │ FFI
+┌─────────────────────▼───────────────────────────────────────┐
+│              Rust ETL Layer (knhk-etl)                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │ Beat         │  │ Fiber        │  │ Ring         │       │
+│  │ Scheduler    │  │ Management   │  │ Conversion   │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│  ┌──────────────┐  ┌──────────────┐                         │
+│  │ Park Manager │  │ Ingest       │                         │
+│  │ (W1 escalate)│  │ (unified)    │                         │
+│  └──────────────┘  └──────────────┘                         │
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
-│              Rust FFI Layer (knhk-unrdf)                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │   Native     │  │   unrdf      │  │   FFI        │       │
-│  │   (Pure Rust)│  │  (Node.js)   │  │   Exports    │       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│              Sidecar Service (knhk-sidecar)                  │
+│  • Beat Admission Control (8-beat epoch)                    │
+│  • gRPC Proxy with Batching                                 │
+│  • Circuit Breaker & Retry Logic                            │
+│  • Weaver Live-Check Integration                             │
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
@@ -60,7 +82,45 @@ See [Repository Overview](REPOSITORY_OVERVIEW.md) for complete system overview.
 
 ## Core Components
 
-### 1. Hooks Engine (`rust/knhk-unrdf/src/hooks_native.rs`)
+### 1. 8-Beat Epoch System (`c/src/beat.c`, `rust/knhk-etl/src/beat_scheduler.rs`)
+
+Fixed-cadence reconciliation system implementing the **8-beat epoch** (τ=8):
+
+**C Layer (Hot Path)**:
+- **Beat Scheduler**: Branchless cycle counter with atomic operations
+  - `knhk_beat_next()`: Advance cycle atomically
+  - `knhk_beat_tick(cycle)`: Extract tick (0-7) via `cycle & 0x7`
+  - `knhk_beat_pulse(cycle)`: Compute pulse signal (1 when tick==0) branchlessly
+- **Ring Buffers**: SoA-optimized buffers with per-tick isolation
+  - Δ-ring (input): SoA layout for deltas with cycle IDs
+  - A-ring (output): SoA layout for assertions with receipts
+  - 64-byte alignment for cache lines, power-of-2 sizing
+- **Fiber Execution**: Per-shard execution units
+  - `knhk_fiber_execute()`: Execute μ on ≤8 items at tick slot
+  - `knhk_fiber_park()`: Park over-budget work to W1
+  - `knhk_fiber_process_tick()`: Process tick (read → execute → write)
+- **Eval Dispatch**: Hot path kernel dispatch
+  - Branchless ASK/COUNT/COMPARE/VALIDATE/SELECT/UNIQUE operations
+  - SIMD-aware memory layout
+
+**Rust ETL Layer**:
+- **BeatScheduler**: Manages cycle counter, ring buffers, and fiber rotation
+  - `advance_beat()`: Advance to next beat, execute fibers, commit on pulse
+  - `enqueue_delta()`: Enqueue delta to Δ-ring at tick slot
+  - `commit_cycle()`: Finalize receipts and update lockchain on pulse boundary
+- **Fiber Management**: Per-shard fibers with tick-based rotation
+- **Ring Conversion**: RawTriple ↔ SoA array conversion utilities
+- **Park Manager**: Handles over-budget work escalation to W1
+
+**Key Laws** (from the Constitution):
+- `Epoch: μ ⊂ τ` (τ=8) - Hook evaluation contained in 8-tick bound
+- `Order: Λ` is `≺`-total - Global beat defines order across pods/shards
+- `Provenance: hash(A) = hash(μ(O))` - Every beat yields cryptographic receipts
+- `Bounded Time`: R1 completion ≤8 ticks per admitted unit
+
+See [8-Beat C/Rust Integration](docs/8BEAT-C-RUST-INTEGRATION.md) for complete integration details.
+
+### 2. Hooks Engine (`rust/knhk-unrdf/src/hooks_native.rs`)
 
 Rust-native hooks engine implementing the Guard law `μ ⊣ H` (partial):
 
@@ -128,7 +188,11 @@ Enterprise data source connectors with structured diagnostics:
 
 ### 7. ETL Pipeline (`rust/knhk-etl/`)
 
-ETL pipeline with streaming support:
+ETL pipeline with 8-beat epoch integration:
+- **Beat Scheduler**: 8-beat epoch scheduler with cycle/tick/pulse generation
+- **Fiber Management**: Per-shard execution units with tick-based rotation
+- **Ring Buffers**: Δ-ring (input) and A-ring (output) with SoA layout
+- **Park Manager**: Over-budget work escalation to W1
 - **Ingester Pattern**: Unified interface for multiple input sources (inspired by Weaver)
 - **Streaming Support**: Real-time ingestion with `StreamingIngester` trait
 - **Pipeline Stages**: Ingest → Transform → Load → Reflex → Emit
@@ -136,7 +200,9 @@ ETL pipeline with streaming support:
 
 ### 8. Sidecar Service (`rust/knhk-sidecar/`)
 
-gRPC proxy service with Weaver integration:
+gRPC proxy service with 8-beat admission control:
+- **Beat Admission Control**: Admits deltas on beat `k` with cycle ID stamping
+- **Beat Scheduler Integration**: Continuous beat advancement with pulse detection
 - **Weaver Live-Check**: Automatic telemetry validation
 - **Request Batching**: Groups multiple RDF operations
 - **Circuit Breaker**: Prevents cascading failures
@@ -147,12 +213,17 @@ gRPC proxy service with Weaver integration:
 ### Prerequisites
 
 - Rust 1.70+ (2021 edition)
+- C compiler (GCC/Clang) with C11 support (for hot path C layer)
 - Node.js 18+ (for unrdf integration)
 - Cargo with `native` feature enabled
+- Make (for C build system)
 
 ### Building
 
 ```bash
+# Build C hot path layer first
+cd c && make && cd ..
+
 # Build with native features (Rust-native RDF)
 cargo build --features native --release
 
@@ -193,6 +264,9 @@ cargo bench --features native
 - **[Repository Overview](REPOSITORY_OVERVIEW.md)** - Complete system overview with formal insights
 - **[Formal Mathematical Foundations](docs/formal-foundations.md)** - Deep formal insights and emergent properties
 - **[Architecture Overview](docs/architecture.md)** - System architecture
+- **[8-Beat C/Rust Integration](docs/8BEAT-C-RUST-INTEGRATION.md)** - 8-beat epoch system integration details
+- **[8-Beat Integration Completion Plan](docs/8BEAT-INTEGRATION-COMPLETION-PLAN.md)** - Integration roadmap
+- **[Branchless C Engine Implementation](docs/BRANCHLESS_C_ENGINE_IMPLEMENTATION.md)** - C hot path implementation
 - **[unrdf Integration](docs/unrdf-integration-dod.md)** - Cold path integration status
 - **[Chicago TDD Validation](docs/unrdf-chicago-tdd-validation.md)** - Integration test results
 - **[API Reference](docs/api.md)** - Complete API documentation
@@ -261,10 +335,21 @@ See [Weaver Insights Chicago TDD Validation](docs/WEAVER_INSIGHTS_CHICAGO_TDD_VA
 
 ## Performance
 
-### Hot Path Targets
-- Single hook execution: <2ns (8 ticks)
-- Memory layout: Zero-copy, SIMD-aware
-- Branchless operations: Constant-time execution
+### Hot Path Targets (8-Beat Epoch)
+- **Beat Cycle**: Atomic increment, branchless tick extraction (`cycle & 0x7`)
+- **Pulse Detection**: Branchless pulse signal (1 when tick==0)
+- **Single Hook Execution**: <2ns (8 ticks) per admitted unit
+- **Ring Buffer Operations**: Branchless enqueue/dequeue with atomic indices
+- **Fiber Execution**: ≤8 ticks per tick slot, automatic park on over-budget
+- **Memory Layout**: Zero-copy, SIMD-aware, 64-byte alignment for cache lines
+- **Branchless Operations**: Constant-time execution (no conditional branches in hot path)
+
+### ETL Pipeline (8-Beat Integration)
+- **Beat Advancement**: Continuous cycle/tick/pulse generation
+- **Delta Admission**: Cycle ID stamping on admission, tick-based routing
+- **Fiber Rotation**: Per-shard execution with tick-based rotation
+- **Commit Boundary**: Pulse-triggered commit (every 8 ticks)
+- **Park Escalation**: Automatic W1 escalation for over-budget work
 
 ### Cold Path (Batch Evaluation)
 - 100 hooks: <100ms (parallel)
@@ -302,7 +387,46 @@ KNHK uses formal mathematical vocabulary:
 
 ```
 knhk/
+├── c/                        # C core layer (hot path)
+│   ├── include/knhk/
+│   │   ├── beat.h            # 8-beat epoch scheduler
+│   │   ├── ring.h            # Ring buffer structures
+│   │   ├── fiber.h           # Fiber execution
+│   │   ├── eval_dispatch.h   # Hot path kernel dispatch
+│   │   └── types.h           # Core types (receipts, etc.)
+│   ├── src/
+│   │   ├── beat.c            # Beat scheduler implementation
+│   │   ├── ring.c            # Ring buffer implementation
+│   │   ├── fiber.c           # Fiber execution implementation
+│   │   ├── eval_dispatch.c   # Eval dispatch implementation
+│   │   └── simd/             # SIMD-optimized operations
+│   └── tests/
+│       └── chicago_construct8.c  # Chicago TDD tests
 ├── rust/
+│   ├── knhk-hot/            # C FFI bindings (hot path)
+│   │   ├── src/
+│   │   │   ├── beat_ffi.rs   # Beat scheduler FFI
+│   │   │   ├── ring_ffi.rs   # Ring buffer FFI
+│   │   │   ├── fiber_ffi.rs  # Fiber execution FFI
+│   │   │   └── receipt_convert.rs  # Receipt conversion
+│   │   └── tests/
+│   ├── knhk-etl/            # ETL pipeline with 8-beat integration
+│   │   ├── src/
+│   │   │   ├── beat_scheduler.rs    # 8-beat epoch scheduler
+│   │   │   ├── fiber.rs             # Fiber management
+│   │   │   ├── ring_conversion.rs   # RawTriple ↔ SoA conversion
+│   │   │   ├── park.rs              # Park manager (W1 escalation)
+│   │   │   ├── ingester.rs          # Ingester pattern (Weaver-inspired)
+│   │   │   └── pipeline.rs          # ETL pipeline stages
+│   │   └── tests/
+│   │       └── chicago_tdd_beat_system.rs  # Chicago TDD tests
+│   ├── knhk-sidecar/        # gRPC proxy service
+│   │   ├── src/
+│   │   │   ├── beat_admission.rs    # Beat admission control
+│   │   │   ├── server.rs            # gRPC server
+│   │   │   └── service.rs           # Service implementation
+│   │   └── tests/
+│   │       └── chicago_tdd_beat_admission.rs  # Chicago TDD tests
 │   ├── knhk-unrdf/          # Rust-native hooks engine
 │   │   ├── src/
 │   │   │   ├── hooks_native.rs      # Native hooks implementation
@@ -312,13 +436,6 @@ knhk/
 │   │   │   └── hooks_native_ffi.rs  # FFI exports
 │   │   └── benches/
 │   │       └── hooks_native_bench.rs # Performance benchmarks
-│   ├── knhk-etl/            # ETL pipeline with streaming support
-│   │   ├── src/
-│   │   │   ├── ingester.rs          # Ingester pattern (Weaver-inspired)
-│   │   │   ├── pipeline.rs          # ETL pipeline stages
-│   │   │   └── ...
-│   │   └── tests/
-│   │       └── ingester_pattern_test.rs  # Chicago TDD tests
 │   ├── knhk-connectors/     # Enterprise data connectors
 │   │   ├── src/
 │   │   │   ├── kafka.rs             # Kafka connector
@@ -332,17 +449,15 @@ knhk/
 │   │   │   └── diagnostics.rs      # Structured diagnostics
 │   │   └── tests/
 │   │       └── policy_engine_enhanced_test.rs  # Chicago TDD tests
-│   ├── knhk-sidecar/        # gRPC proxy service
-│   │   ├── src/
-│   │   │   ├── server.rs            # gRPC server (fixed startup)
-│   │   │   └── service.rs           # Service implementation
-│   │   └── docs/
-│   │       └── WEAVER_INTEGRATION.md  # Weaver live-check integration
 │   └── knhk-cli/            # Command-line interface
-├── c/                        # C core layer (hot path)
 ├── vendors/
 │   └── unrdf/               # unrdf JavaScript integration
 └── docs/                     # Documentation
+    ├── 8BEAT-C-RUST-INTEGRATION.md
+    ├── 8BEAT-INTEGRATION-COMPLETION-PLAN.md
+    ├── BRANCHLESS_C_ENGINE_IMPLEMENTATION.md
+    ├── V1-ARCHITECTURE-COMPLIANCE-REPORT.md
+    ├── V1-PERFORMANCE-BENCHMARK-REPORT.md
     ├── WEAVER_ANALYSIS_AND_LEARNINGS.md
     ├── WEAVER_INSIGHTS_IMPLEMENTATION.md
     └── WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md
@@ -387,6 +502,13 @@ knhk/
 ✅ **Production Ready**: All tests passing, comprehensive error handling, performance validated
 
 **Current Status**:
+- ✅ 8-beat epoch system (C layer) complete
+- ✅ Beat scheduler with branchless cycle/tick/pulse generation
+- ✅ Ring buffers (Δ-ring and A-ring) with SoA layout
+- ✅ Fiber execution system with tick-based rotation
+- ✅ Eval dispatch for hot path kernel operations
+- ✅ Rust ETL integration with beat scheduler
+- ✅ Sidecar beat admission control
 - ✅ Rust-native hooks engine complete
 - ✅ Cold path integration with unrdf complete
 - ✅ Chicago TDD test coverage complete (62+ tests)
@@ -396,7 +518,6 @@ knhk/
 - ✅ Policy engine with Rego support preparation
 - ✅ Streaming ingester pattern implemented
 - ✅ Enhanced error diagnostics with structured codes
-- ✅ Sidecar server startup implementation fixed
 - ✅ Connector lifecycle methods implemented
 - ✅ Documentation complete
 
