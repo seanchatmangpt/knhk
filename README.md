@@ -252,86 +252,66 @@ cargo bench --features native
 
 ## Documentation
 
-### Hooks Engine Documentation
+### Current Status & Planning
 
-- **[Hooks Engine: 2ns Use Cases](docs/hooks-engine-2ns-use-cases.md)** - Complete documentation of hooks engine architecture and laws
-- **[Chicago TDD Coverage](docs/hooks-engine-chicago-tdd-coverage.md)** - Test coverage by law and use case (14 tests)
-- **[Error Validation Tests](docs/hooks-engine-error-validation-tests.md)** - What works and what doesn't work (17 tests)
-- **[Stress Tests & Benchmarks](docs/hooks-engine-stress-tests.md)** - Performance validation (7 tests)
+- **[V1 Status](docs/V1-STATUS.md)** - **Single source of truth** for v1.0 status (replaces 160+ archived status docs)
+- **[Documentation Policy](docs/DOCUMENTATION_POLICY.md)** - LEAN pull-based documentation policy
+- **[Evidence Index](docs/EVIDENCE_INDEX.md)** - Deduplication index for all validation evidence
 
-### Architecture Documentation
+### Core Architecture
 
 - **[Repository Overview](REPOSITORY_OVERVIEW.md)** - Complete system overview with formal insights
+- **[8-Beat System](docs/8BEAT-SYSTEM.md)** - Fixed-cadence reconciliation epoch system
+- **[Weaver Integration](docs/WEAVER.md)** - OpenTelemetry live-check validation (consolidated)
 - **[Formal Mathematical Foundations](docs/formal-foundations.md)** - Deep formal insights and emergent properties
-- **[Architecture Overview](docs/architecture.md)** - System architecture
-- **[8-Beat C/Rust Integration](docs/8BEAT-C-RUST-INTEGRATION.md)** - 8-beat epoch system integration details
-- **[8-Beat Integration Completion Plan](docs/8BEAT-INTEGRATION-COMPLETION-PLAN.md)** - Integration roadmap
 - **[Branchless C Engine Implementation](docs/BRANCHLESS_C_ENGINE_IMPLEMENTATION.md)** - C hot path implementation
-- **[unrdf Integration](docs/unrdf-integration-dod.md)** - Cold path integration status
-- **[Chicago TDD Validation](docs/unrdf-chicago-tdd-validation.md)** - Integration test results
-- **[API Reference](docs/api.md)** - Complete API documentation
-- **[CLI Guide](docs/cli.md)** - Command-line interface reference
 
-### Weaver Integration & Insights
+### Development Guides
 
-- **[Weaver Integration](docs/weaver-integration.md)** - OpenTelemetry Weaver live-check integration
-- **[Weaver Analysis and Learnings](docs/WEAVER_ANALYSIS_AND_LEARNINGS.md)** - Architectural patterns learned from Weaver
-- **[Weaver Insights Implementation](docs/WEAVER_INSIGHTS_IMPLEMENTATION.md)** - Implementation summary of Weaver insights
-- **[Weaver Insights Chicago TDD Validation](docs/WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md)** - Test validation for Weaver insights
+- **[KANBAN Board](docs/KANBAN.md)** - Single-piece flow task board
+- **[Agent Selection Guide](docs/AGENT_SELECTION_GUIDE.md)** - When to use which specialized agent
+- **[Agent Selection Matrix](docs/AGENT_SELECTION_MATRIX.md)** - Agent capability matrix
+- **[Single Piece Flow](docs/SINGLE_PIECE_FLOW.md)** - LEAN workflow principles
+
+### Evidence & Validation (Pull-Based)
+
+All validation evidence is co-located in `docs/evidence/` following LEAN principles:
+- **Performance**: `performance_validation.md`, `performance_8beat_validation.md`
+- **Quality**: `code_quality_analysis.md`, `chicago_tdd_validation.md`
+- **Security**: `security_audit_v1.md`
+- **Production**: `production_validation_final.md`
+- **DFLSS**: `dflss_consolidated.md` (single consolidated LEAN/DFLSS report)
+- **Weaver**: `weaver_validation_final.md`
+
+See [Evidence Index](docs/EVIDENCE_INDEX.md) for complete catalog.
 
 ## Test Coverage
 
-### Hooks Engine Tests: 31 tests (all passing ✅)
+### Chicago TDD Test Suite (22 tests - all passing ✅)
 
-**Chicago TDD Tests: 14 tests**
+Organized by subsystem following AAA pattern (Arrange-Act-Assert):
+
+**8-Beat Epoch System** (`rust/knhk-etl/tests/`):
+- `chicago_tdd_beat_scheduler.rs` - Beat advancement, tick rotation, pulse detection
+- `chicago_tdd_pipeline.rs` - ETL pipeline stages with beat integration
+- `chicago_tdd_ring_conversion.rs` - SoA ↔ RawTriple conversion
+- `chicago_tdd_hook_registry.rs` - Hook registration and lookup
+- `chicago_tdd_runtime_class.rs` - R1/W1/C1 runtime class management
+
+**Formal Properties Validated**:
 - Guard law validation (`μ ⊣ H`)
 - Invariant preservation (`preserve(Q)`)
 - Provenance verification (`hash(A) = hash(μ(O))`)
 - Order preservation (`Λ` is `≺`-total)
 - Idempotence property (`μ ∘ μ = μ`)
-- Merge associativity (`Π` is `⊕`-monoid)
-- Typing constraints (`O ⊨ Σ`)
+- Epoch containment (`μ ⊂ τ`, τ=8)
 
-**Error Validation Tests: 17 tests**
-- Query type validation (non-ASK queries rejected)
-- Hook definition validation (missing fields)
-- Data validation (malformed Turtle)
-- SPARQL syntax validation
-- Batch evaluation errors
-- Registry error handling
+**Weaver Integration Tests** (31 tests - all passing ✅):
+- Error diagnostics with OTEL correlation (9 tests)
+- Policy engine validation (10 tests)
+- Streaming ingester pattern (12 tests)
 
-**Stress Tests: 7 tests**
-- Concurrent hook execution (1000 hooks, 10 threads)
-- Large batch evaluation (1000 hooks)
-- Registry concurrent access (20 threads)
-- Memory pressure (10k triples)
-- Receipt uniqueness (1000 receipts)
-- Query complexity variation
-- Error handling under load
-
-### Weaver Insights Tests: 31 tests (all passing ✅)
-
-**Error Diagnostics Tests: 9 tests**
-- Error code extraction and consistency
-- Error message extraction
-- Retryability checking
-- All error types coverage
-
-**Policy Engine Tests: 10 tests**
-- Policy context creation and defaults
-- Unified policy evaluation (`evaluate_all()`)
-- Multiple violation detection
-- Custom policy configuration
-- Partial context handling
-
-**Ingester Pattern Tests: 12 tests**
-- File and stdin ingester creation
-- Streaming support (start/stop)
-- Trait consistency
-- Data format support (RDF, JSON-LD, JSON, CSV)
-- Ingester readiness checking
-
-See [Weaver Insights Chicago TDD Validation](docs/WEAVER_INSIGHTS_CHICAGO_TDD_VALIDATION.md) for complete test documentation.
+See [Chicago TDD Validation Evidence](docs/evidence/chicago_tdd_validation.md) for complete test documentation.
 
 ## Performance
 
@@ -467,14 +447,16 @@ knhk/
 
 ### Development Standards
 
-- **80/20 Principle**: Focus on critical 20% features
+- **LEAN/DFLSS Methodology**: Pull-based workflows, single-piece flow, zero inventory
+- **80/20 Principle**: Focus on critical 20% features (Pareto efficiency)
 - **No Placeholders**: Production-ready implementations only
-- **Chicago TDD**: State-based tests, real collaborators (62+ tests)
+- **Chicago TDD**: State-based tests, real collaborators (22+ tests, reorganized by subsystem)
 - **Error Handling**: Proper `Result<T, E>` propagation with structured diagnostics
 - **Performance**: Hot path ≤2ns constraint (8 ticks)
 - **Weaver Patterns**: Architectural patterns from OpenTelemetry Weaver
 - **Policy-Based Validation**: Rego-based policies for guard constraints and performance budgets
-- **Streaming Support**: Real-time processing with unified ingester pattern
+- **Evidence-Based**: All claims validated with evidence in `docs/evidence/`
+- **Pull Documentation**: Create docs on-demand, not speculatively (see [Documentation Policy](docs/DOCUMENTATION_POLICY.md))
 
 ### Code Review Checklist
 
@@ -499,27 +481,32 @@ knhk/
 
 ## Status
 
-✅ **Production Ready**: All tests passing, comprehensive error handling, performance validated
+✅ **v1.0 Implementation Sprint**: DFLSS quality optimization in progress
 
-**Current Status**:
-- ✅ 8-beat epoch system (C layer) complete
-- ✅ Beat scheduler with branchless cycle/tick/pulse generation
+**Current Metrics** (see [V1-STATUS.md](docs/V1-STATUS.md) for detailed status):
+- **DFLSS Quality Score**: 61.2% → 95%+ (in progress)
+- **Lean Waste**: 59% → <15% (eliminating)
+- **Code Quality**: 92.5% (maintained)
+- **First Pass Yield**: 41% → 85%+ (target)
+- **Documentation**: 301 files → 1 status file (99% inventory reduction)
+
+**Completed Components**:
+- ✅ 8-beat epoch system (C layer) with branchless operations
 - ✅ Ring buffers (Δ-ring and A-ring) with SoA layout
-- ✅ Fiber execution system with tick-based rotation
-- ✅ Eval dispatch for hot path kernel operations
+- ✅ Fiber execution with tick-based rotation and park/escalate
 - ✅ Rust ETL integration with beat scheduler
 - ✅ Sidecar beat admission control
-- ✅ Rust-native hooks engine complete
-- ✅ Cold path integration with unrdf complete
-- ✅ Chicago TDD test coverage complete (62+ tests)
-- ✅ Error validation tests complete
-- ✅ Stress tests and benchmarks complete
-- ✅ Weaver insights implementation complete
-- ✅ Policy engine with Rego support preparation
-- ✅ Streaming ingester pattern implemented
-- ✅ Enhanced error diagnostics with structured codes
-- ✅ Connector lifecycle methods implemented
-- ✅ Documentation complete
+- ✅ Chicago TDD test coverage (22 tests, reorganized by subsystem)
+- ✅ Weaver live-check integration
+- ✅ LEAN documentation policy implementation
+- ✅ Evidence-based validation structure
+
+**Active Work** (see [V1-STATUS.md](docs/V1-STATUS.md)):
+- Gate-0 validation (catch defects at compile-time)
+- Pull system implementation (JIT work, zero inventory)
+- Final quality audit for v1.0 release
+
+**Next**: v1.0 Production Release (GO/NO-GO based on DFLSS score ≥95%)
 
 ---
 
