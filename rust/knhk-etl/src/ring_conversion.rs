@@ -14,34 +14,35 @@ pub fn raw_triples_to_soa(triples: &[RawTriple]) -> Result<(Vec<u64>, Vec<u64>, 
         return Err(format!("Triple count {} exceeds max_run_len 8", triples.len()));
     }
 
-    let mut S = Vec::with_capacity(triples.len());
-    let mut P = Vec::with_capacity(triples.len());
-    let mut O = Vec::with_capacity(triples.len());
+    let mut s = Vec::with_capacity(triples.len());
+    let mut p = Vec::with_capacity(triples.len());
+    let mut o = Vec::with_capacity(triples.len());
 
     for triple in triples {
-        S.push(hash_iri(&triple.subject)?);
-        P.push(hash_iri(&triple.predicate)?);
-        O.push(hash_iri(&triple.object)?);
+        s.push(hash_iri(&triple.subject)?);
+        p.push(hash_iri(&triple.predicate)?);
+        o.push(hash_iri(&triple.object)?);
     }
 
-    Ok((S, P, O))
+    Ok((s, p, o))
 }
 
 /// Convert SoA arrays back to RawTriple
 /// Uses hex representation of u64 as IRI
 /// Note: This is a placeholder until reverse lookup from IRI registry is available
-pub fn soa_to_raw_triples(S: &[u64], P: &[u64], O: &[u64]) -> Vec<RawTriple> {
-    if S.len() != P.len() || P.len() != O.len() {
+#[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
+pub fn soa_to_raw_triples(s: &[u64], p: &[u64], o: &[u64]) -> Vec<RawTriple> {
+    if s.len() != p.len() || p.len() != o.len() {
         return Vec::new();
     }
 
-    S.iter()
-        .zip(P.iter())
-        .zip(O.iter())
-        .map(|((&s, &p), &o)| RawTriple {
-            subject: format!("urn:hash:{:x}", s),
-            predicate: format!("urn:hash:{:x}", p),
-            object: format!("urn:hash:{:x}", o),
+    s.iter()
+        .zip(p.iter())
+        .zip(o.iter())
+        .map(|((&s_val, &p_val), &o_val)| RawTriple {
+            subject: format!("urn:hash:{:x}", s_val),
+            predicate: format!("urn:hash:{:x}", p_val),
+            object: format!("urn:hash:{:x}", o_val),
             graph: None,
         })
         .collect()
@@ -83,22 +84,22 @@ mod tests {
 
         let result = raw_triples_to_soa(&triples);
         assert!(result.is_ok());
-        let (S, P, O) = match result {
+        let (s, p, o) = match result {
             Ok(v) => v,
             Err(e) => panic!("Failed to convert triples to SoA: {}", e),
         };
-        assert_eq!(S.len(), 2);
-        assert_eq!(P.len(), 2);
-        assert_eq!(O.len(), 2);
+        assert_eq!(s.len(), 2);
+        assert_eq!(p.len(), 2);
+        assert_eq!(o.len(), 2);
     }
 
     #[test]
     fn test_soa_to_raw_triples() {
-        let S = vec![0x1234, 0x5678];
-        let P = vec![0xabcd, 0xef00];
-        let O = vec![0x1111, 0x2222];
+        let s = vec![0x1234, 0x5678];
+        let p = vec![0xabcd, 0xef00];
+        let o = vec![0x1111, 0x2222];
 
-        let triples = soa_to_raw_triples(&S, &P, &O);
+        let triples = soa_to_raw_triples(&s, &p, &o);
         assert_eq!(triples.len(), 2);
         assert!(triples[0].subject.starts_with("urn:hash:"));
     }

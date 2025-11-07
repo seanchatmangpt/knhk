@@ -2,6 +2,10 @@
 // KNHKS CLI - Main Entry Point
 // Noun-Verb Command Interface based on CONVO.txt API
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 mod commands;
 mod error;
 mod tracing;
@@ -23,14 +27,14 @@ mod config;
 mod hook;
 
 use clap_noun_verb::Result as CnvResult;
-use knhk_config::load_config;
+use knhk_config::{load_config, config::KnhkConfig, Config};
 
 // Global configuration (loaded at startup)
-static CONFIG: std::sync::OnceLock<knhk_config::KnhkConfig> = std::sync::OnceLock::new();
+static CONFIG: std::sync::OnceLock<Config> = std::sync::OnceLock::new();
 
-fn get_config() -> &'static knhk_config::KnhkConfig {
+fn get_config() -> &'static Config {
     CONFIG.get_or_init(|| {
-        match load_config() {
+        match load_config(None) {
             Ok(config) => {
                 // Record configuration load metric
                 #[cfg(feature = "otel")]
@@ -50,7 +54,7 @@ fn get_config() -> &'static knhk_config::KnhkConfig {
                     let mut tracer = Tracer::new();
                     MetricsHelper::record_config_error(&mut tracer, "load_failed");
                 }
-                knhk_config::KnhkConfig::default()
+                Config::default()
             }
         }
     })

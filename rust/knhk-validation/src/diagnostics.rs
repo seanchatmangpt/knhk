@@ -4,9 +4,23 @@
 
 #![cfg(feature = "diagnostics")]
 
+#[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::format;
+
+#[cfg(feature = "std")]
+use std::string::{String, ToString};
+#[cfg(feature = "std")]
+use std::vec::Vec;
+#[cfg(feature = "std")]
+use std::collections::BTreeMap;
+#[cfg(feature = "std")]
+use std::format;
 
 #[cfg(feature = "diagnostics")]
 use miette::{Diagnostic, SourceSpan};
@@ -248,7 +262,7 @@ pub fn policy_violation(policy_name: &str, violation: &str) -> DiagnosticMessage
 /// Format diagnostics for human-readable output (using miette)
 #[cfg(feature = "std")]
 pub fn format_diagnostics(diagnostics: &Diagnostics) -> String {
-    use alloc::format;
+    // format! macro already imported at top of file
     
     let mut output = String::new();
     

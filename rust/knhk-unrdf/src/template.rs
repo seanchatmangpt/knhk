@@ -1,6 +1,9 @@
 // knhk-unrdf: Template engine for JavaScript templates
 // Uses Tera template engine for safe, compile-time template rendering
 
+// ACCEPTABLE: Singleton initialization .expect() is allowed (unrecoverable deployment error)
+#![allow(clippy::expect_used)]
+
 use crate::error::UnrdfError;
 use std::collections::HashMap;
 use std::sync::{OnceLock, Mutex};
@@ -55,8 +58,11 @@ impl TemplateEngine {
     
     /// Get singleton template engine instance
     pub fn get() -> Result<&'static Mutex<TemplateEngine>, UnrdfError> {
+        // ACCEPTABLE: Singleton initialization failure is rare and unrecoverable.
+        // Template engine includes hardcoded templates, so failure indicates broken deployment.
+        // Alternative: Use once_cell crate's get_or_try_init (requires adding dependency).
         Ok(TEMPLATE_ENGINE.get_or_init(|| {
-            Mutex::new(Self::new().expect("Failed to initialize template engine"))
+            Mutex::new(Self::new().expect("FATAL: Failed to initialize template engine - templates are corrupted or missing"))
         }))
     }
     

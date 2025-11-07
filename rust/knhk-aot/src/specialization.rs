@@ -1,12 +1,10 @@
 // knhk-aot: Code specialization
 // Generates specialized code paths for common patterns
 
-#![no_std]
 extern crate alloc;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use alloc::format;
 
 /// Specialization pattern
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,9 +38,9 @@ pub fn detect_pattern(subjects: &[u64; 8], len: usize) -> SpecializationPattern 
     
     let mut zero_count = 0;
     let mut non_zero_count = 0;
-    
-    for i in 0..len {
-        if subjects[i] == 0 {
+
+    for item in subjects.iter().take(len) {
+        if *item == 0 {
             zero_count += 1;
         } else {
             non_zero_count += 1;
@@ -71,27 +69,25 @@ pub fn specialize(pattern: SpecializationPattern, len: usize) -> SpecializationR
     
     let hints = match pattern {
         SpecializationPattern::AllNonZero => {
-            let mut v = Vec::new();
-            v.push("Skip mask generation".to_string());
-            v.push("Use all-ones mask constant".to_string());
-            v
+            vec![
+                "Skip mask generation".to_string(),
+                "Use all-ones mask constant".to_string(),
+            ]
         },
         SpecializationPattern::AllZero => {
-            let mut v = Vec::new();
-            v.push("Early return".to_string());
-            v.push("Set out_mask to 0".to_string());
-            v
+            vec![
+                "Early return".to_string(),
+                "Set out_mask to 0".to_string(),
+            ]
         },
         SpecializationPattern::Sparse => {
-            let mut v = Vec::new();
-            v.push("Use sparse computation path".to_string());
-            v.push("Optimize for zero lanes".to_string());
-            v
+            vec![
+                "Use sparse computation path".to_string(),
+                "Optimize for zero lanes".to_string(),
+            ]
         },
         SpecializationPattern::Dense => {
-            let mut v = Vec::new();
-            v.push("Use standard computation".to_string());
-            v
+            vec!["Use standard computation".to_string()]
         },
     };
     

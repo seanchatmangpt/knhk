@@ -1,8 +1,6 @@
 // rust/knhk-aot/src/prebinding.rs
 // Prebinding constants to IR for AOT optimization
 
-use alloc::vec::Vec;
-use alloc::string::String;
 use crate::template::ConstructTemplate;
 
 #[derive(Debug, Clone)]

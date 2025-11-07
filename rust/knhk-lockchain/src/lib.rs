@@ -1,13 +1,38 @@
 // rust/knhk-lockchain/src/lib.rs
 // Lockchain: Merkle tree-based receipt provenance with quorum consensus
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 pub mod merkle;
 pub mod quorum;
 pub mod storage;
 
-pub use merkle::{MerkleTree, MerkleProof};
+pub use merkle::{MerkleTree, MerkleProof, MerkleError};
 pub use quorum::{QuorumManager, QuorumProof, QuorumError, PeerId};
 pub use storage::{LockchainStorage, StorageError};
+
+use thiserror::Error;
+
+/// Top-level lockchain errors
+#[derive(Debug, Error)]
+pub enum LockchainError {
+    #[error("Storage error: {0}")]
+    Storage(#[from] StorageError),
+
+    #[error("Merkle proof error: {0}")]
+    Merkle(#[from] MerkleError),
+
+    #[error("Quorum error: {0}")]
+    Quorum(#[from] QuorumError),
+
+    #[error("Receipt verification failed: {0}")]
+    ReceiptVerificationFailed(String),
+
+    #[error("Hash computation failed: {0}")]
+    HashComputationFailed(String),
+}
 
 /// Receipt structure for lockchain hashing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,11 +69,11 @@ impl Receipt {
         // Step 2: SHA-256 hash of canonicalized data + receipt fields
         let mut hasher = Sha256::new();
         hasher.update(canonical.as_bytes());
-        hasher.update(&self.cycle_id.to_le_bytes());
-        hasher.update(&self.shard_id.to_le_bytes());
-        hasher.update(&self.hook_id.to_le_bytes());
-        hasher.update(&self.actual_ticks.to_le_bytes());
-        hasher.update(&self.hash_a.to_le_bytes());
+        hasher.update(self.cycle_id.to_le_bytes());
+        hasher.update(self.shard_id.to_le_bytes());
+        hasher.update(self.hook_id.to_le_bytes());
+        hasher.update(self.actual_ticks.to_le_bytes());
+        hasher.update(self.hash_a.to_le_bytes());
         
         let hash = hasher.finalize();
         let mut result = [0u8; 32];

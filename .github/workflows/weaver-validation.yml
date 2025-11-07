@@ -1,0 +1,86 @@
+name: Weaver Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'registry/**'
+      - 'rust/**'
+      - '.github/workflows/weaver-validation.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'registry/**'
+      - 'rust/**'
+
+jobs:
+  weaver-check:
+    name: OpenTelemetry Weaver Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Install Weaver
+        run: |
+          cargo install weaver-cli --locked
+          weaver --version
+
+      - name: Start OTEL Collector
+        run: |
+          docker run -d \
+            --name otel-collector \
+            -p 4317:4317 \
+            -p 4318:4318 \
+            -v $(pwd)/tests/integration/otel-collector-config.yaml:/etc/otelcol/config.yaml \
+            otel/opentelemetry-collector:latest \
+            --config=/etc/otelcol/config.yaml
+
+          # Wait for collector
+          sleep 5
+
+          # Verify collector is running
+          docker ps --filter name=otel-collector
+          docker logs otel-collector
+
+      - name: Set OTEL Environment
+        run: |
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> $GITHUB_ENV
+          echo "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4318/v1/traces" >> $GITHUB_ENV
+
+      - name: Run Weaver Schema Check
+        run: |
+          weaver registry check -r registry/
+
+      - name: Build KNHK with Telemetry
+        run: |
+          cd rust
+          cargo build --release --features tokio-runtime
+
+      - name: Emit Test Telemetry
+        run: |
+          cd rust
+          timeout 10 cargo run --release --example emit_telemetry || true
+          sleep 2
+
+      - name: Run Weaver Live-Check
+        run: |
+          weaver registry live-check --registry registry/
+
+      - name: Collector Logs (on failure)
+        if: failure()
+        run: |
+          docker logs otel-collector
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop otel-collector || true
+          docker rm otel-collector || true

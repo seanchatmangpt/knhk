@@ -11,6 +11,3 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 
-[build.rs]
-file = "build.rs"
-

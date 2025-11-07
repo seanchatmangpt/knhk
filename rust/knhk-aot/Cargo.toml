@@ -10,6 +10,9 @@ path = "src/lib.rs"
 [dependencies]
 knhk-validation = { path = "../knhk-validation", version = "0.1.0", features = ["policy-engine"], optional = true }
 
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = "0.6"
+
 [features]
 default = []
 std = []

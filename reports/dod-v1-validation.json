@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-07T05:23:32Z",
+  "timestamp": "2025-11-07T19:57:12Z",
   "summary": {
     "total_criteria": 19,
     "passed": 11,
@@ -16,7 +16,7 @@
 ,
     "core_no_unwrap": {
       "status": "warning",
-      "message": "Found 149 instances of unwrap()/expect() in production code (review recommended, many likely in test modules)"
+      "message": "Found 145 instances of unwrap()/expect() in production code (review recommended, many likely in test modules)"
     }
 ,
     "core_trait_compatibility": {
@@ -66,12 +66,12 @@
 ,
     "ext_code_quality": {
       "status": "warning",
-      "message": "Found 2 TODO/FIXME comments"
+      "message": "Found 1 TODO/FIXME comments"
     }
 ,
     "ext_documentation": {
       "status": "warning",
-      "message": "Found 965 public items without documentation"
+      "message": "Found 966 public items without documentation"
     }
 ,
     "ext_performance": {
@@ -101,7 +101,7 @@
 ,
     "ext_knhk_specific": {
       "status": "passed",
-      "message": "KNHK-specific requirements met (guard constraints: 151 instances)"
+      "message": "KNHK-specific requirements met (guard constraints: 153 instances)"
     }
   }
 }

@@ -1,0 +1,140 @@
+[workspace]
+resolver = "2"
+members = [
+    "knhk-hot",
+    "knhk-otel",
+    "knhk-connectors",
+    "knhk-lockchain",
+    "knhk-unrdf",
+    "knhk-etl",
+    "knhk-warm",
+    "knhk-aot",
+    "knhk-validation",
+    "knhk-config",
+    # "knhk-sidecar",  # Temporarily excluded - 53 async trait errors, Wave 5 technical debt
+    "knhk-cli",
+    "knhk-integration-tests",
+]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["KNHK Team"]
+
+[workspace.dependencies]
+# Core system crates (internal)
+knhk-hot = { path = "./knhk-hot", version = "1.0.0" }
+knhk-otel = { path = "./knhk-otel", version = "0.1.0" }
+knhk-connectors = { path = "./knhk-connectors", version = "0.1.0" }
+knhk-lockchain = { path = "./knhk-lockchain", version = "0.1.0" }
+knhk-unrdf = { path = "./knhk-unrdf", version = "0.1.0" }
+knhk-etl = { path = "./knhk-etl", version = "0.1.0" }
+knhk-warm = { path = "./knhk-warm", version = "0.1.0" }
+knhk-aot = { path = "./knhk-aot", version = "0.1.0" }
+knhk-validation = { path = "./knhk-validation", version = "0.1.0" }
+knhk-config = { path = "./knhk-config", version = "0.1.0" }
+knhk-sidecar = { path = "./knhk-sidecar", version = "0.5.0" }
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+tokio-stream = "0.1"
+tokio-test = "0.4"
+
+# gRPC/Protobuf
+tonic = { version = "0.10", features = ["tls", "tls-roots"] }
+tonic-build = "0.10"
+prost = "0.12"
+prost-types = "0.12"
+
+# OpenTelemetry (0.31 for CLI, 0.21 for ETL - keep separate)
+opentelemetry = "0.31"
+opentelemetry_sdk = "0.31"
+opentelemetry-otlp = "0.31"
+opentelemetry-http = "0.31"
+opentelemetry-semantic-conventions = "0.15"
+tracing = "0.1"
+tracing-opentelemetry = "0.32"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+toml = "0.8"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+miette = { version = "7.6", features = ["fancy", "serde"] }
+
+# Hashing & crypto
+blake3 = "1.5"
+sha2 = "0.10"
+hex = "0.4"
+
+# Collections & data structures
+hashbrown = { version = "0.15", default-features = false }
+lru = "0.16"
+ahash = "0.8"
+
+# RDF & semantic web
+oxigraph = "0.5"
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+
+# Kafka
+rdkafka = "0.36"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+clap-noun-verb = "3.3.0"
+clap-noun-verb-macros = "3.3.0"
+
+# Storage
+sled = "0.34"
+
+# Git
+git2 = "0.18"
+
+# Template engine
+tera = { version = "1.19", features = ["builtins"] }
+
+# Policy engine
+regorus = { version = "0.4", default-features = false, features = ["std", "arc"] }
+
+# Utilities
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
+rand = "0.8"
+rayon = "1.8"
+futures = "0.3"
+
+# Dev/test dependencies
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.0"
+tempfile = "3.8"
+
+[workspace.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+# Workspace-wide profile settings
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.test]
+opt-level = 0
+debug = true
+
+[profile.bench]
+opt-level = 3
+debug = false

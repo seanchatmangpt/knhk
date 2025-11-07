@@ -28,6 +28,7 @@ fn test_ring_conversion_raw_to_soa() {
     ];
     
     // Act: Convert to SoA
+    #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     let (S, P, O) = raw_triples_to_soa(&triples).expect("Should convert");
     
     // Assert: SoA arrays have correct length and values
@@ -42,8 +43,11 @@ fn test_ring_conversion_raw_to_soa() {
 #[test]
 fn test_ring_conversion_soa_to_raw() {
     // Arrange: Create SoA arrays
+    #[allow(non_snake_case)] // RDF naming convention
     let S = vec![100u64, 200u64];
+    #[allow(non_snake_case)] // RDF naming convention
     let P = vec![50u64, 50u64];
+    #[allow(non_snake_case)] // RDF naming convention
     let O = vec![10u64, 20u64];
     
     // Act: Convert to raw triples
@@ -68,6 +72,7 @@ fn test_ring_conversion_empty_input() {
     
     // Assert: Returns empty arrays
     assert!(result.is_ok());
+    #[allow(non_snake_case)] // RDF naming convention
     let (S, P, O) = result.unwrap();
     assert_eq!(S.len(), 0);
     assert_eq!(P.len(), 0);
@@ -91,6 +96,7 @@ fn test_ring_conversion_max_run_len() {
     
     // Assert: Conversion succeeds (within max_run_len)
     assert!(result.is_ok());
+    #[allow(non_snake_case)] // RDF naming convention
     let (S, P, O) = result.unwrap();
     assert_eq!(S.len(), 8);
     assert_eq!(P.len(), 8);

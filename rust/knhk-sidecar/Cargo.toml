@@ -7,18 +7,18 @@ description = "KGC Sidecar - gRPC proxy service for enterprise apps with batchin
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.0", features = ["full"] }
+knhk-etl = { path = "../knhk-etl", version = "0.1.0", features = ["std"] }
+tokio = { version = "1.35", features = ["full"] }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 prost = "0.12"
 prost-types = "0.12"
-knhk-etl = { path = "../knhk-etl", features = ["std"] }
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", optional = true }
 tokio-stream = "0.1"
-thiserror = "1.0"
+thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 toml = "0.8"

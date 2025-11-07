@@ -183,7 +183,21 @@ Monitor these metrics within 6σ control limits:
 ```bash
 cargo test --workspace  # 100% pass
 make test-chicago-v04   # 22 tests pass
+cargo clippy --workspace -- -D warnings  # Zero warnings
 ```
+
+**Code Quality Gates**:
+- [ ] Zero `.unwrap()` calls in production code (enforced by `#![deny(clippy::unwrap_used)]`)
+- [ ] Zero `.expect()` calls in production code except documented acceptable patterns:
+  - Mutex poisoning (unrecoverable, documented with comment + link to Rust docs)
+  - Singleton initialization failure (unrecoverable deployment error, documented)
+  - Default trait fallback (cannot return Result, documented)
+  - Mathematically guaranteed infallible operations (e.g., `NonZeroUsize::new(1000)`)
+- [ ] All production crates have `#![deny(clippy::unwrap_used)]` and `#![deny(clippy::expect_used)]` in lib.rs/main.rs
+- [ ] Acceptable `.expect()` patterns have `#![allow(clippy::expect_used)]` at module level with documentation
+- [ ] All error paths use proper `Result<T, E>` propagation with `?` operator
+
+**Rationale**: KNHK exists to eliminate false positives in testing. Using `.unwrap()` creates potential panics that can mask errors. Proper error handling ensures failures are visible and traceable.
 
 ### 7.2 Performance Completion ✓
 

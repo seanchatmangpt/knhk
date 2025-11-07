@@ -215,7 +215,22 @@ impl ReconcileContext {
                 ticks: 0,
                 actual_ticks: 0,
                 lanes: 0,
-                span_id: knhk_otel::generate_span_id(), // Generate OTEL-compatible span ID
+                span_id: {
+                    #[cfg(feature = "knhk-otel")]
+                    {
+                        use knhk_otel::generate_span_id;
+                        generate_span_id()
+                    }
+                    #[cfg(not(feature = "knhk-otel"))]
+                    {
+                        use std::time::{SystemTime, UNIX_EPOCH};
+                        let timestamp = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .map(|d| d.as_nanos() as u64)
+                            .unwrap_or(0);
+                        timestamp.wrapping_mul(0x9e3779b97f4a7c15)
+                    }
+                }, // Generate OTEL-compatible span ID
                 a_hash: 0,
             }));
         }
@@ -368,7 +383,7 @@ mod tests {
 
         let result = ctx.reconcile_delta(&delta, &soa, 0);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 0);
+        assert_eq!(result.expect("Empty delta reconciliation should succeed").len(), 0);
     }
 
     #[test]

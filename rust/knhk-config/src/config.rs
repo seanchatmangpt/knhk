@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Main configuration structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub knhk: KnhkConfig,
@@ -162,17 +162,8 @@ pub fn load_config(_path: Option<()>) -> Result<Config, String> {
     Ok(Config::default())
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            knhk: KnhkConfig::default(),
-            connectors: BTreeMap::new(),
-            epochs: BTreeMap::new(),
-            hooks: HooksConfig::default(),
-            routes: BTreeMap::new(),
-        }
-    }
-}
+// Default implementation auto-derived
+// Manual implementation removed - using #[derive(Default)] on Config struct instead
 
 #[cfg(test)]
 mod tests {

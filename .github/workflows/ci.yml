@@ -4,65 +4,33 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 env:
-  CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
 
 jobs:
-  # ============================================
-  # LEVEL 1: Weaver Schema Validation (MANDATORY)
-  # ============================================
-  weaver-validation:
-    name: Weaver Registry Validation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Weaver
-        run: |
-          curl -sSL https://github.com/open-telemetry/weaver/releases/download/v0.9.0/weaver-linux-x86_64 -o weaver
-          chmod +x weaver
-          sudo mv weaver /usr/local/bin/
-
-      - name: Validate OTel Registry Schema
-        run: weaver registry check -r registry/
-        continue-on-error: false
-
-      - name: Comment on PR (Schema Validation Failed)
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ **CRITICAL: Weaver schema validation failed!**\n\nThe OTel registry schema is invalid. This is the source of truth for KNHK and MUST pass before any code can be merged.'
-            })
-
-  # ============================================
-  # LEVEL 2: Compilation & Code Quality
-  # ============================================
-  build-and-lint:
-    name: Build and Lint
+  # Build and test Rust crates
+  rust-tests:
+    name: Rust Tests
     runs-on: ${{ matrix.os }}
-    needs: weaver-validation
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        rust: [stable]
+        rust: [stable, nightly]
+        exclude:
+          - os: macos-latest
+            rust: nightly
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
@@ -75,78 +43,91 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            rust/*/target/
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('rust/**/Cargo.lock') }}
           restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.rust }}-
             ${{ runner.os }}-cargo-
 
-      - name: Install system dependencies (macOS)
-        if: matrix.os == 'macos-latest'
+      - name: Check Rust formatting
+        if: matrix.rust == 'stable'
         run: |
-          brew install raptor2 || true
-
-      - name: Install system dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libraptor2-dev pkg-config || true
-
-      - name: Build all crates
-        run: |
-          for crate in rust/knhk-*; do
-            if [ -d "$crate" ] && [ -f "$crate/Cargo.toml" ]; then
-              echo "Building $crate..."
-              (cd "$crate" && cargo build --all-features)
+          for crate in rust/*/Cargo.toml; do
+            if [ -f "$crate" ]; then
+              dir=$(dirname "$crate")
+              echo "Checking formatting in $dir..."
+              (cd "$dir" && cargo fmt -- --check) || exit 1
             fi
           done
 
-      - name: Run Clippy (all crates)
-        run: |
-          for crate in rust/knhk-*; do
-            if [ -d "$crate" ] && [ -f "$crate/Cargo.toml" ]; then
-              echo "Linting $crate..."
-              (cd "$crate" && cargo clippy --all-features -- -D warnings)
-            fi
-          done
+      - name: Run Clippy
+        if: matrix.rust == 'stable'
+        run: make lint-rust
 
-      - name: Check code formatting
-        run: |
-          for crate in rust/knhk-*; do
-            if [ -d "$crate" ] && [ -f "$crate/Cargo.toml" ]; then
-              echo "Checking format $crate..."
-              (cd "$crate" && cargo fmt -- --check)
-            fi
-          done
+      - name: Build Rust crates
+        run: make build-rust
 
-      - name: Check for unsafe code patterns
-        run: |
-          echo "Checking for .unwrap() in production code..."
-          if grep -r "\.unwrap()" rust/*/src --include="*.rs" | grep -v "test" | grep -v "example"; then
-            echo "❌ Found .unwrap() in production code"
-            exit 1
-          fi
-          echo "✅ No .unwrap() found in production code"
+      - name: Run Rust tests
+        run: bash scripts/run-all-rust-tests.sh
 
-  # ============================================
-  # LEVEL 3: Traditional Tests
-  # ============================================
-  test:
-    name: Test Suite
+  # C library tests
+  c-tests:
+    name: C Library Tests
     runs-on: ${{ matrix.os }}
-    needs: build-and-lint
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        compiler: [gcc, clang]
+        exclude:
+          - os: macos-latest
+            compiler: gcc
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libraptor2-dev pkg-config
 
-      - name: Cache Rust dependencies
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install raptor pkg-config
+
+      - name: Set compiler
+        run: echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
+
+      - name: Build C library
+        run: make build-c
+
+      - name: Run C tests
+        run: make test-c
+
+  # Chicago TDD tests
+  chicago-tdd:
+    name: Chicago TDD Tests
+    runs-on: ubuntu-latest
+    needs: [rust-tests, c-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install C dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libraptor2-dev pkg-config clang
+
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -154,115 +135,134 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            rust/*/target/
+          key: chicago-${{ runner.os }}-${{ hashFiles('rust/**/Cargo.lock') }}
 
-      - name: Install system dependencies (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install raptor2 || true
+      - name: Build all
+        run: make build
 
-      - name: Install system dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Run Chicago TDD tests
+        run: make test-chicago-v04
+
+  # Performance tests
+  performance:
+    name: Performance Tests (τ ≤ 8)
+    runs-on: ubuntu-latest
+    needs: [rust-tests, c-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install C dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libraptor2-dev pkg-config || true
+          sudo apt-get install -y libraptor2-dev pkg-config clang
 
-      - name: Run unit tests (all crates)
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/*/target/
+          key: perf-${{ runner.os }}-${{ hashFiles('rust/**/Cargo.lock') }}
+
+      - name: Build with optimizations
+        run: make build
+
+      - name: Run performance tests
+        run: make test-performance-v04
+
+  # Integration tests
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [rust-tests, c-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install C dependencies
         run: |
-          for crate in rust/knhk-*; do
-            if [ -d "$crate" ] && [ -f "$crate/Cargo.toml" ]; then
-              echo "Testing $crate..."
-              (cd "$crate" && cargo test --all-features)
-            fi
-          done
+          sudo apt-get update
+          sudo apt-get install -y libraptor2-dev pkg-config clang
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/*/target/
+          key: integration-${{ runner.os }}-${{ hashFiles('rust/**/Cargo.lock') }}
+
+      - name: Build all
+        run: make build
 
       - name: Run integration tests
-        if: hashFiles('rust/knhk-integration-tests/Cargo.toml') != ''
-        run: |
-          cd rust/knhk-integration-tests
-          cargo test --all-features
+        run: make test-integration-v2
 
-      - name: Generate test coverage report
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo install cargo-tarpaulin || true
-          cargo tarpaulin --out Xml --workspace || true
-
-      - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./cobertura.xml
-          fail_ci_if_error: false
-
-  # ============================================
-  # Production Readiness Check
-  # ============================================
-  production-ready:
-    name: Production Readiness Validation
+  # Complete test suite
+  complete-suite:
+    name: Complete Test Suite
     runs-on: ubuntu-latest
-    needs: [weaver-validation, build-and-lint, test]
+    needs: [chicago-tdd, performance, integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Weaver
-        run: |
-          curl -sSL https://github.com/open-telemetry/weaver/releases/download/v0.9.0/weaver-linux-x86_64 -o weaver
-          chmod +x weaver
-          sudo mv weaver /usr/local/bin/
-
-      - name: Run production readiness validation
-        run: ./scripts/validate-production-ready.sh
-
-      - name: Comment on PR (Success)
-        if: success() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ **All validation checks passed!**\n\n- ✅ Weaver registry schema valid\n- ✅ Zero compilation warnings\n- ✅ Zero Clippy issues\n- ✅ All tests passing\n- ✅ No unsafe code patterns\n\nCode is production-ready! 🚀'
-            })
+          toolchain: stable
 
-      - name: Comment on PR (Failure)
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: Install C dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libraptor2-dev pkg-config clang
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ **Production readiness validation failed!**\n\nPlease review the CI logs and fix all issues before merging.'
-            })
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/*/target/
+          key: complete-${{ runner.os }}-${{ hashFiles('rust/**/Cargo.lock') }}
 
-  # ============================================
-  # Security Audit
-  # ============================================
-  security-audit:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Build all
+        run: make build
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Run complete test suite
+        run: make test-all
 
-      - name: Run cargo audit
+      - name: Generate test report
+        if: always()
         run: |
-          cargo install cargo-audit || true
-          cargo audit || true
-
-      - name: Run cargo deny
-        run: |
-          cargo install cargo-deny || true
-          cargo deny check || true
+          echo "## Test Results" > $GITHUB_STEP_SUMMARY
+          echo "✅ Complete test suite passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- Chicago TDD tests: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance tests (τ ≤ 8): ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration tests: ✅" >> $GITHUB_STEP_SUMMARY

@@ -8,6 +8,8 @@ use std::os::raw::c_int;
 
 /// Δ-ring (input): SoA layout for deltas
 #[repr(C)]
+#[derive(Debug)]
+#[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
 pub struct knhk_delta_ring_t {
     pub S: *mut u64,              // Subject array (64B aligned)
     pub P: *mut u64,              // Predicate array
@@ -23,6 +25,8 @@ pub struct knhk_delta_ring_t {
 
 /// A-ring (output): SoA layout for assertions + receipts
 #[repr(C)]
+#[derive(Debug)]
+#[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
 pub struct knhk_assertion_ring_t {
     pub S: *mut u64,              // Subject array (64B aligned)
     pub P: *mut u64,               // Predicate array
@@ -104,6 +108,7 @@ extern "C" {
 }
 
 /// Safe wrapper for Δ-ring
+#[derive(Debug)]
 pub struct DeltaRing {
     pub(crate) inner: knhk_delta_ring_t,
 }
@@ -132,6 +137,7 @@ impl DeltaRing {
     }
 
     /// Enqueue delta to ring at tick slot
+    #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     pub fn enqueue(
         &self,
         tick: u64,
@@ -143,7 +149,7 @@ impl DeltaRing {
         if S.len() != P.len() || P.len() != O.len() {
             return Err("S, P, O arrays must have same length".to_string());
         }
-        if S.len() == 0 || S.len() > 8 {
+        if S.is_empty() || S.len() > 8 {
             return Err("Count must be between 1 and 8".to_string());
         }
 
@@ -167,23 +173,26 @@ impl DeltaRing {
     }
 
     /// Dequeue delta from ring at tick slot
+    /// Returns tuple of (S, P, O, cycle_ids) vectors
+    #[allow(clippy::type_complexity)] // FFI tuple matches C API structure
+    #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     pub fn dequeue(
         &self,
         tick: u64,
         capacity: usize,
     ) -> Option<(Vec<u64>, Vec<u64>, Vec<u64>, Vec<u64>)> {
-        let mut S = vec![0u64; capacity];
-        let mut P = vec![0u64; capacity];
-        let mut O = vec![0u64; capacity];
+        let mut s = vec![0u64; capacity];
+        let mut p = vec![0u64; capacity];
+        let mut o = vec![0u64; capacity];
         let mut cycle_ids = vec![0u64; capacity];
 
         let count = unsafe {
             knhk_ring_dequeue_delta(
                 &self.inner as *const _ as *mut _,
                 tick,
-                S.as_mut_ptr(),
-                P.as_mut_ptr(),
-                O.as_mut_ptr(),
+                s.as_mut_ptr(),
+                p.as_mut_ptr(),
+                o.as_mut_ptr(),
                 cycle_ids.as_mut_ptr(),
                 capacity,
             )
@@ -192,11 +201,11 @@ impl DeltaRing {
         if count == 0 {
             None
         } else {
-            S.truncate(count);
-            P.truncate(count);
-            O.truncate(count);
+            s.truncate(count);
+            p.truncate(count);
+            o.truncate(count);
             cycle_ids.truncate(count);
-            Some((S, P, O, cycle_ids))
+            Some((s, p, o, cycle_ids))
         }
     }
 
@@ -215,6 +224,7 @@ impl Drop for DeltaRing {
 }
 
 /// Safe wrapper for A-ring
+#[derive(Debug)]
 pub struct AssertionRing {
     pub(crate) inner: knhk_assertion_ring_t,
 }
@@ -242,6 +252,7 @@ impl AssertionRing {
     }
 
     /// Enqueue assertion + receipt to ring at tick slot
+    #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     pub fn enqueue(
         &self,
         tick: u64,
@@ -253,7 +264,7 @@ impl AssertionRing {
         if S.len() != P.len() || P.len() != O.len() {
             return Err("S, P, O arrays must have same length".to_string());
         }
-        if S.len() == 0 || S.len() > 8 {
+        if S.is_empty() || S.len() > 8 {
             return Err("Count must be between 1 and 8".to_string());
         }
 
@@ -277,19 +288,22 @@ impl AssertionRing {
     }
 
     /// Dequeue assertion + receipt from ring at tick slot
+    /// Returns tuple of (S, P, O, receipts) vectors
+    #[allow(clippy::type_complexity)] // FFI tuple matches C API structure
+    #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     pub fn dequeue(&self, tick: u64, capacity: usize) -> Option<(Vec<u64>, Vec<u64>, Vec<u64>, Vec<Receipt>)> {
-        let mut S = vec![0u64; capacity];
-        let mut P = vec![0u64; capacity];
-        let mut O = vec![0u64; capacity];
+        let mut s = vec![0u64; capacity];
+        let mut p = vec![0u64; capacity];
+        let mut o = vec![0u64; capacity];
         let mut receipts = vec![Receipt::default(); capacity];
 
         let count = unsafe {
             knhk_ring_dequeue_assertion(
                 &self.inner as *const _ as *mut _,
                 tick,
-                S.as_mut_ptr(),
-                P.as_mut_ptr(),
-                O.as_mut_ptr(),
+                s.as_mut_ptr(),
+                p.as_mut_ptr(),
+                o.as_mut_ptr(),
                 receipts.as_mut_ptr(),
                 capacity,
             )
@@ -298,11 +312,11 @@ impl AssertionRing {
         if count == 0 {
             None
         } else {
-            S.truncate(count);
-            P.truncate(count);
-            O.truncate(count);
+            s.truncate(count);
+            p.truncate(count);
+            o.truncate(count);
             receipts.truncate(count);
-            Some((S, P, O, receipts))
+            Some((s, p, o, receipts))
         }
     }
 
@@ -336,23 +350,23 @@ mod tests {
             Ok(r) => r,
             Err(e) => panic!("Failed to create delta ring: {}", e),
         };
-        let S = vec![0x1234, 0x5678];
-        let P = vec![0xabcd, 0xef00];
-        let O = vec![0x1111, 0x2222];
+        let s = vec![0x1234, 0x5678];
+        let p = vec![0xabcd, 0xef00];
+        let o = vec![0x1111, 0x2222];
 
         // Enqueue at tick 0
-        assert!(ring.enqueue(0, &S, &P, &O, 42).is_ok());
+        assert!(ring.enqueue(0, &s, &p, &o, 42).is_ok());
 
         // Dequeue at tick 0
         let result = ring.dequeue(0, 8);
         assert!(result.is_some());
-        let (S_out, P_out, O_out, cycle_ids) = match result {
+        let (s_out, p_out, o_out, cycle_ids) = match result {
             Some(v) => v,
             None => panic!("Expected dequeue result"),
         };
-        assert_eq!(S_out.len(), 2);
-        assert_eq!(P_out.len(), 2);
-        assert_eq!(O_out.len(), 2);
+        assert_eq!(s_out.len(), 2);
+        assert_eq!(p_out.len(), 2);
+        assert_eq!(o_out.len(), 2);
         assert_eq!(cycle_ids.len(), 2);
         assert_eq!(cycle_ids[0], 42);
     }
@@ -364,35 +378,35 @@ mod tests {
             Ok(r) => r,
             Err(e) => panic!("Failed to create delta ring: {}", e),
         };
-        let S0 = vec![0x1111];
-        let P0 = vec![0x2222];
-        let O0 = vec![0x3333];
-        let S1 = vec![0x4444];
-        let P1 = vec![0x5555];
-        let O1 = vec![0x6666];
+        let s0 = vec![0x1111];
+        let p0 = vec![0x2222];
+        let o0 = vec![0x3333];
+        let s1 = vec![0x4444];
+        let p1 = vec![0x5555];
+        let o1 = vec![0x6666];
 
         // Enqueue to tick 0
-        assert!(ring.enqueue(0, &S0, &P0, &O0, 0).is_ok());
+        assert!(ring.enqueue(0, &s0, &p0, &o0, 0).is_ok());
         // Enqueue to tick 1
-        assert!(ring.enqueue(1, &S1, &P1, &O1, 8).is_ok());
+        assert!(ring.enqueue(1, &s1, &p1, &o1, 8).is_ok());
 
         // Dequeue from tick 0 - should get tick 0 data
         let result0 = ring.dequeue(0, 8);
         assert!(result0.is_some());
-        let (S_out0, _, _, _) = match result0 {
+        let (s_out0, _, _, _) = match result0 {
             Some(v) => v,
             None => panic!("Expected dequeue result for tick 0"),
         };
-        assert_eq!(S_out0[0], 0x1111);
+        assert_eq!(s_out0[0], 0x1111);
 
         // Dequeue from tick 1 - should get tick 1 data
         let result1 = ring.dequeue(1, 8);
         assert!(result1.is_some());
-        let (S_out1, _, _, _) = match result1 {
+        let (s_out1, _, _, _) = match result1 {
             Some(v) => v,
             None => panic!("Expected dequeue result for tick 1"),
         };
-        assert_eq!(S_out1[0], 0x4444);
+        assert_eq!(s_out1[0], 0x4444);
     }
 
     #[test]
@@ -405,21 +419,21 @@ mod tests {
         
         // Fill ring at tick 0 multiple times to test wrap-around
         for i in 0..3 {
-            let S = vec![0x1000 + i];
-            let P = vec![0x2000 + i];
-            let O = vec![0x3000 + i];
-            assert!(ring.enqueue(0, &S, &P, &O, i).is_ok());
+            let s = vec![0x1000 + i];
+            let p = vec![0x2000 + i];
+            let o = vec![0x3000 + i];
+            assert!(ring.enqueue(0, &s, &p, &o, i).is_ok());
         }
         
         // Dequeue all from tick 0
         for i in 0..3 {
             let result = ring.dequeue(0, 8);
             assert!(result.is_some());
-            let (S_out, _, _, _) = match result {
+            let (s_out, _, _, _) = match result {
                 Some(v) => v,
                 None => panic!("Expected dequeue result"),
             };
-            assert_eq!(S_out[0], 0x1000 + i);
+            assert_eq!(s_out[0], 0x1000 + i);
         }
         
         // Verify ring is empty after wrap-around
@@ -439,9 +453,9 @@ mod tests {
             Ok(r) => r,
             Err(e) => panic!("Failed to create assertion ring: {}", e),
         };
-        let S = vec![0x1234, 0x5678];
-        let P = vec![0xabcd, 0xef00];
-        let O = vec![0x1111, 0x2222];
+        let s = vec![0x1234, 0x5678];
+        let p = vec![0xabcd, 0xef00];
+        let o = vec![0x1111, 0x2222];
         let receipt = Receipt {
             cycle_id: 1,
             shard_id: 2,
@@ -454,16 +468,16 @@ mod tests {
         };
 
         // Enqueue at tick 0
-        assert!(ring.enqueue(0, &S, &P, &O, &receipt).is_ok());
+        assert!(ring.enqueue(0, &s, &p, &o, &receipt).is_ok());
 
         // Dequeue at tick 0
         let result = ring.dequeue(0, 8);
         assert!(result.is_some());
-        let (S_out, P_out, O_out, receipts) = match result {
+        let (s_out, p_out, o_out, receipts) = match result {
             Some(v) => v,
             None => panic!("Expected dequeue result"),
         };
-        assert_eq!(S_out.len(), 2);
+        assert_eq!(s_out.len(), 2);
         assert_eq!(receipts.len(), 2);
         assert_eq!(receipts[0].cycle_id, 1);
         assert_eq!(receipts[0].shard_id, 2);

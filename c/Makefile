@@ -135,33 +135,33 @@ $(TEST_GAPS_V1): tests/chicago_gaps_v1.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
 # v0.4.0 Chicago TDD test suites
-$(TEST_V04): tests/chicago_v04_test.c tests/chicago_integration_e2e.c tests/chicago_network_integration.c tests/chicago_cli_integration.c tests/chicago_configuration.c tests/chicago_lockchain_integration.c tests/chicago_performance_v04.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_v04_test.c tests/chicago_integration_e2e.c tests/chicago_network_integration.c tests/chicago_cli_integration.c tests/chicago_configuration.c tests/chicago_lockchain_integration.c tests/chicago_performance_v04.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_V04): ../tests/chicago_v04_test.c ../tests/chicago_integration_e2e.c ../tests/chicago_network_integration.c ../tests/chicago_cli_integration.c ../tests/chicago_configuration.c ../tests/chicago_lockchain_integration.c ../tests/chicago_performance_v04.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_v04_test.c ../tests/chicago_integration_e2e.c ../tests/chicago_network_integration.c ../tests/chicago_cli_integration.c ../tests/chicago_configuration.c ../tests/chicago_lockchain_integration.c ../tests/chicago_performance_v04.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
-$(TEST_E2E): tests/chicago_integration_e2e.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_integration_e2e.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_E2E): ../tests/chicago_integration_e2e.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_integration_e2e.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
-$(TEST_NETWORK): tests/chicago_network_integration.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_network_integration.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_NETWORK): ../tests/chicago_network_integration.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_network_integration.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
-$(TEST_CLI): tests/chicago_cli_integration.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_cli_integration.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_CLI): ../tests/chicago_cli_integration.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_cli_integration.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
-$(TEST_CONFIG): tests/chicago_configuration.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_configuration.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_CONFIG): ../tests/chicago_configuration.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_configuration.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
-$(TEST_LOCKCHAIN_INT): tests/chicago_lockchain_integration.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_lockchain_integration.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_LOCKCHAIN_INT): ../tests/chicago_lockchain_integration.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_lockchain_integration.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
-$(TEST_PERF_V04): tests/chicago_performance_v04.c tests/chicago_test_helpers.c $(LIB)
-	$(CC) $(CFLAGS) -DSTANDALONE_PERFORMANCE_TEST $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_performance_v04.c tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_PERF_V04): ../tests/chicago_performance_v04.c ../tests/chicago_test_helpers.c $(LIB)
+	$(CC) $(CFLAGS) -DSTANDALONE_PERFORMANCE_TEST $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_performance_v04.c ../tests/chicago_test_helpers.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 # v0.5.0 Warm path tests
-$(TEST_WARM_PATH): tests/chicago_warm_path.c $(LIB)
+$(TEST_WARM_PATH): ../tests/chicago_warm_path.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) $< -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 # v0.5.0 Configuration tests
-$(TEST_CONFIG_V05): tests/chicago_config.c
+$(TEST_CONFIG_V05): ../tests/chicago_config_toml.c
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
 
 # 8-Beat Epoch System tests
@@ -173,44 +173,44 @@ $(TEST_PMU): tests/chicago_8beat_pmu.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
 # CLI noun Chicago TDD tests
-$(TEST_CLI_BOOT): tests/chicago_cli_boot.c $(LIB)
+$(TEST_CLI_BOOT): ../tests/chicago_cli_boot.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_CONNECT): tests/chicago_cli_connect.c $(LIB)
+$(TEST_CLI_CONNECT): ../tests/chicago_cli_connect.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_COVER): tests/chicago_cli_cover.c $(LIB)
+$(TEST_CLI_COVER): ../tests/chicago_cli_cover.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_ADMIT): tests/chicago_cli_admit.c $(LIB)
+$(TEST_CLI_ADMIT): ../tests/chicago_cli_admit.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_REFLEX): tests/chicago_cli_reflex.c $(LIB)
+$(TEST_CLI_REFLEX): ../tests/chicago_cli_reflex.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_EPOCH): tests/chicago_cli_epoch.c $(LIB)
+$(TEST_CLI_EPOCH): ../tests/chicago_cli_epoch.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_ROUTE): tests/chicago_cli_route.c $(LIB)
+$(TEST_CLI_ROUTE): ../tests/chicago_cli_route.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_RECEIPT): tests/chicago_cli_receipt.c $(LIB)
+$(TEST_CLI_RECEIPT): ../tests/chicago_cli_receipt.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_METRICS): tests/chicago_cli_metrics.c $(LIB)
+$(TEST_CLI_METRICS): ../tests/chicago_cli_metrics.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
-$(TEST_CLI_COVERAGE): tests/chicago_cli_coverage.c $(LIB)
+$(TEST_CLI_COVERAGE): ../tests/chicago_cli_coverage.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
 # Integration tests with Docker
-$(TEST_KAFKA_INTEGRATION): tests/integration/test_kafka_integration.c
+$(TEST_KAFKA_INTEGRATION): ../tests/integration/test_kafka_integration.c
 	$(CC) $(CFLAGS) -Iinclude $< -o $@
 
-$(TEST_LOCKCHAIN_INTEGRATION): tests/integration/test_lockchain_integration.c
+$(TEST_LOCKCHAIN_INTEGRATION): ../tests/integration/test_lockchain_integration.c
 	$(CC) $(CFLAGS) -Iinclude $< -o $@
 
-$(TEST_ETL_INTEGRATION): tests/integration/test_etl_integration.c
+$(TEST_ETL_INTEGRATION): ../tests/integration/test_etl_integration.c
 	$(CC) $(CFLAGS) -Iinclude $< -o $@
 
 # Build benchmark

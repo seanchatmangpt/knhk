@@ -30,6 +30,8 @@ pub enum UnrdfError {
     GuardViolation(String),
     #[error("Invariant violation: {0}")]
     InvariantViolation(String),
+    #[error("Lock poisoned: {0}")]
+    LockPoisoned(String),
 }
 
 /// Error code enumeration for FFI
@@ -63,6 +65,7 @@ impl From<&UnrdfError> for UnrdfErrorCode {
             UnrdfError::OrderViolation(_) => UnrdfErrorCode::ValidationFailed,
             UnrdfError::GuardViolation(_) => UnrdfErrorCode::ValidationFailed,
             UnrdfError::InvariantViolation(_) => UnrdfErrorCode::ValidationFailed,
+            UnrdfError::LockPoisoned(_) => UnrdfErrorCode::InvalidInput,
         }
     }
 }

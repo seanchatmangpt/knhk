@@ -6,7 +6,7 @@ use crate::quorum::QuorumProof;
 use serde::{Deserialize, Serialize};
 use sled::Db;
 use thiserror::Error;
-use git2::{Repository, Signature, Commit, Oid};
+use git2::{Repository, Signature, Oid};
 use std::path::Path;
 
 /// Storage error types
@@ -39,6 +39,7 @@ pub struct LockchainEntry {
 pub struct LockchainStorage {
     db: Db,
     git_repo: Option<Repository>,  // Optional Git repository for audit log
+    #[allow(dead_code)]
     git_path: Option<String>,       // Git repository path
 }
 
@@ -97,8 +98,8 @@ impl LockchainStorage {
             let file_path = format!("receipts/{:020}.txt", cycle);
             let now_secs = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or(std::time::Duration::from_secs(0))
-                .as_secs() as i32;
+                .map(|d| d.as_secs() as i32)
+                .unwrap_or(0);
             index.add_frombuffer(
                 &git2::IndexEntry {
                     ctime: git2::IndexTime::new(now_secs, 0),
@@ -257,6 +258,15 @@ impl LockchainStorage {
     }
 }
 
+impl std::fmt::Debug for LockchainStorage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LockchainStorage")
+            .field("git_path", &self.git_path)
+            .field("has_git_repo", &self.git_repo.is_some())
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -289,16 +299,20 @@ mod tests {
 
     #[test]
     fn test_storage_persist_and_get() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-1").unwrap();
-        storage.clear().unwrap();
+        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-1")
+            .expect("failed to create storage");
+        storage.clear().expect("failed to clear storage");
 
         let cycle = 100;
         let root = [1u8; 32];
         let proof = create_test_proof(cycle, root);
 
-        storage.persist_root(cycle, root, proof.clone()).unwrap();
+        storage.persist_root(cycle, root, proof.clone())
+            .expect("failed to persist root");
 
-        let retrieved = storage.get_root(cycle).unwrap().unwrap();
+        let retrieved = storage.get_root(cycle)
+            .expect("failed to get root")
+            .expect("root not found");
         assert_eq!(retrieved.cycle, cycle);
         assert_eq!(retrieved.root, root);
         assert_eq!(retrieved.proof.vote_count(), 2);
@@ -306,26 +320,30 @@ mod tests {
 
     #[test]
     fn test_storage_get_nonexistent() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-2").unwrap();
-        storage.clear().unwrap();
+        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-2")
+            .expect("failed to create storage");
+        storage.clear().expect("failed to clear storage");
 
-        let result = storage.get_root(999);
-        assert!(result.unwrap().is_none());
+        let result = storage.get_root(999).expect("failed to query root");
+        assert!(result.is_none());
     }
 
     #[test]
     fn test_storage_range_query() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-3").unwrap();
-        storage.clear().unwrap();
+        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-3")
+            .expect("failed to create storage");
+        storage.clear().expect("failed to clear storage");
 
         // Persist multiple roots
         for cycle in 100..105 {
             let root = [cycle as u8; 32];
             let proof = create_test_proof(cycle, root);
-            storage.persist_root(cycle, root, proof).unwrap();
+            storage.persist_root(cycle, root, proof)
+                .expect("failed to persist root");
         }
 
-        let entries = storage.get_roots_range(101, 103).unwrap();
+        let entries = storage.get_roots_range(101, 103)
+            .expect("failed to get roots range");
         assert_eq!(entries.len(), 3);
         assert_eq!(entries[0].cycle, 101);
         assert_eq!(entries[2].cycle, 103);
@@ -333,35 +351,43 @@ mod tests {
 
     #[test]
     fn test_storage_latest_root() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-4").unwrap();
-        storage.clear().unwrap();
+        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-4")
+            .expect("failed to create storage");
+        storage.clear().expect("failed to clear storage");
 
         // Persist roots
         for cycle in 100..105 {
             let root = [cycle as u8; 32];
             let proof = create_test_proof(cycle, root);
-            storage.persist_root(cycle, root, proof).unwrap();
+            storage.persist_root(cycle, root, proof)
+                .expect("failed to persist root");
         }
 
-        let latest = storage.get_latest_root().unwrap().unwrap();
+        let latest = storage.get_latest_root()
+            .expect("failed to get latest root")
+            .expect("no roots found");
         assert_eq!(latest.cycle, 104);
     }
 
     #[test]
     fn test_storage_continuity() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-5").unwrap();
-        storage.clear().unwrap();
+        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-5")
+            .expect("failed to create storage");
+        storage.clear().expect("failed to clear storage");
 
         // Persist continuous range
         for cycle in 100..110 {
             let root = [cycle as u8; 32];
             let proof = create_test_proof(cycle, root);
-            storage.persist_root(cycle, root, proof).unwrap();
+            storage.persist_root(cycle, root, proof)
+                .expect("failed to persist root");
         }
 
-        assert!(storage.verify_continuity(100, 109).unwrap());
+        assert!(storage.verify_continuity(100, 109)
+            .expect("failed to verify continuity"));
 
         // Gap in range
-        assert!(!storage.verify_continuity(100, 120).unwrap());
+        assert!(!storage.verify_continuity(100, 120)
+            .expect("failed to verify continuity"));
     }
 }

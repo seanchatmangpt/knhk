@@ -216,12 +216,13 @@ impl IngestStage {
     }
 }
 
+#[derive(Debug)]
 pub struct IngestResult {
     pub triples: Vec<RawTriple>,
     pub metadata: BTreeMap<String, String>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct RawTriple {
     pub subject: String,
     pub predicate: String,

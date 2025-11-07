@@ -3,7 +3,9 @@
 // Actions (A) + Receipts → Lockchain + Downstream APIs
 
 extern crate alloc;
+#[cfg(feature = "knhk-otel")]
 extern crate knhk_otel;
+#[cfg(feature = "knhk-lockchain")]
 extern crate knhk_lockchain;
 
 use alloc::vec::Vec;
@@ -40,6 +42,7 @@ pub struct EmitStage {
     pub downstream_endpoints: Vec<String>,
     max_retries: u32,
     retry_delay_ms: u64,
+    #[cfg(feature = "knhk-lockchain")]
     lockchain: Option<knhk_lockchain::storage::LockchainStorage>,
     // W1 cache: simple in-memory cache for degraded responses
     cache: BTreeMap<String, Action>,
@@ -60,6 +63,7 @@ impl EmitStage {
             downstream_endpoints,
             max_retries: 3,
             retry_delay_ms: 1000,
+            #[cfg(feature = "knhk-lockchain")]
             lockchain: if lockchain_enabled {
                 // LockchainStorage requires a database path - configuration will be added in v1.1
                 // For v1.0, lockchain is disabled if storage path not provided
@@ -91,6 +95,7 @@ impl EmitStage {
         let mut lockchain_hashes = Vec::new();
 
         // Write receipts to lockchain
+        #[cfg(feature = "knhk-lockchain")]
         if self.lockchain_enabled {
             // Use mutable lockchain reference
             if let Some(ref mut lockchain) = self.lockchain {
@@ -138,7 +143,7 @@ impl EmitStage {
                     RuntimeClass::R1 => {
                         // R1 failure: escalate
                         return Err(PipelineError::R1FailureError(
-                            format!("Failed to send action {} to all endpoints: {:?}", 
+                            format!("Failed to send action {} to all endpoints: {:?}",
                                 action.id, last_error)
                         ));
                     },
@@ -154,25 +159,28 @@ impl EmitStage {
                             if let Some(_cached_action) = cached_answer {
                                 // Use cached action instead of retrying
                                 // Log cache hit and continue with cached action
-                                use knhk_otel::{Tracer, Metric, MetricValue};
-                                
-                                let mut tracer = Tracer::new();
-                                let timestamp_ms = SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .map(|d| d.as_millis() as u64)
-                                    .unwrap_or(0);
-                                
-                                let mut attrs = BTreeMap::new();
-                                attrs.insert("action_id".to_string(), action.id.clone());
-                                attrs.insert("runtime_class".to_string(), "W1".to_string());
-                                
-                                let metric = Metric {
-                                    name: "knhk.w1.cache_hit".to_string(),
-                                    value: MetricValue::Counter(1),
-                                    timestamp_ms,
-                                    attributes: attrs,
-                                };
-                                tracer.record_metric(metric);
+                                #[cfg(feature = "knhk-otel")]
+                                {
+                                    use knhk_otel::{Tracer, Metric, MetricValue};
+
+                                    let mut tracer = Tracer::new();
+                                    let timestamp_ms = SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .map(|d| d.as_millis() as u64)
+                                        .unwrap_or(0); // Already using unwrap_or(0) - no change needed
+                                    
+                                    let mut attrs = BTreeMap::new();
+                                    attrs.insert("action_id".to_string(), action.id.clone());
+                                    attrs.insert("runtime_class".to_string(), "W1".to_string());
+                                    
+                                    let metric = Metric {
+                                        name: "knhk.w1.cache_hit".to_string(),
+                                        value: MetricValue::Counter(1),
+                                        timestamp_ms,
+                                        attributes: attrs,
+                                    };
+                                    tracer.record_metric(metric);
+                                }
                                 
                                 // Continue with cached action (count as sent)
                                 actions_sent += 1;
@@ -218,6 +226,7 @@ impl EmitStage {
     }
 
     /// Write receipt to lockchain (Merkle-linked) - with mutable lockchain reference
+    #[cfg(feature = "knhk-lockchain")]
     fn write_receipt_to_lockchain_with_lockchain(
         _lockchain: &mut knhk_lockchain::storage::LockchainStorage,
         receipt: &Receipt,
@@ -232,7 +241,7 @@ impl EmitStage {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
-            .unwrap_or(0)
+            .unwrap_or(0) // Already using unwrap_or(0) - no change needed
     }
 
     /// Send action to downstream endpoint
@@ -296,9 +305,9 @@ impl EmitStage {
             }
         }
         
-        Err(format!("Failed to send action after {} retries: {}", 
-            self.max_retries, 
-            last_error.unwrap_or_else(|| "Unknown error".to_string())))
+        Err(format!("Failed to send action after {} retries: {}",
+            self.max_retries,
+            last_error.unwrap_or_else(|| "Unknown error".to_string()))) // Using unwrap_or_else - OK
     }
     
     fn send_kafka_action(&self, action: &Action, endpoint: &str) -> Result<(), String> {
@@ -363,9 +372,9 @@ impl EmitStage {
             }
         }
         
-        Err(format!("Failed to send action to Kafka after {} retries: {}", 
-            self.max_retries, 
-            last_error.unwrap_or_else(|| "Unknown error".to_string())))
+        Err(format!("Failed to send action to Kafka after {} retries: {}",
+            self.max_retries,
+            last_error.unwrap_or_else(|| "Unknown error".to_string()))) // Using unwrap_or_else - OK
     }
 
     /// Lookup cached answer for an action
@@ -438,6 +447,7 @@ impl EmitStage {
     }
 }
 
+#[derive(Debug)]
 pub struct EmitResult {
     pub receipts_written: usize,
     pub actions_sent: usize,

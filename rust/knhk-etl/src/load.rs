@@ -146,7 +146,7 @@ impl SoAArrays {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct PredRun {
     pub pred: u64,
     pub off: u64,

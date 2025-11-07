@@ -4,9 +4,19 @@
 
 #![cfg(feature = "policy-engine")]
 
+#[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap;
+
+#[cfg(feature = "std")]
+use std::string::{String, ToString};
+#[cfg(feature = "std")]
+use std::vec::Vec;
+#[cfg(feature = "std")]
+use std::collections::BTreeMap;
 
 #[cfg(feature = "policy-engine")]
 use regorus::{Engine, Value};

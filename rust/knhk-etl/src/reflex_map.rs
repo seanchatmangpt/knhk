@@ -178,7 +178,9 @@ impl ReflexMap {
             use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
             
             // Initialize engine with SoA arrays
-            let mut engine = Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr());
+            // SAFETY: Engine::new requires valid pointers to SoA arrays.
+            // We guarantee this by passing pointers from valid Vec<u64> allocations.
+            let mut engine = unsafe { Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr()) };
             
             // Guard: validate run length ≤ 8
             if run.len > 8 {
@@ -421,7 +423,22 @@ impl ReflexMap {
     pub fn merge_receipts(receipts: &[Receipt]) -> Receipt {
         if receipts.is_empty() {
             // Generate proper span_id for empty receipt
-            use knhk_otel::generate_span_id;
+            fn generate_span_id() -> u64 {
+                #[cfg(feature = "knhk-otel")]
+                {
+                    use knhk_otel::generate_span_id;
+                    generate_span_id()
+                }
+                #[cfg(not(feature = "knhk-otel"))]
+                {
+                    use std::time::{SystemTime, UNIX_EPOCH};
+                    let timestamp = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map(|d| d.as_nanos() as u64)
+                        .unwrap_or(0);
+                    timestamp.wrapping_mul(0x9e3779b97f4a7c15)
+                }
+            }
             return Receipt {
                 id: "merged_receipt".to_string(),
                 cycle_id: 0,
@@ -496,8 +513,8 @@ mod tests {
             runs: runs.clone(),
         };
 
-        let result1 = reflex_map.apply(input.clone()).unwrap();
-        let result2 = reflex_map.apply(input).unwrap();
+        let result1 = reflex_map.apply(input.clone()).expect("First reflex_map application should succeed");
+        let result2 = reflex_map.apply(input).expect("Second reflex_map application should succeed");
 
         // Same input → same output (idempotence)
         assert_eq!(result1.mu_hash, result2.mu_hash);
@@ -525,7 +542,7 @@ mod tests {
             runs,
         };
 
-        let result = reflex_map.apply(input).unwrap();
+        let result = reflex_map.apply(input).expect("Reflex map application should succeed");
 
         // Verify hash(A) = hash(μ(O))
         assert_eq!(result.a_hash, result.mu_hash, 

@@ -5,21 +5,20 @@ use std::fs;
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use knhk_connectors::{SourceType, DataFormat};
-use knhk_config::{ConfigLoader, Config};
 
 /// Connector storage (file-based)
 /// Simplified storage format for CLI persistence
 /// Note: TOML config takes precedence, JSON files maintained for backward compatibility
 #[derive(Debug, Serialize, Deserialize)]
-struct ConnectorStorage {
-    connectors: Vec<ConnectorStorageEntry>,
+pub struct ConnectorStorage {
+    pub connectors: Vec<ConnectorStorageEntry>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct ConnectorStorageEntry {
-    name: String,
-    schema: String,
-    source: String,  // Stored as string, parsed on load
+pub struct ConnectorStorageEntry {
+    pub name: String,
+    pub schema: String,
+    pub source: String,  // Stored as string, parsed on load
 }
 
 /// Register a connector
@@ -31,31 +30,7 @@ pub fn register(name: String, schema: String, source: String) -> Result<(), Stri
     // Validate source format (basic check)
     parse_source(&source)?;
     
-    // Try to load from TOML config first
-    if let Ok(mut config) = ConfigLoader::load() {
-        // Add connector to TOML config
-        let connector_config = knhk_config::ConnectorConfig {
-            r#type: "kafka".to_string(), // Default, can be inferred from source
-            bootstrap_servers: vec!["localhost:9092".to_string()],
-            topic: "triples".to_string(),
-            schema: schema.clone(),
-            max_run_len: 8,
-            max_batch_size: 1000,
-        };
-        config.connectors.insert(name.clone(), connector_config);
-        
-        // Save to TOML config
-        ConfigLoader::save(&config)
-            .map_err(|e| format!("Failed to save TOML config: {}", e))?;
-        
-        println!("  ✓ Schema: {}", schema);
-        println!("  ✓ Source: {}", source);
-        println!("✓ Connector registered (TOML config)");
-        
-        return Ok(());
-    }
-    
-    // Fall back to JSON storage for backward compatibility
+    // Use JSON storage
     let mut storage = load_connectors()?;
     
     // Check if connector already exists
@@ -81,22 +56,8 @@ pub fn register(name: String, schema: String, source: String) -> Result<(), Stri
 }
 
 /// List connectors
-/// Loads from TOML config if available, falls back to JSON
 pub fn list() -> Result<Vec<String>, String> {
-    // Try to load from TOML config first
-    if let Ok(config) = ConfigLoader::load() {
-        if config.connectors.is_empty() {
-            return Ok(Vec::new());
-        }
-        
-        let mut connectors = Vec::new();
-        for (name, _connector) in &config.connectors {
-            connectors.push(name.clone());
-        }
-        return Ok(connectors);
-    }
-    
-    // Fall back to JSON storage
+    // Load from JSON storage
     let storage = load_connectors()?;
     
     if storage.connectors.is_empty() {

@@ -9,7 +9,8 @@
 
 // v1.0 Constants
 #define KNHK_TIME_BUDGET_NS 2.0  // 2 nanoseconds budget (Chatman Constant)
-#define KNHK_NROWS       8u        // compile-time fixed
+#define KNHK_TICK_BUDGET    8u     // Chatman Constant: maximum ticks per operation
+#define KNHK_NROWS       8u        // compile-time fixed (same as TICK_BUDGET)
 #define KNHK_ALIGN       64u       // bytes
 
 // Maximum rows that fit in 2ns window (must be 8 for v1.0)

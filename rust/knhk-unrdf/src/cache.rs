@@ -46,7 +46,10 @@ pub struct QueryCache {
 impl QueryCache {
     /// Create a new cache with specified capacity
     pub fn new(capacity: usize) -> Self {
-        let cap = NonZeroUsize::new(capacity.max(1)).unwrap();
+        // SAFETY: capacity.max(1) mathematically guarantees the value is at least 1,
+        // making NonZeroUsize::new infallible. Using unwrap_or as defensive programming.
+        let cap = NonZeroUsize::new(capacity.max(1))
+            .unwrap_or(NonZeroUsize::MIN);
         Self {
             cache: Arc::new(Mutex::new(LruCache::new(cap))),
             hits: Arc::new(Mutex::new(0)),
@@ -62,11 +65,13 @@ impl QueryCache {
         
         match cache.get(&key) {
             Some(result) => {
-                *self.hits.lock().unwrap() += 1;
+                *self.hits.lock()
+                    .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire hits lock: {}", e)))? += 1;
                 Ok(Some(result.clone()))
             }
             None => {
-                *self.misses.lock().unwrap() += 1;
+                *self.misses.lock()
+                    .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire misses lock: {}", e)))? += 1;
                 Ok(None)
             }
         }
@@ -83,34 +88,39 @@ impl QueryCache {
     }
 
     /// Get cache statistics
-    pub fn stats(&self) -> CacheStats {
-        let hits = *self.hits.lock().unwrap();
-        let misses = *self.misses.lock().unwrap();
+    pub fn stats(&self) -> UnrdfResult<CacheStats> {
+        let hits = *self.hits.lock()
+            .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire hits lock: {}", e)))?;
+        let misses = *self.misses.lock()
+            .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire misses lock: {}", e)))?;
         let total = hits + misses;
         let hit_rate = if total > 0 {
             hits as f64 / total as f64
         } else {
             0.0
         };
-        
-        let cache = self.cache.lock().unwrap();
-        CacheStats {
+
+        let cache = self.cache.lock()
+            .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire cache lock: {}", e)))?;
+        Ok(CacheStats {
             hits,
             misses,
             hit_rate,
             size: cache.len(),
             capacity: cache.cap().get(),
-        }
+        })
     }
 
     /// Clear the cache
     pub fn clear(&self) -> UnrdfResult<()> {
         let mut cache = self.cache.lock()
-            .map_err(|e| UnrdfError::InvalidInput(format!("Failed to acquire cache lock: {}", e)))?;
-        
+            .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire cache lock: {}", e)))?;
+
         cache.clear();
-        *self.hits.lock().unwrap() = 0;
-        *self.misses.lock().unwrap() = 0;
+        *self.hits.lock()
+            .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire hits lock: {}", e)))? = 0;
+        *self.misses.lock()
+            .map_err(|e| UnrdfError::LockPoisoned(format!("Failed to acquire misses lock: {}", e)))? = 0;
         Ok(())
     }
 }

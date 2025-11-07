@@ -39,6 +39,7 @@ pub struct KafkaConnector {
     schema: SchemaIri,
     spec: ConnectorSpec,
     topic: String,
+    #[allow(dead_code)] // Used in full implementation, kept for 80/20
     format: DataFormat,
     bootstrap_servers: Vec<String>,
     state: KafkaConnectionState,
@@ -128,9 +129,9 @@ impl Connector for KafkaConnector {
         {
             // kafka feature is disabled - cannot actually connect
             self.state = KafkaConnectionState::Error("Kafka feature not enabled".to_string());
-            return Err(ConnectorError::NetworkError(
+            Err(ConnectorError::NetworkError(
                 "Cannot initialize Kafka connector: kafka feature not enabled".to_string()
-            ));
+            ))
         }
 
         #[cfg(feature = "kafka")]
@@ -666,12 +667,12 @@ mod tests {
         };
 
         assert!(connector.initialize(spec).is_ok());
-        
+
         // Fetch delta from connected connector
         let result = connector.fetch_delta();
         assert!(result.is_ok());
-        
-        let delta = result.unwrap();
+
+        let delta = result.expect("fetch_delta should succeed for connected connector");
         assert_eq!(delta.actor, "kafka_connector:test_kafka");
     }
 
@@ -686,8 +687,8 @@ mod tests {
         // Try to fetch without initializing
         let result = connector.fetch_delta();
         assert!(result.is_err());
-        
-        match result.unwrap_err() {
+
+        match result.expect_err("fetch_delta should fail for uninitialized connector") {
             ConnectorError::NetworkError(_) => {}
             _ => panic!("Expected NetworkError"),
         }
@@ -723,8 +724,8 @@ mod tests {
 
         let result = connector.transform_to_soa(&delta);
         assert!(result.is_ok());
-        
-        let soa = result.unwrap();
+
+        let soa = result.expect("transform_to_soa should succeed for valid delta");
         assert_eq!(soa.s[0], 0xA11CE);
         assert_eq!(soa.p[0], 0xC0FFEE);
         assert_eq!(soa.o[0], 0xB0B);
@@ -758,8 +759,8 @@ mod tests {
 
         let result = connector.transform_to_soa(&delta);
         assert!(result.is_err());
-        
-        match result.unwrap_err() {
+
+        match result.expect_err("transform_to_soa should fail for oversized batch") {
             ConnectorError::GuardViolation(_) => {}
             _ => panic!("Expected GuardViolation"),
         }

@@ -113,17 +113,20 @@ pub fn run(id: String) -> Result<(), String> {
     // Load epoch
     let mut storage = load_epochs()?;
     
-    // Find epoch
-    let epoch = storage.epochs.iter_mut().find(|e| e.id == id)
+    // Find epoch index
+    let epoch_idx = storage.epochs.iter().position(|e| e.id == id)
         .ok_or_else(|| format!("Epoch '{}' not found", id))?;
-    
-    if epoch.status != "scheduled" && epoch.status != "completed" {
-        return Err(format!("Epoch '{}' is already {}", id, epoch.status));
+
+    if storage.epochs[epoch_idx].status != "scheduled" && storage.epochs[epoch_idx].status != "completed" {
+        return Err(format!("Epoch '{}' is already {}", id, storage.epochs[epoch_idx].status));
     }
-    
+
     // Update status
-    epoch.status = "running".to_string();
+    storage.epochs[epoch_idx].status = "running".to_string();
     save_epochs(&storage)?;
+
+    // Get epoch reference for execution
+    let epoch = &mut storage.epochs[epoch_idx];
     
     // Call Erlang RC layer: Execute epoch
     let output = Command::new("erl")

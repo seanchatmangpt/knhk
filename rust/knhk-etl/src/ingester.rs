@@ -7,6 +7,7 @@ use alloc::vec::Vec;
 use crate::error::PipelineError;
 
 /// Ingested data result
+#[derive(Debug)]
 pub struct IngestedData {
     /// Raw data bytes
     pub data: Vec<u8>,

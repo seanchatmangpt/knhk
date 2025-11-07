@@ -1,5 +1,8 @@
 // knhk-sidecar: Metrics collection and OTEL integration
 
+// ACCEPTABLE: Mutex poisoning .expect() is allowed in this module (unrecoverable error)
+#![allow(clippy::expect_used)]
+
 use std::sync::{Arc, Mutex};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
@@ -112,6 +115,8 @@ impl MetricsCollector {
 
     /// Record request
     pub fn record_request(&self, success: bool) {
+        // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
+        // See Rust std docs: https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
         let mut metrics = self.requests.lock().expect("Metrics mutex poisoned - unrecoverable state");
         metrics.total += 1;
         if success {

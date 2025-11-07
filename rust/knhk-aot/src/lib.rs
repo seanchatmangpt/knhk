@@ -3,21 +3,20 @@
 // Validates IR before execution to enforce Chatman Constant (≤8 ticks)
 // Includes template analysis, prebinding, and MPHF generation
 
-#![no_std]
-extern crate alloc;
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 
-// Global allocator for no_std
-#[cfg(feature = "alloc")]
+// Use jemalloc for better allocation performance in AOT scenarios
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
 #[global_allocator]
-static ALLOCATOR: alloc::alloc::System = alloc::alloc::System;
+static GLOBAL: Jemalloc = Jemalloc;
 
-// Panic handler for no_std
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
-}
-
-use alloc::string::String;
+// Explicit imports for cdylib/staticlib compatibility
+use std::string::String;
 
 #[cfg(feature = "validation")]
 use knhk_validation::policy_engine::{PolicyEngine, PolicyViolation};
@@ -91,7 +90,7 @@ impl AotGuard {
                 Ok(())
             }
             // COMPARE operations - always valid
-            12 | 13 | 14 | 15 | 16 => Ok(()),
+            12..=16 => Ok(()),
             // CONSTRUCT8 - check template size ≤ 8
             32 => {
                 if run_len > 8 {

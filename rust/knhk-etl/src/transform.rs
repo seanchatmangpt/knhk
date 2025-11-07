@@ -115,6 +115,7 @@ impl TransformStage {
     }
 }
 
+#[derive(Debug)]
 pub struct TransformResult {
     pub typed_triples: Vec<TypedTriple>,
     pub validation_errors: Vec<String>,

@@ -2,6 +2,10 @@
 // Dark Matter 80/20 Connector Framework
 // Provides typed, validated connectors for enterprise data sources
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 #![no_std]
 #[cfg(feature = "std")]
 extern crate std;
@@ -109,7 +113,7 @@ pub struct Triple {
 
 /// SoA arrays for hot path (64-byte aligned)
 #[repr(align(64))]
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct SoAArrays {
     pub s: [u64; 8],
     pub p: [u64; 8],
@@ -118,21 +122,17 @@ pub struct SoAArrays {
 
 impl SoAArrays {
     pub fn new() -> Self {
-        Self {
-            s: [0; 8],
-            p: [0; 8],
-            o: [0; 8],
-        }
+        Self::default()
     }
 
     /// Convert triples to SoA layout (run.len ≤ 8)
     pub fn from_triples(triples: &[Triple], max_len: usize) -> Self {
         let mut arrays = Self::new();
         let len = core::cmp::min(triples.len(), max_len);
-        for i in 0..len {
-            arrays.s[i] = triples[i].subject;
-            arrays.p[i] = triples[i].predicate;
-            arrays.o[i] = triples[i].object;
+        for (i, triple) in triples.iter().enumerate().take(len) {
+            arrays.s[i] = triple.subject;
+            arrays.p[i] = triple.predicate;
+            arrays.o[i] = triple.object;
         }
         arrays
     }
@@ -309,12 +309,11 @@ impl CircuitBreaker {
         match f() {
             Ok(result) => {
                 self.success_count += 1;
-                if self.state == CircuitBreakerState::HalfOpen {
-                    if self.success_count >= self.success_threshold {
+                if self.state == CircuitBreakerState::HalfOpen
+                    && self.success_count >= self.success_threshold {
                         self.state = CircuitBreakerState::Closed;
                         self.failure_count = 0;
                     }
-                }
                 Ok(result)
             }
             Err(e) => {
@@ -368,6 +367,12 @@ pub struct ConnectorRegistry {
     connectors: BTreeMap<ConnectorId, Box<dyn Connector>>,
     circuit_breakers: BTreeMap<ConnectorId, CircuitBreaker>,
     metrics: BTreeMap<ConnectorId, ConnectorMetrics>,
+}
+
+impl Default for ConnectorRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConnectorRegistry {
@@ -586,7 +591,10 @@ mod tests {
         // Test circuit breaker state
         let state = registry.circuit_breaker_state(&"test_kafka".to_string());
         assert!(state.is_some());
-        assert_eq!(*state.unwrap(), CircuitBreakerState::Closed);
+        assert_eq!(
+            *state.expect("circuit breaker should exist for registered connector"),
+            CircuitBreakerState::Closed
+        );
     }
 
     #[test]
@@ -600,12 +608,13 @@ mod tests {
             DataFormat::JsonLd,
         ));
         
-        registry.register(connector).unwrap();
-        
+        registry.register(connector)
+            .expect("registering new connector should succeed");
+
         // Get metrics (should be zero initially)
         let metrics = registry.metrics(&"test_kafka".to_string());
         assert!(metrics.is_some());
-        let m = metrics.unwrap();
+        let m = metrics.expect("metrics should exist for registered connector");
         assert_eq!(m.total_requests, 0);
         assert_eq!(m.successful_requests, 0);
         assert_eq!(m.failed_requests, 0);

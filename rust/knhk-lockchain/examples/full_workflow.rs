@@ -83,15 +83,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nSTEP 6: Merkle Proof (Receipt Audit)");
     println!("=====================================");
     let receipt_idx = 2;
-    if let Some(proof) = merkle_tree.generate_proof(receipt_idx) {
-        println!("  Generating proof for receipt {}:", receipt_idx);
-        println!("    Leaf hash: {:x?}...{:x?}",
-            &proof.leaf_hash[..4], &proof.leaf_hash[28..]);
-        println!("    Proof path: {} hashes", proof.proof_hashes.len());
-        println!("    Verification: {}",
-            if proof.verify() { "✓ PASS" } else { "✗ FAIL" });
-        println!("\n  This proves receipt {} was included in cycle {} root",
-            receipt_idx, cycle_id);
+    match merkle_tree.generate_proof(receipt_idx) {
+        Ok(proof) => {
+            println!("  Generating proof for receipt {}:", receipt_idx);
+            println!("    Leaf hash: {:x?}...{:x?}",
+                &proof.leaf_hash[..4], &proof.leaf_hash[28..]);
+            println!("    Proof path: {} hashes", proof.proof_hashes.len());
+            println!("    Verification: {}",
+                if proof.verify() { "✓ PASS" } else { "✗ FAIL" });
+            println!("\n  This proves receipt {} was included in cycle {} root",
+                receipt_idx, cycle_id);
+        }
+        Err(e) => {
+            println!("  ✗ Failed to generate proof: {}", e);
+        }
     }
 
     // Step 7: Continuity check

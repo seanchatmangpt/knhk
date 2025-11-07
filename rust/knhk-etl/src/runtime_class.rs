@@ -135,30 +135,30 @@ mod tests {
 
     #[test]
     fn test_r1_classification() {
-        assert_eq!(RuntimeClass::classify_operation("ASK_SP", 5).unwrap(), RuntimeClass::R1);
-        assert_eq!(RuntimeClass::classify_operation("COUNT_SP_GE", 8).unwrap(), RuntimeClass::R1);
-        assert_eq!(RuntimeClass::classify_operation("COMPARE_O_EQ", 3).unwrap(), RuntimeClass::R1);
-        assert_eq!(RuntimeClass::classify_operation("VALIDATE_DATATYPE_SP", 1).unwrap(), RuntimeClass::R1);
+        assert_eq!(RuntimeClass::classify_operation("ASK_SP", 5).expect("Classification should succeed"), RuntimeClass::R1);
+        assert_eq!(RuntimeClass::classify_operation("COUNT_SP_GE", 8).expect("R1 classification should succeed"), RuntimeClass::R1);
+        assert_eq!(RuntimeClass::classify_operation("COMPARE_O_EQ", 3).expect("R1 classification should succeed"), RuntimeClass::R1);
+        assert_eq!(RuntimeClass::classify_operation("VALIDATE_DATATYPE_SP", 1).expect("R1 classification should succeed"), RuntimeClass::R1);
     }
 
     #[test]
     fn test_r1_data_size_limit() {
-        assert_eq!(RuntimeClass::classify_operation("ASK_SP", 8).unwrap(), RuntimeClass::R1);
-        assert_ne!(RuntimeClass::classify_operation("ASK_SP", 9).unwrap(), RuntimeClass::R1);
+        assert_eq!(RuntimeClass::classify_operation("ASK_SP", 8).expect("R1 classification should succeed"), RuntimeClass::R1);
+        assert_ne!(RuntimeClass::classify_operation("ASK_SP", 9).expect("R1 classification should succeed"), RuntimeClass::R1);
     }
 
     #[test]
     fn test_w1_classification() {
-        assert_eq!(RuntimeClass::classify_operation("CONSTRUCT8", 5).unwrap(), RuntimeClass::W1);
-        assert_eq!(RuntimeClass::classify_operation("PREBIND_TEMPLATE", 10).unwrap(), RuntimeClass::W1);
-        assert_eq!(RuntimeClass::classify_operation("AOT_TRANSFORM", 100).unwrap(), RuntimeClass::W1);
+        assert_eq!(RuntimeClass::classify_operation("CONSTRUCT8", 5).expect("W1 classification should succeed"), RuntimeClass::W1);
+        assert_eq!(RuntimeClass::classify_operation("PREBIND_TEMPLATE", 10).expect("W1 classification should succeed"), RuntimeClass::W1);
+        assert_eq!(RuntimeClass::classify_operation("AOT_TRANSFORM", 100).expect("W1 classification should succeed"), RuntimeClass::W1);
     }
 
     #[test]
     fn test_c1_classification() {
-        assert_eq!(RuntimeClass::classify_operation("SPARQL_SELECT", 100).unwrap(), RuntimeClass::C1);
-        assert_eq!(RuntimeClass::classify_operation("SHACL_VALIDATE", 50).unwrap(), RuntimeClass::C1);
-        assert_eq!(RuntimeClass::classify_operation("JOIN_QUERY", 200).unwrap(), RuntimeClass::C1);
+        assert_eq!(RuntimeClass::classify_operation("SPARQL_SELECT", 100).expect("C1 classification should succeed"), RuntimeClass::C1);
+        assert_eq!(RuntimeClass::classify_operation("SHACL_VALIDATE", 50).expect("C1 classification should succeed"), RuntimeClass::C1);
+        assert_eq!(RuntimeClass::classify_operation("JOIN_QUERY", 200).expect("C1 classification should succeed"), RuntimeClass::C1);
     }
 
     #[test]

@@ -18,7 +18,7 @@ struct HookResult {
 #[verb] // Noun "hook" auto-inferred from filename "hook.rs"
 fn create(name: String, op: String, pred: u64, off: u64, len: u64) -> Result<HookResult> {
     hook_impl::create(name.clone(), op.clone(), pred, off, len, None, None, None, None)
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to create hook: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to create hook: {}", e)))
         .map(|_| HookResult { name, op, pred, off, len })
 }
 
@@ -31,7 +31,7 @@ struct HookList {
 #[verb] // Noun "hook" auto-inferred
 fn list() -> Result<HookList> {
     hook_impl::list()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to list hooks: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to list hooks: {}", e)))
         .map(|hooks| HookList { hooks })
 }
 
@@ -45,7 +45,7 @@ struct EvalHookResult {
 #[verb] // Noun "hook" auto-inferred
 fn eval(name: String) -> Result<EvalHookResult> {
     hook_impl::eval(name.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to eval hook: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to eval hook: {}", e)))
         .map(|result| EvalHookResult { name, result })
 }
 
@@ -63,7 +63,7 @@ struct ShowHookResult {
 #[verb] // Noun "hook" auto-inferred
 fn show(name: String) -> Result<ShowHookResult> {
     let hook = hook_impl::show(name.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to show hook: {}", e)))?;
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to show hook: {}", e)))?;
     
     Ok(ShowHookResult {
         name: hook.name,

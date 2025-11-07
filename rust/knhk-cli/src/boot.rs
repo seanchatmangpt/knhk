@@ -28,7 +28,7 @@ fn init(sigma: String, q: String) -> Result<InitResult> {
         let result = boot_impl::init(sigma.clone(), q.clone())
             .map_err(|e| {
                 error!(error = %e, "boot.init.failed");
-                clap_noun_verb::NounVerbError::new(&format!("Failed to initialize: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!("Failed to initialize: {}", e))
             });
         
         let duration = start.elapsed();
@@ -59,7 +59,7 @@ fn init(sigma: String, q: String) -> Result<InitResult> {
     #[cfg(not(feature = "otel"))]
     {
         let config_dir = boot_impl::init(sigma.clone(), q.clone())
-            .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to initialize: {}", e)))?;
+            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to initialize: {}", e)))?;
         
         Ok(InitResult {
             sigma,

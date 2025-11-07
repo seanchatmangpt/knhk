@@ -1,6 +1,10 @@
 // knhk-unrdf: Rust integration layer for unrdf knowledge hook engine
 // Provides FFI-safe interface for cold path integration
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 pub mod error;
 pub mod ffi;
 pub mod hooks;

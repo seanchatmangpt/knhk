@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: knhk-weaver-otel
+    ports:
+      - "4317:4317"  # gRPC (no conflict)
+      - "4319:4318"  # HTTP (mapped to 4319 to avoid Docker Desktop conflict)
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+    command: ["--config=/etc/otelcol/config.yaml"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133/"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped

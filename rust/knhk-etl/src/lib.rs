@@ -2,6 +2,10 @@
 // ETL Pipeline Stages
 // Implements: Ingest → Transform → Load → Reflex → Emit
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 extern crate alloc;
 extern crate std;
 
@@ -75,6 +79,12 @@ pub use emit::{EmitStage, EmitResult};
 pub use pipeline::Pipeline;
 pub use ingester::{Ingester, FileIngester, StdinIngester};
 
+// Hook registry exports
+pub use hook_registry::{HookRegistry, HookRegistryError, HookMetadata, GuardFn};
+
+// Beat scheduler exports
+pub use beat_scheduler::{BeatScheduler, BeatSchedulerError};
+
 pub mod integration;
 
 #[cfg(test)]
@@ -116,12 +126,12 @@ mod tests {
     #[test]
     fn test_ingest_stage_rdf_parsing() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = "<http://example.org/subject> <http://example.org/predicate> <http://example.org/object> .";
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_ok());
-        let triples = result.unwrap();
+        let triples = result.expect("Failed to parse basic RDF turtle content");
         assert_eq!(triples.len(), 1);
         assert_eq!(triples[0].subject, "http://example.org/subject");
         assert_eq!(triples[0].predicate, "http://example.org/predicate");
@@ -137,9 +147,9 @@ mod tests {
             ex:subject ex:predicate ex:object .
         "#;
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_ok());
-        let triples = result.unwrap();
+        let triples = result.expect("Failed to parse RDF with prefix resolution");
         assert_eq!(triples.len(), 1);
         assert_eq!(triples[0].subject, "http://example.org/subject");
         assert_eq!(triples[0].predicate, "http://example.org/predicate");
@@ -155,9 +165,9 @@ mod tests {
             _:bob <http://example.org/name> "Bob" .
         "#;
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_ok());
-        let triples = result.unwrap();
+        let triples = result.expect("Failed to parse RDF with blank nodes");
         assert_eq!(triples.len(), 2);
         assert!(triples[0].subject.starts_with("_:"));
         assert!(triples[1].subject.starts_with("_:"));
@@ -175,9 +185,9 @@ mod tests {
             <http://example.org/subject> <http://example.org/label> "Hello"@en .
         "#;
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_ok());
-        let triples = result.unwrap();
+        let triples = result.expect("Failed to parse RDF with literals");
         assert_eq!(triples.len(), 3);
         assert_eq!(triples[0].object, "\"Alice\"");
         assert!(triples[1].object.contains("integer"));
@@ -193,9 +203,9 @@ mod tests {
             <subject> <predicate> <object> .
         "#;
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_ok());
-        let triples = result.unwrap();
+        let triples = result.expect("Failed to parse RDF with base URI");
         assert_eq!(triples.len(), 1);
         assert_eq!(triples[0].subject, "http://example.org/subject");
         assert_eq!(triples[0].predicate, "http://example.org/predicate");
@@ -212,19 +222,19 @@ mod tests {
             <http://example.org/bob> <http://example.org/name> "Bob" .
         "#;
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_ok());
-        let triples = result.unwrap();
+        let triples = result.expect("Failed to parse multiple RDF triples");
         assert_eq!(triples.len(), 3);
     }
 
     #[test]
     fn test_ingest_stage_empty_input() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let result = ingest.parse_rdf_turtle("");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 0);
+        assert_eq!(result.expect("Failed to parse empty RDF input").len(), 0);
     }
 
     #[test]
@@ -260,8 +270,8 @@ mod tests {
         
         let result = transform.transform(ingest_result);
         assert!(result.is_ok());
-        
-        let transform_result = result.unwrap();
+
+        let transform_result = result.expect("Failed to transform triples");
         assert_eq!(transform_result.typed_triples.len(), 1);
         assert!(transform_result.typed_triples[0].subject > 0);
         assert!(transform_result.typed_triples[0].predicate > 0);
@@ -283,8 +293,8 @@ mod tests {
         
         let result = load.load(transform_result);
         assert!(result.is_ok());
-        
-        let load_result = result.unwrap();
+
+        let load_result = result.expect("Failed to load triples into SoA");
         assert_eq!(load_result.runs.len(), 2); // Two different predicates
         assert_eq!(load_result.runs[0].pred, 100);
         assert_eq!(load_result.runs[0].len, 2);
@@ -310,8 +320,8 @@ mod tests {
         
         let result = reflex.reflex(load_result);
         assert!(result.is_ok());
-        
-        let reflex_result = result.unwrap();
+
+        let reflex_result = result.expect("Failed to execute reflex stage");
         assert!(reflex_result.max_ticks <= 8);
         assert!(!reflex_result.receipts.is_empty());
     }
@@ -319,9 +329,24 @@ mod tests {
     #[test]
     fn test_receipt_merging() {
         // Generate proper span IDs for test receipts
-        use knhk_otel::generate_span_id;
-        let span_id1 = generate_span_id();
-        let span_id2 = generate_span_id();
+        fn generate_test_span_id() -> u64 {
+            #[cfg(feature = "knhk-otel")]
+            {
+                use knhk_otel::generate_span_id;
+                generate_span_id()
+            }
+            #[cfg(not(feature = "knhk-otel"))]
+            {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .unwrap_or(0);
+                timestamp.wrapping_mul(0x9e3779b97f4a7c15)
+            }
+        }
+        let span_id1 = generate_test_span_id();
+        let span_id2 = generate_test_span_id();
         let expected_merged_span_id = span_id1 ^ span_id2;
         
         let receipt1 = Receipt {
@@ -361,7 +386,22 @@ mod tests {
         let mut emit = EmitStage::new(true, vec!["https://webhook.example.com".to_string()]);
 
         // Generate proper span ID for test receipt
-        use knhk_otel::generate_span_id;
+        fn generate_test_span_id() -> u64 {
+            #[cfg(feature = "knhk-otel")]
+            {
+                use knhk_otel::generate_span_id;
+                generate_span_id()
+            }
+            #[cfg(not(feature = "knhk-otel"))]
+            {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .unwrap_or(0);
+                timestamp.wrapping_mul(0x9e3779b97f4a7c15)
+            }
+        }
         let receipt = Receipt {
             id: "receipt1".to_string(),
             cycle_id: 1,
@@ -370,7 +410,7 @@ mod tests {
             ticks: 4,
             actual_ticks: 3,
             lanes: 8,
-            span_id: generate_span_id(),
+            span_id: generate_test_span_id(),
             a_hash: 0xABCD,
         };
 
@@ -389,8 +429,8 @@ mod tests {
 
         let result = emit.emit(reflex_result);
         assert!(result.is_ok());
-        
-        let emit_result = result.unwrap();
+
+        let emit_result = result.expect("Failed to emit actions and receipts");
         assert_eq!(emit_result.receipts_written, 1);
         assert_eq!(emit_result.actions_sent, 1);
         assert_eq!(emit_result.lockchain_hashes.len(), 1);

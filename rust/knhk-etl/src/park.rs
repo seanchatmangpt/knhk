@@ -68,13 +68,14 @@ impl ExecutionResult {
 }
 
 /// Park manager for handling parked deltas
+#[derive(Debug)]
 pub struct ParkManager {
     /// Parked deltas waiting for W1 processing
     parked_deltas: Vec<ParkedDelta>,
 }
 
 /// Parked delta with metadata
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ParkedDelta {
     /// Delta triples
     pub delta: Vec<RawTriple>,

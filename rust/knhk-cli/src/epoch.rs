@@ -16,7 +16,7 @@ struct EpochResult {
 #[verb] // Noun "epoch" auto-inferred from filename "epoch.rs"
 fn create(id: String, tau: u32, lambda: String) -> Result<EpochResult> {
     epoch_impl::create(id.clone(), tau, lambda.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to create epoch: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to create epoch: {}", e)))
         .map(|_| EpochResult { id, tau, lambda })
 }
 
@@ -30,7 +30,7 @@ struct RunEpochResult {
 #[verb] // Noun "epoch" auto-inferred
 fn run(id: String) -> Result<RunEpochResult> {
     epoch_impl::run(id.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to run epoch: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to run epoch: {}", e)))
         .map(|_| RunEpochResult { id, success: true })
 }
 
@@ -43,7 +43,7 @@ struct EpochList {
 #[verb] // Noun "epoch" auto-inferred
 fn list() -> Result<EpochList> {
     epoch_impl::list()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to list epochs: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to list epochs: {}", e)))
         .map(|epochs| EpochList { epochs })
 }
 

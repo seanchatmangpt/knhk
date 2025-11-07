@@ -18,7 +18,7 @@ struct ReflexResult {
 #[verb] // Noun "reflex" auto-inferred from filename "reflex.rs"
 fn declare(name: String, op: String, pred: u64, off: u64, len: u64) -> Result<ReflexResult> {
     reflex_impl::declare(name.clone(), op.clone(), pred, off, len)
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to declare reflex: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to declare reflex: {}", e)))
         .map(|_| ReflexResult { name, op, pred, off, len })
 }
 
@@ -31,7 +31,7 @@ struct ReflexList {
 #[verb] // Noun "reflex" auto-inferred
 fn list() -> Result<ReflexList> {
     reflex_impl::list()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to list reflexes: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to list reflexes: {}", e)))
         .map(|reflexes| ReflexList { reflexes })
 }
 

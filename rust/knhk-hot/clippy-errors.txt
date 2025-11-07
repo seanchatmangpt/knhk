@@ -1,0 +1,225 @@
+   Compiling knhk-hot v1.0.0 (/Users/sac/knhk/rust/knhk-hot)
+error: this public function might dereference a raw pointer but is not marked `unsafe`
+   --> knhk-hot/src/ffi.rs:127:42
+    |
+127 |         unsafe { knhk_init_ctx(&mut ctx, s, p, o) };
+    |                                          ^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#not_unsafe_ptr_arg_deref
+    = note: `#[deny(clippy::not_unsafe_ptr_arg_deref)]` on by default
+
+error: this public function might dereference a raw pointer but is not marked `unsafe`
+   --> knhk-hot/src/ffi.rs:127:45
+    |
+127 |         unsafe { knhk_init_ctx(&mut ctx, s, p, o) };
+    |                                             ^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#not_unsafe_ptr_arg_deref
+
+error: this public function might dereference a raw pointer but is not marked `unsafe`
+   --> knhk-hot/src/ffi.rs:127:48
+    |
+127 |         unsafe { knhk_init_ctx(&mut ctx, s, p, o) };
+    |                                                ^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#not_unsafe_ptr_arg_deref
+
+error: length comparison to zero
+   --> knhk-hot/src/ring_ffi.rs:146:12
+    |
+146 |         if S.len() == 0 || S.len() > 8 {
+    |            ^^^^^^^^^^^^ help: using `is_empty` is clearer and more explicit: `S.is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+    = note: `-D clippy::len-zero` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::len_zero)]`
+
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> knhk-hot/src/ring_ffi.rs:174:10
+    |
+174 |     ) -> Option<(Vec<u64>, Vec<u64>, Vec<u64>, Vec<u64>)> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+    = note: `-D clippy::type-complexity` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: length comparison to zero
+   --> knhk-hot/src/ring_ffi.rs:256:12
+    |
+256 |         if S.len() == 0 || S.len() > 8 {
+    |            ^^^^^^^^^^^^ help: using `is_empty` is clearer and more explicit: `S.is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> knhk-hot/src/ring_ffi.rs:280:58
+    |
+280 |     pub fn dequeue(&self, tick: u64, capacity: usize) -> Option<(Vec<u64>, Vec<u64>, Vec<u64>, Vec<Receipt>)> {
+    |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+
+error: field assignment outside of initializer for an instance created with Default::default()
+  --> knhk-hot/src/fiber_ffi.rs:66:9
+   |
+66 |         receipt.cycle_id = cycle_id;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `ffi::Receipt { cycle_id: cycle_id, shard_id: shard_id, hook_id: hook_id, ..Default::default() }` and removing relevant reassignments
+  --> knhk-hot/src/fiber_ffi.rs:65:9
+   |
+65 |         let mut receipt = Receipt::default();
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+   = note: `-D clippy::field-reassign-with-default` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::field_reassign_with_default)]`
+
+error: structure field `S` should have a snake case name
+  --> knhk-hot/src/ffi.rs:26:9
+   |
+26 |     pub S: *const u64,
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+   |
+   = note: `-D non-snake-case` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(non_snake_case)]`
+
+error: structure field `P` should have a snake case name
+  --> knhk-hot/src/ffi.rs:27:9
+   |
+27 |     pub P: *const u64,
+   |         ^ help: convert the identifier to snake case: `p`
+
+error: structure field `O` should have a snake case name
+  --> knhk-hot/src/ffi.rs:28:9
+   |
+28 |     pub O: *const u64,
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: structure field `out_S` should have a snake case name
+  --> knhk-hot/src/ffi.rs:63:9
+   |
+63 |     pub out_S: *mut u64,
+   |         ^^^^^ help: convert the identifier to snake case (notice the capitalization): `out_s`
+
+error: structure field `out_P` should have a snake case name
+  --> knhk-hot/src/ffi.rs:64:9
+   |
+64 |     pub out_P: *mut u64,
+   |         ^^^^^ help: convert the identifier to snake case: `out_p`
+
+error: structure field `out_O` should have a snake case name
+  --> knhk-hot/src/ffi.rs:65:9
+   |
+65 |     pub out_O: *mut u64,
+   |         ^^^^^ help: convert the identifier to snake case (notice the capitalization): `out_o`
+
+error: structure field `S` should have a snake case name
+  --> knhk-hot/src/ring_ffi.rs:12:9
+   |
+12 |     pub S: *mut u64,              // Subject array (64B aligned)
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+error: structure field `P` should have a snake case name
+  --> knhk-hot/src/ring_ffi.rs:13:9
+   |
+13 |     pub P: *mut u64,              // Predicate array
+   |         ^ help: convert the identifier to snake case: `p`
+
+error: structure field `O` should have a snake case name
+  --> knhk-hot/src/ring_ffi.rs:14:9
+   |
+14 |     pub O: *mut u64,              // Object array
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: structure field `S` should have a snake case name
+  --> knhk-hot/src/ring_ffi.rs:27:9
+   |
+27 |     pub S: *mut u64,              // Subject array (64B aligned)
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+error: structure field `P` should have a snake case name
+  --> knhk-hot/src/ring_ffi.rs:28:9
+   |
+28 |     pub P: *mut u64,               // Predicate array
+   |         ^ help: convert the identifier to snake case: `p`
+
+error: structure field `O` should have a snake case name
+  --> knhk-hot/src/ring_ffi.rs:29:9
+   |
+29 |     pub O: *mut u64,               // Object array
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: variable `S` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:138:9
+    |
+138 |         S: &[u64],
+    |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+error: variable `P` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:139:9
+    |
+139 |         P: &[u64],
+    |         ^ help: convert the identifier to snake case: `p`
+
+error: variable `O` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:140:9
+    |
+140 |         O: &[u64],
+    |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: variable `S` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:175:17
+    |
+175 |         let mut S = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+error: variable `P` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:176:17
+    |
+176 |         let mut P = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case: `p`
+
+error: variable `O` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:177:17
+    |
+177 |         let mut O = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: variable `S` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:248:9
+    |
+248 |         S: &[u64],
+    |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+error: variable `P` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:249:9
+    |
+249 |         P: &[u64],
+    |         ^ help: convert the identifier to snake case: `p`
+
+error: variable `O` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:250:9
+    |
+250 |         O: &[u64],
+    |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: variable `S` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:281:17
+    |
+281 |         let mut S = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+error: variable `P` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:282:17
+    |
+282 |         let mut P = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case: `p`
+
+error: variable `O` should have a snake case name
+   --> knhk-hot/src/ring_ffi.rs:283:17
+    |
+283 |         let mut O = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+error: could not compile `knhk-hot` (lib) due to 32 previous errors

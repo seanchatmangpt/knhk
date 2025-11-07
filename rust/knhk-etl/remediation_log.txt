@@ -1,0 +1,172 @@
+=== Unwrap() Remediation Monitor ===
+Started: Thu Nov  6 21:44:33 PST 2025
+
+[0;32m[21:44:33][0m Starting validation pass...
+[0;32m[21:44:33][0m Counting unwrap() usage...
+[0;32m[21:44:33][0m Found 36 unwrap() calls
+[0;32m[21:44:33][0m Counting expect() usage...
+[0;32m[21:44:33][0m Found 14 expect() calls
+[0;32m[21:44:33][0m Running clippy...
+warning: field `format` is never read
+  --> /Users/sac/knhk/rust/knhk-connectors/src/kafka.rs:42:5
+   |
+37 | pub struct KafkaConnector {
+   |            -------------- field in this struct
+...
+42 |     format: DataFormat,
+   |     ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: fields `access_token`, `refresh_token`, and `instance_url` are never read
+  --> /Users/sac/knhk/rust/knhk-connectors/src/salesforce.rs:25:5
+   |
+24 | pub struct OAuth2Token {
+   |            ----------- fields in this struct
+25 |     access_token: String,
+   |     ^^^^^^^^^^^^
+26 |     refresh_token: String,
+   |     ^^^^^^^^^^^^^
+27 |     expires_at_ms: u64,
+28 |     instance_url: String,
+   |     ^^^^^^^^^^^^
+   |
+   = note: `OAuth2Token` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `last_modified_date` is never read
+  --> /Users/sac/knhk/rust/knhk-connectors/src/salesforce.rs:66:5
+   |
+51 | pub struct SalesforceConnector {
+   |            ------------------- field in this struct
+...
+66 |     last_modified_date: Option<String>,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: `knhk-connectors` (lib) generated 3 warnings
+warning: unused import: `Commit`
+ --> /Users/sac/knhk/rust/knhk-lockchain/src/storage.rs:9:35
+  |
+9 | use git2::{Repository, Signature, Commit, Oid};
+  |                                   ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: field `git_path` is never read
+  --> /Users/sac/knhk/rust/knhk-lockchain/src/storage.rs:42:5
+   |
+39 | pub struct LockchainStorage {
+   |            ---------------- field in this struct
+...
+42 |     git_path: Option<String>,       // Git repository path
+   |     ^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+    Checking knhk-hot v1.0.0 (/Users/sac/knhk/rust/knhk-hot)
+warning: `knhk-lockchain` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p knhk-lockchain` to apply 1 suggestion)
+warning: structure field `S` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ffi.rs:26:9
+   |
+26 |     pub S: *const u64,
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+   |
+   = note: `#[warn(non_snake_case)]` on by default
+
+warning: structure field `P` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ffi.rs:27:9
+   |
+27 |     pub P: *const u64,
+   |         ^ help: convert the identifier to snake case: `p`
+
+warning: structure field `O` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ffi.rs:28:9
+   |
+28 |     pub O: *const u64,
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+warning: structure field `out_S` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ffi.rs:63:9
+   |
+63 |     pub out_S: *mut u64,
+   |         ^^^^^ help: convert the identifier to snake case (notice the capitalization): `out_s`
+
+warning: structure field `out_P` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ffi.rs:64:9
+   |
+64 |     pub out_P: *mut u64,
+   |         ^^^^^ help: convert the identifier to snake case: `out_p`
+
+warning: structure field `out_O` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ffi.rs:65:9
+   |
+65 |     pub out_O: *mut u64,
+   |         ^^^^^ help: convert the identifier to snake case (notice the capitalization): `out_o`
+
+warning: structure field `S` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:12:9
+   |
+12 |     pub S: *mut u64,              // Subject array (64B aligned)
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+warning: structure field `P` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:13:9
+   |
+13 |     pub P: *mut u64,              // Predicate array
+   |         ^ help: convert the identifier to snake case: `p`
+
+warning: structure field `O` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:14:9
+   |
+14 |     pub O: *mut u64,              // Object array
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+warning: structure field `S` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:27:9
+   |
+27 |     pub S: *mut u64,              // Subject array (64B aligned)
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+warning: structure field `P` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:28:9
+   |
+28 |     pub P: *mut u64,               // Predicate array
+   |         ^ help: convert the identifier to snake case: `p`
+
+warning: structure field `O` should have a snake case name
+  --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:29:9
+   |
+29 |     pub O: *mut u64,               // Object array
+   |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+warning: variable `S` should have a snake case name
+   --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:138:9
+    |
+138 |         S: &[u64],
+    |         ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+warning: variable `P` should have a snake case name
+   --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:139:9
+    |
+139 |         P: &[u64],
+    |         ^ help: convert the identifier to snake case: `p`
+
+warning: variable `O` should have a snake case name
+   --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:140:9
+    |
+140 |         O: &[u64],
+    |         ^ help: convert the identifier to snake case (notice the capitalization): `o`
+
+warning: variable `S` should have a snake case name
+   --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:175:17
+    |
+175 |         let mut S = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `s`
+
+warning: variable `P` should have a snake case name
+   --> /Users/sac/knhk/rust/knhk-hot/src/ring_ffi.rs:176:17
+    |
+176 |         let mut P = vec![0u64; capacity];
+    |                 ^ help: convert the identifier to snake case: `p`
+
+warning: variable `O` should have a snake case name
+   --> [0;31m[21:44:33] ERROR:[0m ✗ Clippy found warnings/errors

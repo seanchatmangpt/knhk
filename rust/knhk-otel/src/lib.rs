@@ -2,6 +2,10 @@
 // OpenTelemetry Observability Integration
 // Provides metrics, traces, and spans for KNHKS operations
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
@@ -233,20 +237,20 @@ impl WeaverLiveCheck {
         
         let mut cmd = Command::new("weaver");
         
-        cmd.args(&["registry", "live-check"]);
-        
+        cmd.args(["registry", "live-check"]);
+
         if let Some(ref registry) = self.registry_path {
-            cmd.args(&["--registry", registry]);
+            cmd.args(["--registry", registry]);
         }
-        
-        cmd.args(&["--otlp-grpc-address", &self.otlp_grpc_address]);
-        cmd.args(&["--otlp-grpc-port", &self.otlp_grpc_port.to_string()]);
-        cmd.args(&["--admin-port", &self.admin_port.to_string()]);
-        cmd.args(&["--inactivity-timeout", &self.inactivity_timeout.to_string()]);
-        cmd.args(&["--format", &self.format]);
-        
+
+        cmd.args(["--otlp-grpc-address", &self.otlp_grpc_address]);
+        cmd.args(["--otlp-grpc-port", &self.otlp_grpc_port.to_string()]);
+        cmd.args(["--admin-port", &self.admin_port.to_string()]);
+        cmd.args(["--inactivity-timeout", &self.inactivity_timeout.to_string()]);
+        cmd.args(["--format", &self.format]);
+
         if let Some(ref output) = self.output {
-            cmd.args(&["--output", output]);
+            cmd.args(["--output", output]);
         }
         
         cmd.spawn()
@@ -641,11 +645,7 @@ impl MetricsHelper {
     pub fn record_hook_latency(tracer: &mut Tracer, ticks: u32, operation: &str) {
         let metric = Metric {
             name: "knhk.hook.latency.ticks".to_string(),
-            value: MetricValue::Histogram({
-                let mut v = Vec::new();
-                v.push(ticks as u64);
-                v
-            }),
+            value: MetricValue::Histogram(vec![ticks as u64]),
             timestamp_ms: get_timestamp_ms(),
             attributes: {
                 let mut attrs = BTreeMap::new();
@@ -690,11 +690,7 @@ impl MetricsHelper {
     pub fn record_warm_path_latency(tracer: &mut Tracer, latency_us: u64, operation: &str) {
         let metric = Metric {
             name: "knhk.warm_path.operations.latency".to_string(),
-            value: MetricValue::Histogram({
-                let mut v = Vec::new();
-                v.push(latency_us);
-                v
-            }),
+            value: MetricValue::Histogram(vec![latency_us]),
             timestamp_ms: get_timestamp_ms(),
             attributes: {
                 let mut attrs = BTreeMap::new();

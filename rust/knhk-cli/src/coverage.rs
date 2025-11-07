@@ -14,7 +14,7 @@ struct CoverageResult {
 #[verb] // Noun "coverage" auto-inferred from filename "coverage.rs"
 fn get() -> Result<CoverageResult> {
     coverage_impl::get()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to get coverage: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to get coverage: {}", e)))
         .map(|coverage| CoverageResult { coverage })
 }
 

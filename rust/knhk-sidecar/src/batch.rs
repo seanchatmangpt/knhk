@@ -1,5 +1,8 @@
 // knhk-sidecar: Request batching logic
 
+// ACCEPTABLE: Mutex poisoning .expect() is allowed in this module (unrecoverable error)
+#![allow(clippy::expect_used)]
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
@@ -49,7 +52,9 @@ impl<T> BatchCollector<T> {
     /// Add request to batch
     pub fn add_request(&self, request: T) -> oneshot::Receiver<SidecarResult<T>> {
         let (tx, rx) = oneshot::channel();
-        
+
+        // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
+        // See Rust std docs: https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
         let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
         pending.push(BatchedRequest {
             request,

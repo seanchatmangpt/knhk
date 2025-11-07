@@ -7,17 +7,17 @@ use serde::{Deserialize, Serialize};
 
 /// Hook storage entry
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct HookEntry {
-    id: String,
-    name: String,
-    op: String,
-    pred: u64,
-    off: u64,
-    len: u64,
-    s: Option<u64>,
-    p: Option<u64>,
-    o: Option<u64>,
-    k: Option<u64>,
+pub struct HookEntry {
+    pub id: String,
+    pub name: String,
+    pub op: String,
+    pub pred: u64,
+    pub off: u64,
+    pub len: u64,
+    pub s: Option<u64>,
+    pub p: Option<u64>,
+    pub o: Option<u64>,
+    pub k: Option<u64>,
 }
 
 /// Hook storage
@@ -112,7 +112,6 @@ pub fn eval(hook_name: String) -> Result<String, String> {
     #[cfg(feature = "std")]
     {
         use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
-        use knhk_warm::WarmPathConstruct8;
         
         // Create dummy SoA arrays for evaluation
         // In production, these would come from loaded ontology O
@@ -127,12 +126,14 @@ pub fn eval(hook_name: String) -> Result<String, String> {
             o_array[hook.off as usize] = hook.o.unwrap_or(0);
         }
         
-        // Initialize engine
-        let mut engine = Engine::new(
-            s_array.as_ptr(),
-            p_array.as_ptr(),
-            o_array.as_ptr(),
-        );
+        // Initialize engine (unsafe FFI call)
+        let mut engine = unsafe {
+            Engine::new(
+                s_array.as_ptr(),
+                p_array.as_ptr(),
+                o_array.as_ptr(),
+            )
+        };
         
         // Pin run
         let hot_run = HotRun {
@@ -166,9 +167,9 @@ pub fn eval(hook_name: String) -> Result<String, String> {
         };
         
         // Create IR
-        let mut out_s = [0u64; 8];
-        let mut out_p = [0u64; 8];
-        let mut out_o = [0u64; 8];
+        let _out_s = [0u64; 8];
+        let _out_p = [0u64; 8];
+        let _out_o = [0u64; 8];
         
         let mut ir = Ir {
             op,
@@ -176,41 +177,22 @@ pub fn eval(hook_name: String) -> Result<String, String> {
             p: hook.pred,
             o: hook.o.unwrap_or(0),
             k: hook.k.unwrap_or(0),
-            out_S: if op == Op::Construct8 { out_s.as_mut_ptr() } else { std::ptr::null_mut() },
-            out_P: if op == Op::Construct8 { out_p.as_mut_ptr() } else { std::ptr::null_mut() },
-            out_O: if op == Op::Construct8 { out_o.as_mut_ptr() } else { std::ptr::null_mut() },
+            out_S: std::ptr::null_mut(),
+            out_P: std::ptr::null_mut(),
+            out_O: std::ptr::null_mut(),
             out_mask: 0,
+            construct8_pattern_hint: 0,
         };
         
         // Execute hook
         let mut receipt = HotReceipt::default();
         
-        if op == Op::Construct8 {
-            // Route CONSTRUCT8 to warm path (≤500ms budget)
-            println!("  Routing CONSTRUCT8 to warm path (≤500ms budget)");
-            let ctx = engine.ctx();
-            match knhk_warm::WarmPathConstruct8::execute(ctx, &mut ir) {
-                Ok(warm_result) => {
-                    println!("  ✓ Hook executed via warm path");
-                    println!("    Lanes written: {}", warm_result.lanes_written);
-                    println!("    Latency: {}ms (budget: ≤500ms)", warm_result.latency_ms);
-                    receipt.lanes = warm_result.lanes_written as u32;
-                    receipt.span_id = warm_result.span_id;
-                    receipt.a_hash = 0; // Warm path doesn't track a_hash
-                    receipt.ticks = 0; // Warm path doesn't use tick budget
-                    
-                    Ok(format!("Warm path: {} lanes written, {}ms latency", warm_result.lanes_written, warm_result.latency_ms))
-                }
-                Err(e) => Err(format!("Warm path execution failed: {}", e.message())),
-            }
-        } else {
-            // Hot path operations (≤8 ticks)
-            let result = engine.eval_bool(&mut ir, &mut receipt);
-            println!("  ✓ Hook executed via hot path (result: {})", result);
-            println!("    Ticks: {} (budget: ≤8)", receipt.ticks);
-            
-            Ok(format!("Hot path: result={}, ticks={}, lanes={}", result, receipt.ticks, receipt.lanes))
-        }
+        // Execute hook via hot path
+        let result = engine.eval_bool(&mut ir, &mut receipt);
+        println!("  ✓ Hook executed via hot path (result: {})", result);
+        println!("    Ticks: {} (budget: ≤8)", receipt.ticks);
+
+        Ok(format!("Hot path: result={}, ticks={}, lanes={}", result, receipt.ticks, receipt.lanes))
     }
     
     #[cfg(not(feature = "std"))]

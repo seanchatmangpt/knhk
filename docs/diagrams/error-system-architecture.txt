@@ -1,0 +1,302 @@
+KNHK Error Type System Architecture
+=====================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         APPLICATION LAYER (CLI/API)                          │
+│                                                                              │
+│  ┌────────────────────┐         ┌────────────────────┐                     │
+│  │   knhk-cli         │         │   knhk-sidecar     │                     │
+│  │                    │         │                    │                     │
+│  │  CliError          │         │  SidecarError      │                     │
+│  │  - Config          │         │  - NetworkError    │                     │
+│  │  - Command         │         │  - ValidationError │                     │
+│  │  - Validation      │         │  - TimeoutError    │                     │
+│  └────────────────────┘         └────────────────────┘                     │
+│           │                              │                                   │
+│           └──────────────┬───────────────┘                                   │
+│                          │                                                   │
+└──────────────────────────┼───────────────────────────────────────────────────┘
+                           │
+                           ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        CORE ORCHESTRATION LAYER                              │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         KnhkError (Top-Level)                        │   │
+│  │                                                                       │   │
+│  │  All errors flow here with OtelContext:                             │   │
+│  │    - trace_id: [u8; 16]    (distributed tracing)                    │   │
+│  │    - span_id: [u8; 8]      (operation correlation)                  │   │
+│  │    - source_location       (debugging)                               │   │
+│  │                                                                       │   │
+│  │  Variants:                                                            │   │
+│  │    Etl { source: EtlError, context }                                │   │
+│  │    Warm { source: WarmError, context }                              │   │
+│  │    Hot { code, message, context }                                   │   │
+│  │    Cold { source, context }                                         │   │
+│  │    Lockchain { source, context }                                    │   │
+│  │    Config { source, context }                                       │   │
+│  │    Validation { source, context }                                   │   │
+│  │    Sidecar { source, context }                                      │   │
+│  │    Cli { source, context }                                          │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│           │              │              │              │                     │
+└───────────┼──────────────┼──────────────┼──────────────┼─────────────────────┘
+            │              │              │              │
+            ↓              ↓              ↓              ↓
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│  ETL LAYER    │ │  WARM LAYER   │ │  HOT LAYER    │ │ COLD LAYER    │
+│               │ │               │ │               │ │               │
+│  EtlError     │ │  WarmError    │ │  HotError     │ │ ColdError     │
+│  ┌─────────┐  │ │  ┌─────────┐  │ │  (via FFI)    │ │ (Erlang)      │
+│  │ Ingest  │  │ │  │ Fiber   │  │ │               │ │               │
+│  │ - Format│  │ │  │ - Input │  │ │  Error Codes: │ │  Error Codes: │
+│  │ - Schema│  │ │  │ - Guard │  │ │  3000-3999    │ │  4000-4999    │
+│  │ - RdfPrs│  │ │  │ - Exec  │  │ │               │ │               │
+│  └─────────┘  │ │  │ - Tmout │  │ │  Performance: │ │               │
+│  ┌─────────┐  │ │  └─────────┘  │ │  ≤8 ticks     │ │               │
+│  │Transfrm │  │ │  ┌─────────┐  │ │               │ │               │
+│  │ - Class │  │ │  │ Graph   │  │ │  Zero allocs  │ │               │
+│  │ - Guard │  │ │  │ - Node  │  │ │  in critical  │ │               │
+│  │ - Reflex│  │ │  │ - Edge  │  │ │  path         │ │               │
+│  │ - SLO   │  │ │  │ - Cycle │  │ │               │ │               │
+│  └─────────┘  │ │  └─────────┘  │ │               │ │               │
+│  ┌─────────┐  │ │  ┌─────────┐  │ │               │ │               │
+│  │  Load   │  │ │  │ Query   │  │ │               │ │               │
+│  │ - Emit  │  │ │  │ - Parse │  │ │               │ │               │
+│  │ - Serial│  │ │  │ - Tmout │  │ │               │ │               │
+│  │ - Dest  │  │ │  └─────────┘  │ │               │ │               │
+│  └─────────┘  │ │  ┌─────────┐  │ │               │ │               │
+│  ┌─────────┐  │ │  │Executor │  │ │               │ │               │
+│  │Pipeline │  │ │  │ - Task  │  │ │               │ │               │
+│  │HookReg  │  │ │  │ - Sched │  │ │               │ │               │
+│  │BeatSch  │  │ │  └─────────┘  │ │               │ │               │
+│  │Reconcil │  │ │               │ │               │ │               │
+│  │RingBuf  │  │ │               │ │               │ │               │
+│  └─────────┘  │ │               │ │               │ │               │
+│               │ │               │ │               │ │               │
+│  Error Codes: │ │  Error Codes: │ │               │ │               │
+│  1000-1999    │ │  2000-2999    │ │               │ │               │
+└───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘
+        │                  │                  │                  │
+        └──────────────────┴──────────────────┴──────────────────┘
+                                    │
+                                    ↓
+        ┌───────────────────────────────────────────────────────┐
+        │          CROSS-CUTTING CONCERNS                        │
+        │                                                        │
+        │  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
+        │  │ Lockchain    │  │ Config       │  │ Validation  │ │
+        │  │              │  │              │  │             │ │
+        │  │ - Storage    │  │ - NotFound   │  │ - Policy    │ │
+        │  │ - Quorum     │  │ - Parse      │  │ - Ingest    │ │
+        │  │ - Merkle     │  │ - Validate   │  │ - Schema    │ │
+        │  │ - Receipt    │  │ - MissField  │  │             │ │
+        │  │              │  │ - InvValue   │  │             │ │
+        │  │ Error Codes: │  │ Error Codes: │  │ Error Codes:│ │
+        │  │ 5000-5999    │  │ 6000-6999    │  │ 7000-7999   │ │
+        │  └──────────────┘  └──────────────┘  └─────────────┘ │
+        └───────────────────────────────────────────────────────┘
+                                    │
+                                    ↓
+        ┌───────────────────────────────────────────────────────┐
+        │               FFI BOUNDARY LAYER                       │
+        │                                                        │
+        │  ┌─────────────────────────────────────────────────┐  │
+        │  │         KnhkErrorFFI (#[repr(C)])               │  │
+        │  │                                                  │  │
+        │  │  struct {                                       │  │
+        │  │    code: i32              // Error code         │  │
+        │  │    message: *const c_char // Error message     │  │
+        │  │    trace_id: [u8; 16]     // OTEL trace ID     │  │
+        │  │    span_id: [u8; 8]       // OTEL span ID      │  │
+        │  │    source_location: *const c_char              │  │
+        │  │  }                                              │  │
+        │  │                                                  │  │
+        │  │  Functions:                                     │  │
+        │  │    knhk_error_free(error*)                     │  │
+        │  │    knhk_error_message(error*) -> *const char   │  │
+        │  │    knhk_error_code(error*) -> i32              │  │
+        │  └─────────────────────────────────────────────────┘  │
+        └───────────────────────────────────────────────────────┘
+                                    │
+                                    ↓
+        ┌───────────────────────────────────────────────────────┐
+        │                   C CODE LAYER                         │
+        │                                                        │
+        │  knhk_error_t* error = NULL;                          │
+        │  int32_t result = knhk_ingest_data(data, len, &error);│
+        │                                                        │
+        │  if (result != KNHK_SUCCESS) {                        │
+        │    printf("Error %d: %s\n",                           │
+        │            knhk_error_code(error),                    │
+        │            knhk_error_message(error));                │
+        │                                                        │
+        │    // Print OTEL trace for correlation                │
+        │    for (i = 0; i < 16; i++)                           │
+        │      printf("%02x", error->trace_id[i]);              │
+        │                                                        │
+        │    knhk_error_free(error); // REQUIRED                │
+        │  }                                                     │
+        └───────────────────────────────────────────────────────┘
+
+INTEGRATION POINTS
+==================
+
+┌────────────────────────────────────────────────────────────────┐
+│ OpenTelemetry Integration                                      │
+│                                                                 │
+│  Error Creation → Add OtelContext → Propagate through stack   │
+│                                                                 │
+│  trace_id + span_id allow correlation with:                   │
+│    - Distributed traces across services                        │
+│    - Span events and attributes                                │
+│    - Log aggregation systems                                   │
+│    - Monitoring dashboards                                     │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Lockchain Integration                                          │
+│                                                                 │
+│  Error → Serialize (JSON) → Store in Receipt → Git Commit     │
+│                                                                 │
+│  Provides:                                                      │
+│    - Immutable audit log of errors                             │
+│    - Error replay for debugging                                │
+│    - Compliance and forensics                                  │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ External Dependencies Integration                              │
+│                                                                 │
+│  std::io::Error         → IoError                             │
+│  oxigraph::RdfParseError → IngestError::RdfParse              │
+│  serde_json::Error      → ConfigError::ParseError             │
+│  PoisonError<T>         → InternalError                        │
+└────────────────────────────────────────────────────────────────┘
+
+ERROR FLOW EXAMPLES
+===================
+
+Example 1: ETL Pipeline Error Flow
+───────────────────────────────────
+
+Input Data
+    ↓
+┌────────────────────┐
+│ Ingest Phase       │ → oxigraph parse error
+│                    │   ↓
+│ IngestError::      │   IngestError::RdfParse { message }
+│   RdfParse         │       ↓ (From trait)
+└────────────────────┘   EtlError::Ingest { source }
+                              ↓ (From trait)
+                          KnhkError::Etl { source, context }
+                              ↓ (add OTEL context)
+                          context.trace_id = [current trace]
+                          context.span_id = [current span]
+                              ↓
+                          Record to OTEL span
+                              ↓
+                          Return to caller / Convert to FFI
+
+Example 2: Hot Path Error Flow (Performance Critical)
+──────────────────────────────────────────────────────
+
+Guard Check (≤8 ticks required)
+    ↓
+if input >= MAX_VALUE {
+    return Err(hot_error(HOT_ERROR_GUARD));  // ≤8 ticks
+    // Pre-allocated code, no allocations
+    // Empty OTEL context (zero-init)
+}
+    ↓ (After hot path completes)
+add_otel_context(error, trace_id, span_id)
+    ↓
+Return to caller with full context
+
+Example 3: FFI Boundary Error Flow
+───────────────────────────────────
+
+Rust Function Error
+    ↓
+KnhkError::Etl {
+    source: EtlError::Ingest {
+        source: IngestError::InvalidFormat { message }
+    },
+    context: OtelContext { trace_id, span_id, location }
+}
+    ↓ (.to_ffi())
+KnhkErrorFFI {
+    code: 1000,                    // KNHK_ETL_INGEST
+    message: CString::new(msg),    // Owned by FFI struct
+    trace_id: [1,2,3,...],
+    span_id: [4,5,6,...],
+    source_location: CString::new("file.rs:123")
+}
+    ↓ (Return via out param)
+C Code receives error pointer
+    ↓
+printf("Error: %s\n", knhk_error_message(error));
+printf("Trace: %s\n", format_trace_id(error->trace_id));
+    ↓
+knhk_error_free(error);  // Free memory
+
+PERFORMANCE CHARACTERISTICS
+============================
+
+Layer          | Allocation | Ticks  | Use Case
+---------------|------------|--------|---------------------------
+Hot Path       | 0          | ≤8     | Critical path operations
+Warm Path      | 1 String   | ~50    | Normal operations
+Cold Path      | Multiple   | >50    | Error reporting, logging
+FFI Conversion | 2 CString  | ~100   | Rust→C boundary
+Serialization  | Multiple   | ~500   | Lockchain, debugging
+
+DESIGN PRINCIPLES
+=================
+
+1. Type Safety
+   - Compiler enforces error handling
+   - No unwrap() in production code
+   - Explicit error types
+
+2. Composability
+   - Errors flow up hierarchy automatically
+   - From traits enable seamless conversion
+   - Clean error propagation with ?
+
+3. Observability
+   - OTEL context in every error
+   - Distributed tracing support
+   - Source location tracking
+
+4. Performance
+   - Hot path optimized (≤8 ticks)
+   - Zero allocations in critical paths
+   - Deferred context addition
+
+5. Debuggability
+   - Rich error messages with context
+   - Source location (file:line)
+   - OTEL trace correlation
+   - Serializable for audit logs
+
+6. FFI Compatibility
+   - C-compatible error representation
+   - Structured error codes
+   - Memory safety (free functions)
+
+IMPLEMENTATION STATUS
+=====================
+
+Phase 1: Foundation         [ ] Week 1  (knhk-core, FFI boundary)
+Phase 2: Crate Errors       [ ] Week 2  (Update all crates)
+Phase 3: Replace unwrap()   [ ] Week 3  (Fix 149 calls)
+Phase 4: Validation         [ ] Week 4  (Testing, benchmarks)
+
+Target: 149 unwrap() calls → 0 unwrap() calls
+Current: 149 unwrap() calls
+Progress: 0%
+
+Design Complete: ✅
+Implementation Ready: ✅

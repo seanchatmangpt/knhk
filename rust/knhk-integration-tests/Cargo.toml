@@ -8,10 +8,10 @@ name = "integration_test"
 path = "src/main.rs"
 
 [dependencies]
-# Core testcontainers
-testcontainers = "0.16"
-testcontainers-modules = { version = "0.16", features = ["kafka", "postgres"] }
-tokio = { version = "1", features = ["full"] }
+# Core testcontainers (using aligned compatible versions)
+testcontainers = { version = "0.25", features = ["blocking"] }
+testcontainers-modules = { version = "0.13", features = ["kafka", "postgres"] }
+tokio = { version = "1.35", features = ["full"] }
 
 # KNHK components
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }

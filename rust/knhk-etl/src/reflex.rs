@@ -198,7 +198,9 @@ impl ReflexStage {
         use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
         
         // Initialize engine with SoA arrays
-        let mut engine = Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr());
+        // SAFETY: Engine::new requires valid pointers to SoA arrays.
+        // We guarantee this by passing pointers from valid Vec<u64> allocations.
+        let mut engine = unsafe { Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr()) };
         
         // Pin run (validates len ≤ 8 via C API)
         // Additional guard validation before pinning (defense in depth)
@@ -273,7 +275,6 @@ impl ReflexStage {
     pub fn merge_receipts(receipts: &[Receipt]) -> Receipt {
         if receipts.is_empty() {
             // Generate proper span_id for empty receipt
-            use knhk_otel::generate_span_id;
             return Receipt {
                 id: "merged_receipt".to_string(),
                 cycle_id: 0,
@@ -282,7 +283,7 @@ impl ReflexStage {
                 ticks: 0,
                 actual_ticks: 0,
                 lanes: 0,
-                span_id: generate_span_id(), // Generate OTEL-compatible span ID
+                span_id: Self::generate_span_id(), // Generate OTEL-compatible span ID
                 a_hash: 0,
             };
         }
@@ -329,7 +330,7 @@ impl ReflexStage {
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_nanos() as u64)
-                .unwrap_or(0);
+                .unwrap_or(0); // Already using unwrap_or(0) - no change needed
             // Simple hash of timestamp
             timestamp.wrapping_mul(0x9e3779b97f4a7c15)
         }
@@ -414,7 +415,7 @@ impl ReflexStage {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
-            .unwrap_or(0)
+            .unwrap_or(0) // Already using unwrap_or(0) - no change needed
     }
 
     /// Extract operation type from predicate run
@@ -443,6 +444,7 @@ impl ReflexStage {
     }
 }
 
+#[derive(Debug)]
 pub struct ReflexResult {
     pub actions: Vec<Action>,
     pub receipts: Vec<Receipt>,

@@ -49,6 +49,7 @@ pub enum BeatSchedulerError {
 /// let mut scheduler = BeatScheduler::new(4, 1, 8)?; // 4 shards, 1 domain, ring capacity 8
 /// let (tick, pulse) = scheduler.advance_beat();
 /// ```
+#[derive(Debug)]
 pub struct BeatScheduler {
     /// C beat scheduler initialized flag
     c_beat_initialized: bool,

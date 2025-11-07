@@ -3,9 +3,27 @@
 
 use crate::Receipt;
 use blake3::Hasher;
+use thiserror::Error;
+
+/// Merkle proof error types
+#[derive(Debug, Error)]
+pub enum MerkleError {
+    #[error("Invalid leaf index: {index} (tree has {leaf_count} leaves)")]
+    InvalidLeafIndex { index: usize, leaf_count: usize },
+
+    #[error("Merkle proof generation failed: {0}")]
+    ProofGenerationFailed(String),
+
+    #[error("Merkle proof verification failed: {0}")]
+    ProofVerificationFailed(String),
+
+    #[error("Empty Merkle tree")]
+    EmptyTree,
+}
 
 /// Merkle tree for receipt hashing
 /// Builds binary tree bottom-up, computes root hash
+#[derive(Debug)]
 pub struct MerkleTree {
     leaves: Vec<[u8; 32]>,  // Receipt hashes (leaf nodes)
     nodes: Vec<[u8; 32]>,   // Internal node hashes
@@ -93,9 +111,12 @@ impl MerkleTree {
 
     /// Generate Merkle proof for a specific leaf
     /// Proof consists of sibling hashes along path to root
-    pub fn generate_proof(&self, leaf_index: usize) -> Option<MerkleProof> {
+    pub fn generate_proof(&self, leaf_index: usize) -> Result<MerkleProof, MerkleError> {
         if leaf_index >= self.leaves.len() {
-            return None;
+            return Err(MerkleError::InvalidLeafIndex {
+                index: leaf_index,
+                leaf_count: self.leaves.len(),
+            });
         }
 
         let mut proof_hashes = Vec::new();
@@ -136,7 +157,7 @@ impl MerkleTree {
             current_level = next_level;
         }
 
-        Some(MerkleProof {
+        Ok(MerkleProof {
             leaf_index,
             leaf_hash: self.leaves[leaf_index],
             proof_hashes,
@@ -246,7 +267,7 @@ mod tests {
 
         tree.compute_root();
 
-        let proof = tree.generate_proof(0).unwrap();
+        let proof = tree.generate_proof(0).expect("proof generation failed");
         assert_eq!(proof.leaf_index, 0);
         assert!(proof.verify());
     }
@@ -264,7 +285,7 @@ mod tests {
 
         // Verify all proofs
         for i in 0..8 {
-            let proof = tree.generate_proof(i).unwrap();
+            let proof = tree.generate_proof(i).expect("proof generation failed");
             assert!(proof.verify(), "Proof verification failed for leaf {}", i);
         }
     }

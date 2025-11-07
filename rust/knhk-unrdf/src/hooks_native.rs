@@ -174,7 +174,7 @@ pub fn evaluate_hook_native(
     let hook_query = extract_hook_query(hook)?;
     
     // Create store and load data
-    let store = NativeStore::new();
+    let store = NativeStore::new()?;
     store.load_turtle(turtle_data)?;
     
     // Execute ASK query to check if hook condition is met

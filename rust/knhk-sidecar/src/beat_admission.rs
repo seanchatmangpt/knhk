@@ -240,7 +240,23 @@ impl BeatAdmission {
         };
 
         // Lock predictor for this routing decision
-        let mut predictor = self.predictor.lock().unwrap();
+        // If lock is poisoned (panic in another thread), recover by parking to W1 (safe default)
+        let mut predictor = match self.predictor.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                // Mutex was poisoned by a panic in another thread
+                // Log and return safe default: park to W1
+                #[cfg(feature = "otel")]
+                tracing::warn!(
+                    "Predictor mutex poisoned, parking delta to W1 as safe default"
+                );
+                return AdmissionDecision::Park {
+                    reason: ParkReason::WarmPathRequired,
+                    destination: PathTier::W1,
+                    estimated_ticks: 200, // Conservative estimate
+                };
+            }
+        };
         predictor.update_tick(current_tick);
 
         // CHECK 1: Does delta require CONSTRUCT8? → W1

@@ -5,7 +5,6 @@
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
 use alloc::string::ToString;
 use alloc::format;
 use crate::{Tracer, Metric, MetricValue, SpanStatus};
@@ -38,11 +37,7 @@ pub fn record_runtime_class_operation(tracer: &mut Tracer, class: &str) {
 pub fn record_runtime_class_latency(tracer: &mut Tracer, class: &str, latency_ns: u64) {
     let metric = Metric {
         name: "knhk.runtime_class.operations.latency".to_string(),
-        value: MetricValue::Histogram({
-            let mut v = Vec::new();
-            v.push(latency_ns);
-            v
-        }),
+        value: MetricValue::Histogram(vec![latency_ns]),
         timestamp_ms: get_timestamp_ms(),
         attributes: {
             let mut attrs = BTreeMap::new();

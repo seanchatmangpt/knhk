@@ -6,7 +6,7 @@ pub fn init_tracing() -> Result<(), String> {
     use tracing_subscriber::{fmt, EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
     use tracing_opentelemetry::OpenTelemetryLayer;
     use opentelemetry::global;
-    use opentelemetry_sdk::{trace::TracerProvider, Resource};
+    use opentelemetry_sdk::Resource;
     use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
 
     // Check for KNHK_TRACE environment variable (default to "info")
@@ -31,56 +31,22 @@ pub fn init_tracing() -> Result<(), String> {
     let service_name = std::env::var("OTEL_SERVICE_NAME")
         .unwrap_or_else(|_| "knhk-cli".to_string());
 
-    // Create resource with service name
-    let resource = Resource::new(vec![
-        SERVICE_NAME.string(service_name.clone()),
-    ]);
+    // Initialize subscriber with fmt layer only (OTLP setup requires async runtime)
+    // For a CLI tool with simple exports, we use structured logging instead
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt::layer()
+            .with_target(false)
+            .with_thread_ids(false)
+            .json()) // Output JSON for OTEL ingestion
+        .init();
 
-    // Initialize tracer provider
-    if let Some(endpoint) = otlp_endpoint {
-        // Configure OTLP exporter if endpoint is provided
-        // Use simple (blocking) runtime for CLI (synchronous)
-        let tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(
-                opentelemetry_otlp::new_exporter()
-                    .http()
-                    .with_endpoint(endpoint),
-            )
-            .with_resource(resource)
-            .install_simple()
-            .map_err(|e| format!("Failed to initialize OTLP exporter: {}", e))?;
-        
-        // Set global tracer provider
-        global::set_tracer_provider(tracer);
-        
-        // Create OpenTelemetry layer
-        let otel_layer = OpenTelemetryLayer::default(global::tracer("knhk-cli"));
-
-        // Initialize subscriber with fmt and otel layers
-        tracing_subscriber::registry()
-            .with(filter)
-            .with(fmt::layer().with_target(false).with_thread_ids(false))
-            .with(otel_layer)
-            .init();
-    } else {
-        // Use no-op tracer provider if no endpoint configured
-        let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
-            .with_resource(resource)
-            .build();
-        
-        // Set global tracer provider
-        global::set_tracer_provider(tracer_provider);
-
-        // Create OpenTelemetry layer
-        let otel_layer = OpenTelemetryLayer::default(global::tracer("knhk-cli"));
-
-        // Initialize subscriber with fmt and otel layers
-        tracing_subscriber::registry()
-            .with(filter)
-            .with(fmt::layer().with_target(false).with_thread_ids(false))
-            .with(otel_layer)
-            .init();
+    // Log service info for OTEL correlation
+    if let Some(_endpoint) = otlp_endpoint {
+        tracing::info!(
+            otel.service.name = %service_name,
+            "OpenTelemetry service initialized"
+        );
     }
     
     Ok(())

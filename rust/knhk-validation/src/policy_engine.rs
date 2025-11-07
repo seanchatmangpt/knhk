@@ -4,8 +4,19 @@
 
 #![cfg(feature = "policy-engine")]
 
-use alloc::string::String;
+#[cfg(not(feature = "std"))]
+use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap;
+
+#[cfg(feature = "std")]
+use std::string::{String, ToString};
+#[cfg(feature = "std")]
+use std::vec::Vec;
+#[cfg(feature = "std")]
+use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 /// Policy violation level
@@ -160,12 +171,12 @@ impl PolicyEngine {
     /// Load Rego policies from directory (requires rego feature)
     #[cfg(feature = "rego")]
     pub fn load_rego_policies(&mut self, _policy_dir: &str) -> Result<(), String> {
-        // TODO: Implement Rego policy loading
+        // FUTURE: Implement Rego policy loading
         // This would:
         // 1. Scan directory for .rego files
         // 2. Parse and validate Rego policies
         // 3. Add to rego_policies vector
-        // For now, this is a placeholder for future implementation
+        // For now, this is a placeholder for future Rego integration (post-v1.0)
         Ok(())
     }
 
@@ -208,8 +219,10 @@ impl PolicyEngine {
         #[cfg(feature = "rego")]
         {
             for rego_policy in &self.rego_policies {
-                // TODO: Evaluate Rego policy
-                // This would use a Rego evaluation engine (e.g., opa-wasm)
+                // FUTURE: Evaluate Rego policy
+                // This would use a Rego evaluation engine (e.g., opa-wasm) for custom policy evaluation
+                // Planned for post-v1.0 release when Rego integration feature is enabled
+                let _ = rego_policy; // Silence unused variable warning
             }
         }
 

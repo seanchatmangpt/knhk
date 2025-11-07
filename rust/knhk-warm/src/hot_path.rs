@@ -82,7 +82,9 @@ pub fn execute_hot_path_ask(
     // Extract results
     let mut triples = Vec::new();
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
-        for solution in solutions {
+        for solution_result in solutions {
+            // Handle Result from iterator
+            let solution = solution_result.map_err(|e| QueryError::ExecutionError(format!("Query solution error: {}", e)))?;
             // Check if this triple matches our query
             if let Some(s_val) = solution.get("s") {
                 if let Some(o_val) = solution.get("o") {
@@ -109,11 +111,15 @@ pub fn execute_hot_path_ask(
         }
         
         // Create engine
-        let engine = Engine::new(
-            s_array.as_ptr(),
-            p_array.as_ptr(),
-            o_array.as_ptr(),
-        );
+        // SAFETY: Engine::new requires valid pointers to SoA arrays.
+        // We guarantee this by passing pointers from valid Vec<u64> allocations.
+        let engine = unsafe {
+            Engine::new(
+                s_array.as_ptr(),
+                p_array.as_ptr(),
+                o_array.as_ptr(),
+            )
+        };
         
         // Create run
         let run = Run {
@@ -210,7 +216,9 @@ pub fn execute_hot_path_select(
     // Extract results
     let mut triples = Vec::new();
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
-        for solution in solutions {
+        for solution_result in solutions {
+            // Handle Result from iterator
+            let solution = solution_result.map_err(|e| QueryError::ExecutionError(format!("Query solution error: {}", e)))?;
             if let Some(s_val) = solution.get("s") {
                 if let Some(o_val) = solution.get("o") {
                     triples.push((hash_iri_value(s_val), hash_iri_value(o_val)));
@@ -236,11 +244,15 @@ pub fn execute_hot_path_select(
         }
         
         // Create engine
-        let engine = Engine::new(
-            s_array.as_ptr(),
-            p_array.as_ptr(),
-            o_array.as_ptr(),
-        );
+        // SAFETY: Engine::new requires valid pointers to SoA arrays.
+        // We guarantee this by passing pointers from valid Vec<u64> allocations.
+        let engine = unsafe {
+            Engine::new(
+                s_array.as_ptr(),
+                p_array.as_ptr(),
+                o_array.as_ptr(),
+            )
+        };
         
         // Create run
         let run = Run {

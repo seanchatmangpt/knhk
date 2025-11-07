@@ -76,6 +76,7 @@ impl QuorumProof {
 
 /// Quorum consensus manager
 /// Coordinates voting among peers to agree on Merkle roots
+#[derive(Debug)]
 pub struct QuorumManager {
     peers: Vec<PeerId>,
     threshold: usize, // e.g., 2/3 + 1 for Byzantine fault tolerance
@@ -222,7 +223,8 @@ mod tests {
         let root = [1u8; 32];
         let cycle = 100;
 
-        let proof = manager.achieve_consensus(root, cycle).unwrap();
+        let proof = manager.achieve_consensus(root, cycle)
+            .expect("failed to achieve consensus");
         assert_eq!(proof.root, root);
         assert_eq!(proof.cycle, cycle);
         assert!(proof.vote_count() >= 2);
@@ -236,7 +238,8 @@ mod tests {
         let root = [1u8; 32];
         let cycle = 100;
 
-        let proof = manager.achieve_consensus(root, cycle).unwrap();
+        let proof = manager.achieve_consensus(root, cycle)
+            .expect("failed to achieve consensus");
         assert!(proof.verify(2));
     }
 

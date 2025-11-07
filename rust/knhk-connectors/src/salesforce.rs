@@ -22,9 +22,12 @@ use serde_json::Value;
 /// OAuth2 token information
 #[derive(Debug, Clone)]
 pub struct OAuth2Token {
+    #[allow(dead_code)] // Used in full OAuth2 implementation
     access_token: String,
+    #[allow(dead_code)] // Used in token refresh flow
     refresh_token: String,
     expires_at_ms: u64,
+    #[allow(dead_code)] // Used for API endpoint construction
     instance_url: String,
 }
 
@@ -63,6 +66,7 @@ pub struct SalesforceConnector {
     token: Option<OAuth2Token>,
     rate_limit: Option<RateLimitInfo>,
     last_timestamp_ms: u64,
+    #[allow(dead_code)] // Used in SOQL query generation
     last_modified_date: Option<String>,
     #[cfg(feature = "salesforce")]
     http_client: Option<Client>,
@@ -212,9 +216,7 @@ impl Connector for SalesforceConnector {
             let current_time_ms = Self::get_current_timestamp_ms();
             if current_time_ms >= token.expires_at_ms {
                 // Token expired, need to refresh
-                if let Err(e) = self.refresh_token() {
-                    return Err(e);
-                }
+                self.refresh_token()?;
             }
         }
 
@@ -763,12 +765,12 @@ mod tests {
         };
 
         assert!(connector.initialize(spec).is_ok());
-        
+
         // Fetch delta from authenticated connector
         let result = connector.fetch_delta();
         assert!(result.is_ok());
-        
-        let delta = result.unwrap();
+
+        let delta = result.expect("fetch_delta should succeed for authenticated connector");
         assert_eq!(delta.actor, "salesforce_connector:test_salesforce");
     }
 
@@ -784,8 +786,8 @@ mod tests {
         // Try to fetch without initializing
         let result = connector.fetch_delta();
         assert!(result.is_err());
-        
-        match result.unwrap_err() {
+
+        match result.expect_err("fetch_delta should fail for unauthenticated connector") {
             ConnectorError::NetworkError(_) => {}
             _ => panic!("Expected NetworkError"),
         }
@@ -835,8 +837,8 @@ mod tests {
         // Fetch should fail with rate limit error
         let result = connector.fetch_delta();
         assert!(result.is_err());
-        
-        match result.unwrap_err() {
+
+        match result.expect_err("fetch_delta should fail when rate limited") {
             ConnectorError::NetworkError(_) => {}
             _ => panic!("Expected NetworkError for rate limit"),
         }

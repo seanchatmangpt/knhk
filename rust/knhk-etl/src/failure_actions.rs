@@ -75,7 +75,7 @@ pub fn handle_r1_failure(
             let timestamp_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
-                .unwrap_or(0);
+                .unwrap_or(0); // Already using unwrap_or(0) - no change needed
             
             // Record escalation event
             let mut attrs = alloc::collections::BTreeMap::new();
@@ -222,7 +222,7 @@ mod tests {
         
         let result = handle_r1_failure(delta, receipt.clone(), true);
         assert!(result.is_ok());
-        let action = result.unwrap();
+        let action = result.expect("R1 failure handling should succeed");
         assert!(action.escalate);
         assert_eq!(action.receipt.id, receipt.id);
     }
@@ -250,8 +250,8 @@ mod tests {
     fn test_w1_failure_retry() {
         let result = handle_w1_failure(0, 3, None);
         assert!(result.is_ok());
-        
-        let action = result.unwrap();
+
+        let action = result.expect("W1 retry should succeed");
         assert_eq!(action.retry_count, 1);
         assert_eq!(action.max_retries, 3);
         assert!(!action.use_cache);
@@ -273,8 +273,8 @@ mod tests {
         
         let result = handle_w1_failure(3, 3, cached_action);
         assert!(result.is_ok());
-        
-        let action = result.unwrap();
+
+        let action = result.expect("W1 cache degrade should succeed");
         assert!(action.use_cache);
     }
 
@@ -282,8 +282,8 @@ mod tests {
     fn test_c1_failure_async() {
         let result = handle_c1_failure("op123");
         assert!(result.is_ok());
-        
-        let action = result.unwrap();
+
+        let action = result.expect("C1 async failure should succeed");
         assert!(action.async_finalize);
         assert!(action.non_blocking);
     }
@@ -292,7 +292,7 @@ mod tests {
     fn test_c1_failure_empty_operation_id() {
         let result = handle_c1_failure("");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("cannot be empty"));
+        assert!(result.expect_err("Empty operation ID should fail").contains("cannot be empty"));
     }
 }
 

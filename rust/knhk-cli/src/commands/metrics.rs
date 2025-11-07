@@ -71,8 +71,8 @@ pub fn weaver_start(
     let mut weaver = WeaverLiveCheck::new();
     
     if let Some(registry_path) = registry {
-        weaver = weaver.with_registry(registry_path);
-        debug!(registry = %weaver.registry_path.as_ref().unwrap(), "weaver_registry_set");
+        weaver = weaver.with_registry(registry_path.clone());
+        debug!(registry = %registry_path.display(), "weaver_registry_set");
     }
     
     let otlp_port = otlp_port.unwrap_or(4317);
@@ -85,8 +85,8 @@ pub fn weaver_start(
         .with_format(format.clone());
     
     if let Some(output_dir) = output {
-        weaver = weaver.with_output(output_dir);
-        debug!(output = %weaver.output.as_ref().unwrap(), "weaver_output_set");
+        weaver = weaver.with_output(output_dir.clone());
+        debug!(output = %output_dir.display(), "weaver_output_set");
     }
     
     debug!(

@@ -25,10 +25,12 @@ pub struct NativeStore {
 #[cfg(feature = "native")]
 impl NativeStore {
     /// Create a new native store
-    pub fn new() -> Self {
-        Self {
-            store: Arc::new(Mutex::new(Store::new().expect("Failed to create store"))),
-        }
+    pub fn new() -> UnrdfResult<Self> {
+        let store = Store::new()
+            .map_err(|e| UnrdfError::StoreFailed(format!("Failed to create RDF store: {}", e)))?;
+        Ok(Self {
+            store: Arc::new(Mutex::new(store)),
+        })
     }
 
     /// Load Turtle data into the store
@@ -146,9 +148,10 @@ impl NativeStore {
     pub fn clear(&self) -> UnrdfResult<()> {
         let mut store = self.store.lock()
             .map_err(|e| UnrdfError::StoreFailed(format!("Failed to acquire store lock: {}", e)))?;
-        
+
         // Create new empty store
-        *store = Store::new().expect("Failed to create store");
+        *store = Store::new()
+            .map_err(|e| UnrdfError::StoreFailed(format!("Failed to create replacement store: {}", e)))?;
         Ok(())
     }
 }
@@ -176,8 +179,8 @@ pub fn query_sparql_native(query: &str, turtle_data: &str) -> UnrdfResult<QueryR
     use crate::query::detect_query_type;
     
     let query_type = detect_query_type(query);
-    let store = NativeStore::new();
-    
+    let store = NativeStore::new()?;
+
     // Load data
     store.load_turtle(turtle_data)?;
     
@@ -191,8 +194,8 @@ pub fn query_sparql_native_empty(query: &str) -> UnrdfResult<QueryResult> {
     use crate::query::detect_query_type;
     
     let query_type = detect_query_type(query);
-    let store = NativeStore::new();
-    
+    let store = NativeStore::new()?;
+
     // Execute query on empty store
     store.query(query, query_type)
 }

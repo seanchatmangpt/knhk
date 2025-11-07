@@ -22,6 +22,7 @@ pub struct Run {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
+#[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
 pub struct Ctx {
     pub S: *const u64,
     pub P: *const u64,
@@ -53,6 +54,7 @@ pub enum Op {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
+#[allow(non_snake_case)] // RDF naming: out_S/P/O match C API convention
 pub struct Ir {
     pub op: Op,
     pub s: u64,
@@ -117,14 +119,16 @@ pub struct Engine {
 
 impl Engine {
     /// Σ: arrays must be 64B-aligned, len = NROWS.
-    pub fn new(s: *const u64, p: *const u64, o: *const u64) -> Self {
+    /// # Safety
+    /// Caller must ensure s, p, o point to valid 64B-aligned arrays of length NROWS
+    pub unsafe fn new(s: *const u64, p: *const u64, o: *const u64) -> Self {
         let mut ctx = Ctx {
             S: std::ptr::null(),
             P: std::ptr::null(),
             O: std::ptr::null(),
             run: Run { pred: 0, off: 0, len: 0 },
         };
-        unsafe { knhk_init_ctx(&mut ctx, s, p, o) };
+        knhk_init_ctx(&mut ctx, s, p, o);
         Self { ctx }
     }
 

@@ -62,10 +62,12 @@ impl FiberExecutor {
         shard_id: u64,
         hook_id: u64,
     ) -> Result<Receipt, String> {
-        let mut receipt = Receipt::default();
-        receipt.cycle_id = cycle_id;
-        receipt.shard_id = shard_id;
-        receipt.hook_id = hook_id;
+        let mut receipt = Receipt {
+            cycle_id,
+            shard_id,
+            hook_id,
+            ..Default::default()
+        };
 
         let result = unsafe {
             knhk_fiber_execute(

@@ -14,7 +14,7 @@ struct AdmitResult {
 #[verb] // Noun "admit" auto-inferred from filename "admit.rs"
 fn delta(delta_file: String) -> Result<AdmitResult> {
     admit_impl::delta(delta_file.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to admit delta: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to admit delta: {}", e)))
         .map(|_| AdmitResult { delta_file })
 }
 

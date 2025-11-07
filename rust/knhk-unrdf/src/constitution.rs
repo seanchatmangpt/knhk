@@ -3,7 +3,7 @@
 
 use crate::error::{UnrdfError, UnrdfResult};
 use crate::types::HookDefinition;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 /// Schema representation
 /// Note: Full integration with knhk_sigma (Erlang schema registry) planned for v1.0

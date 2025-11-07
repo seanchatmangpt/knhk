@@ -38,7 +38,7 @@ fn get() -> Result<MetricsResult> {
         
         let start = Instant::now();
         let result = metrics_impl::get()
-            .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to get metrics: {}", e)));
+            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to get metrics: {}", e)));
         
         let duration = start.elapsed();
         match &result {
@@ -58,7 +58,7 @@ fn get() -> Result<MetricsResult> {
     #[cfg(not(feature = "otel"))]
     {
         metrics_impl::get()
-            .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to get metrics: {}", e)))
+            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to get metrics: {}", e)))
             .map(|metrics| MetricsResult { metrics })
     }
 }
@@ -99,7 +99,7 @@ fn weaver_start(
             }
             Err(ref e) => {
                 error!(error = %e, duration_ms = duration.as_millis(), "weaver.start.failed");
-                Err(clap_noun_verb::NounVerbError::new(&format!("Failed to start Weaver: {}", e)))
+                Err(clap_noun_verb::NounVerbError::execution_error(format!("Failed to start Weaver: {}", e)))
             }
         }
     }
@@ -107,7 +107,7 @@ fn weaver_start(
     #[cfg(not(feature = "otel"))]
     {
         metrics_impl::weaver_start(registry, otlp_port, admin_port, format, output)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to start Weaver: {}", e)))
+            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to start Weaver: {}", e)))
             .map(|(endpoint, admin_port, process_id)| WeaverStartResult {
                 endpoint,
                 admin_port,
@@ -138,13 +138,13 @@ fn weaver_stop(admin_port: Option<u16>) -> Result<()> {
             }
         }
         
-        result.map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to stop Weaver: {}", e)))
+        result.map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to stop Weaver: {}", e)))
     }
     
     #[cfg(not(feature = "otel"))]
     {
         metrics_impl::weaver_stop(admin_port)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to stop Weaver: {}", e)))
+            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to stop Weaver: {}", e)))
     }
 }
 
@@ -183,7 +183,7 @@ fn weaver_validate(
             }
             Err(ref e) => {
                 error!(error = %e, duration_ms = duration.as_millis(), "weaver.validate.failed");
-                Err(clap_noun_verb::NounVerbError::new(&format!("Failed to validate with Weaver: {}", e)))
+                Err(clap_noun_verb::NounVerbError::execution_error(format!("Failed to validate with Weaver: {}", e)))
             }
         }
     }
@@ -191,7 +191,7 @@ fn weaver_validate(
     #[cfg(not(feature = "otel"))]
     {
         metrics_impl::weaver_validate(registry, otlp_port, admin_port, timeout)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to validate with Weaver: {}", e)))
+            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to validate with Weaver: {}", e)))
             .map(|(compliant, violations, message)| WeaverValidateResult {
                 compliant,
                 violations,

@@ -7,13 +7,13 @@ use serde::{Deserialize, Serialize};
 
 /// Receipt storage entry
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct ReceiptEntry {
-    id: String,
-    ticks: u32,
-    lanes: u32,
-    span_id: u64,
-    a_hash: u64,
-    timestamp_ms: u64,
+pub struct ReceiptEntry {
+    pub id: String,
+    pub ticks: u32,
+    pub lanes: u32,
+    pub span_id: u64,
+    pub a_hash: u64,
+    pub timestamp_ms: u64,
 }
 
 /// Receipt storage (file-based)

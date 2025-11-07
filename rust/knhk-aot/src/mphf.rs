@@ -1,11 +1,14 @@
 // rust/knhk-aot/src/mphf.rs
 // Minimal Perfect Hash Function generation for predicate lookups
 
+extern crate alloc;
+
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 
 /// Minimal Perfect Hash Function for predicates
 /// Optimizes predicate lookups in hot path
+#[derive(Default)]
 pub struct Mphf {
     predicates: Vec<u64>,
     hash_table: BTreeMap<u64, usize>, // Predicate -> index mapping
@@ -44,14 +47,6 @@ impl Mphf {
     }
 }
 
-impl Default for Mphf {
-    fn default() -> Self {
-        Self {
-            predicates: Vec::new(),
-            hash_table: BTreeMap::new(),
-        }
-    }
-}
 
 /// MPHF cache for common predicates
 pub struct MphfCache {

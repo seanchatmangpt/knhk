@@ -1,7 +1,10 @@
 // rust/knhk-validation/src/error.rs
 // Error types for policy engine and validation
 
+#[cfg(not(feature = "std"))]
 use alloc::string::String;
+#[cfg(feature = "std")]
+use std::string::String;
 
 #[cfg(feature = "policy-engine")]
 use thiserror::Error;

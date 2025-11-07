@@ -20,6 +20,12 @@ pub struct ErrorContext {
     pub trace_id: Option<String>,
 }
 
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] {}", self.code, self.message)
+    }
+}
+
 impl ErrorContext {
     pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
         Self {

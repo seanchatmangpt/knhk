@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_creation() {
-        let ring = RingBuffer::<u32>::new(8).unwrap();
+        let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
         assert_eq!(ring.capacity(), 8);
         assert!(ring.is_empty());
     }
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_enqueue_dequeue() {
-        let ring = RingBuffer::<u32>::new(8).unwrap();
+        let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
         
         assert!(ring.enqueue(1).is_ok());
         assert!(ring.enqueue(2).is_ok());
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_full() {
-        let ring = RingBuffer::<u32>::new(8).unwrap();
+        let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
         
         // Fill buffer (capacity is 8, so we can store 7 items before full)
         for i in 0..7 {
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_wrap_around() {
-        let ring = RingBuffer::<u32>::new(8).unwrap();
+        let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
         
         // Fill and drain to test wrap-around
         for i in 0..7 {
@@ -207,12 +207,12 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_len() {
-        let ring = RingBuffer::<u32>::new(8).unwrap();
+        let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
         
         assert_eq!(ring.len(), 0);
         
-        ring.enqueue(1).unwrap();
-        ring.enqueue(2).unwrap();
+        ring.enqueue(1).expect("Enqueue should succeed");
+        ring.enqueue(2).expect("Enqueue should succeed");
         assert_eq!(ring.len(), 2);
         
         ring.dequeue();

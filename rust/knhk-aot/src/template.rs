@@ -1,6 +1,8 @@
 // rust/knhk-aot/src/template.rs
 // CONSTRUCT template analysis for AOT optimization
 
+extern crate alloc;
+
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::collections::BTreeMap;

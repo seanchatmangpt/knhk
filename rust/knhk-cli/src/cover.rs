@@ -15,7 +15,7 @@ struct CoverResult {
 #[verb] // Noun "cover" auto-inferred from filename "cover.rs"
 fn define(select: String, shard: String) -> Result<CoverResult> {
     cover_impl::define(select.clone(), shard.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to define cover: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to define cover: {}", e)))
         .map(|_| CoverResult { select, shard })
 }
 
@@ -28,7 +28,7 @@ struct CoverList {
 #[verb] // Noun "cover" auto-inferred
 fn list() -> Result<CoverList> {
     cover_impl::list()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to list covers: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to list covers: {}", e)))
         .map(|covers| CoverList { covers })
 }
 

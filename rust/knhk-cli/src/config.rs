@@ -14,7 +14,7 @@ struct ConfigResult {
 #[verb] // Noun "config" auto-inferred from filename "config.rs"
 fn show() -> Result<ConfigResult> {
     config_impl::show()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to show config: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to show config: {}", e)))
         .map(|config| ConfigResult { config })
 }
 

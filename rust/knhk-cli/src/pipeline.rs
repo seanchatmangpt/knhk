@@ -16,7 +16,7 @@ struct PipelineResult {
 #[verb] // Noun "pipeline" auto-inferred from filename "pipeline.rs"
 fn run(connectors: Option<String>, schema: Option<String>) -> Result<PipelineResult> {
     pipeline_impl::run(connectors.clone(), schema.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to run pipeline: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to run pipeline: {}", e)))
         .map(|_| PipelineResult { connectors, schema, success: true })
 }
 
@@ -29,7 +29,7 @@ struct PipelineStatus {
 #[verb] // Noun "pipeline" auto-inferred
 fn status() -> Result<PipelineStatus> {
     pipeline_impl::status()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to get pipeline status: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to get pipeline status: {}", e)))
         .map(|status| PipelineStatus { status })
 }
 

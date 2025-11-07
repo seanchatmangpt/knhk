@@ -1,14 +1,12 @@
 // knhk-aot: CONSTRUCT template analyzer
 // Analyzes CONSTRUCT templates to extract constant vs variable patterns
 
-#![no_std]
 extern crate alloc;
 
 use alloc::vec::Vec;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::collections::BTreeMap;
-use alloc::format;
 
 /// Template triple pattern
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -168,10 +166,10 @@ fn parse_triple_pattern(pattern: &str) -> Result<TriplePattern, String> {
 /// Parse a term (constant IRI or variable)
 fn parse_term(term: &str) -> Result<Variable, String> {
     let term = term.trim();
-    
+
     // Check if it's a variable (starts with ?)
-    if term.starts_with('?') {
-        Ok(Variable::Binding(term[1..].to_string()))
+    if let Some(stripped) = term.strip_prefix('?') {
+        Ok(Variable::Binding(stripped.to_string()))
     } else if term.starts_with('<') && term.ends_with('>') {
         // IRI constant - hash it (simplified)
         // In production, would use proper IRI hashing

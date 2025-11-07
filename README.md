@@ -221,33 +221,51 @@ gRPC proxy service with 8-beat admission control:
 ### Building
 
 ```bash
-# Build C hot path layer first
+# Build C hot path layer first (required by knhk-hot)
 cd c && make && cd ..
 
-# Build with native features (Rust-native RDF)
-cargo build --features native --release
+# Build all Rust crates using workspace (recommended)
+cd rust && cargo build --workspace --release
 
-# Build with unrdf integration (JavaScript)
-cargo build --features unrdf --release
+# Or build individual crates from workspace root
+cd rust && cargo build -p knhk-etl --release
+cd rust && cargo build -p knhk-unrdf --release --features native
+cd rust && cargo build -p knhk-sidecar --release
 
-# Build everything
-cargo build --features native,unrdf --release
+# Alternative: Build from individual crate directories
+cd rust/knhk-etl && cargo build --release
 ```
 
 ### Running Tests
 
 ```bash
-# Run all tests
-cargo test --features native
+# Run all tests across the entire workspace
+cd rust && cargo test --workspace
+
+# Run tests for a specific crate
+cd rust && cargo test -p knhk-etl
+cd rust && cargo test -p knhk-unrdf --features native
+
+# Run Chicago TDD test suite for ETL
+cd rust && cargo test -p knhk-etl --test chicago_tdd_beat_scheduler
+cd rust/knhk-etl && cargo test --test chicago_tdd_pipeline
+cd rust/knhk-etl && cargo test --test chicago_tdd_ring_conversion
 
 # Run hooks engine tests
-cargo test --features native hooks_native::tests
+cd rust/knhk-unrdf && cargo test hooks_native::tests
 
-# Run error validation tests
-cargo test --features native hooks_native::tests::test_error
+# Run benchmarks (from crate directory)
+cd rust/knhk-unrdf && cargo bench
 
-# Run benchmarks
-cargo bench --features native
+# Code quality checks (workspace-wide)
+cd rust && cargo clippy --workspace -- -D warnings  # Linting
+cd rust && cargo fmt --all --check                  # Format check
+cd rust && cargo fmt --all                          # Auto-format
+
+# C layer tests (from repo root)
+make test-chicago-v04        # Chicago TDD C tests
+make test-performance-v04    # Performance tests (verify ≤8 ticks)
+make test-integration-v2     # Integration tests
 ```
 
 ## Documentation
@@ -447,7 +465,15 @@ knhk/
 
 ### Development Standards
 
-- **LEAN/DFLSS Methodology**: Pull-based workflows, single-piece flow, zero inventory
+- **DFLSS Methodology**: Design for LEAN Six Sigma
+  - **LEAN**: 8 wastes elimination (DOWNTIME - Defects, Overproduction, Waiting, Non-utilized talent, Transportation, Inventory, Motion, Extra-processing)
+  - **Six Sigma**: 6σ quality (3.4 DPMO target)
+  - **DMAIC**: Define, Measure, Analyze, Improve, Control
+- **12-Agent Hive Mind Swarm**: Ultrathink parallel execution with collective intelligence
+- **Gate 0 Validation**: Pre-commit error-proofing (poka-yoke) preventing defects at source
+- **Pull System**: JIT documentation and work, zero inventory waste
+- **Single-Piece Flow**: Complete features end-to-end before starting new work
+- **Evidence-Based**: All claims validated with evidence in `docs/evidence/`
 - **80/20 Principle**: Focus on critical 20% features (Pareto efficiency)
 - **No Placeholders**: Production-ready implementations only
 - **Chicago TDD**: State-based tests, real collaborators (22+ tests, reorganized by subsystem)
@@ -455,8 +481,37 @@ knhk/
 - **Performance**: Hot path ≤2ns constraint (8 ticks)
 - **Weaver Patterns**: Architectural patterns from OpenTelemetry Weaver
 - **Policy-Based Validation**: Rego-based policies for guard constraints and performance budgets
-- **Evidence-Based**: All claims validated with evidence in `docs/evidence/`
 - **Pull Documentation**: Create docs on-demand, not speculatively (see [Documentation Policy](docs/DOCUMENTATION_POLICY.md))
+
+### DFLSS Workflows
+
+The project uses Design for LEAN Six Sigma methodology with 12-agent hive mind coordination:
+
+**Quality Gates**:
+1. **Gate 0** (Pre-Commit): Poka-yoke error-proofing catches defects at source
+   - Run: `scripts/gate-0-validation.sh`
+   - Zero warnings required for commit
+2. **Gate 1** (CI): Automated quality checks on every PR
+3. **Gate 2** (Production): Final certification before release
+
+**Swarm Coordination**:
+- **12 Specialized Agents**: Each agent focuses on specific DFLSS aspect
+- **Ultrathink Mode**: Parallel execution with collective intelligence
+- **Pull System**: Work items pulled JIT, zero inventory waste
+- **Single-Piece Flow**: Complete one feature end-to-end before starting next
+
+**Quality Metrics** (see [V1-STATUS.md](docs/V1-STATUS.md)):
+- **DFLSS Score**: ≥95% required for production release
+- **Lean Waste**: <15% across 8 DOWNTIME categories
+- **Six Sigma Quality**: 3.4 DPMO target (99.99966% defect-free)
+- **First Pass Yield**: ≥95% (right first time)
+
+**Tools**:
+- `scripts/gate-0-validation.sh` - Pre-commit validation
+- `scripts/doc-pull.sh` - JIT documentation generation
+- `scripts/flow-agent.sh` - Single-piece flow automation
+- `.git/hooks/pre-commit` - Poka-yoke error prevention
+- `.git/hooks/pre-push` - Quality gate enforcement
 
 ### Code Review Checklist
 
@@ -469,6 +524,7 @@ knhk/
 - [ ] Resources properly cleaned up
 - [ ] Hot path operations are branchless/constant-time
 - [ ] Code verified with tests/OTEL validation
+- [ ] Gate 0 validation passes (zero warnings)
 
 ## License
 
@@ -481,14 +537,26 @@ knhk/
 
 ## Status
 
-✅ **v1.0 Implementation Sprint**: DFLSS quality optimization in progress
+✅ **v1.0 DFLSS Implementation**: 12-agent ultrathink hive mind swarm deployed
 
 **Current Metrics** (see [V1-STATUS.md](docs/V1-STATUS.md) for detailed status):
-- **DFLSS Quality Score**: 61.2% → 95%+ (in progress)
-- **Lean Waste**: 59% → <15% (eliminating)
-- **Code Quality**: 92.5% (maintained)
-- **First Pass Yield**: 41% → 85%+ (target)
+- **DFLSS Quality Score**: 68.5% → 95%+ (remediation in progress)
+- **Lean Waste**: 54.2% → <15% (Wave 1-3 complete, Wave 4 in progress)
+- **Code Quality**: 92.5% (maintained through Six Sigma)
+- **First Pass Yield**: 20.6% → 95% (Poka-yoke implemented)
 - **Documentation**: 301 files → 1 status file (99% inventory reduction)
+
+**12-Agent Hive Mind Swarm Deliverables**:
+- ✅ Gate 0 validation (scripts/gate-0-validation.sh)
+- ✅ Poka-yoke error-proofing (.git/hooks/pre-commit, pre-push)
+- ✅ CI/CD automation (4 GitHub Actions workflows)
+- ✅ Pull system (scripts/doc-pull.sh)
+- ✅ Documentation policy (docs/DOCUMENTATION_POLICY.md)
+- ✅ Single-piece flow (scripts/flow-agent.sh)
+- ✅ Agent optimization (docs/AGENT_SELECTION_MATRIX.md)
+- ✅ Evidence deduplication (docs/EVIDENCE_INDEX.md)
+- ✅ LEAN metrics measurement (docs/evidence/lean_metrics_actual.md)
+- 🔄 Unwrap() remediation (149 calls → 0, in progress)
 
 **Completed Components**:
 - ✅ 8-beat epoch system (C layer) with branchless operations
@@ -502,9 +570,10 @@ knhk/
 - ✅ Evidence-based validation structure
 
 **Active Work** (see [V1-STATUS.md](docs/V1-STATUS.md)):
-- Gate-0 validation (catch defects at compile-time)
-- Pull system implementation (JIT work, zero inventory)
-- Final quality audit for v1.0 release
+- Unwrap() pattern analysis and error hierarchy design
+- knhk-etl error handling fixes (47 unwrap calls)
+- Regression testing with TDD London School approach
+- Target: Gate 0 zero-warning certification
 
 **Next**: v1.0 Production Release (GO/NO-GO based on DFLSS score ≥95%)
 

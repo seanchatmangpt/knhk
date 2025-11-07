@@ -1,13 +1,10 @@
 // knhk-aot: Pattern detection
 // Detects input patterns for optimization hints
 
-#![no_std]
 extern crate alloc;
 
 use alloc::vec::Vec;
 use alloc::string::String;
-use alloc::format;
-use alloc::string::ToString;
 
 /// Input pattern analysis
 #[derive(Debug, Clone)]
@@ -36,9 +33,9 @@ pub fn analyze_pattern(subjects: &[u64; 8], len: usize) -> PatternAnalysis {
     let mut zero_mask = 0u8;
     let mut zero_count = 0;
     let mut non_zero_count = 0;
-    
-    for i in 0..len {
-        if subjects[i] == 0 {
+
+    for (i, item) in subjects.iter().enumerate().take(len) {
+        if *item == 0 {
             zero_mask |= 1 << i;
             zero_count += 1;
         } else {

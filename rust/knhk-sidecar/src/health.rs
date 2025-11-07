@@ -1,6 +1,9 @@
 // rust/knhk-sidecar/src/health.rs
 // Health check implementation
 
+// ACCEPTABLE: Mutex poisoning .expect() is allowed in this module (unrecoverable error)
+#![allow(clippy::expect_used)]
+
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -27,6 +30,8 @@ impl HealthChecker {
     }
 
     pub fn status(&self) -> HealthStatus {
+        // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
+        // See Rust std docs: https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
         self.status.lock().expect("Health status mutex poisoned - unrecoverable state").clone()
     }
 

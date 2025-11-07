@@ -2,9 +2,7 @@
 // C-compatible function exports for native hook execution
 
 #[cfg(feature = "native")]
-use crate::error::UnrdfError;
-#[cfg(feature = "native")]
-use crate::hooks_native::{evaluate_hook_native, evaluate_hooks_batch_native, execute_hook_by_name_native, NativeHookRegistry};
+use crate::hooks_native::{evaluate_hooks_batch_native, execute_hook_by_name_native, NativeHookRegistry};
 #[cfg(feature = "native")]
 use crate::types::HookDefinition;
 #[cfg(feature = "native")]
@@ -245,7 +243,24 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
             let mut result_obj = serde_json::Map::new();
             result_obj.insert("success".to_string(), JsonValue::Bool(true));
             result_obj.insert("count".to_string(), JsonValue::Number(results.len().into()));
-            result_obj.insert("results".to_string(), serde_json::to_value(&results).unwrap());
+            let results_value = match serde_json::to_value(&results) {
+                Ok(v) => v,
+                Err(e) => {
+                    let error_msg = format!(r#"{{"success":false,"error":"Failed to serialize results: {}"}}"#, e);
+                    let error_bytes = error_msg.as_bytes();
+                    let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(
+                            error_bytes.as_ptr(),
+                            result_json as *mut u8,
+                            copy_len
+                        );
+                        *result_json.add(copy_len) = 0;
+                    }
+                    return -7;
+                }
+            };
+            result_obj.insert("results".to_string(), results_value);
             
             match serde_json::to_string(&JsonValue::Object(result_obj)) {
                 Ok(json) => {

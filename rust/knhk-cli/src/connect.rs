@@ -16,7 +16,7 @@ struct RegisterResult {
 #[verb] // Noun "connect" auto-inferred from filename "connect.rs"
 fn register(name: String, schema: String, source: String) -> Result<RegisterResult> {
     connect_impl::register(name.clone(), schema.clone(), source.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to register connector: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to register connector: {}", e)))
         .map(|_| RegisterResult { name, schema, source })
 }
 
@@ -29,7 +29,7 @@ struct ConnectorList {
 #[verb] // Noun "connect" auto-inferred
 fn list() -> Result<ConnectorList> {
     connect_impl::list()
-        .map_err(|e| clap_noun_verb::NounVerbError::new(&format!("Failed to list connectors: {}", e)))
+        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to list connectors: {}", e)))
         .map(|connectors| ConnectorList { connectors })
 }
 

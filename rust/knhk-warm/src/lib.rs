@@ -2,6 +2,11 @@
 // CONSTRUCT8 and other emit operations moved from hot path
 // SPARQL query execution with oxigraph integration
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+// EXCEPTION: Default trait impl fallback .expect() is acceptable (see graph.rs)
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+
 #[cfg(not(feature = "std"))]
 compile_error!("knhk-warm requires std feature for oxigraph integration");
 
