@@ -1,0 +1,210 @@
+# Weaver Live Validation Results
+# KNHK 8-Beat v1.0 - OpenTelemetry Schema Validation
+# Date: 2025-11-06
+# Validator: Weaver Validation Specialist (Agent #4)
+# Status: ✅ SCHEMA VALIDATION PASSED
+
+schema_version: "1.0.0"
+validation_date: "2025-11-06T23:45:00Z"
+system: "knhk-8beat-v1"
+weaver_version: "0.16.1"
+
+# Static Schema Validation (✅ PASSED)
+static_validation:
+  status: "PASSED"
+  registry_path: "registry/"
+  execution_time_ms: 48
+  schemas_validated: 5
+  files:
+    - "registry_manifest.yaml"
+    - "knhk-attributes.yaml"
+    - "knhk-sidecar.yaml"
+    - "knhk-operation.yaml"
+    - "knhk-warm.yaml"
+    - "knhk-etl.yaml"
+  spans_declared: 14
+  metrics_declared: 9
+  attributes_declared: 32
+  policy_violations: 0
+  resolution_errors: 0
+
+# Live Validation Status
+live_validation:
+  status: "REQUIRES_DEPLOYMENT"
+  note: "Runtime validation requires deployed application with OTEL enabled"
+  endpoint: "http://localhost:4317"
+  expected_spans: 14
+  expected_metrics: 9
+  reason: "Cannot validate runtime telemetry without running system (correct approach)"
+
+# LAW Assertions (from PRD requirements)
+law_assertions:
+  - law: "μ ⊂ τ ; τ ≤ 8 ticks (Chatman Constant)"
+    metric: "knhk.operation.duration"
+    unit: "ticks"
+    p99_requirement: 8
+    p99_measured: 8
+    p50_measured: 6.89
+    schema_status: "DECLARED"
+    runtime_status: "PENDING_DEPLOYMENT"
+    validation_source: "ev_pmu_bench.csv"
+    result: "PASS_SCHEMA"
+
+  - law: "park_rate ≤ 20%"
+    metric: "knhk.fiber.park_rate"
+    threshold: 0.20
+    schema_status: "DECLARED"
+    runtime_status: "PENDING_DEPLOYMENT"
+    implementation: "rust/knhk-etl/src/park.rs"
+    result: "PASS_SCHEMA"
+
+  - law: "100% receipts"
+    metric: "knhk.etl.receipts_written"
+    requirement: "Every delta must produce receipt"
+    schema_status: "DECLARED"
+    runtime_status: "PENDING_DEPLOYMENT"
+    implementation: "c/include/knhk/receipts.h"
+    merging: "XOR monoid (⊕ associative)"
+    result: "PASS_SCHEMA"
+
+  - law: "C1 share < 2%"
+    metric: "knhk.operation.c1_share"
+    threshold: 0.02
+    schema_status: "NOT_DECLARED"
+    runtime_status: "NOT_IMPLEMENTED"
+    result: "MISSING_SCHEMA"
+    blocker: "P1-2"
+
+  - law: "L1 hit rate ≥ 95%"
+    metric: "knhk.operation.l1_hit_rate"
+    threshold: 0.95
+    measured: 0.977
+    schema_status: "NOT_DECLARED"
+    runtime_status: "VALIDATED_PMU"
+    validation_source: "ev_pmu_bench.csv"
+    result: "PASS_PMU"
+
+# Schema Coverage by Component
+schema_coverage:
+  sidecar:
+    file: "knhk-sidecar.yaml"
+    spans: 4
+    metrics: 2
+    attributes: 7
+    examples:
+      - "knhk.sidecar.transaction"
+      - "knhk.sidecar.query"
+      - "knhk.sidecar.validate_graph"
+      - "knhk.sidecar.evaluate_hook"
+
+  operations_r1:
+    file: "knhk-operation.yaml"
+    spans: 3
+    metrics: 2
+    attributes: 5
+    operations_covered: 18
+    examples:
+      - "knhk.operation.ask"
+      - "knhk.operation.count"
+      - "knhk.operation.compare"
+
+  warm_path_w1:
+    file: "knhk-warm.yaml"
+    spans: 2
+    metrics: 2
+    attributes: 4
+    examples:
+      - "knhk.warm.construct8"
+      - "knhk.warm.select"
+
+  etl_pipeline:
+    file: "knhk-etl.yaml"
+    spans: 5
+    metrics: 4
+    attributes: 12
+    stages:
+      - "knhk.etl.ingest"
+      - "knhk.etl.normalize"
+      - "knhk.etl.reflex"
+      - "knhk.etl.failure_actions"
+      - "knhk.etl.emit"
+
+# Instrumentation Analysis
+instrumentation:
+  files_instrumented: 5
+  primary_file: "rust/knhk-otel/src/lib.rs"
+  lines_of_code: 1188
+  test_coverage:
+    total_tests: 14
+    passed: 14
+    failed: 0
+    status: "ALL_PASSING"
+  otlp_exporter:
+    protocol: "HTTP"
+    endpoints:
+      traces: "{endpoint}/v1/traces"
+      metrics: "{endpoint}/v1/metrics"
+    timeout_seconds: 30
+    retry_logic: true
+  integration:
+    sidecar: "rust/knhk-sidecar/src/lib.rs"
+    auto_start_weaver: true
+    health_verification: true
+    graceful_shutdown: true
+
+# Compliance Assessment
+compliance:
+  schema_validation: "PASSED"
+  semantic_conventions: "COMPLIANT"
+  naming_convention: "knhk.<noun>.<verb>"
+  attribute_convention: "knhk.<component>.<property>"
+  policy_enforcement: "NO_VIOLATIONS"
+
+# Gaps and Recommendations
+gaps:
+  - component: "C1 cold path metrics"
+    severity: "P1"
+    action: "Add knhk.operation.c1_share metric to schema"
+
+  - component: "Live runtime validation"
+    severity: "P0"
+    action: "Deploy sidecar with OTEL, run weaver live-check"
+
+  - component: "PMU metrics in schema"
+    severity: "P2"
+    action: "Declare L1/branch metrics in knhk-operation.yaml"
+
+# Certification
+certification:
+  schema_check: "✅ PASSED"
+  instrumentation: "✅ COMPLETE"
+  test_coverage: "✅ 14/14 TESTS PASS"
+  live_check: "⚠️ REQUIRES_DEPLOYMENT"
+  overall_status: "SCHEMA_READY"
+
+# Next Steps
+next_steps:
+  - "Deploy knhk-sidecar with --features otel"
+  - "Start weaver registry live-check"
+  - "Generate runtime telemetry"
+  - "Validate spans/metrics against schema"
+  - "Publish weaver-reports/ evidence"
+
+# Evidence References
+evidence_sources:
+  - "docs/V1-WEAVER-VALIDATION-REPORT.md"
+  - "registry/registry_manifest.yaml"
+  - "rust/knhk-otel/src/lib.rs (tests: lines 807-1111)"
+  - "scripts/verify-weaver.sh"
+
+# Weaver Source of Truth Principle
+validation_philosophy:
+  statement: "Weaver is KNHK's ONLY source of truth"
+  rationale: |
+    Traditional tests can pass even when features are broken (false positives).
+    Weaver validates actual runtime telemetry against declared schemas.
+    Only passes if runtime behavior conforms to specification.
+  hierarchy:
+    1: "Weaver live-check (proves runtime behavior)"
+    2: "Weaver schema check (proves schema validity)"
+    3: "Traditional tests (supporting evidence only)"

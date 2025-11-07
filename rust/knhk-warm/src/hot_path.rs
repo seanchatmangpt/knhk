@@ -137,6 +137,7 @@ pub fn execute_hot_path_ask(
             out_P: std::ptr::null_mut(),
             out_O: std::ptr::null_mut(),
             out_mask: 0,
+            construct8_pattern_hint: 0, // Default to generic pattern
         };
         
         let mut receipt = Receipt::default();
@@ -263,6 +264,7 @@ pub fn execute_hot_path_select(
             out_P: std::ptr::null_mut(),
             out_O: std::ptr::null_mut(),
             out_mask: 0,
+            construct8_pattern_hint: 0, // Default to generic pattern
         };
         
         let mut receipt = Receipt::default();

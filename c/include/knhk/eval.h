@@ -16,7 +16,10 @@ uint64_t knhk_generate_span_id(void);
 // Branchless dispatch: uses function pointer table instead of if-else chains
 // Eliminates branch mispredicts for zero mispredicts on hot path
 // Fills receipt with provenance information (timing is caller's responsibility)
-static inline int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
+#ifndef KNHK_EVAL_BOOL_INLINE
+#define KNHK_EVAL_BOOL_INLINE static inline
+#endif
+KNHK_EVAL_BOOL_INLINE int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
 {
   // Branchless predicate check: use mask instead of if
   // If predicate doesn't match, mask result to zero (no branches)
@@ -53,12 +56,78 @@ static inline int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t
   return result;
 }
 
+// CONSTRUCT8 function pointer type for branchless dispatch
+typedef size_t (*knhk_construct8_fn_t)(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                        uint64_t p_const, uint64_t o_const,
+                                        uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                        uint64_t *restrict out_mask);
+
+// Branchless dispatch table for CONSTRUCT8 specialized functions
+// Indexed by knhk_construct8_pattern_t (0 = GENERIC, 1 = ALL_NONZERO, 2-9 = LEN1-LEN8)
+// Branchless lookup: fn = dispatch_table[ir->construct8_pattern_hint]
+static inline const knhk_construct8_fn_t* knhk_get_construct8_dispatch_table(void)
+{
+  // Forward declarations for wrapper functions (defined in simd/construct.h)
+  extern size_t knhk_construct8_emit_8_len1_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len2_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len3_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len4_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len5_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len6_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len7_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_len8_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                     uint64_t p_const, uint64_t o_const,
+                                                     uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                     uint64_t *restrict out_mask);
+  extern size_t knhk_construct8_emit_8_all_nonzero_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                            uint64_t p_const, uint64_t o_const,
+                                                            uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                            uint64_t *restrict out_mask);
+  
+  static const knhk_construct8_fn_t dispatch_table[KNHK_CONSTRUCT8_PATTERN_MAX] = {
+    [KNHK_CONSTRUCT8_PATTERN_GENERIC] = knhk_construct8_emit_8,
+    [KNHK_CONSTRUCT8_PATTERN_ALL_NONZERO] = knhk_construct8_emit_8_all_nonzero_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN1] = knhk_construct8_emit_8_len1_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN2] = knhk_construct8_emit_8_len2_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN3] = knhk_construct8_emit_8_len3_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN4] = knhk_construct8_emit_8_len4_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN5] = knhk_construct8_emit_8_len5_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN6] = knhk_construct8_emit_8_len6_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN7] = knhk_construct8_emit_8_len7_wrapper,
+    [KNHK_CONSTRUCT8_PATTERN_LEN8] = knhk_construct8_emit_8_len8_wrapper,
+  };
+  return dispatch_table;
+}
+
 // Emit up to 8 triples using a fixed template (CONSTRUCT8)
 // Returns number of lanes written, fills rcpt with user knowledge only
-// WARM PATH: CONSTRUCT8 exceeds 8-tick budget (41-83 ticks), moved to warm path (≤500ms)
-// This function is kept for backward compatibility but should be routed through warm path API
-// Use knhk_warm_execute_construct8() from knhk/warm_path.h for warm path routing
-static inline int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
+// AOT optimization: Routes to specialized functions via branchless dispatch table
+// Pattern hint set by warm path based on pattern detection (all-nonzero, len1-len8)
+#ifndef KNHK_EVAL_CONSTRUCT8_INLINE
+#define KNHK_EVAL_CONSTRUCT8_INLINE static inline
+#endif
+KNHK_EVAL_CONSTRUCT8_INLINE int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
 {
   if (!ctx || !ir || ir->op != KNHK_OP_CONSTRUCT8)
     return 0;
@@ -70,18 +139,23 @@ static inline int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t
     return 0;
   
   // Hot path: Pure CONSTRUCT logic only (branchless SIMD)
-  // AOT optimization: Route to specialized functions based on len and pattern
-  // Pattern detection happens at warm path, len is known at runtime
-  // Note: Specialized variants available (len1-len8, all_nonzero) for future routing
+  // Branchless routing: Use dispatch table indexed by pattern_hint
+  // Pattern hint set by warm path (all-nonzero detection, length specialization)
 #if NROWS == 8
-  // Branchless: Always call generic function (len is guaranteed ≤ 8 by guard constraints)
-  // Future optimization: Route to length-specialized variants via function table
-  // Specialized functions: knhk_construct8_emit_8_len1() through len8()
-  // Pattern-specialized: knhk_construct8_emit_8_all_nonzero() (skips mask generation)
-  size_t written = knhk_construct8_emit_8(ctx->S, ctx->run.off, ctx->run.len,
-                                            ir->p, ir->o,
-                                            ir->out_S, ir->out_P, ir->out_O,
-                                            &ir->out_mask);
+  // Branchless dispatch: table lookup (no branches, no mispredicts)
+  // Bounds check: if pattern_hint >= MAX, use generic (branchless via mask)
+  uint8_t pattern_idx = ir->construct8_pattern_hint;
+  uint8_t pattern_valid = (pattern_idx < KNHK_CONSTRUCT8_PATTERN_MAX) ? pattern_idx : KNHK_CONSTRUCT8_PATTERN_GENERIC;
+  
+  const knhk_construct8_fn_t* dispatch_table = knhk_get_construct8_dispatch_table();
+  knhk_construct8_fn_t fn = dispatch_table[pattern_valid];
+  
+  // Call specialized function (branchless)
+  // For length-specialized variants, len parameter is compile-time constant
+  size_t written = fn(ctx->S, ctx->run.off, ctx->run.len,
+                       ir->p, ir->o,
+                       ir->out_S, ir->out_P, ir->out_O,
+                       &ir->out_mask);
 #else
   // Scalar fallback for non-8 configurations
   // ctx->run.len is guaranteed ≤ 8 at Chicago TDD level

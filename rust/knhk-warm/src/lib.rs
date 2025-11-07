@@ -18,4 +18,6 @@ pub use graph::WarmPathGraph;
 pub use query::*;
 pub use executor::WarmPathExecutor;
 pub use scheduler::{EpochScheduler, EpochPlan, ExecutionPlan};
+// Hot path types are re-exported from ffi module
+pub use ffi::{Op, Ctx, Ir, Receipt, Run};
 

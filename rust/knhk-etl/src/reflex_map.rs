@@ -225,6 +225,7 @@ impl ReflexMap {
                 out_P: core::ptr::null_mut(),
                 out_O: core::ptr::null_mut(),
                 out_mask: 0,
+                construct8_pattern_hint: 0,
             };
             
             // Execute hook

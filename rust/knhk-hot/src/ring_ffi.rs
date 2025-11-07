@@ -395,6 +395,37 @@ mod tests {
     }
 
     #[test]
+    fn test_delta_ring_wrap_around() {
+        let ring = match DeltaRing::new(8) {
+            Ok(r) => r,
+            Err(e) => panic!("Failed to create delta ring: {}", e),
+        };
+        
+        // Fill ring at tick 0 multiple times to test wrap-around
+        for i in 0..3 {
+            let S = vec![0x1000 + i];
+            let P = vec![0x2000 + i];
+            let O = vec![0x3000 + i];
+            assert!(ring.enqueue(0, &S, &P, &O, i).is_ok());
+        }
+        
+        // Dequeue all from tick 0
+        for i in 0..3 {
+            let result = ring.dequeue(0, 8);
+            assert!(result.is_some());
+            let (S_out, _, _, _) = match result {
+                Some(v) => v,
+                None => panic!("Expected dequeue result"),
+            };
+            assert_eq!(S_out[0], 0x1000 + i);
+        }
+        
+        // Verify ring is empty after wrap-around
+        let result = ring.dequeue(0, 8);
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn test_assertion_ring_new() {
         let ring = AssertionRing::new(8);
         assert!(ring.is_ok());
@@ -414,6 +445,7 @@ mod tests {
             shard_id: 2,
             hook_id: 3,
             ticks: 4,
+            actual_ticks: 3,
             lanes: 2,
             span_id: 0x1234,
             a_hash: 0x5678,

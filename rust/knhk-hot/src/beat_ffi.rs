@@ -3,37 +3,46 @@
 
 #![allow(non_camel_case_types)]
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
+// Global cycle counter (shared across all threads/pods)
+static KNHK_GLOBAL_CYCLE: AtomicU64 = AtomicU64::new(0);
+
 // Initialize beat scheduler (call once at startup)
+// C function from libknhk.a
 #[link(name = "knhk")]
 extern "C" {
     pub fn knhk_beat_init();
 }
 
-// Advance cycle counter atomically, return new cycle value
-// Branchless: single atomic operation
-#[link(name = "knhk")]
-extern "C" {
-    pub fn knhk_beat_next() -> u64;
+// The following functions are static inline in C header knhk/beat.h
+// We implement them in Rust since they're simple branchless operations
+
+/// Advance cycle counter atomically, return new cycle value
+/// Branchless: single atomic operation
+pub fn knhk_beat_next() -> u64 {
+    KNHK_GLOBAL_CYCLE.fetch_add(1, Ordering::SeqCst) + 1
 }
 
-// Extract tick from cycle (0..7)
-// Branchless: bitwise mask operation
-#[link(name = "knhk")]
-extern "C" {
-    pub fn knhk_beat_tick(cycle: u64) -> u64;
+/// Extract tick from cycle (0..7)
+/// Branchless: bitwise mask operation
+pub fn knhk_beat_tick(cycle: u64) -> u64 {
+    cycle & 0x7
 }
 
-// Compute pulse signal (1 when tick==0, else 0)
-// Branchless: mask-based, no conditional branches
-#[link(name = "knhk")]
-extern "C" {
-    pub fn knhk_beat_pulse(cycle: u64) -> u64;
+/// Compute pulse signal (1 when tick==0, else 0)
+/// Branchless: mask-based, no conditional branches
+pub fn knhk_beat_pulse(cycle: u64) -> u64 {
+    let tick = cycle & 0x7;
+    // Branchless: return 1 if tick==0, else 0
+    // Use arithmetic underflow: when tick==0, (tick - 1) wraps to 0xFF...
+    // Right-shift by 63 gives 1 when tick==0, else 0
+    ((tick.wrapping_sub(1)) >> 63) & 1
 }
 
-// Get current cycle without incrementing
-#[link(name = "knhk")]
-extern "C" {
-    pub fn knhk_beat_current() -> u64;
+/// Get current cycle without incrementing
+pub fn knhk_beat_current() -> u64 {
+    KNHK_GLOBAL_CYCLE.load(Ordering::SeqCst)
 }
 
 /// Safe wrapper for beat scheduler
@@ -47,22 +56,22 @@ impl BeatScheduler {
 
     /// Advance to next beat and return cycle
     pub fn next() -> u64 {
-        unsafe { knhk_beat_next() }
+        knhk_beat_next()
     }
 
     /// Get tick from cycle (0..7)
     pub fn tick(cycle: u64) -> u64 {
-        unsafe { knhk_beat_tick(cycle) }
+        knhk_beat_tick(cycle)
     }
 
     /// Get pulse signal from cycle (1 when tick==0, else 0)
     pub fn pulse(cycle: u64) -> u64 {
-        unsafe { knhk_beat_pulse(cycle) }
+        knhk_beat_pulse(cycle)
     }
 
     /// Get current cycle without incrementing
     pub fn current() -> u64 {
-        unsafe { knhk_beat_current() }
+        knhk_beat_current()
     }
 }
 

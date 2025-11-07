@@ -6,6 +6,8 @@
 
 **Note**: This document specifies requirements for v1.0. Current production release is v0.4.0. See [v0.4.0 Status](archived/v0.4.0/v0.4.0-status.md) for v0.4.0 completion status.
 
+**Definition of Done**: See [v1.0 Definition of Done](v1.0-definition-of-done.md) for complete acceptance criteria and validation process.
+
 ## Overview
 
 ### 1.1 Chatman Equation

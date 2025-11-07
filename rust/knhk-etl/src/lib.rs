@@ -9,6 +9,34 @@ extern crate std;
 use knhk_otel as _;
 use knhk_lockchain as _;
 
+// OpenTelemetry initialization (requires tokio runtime for async OTLP exporter)
+#[allow(unexpected_cfgs)]
+#[cfg(feature = "tokio-runtime")]
+pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
+    use opentelemetry_sdk::trace::TracerProvider;
+    use tracing_subscriber::layer::SubscriberExt;
+
+    let tracer = opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
+        .install_batch(opentelemetry_sdk::runtime::TokioScheduler)?;
+
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let subscriber = tracing_subscriber::registry()
+        .with(telemetry)
+        .with(tracing_subscriber::EnvFilter::from_default_env());
+
+    tracing::subscriber::set_global_default(subscriber)?;
+    Ok(())
+}
+
+// No-op version for non-tokio builds
+#[allow(unexpected_cfgs)]
+#[cfg(not(feature = "tokio-runtime"))]
+pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
 // Module declarations
 pub mod types;
 pub mod error;
@@ -28,6 +56,9 @@ pub mod ring_conversion; // Lock-free ring buffers for 8-beat epoch
 pub mod fiber; // Cooperative fibers for deterministic execution
 pub mod park; // Park/escalate mechanism for over-budget work
 pub mod beat_scheduler; // 8-beat epoch scheduler
+pub mod hash; // Provenance hashing for LAW: hash(A) = hash(μ(O))
+pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
+pub mod reconcile; // Reconciliation: A = μ(O)
 
 // Re-exports for convenience
 pub use types::{PipelineStage, PipelineMetrics};
@@ -291,17 +322,19 @@ mod tests {
             shard_id: 1,
             hook_id: 1,
             ticks: 4,
+            actual_ticks: 3,
             lanes: 8,
             span_id: 0x1234,
             a_hash: 0xABCD,
         };
-        
+
         let receipt2 = Receipt {
             id: "r2".to_string(),
             cycle_id: 2,
             shard_id: 2,
             hook_id: 2,
             ticks: 6,
+            actual_ticks: 5,
             lanes: 8,
             span_id: 0x5678,
             a_hash: 0xEF00,
@@ -325,6 +358,7 @@ mod tests {
             shard_id: 1,
             hook_id: 1,
             ticks: 4,
+            actual_ticks: 3,
             lanes: 8,
             span_id: 0x1234,
             a_hash: 0xABCD,

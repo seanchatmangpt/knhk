@@ -1,0 +1,68 @@
+{
+  "test_suite": "chicago_construct8",
+  "timestamp": "2025-11-06T01:55:00Z",
+  "language": "C",
+  "library_version": "libknhk.a",
+  "compilation_status": "SUCCESS",
+  "execution_status": "PASSED",
+  "total_tests": 6,
+  "passed": 6,
+  "failed": 0,
+  "test_results": [
+    {
+      "name": "CONSTRUCT8 Basic Emit",
+      "status": "PASSED",
+      "description": "Emitted 2 triples (timing validated by Rust)",
+      "validation": "functional"
+    },
+    {
+      "name": "CONSTRUCT8 Timing",
+      "status": "PASSED",
+      "description": "All 1000 operations completed (timing validated by Rust)",
+      "validation": "performance"
+    },
+    {
+      "name": "CONSTRUCT8 Lane Masking",
+      "status": "PASSED",
+      "description": "Lane mask correctly identifies 3 non-zero lanes",
+      "validation": "correctness"
+    },
+    {
+      "name": "CONSTRUCT8 Idempotence",
+      "status": "PASSED",
+      "description": "CONSTRUCT8 is idempotent",
+      "validation": "property"
+    },
+    {
+      "name": "CONSTRUCT8 Empty Run",
+      "status": "PASSED",
+      "description": "Empty run emits zero triples",
+      "validation": "edge_case"
+    },
+    {
+      "name": "CONSTRUCT8 Epistemology Generation (A = μ(O))",
+      "status": "PASSED",
+      "description": "Generated 4 epistemology triples (A = μ(O)) with provenance",
+      "validation": "law_compliance",
+      "law": "A = μ(O)",
+      "receipt_validation": "hash(A) = hash(μ(O))"
+    }
+  ],
+  "compilation_warnings": [
+    "unused parameter 'len' in knhk_construct8_emit_8_with_mask",
+    "unused parameter 'ctx' in admission.h"
+  ],
+  "notes": [
+    "C tests validate functional correctness",
+    "No OTEL instrumentation in C code",
+    "Cannot satisfy Weaver live-check requirements",
+    "Rust instrumentation required for telemetry validation"
+  ],
+  "verdict": "FUNCTIONAL_CORRECT",
+  "certification_level": "C_IMPLEMENTATION_VALID",
+  "limitations": [
+    "No runtime telemetry generated",
+    "Cannot validate law assertions via metrics",
+    "Insufficient for production certification"
+  ]
+}

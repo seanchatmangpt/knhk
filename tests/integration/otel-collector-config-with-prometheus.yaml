@@ -1,0 +1,67 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  # Resource detection for better metadata
+  resourcedetection:
+    detectors: [env, system, docker]
+    timeout: 5s
+    override: false
+
+  # Attributes processor to add KNHK-specific labels
+  attributes:
+    actions:
+      - key: service.name
+        value: knhk
+        action: insert
+      - key: service.version
+        value: "1.0.0"
+        action: insert
+
+exporters:
+  # Logging for debugging
+  logging:
+    loglevel: info
+
+  # Prometheus exporter
+  prometheus:
+    endpoint: "0.0.0.0:8888"
+    namespace: knhk
+    const_labels:
+      cluster: knhk-v1
+    metric_expiration: 5m
+    enable_open_metrics: true
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # OTLP for traces (if needed)
+  otlp:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resourcedetection, attributes, batch]
+      exporters: [logging]
+
+    metrics:
+      receivers: [otlp]
+      processors: [resourcedetection, attributes, batch]
+      exporters: [logging, prometheus]
+
+    logs:
+      receivers: [otlp]
+      processors: [resourcedetection, attributes, batch]
+      exporters: [logging]

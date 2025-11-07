@@ -84,6 +84,7 @@ impl WarmPathConstruct8 {
         // Early return for all-zero pattern (0 ticks in hot path)
         if pattern == Construct8Pattern::AllZero {
             ir.out_mask = 0;
+            ir.construct8_pattern_hint = 0; // KNHK_CONSTRUCT8_PATTERN_GENERIC
             return Ok(WarmPathResult::new(
                 false,
                 0,
@@ -92,14 +93,40 @@ impl WarmPathConstruct8 {
             ));
         }
 
+        // Set pattern hint for branchless routing to specialized functions
+        // Pattern hint enables hot path to route to optimized variants without branches
+        match pattern {
+            Construct8Pattern::AllNonZero => {
+                // Route to all-nonzero specialized function (skips mask generation)
+                ir.construct8_pattern_hint = 1; // KNHK_CONSTRUCT8_PATTERN_ALL_NONZERO
+            }
+            Construct8Pattern::Mixed => {
+                // Route based on length for length-specialized variants
+                // Length-specialized variants have compile-time constant len_mask_bits
+                match ctx.run.len {
+                    1 => ir.construct8_pattern_hint = 2, // KNHK_CONSTRUCT8_PATTERN_LEN1
+                    2 => ir.construct8_pattern_hint = 3, // KNHK_CONSTRUCT8_PATTERN_LEN2
+                    3 => ir.construct8_pattern_hint = 4, // KNHK_CONSTRUCT8_PATTERN_LEN3
+                    4 => ir.construct8_pattern_hint = 5, // KNHK_CONSTRUCT8_PATTERN_LEN4
+                    5 => ir.construct8_pattern_hint = 6, // KNHK_CONSTRUCT8_PATTERN_LEN5
+                    6 => ir.construct8_pattern_hint = 7, // KNHK_CONSTRUCT8_PATTERN_LEN6
+                    7 => ir.construct8_pattern_hint = 8, // KNHK_CONSTRUCT8_PATTERN_LEN7
+                    8 => ir.construct8_pattern_hint = 9, // KNHK_CONSTRUCT8_PATTERN_LEN8
+                    _ => ir.construct8_pattern_hint = 0, // KNHK_CONSTRUCT8_PATTERN_GENERIC (fallback)
+                }
+            }
+            Construct8Pattern::AllZero => {
+                // Already handled above, but set hint for completeness
+                ir.construct8_pattern_hint = 0;
+            }
+        }
+
         // Measure execution time (in microseconds for W1 budget)
         let start_time = Self::get_current_time_us();
         
-        // Execute CONSTRUCT8 via hot path C code
-        // AOT optimization: Pattern detection enables specialized function routing
-        // For all-nonzero pattern, could route to knhk_construct8_emit_8_all_nonzero()
-        // For length-specialized, could route to knhk_construct8_emit_8_len{N}()
-        // Current: Use generic function, future: route based on pattern/len
+        // Execute CONSTRUCT8 via hot path C code with branchless routing
+        // Hot path uses dispatch table indexed by construct8_pattern_hint
+        // Routes to specialized functions: all-nonzero (skips mask), len1-len8 (compile-time constants)
         let mut rcpt = Receipt::default();
         let result = unsafe {
             knhk_hot::knhk_eval_construct8(ctx, ir, &mut rcpt)

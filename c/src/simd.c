@@ -245,3 +245,96 @@ size_t knhk_select_gather(const uint64_t *S_base, const uint64_t *O_base,
   return out_idx;
 }
 
+// CONSTRUCT8 wrapper functions for branchless dispatch table
+// These wrap the static inline specialized functions to enable function pointer usage
+// Note: simd/construct.h is already included via simd.h
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len1_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len1(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len2_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len2(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len3_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len3(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len4_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len4(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len5_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len5(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len6_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len6(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len7_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len7(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_len8_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                           uint64_t p_const, uint64_t o_const,
+                                           uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                           uint64_t *restrict out_mask)
+{
+  (void)len;
+  return knhk_construct8_emit_8_len8(S_base, off, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+
+__attribute__((hot))
+size_t knhk_construct8_emit_8_all_nonzero_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
+                                                   uint64_t p_const, uint64_t o_const,
+                                                   uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
+                                                   uint64_t *restrict out_mask)
+{
+  return knhk_construct8_emit_8_all_nonzero(S_base, off, len, p_const, o_const, out_S, out_P, out_O, out_mask);
+}
+

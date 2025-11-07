@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "timestamp": "2025-11-07T02:42:44Z",
+  "summary": {
+    "total_criteria": 19,
+    "passed": 9,
+    "failed": 0,
+    "warnings": 7,
+    "completion_percentage": 47.37
+  },
+  "criteria": {
+    "core_compilation": {
+      "status": "passed",
+      "message": "All crates compile without errors"
+    }
+,
+    "core_no_unwrap": {
+      "status": "warning",
+      "message": "Found 148 instances of unwrap()/expect() in production code (review recommended, many likely in test modules)"
+    }
+,
+    "core_trait_compatibility": {
+      "status": "passed",
+      "message": "No async trait methods found"
+    }
+,
+    "core_backward_compatibility": {
+      "status": "warning",
+      "message": "Requires manual review"
+    }
+,
+    "core_tests_pass": {
+      "status": "passed",
+      "message": "All tests passing"
+    }
+,
+    "core_no_linting": {
+      "status": "passed",
+      "message": "Zero clippy warnings"
+    }
+,
+    "core_error_handling": {
+      "status": "passed",
+      "message": "Error handling uses Result types"
+    }
+,
+    "core_async_sync": {
+      "status": "passed",
+      "message": "Async/sync patterns check"
+    }
+,
+    "core_no_false_positives": {
+      "status": "warning",
+      "message": "Found 124 instances of Ok(())"
+    }
+,
+    "core_performance": {
+      "status": "warning",
+      "message": "Performance tests require manual execution"
+    }
+,
+    "core_otel_validation": {
+      "status": "passed",
+      "message": "Weaver registry validation passed"
+    }
+,
+    "ext_code_quality": {
+      "status": "warning",
+      "message": "Found 9 TODO/FIXME comments"
+    }
+,
+    "ext_documentation": {
+      "status": "warning",
+      "message": "Found 965 public items without documentation"
+    }
+,
+    "ext_performance": {
+      "status": "warning",
+      "message": "Requires manual benchmark execution"
+    }
+,
+    "ext_integration": {
+      "status": "warning",
+      "message": "Requires manual verification"
+    }
+,
+    "ext_security": {
+      "status": "warning",
+      "message": "Found 58 potential hardcoded secrets"
+    }
+,
+    "ext_testing": {
+      "status": "passed",
+      "message": "Test infrastructure present"
+    }
+,
+    "ext_build_system": {
+      "status": "passed",
+      "message": "Build system configured"
+    }
+,
+    "ext_knhk_specific": {
+      "status": "warning",
+      "message": "Guard constraints not found"
+    }
+  }
+}

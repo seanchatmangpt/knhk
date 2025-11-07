@@ -152,14 +152,14 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_invalid_capacity() {
-        assert_eq!(
+        assert!(matches!(
             RingBuffer::<u32>::new(7),
             Err(RingError::InvalidCapacity)
-        );
-        assert_eq!(
+        ));
+        assert!(matches!(
             RingBuffer::<u32>::new(0),
             Err(RingError::InvalidCapacity)
-        );
+        ));
     }
 
     #[test]

@@ -1,6 +1,7 @@
 #!/bin/bash
-# KNHK v0.4.0 Release Checklist
+# KNHK v1.0 Release Checklist
 # Interactive script for release managers
+# Includes v1.0 Definition of Done validation
 
 set -e
 
@@ -12,8 +13,9 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Checklist items (using arrays instead of associative arrays for compatibility)
-CHECKLIST_KEYS=("cli_commands" "integration_tests" "network_integrations" "performance" "configuration" "documentation" "build" "bugs")
+CHECKLIST_KEYS=("dod_validation" "cli_commands" "integration_tests" "network_integrations" "performance" "configuration" "documentation" "build" "bugs")
 CHECKLIST_DESC=(
+    "v1.0 Definition of Done validation passed (run scripts/validate-v1-dod.sh)"
     "All CLI commands implemented and tested"
     "End-to-end integration tests passing"
     "Real network integrations working (HTTP, gRPC, Kafka, OTEL)"
@@ -33,8 +35,11 @@ done
 # Functions
 print_header() {
     echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}KNHK v0.4.0 Release Checklist${NC}"
+    echo -e "${BLUE}KNHK v1.0 Release Checklist${NC}"
     echo -e "${BLUE}========================================${NC}"
+    echo ""
+    echo -e "${YELLOW}Note:${NC} This checklist includes v1.0 Definition of Done validation."
+    echo -e "      See docs/v1.0-definition-of-done.md for complete criteria."
     echo ""
 }
 
@@ -73,6 +78,32 @@ prompt_item() {
     
     echo ""
     echo -e "${BLUE}$description${NC}"
+    
+    # Special handling for DoD validation
+    if [ "$key" = "dod_validation" ]; then
+        echo ""
+        echo -e "${YELLOW}Running automated DoD validation...${NC}"
+        if ./scripts/validate-v1-dod.sh --report text; then
+            echo -e "${GREEN}DoD validation passed!${NC}"
+            for i in "${!CHECKLIST_KEYS[@]}"; do
+                if [ "${CHECKLIST_KEYS[$i]}" = "$key" ]; then
+                    STATUS[$i]="passed"
+                    break
+                fi
+            done
+            return 0
+        else
+            echo -e "${RED}DoD validation failed. Please fix errors before release.${NC}"
+            for i in "${!CHECKLIST_KEYS[@]}"; do
+                if [ "${CHECKLIST_KEYS[$i]}" = "$key" ]; then
+                    STATUS[$i]="failed"
+                    break
+                fi
+            done
+            return 1
+        fi
+    fi
+    
     echo "Status:"
     echo "  [p] Passed"
     echo "  [f] Failed"

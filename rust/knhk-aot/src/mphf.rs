@@ -74,7 +74,10 @@ impl MphfCache {
             self.cache.insert(key.clone(), mphf);
         }
 
-        self.cache.get(&key).expect("MPHF cache entry should exist after insertion")
+        // Safe to unwrap: we just inserted the key above if it didn't exist
+        self.cache.get(&key).unwrap_or_else(|| {
+            panic!("MPHF cache entry missing for key: {:?} (this should not happen - bug in cache logic)", key)
+        })
     }
 
     /// Clear cache

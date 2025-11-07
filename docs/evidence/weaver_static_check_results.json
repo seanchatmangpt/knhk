@@ -1,0 +1,81 @@
+{
+  "validation_type": "static_schema_check",
+  "timestamp": "2025-11-06T01:49:00Z",
+  "registry_path": "/Users/sac/knhk/registry/",
+  "weaver_version": "0.16.1",
+  "status": "PASSED",
+  "execution_time_ms": 10.262917,
+  "registry_info": {
+    "name": "knhk",
+    "files_loaded": 6,
+    "manifest": "/Users/sac/knhk/registry/registry_manifest.yaml"
+  },
+  "schema_files": [
+    {
+      "file": "knhk-attributes.yaml",
+      "status": "valid",
+      "description": "Core attributes and dimensions"
+    },
+    {
+      "file": "knhk-beat-v1.yaml",
+      "status": "valid",
+      "description": "8-beat epoch system spans and metrics"
+    },
+    {
+      "file": "knhk-etl.yaml",
+      "status": "valid",
+      "description": "ETL pipeline telemetry definitions"
+    },
+    {
+      "file": "knhk-operation.yaml",
+      "status": "valid",
+      "description": "Operation-level span definitions"
+    },
+    {
+      "file": "knhk-sidecar.yaml",
+      "status": "valid",
+      "description": "Sidecar coordination telemetry"
+    },
+    {
+      "file": "knhk-warm.yaml",
+      "status": "valid",
+      "description": "Warm path instrumentation"
+    }
+  ],
+  "policy_violations": {
+    "before_resolution": [],
+    "after_resolution": []
+  },
+  "resolution_status": "resolved",
+  "verdict": "SCHEMA_VALID",
+  "certification_level": "STATIC_COMPLIANCE",
+  "next_steps": [
+    "Fix Rust compilation errors",
+    "Run live-check with OTEL collector",
+    "Validate law assertions",
+    "Generate evidence bundle"
+  ],
+  "blockers": [
+    {
+      "type": "compilation_error",
+      "component": "rust/knhk-etl",
+      "issue": "BeatScheduler missing Debug, PartialEq derives",
+      "severity": "critical",
+      "blocks": "live_validation"
+    },
+    {
+      "type": "compilation_error",
+      "component": "rust/knhk-etl",
+      "issue": "Fiber::new() parameter count mismatch",
+      "severity": "critical",
+      "blocks": "live_validation"
+    },
+    {
+      "type": "compilation_error",
+      "component": "rust/knhk-etl",
+      "issue": "RingBuffer::new() parameter count mismatch",
+      "severity": "critical",
+      "blocks": "live_validation"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+Weaver Registry Check
+Checking registry `registry/`
+ℹ Found registry manifest: registry/registry_manifest.yaml
+✔ `knhk` semconv registry `registry/` loaded (6 files)
+✔ No `before_resolution` policy violation
+✔ `knhk` semconv registry resolved
+✔ No `after_resolution` policy violation
+
+Total execution time: 0.01626075s

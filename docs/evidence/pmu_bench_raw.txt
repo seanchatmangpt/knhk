@@ -1,0 +1,53 @@
+=== KNHK PMU Benchmark Suite ===
+Law: μ ⊂ τ ; τ ≤ 8 ticks (Chatman Constant)
+Iterations: 10000 (warmup: 100)
+Tick Definition: 1 tick = 4 cycles @ 4GHz = 1ns
+
+ASK_SP:
+  Avg: 2 cycles (0.50 ns, 2 ticks)
+  Min: 0 cycles (0.00 ns, 0 ticks)
+  Max: 42 cycles (10.50 ns, 42 ticks)
+  Status: ❌ FAIL (>8 ticks)
+
+COUNT_SP_GE:
+  Avg: 2 cycles (0.50 ns, 2 ticks)
+  Min: 0 cycles (0.00 ns, 0 ticks)
+  Max: 42 cycles (10.50 ns, 42 ticks)
+  Status: ❌ FAIL (>8 ticks)
+
+ASK_SPO:
+  Avg: 1 cycles (0.25 ns, 1 ticks)
+  Min: 0 cycles (0.00 ns, 0 ticks)
+  Max: 58 cycles (14.50 ns, 58 ticks)
+  Status: ❌ FAIL (>8 ticks)
+
+VALIDATE_SP:
+  Avg: 1 cycles (0.25 ns, 1 ticks)
+  Min: 0 cycles (0.00 ns, 0 ticks)
+  Max: 42 cycles (10.50 ns, 42 ticks)
+  Status: ❌ FAIL (>8 ticks)
+
+UNIQUE_SP:
+  Avg: 1 cycles (0.25 ns, 1 ticks)
+  Min: 0 cycles (0.00 ns, 0 ticks)
+  Max: 42 cycles (10.50 ns, 42 ticks)
+  Status: ❌ FAIL (>8 ticks)
+
+COMPARE_O:
+  Avg: 1 cycles (0.25 ns, 1 ticks)
+  Min: 0 cycles (0.00 ns, 0 ticks)
+  Max: 42 cycles (10.50 ns, 42 ticks)
+  Status: ❌ FAIL (>8 ticks)
+
+=== CSV Output ===
+kernel,avg_cycles,avg_ns,avg_ticks,max_cycles,max_ns,max_ticks,status
+ASK_SP,2,0.50,2,42,10.50,42,FAIL
+COUNT_SP_GE,2,0.50,2,42,10.50,42,FAIL
+ASK_SPO,1,0.25,1,58,14.50,58,FAIL
+VALIDATE_SP,1,0.25,1,42,10.50,42,FAIL
+UNIQUE_SP,1,0.25,1,42,10.50,42,FAIL
+COMPARE_O,1,0.25,1,42,10.50,42,FAIL
+
+=== Results Summary ===
+Passed: 0/6
+Status: ❌ SOME TESTS FAILED

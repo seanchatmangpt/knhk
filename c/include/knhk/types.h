@@ -46,6 +46,21 @@ typedef enum {
   KNHK_OP_CONSTRUCT8 = 32   // CONSTRUCT8 - fixed-template emit
 } knhk_op_t;
 
+// CONSTRUCT8 pattern hint for branchless routing to specialized functions
+typedef enum {
+  KNHK_CONSTRUCT8_PATTERN_GENERIC = 0,    // Generic implementation (mixed pattern)
+  KNHK_CONSTRUCT8_PATTERN_ALL_NONZERO,   // All subjects non-zero (skip mask generation)
+  KNHK_CONSTRUCT8_PATTERN_LEN1,          // Length = 1 (compile-time constant mask)
+  KNHK_CONSTRUCT8_PATTERN_LEN2,          // Length = 2
+  KNHK_CONSTRUCT8_PATTERN_LEN3,          // Length = 3
+  KNHK_CONSTRUCT8_PATTERN_LEN4,          // Length = 4
+  KNHK_CONSTRUCT8_PATTERN_LEN5,          // Length = 5
+  KNHK_CONSTRUCT8_PATTERN_LEN6,          // Length = 6
+  KNHK_CONSTRUCT8_PATTERN_LEN7,          // Length = 7
+  KNHK_CONSTRUCT8_PATTERN_LEN8,          // Length = 8
+  KNHK_CONSTRUCT8_PATTERN_MAX
+} knhk_construct8_pattern_t;
+
 // Predicate run metadata (len ≤ 8 for hot path)
 typedef struct {
   uint64_t pred;  // P id
@@ -58,7 +73,8 @@ typedef struct {
   uint64_t cycle_id;   // Beat cycle ID (from knhk_beat_next())
   uint64_t shard_id;   // Shard identifier
   uint64_t hook_id;    // Hook identifier
-  uint32_t ticks;      // Actual ticks used (≤8)
+  uint32_t ticks;      // Estimated/legacy ticks (for compatibility)
+  uint32_t actual_ticks; // PMU-measured actual ticks (≤8 enforced by τ law)
   uint32_t lanes;      // SIMD width used
   uint64_t span_id;    // OTEL-compatible span ID
   uint64_t a_hash;     // hash(A) = hash(μ(O)) fragment
@@ -74,6 +90,11 @@ typedef struct {
   uint64_t *out_P;
   uint64_t *out_O;
   uint64_t out_mask;    // per-lane bitmask result (returned by μ)
+  
+  // CONSTRUCT8 pattern hint for branchless routing to specialized functions
+  // Set by warm path based on pattern detection (all-nonzero, len1-len8)
+  // Default: KNHK_CONSTRUCT8_PATTERN_GENERIC (0) for non-CONSTRUCT8 ops
+  uint8_t construct8_pattern_hint;  // knhk_construct8_pattern_t (uint8_t for compact storage)
   
   // Legacy SELECT support (cold path only, not in hot v1.0)
   uint64_t *select_out; // Output buffer for SELECT

@@ -19,7 +19,7 @@ endif
 INCLUDES = -Iinclude -Isrc
 
 # Library sources
-LIB_SRCS = src/knhk.c src/simd.c src/rdf.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c
+LIB_SRCS = src/knhk.c src/simd.c src/rdf.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c src/kernels.c src/ffi_wrappers.c
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB = libknhk.a
 
@@ -61,11 +61,12 @@ TEST_WARM_PATH = ../tests/chicago_warm_path
 TEST_CONFIG_V05 = ../tests/chicago_config
 TEST_COLD_PATH_UNRDF = chicago_cold_path_unrdf_integration
 TEST_8BEAT = ../tests/chicago_8beat_test
+TEST_PMU = tests/chicago_8beat_pmu
 
 # Rust unrdf integration library
 RUST_UNRDF_LIB = ../rust/knhk-unrdf/target/release/libknhk_unrdf.a
 
-.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-warm-path test-config-v05 test-cold-path-unrdf test-8beat validate-v0.4.0 lib bench
+.PHONY: all clean test test-enterprise test-v1 test-receipts test-construct8 test-construct8-pipeline test-batch test-guards test-integration test-integration-v2 test-performance test-connectors test-etl test-lockchain test-otel test-gaps-v1 test-chicago-v04 test-e2e test-network test-cli-integration test-config test-lockchain-integration test-performance-v04 test-cli-boot test-cli-connect test-cli-cover test-cli-admit test-cli-reflex test-cli-epoch test-cli-route test-cli-receipt test-cli-metrics test-cli-coverage test-integration-docker test-warm-path test-config-v05 test-cold-path-unrdf test-8beat test-pmu validate-v0.4.0 lib bench
 
 all: $(BENCH)
 
@@ -166,6 +167,10 @@ $(TEST_CONFIG_V05): tests/chicago_config.c
 # 8-Beat Epoch System tests
 $(TEST_8BEAT): tests/chicago_8beat_test.c tests/chicago_8beat_beat.c tests/chicago_8beat_ring.c tests/chicago_8beat_fiber.c tests/chicago_8beat_integration.c $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_8beat_test.c tests/chicago_8beat_beat.c tests/chicago_8beat_ring.c tests/chicago_8beat_fiber.c tests/chicago_8beat_integration.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+
+# PMU instrumentation tests (τ ≤ 8 law enforcement)
+$(TEST_PMU): tests/chicago_8beat_pmu.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@ -L. -lknhk
 
 # CLI noun Chicago TDD tests
 $(TEST_CLI_BOOT): tests/chicago_cli_boot.c $(LIB)
@@ -306,6 +311,10 @@ test-config-v05: $(TEST_CONFIG_V05)
 test-8beat: $(TEST_8BEAT)
 	@echo "Running 8-Beat Epoch System Tests..."
 	@./$(TEST_8BEAT)
+
+test-pmu: $(TEST_PMU)
+	@echo "Running PMU Instrumentation Tests (τ ≤ 8 enforcement)..."
+	@./$(TEST_PMU)
 
 test-warm-path: $(TEST_WARM_PATH)
 	@echo "Running Warm Path Tests..."

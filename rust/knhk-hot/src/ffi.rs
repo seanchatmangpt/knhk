@@ -30,9 +30,10 @@ pub struct Ctx {
 }
 
 #[repr(u32)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Op {
-    AskSp           = 1,
+    #[default]
+    AskSp           = 1,  // Default variant for Default trait
     CountSpGe       = 2,
     AskSpo          = 3,
     CountSpLe       = 5,
@@ -51,7 +52,7 @@ pub enum Op {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Ir {
     pub op: Op,
     pub s: u64,
@@ -63,6 +64,8 @@ pub struct Ir {
     pub out_P: *mut u64,
     pub out_O: *mut u64,
     pub out_mask: u64, // lanes written bitmask (μ sets)
+    // CONSTRUCT8 pattern hint for branchless routing (set by warm path)
+    pub construct8_pattern_hint: u8, // knhk_construct8_pattern_t (0 = GENERIC, 1 = ALL_NONZERO, 2-9 = LEN1-LEN8)
 }
 
 #[repr(C)]
@@ -71,7 +74,8 @@ pub struct Receipt {
     pub cycle_id: u64,   // Beat cycle ID (from knhk_beat_next())
     pub shard_id: u64,   // Shard identifier
     pub hook_id: u64,    // Hook identifier
-    pub ticks: u32,      // Actual ticks used (≤8)
+    pub ticks: u32,      // Estimated/legacy ticks (for compatibility)
+    pub actual_ticks: u32, // PMU-measured actual ticks (≤8 enforced by τ law)
     pub lanes: u32,      // SIMD lanes used
     pub span_id: u64,    // OTEL-compatible span ID
     pub a_hash: u64,     // hash(A) = hash(μ(O)) fragment
@@ -260,8 +264,9 @@ impl Receipt {
             cycle_id: a.cycle_id,
             shard_id: a.shard_id,
             hook_id: a.hook_id,
-            // Merge metrics: max ticks, sum lanes
+            // Merge metrics: max ticks (both estimated and actual)
             ticks: a.ticks.max(b.ticks),
+            actual_ticks: a.actual_ticks.max(b.actual_ticks),
             lanes: a.lanes + b.lanes,
             // Merge provenance: XOR (⊕ monoid)
             span_id: a.span_id ^ b.span_id,
@@ -276,8 +281,8 @@ mod tests {
 
     #[test]
     fn test_receipt_merge() {
-        let a = Receipt { cycle_id: 42, shard_id: 1, hook_id: 100, ticks: 4, lanes: 8, span_id: 0x1234, a_hash: 0x5678 };
-        let b = Receipt { cycle_id: 43, shard_id: 2, hook_id: 200, ticks: 6, lanes: 8, span_id: 0xabcd, a_hash: 0xef00 };
+        let a = Receipt { cycle_id: 42, shard_id: 1, hook_id: 100, ticks: 4, actual_ticks: 3, lanes: 8, span_id: 0x1234, a_hash: 0x5678 };
+        let b = Receipt { cycle_id: 43, shard_id: 2, hook_id: 200, ticks: 6, actual_ticks: 5, lanes: 8, span_id: 0xabcd, a_hash: 0xef00 };
         let merged = Receipt::merge(a, b);
         // Preserve IDs from first receipt
         assert_eq!(merged.cycle_id, 42);
@@ -285,6 +290,7 @@ mod tests {
         assert_eq!(merged.hook_id, 100);
         // Merge metrics
         assert_eq!(merged.ticks, 6);
+        assert_eq!(merged.actual_ticks, 5);
         assert_eq!(merged.lanes, 16);
         assert_eq!(merged.span_id, 0x1234 ^ 0xabcd);
         assert_eq!(merged.a_hash, 0x5678 ^ 0xef00);

@@ -1,0 +1,653 @@
+Weaver Registry Emit
+Resolving registry `registry/`
+ℹ Found registry manifest: registry/registry_manifest.yaml
+✔ `knhk` semconv registry `registry/` loaded (6 files)
+✔ No `before_resolution` policy violation
+✔ `knhk` semconv registry resolved
+✔ No `after_resolution` policy violation
+Emitting registry `registry/`
+Spans
+Resource
+	 ->  service.name=String(Static("weaver"))
+	 ->  telemetry.sdk.name=String(Static("opentelemetry"))
+	 ->  telemetry.sdk.version=String(Static("0.30.0"))
+	 ->  telemetry.sdk.language=String(Static("rust"))
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.etl.ingest
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : e9888548035cd59a
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066000
+	End time: 2025-11-07 00:06:19.066001
+	Status: Unset
+	Attributes:
+		 ->  knhk.etl.stage: String(Owned("ingest"))
+		 ->  knhk.etl.latency_ms: I64(42)
+		 ->  knhk.etl.connector_id: String(Owned("kafka_connector_1"))
+		 ->  knhk.etl.triples_count: I64(42)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.etl.normalize
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : b663915052be0939
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066099
+	End time: 2025-11-07 00:06:19.066099
+	Status: Unset
+	Attributes:
+		 ->  knhk.etl.stage: String(Owned("ingest"))
+		 ->  knhk.etl.latency_ms: I64(42)
+		 ->  knhk.etl.triples_count_normalized: I64(42)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.etl.reflex
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 533b3664d5f856d7
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066147
+	End time: 2025-11-07 00:06:19.066148
+	Status: Unset
+	Attributes:
+		 ->  knhk.etl.stage: String(Owned("ingest"))
+		 ->  knhk.etl.latency_ms: I64(42)
+		 ->  knhk.etl.actions_generated: I64(42)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.etl.failure_actions
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 9a9302b325fcba6f
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066194
+	End time: 2025-11-07 00:06:19.066195
+	Status: Unset
+	Attributes:
+		 ->  knhk.etl.stage: String(Owned("ingest"))
+		 ->  knhk.etl.latency_ms: I64(42)
+		 ->  knhk.etl.runtime_class: String(Owned("R1"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.etl.emit
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 02e0edd8647700c7
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066241
+	End time: 2025-11-07 00:06:19.066241
+	Status: Unset
+	Attributes:
+		 ->  knhk.etl.stage: String(Owned("ingest"))
+		 ->  knhk.etl.latency_ms: I64(42)
+		 ->  knhk.etl.receipts_written: I64(42)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.beat.scheduler.advance
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : a5a1aed9d4b94fde
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066287
+	End time: 2025-11-07 00:06:19.066287
+	Status: Unset
+	Attributes:
+		 ->  knhk.beat.cycle: I64(42)
+		 ->  knhk.beat.tick: I64(42)
+		 ->  knhk.beat.pulse: Bool(true)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.fiber.process_tick
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 5e3fd0fa7d569df5
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066334
+	End time: 2025-11-07 00:06:19.066334
+	Status: Unset
+	Attributes:
+		 ->  knhk.beat.tick: I64(42)
+		 ->  knhk.fiber.shard_id: I64(42)
+		 ->  knhk.fiber.n_deltas: I64(42)
+		 ->  knhk.fiber.actual_ticks: I64(42)
+		 ->  knhk.fiber.parked: Bool(true)
+		 ->  knhk.fiber.cause: String(Owned("TickBudgetExceeded"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.sidecar.transaction
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : dc180653e7c9a302
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066394
+	End time: 2025-11-07 00:06:19.066394
+	Status: Unset
+	Attributes:
+		 ->  knhk.sidecar.success: Bool(true)
+		 ->  knhk.sidecar.latency_ms: I64(42)
+		 ->  knhk.sidecar.method: String(Owned("ApplyTransaction"))
+		 ->  knhk.sidecar.transaction_id: String(Owned("550e8400-e29b-41d4-a716-446655440000"))
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.sidecar.query
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 2664bbef20e5baf9
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066429
+	End time: 2025-11-07 00:06:19.066430
+	Status: Unset
+	Attributes:
+		 ->  knhk.sidecar.success: Bool(true)
+		 ->  knhk.sidecar.latency_ms: I64(42)
+		 ->  knhk.sidecar.method: String(Owned("ApplyTransaction"))
+		 ->  knhk.sidecar.query_type: String(Owned("ASK"))
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.sidecar.validate_graph
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 6e6cb436dd4700c9
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066464
+	End time: 2025-11-07 00:06:19.066464
+	Status: Unset
+	Attributes:
+		 ->  knhk.sidecar.success: Bool(true)
+		 ->  knhk.sidecar.latency_ms: I64(42)
+		 ->  knhk.sidecar.method: String(Owned("ApplyTransaction"))
+		 ->  knhk.sidecar.schema_iri: String(Owned("https://example.org/schema/v1"))
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.sidecar.evaluate_hook
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 2c6ecb5b6c31f4f9
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066498
+	End time: 2025-11-07 00:06:19.066498
+	Status: Unset
+	Attributes:
+		 ->  knhk.sidecar.success: Bool(true)
+		 ->  knhk.sidecar.latency_ms: I64(42)
+		 ->  knhk.sidecar.method: String(Owned("ApplyTransaction"))
+		 ->  knhk.sidecar.hook_id: String(Owned("hook_validation_01"))
+		 ->  knhk.sidecar.rdf_data_size: I64(42)
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.operation.ask
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 630c49de11877b5f
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066534
+	End time: 2025-11-07 00:06:19.066534
+	Status: Unset
+	Attributes:
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+		 ->  knhk.operation.success: Bool(true)
+		 ->  knhk.operation.ticks: I64(1)
+		 ->  knhk.operation.pattern: String(Owned("?s rdf:type ex:Person"))
+		 ->  knhk.operation.result: Bool(true)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.operation.count
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 3d053e0f466db405
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066568
+	End time: 2025-11-07 00:06:19.066568
+	Status: Unset
+	Attributes:
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+		 ->  knhk.operation.success: Bool(true)
+		 ->  knhk.operation.ticks: I64(1)
+		 ->  knhk.operation.pattern: String(Owned("?s rdf:type ex:Person"))
+		 ->  knhk.operation.count_result: I64(0)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.operation.compare
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : a8a48584f4fcd694
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066607
+	End time: 2025-11-07 00:06:19.066607
+	Status: Unset
+	Attributes:
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+		 ->  knhk.operation.success: Bool(true)
+		 ->  knhk.operation.ticks: I64(1)
+		 ->  knhk.operation.entity1: String(Owned("ex:Entity1"))
+		 ->  knhk.operation.entity2: String(Owned("ex:Entity2"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.warm.construct
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 541254c32a4f54d0
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066641
+	End time: 2025-11-07 00:06:19.066641
+	Status: Unset
+	Attributes:
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+		 ->  knhk.operation.success: Bool(true)
+		 ->  knhk.operation.ticks: I64(1)
+		 ->  knhk.warm.cache_hit: Bool(true)
+		 ->  knhk.warm.retry_count: I64(0)
+		 ->  knhk.warm.result_size: I64(10)
+		 ->  knhk.warm.pattern: String(Owned("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }"))
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : knhk.warm.select
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 5a2a47882ff22457
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 153d73a7b4b4ce60
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.066678
+	End time: 2025-11-07 00:06:19.066678
+	Status: Unset
+	Attributes:
+		 ->  knhk.operation.name: String(Owned("apply_transaction"))
+		 ->  knhk.operation.type: String(Owned("sidecar"))
+		 ->  knhk.operation.success: Bool(true)
+		 ->  knhk.operation.ticks: I64(1)
+		 ->  knhk.warm.cache_hit: Bool(true)
+		 ->  knhk.warm.retry_count: I64(0)
+		 ->  knhk.warm.result_size: I64(10)
+		 ->  knhk.warm.variables: String(Owned("?s,?p,?o"))
+		 ->  knhk.warm.limit: I64(10)
+Spans
+Span #0
+	Instrumentation Scope
+		Name         : "weaver"
+
+	Name        : otel.weaver.emit
+	TraceId     : 97237753cae0f23be25c649505d4fac1
+	SpanId      : 153d73a7b4b4ce60
+	TraceFlags  : TraceFlags(1)
+	ParentSpanId: 0000000000000000
+	Kind        : Internal
+	Start time: 2025-11-07 00:06:19.065994
+	End time: 2025-11-07 00:06:19.066717
+	Status: Unset
+	Attributes:
+		 ->  otel.weaver.registry_path: String(Owned("registry/"))
+Metrics
+Resource
+	 ->  telemetry.sdk.language=String(Static("rust"))
+	 ->  telemetry.sdk.name=String(Static("opentelemetry"))
+	 ->  service.name=String(Static("weaver"))
+	 ->  telemetry.sdk.version=String(Static("0.30.0"))
+	Instrumentation Scope #0
+		Name         : weaver
+Metric #0
+		Name         : knhk.etl.stage_duration
+		Description  : ETL stage processing duration
+		Unit         : ms
+		Type         : Histogram
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066773
+		EndTime      : 2025-11-07 00:06:19.066845
+		Histogram DataPoints
+		DataPoint #0
+			Count        : 1
+			Sum          : 1.0
+			Min          : 1.0
+			Max          : 1.0
+			Attributes   :
+				 ->  knhk.etl.stage: ingest
+			Buckets
+				 -inf to 0 : 0
+				 0 to 5 : 1
+				 5 to 10 : 0
+				 10 to 25 : 0
+				 25 to 50 : 0
+				 50 to 75 : 0
+				 75 to 100 : 0
+				 100 to 250 : 0
+				 250 to 500 : 0
+				 500 to 750 : 0
+				 750 to 1000 : 0
+				 1000 to 2500 : 0
+				 2500 to 5000 : 0
+				 5000 to 7500 : 0
+				 7500 to 10000 : 0
+				10000 to +Infinity : 0
+Metric #1
+		Name         : knhk.etl.triples_processed
+		Description  : Total triples processed
+		Unit         : 1
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066782
+		EndTime      : 2025-11-07 00:06:19.066849
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.etl.stage: ingest
+Metric #2
+		Name         : knhk.fiber.ticks_per_unit
+		Description  : Execution time in ticks per delta unit
+		Unit         : ticks
+		Type         : Histogram
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066787
+		EndTime      : 2025-11-07 00:06:19.066850
+		Histogram DataPoints
+		DataPoint #0
+			Count        : 1
+			Sum          : 1.0
+			Min          : 1.0
+			Max          : 1.0
+			Attributes   :
+				 ->  knhk.fiber.shard_id: 42
+			Buckets
+				 -inf to 0 : 0
+				 0 to 5 : 1
+				 5 to 10 : 0
+				 10 to 25 : 0
+				 25 to 50 : 0
+				 50 to 75 : 0
+				 75 to 100 : 0
+				 100 to 250 : 0
+				 250 to 500 : 0
+				 500 to 750 : 0
+				 750 to 1000 : 0
+				 1000 to 2500 : 0
+				 2500 to 5000 : 0
+				 5000 to 7500 : 0
+				 7500 to 10000 : 0
+				10000 to +Infinity : 0
+Metric #3
+		Name         : knhk.fiber.park_rate
+		Description  : Percentage of deltas parked to W1 (0.0-1.0)
+		Unit         : 1
+		Type         : Gauge
+		Gauge DataPoints
+		StartTime    : 2025-11-07 00:06:19.066793
+		EndTime      : 2025-11-07 00:06:19.066851
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.fiber.shard_id: 42
+Metric #4
+		Name         : knhk.fiber.deltas_processed
+		Description  : Total number of deltas processed across all fibers
+		Unit         : {deltas}
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066798
+		EndTime      : 2025-11-07 00:06:19.066852
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.fiber.shard_id: 42
+Metric #5
+		Name         : knhk.beat.cycles_total
+		Description  : Total number of beat cycles executed
+		Unit         : {cycles}
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066802
+		EndTime      : 2025-11-07 00:06:19.066852
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+Metric #6
+		Name         : knhk.beat.pulses_total
+		Description  : Total number of commit pulses (every 8th tick)
+		Unit         : {pulses}
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066804
+		EndTime      : 2025-11-07 00:06:19.066853
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+Metric #7
+		Name         : knhk.sidecar.requests
+		Description  : Total number of sidecar requests
+		Unit         : 1
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066807
+		EndTime      : 2025-11-07 00:06:19.066853
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.sidecar.method: ApplyTransaction
+Metric #8
+		Name         : knhk.sidecar.latency
+		Description  : Sidecar request latency
+		Unit         : ms
+		Type         : Histogram
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066811
+		EndTime      : 2025-11-07 00:06:19.066853
+		Histogram DataPoints
+		DataPoint #0
+			Count        : 1
+			Sum          : 1.0
+			Min          : 1.0
+			Max          : 1.0
+			Attributes   :
+				 ->  knhk.sidecar.method: ApplyTransaction
+			Buckets
+				 -inf to 0 : 0
+				 0 to 5 : 1
+				 5 to 10 : 0
+				 10 to 25 : 0
+				 25 to 50 : 0
+				 50 to 75 : 0
+				 75 to 100 : 0
+				 100 to 250 : 0
+				 250 to 500 : 0
+				 500 to 750 : 0
+				 750 to 1000 : 0
+				 1000 to 2500 : 0
+				 2500 to 5000 : 0
+				 5000 to 7500 : 0
+				 7500 to 10000 : 0
+				10000 to +Infinity : 0
+Metric #9
+		Name         : knhk.operation.duration
+		Description  : Operation duration in ticks (R1 MUST be ≤8)
+		Unit         : ticks
+		Type         : Histogram
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066815
+		EndTime      : 2025-11-07 00:06:19.066854
+		Histogram DataPoints
+		DataPoint #0
+			Count        : 1
+			Sum          : 1.0
+			Min          : 1.0
+			Max          : 1.0
+			Attributes   :
+				 ->  knhk.operation.name: apply_transaction
+				 ->  knhk.operation.type: sidecar
+			Buckets
+				 -inf to 0 : 0
+				 0 to 5 : 1
+				 5 to 10 : 0
+				 10 to 25 : 0
+				 25 to 50 : 0
+				 50 to 75 : 0
+				 75 to 100 : 0
+				 100 to 250 : 0
+				 250 to 500 : 0
+				 500 to 750 : 0
+				 750 to 1000 : 0
+				 1000 to 2500 : 0
+				 2500 to 5000 : 0
+				 5000 to 7500 : 0
+				 7500 to 10000 : 0
+				10000 to +Infinity : 0
+Metric #10
+		Name         : knhk.operation.r1_violations
+		Description  : R1 operations exceeding 8 ticks (Chatman Constant violations)
+		Unit         : 1
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066820
+		EndTime      : 2025-11-07 00:06:19.066854
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.operation.name: apply_transaction
+Metric #11
+		Name         : knhk.warm.latency
+		Description  : Warm path operation latency
+		Unit         : ms
+		Type         : Histogram
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066824
+		EndTime      : 2025-11-07 00:06:19.066855
+		Histogram DataPoints
+		DataPoint #0
+			Count        : 1
+			Sum          : 1.0
+			Min          : 1.0
+			Max          : 1.0
+			Attributes   :
+				 ->  knhk.operation.name: apply_transaction
+			Buckets
+				 -inf to 0 : 0
+				 0 to 5 : 1
+				 5 to 10 : 0
+				 10 to 25 : 0
+				 25 to 50 : 0
+				 50 to 75 : 0
+				 75 to 100 : 0
+				 100 to 250 : 0
+				 250 to 500 : 0
+				 500 to 750 : 0
+				 750 to 1000 : 0
+				 1000 to 2500 : 0
+				 2500 to 5000 : 0
+				 5000 to 7500 : 0
+				 7500 to 10000 : 0
+				10000 to +Infinity : 0
+Metric #12
+		Name         : knhk.warm.cache_hits
+		Description  : W1 cache hits (degradation to cached responses)
+		Unit         : 1
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066827
+		EndTime      : 2025-11-07 00:06:19.066855
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.operation.name: apply_transaction
+Metric #13
+		Name         : knhk.w1.cache_hit
+		Description  : W1 cache hit from ETL emit stage
+		Unit         : 1
+		Type         : Sum
+		Sum DataPoints
+		Monotonic    : true
+		Temporality  : Cumulative
+		StartTime    : 2025-11-07 00:06:19.066831
+		EndTime      : 2025-11-07 00:06:19.066856
+		DataPoint #0
+			Value        : 1.0
+			Attributes   :
+				 ->  knhk.w1.action_id: action_123
+✔ Emitted registry `registry/`
+
+Total execution time: 0.013020125s

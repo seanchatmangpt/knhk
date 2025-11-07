@@ -3,10 +3,10 @@
 
 #![allow(non_camel_case_types)]
 
-use knhk_hot::{Ctx, Ir, Receipt, Op};
+use knhk_hot::{Ctx, Ir, Receipt, Op, Run};
 
-// Re-export types from knhk-hot for convenience
-pub use knhk_hot::Run;
+// Re-export types from knhk-hot for convenience (single export point)
+pub use knhk_hot::{Op, Ctx, Ir, Receipt, Run};
 
 // Type aliases for clarity
 pub type HotContext = Ctx;
@@ -34,7 +34,4 @@ pub unsafe fn knhk_hot_eval_construct8(
 ) -> i32 {
     knhk_eval_construct8(ctx, ir, rcpt)
 }
-
-// Re-export Op for warm_path.rs
-pub use knhk_hot::Op;
 

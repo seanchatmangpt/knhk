@@ -10,7 +10,10 @@
 void knhk_init_ctx(knhk_context_t *ctx, const uint64_t *S, const uint64_t *P, const uint64_t *O);
 
 // Set the active predicate run (len ≤ 8, guarded by H)
-static inline void knhk_pin_run(knhk_context_t *ctx, knhk_pred_run_t run)
+#ifndef KNHK_PIN_RUN_INLINE
+#define KNHK_PIN_RUN_INLINE static inline
+#endif
+KNHK_PIN_RUN_INLINE void knhk_pin_run(knhk_context_t *ctx, knhk_pred_run_t run)
 {
   ctx->run = run;
 }

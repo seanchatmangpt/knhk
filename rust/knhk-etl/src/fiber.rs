@@ -2,13 +2,12 @@
 // Cooperative fibers for 8-beat epoch system
 // Per-shard execution units with tick budget enforcement
 
-use alloc::vec::Vec;
-use alloc::string::String;
 use crate::ingest::RawTriple;
 use crate::reflex::{Action, Receipt};
 use crate::park::{ParkCause, ExecutionResult};
 use crate::ring_conversion::raw_triples_to_soa;
-use knhk_hot::{FiberExecutor, Ctx, Ir, Op, Run, Receipt as HotReceipt};
+use knhk_hot::{FiberExecutor, Ctx, Ir, Op, Run};
+use tracing::instrument;
 
 /// Fiber state
 #[derive(Debug, Clone, PartialEq)]
@@ -78,6 +77,16 @@ impl Fiber {
     /// Execute μ(Δ) for current tick
     /// Returns ExecutionResult indicating completion or parking
     /// Uses C fiber execution for actual hot path execution
+    #[instrument(
+        name = "fiber.process_tick",
+        skip(self, delta),
+        fields(
+            tick = tick,
+            n_deltas = delta.len(),
+            shard_id = self.shard_id,
+            cycle_id = cycle_id,
+        )
+    )]
     pub fn execute_tick(
         &mut self,
         tick: u64,
@@ -91,24 +100,79 @@ impl Fiber {
         // Validate run length ≤ 8 (guard H)
         if delta.len() > 8 {
             self.state = FiberState::Parked;
+
+            tracing::info!(
+                tick = tick,
+                shard_id = self.shard_id,
+                n_deltas = delta.len(),
+                parked = true,
+                cause = "RunLengthExceeded",
+                "Fiber parked due to run length exceeded"
+            );
+
+            // Compute hook_id for parking receipt
+            let hook_id = if let Some(first_triple) = delta.first() {
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+                let mut hasher = DefaultHasher::new();
+                first_triple.predicate.hash(&mut hasher);
+                let predicate_hash = hasher.finish();
+                Self::compute_hook_id(self.shard_id as u64, predicate_hash)
+            } else {
+                Self::compute_hook_id(self.shard_id as u64, 0)
+            };
+            
             return ExecutionResult::Parked {
                 delta: delta.to_vec(),
-                receipt: self.generate_receipt(tick, 0, cycle_id),
+                receipt: self.generate_receipt(tick, 0, cycle_id, hook_id),
                 cause: ParkCause::RunLengthExceeded,
             };
         }
 
+        // Compute hook_id from first predicate in delta
+        let hook_id = if let Some(first_triple) = delta.first() {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            let mut hasher = DefaultHasher::new();
+            first_triple.predicate.hash(&mut hasher);
+            let predicate_hash = hasher.finish();
+            Self::compute_hook_id(self.shard_id as u64, predicate_hash)
+        } else {
+            Self::compute_hook_id(self.shard_id as u64, 0)
+        };
+        
         // Execute via C fiber executor (actual hot path execution)
-        let action = self.run_mu(dick, delta, cycle_id);
+        let action = self.run_mu(tick, delta, cycle_id, hook_id);
         
         // Check if execution was parked by C fiber
         match &action {
             Action { receipt_id, .. } if receipt_id.contains("error") => {
                 // C fiber execution failed or was parked
                 self.state = FiberState::Parked;
+
+                tracing::info!(
+                    tick = tick,
+                    shard_id = self.shard_id,
+                    parked = true,
+                    cause = "TickBudgetExceeded",
+                    "Fiber parked by C executor"
+                );
+
+                // Compute hook_id for parking receipt
+                let hook_id = if let Some(first_triple) = delta.first() {
+                    use std::collections::hash_map::DefaultHasher;
+                    use std::hash::{Hash, Hasher};
+                    let mut hasher = DefaultHasher::new();
+                    first_triple.predicate.hash(&mut hasher);
+                    let predicate_hash = hasher.finish();
+                    Self::compute_hook_id(self.shard_id as u64, predicate_hash)
+                } else {
+                    Self::compute_hook_id(self.shard_id as u64, 0)
+                };
+                
                 ExecutionResult::Parked {
                     delta: delta.to_vec(),
-                    receipt: self.generate_receipt(tick, 0, cycle_id),
+                    receipt: self.generate_receipt(tick, 0, cycle_id, hook_id),
                     cause: ParkCause::TickBudgetExceeded,
                 }
             }
@@ -118,6 +182,15 @@ impl Fiber {
                 let receipt = self.extract_receipt_from_action(&action, tick, cycle_id);
                 self.accumulated_ticks = receipt.ticks;
                 self.state = FiberState::Completed;
+
+                tracing::info!(
+                    tick = tick,
+                    shard_id = self.shard_id,
+                    actual_ticks = receipt.ticks,
+                    n_deltas = delta.len(),
+                    parked = false,
+                    "Fiber completed execution"
+                );
                 
                 ExecutionResult::Completed {
                     action,
@@ -141,12 +214,17 @@ impl Fiber {
             tick as u64
         };
         
+        // Extract hook_id from action payload if available, otherwise compute from shard
+        // For v1.0, we compute hook_id from shard_id (will be improved with hook registry)
+        let hook_id = Self::compute_hook_id(self.shard_id as u64, 0);
+        
         Receipt {
             id: action.receipt_id.clone(),
             cycle_id,
             shard_id: self.shard_id as u64,
-            hook_id: 0, // TODO: Get from hook registry
+            hook_id,
             ticks: self.accumulated_ticks.max(1), // Use accumulated ticks or default to 1
+            actual_ticks: self.accumulated_ticks.max(1),
             lanes: 1, // Will be set by C fiber execution
             span_id,
             a_hash: 0, // Will be computed from action hash
@@ -164,9 +242,9 @@ impl Fiber {
 
     /// Execute μ(Δ) - reconciliation function
     /// Calls C hot path kernels via FiberExecutor
-    fn run_mu(&self, tick: u64, delta: &[RawTriple], cycle_id: u64) -> Action {
+    fn run_mu(&self, tick: u64, delta: &[RawTriple], cycle_id: u64, _hook_id: u64) -> Action {
         // Convert RawTriple to SoA arrays
-        let (S, P, O) = match raw_triples_to_soa(delta) {
+        let (s_vec, p_vec, o_vec) = match raw_triples_to_soa(delta) {
             Ok(arrays) => arrays,
             Err(e) => {
                 // If conversion fails, return action with error payload
@@ -182,21 +260,21 @@ impl Fiber {
         let soa_arrays = crate::load::SoAArrays {
             s: {
                 let mut arr = [0u64; 8];
-                for (i, &val) in S.iter().take(8).enumerate() {
+                for (i, &val) in s_vec.iter().take(8).enumerate() {
                     arr[i] = val;
                 }
                 arr
             },
             p: {
                 let mut arr = [0u64; 8];
-                for (i, &val) in P.iter().take(8).enumerate() {
+                for (i, &val) in p_vec.iter().take(8).enumerate() {
                     arr[i] = val;
                 }
                 arr
             },
             o: {
                 let mut arr = [0u64; 8];
-                for (i, &val) in O.iter().take(8).enumerate() {
+                for (i, &val) in o_vec.iter().take(8).enumerate() {
                     arr[i] = val;
                 }
                 arr
@@ -208,7 +286,7 @@ impl Fiber {
             P: soa_arrays.p.as_ptr(),
             O: soa_arrays.o.as_ptr(),
             run: Run {
-                pred: if !P.is_empty() { P[0] } else { 0 },
+                pred: if !p_vec.is_empty() { p_vec[0] } else { 0 },
                 off: 0,
                 len: delta.len() as u64,
             },
@@ -217,34 +295,28 @@ impl Fiber {
         // Create Ir for ASK_SP operation (default for reconciliation)
         let mut ir = Ir {
             op: Op::AskSp,
-            s: if !S.is_empty() { S[0] } else { 0 },
-            p: if !P.is_empty() { P[0] } else { 0 },
-            o: if !O.is_empty() { O[0] } else { 0 },
+            s: if !s_vec.is_empty() { s_vec[0] } else { 0 },
+            p: if !p_vec.is_empty() { p_vec[0] } else { 0 },
+            o: if !o_vec.is_empty() { o_vec[0] } else { 0 },
             k: 0,
             out_S: std::ptr::null_mut(),
             out_P: std::ptr::null_mut(),
             out_O: std::ptr::null_mut(),
             out_mask: 0,
+            construct8_pattern_hint: 0,
         };
 
         // Use provided cycle_id from beat scheduler
         let shard_id = self.shard_id as u64;
-        let hook_id = 0; // TODO: Get from hook registry
+        // Compute hook_id from shard_id and predicate (first predicate in delta)
+        let hook_id = Self::compute_hook_id(shard_id, ctx.run.pred);
 
         // Execute via C fiber executor (actual hot path execution)
         match FiberExecutor::execute(&ctx, &mut ir, tick, cycle_id, shard_id, hook_id) {
             Ok(hot_receipt) => {
-                // Convert C receipt to Rust receipt
-                let receipt = Receipt {
-                    id: alloc::format!("receipt_{}", hot_receipt.span_id),
-                    cycle_id: hot_receipt.cycle_id,
-                    shard_id: hot_receipt.shard_id,
-                    hook_id: hot_receipt.hook_id,
-                    ticks: hot_receipt.ticks,
-                    lanes: hot_receipt.lanes,
-                    span_id: hot_receipt.span_id,
-                    a_hash: hot_receipt.a_hash,
-                };
+                // Use receipt from C fiber execution (contains actual ticks, span_id, a_hash)
+                // Store receipt info in action for later extraction
+                let receipt_id = alloc::format!("receipt_{}", hot_receipt.span_id);
 
                 // Create action with serialized delta as payload
                 let mut payload = alloc::vec::Vec::new();
@@ -256,31 +328,39 @@ impl Fiber {
                 }
 
                 Action {
-                    id: alloc::format!("action_{}_{}", self.shard_id, self.current_tick),
+                    id: alloc::format!("action_{}_{}", self.shard_id, tick),
                     payload,
-                    receipt_id: receipt.id.clone(),
+                    receipt_id: receipt_id.clone(),
                 }
             }
             Err(e) => {
                 // Fiber execution failed or was parked
                 // Return action with error payload
                 Action {
-                    id: alloc::format!("action_error_{}_{}", self.shard_id, self.current_tick),
+                    id: alloc::format!("action_error_{}_{}", self.shard_id, tick),
                     payload: alloc::format!("Fiber execution error: {}", e).into_bytes(),
-                    receipt_id: alloc::format!("receipt_error_{}_{}", self.shard_id, self.current_tick),
+                    receipt_id: alloc::format!("receipt_error_{}_{}", self.shard_id, tick),
                 }
             }
         }
     }
 
-    /// Generate receipt for execution
-    fn generate_receipt(&self, tick: u64, ticks: u32) -> Receipt {
+    /// Compute hook_id from shard_id and predicate
+    /// Uses hash-based assignment: (shard_id << 32) | (predicate & 0xFFFFFFFF)
+    /// This provides deterministic hook_id assignment for v1.0
+    fn compute_hook_id(shard_id: u64, predicate: u64) -> u64 {
+        (shard_id << 32) | (predicate & 0xFFFFFFFF)
+    }
+
+    /// Generate receipt for execution (used when parking before C execution)
+    fn generate_receipt(&self, tick: u64, ticks: u32, cycle_id: u64, hook_id: u64) -> Receipt {
         Receipt {
             id: alloc::format!("receipt_{}_{}", self.shard_id, tick),
-            cycle_id: 0, // Will be set by beat scheduler
+            cycle_id,
             shard_id: self.shard_id as u64,
-            hook_id: 0, // Will be set by hook registry
+            hook_id,
             ticks,
+            actual_ticks: ticks,
             lanes: 1, // Single lane for now
             span_id: tick as u64, // Use tick as span ID for now
             a_hash: 0, // Will be computed from action hash
@@ -336,7 +416,7 @@ mod tests {
             },
         ];
 
-        let result = fiber.execute_tick(0, &delta);
+        let result = fiber.execute_tick(0, &delta, 1);
         match result {
             ExecutionResult::Completed { action, receipt } => {
                 assert!(!action.id.is_empty());
@@ -362,7 +442,7 @@ mod tests {
             })
             .collect();
 
-        let result = fiber.execute_tick(0, &delta);
+        let result = fiber.execute_tick(0, &delta, 1);
         match result {
             ExecutionResult::Parked { cause, .. } => {
                 assert_eq!(cause, ParkCause::TickBudgetExceeded);

@@ -6,6 +6,7 @@ use oxigraph::model::{GraphName, NamedNode, NamedOrBlankNode, Quad, Term, Triple
 use oxigraph::sparql::{Query, QueryResults};
 use oxigraph::store::Store;
 use serde_json::Value as JsonValue;
+use lru::LruCache;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -228,7 +229,7 @@ impl WarmPathGraph {
         };
 
         // Cache result
-        if let Ok(materialized) = self.materialize_results(results.clone()) {
+        if let Ok(materialized) = self.materialize_results(&results) {
             if let Ok(mut cache) = self.query_cache.lock() {
                 cache.put((query_hash, current_epoch), materialized);
             }
@@ -403,12 +404,20 @@ impl Default for WarmPathGraph {
         // Default implementation should not fail
         // If new() fails, return minimal graph rather than panicking
         Self::new().unwrap_or_else(|_| {
-            // Create minimal graph on failure
+            // Create minimal graph on failure - use same structure as new()
+            let query_cache_size = NonZeroUsize::new(1000).expect("1000 is non-zero");
+            let plan_cache_size = NonZeroUsize::new(1000).expect("1000 is non-zero");
             Self {
-                store: Arc::new(Store::new()),
-                cache: Arc::new(Mutex::new(LruCache::new(
-                    NonZeroUsize::new(1000).expect("1000 is non-zero")
-                ))),
+                inner: Store::new().unwrap_or_else(|_| Store::new().unwrap()),
+                epoch: Arc::new(AtomicU64::new(1)),
+                query_cache: Arc::new(Mutex::new(lru::LruCache::new(query_cache_size))),
+                query_plan_cache: Arc::new(Mutex::new(lru::LruCache::new(plan_cache_size))),
+                #[cfg(feature = "otel")]
+                query_count: Arc::new(AtomicU64::new(0)),
+                #[cfg(feature = "otel")]
+                cache_hits: Arc::new(AtomicU64::new(0)),
+                #[cfg(feature = "otel")]
+                cache_misses: Arc::new(AtomicU64::new(0)),
             }
         })
     }

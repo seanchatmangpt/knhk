@@ -3,7 +3,6 @@
 // Handles demotion of over-budget work to W1
 
 use alloc::vec::Vec;
-use alloc::string::String;
 use crate::ingest::RawTriple;
 use crate::reflex::Receipt;
 
@@ -147,7 +146,8 @@ mod tests {
             cycle_id: 0,
             shard_id: 0,
             hook_id: 0,
-            ticks: 5,
+            ticks:5,
+            actual_ticks: 5,
             lanes: 1,
             span_id: 0,
             a_hash: 0,
@@ -170,7 +170,8 @@ mod tests {
             cycle_id: 0,
             shard_id: 0,
             hook_id: 0,
-            ticks: 10,
+            ticks:10,
+            actual_ticks: 10,
             lanes: 1,
             span_id: 0,
             a_hash: 0,
@@ -196,7 +197,8 @@ mod tests {
             cycle_id: 0,
             shard_id: 0,
             hook_id: 0,
-            ticks: 10,
+            ticks:10,
+            actual_ticks: 10,
             lanes: 1,
             span_id: 0,
             a_hash: 0,

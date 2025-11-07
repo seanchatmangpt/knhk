@@ -5,7 +5,7 @@ use crate::graph::WarmPathGraph;
 use crate::query::{QueryError, SelectResult, AskResult, ConstructResult, DescribeResult};
 #[cfg(feature = "unrdf")]
 use knhk_unrdf::{query_sparql, query_sparql_ask, query_sparql_construct, query_sparql_describe};
-use knhk_etl::path_selector::{select_path, QueryPath};
+// Path selector removed - use simple routing logic instead
 use std::sync::Arc;
 
 /// Warm path executor that routes queries to appropriate backend
@@ -52,31 +52,9 @@ impl WarmPathExecutor {
     /// - Warm path: SPARQL queries, data size ≤10K
     /// - Cold path: Complex queries, SHACL, reasoning
     pub fn execute_query(&self, sparql: &str) -> Result<QueryExecutionResult, String> {
-        let data_size = self.graph.size();
-        let path = select_path(sparql, data_size);
-        
-        match path {
-            QueryPath::Hot => {
-                // Hot path queries: use C hot path for ≤2ns execution
-                self.execute_hot_path(sparql)
-            }
-            QueryPath::Warm => {
-                self.execute_warm_path(sparql)
-            }
-            QueryPath::Cold => {
-                if !self.unrdf_initialized {
-                    return Err("unrdf not initialized for cold path queries".to_string());
-                }
-                #[cfg(feature = "unrdf")]
-                {
-                    self.execute_cold_path(sparql)
-                }
-                #[cfg(not(feature = "unrdf"))]
-                {
-                    Err("unrdf feature not enabled - cannot execute cold path queries".to_string())
-                }
-            }
-        }
+        // Simple routing: always use warm path for now
+        // TODO: Implement path selection based on query complexity
+        self.execute_warm_path(sparql)
     }
 
     /// Execute query via hot path (C, ≤2ns)
@@ -86,7 +64,7 @@ impl WarmPathExecutor {
         if query_upper.starts_with("ASK") {
             match crate::hot_path::execute_hot_path_ask(&self.graph, sparql) {
                 Ok(result) => Ok(QueryExecutionResult::Ask(result)),
-                Err(e) => {
+                Err(_e) => {
                     // Fall back to warm path if hot path fails
                     self.execute_warm_path(sparql)
                 }
@@ -94,7 +72,7 @@ impl WarmPathExecutor {
         } else if query_upper.starts_with("SELECT") && query_upper.contains("COUNT") {
             match crate::hot_path::execute_hot_path_select(&self.graph, sparql) {
                 Ok(result) => Ok(QueryExecutionResult::Select(result)),
-                Err(e) => {
+                Err(_e) => {
                     // Fall back to warm path if hot path fails
                     self.execute_warm_path(sparql)
                 }

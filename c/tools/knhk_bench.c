@@ -179,6 +179,7 @@ int main(int argc, char **argv)
     .out_P = out_P,
     .out_O = out_O,
     .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_GENERIC,  // Default to generic for benchmark
     .select_out = NULL,
     .select_capacity = 0
   };

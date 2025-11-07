@@ -1,0 +1,137 @@
+# KNHK Beat System Telemetry Schema
+# Defines telemetry for 8-beat epoch reconciliation system
+
+groups:
+  # Beat attributes
+  - id: knhk.beat.attributes
+    type: attribute_group
+    brief: "Beat system attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.beat.cycle
+        type: int
+        stability: experimental
+        brief: "Global beat cycle counter"
+        requirement_level: required
+        note: "Monotonically increasing cycle counter, incremented on every beat"
+      - id: knhk.beat.tick
+        type: int
+        stability: experimental
+        brief: "Tick within current beat (0-7)"
+        requirement_level: required
+        note: "Calculated as cycle & 0x7 (branchless modulo-8)"
+      - id: knhk.beat.pulse
+        type: boolean
+        stability: experimental
+        brief: "Commit boundary indicator (true when tick==0)"
+        requirement_level: required
+        note: "Detected via branchless: ((tick.wrapping_sub(1)) >> 63) & 1 == 1"
+
+  # Fiber attributes
+  - id: knhk.fiber.attributes
+    type: attribute_group
+    brief: "Fiber execution attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.fiber.shard_id
+        type: int
+        stability: experimental
+        brief: "Shard ID (0-7 for 8-shard system)"
+        requirement_level: required
+      - id: knhk.fiber.n_deltas
+        type: int
+        stability: experimental
+        brief: "Number of delta triples in this batch"
+        requirement_level: required
+      - id: knhk.fiber.actual_ticks
+        type: int
+        stability: experimental
+        brief: "PMU-measured execution ticks"
+        requirement_level: required
+        note: "Must be ≤8 for hot path (Chatman Constant)"
+      - id: knhk.fiber.parked
+        type: boolean
+        stability: experimental
+        brief: "Whether work was parked to W1 due to budget exceeded"
+        requirement_level: required
+      - id: knhk.fiber.cause
+        type: string
+        stability: experimental
+        brief: "Reason for parking (if parked)"
+        examples: ["TickBudgetExceeded", "RunLengthExceeded"]
+
+  # Beat scheduler spans
+  - id: knhk.beat.scheduler.advance
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Beat scheduler cycle advancement"
+    note: "8-beat epoch reconciliation system with branchless cadence"
+    attributes:
+      - ref: knhk.beat.cycle
+      - ref: knhk.beat.tick
+      - ref: knhk.beat.pulse
+
+  # Fiber execution spans
+  - id: knhk.fiber.process_tick
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Fiber execution per tick"
+    note: "Cooperative fibers executing μ(Δ) reconciliation within ≤8 tick budget"
+    attributes:
+      - ref: knhk.beat.tick
+      - ref: knhk.fiber.shard_id
+      - ref: knhk.fiber.n_deltas
+      - ref: knhk.fiber.actual_ticks
+      - ref: knhk.fiber.parked
+      - ref: knhk.fiber.cause
+
+  # Metrics
+  - id: metric.knhk.fiber.ticks_per_unit
+    type: metric
+    metric_name: knhk.fiber.ticks_per_unit
+    stability: experimental
+    brief: "Execution time in ticks per delta unit"
+    instrument: histogram
+    unit: "ticks"
+    note: "Must be ≤8 for hot path compliance (Chatman Constant)"
+    attributes:
+      - ref: knhk.fiber.shard_id
+
+  - id: metric.knhk.fiber.park_rate
+    type: metric
+    metric_name: knhk.fiber.park_rate
+    stability: experimental
+    brief: "Percentage of deltas parked to W1 (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+    note: "High park rate (>0.2) indicates undersized tick budget or complex deltas"
+    attributes:
+      - ref: knhk.fiber.shard_id
+
+  - id: metric.knhk.fiber.deltas_processed
+    type: metric
+    metric_name: knhk.fiber.deltas_processed
+    stability: experimental
+    brief: "Total number of deltas processed across all fibers"
+    instrument: counter
+    unit: "{deltas}"
+    attributes:
+      - ref: knhk.fiber.shard_id
+
+  - id: metric.knhk.beat.cycles_total
+    type: metric
+    metric_name: knhk.beat.cycles_total
+    stability: experimental
+    brief: "Total number of beat cycles executed"
+    instrument: counter
+    unit: "{cycles}"
+
+  - id: metric.knhk.beat.pulses_total
+    type: metric
+    metric_name: knhk.beat.pulses_total
+    stability: experimental
+    brief: "Total number of commit pulses (every 8th tick)"
+    instrument: counter
+    unit: "{pulses}"

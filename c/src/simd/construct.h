@@ -195,7 +195,7 @@ static inline size_t knhk_construct8_emit_8_len##len_val(const uint64_t *S_base,
 
 // Internal helper with precomputed len_mask_bits
 __attribute__((hot, always_inline))
-static inline size_t knhk_construct8_emit_8_with_mask(const uint64_t *S_base, uint64_t off, uint64_t len,
+static inline size_t knhk_construct8_emit_8_with_mask(const uint64_t *S_base, uint64_t off, uint64_t len __attribute__((unused)),
                                                         uint64_t p_const, uint64_t o_const,
                                                         uint64_t *restrict out_S, uint64_t *restrict out_P, uint64_t *restrict out_O,
                                                         uint64_t *restrict out_mask, uint64_t len_mask_bits)
@@ -335,6 +335,8 @@ KNHK_CONSTRUCT8_LEN_SPECIALIZED(5)
 KNHK_CONSTRUCT8_LEN_SPECIALIZED(6)
 KNHK_CONSTRUCT8_LEN_SPECIALIZED(7)
 KNHK_CONSTRUCT8_LEN_SPECIALIZED(8)
+
+// Wrapper functions are implemented in simd.c (non-static for function pointer usage)
 
 // Pattern-specialized variant: All-nonzero (skips mask generation)
 // For patterns where all subjects are known to be non-zero (common in enterprise)

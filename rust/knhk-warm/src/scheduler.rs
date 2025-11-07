@@ -2,7 +2,7 @@
 // Implements Λ total order scheduling with τ ≤ 8 ticks enforcement
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use crate::error::WarmPathError;
+use crate::warm_path::WarmPathError;
 use crate::WarmPathResult;
 
 /// Hook ID type

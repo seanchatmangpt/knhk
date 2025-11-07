@@ -57,7 +57,8 @@ static int test_construct8_basic_emit(void)
     .out_S = out_S,
     .out_P = out_P,
     .out_O = out_O,
-    .out_mask = 0
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_GENERIC
   };
   
   knhk_receipt_t rcpt = {0};
@@ -103,7 +104,8 @@ static int test_construct8_timing(void)
     .out_S = out_S,
     .out_P = out_P,
     .out_O = out_O,
-    .out_mask = 0
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_GENERIC
   };
   
   // Cache warming: Prefetch data and warm up L1 cache
@@ -164,7 +166,8 @@ static int test_construct8_lane_masking(void)
     .out_S = out_S,
     .out_P = out_P,
     .out_O = out_O,
-    .out_mask = 0
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_GENERIC
   };
   
   knhk_receipt_t rcpt = {0};
@@ -208,7 +211,8 @@ static int test_construct8_idempotence(void)
     .out_S = out_S1,
     .out_P = out_P1,
     .out_O = out_O1,
-    .out_mask = 0
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_GENERIC
   };
   
   knhk_hook_ir_t ir2 = ir1;
@@ -254,7 +258,8 @@ static int test_construct8_empty_run(void)
     .out_S = out_S,
     .out_P = out_P,
     .out_O = out_O,
-    .out_mask = 0
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_GENERIC
   };
   
   knhk_receipt_t rcpt = {0};
@@ -293,6 +298,7 @@ static int test_construct8_epistemology(void)
   // CONSTRUCT8 uses constant predicate/object from ir.p and ir.o
   // Note: ir.p must match ctx.run.pred (design constraint)
   // Pattern: For each non-zero subject S[i], generate (S[i], ir.p, ir.o)
+  // Test length-specialized routing: len=4 → KNHK_CONSTRUCT8_PATTERN_LEN4
   uint64_t epistemology_obj = 0xACC355ED;  // Constant object (ex:Allowed)
   knhk_hook_ir_t ir = {
     .op = KNHK_OP_CONSTRUCT8,
@@ -303,7 +309,8 @@ static int test_construct8_epistemology(void)
     .out_S = out_S,
     .out_P = out_P,
     .out_O = out_O,
-    .out_mask = 0
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_LEN4  // Test length-specialized routing
   };
   
   knhk_receipt_t rcpt = {0};
@@ -345,6 +352,69 @@ static int test_construct8_epistemology(void)
   return 1;
 }
 
+// Test: CONSTRUCT8 pattern routing (branchless dispatch to specialized functions)
+// Verifies that pattern_hint correctly routes to specialized functions
+static int test_construct8_pattern_routing(void)
+{
+  printf("[TEST] CONSTRUCT8 Pattern Routing (Branchless Dispatch)\n");
+  reset_test_data();
+  
+  // Setup: All non-zero subjects (should route to all_nonzero specialized function)
+  for (int i = 0; i < 8; i++) {
+    S[i] = 0x1000 + i;  // All non-zero
+    P[i] = 0xC0FFEE;
+    O[i] = 0x2000 + i;
+  }
+  
+  knhk_pin_run(&ctx, (knhk_pred_run_t){.pred = 0xC0FFEE, .off = 0, .len = 8});
+  
+  uint64_t ALN out_S[KNHK_NROWS];
+  uint64_t ALN out_P[KNHK_NROWS];
+  uint64_t ALN out_O[KNHK_NROWS];
+  
+  // Test all-nonzero pattern routing
+  knhk_hook_ir_t ir_all_nonzero = {
+    .op = KNHK_OP_CONSTRUCT8,
+    .s = 0,
+    .p = 0xC0FFEE,
+    .o = 0xB0B,
+    .k = 0,
+    .out_S = out_S,
+    .out_P = out_P,
+    .out_O = out_O,
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_ALL_NONZERO
+  };
+  
+  knhk_receipt_t rcpt = {0};
+  int written_all_nonzero = knhk_eval_construct8(&ctx, &ir_all_nonzero, &rcpt);
+  assert(written_all_nonzero == 8);
+  assert(ir_all_nonzero.out_mask == 0xFF);  // All 8 lanes active
+  
+  // Test length-specialized routing (len=3)
+  knhk_pin_run(&ctx, (knhk_pred_run_t){.pred = 0xC0FFEE, .off = 0, .len = 3});
+  knhk_hook_ir_t ir_len3 = {
+    .op = KNHK_OP_CONSTRUCT8,
+    .s = 0,
+    .p = 0xC0FFEE,
+    .o = 0xB0B,
+    .k = 0,
+    .out_S = out_S,
+    .out_P = out_P,
+    .out_O = out_O,
+    .out_mask = 0,
+    .construct8_pattern_hint = KNHK_CONSTRUCT8_PATTERN_LEN3
+  };
+  
+  int written_len3 = knhk_eval_construct8(&ctx, &ir_len3, &rcpt);
+  assert(written_len3 == 3);
+  assert(ir_len3.out_mask == 0x07);  // First 3 lanes active
+  
+  printf("  ✓ All-nonzero pattern routes to specialized function\n");
+  printf("  ✓ Length-specialized routing works (len3)\n");
+  return 1;
+}
+
 int main(void)
 {
   printf("========================================\n");
@@ -360,6 +430,7 @@ int main(void)
   total++; if (test_construct8_idempotence()) passed++;
   total++; if (test_construct8_empty_run()) passed++;
   total++; if (test_construct8_epistemology()) passed++;
+  total++; if (test_construct8_pattern_routing()) passed++;
   
   printf("\n========================================\n");
   printf("Results: %d/%d tests passed\n", passed, total);

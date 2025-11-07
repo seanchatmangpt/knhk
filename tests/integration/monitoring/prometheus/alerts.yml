@@ -1,0 +1,175 @@
+groups:
+  - name: knhk_performance
+    interval: 15s
+    rules:
+      # Critical: Tick budget violations (>8 ticks)
+      - alert: TickBudgetViolation
+        expr: knhk_operation_duration_bucket{le="8"} / knhk_operation_duration_count < 0.95
+        for: 1m
+        labels:
+          severity: critical
+          component: hot_path
+        annotations:
+          summary: "Operation exceeding 8-tick budget"
+          description: "{{ $labels.operation_name }} is violating the Chatman Constant (≤8 ticks). Current P95: {{ $value }}. This is a critical hot path violation."
+
+      # Critical: High R1 violation rate
+      - alert: R1ViolationRateHigh
+        expr: rate(knhk_operation_r1_violations_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: hot_path
+        annotations:
+          summary: "High rate of R1 (hot path) violations"
+          description: "R1 violations at {{ $value | humanizePercentage }} per second. More than 5% of operations are exceeding the 8-tick budget."
+
+      # Warning: Fiber execution approaching budget limit
+      - alert: FiberExecutionNearLimit
+        expr: knhk_fiber_ticks_per_unit > 7
+        for: 5m
+        labels:
+          severity: warning
+          component: etl
+        annotations:
+          summary: "Fiber execution time approaching tick budget"
+          description: "Shard {{ $labels.shard_id }} fiber execution at {{ $value }} ticks (budget: 8). Risk of parking to W1."
+
+      # Critical: High park rate indicates undersized budget
+      - alert: HighParkRate
+        expr: knhk_fiber_park_rate > 0.2
+        for: 3m
+        labels:
+          severity: warning
+          component: etl
+        annotations:
+          summary: "High delta parking rate to W1"
+          description: "Shard {{ $labels.shard_id }} parking {{ $value | humanizePercentage }} of deltas. May indicate undersized tick budget or complex deltas."
+
+      # SLO violation: <95% operations within budget
+      - alert: SLOViolation
+        expr: |
+          (
+            sum(rate(knhk_operation_duration_bucket{le="8"}[5m]))
+            /
+            sum(rate(knhk_operation_duration_count[5m]))
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: critical
+          component: slo
+        annotations:
+          summary: "SLO violation: <95% operations within 8-tick budget"
+          description: "Only {{ $value | humanizePercentage }} of operations completing within budget. SLO requires ≥95%."
+
+  - name: knhk_correctness
+    interval: 15s
+    rules:
+      # Critical: Receipt hash mismatches
+      - alert: ReceiptHashMismatch
+        expr: rate(knhk_receipt_hash_mismatches_total[5m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: receipts
+        annotations:
+          summary: "Receipt hash validation failed"
+          description: "Detected {{ $value }} receipt hash mismatches in last 5m. This indicates data corruption or receipt tampering."
+
+      # Critical: Beat pulse irregularity
+      - alert: BeatPulseIrregular
+        expr: |
+          (
+            rate(knhk_beat_pulses_total[1m])
+            /
+            (rate(knhk_beat_cycles_total[1m]) / 8)
+          ) < 0.9 or > 1.1
+        for: 2m
+        labels:
+          severity: warning
+          component: beat_system
+        annotations:
+          summary: "Beat pulse timing irregular"
+          description: "Pulse rate {{ $value }}x expected (should be 1:8 ratio with cycles). Beat system may be degraded."
+
+  - name: knhk_system_health
+    interval: 30s
+    rules:
+      # Critical: Container crash loop
+      - alert: ContainerCrashLoop
+        expr: rate(container_restarts_total{container=~"knhk-.*"}[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "KNHK container in crash loop"
+          description: "Container {{ $labels.container }} restarting {{ $value }} times per 10 minutes."
+
+      # Warning: High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            container_memory_usage_bytes{container=~"knhk-.*"}
+            /
+            container_spec_memory_limit_bytes{container=~"knhk-.*"}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage in KNHK container"
+          description: "Container {{ $labels.container }} using {{ $value | humanizePercentage }} of memory limit. Risk of OOM."
+
+      # Critical: OTEL collector down
+      - alert: OTELCollectorDown
+        expr: up{job="otel-collector"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: observability
+        annotations:
+          summary: "OTEL collector is down"
+          description: "Cannot scrape metrics from OTEL collector. Observability compromised."
+
+      # Warning: Metric scrape failures
+      - alert: MetricScrapeFailing
+        expr: up{job=~"knhk-.*"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          component: observability
+        annotations:
+          summary: "Metric scrape failing for {{ $labels.job }}"
+          description: "Cannot scrape metrics from {{ $labels.job }}. Check endpoint health."
+
+  - name: knhk_business_metrics
+    interval: 1m
+    rules:
+      # Warning: Low delta throughput
+      - alert: LowDeltaThroughput
+        expr: rate(knhk_fiber_deltas_processed_total[5m]) < 100
+        for: 10m
+        labels:
+          severity: warning
+          component: throughput
+        annotations:
+          summary: "Low delta processing throughput"
+          description: "Processing only {{ $value }} deltas/sec. Expected >100/sec under normal load."
+
+      # Warning: Beat cycle rate anomaly
+      - alert: BeatCycleRateAnomaly
+        expr: |
+          abs(
+            rate(knhk_beat_cycles_total[5m])
+            -
+            avg_over_time(rate(knhk_beat_cycles_total[5m])[1h:5m])
+          ) / avg_over_time(rate(knhk_beat_cycles_total[5m])[1h:5m]) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          component: beat_system
+        annotations:
+          summary: "Beat cycle rate deviated from baseline"
+          description: "Cycle rate {{ $value | humanizePercentage }} different from 1-hour average. May indicate load anomaly."

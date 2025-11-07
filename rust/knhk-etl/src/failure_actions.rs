@@ -197,6 +197,7 @@ mod tests {
             shard_id: 0,
             hook_id: 0,
             ticks: 10, // Exceeds R1 budget
+            actual_ticks: 9,
             lanes: 8,
             span_id: 12345,
             a_hash: 67890,
@@ -235,6 +236,7 @@ mod tests {
             shard_id: 0,
             hook_id: 0,
             ticks: 5, // Within budget
+            actual_ticks: 4,
             lanes: 8,
             span_id: 12345,
             a_hash: 67890,

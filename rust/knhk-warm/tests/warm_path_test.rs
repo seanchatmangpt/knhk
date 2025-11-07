@@ -42,6 +42,7 @@ fn test_construct8_warm_path_execution() {
         out_P: out_p.as_mut_ptr(),
         out_O: out_o.as_mut_ptr(),
         out_mask: 0,
+        construct8_pattern_hint: 0, // Default to generic pattern
     };
     
     // Execute: Warm path CONSTRUCT8
@@ -94,6 +95,7 @@ fn test_construct8_warm_path_timing() {
         out_P: out_p.as_mut_ptr(),
         out_O: out_o.as_mut_ptr(),
         out_mask: 0,
+        construct8_pattern_hint: 0, // Default to generic pattern
     };
     
     // Execute: Multiple runs to measure timing
@@ -143,6 +145,7 @@ fn test_hot_path_no_regression() {
         out_P: std::ptr::null_mut(),
         out_O: std::ptr::null_mut(),
         out_mask: 0,
+        construct8_pattern_hint: 0, // Default to generic pattern
     };
     
     let mut rcpt = Receipt::default();
@@ -189,6 +192,7 @@ fn test_warm_path_error_handling() {
         out_P: out_p.as_mut_ptr(),
         out_O: out_o.as_mut_ptr(),
         out_mask: 0,
+        construct8_pattern_hint: 0, // Default to generic pattern
     };
     
     // Execute: Should fail with InvalidInput error
@@ -249,6 +253,7 @@ fn test_warm_path_guard_validation() {
         out_P: out_p.as_mut_ptr(),
         out_O: out_o.as_mut_ptr(),
         out_mask: 0,
+        construct8_pattern_hint: 0, // Default to generic pattern
     };
     
     // Execute: Should succeed with valid guard constraint

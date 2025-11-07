@@ -247,6 +247,7 @@ impl ReflexStage {
             out_P: core::ptr::null_mut(),
             out_O: core::ptr::null_mut(),
             out_mask: 0,
+            construct8_pattern_hint: 0,
         };
         
         // Execute hook via C FFI
@@ -260,6 +261,7 @@ impl ReflexStage {
             shard_id: hot_receipt.shard_id,
             hook_id: hot_receipt.hook_id,
             ticks: hot_receipt.ticks,
+            actual_ticks: hot_receipt.actual_ticks,
             lanes: hot_receipt.lanes,
             span_id: hot_receipt.span_id,
             a_hash: hot_receipt.a_hash,
@@ -276,6 +278,7 @@ impl ReflexStage {
                 shard_id: 0,
                 hook_id: 0,
                 ticks: 0,
+                actual_ticks: 0,
                 lanes: 0,
                 span_id: 0,
                 a_hash: 0,
@@ -289,14 +292,16 @@ impl ReflexStage {
             shard_id: receipts[0].shard_id,
             hook_id: receipts[0].hook_id,
             ticks: receipts[0].ticks,
+            actual_ticks: receipts[0].actual_ticks,
             lanes: receipts[0].lanes,
             span_id: receipts[0].span_id,
             a_hash: receipts[0].a_hash,
         };
 
         for receipt in receipts.iter().skip(1) {
-            // Max ticks (worst case)
+            // Max ticks (worst case) - both estimated and actual
             merged.ticks = merged.ticks.max(receipt.ticks);
+            merged.actual_ticks = merged.actual_ticks.max(receipt.actual_ticks);
             // Sum lanes
             merged.lanes += receipt.lanes;
             // XOR merge for span_id
@@ -457,7 +462,8 @@ pub struct Receipt {
     pub cycle_id: u64,   // Beat cycle ID (from knhk_beat_next())
     pub shard_id: u64,   // Shard identifier
     pub hook_id: u64,    // Hook identifier
-    pub ticks: u32,      // Actual ticks used (≤8)
+    pub ticks: u32,      // Estimated/legacy ticks (for compatibility)
+    pub actual_ticks: u32, // PMU-measured actual ticks (≤8 enforced by τ law)
     pub lanes: u32,      // SIMD lanes used
     pub span_id: u64,    // OTEL-compatible span ID
     pub a_hash: u64,     // hash(A) = hash(μ(O)) fragment
