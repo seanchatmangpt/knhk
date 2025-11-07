@@ -72,7 +72,7 @@ pub fn weaver_start(
     
     if let Some(registry_path) = registry {
         weaver = weaver.with_registry(registry_path.clone());
-        debug!(registry = %registry_path.display(), "weaver_registry_set");
+        debug!(registry = %registry_path, "weaver_registry_set");
     }
     
     let otlp_port = otlp_port.unwrap_or(4317);
@@ -86,7 +86,7 @@ pub fn weaver_start(
     
     if let Some(output_dir) = output {
         weaver = weaver.with_output(output_dir.clone());
-        debug!(output = %output_dir.display(), "weaver_output_set");
+        debug!(output = %output_dir, "weaver_output_set");
     }
     
     debug!(
