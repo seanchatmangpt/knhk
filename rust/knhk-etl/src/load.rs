@@ -13,6 +13,10 @@ use crate::transform::{TransformResult, TypedTriple};
 
 /// Stage 3: Load
 /// SoA-aligned arrays in L1 cache
+/// Load stage for converting triples to SoA (Structure of Arrays) format
+/// 
+/// Converts transformed triples into SoA format for efficient SIMD processing
+/// and hot path execution (≤8 ticks per operation).
 pub struct LoadStage {
     pub alignment: usize, // Must be 64
     pub max_run_len: usize, // Must be ≤ 8

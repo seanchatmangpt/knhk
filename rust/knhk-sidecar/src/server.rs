@@ -7,11 +7,13 @@ use crate::batch::BatchConfig;
 use crate::tls::{TlsConfig, create_tls_server_config};
 use crate::metrics::{MetricsCollector, LatencyTimer};
 use crate::health::HealthChecker;
-// TODO: Re-enable when service.rs is fixed
-// use crate::service::KgcSidecarService;
+use crate::service::KgcSidecarService;
 use crate::config::SidecarConfig;
 
-/// Server configuration
+/// Server configuration for sidecar gRPC server
+/// 
+/// Contains all configuration needed to start and run the sidecar server,
+/// including TLS, batching, retry, and beat admission settings.
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
     /// Bind address
@@ -34,7 +36,29 @@ impl Default for ServerConfig {
     }
 }
 
-/// Sidecar server
+/// Sidecar gRPC server
+/// 
+/// Main server struct that manages the gRPC service, client connections, metrics,
+/// health checks, and beat-driven admission control.
+/// 
+/// # Features
+/// 
+/// - gRPC service with beat-driven admission
+/// - TLS/mTLS support
+/// - Request batching and retries
+/// - Circuit breaking
+/// - OTEL telemetry integration
+/// - Weaver live-check validation
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use knhk_sidecar::{SidecarServer, SidecarConfig};
+/// 
+/// let config = SidecarConfig::default();
+/// let server = SidecarServer::new(server_config, client, metrics, health).await?;
+/// server.start().await?;
+/// ```
 pub struct SidecarServer {
     config: ServerConfig,
     client: Arc<SidecarClient>,
@@ -113,7 +137,7 @@ impl SidecarServer {
         // Create service with beat admission
         use crate::service::KgcSidecarService;
         let service = KgcSidecarService::new_with_weaver(
-            crate::config::SidecarConfig::default(), // TODO: Pass actual config
+            self.config.clone(), // Pass actual config from server
             self.weaver_endpoint.clone(),
             self.beat_admission.clone(),
         );

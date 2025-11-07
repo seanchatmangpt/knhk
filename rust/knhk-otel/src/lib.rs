@@ -341,7 +341,7 @@ impl OtlpExporter {
         {
             // Fallback: log spans (for no_std or when reqwest not available)
             eprintln!("OTLP Export to {}: {} spans (HTTP client not available)", self.endpoint, spans.len());
-            Ok(())
+            Err(format!("OTLP export not available: reqwest feature not enabled. Cannot export {} spans without HTTP client.", spans.len()))
         }
     }
     
@@ -443,7 +443,7 @@ impl OtlpExporter {
         {
             // Fallback: log metrics (for no_std or when reqwest not available)
             eprintln!("OTLP Export to {}: {} metrics (HTTP client not available)", self.endpoint, metrics.len());
-            Ok(())
+            Err(format!("OTLP export not available: reqwest feature not enabled. Cannot export {} metrics without HTTP client.", metrics.len()))
         }
     }
     
@@ -530,10 +530,11 @@ impl Tracer {
     
     #[cfg(feature = "std")]
     pub fn export(&mut self) -> Result<(), String> {
-        if let Some(ref mut exporter) = self.exporter {
-            exporter.export_spans(&self.spans)?;
-            exporter.export_metrics(&self.metrics)?;
-        }
+        let exporter = self.exporter.as_mut()
+            .ok_or_else(|| "No OTLP exporter configured. Cannot export telemetry without exporter.".to_string())?;
+
+        exporter.export_spans(&self.spans)?;
+        exporter.export_metrics(&self.metrics)?;
         Ok(())
     }
 

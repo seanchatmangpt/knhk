@@ -30,8 +30,25 @@ pub enum BeatSchedulerError {
 }
 
 /// 8-beat epoch scheduler
-/// Manages cycle counter, ring buffers, and fiber rotation
-/// Uses C branchless beat scheduler for cycle/tick/pulse generation
+/// 
+/// Manages cycle counter, ring buffers, and fiber rotation for deterministic execution.
+/// Uses C branchless beat scheduler for cycle/tick/pulse generation (≤8 ticks per beat).
+/// 
+/// # Architecture
+/// 
+/// - **Cycles**: 8-beat cycles (0-7 ticks per cycle)
+/// - **Pulse**: Detected at tick 0 (cycle commit boundary)
+/// - **Fibers**: Cooperative execution units per shard
+/// - **Ring Buffers**: Lock-free SPSC rings for delta/assertion queues
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use knhk_etl::beat_scheduler::BeatScheduler;
+/// 
+/// let mut scheduler = BeatScheduler::new(4, 1, 8)?; // 4 shards, 1 domain, ring capacity 8
+/// let (tick, pulse) = scheduler.advance_beat();
+/// ```
 pub struct BeatScheduler {
     /// C beat scheduler initialized flag
     c_beat_initialized: bool,
@@ -62,11 +79,21 @@ pub struct BeatScheduler {
 
 impl BeatScheduler {
     /// Create new beat scheduler
-    ///
+    /// 
+    /// Initializes the 8-beat epoch system with specified shard and domain configuration.
+    /// 
     /// # Arguments
-    /// * `shard_count` - Number of shards (must be ≤8 for 8-beat system)
+    /// * `shard_count` - Number of shards (must be ≤8 for 8-beat system, Chatman Constant)
     /// * `domain_count` - Number of reconciliation domains
     /// * `ring_capacity` - Ring buffer capacity (must be power-of-two, typically 8 or 16)
+    /// 
+    /// # Returns
+    /// * `Ok(BeatScheduler)` - Successfully created scheduler
+    /// * `Err(BeatSchedulerError)` - Invalid configuration (shard_count > 8 or domain_count == 0)
+    /// 
+    /// # Errors
+    /// Returns `BeatSchedulerError::InvalidShardCount` if shard_count is 0 or > 8
+    /// Returns `BeatSchedulerError::InvalidDomainCount` if domain_count is 0
     pub fn new(
         shard_count: usize,
         domain_count: usize,
@@ -162,8 +189,18 @@ impl BeatScheduler {
         Ok(())
     }
 
-    /// Advance to next beat and execute
-    /// Returns current tick (0-7) and pulse flag (true when tick==0)
+    /// Advance to next beat and execute fibers
+    /// 
+    /// Increments the cycle counter, calculates tick (cycle & 0x7), detects pulse (tick == 0),
+    /// executes fibers for the current tick, and commits cycle on pulse boundary.
+    /// 
+    /// # Returns
+    /// Tuple of `(tick, pulse)` where:
+    /// - `tick`: Current tick value (0-7)
+    /// - `pulse`: True when tick == 0 (cycle commit boundary)
+    /// 
+    /// # Performance
+    /// This operation must complete in ≤8 ticks (Chatman Constant) for hot path compliance.
     pub fn advance_beat(&mut self) -> (u64, bool) {
         // Use C branchless beat scheduler
         let cycle = CBeatScheduler::next();
@@ -368,10 +405,21 @@ impl BeatScheduler {
 
     /// Enqueue delta to delta ring (called by sidecar on admission)
     /// 
+    /// Admits a delta into the beat scheduler for processing. The delta is converted to SoA format
+    /// and enqueued to the appropriate domain's delta ring at the current tick slot.
+    /// 
     /// # Arguments
-    /// * `domain_id` - Reconciliation domain ID
-    /// * `delta` - Delta triples to enqueue
+    /// * `domain_id` - Reconciliation domain ID (must be < domain_count)
+    /// * `delta` - Delta triples to enqueue (will be converted to SoA format)
     /// * `cycle_id` - Current cycle ID (stamped by sidecar, used for validation)
+    /// 
+    /// # Returns
+    /// * `Ok(())` - Delta successfully enqueued
+    /// * `Err(BeatSchedulerError)` - Invalid domain_id or enqueue failure
+    /// 
+    /// # Errors
+    /// Returns `BeatSchedulerError::InvalidDomainCount` if domain_id >= domain_count
+    /// Returns `BeatSchedulerError::FiberError` if SoA conversion or enqueue fails
     pub fn enqueue_delta(
         &self,
         domain_id: usize,

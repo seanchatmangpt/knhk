@@ -7,10 +7,11 @@
 #include "common.h"
 
 #if NROWS == 8
-static inline uint64_t knhk_eq64_count_8(const uint64_t *base, uint64_t off, uint64_t key)
+static inline __attribute__((always_inline)) uint64_t knhk_eq64_count_8(const uint64_t *base, uint64_t off, uint64_t key)
 {
 #if defined(__aarch64__)
   const uint64_t *p = base + off;
+  __builtin_prefetch(p, 0, 3);  // Prefetch for read, high temporal locality
   uint64x2_t K = vdupq_n_u64(key);
   const uint64x2_t ONE = vdupq_n_u64(1);
   uint64x2_t acc = vdupq_n_u64(0);

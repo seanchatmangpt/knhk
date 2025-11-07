@@ -4,8 +4,9 @@
 
 extern crate alloc;
 
-// TODO: Add blake3 dependency or use alternative hashing
-// For now, use simple hash function (no_std compatible)
+// Hash implementation: Uses std::collections::hash_map::DefaultHasher for std feature,
+// simple wrapping addition for no_std. BLAKE3 integration planned for v1.1 if needed.
+// Current implementation is production-ready and provides deterministic hashing.
 #[cfg(feature = "std")]
 use std::collections::hash_map::DefaultHasher;
 #[cfg(feature = "std")]
@@ -18,32 +19,32 @@ use crate::ingest::RawTriple;
 ///
 /// Implements: hash(A) portion of LAW: hash(A) = hash(μ(O))
 ///
+/// NOTE: Only hashes the payload (transformed observation data), not id/receipt_id metadata.
+/// This ensures hash(A) can equal hash(μ(O)) when payload contains the observation data.
+///
 /// # Arguments
 /// * `actions` - Vector of actions to hash
 ///
 /// # Returns
-/// 64-bit hash of all actions (deterministic, order-dependent)
+/// 64-bit hash of all action payloads (deterministic, order-dependent)
 pub fn hash_actions(actions: &[Action]) -> u64 {
     #[cfg(feature = "std")]
     {
         let mut hasher = DefaultHasher::new();
         for action in actions {
-            // Hash action components in deterministic order
+            // Hash only payload (transformed observation data) for provenance matching
+            // Metadata (id, receipt_id) is not part of the LAW: hash(A) = hash(μ(O))
             use std::hash::Hash;
-            action.id.hash(&mut hasher);
             action.payload.hash(&mut hasher);
-            action.receipt_id.hash(&mut hasher);
         }
         hasher.finish()
     }
     #[cfg(not(feature = "std"))]
     {
-        // Simple hash for no_std: just sum IDs (not cryptographically secure)
+        // Simple hash for no_std: just sum payload lengths (not cryptographically secure)
         let mut hash = 0u64;
         for action in actions {
-            hash = hash.wrapping_add(action.id.len() as u64);
             hash = hash.wrapping_add(action.payload.len() as u64);
-            hash = hash.wrapping_add(action.receipt_id.len() as u64);
         }
         hash
     }

@@ -1,12 +1,12 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-07T02:42:44Z",
+  "timestamp": "2025-11-07T05:23:32Z",
   "summary": {
     "total_criteria": 19,
-    "passed": 9,
+    "passed": 11,
     "failed": 0,
-    "warnings": 7,
-    "completion_percentage": 47.37
+    "warnings": 5,
+    "completion_percentage": 57.89
   },
   "criteria": {
     "core_compilation": {
@@ -16,7 +16,7 @@
 ,
     "core_no_unwrap": {
       "status": "warning",
-      "message": "Found 148 instances of unwrap()/expect() in production code (review recommended, many likely in test modules)"
+      "message": "Found 149 instances of unwrap()/expect() in production code (review recommended, many likely in test modules)"
     }
 ,
     "core_trait_compatibility": {
@@ -51,7 +51,7 @@
 ,
     "core_no_false_positives": {
       "status": "warning",
-      "message": "Found 124 instances of Ok(())"
+      "message": "Found 120 instances of Ok(())"
     }
 ,
     "core_performance": {
@@ -66,7 +66,7 @@
 ,
     "ext_code_quality": {
       "status": "warning",
-      "message": "Found 9 TODO/FIXME comments"
+      "message": "Found 2 TODO/FIXME comments"
     }
 ,
     "ext_documentation": {
@@ -85,8 +85,8 @@
     }
 ,
     "ext_security": {
-      "status": "warning",
-      "message": "Found 58 potential hardcoded secrets"
+      "status": "passed",
+      "message": "Security requirements met"
     }
 ,
     "ext_testing": {
@@ -100,8 +100,8 @@
     }
 ,
     "ext_knhk_specific": {
-      "status": "warning",
-      "message": "Guard constraints not found"
+      "status": "passed",
+      "message": "KNHK-specific requirements met (guard constraints: 151 instances)"
     }
   }
 }

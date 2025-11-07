@@ -126,10 +126,14 @@ impl Connector for KafkaConnector {
         
         #[cfg(not(feature = "kafka"))]
         {
-            // Simulate connection when kafka feature is disabled
-            self.state = KafkaConnectionState::Connected;
+            // kafka feature is disabled - cannot actually connect
+            self.state = KafkaConnectionState::Error("Kafka feature not enabled".to_string());
+            return Err(ConnectorError::NetworkError(
+                "Cannot initialize Kafka connector: kafka feature not enabled".to_string()
+            ));
         }
-        
+
+        #[cfg(feature = "kafka")]
         Ok(())
     }
     
@@ -494,12 +498,15 @@ impl KafkaConnector {
         self.reconnect_attempts += 1;
 
         // Attempt to reconnect to Kafka
-        // Current implementation simulates reconnection (acceptable for 80/20)
+        // Current implementation does not perform actual reconnection (80/20 implementation)
         // Full reconnection logic with exponential backoff planned for v1.0
-        self.state = KafkaConnectionState::Connected;
-        self.reconnect_attempts = 0;
-        
-        Ok(())
+        //
+        // IMPORTANT: This is a stub that does NOT perform actual reconnection
+        // Returning error until real reconnection is implemented to prevent false positives
+        self.state = KafkaConnectionState::Error("Reconnection not implemented".to_string());
+        Err(ConnectorError::NetworkError(
+            "Kafka reconnection not implemented. Manual reinitialization required.".to_string()
+        ))
     }
 
     /// Get metrics about the connector
@@ -525,6 +532,7 @@ pub struct KafkaMetrics {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
 
     #[test]
     fn test_kafka_connector_init() {

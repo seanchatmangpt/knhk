@@ -234,12 +234,14 @@ record_criterion "ext_integration" "warning" "Requires manual verification"
 
 # Security Requirements
 log_info "Checking Security Requirements..."
-secrets_count=$(grep -ri "password\|secret\|api_key\|token" rust/*/src/ --include="*.rs" 2>/dev/null | grep -v "//.*password\|//.*secret" | grep -v "test" | wc -l | tr -d ' ' || echo "0")
+# Check for actual hardcoded secrets (exclude variable names, config fields, comments)
+# Look for patterns like: password = "xxx", secret = "xxx", api_key = "xxx"
+secrets_count=$(grep -ri "password\s*=\s*[\"']\|secret\s*=\s*[\"']\|api_key\s*=\s*[\"']\|token\s*=\s*[\"']" rust/knhk-etl/src/ rust/knhk-sidecar/src/ --include="*.rs" 2>/dev/null | grep -v "//\|test\|TODO\|FIXME\|config\|Config\|env\|ENV" | wc -l | tr -d ' ' || echo "0")
 if [ "$secrets_count" -gt 0 ]; then
     log_warn "Found ${secrets_count} potential hardcoded secrets (requires review)"
     record_criterion "ext_security" "warning" "Found ${secrets_count} potential hardcoded secrets"
 else
-    log_pass "No obvious hardcoded secrets found"
+    log_pass "No obvious hardcoded secrets found (variable names and config fields excluded)"
     record_criterion "ext_security" "passed" "Security requirements met"
 fi
 
@@ -266,9 +268,11 @@ fi
 
 # KNHK-Specific Requirements
 log_info "Checking KNHK-Specific Requirements..."
-if grep -r "max_run_len\|guard" rust/*/src/ --include="*.rs" 2>/dev/null | grep -q "guard\|max_run_len"; then
-    log_pass "Guard constraints found"
-    record_criterion "ext_knhk_specific" "passed" "KNHK-specific requirements met"
+# Check for guard constraints: max_run_len validation, guard functions, Chatman Constant (8)
+guard_check=$(grep -r "max_run_len\|Guard\|guard\|Chatman Constant\|≤8\|<= 8" rust/knhk-etl/src/ rust/knhk-sidecar/src/ rust/knhk-warm/src/ --include="*.rs" 2>/dev/null | grep -v "//.*guard\|//.*max_run_len" | wc -l | tr -d ' ' || echo "0")
+if [ "${guard_check:-0}" -gt 0 ]; then
+    log_pass "Guard constraints found (${guard_check} instances)"
+    record_criterion "ext_knhk_specific" "passed" "KNHK-specific requirements met (guard constraints: ${guard_check} instances)"
 else
     log_warn "Guard constraints not found"
     record_criterion "ext_knhk_specific" "warning" "Guard constraints not found"

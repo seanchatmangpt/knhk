@@ -6,6 +6,17 @@
 #![no_std]
 extern crate alloc;
 
+// Global allocator for no_std
+#[cfg(feature = "alloc")]
+#[global_allocator]
+static ALLOCATOR: alloc::alloc::System = alloc::alloc::System;
+
+// Panic handler for no_std
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
+}
+
 use alloc::string::String;
 
 #[cfg(feature = "validation")]

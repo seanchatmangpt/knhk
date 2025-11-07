@@ -5,8 +5,10 @@
 extern crate alloc;
 extern crate std;
 
-// All dependencies always available
+// Conditional compilation for optional features
+#[cfg(feature = "knhk-otel")]
 use knhk_otel as _;
+#[cfg(feature = "knhk-lockchain")]
 use knhk_lockchain as _;
 
 // OpenTelemetry initialization (requires tokio runtime for async OTLP exporter)
@@ -316,6 +318,12 @@ mod tests {
 
     #[test]
     fn test_receipt_merging() {
+        // Generate proper span IDs for test receipts
+        use knhk_otel::generate_span_id;
+        let span_id1 = generate_span_id();
+        let span_id2 = generate_span_id();
+        let expected_merged_span_id = span_id1 ^ span_id2;
+        
         let receipt1 = Receipt {
             id: "r1".to_string(),
             cycle_id: 1,
@@ -324,7 +332,7 @@ mod tests {
             ticks: 4,
             actual_ticks: 3,
             lanes: 8,
-            span_id: 0x1234,
+            span_id: span_id1,
             a_hash: 0xABCD,
         };
 
@@ -336,7 +344,7 @@ mod tests {
             ticks: 6,
             actual_ticks: 5,
             lanes: 8,
-            span_id: 0x5678,
+            span_id: span_id2,
             a_hash: 0xEF00,
         };
         
@@ -344,7 +352,7 @@ mod tests {
         
         assert_eq!(merged.ticks, 6); // Max ticks
         assert_eq!(merged.lanes, 16); // Sum lanes
-        assert_eq!(merged.span_id, 0x1234 ^ 0x5678); // XOR merge
+        assert_eq!(merged.span_id, expected_merged_span_id); // XOR merge
         assert_eq!(merged.a_hash, 0xABCD ^ 0xEF00); // XOR merge
     }
 
@@ -352,6 +360,8 @@ mod tests {
     fn test_emit_stage() {
         let mut emit = EmitStage::new(true, vec!["https://webhook.example.com".to_string()]);
 
+        // Generate proper span ID for test receipt
+        use knhk_otel::generate_span_id;
         let receipt = Receipt {
             id: "receipt1".to_string(),
             cycle_id: 1,
@@ -360,7 +370,7 @@ mod tests {
             ticks: 4,
             actual_ticks: 3,
             lanes: 8,
-            span_id: 0x1234,
+            span_id: generate_span_id(),
             a_hash: 0xABCD,
         };
 

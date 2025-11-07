@@ -17,7 +17,7 @@ uint64_t knhk_generate_span_id(void);
 // Eliminates branch mispredicts for zero mispredicts on hot path
 // Fills receipt with provenance information (timing is caller's responsibility)
 #ifndef KNHK_EVAL_BOOL_INLINE
-#define KNHK_EVAL_BOOL_INLINE static inline
+#define KNHK_EVAL_BOOL_INLINE static inline __attribute__((always_inline))
 #endif
 KNHK_EVAL_BOOL_INLINE int knhk_eval_bool(const knhk_context_t *ctx, const knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
 {
@@ -65,7 +65,7 @@ typedef size_t (*knhk_construct8_fn_t)(const uint64_t *S_base, uint64_t off, uin
 // Branchless dispatch table for CONSTRUCT8 specialized functions
 // Indexed by knhk_construct8_pattern_t (0 = GENERIC, 1 = ALL_NONZERO, 2-9 = LEN1-LEN8)
 // Branchless lookup: fn = dispatch_table[ir->construct8_pattern_hint]
-static inline const knhk_construct8_fn_t* knhk_get_construct8_dispatch_table(void)
+static inline __attribute__((always_inline)) const knhk_construct8_fn_t* knhk_get_construct8_dispatch_table(void)
 {
   // Forward declarations for wrapper functions (defined in simd/construct.h)
   extern size_t knhk_construct8_emit_8_len1_wrapper(const uint64_t *S_base, uint64_t off, uint64_t len,
@@ -125,7 +125,7 @@ static inline const knhk_construct8_fn_t* knhk_get_construct8_dispatch_table(voi
 // AOT optimization: Routes to specialized functions via branchless dispatch table
 // Pattern hint set by warm path based on pattern detection (all-nonzero, len1-len8)
 #ifndef KNHK_EVAL_CONSTRUCT8_INLINE
-#define KNHK_EVAL_CONSTRUCT8_INLINE static inline
+#define KNHK_EVAL_CONSTRUCT8_INLINE static inline __attribute__((always_inline))
 #endif
 KNHK_EVAL_CONSTRUCT8_INLINE int knhk_eval_construct8(const knhk_context_t *ctx, knhk_hook_ir_t *ir, knhk_receipt_t *rcpt)
 {

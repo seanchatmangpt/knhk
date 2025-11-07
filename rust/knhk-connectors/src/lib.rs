@@ -109,6 +109,7 @@ pub struct Triple {
 
 /// SoA arrays for hot path (64-byte aligned)
 #[repr(align(64))]
+#[derive(Debug)]
 pub struct SoAArrays {
     pub s: [u64; 8],
     pub p: [u64; 8],
@@ -512,6 +513,7 @@ mod tests {
 
     #[test]
     fn test_soa_from_triples() {
+        use alloc::vec;
         let triples = vec![
             Triple {
                 subject: 0xA11CE,
@@ -536,7 +538,7 @@ mod tests {
 
     #[test]
     fn test_connector_registry() {
-        let mut registry = ConnectorRegistry::new();
+        let registry = ConnectorRegistry::new();
         assert_eq!(registry.list().len(), 0);
     }
 
@@ -550,13 +552,13 @@ mod tests {
         assert_eq!(*cb.state(), CircuitBreakerState::Closed);
         
         // Failures
-        let result2 = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
+        let result2: Result<(), ConnectorError> = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
         assert!(result2.is_err());
         
-        let result3 = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
+        let result3: Result<(), ConnectorError> = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
         assert!(result3.is_err());
         
-        let result4 = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
+        let result4: Result<(), ConnectorError> = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
         assert!(result4.is_err());
         
         // Should be open now

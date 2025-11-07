@@ -3,9 +3,7 @@
 
 #![allow(non_camel_case_types)]
 
-use knhk_hot::{Ctx, Ir, Receipt, Op, Run};
-
-// Re-export types from knhk-hot for convenience (single export point)
+// Re-export types from knhk-hot (they're already public via pub use ffi::* in knhk_hot)
 pub use knhk_hot::{Op, Ctx, Ir, Receipt, Run};
 
 // Type aliases for clarity

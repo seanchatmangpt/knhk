@@ -1,7 +1,7 @@
 // Warm path operations
 // CONSTRUCT8 execution moved from hot path (exceeds 8-tick budget)
 
-use crate::ffi::*;
+use crate::ffi::{Op, HotContext, HotHookIr, HotReceipt};
 
 /// Warm path execution result
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ pub fn execute_construct8(
     ir: &mut HotHookIr,
 ) -> Result<WarmPathResult, WarmPathError> {
     // Validate CONSTRUCT8 operation
-    if ir.op != Op::Construct8 {
+    if !matches!(ir.op, Op::Construct8) {
         return Err(WarmPathError::InvalidOperation);
     }
 
@@ -49,7 +49,7 @@ pub fn execute_construct8(
     // it through warm path for timing purposes
     let mut receipt = HotReceipt::default();
     let lanes_written = unsafe {
-        knhk_hot_eval_construct8(
+        crate::ffi::knhk_hot_eval_construct8(
             ctx as *const HotContext,
             ir as *mut HotHookIr,
             &mut receipt,
@@ -77,7 +77,7 @@ pub fn execute_construct8(
 /// Warm path error types
 #[derive(Debug, Clone, PartialEq)]
 pub enum WarmPathError {
-    InvalidInput,
+    InvalidInput(String),
     InvalidOperation,
     InvalidOutputBuffers,
     ExecutionFailed,
@@ -90,7 +90,7 @@ pub enum WarmPathError {
 impl core::fmt::Display for WarmPathError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            WarmPathError::InvalidInput => write!(f, "Invalid input parameters"),
+            WarmPathError::InvalidInput(msg) => write!(f, "Invalid input: {}", msg),
             WarmPathError::InvalidOperation => write!(f, "Invalid operation for warm path"),
             WarmPathError::InvalidOutputBuffers => write!(f, "Invalid output buffers"),
             WarmPathError::ExecutionFailed => write!(f, "Warm path execution failed"),

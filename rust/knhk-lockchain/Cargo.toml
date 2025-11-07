@@ -15,5 +15,9 @@ hex = "0.4"
 # Note: Full URDNA2015 canonicalization deferred to v1.1
 # For v1.0, using basic canonicalization (sorting + normalization)
 
+[features]
+default = ["std"]
+std = []
+
 [dev-dependencies]
 

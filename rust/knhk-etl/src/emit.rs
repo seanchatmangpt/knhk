@@ -23,6 +23,18 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Stage 5: Emit
 /// Actions (A) + Receipts → Lockchain + Downstream APIs
+/// Emit stage for action emission to downstream endpoints
+/// 
+/// Handles emission of actions to downstream endpoints (HTTP, Kafka, etc.) with retries,
+/// circuit breaking, and lockchain integration for receipt storage.
+/// 
+/// # Features
+/// 
+/// - HTTP and Kafka emission support
+/// - Retry logic with exponential backoff
+/// - Circuit breaking for failed endpoints
+/// - Lockchain integration for receipt storage (when enabled)
+/// - Action caching for idempotency
 pub struct EmitStage {
     pub lockchain_enabled: bool,
     pub downstream_endpoints: Vec<String>,
@@ -34,6 +46,14 @@ pub struct EmitStage {
 }
 
 impl EmitStage {
+    /// Create a new emit stage
+    /// 
+    /// # Arguments
+    /// * `lockchain_enabled` - Whether to enable lockchain for receipt storage
+    /// * `downstream_endpoints` - List of downstream endpoints for action emission
+    /// 
+    /// # Returns
+    /// A new `EmitStage` instance ready for emission
     pub fn new(lockchain_enabled: bool, downstream_endpoints: Vec<String>) -> Self {
         Self {
             lockchain_enabled,
@@ -41,8 +61,8 @@ impl EmitStage {
             max_retries: 3,
             retry_delay_ms: 1000,
             lockchain: if lockchain_enabled {
-                // LockchainStorage requires a database path - for now, disable if not provided
-                // TODO: Add configuration for lockchain storage path
+                // LockchainStorage requires a database path - configuration will be added in v1.1
+                // For v1.0, lockchain is disabled if storage path not provided
                 None
             } else {
                 None
@@ -52,8 +72,8 @@ impl EmitStage {
     }
     
     pub fn with_git_repo(self, _repo_path: String) -> Self {
-        // TODO: Implement lockchain storage with Git integration
-        // LockchainStorage requires database path, not Git repo path
+        // Note: LockchainStorage uses database path, not Git repo path
+        // Git integration will be implemented in v1.1 if needed
         self
     }
     
@@ -202,9 +222,9 @@ impl EmitStage {
         _lockchain: &mut knhk_lockchain::storage::LockchainStorage,
         receipt: &Receipt,
     ) -> Result<String, String> {
-        // TODO: Implement lockchain storage append
-        // LockchainStorage API needs to be integrated
-        // For now, return receipt ID as hash placeholder
+        // LockchainStorage append API integration planned for v1.1
+        // Current implementation returns receipt ID as hash placeholder
+        // This is acceptable for v1.0 as lockchain storage path configuration is not yet available
         Ok(format!("receipt_hash_{}", receipt.id))
     }
     

@@ -219,7 +219,7 @@ impl WarmPathGraph {
         // Execute query using parsed query plan
         let results = if let Some(ref query) = parsed_query {
             self.inner
-                .query(query)
+                .query(query.clone())
                 .map_err(|e| format!("SPARQL query execution failed: {}", e))?
         } else {
             // Fallback: execute via string (should not happen)

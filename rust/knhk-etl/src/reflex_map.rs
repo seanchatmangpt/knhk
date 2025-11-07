@@ -420,14 +420,16 @@ impl ReflexMap {
     /// Merge receipts via ⊕ (associative merge)
     pub fn merge_receipts(receipts: &[Receipt]) -> Receipt {
         if receipts.is_empty() {
+            // Generate proper span_id for empty receipt
+            use knhk_otel::generate_span_id;
             return Receipt {
                 id: "merged_receipt".to_string(),
                 cycle_id: 0,
                 shard_id: 0,
-                hook_id: 0,
+                hook_id: 0, // Empty receipt has no hook
                 ticks: 0,
                 lanes: 0,
-                span_id: 0,
+                span_id: generate_span_id(), // Generate OTEL-compatible span ID
                 a_hash: 0,
                 mu_hash: 0,
             };

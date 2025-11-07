@@ -163,9 +163,18 @@ impl ReconcileContext {
         // Generate actions from mask (only validated rows)
         for i in 0..delta.len() {
             if (out_mask & (1 << i)) != 0 {
+                // Serialize triple into payload for hash provenance: hash(A) = hash(μ(O))
+                // Format: "subject|predicate|object" (deterministic, matches hash_delta order)
+                let payload = format!(
+                    "{}|{}|{}",
+                    delta[i].subject,
+                    delta[i].predicate,
+                    delta[i].object
+                ).into_bytes();
+
                 actions.push(Action {
                     id: format!("action_{}", i),
-                    payload: Vec::new(), // Payload can be computed from triple
+                    payload,
                     receipt_id: format!("receipt_{}_{}", tick, i),
                 });
             }
@@ -206,7 +215,7 @@ impl ReconcileContext {
                 ticks: 0,
                 actual_ticks: 0,
                 lanes: 0,
-                span_id: 0,
+                span_id: knhk_otel::generate_span_id(), // Generate OTEL-compatible span ID
                 a_hash: 0,
             }));
         }
@@ -257,13 +266,32 @@ impl ReconcileContext {
             });
         }
 
-        // Generate actions
+        // Generate actions with payload for hash provenance
         let mut actions = Vec::new();
         for i in 0..delta.len() {
             if (out_mask & (1 << i)) != 0 {
+                // Serialize triple into payload for hash provenance: hash(A) = hash(μ(O))
+                // Format: "subject|predicate|object|graph" (deterministic, matches hash_delta order)
+                let payload = if let Some(ref graph) = delta[i].graph {
+                    format!(
+                        "{}|{}|{}|{}",
+                        delta[i].subject,
+                        delta[i].predicate,
+                        delta[i].object,
+                        graph
+                    ).into_bytes()
+                } else {
+                    format!(
+                        "{}|{}|{}",
+                        delta[i].subject,
+                        delta[i].predicate,
+                        delta[i].object
+                    ).into_bytes()
+                };
+
                 actions.push(Action {
                     id: format!("action_{}_{}", tick, i),
-                    payload: Vec::new(),
+                    payload,
                     receipt_id: format!("receipt_{}_{}", cycle_id, tick),
                 });
             }

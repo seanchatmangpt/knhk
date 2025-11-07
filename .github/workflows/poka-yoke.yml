@@ -1,0 +1,106 @@
+name: Poka-Yoke Validation
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  error-proofing:
+    name: Error-Proofing Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Poka-Yoke 1 - No unwrap() in production
+        run: |
+          echo "Checking for unwrap() in production code..."
+          unwraps=$(grep -r "\.unwrap()" rust/*/src --include="*.rs" | grep -v test | grep -v cli | grep -v examples || true)
+          if [ -n "$unwraps" ]; then
+            echo "❌ ERROR: unwrap() found in production code"
+            echo "$unwraps"
+            echo "Replace with proper error handling (? operator or if-let)"
+            exit 1
+          fi
+          echo "✅ No unwrap() in production code"
+
+      - name: Poka-Yoke 2 - No unimplemented!()
+        run: |
+          echo "Checking for unimplemented!()..."
+          unimpl=$(grep -r "unimplemented!" rust/*/src --include="*.rs" || true)
+          if [ -n "$unimpl" ]; then
+            echo "❌ ERROR: unimplemented!() found"
+            echo "$unimpl"
+            echo "Complete implementation before merging"
+            exit 1
+          fi
+          echo "✅ No unimplemented!() placeholders"
+
+      - name: Poka-Yoke 3 - No println! in production
+        run: |
+          echo "Checking for println! in production code..."
+          printlns=$(grep -r "println!" rust/*/src --include="*.rs" | grep -v test | grep -v cli | grep -v examples || true)
+          if [ -n "$printlns" ]; then
+            echo "❌ ERROR: println! found in production code"
+            echo "$printlns"
+            echo "Use tracing::info! or tracing::debug! instead"
+            exit 1
+          fi
+          echo "✅ No println! in production code"
+
+      - name: Poka-Yoke 4 - Compilation check
+        run: |
+          echo "Checking compilation..."
+          cargo check --workspace
+          echo "✅ Code compiles successfully"
+
+      - name: Poka-Yoke 5 - Clippy check
+        run: |
+          echo "Checking clippy..."
+          cargo clippy --workspace -- -D warnings
+          echo "✅ No clippy warnings"
+
+      - name: Poka-Yoke 6 - Test check
+        run: |
+          echo "Running tests..."
+          cargo test --workspace
+          echo "✅ All tests passing"
+
+      - name: Poka-Yoke 7 - Format check
+        run: |
+          echo "Checking code formatting..."
+          cargo fmt --all -- --check
+          echo "✅ Code is properly formatted"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo ""
+          echo "✅ All Poka-Yoke validations PASSED"
+          echo "   Code is error-proofed and ready to merge"
+          echo ""

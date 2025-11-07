@@ -39,7 +39,7 @@ pub enum SalesforceConnectionState {
 }
 
 /// Salesforce API rate limit information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RateLimitInfo {
     daily_api_requests_limit: u32,
     daily_api_requests_remaining: u32,
@@ -444,12 +444,15 @@ impl SalesforceConnector {
            self.username.is_none() || self.password.is_none() {
             return Err("OAuth2 credentials not set".to_string());
         }
-        
+
         // OAuth2 username-password flow implementation
-        // When salesforce feature is enabled, this performs real OAuth2 authentication
-        // Current implementation validates credentials are set
-        // Full OAuth2 flow planned for v1.0
-        Ok(())
+        // When salesforce feature is enabled, this should perform real OAuth2 authentication
+        // Current implementation only validates credentials are set (80/20 implementation)
+        // Full OAuth2 flow with actual token exchange planned for v1.0
+        //
+        // IMPORTANT: This is a stub that does NOT perform actual authentication
+        // Returning error until real OAuth2 is implemented to prevent false positives
+        Err("OAuth2 authentication not implemented. Credentials validated but no token exchange performed.".to_string())
     }
     
     #[cfg(feature = "salesforce")]

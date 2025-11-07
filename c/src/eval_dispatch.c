@@ -517,7 +517,8 @@ static const knhk_eval_fn_t dispatch_table[KNHK_OP_MAX] = {
   // KNHK_OP_CONSTRUCT8 = 32 (warm path, not in hot path dispatch)
 };
 
-const knhk_eval_fn_t* knhk_get_eval_dispatch_table(void)
+// Force inline to eliminate function call overhead
+inline __attribute__((always_inline)) const knhk_eval_fn_t* knhk_get_eval_dispatch_table(void)
 {
   return dispatch_table;
 }

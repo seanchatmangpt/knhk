@@ -7,10 +7,11 @@
 #include "common.h"
 
 #if NROWS == 8
-static inline int knhk_eq64_exists_8(const uint64_t *base, uint64_t off, uint64_t key)
+static inline __attribute__((always_inline)) int knhk_eq64_exists_8(const uint64_t *base, uint64_t off, uint64_t key)
 {
 #if defined(__aarch64__)
   const uint64_t *p = base + off;
+  __builtin_prefetch(p, 0, 3);  // Prefetch for read, high temporal locality
   uint64x2_t K = vdupq_n_u64(key);
   // Load first 4 elements
   uint64x2_t a0 = vld1q_u64(p + 0);
@@ -63,19 +64,21 @@ static inline int knhk_eq64_exists_8(const uint64_t *base, uint64_t off, uint64_
 }
 
 // Ultra-fast ASK(O,P) for exactly 8 elements - fully unrolled (reverse lookup)
-static inline int knhk_eq64_exists_o_8(const uint64_t *base, uint64_t off, uint64_t key)
+static inline __attribute__((always_inline)) int knhk_eq64_exists_o_8(const uint64_t *base, uint64_t off, uint64_t key)
 {
   // Same as knhk_eq64_exists_8 but semantically for O array
   return knhk_eq64_exists_8(base, off, key);
 }
 
 // Ultra-fast ASK(S,P,O) for exactly 8 elements - fully unrolled
-static inline int knhk_eq64_spo_exists_8(const uint64_t *S_base, const uint64_t *O_base,
+static inline __attribute__((always_inline)) int knhk_eq64_spo_exists_8(const uint64_t *S_base, const uint64_t *O_base,
                              uint64_t off, uint64_t s_key, uint64_t o_key)
 {
 #if defined(__aarch64__)
   const uint64_t *s_p = S_base + off;
   const uint64_t *o_p = O_base + off;
+  __builtin_prefetch(s_p, 0, 3);  // Prefetch S array
+  __builtin_prefetch(o_p, 0, 3);  // Prefetch O array
   uint64x2_t Ks = vdupq_n_u64(s_key);
   uint64x2_t Ko = vdupq_n_u64(o_key);
   uint64_t has_match = 0;

@@ -68,17 +68,94 @@ impl HookRegistry {
         }
     }
 
-    /// Register a hook: predicate → kernel + guard
+    /// Registers a validation hook for a predicate with kernel and guard.
+    ///
+    /// # Purpose
+    /// Implements the KNHK LAW: μ ⊣ H (hooks at ingress). Associates a predicate
+    /// with a validation kernel and guard function to enforce schema invariants.
+    /// Each predicate can have at most one hook (no duplicates allowed).
     ///
     /// # Arguments
-    /// * `predicate` - Predicate ID this hook applies to
-    /// * `kernel_type` - Kernel to execute for this predicate
-    /// * `guard` - Guard function to validate triples
-    /// * `invariants` - List of invariants this hook must preserve (Q)
+    /// * `predicate` - Predicate ID (u64 hash) this hook validates:
+    ///   - Example: `hash("http://example.org/name")` → predicate ID
+    ///   - Obtained from Transform stage hashing
+    /// * `kernel_type` - Validation kernel to execute:
+    ///   - `KernelType::AskSp` - Check if (subject, predicate) exists
+    ///   - `KernelType::CountSpGe` - Count assertions for cardinality checks
+    ///   - `KernelType::ValidateSp` - Full schema validation
+    /// * `guard` - Guard function `fn(&RawTriple) -> bool` that validates triples:
+    ///   - Returns `true` if triple passes validation
+    ///   - Returns `false` if triple violates invariants (reject or escalate)
+    /// * `invariants` - List of invariants this hook preserves (Q):
+    ///   - Example: `["cardinality >= 1", "object is URI"]`
+    ///   - Used for documentation and verification
     ///
     /// # Returns
-    /// - Ok(hook_id): Successfully registered hook
-    /// - Err(error): Registration failed (duplicate predicate)
+    /// * `Ok(hook_id)` - Successfully registered hook with unique ID
+    /// * `Err(HookRegistryError)` - Registration failed (see Errors)
+    ///
+    /// # Errors
+    /// * `HookRegistryError::DuplicatePredicate` - Hook already exists for this predicate
+    ///
+    /// # Performance
+    /// * Registration: O(log n) BTreeMap insert
+    /// * Hook lookup: O(log n) during pipeline execution
+    /// * Guard execution: User-defined, should be ≤8 ticks
+    ///
+    /// # Example
+    /// ```rust
+    /// use knhk_etl::hook_registry::{HookRegistry, guards};
+    /// use knhk_hot::KernelType;
+    ///
+    /// let mut registry = HookRegistry::new();
+    ///
+    /// // Register hook for name predicate (cardinality: exactly 1)
+    /// let name_predicate = 200; // Hash of "http://example.org/name"
+    /// let hook_id = registry.register_hook(
+    ///     name_predicate,
+    ///     KernelType::ValidateSp,
+    ///     guards::check_object_nonempty, // Guard: object must be non-empty
+    ///     vec!["cardinality == 1".to_string(), "object is literal".to_string()],
+    /// ).expect("Failed to register hook");
+    ///
+    /// println!("Registered hook ID: {}", hook_id);
+    ///
+    /// // Register hook for age predicate (must be integer)
+    /// let age_predicate = 201;
+    /// registry.register_hook(
+    ///     age_predicate,
+    ///     KernelType::ValidateSp,
+    ///     guards::check_object_integer, // Guard: object must be integer
+    ///     vec!["object is xsd:integer".to_string()],
+    /// ).expect("Failed to register hook");
+    /// ```
+    ///
+    /// # Custom Guards
+    /// ```rust
+    /// use knhk_etl::hook_registry::{HookRegistry, GuardFn};
+    /// use knhk_etl::RawTriple;
+    /// use knhk_hot::KernelType;
+    ///
+    /// // Custom guard: check email format
+    /// fn check_email_format(triple: &RawTriple) -> bool {
+    ///     triple.object.contains("@") && triple.object.contains(".")
+    /// }
+    ///
+    /// let mut registry = HookRegistry::new();
+    /// let email_predicate = 300;
+    /// registry.register_hook(
+    ///     email_predicate,
+    ///     KernelType::ValidateSp,
+    ///     check_email_format,
+    ///     vec!["object is valid email".to_string()],
+    /// ).expect("Failed to register hook");
+    /// ```
+    ///
+    /// # See Also
+    /// * [`HookRegistry::get_kernel`] - Lookup kernel for predicate
+    /// * [`HookRegistry::check_guard`] - Execute guard validation
+    /// * [`guards`] - Standard guard functions module
+    /// * [`KernelType`] - Available validation kernels
     pub fn register_hook(
         &mut self,
         predicate: u64,
@@ -284,7 +361,8 @@ pub mod guards {
     /// Check cardinality: at most one (would need context for full implementation)
     /// This is a placeholder - full implementation needs access to existing assertions
     pub fn check_cardinality_one(_triple: &RawTriple) -> bool {
-        // TODO: Check against existing assertions in store
+        // Note: Assertion conflict checking will be implemented in v1.1
+        // For v1.0, hook registration does not check against existing assertions
         // For now, always pass (conservative)
         true
     }

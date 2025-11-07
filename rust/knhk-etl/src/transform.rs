@@ -12,6 +12,10 @@ use crate::ingest::IngestResult;
 
 /// Stage 2: Transform
 /// Typed by Σ, constrained by Q
+/// Transform stage for schema validation and transformation
+/// 
+/// Validates triples against schema and performs transformations required
+/// for downstream processing.
 pub struct TransformStage {
     pub schema_iri: String,
     pub validation_enabled: bool,
