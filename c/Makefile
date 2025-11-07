@@ -165,8 +165,8 @@ $(TEST_CONFIG_V05): tests/chicago_config.c
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
 
 # 8-Beat Epoch System tests
-$(TEST_8BEAT): tests/chicago_8beat_test.c tests/chicago_8beat_beat.c tests/chicago_8beat_ring.c tests/chicago_8beat_fiber.c tests/chicago_8beat_integration.c $(LIB)
-	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) tests/chicago_8beat_test.c tests/chicago_8beat_beat.c tests/chicago_8beat_ring.c tests/chicago_8beat_fiber.c tests/chicago_8beat_integration.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
+$(TEST_8BEAT): ../tests/chicago_8beat_test.c ../tests/chicago_8beat_beat.c ../tests/chicago_8beat_ring.c ../tests/chicago_8beat_fiber.c ../tests/chicago_8beat_integration.c $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) $(RAPTOR_CFLAGS) ../tests/chicago_8beat_test.c ../tests/chicago_8beat_beat.c ../tests/chicago_8beat_ring.c ../tests/chicago_8beat_fiber.c ../tests/chicago_8beat_integration.c -o $@ -L. -lknhk $(RAPTOR_LIBS)
 
 # PMU instrumentation tests (τ ≤ 8 law enforcement)
 $(TEST_PMU): tests/chicago_8beat_pmu.c $(LIB)
