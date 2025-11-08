@@ -5,7 +5,6 @@ use crate::integration::fortune5::RuntimeClass;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use std::time::Instant;
 
-use super::provenance;
 use super::WorkflowEngine;
 
 impl WorkflowEngine {

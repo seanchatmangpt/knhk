@@ -162,9 +162,8 @@ fn hash_named_graphs(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult
         hasher.update(quad.subject.to_string().as_bytes());
         hasher.update(quad.predicate.to_string().as_bytes());
         hasher.update(quad.object.to_string().as_bytes());
-        if let Some(graph) = quad.graph_name {
-            hasher.update(graph.to_string().as_bytes());
-        }
+        // Graph name is always present (default or named)
+        hasher.update(quad.graph_name.to_string().as_bytes());
     }
 
     Ok(hasher.finalize().into())
@@ -233,15 +232,11 @@ fn store_to_turtle(store: &Store) -> WorkflowResult<String> {
             quad.map_err(|e| WorkflowError::Internal(format!("Failed to iterate quads: {:?}", e)))?;
 
         // Write quad in Turtle format (simplified)
+        // Graph name is always present (default or named)
         writeln!(
             &mut writer,
             "{} {} {} {} .",
-            quad.subject,
-            quad.predicate,
-            quad.object,
-            quad.graph_name
-                .map(|g| format!("GRAPH {}", g))
-                .unwrap_or_default()
+            quad.subject, quad.predicate, quad.object, quad.graph_name
         )
         .map_err(|e| WorkflowError::Internal(format!("Failed to write quad: {:?}", e)))?;
     }
@@ -300,7 +295,7 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
 
         // Extract parameters (MI count, thresholds)
         let param = match task.task_type {
-            crate::parser::types::TaskType::MultipleInstance => {
+            crate::parser::TaskType::MultipleInstance => {
                 // Extract MI count from task properties (default to 1)
                 1
             }
@@ -390,7 +385,7 @@ fn persist_ir(
         .map_err(|e| WorkflowError::Internal(format!("Failed to serialize IR: {:?}", e)))?;
 
     // Store IR under spec:H(O) key
-    let spec_key = format!("spec:{:x}", hex::encode(graph_hash));
+    let spec_key = format!("spec:{}", hex::encode(graph_hash));
     db.insert(spec_key.as_bytes(), ir_bytes.as_slice())
         .map_err(|e| WorkflowError::StatePersistence(format!("Failed to store IR: {:?}", e)))?;
 
