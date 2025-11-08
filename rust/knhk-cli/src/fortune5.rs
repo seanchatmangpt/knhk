@@ -4,20 +4,20 @@
 #![allow(non_upper_case_globals)]
 
 #[cfg(feature = "fortune5")]
-use crate::commands::fortune5 as fortune5_impl;
+use crate::commands::fortune5;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
 
 // Re-export types from implementation
-pub use fortune5_impl::{TestResult, TestSummary};
+pub use fortune5::{TestResult, TestSummary};
 
 /// Run all Fortune 5 tests
 #[verb] // Noun "fortune5" auto-inferred from filename "fortune5.rs"
 fn test() -> Result<TestSummary> {
     #[cfg(feature = "fortune5")]
     {
-        fortune5_impl::run_all_tests().map_err(|e| {
+        fortune5::run_all_tests().map_err(|e| {
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to run Fortune 5 tests: {}",
                 e
@@ -37,7 +37,7 @@ fn test() -> Result<TestSummary> {
 fn test_category(category: String) -> Result<TestSummary> {
     #[cfg(feature = "fortune5")]
     {
-        fortune5_impl::run_category_tests(&category).map_err(|e| {
+        fortune5::run_category_tests(&category).map_err(|e| {
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to run {} tests: {}",
                 category, e
@@ -57,7 +57,7 @@ fn test_category(category: String) -> Result<TestSummary> {
 fn validate() -> Result<String> {
     #[cfg(feature = "fortune5")]
     {
-        fortune5_impl::validate_config()
+        fortune5::validate_config()
             .map_err(|e| {
                 clap_noun_verb::NounVerbError::execution_error(format!(
                     "Fortune 5 validation failed: {}",

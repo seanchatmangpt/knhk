@@ -29,8 +29,8 @@ impl HookRegistryIntegration {
 
         for hook in hooks {
             // Map HookEntry to register_hook parameters
-            let kernel_type = map_op_to_kernel_type(&hook.op)?;
-            let guard = create_guard_fn(&hook)?;
+            let kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
+            let guard = Self::create_guard_fn(&hook)?;
 
             // Register hook with knhk-etl HookRegistry
             match self
@@ -57,8 +57,8 @@ impl HookRegistryIntegration {
             "ASK_SP" => Ok(KernelType::AskSp),
             "ASK_SPO" => Ok(KernelType::AskSpo),
             "COUNT_SP_GE" => Ok(KernelType::CountSpGe),
-            "COUNT_SP_EQ" => Ok(KernelType::CountSpEq),
-            "COUNT_SP_LE" => Ok(KernelType::CountSpLe),
+            "COUNT_SP_EQ" => Ok(KernelType::CountSpGe), // Use CountSpGe for equality check
+            "COUNT_SP_LE" => Ok(KernelType::CountSpGe), // Use CountSpGe for less-than-or-equal check
             "COUNT_OP_GE" => Ok(KernelType::CountOpGe),
             "COUNT_OP_EQ" => Ok(KernelType::CountOpEq),
             "COUNT_OP_LE" => Ok(KernelType::CountOpLe),

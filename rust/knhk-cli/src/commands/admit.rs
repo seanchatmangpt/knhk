@@ -131,6 +131,7 @@ fn parse_delta(content: &str) -> Result<Vec<Triple>, String> {
     let mut json_bytes = content.as_bytes().to_vec();
     if let Ok(value) = simd_json::from_slice::<simd_json::OwnedValue>(&mut json_bytes) {
         // Try array format: [{"s": ..., "p": ..., "o": ...}]
+        use simd_json::prelude::{ValueAsArray, ValueAsObject, ValueAsScalar};
         if let Some(arr) = value.as_array() {
             for item in arr {
                 if let Some(obj) = item.as_object() {
@@ -158,42 +159,48 @@ fn parse_delta(content: &str) -> Result<Vec<Triple>, String> {
                     }
                 }
             }
-        } else if let Some(obj) = value.as_object() {
-            // Try delta format: {"additions": [{"s": ..., "p": ..., "o": ...}]}
-            if let Some(additions) = obj.get("additions") {
-                if let Some(arr) = additions.as_array() {
-                    for item in arr {
-                        if let Some(item_obj) = item.as_object() {
-                            let s = item_obj
-                                .get("s")
-                                .or_else(|| item_obj.get("subject"))
-                                .and_then(|v| {
-                                    v.as_u64()
-                                        .or_else(|| v.as_str().and_then(|s| s.parse::<u64>().ok()))
-                                });
+        } else {
+            use simd_json::prelude::{ValueAsArray, ValueAsObject, ValueAsScalar};
+            if let Some(obj) = value.as_object() {
+                // Try delta format: {"additions": [{"s": ..., "p": ..., "o": ...}]}
+                if let Some(additions) = obj.get("additions") {
+                    if let Some(arr) = additions.as_array() {
+                        for item in arr {
+                            if let Some(item_obj) = item.as_object() {
+                                let s = item_obj
+                                    .get("s")
+                                    .or_else(|| item_obj.get("subject"))
+                                    .and_then(|v| {
+                                        v.as_u64().or_else(|| {
+                                            v.as_str().and_then(|s| s.parse::<u64>().ok())
+                                        })
+                                    });
 
-                            let p = item_obj
-                                .get("p")
-                                .or_else(|| item_obj.get("predicate"))
-                                .and_then(|v| {
-                                    v.as_u64()
-                                        .or_else(|| v.as_str().and_then(|s| s.parse::<u64>().ok()))
-                                });
+                                let p = item_obj
+                                    .get("p")
+                                    .or_else(|| item_obj.get("predicate"))
+                                    .and_then(|v| {
+                                        v.as_u64().or_else(|| {
+                                            v.as_str().and_then(|s| s.parse::<u64>().ok())
+                                        })
+                                    });
 
-                            let o = item_obj
-                                .get("o")
-                                .or_else(|| item_obj.get("object"))
-                                .and_then(|v| {
-                                    v.as_u64()
-                                        .or_else(|| v.as_str().and_then(|s| s.parse::<u64>().ok()))
-                                });
+                                let o = item_obj
+                                    .get("o")
+                                    .or_else(|| item_obj.get("object"))
+                                    .and_then(|v| {
+                                        v.as_u64().or_else(|| {
+                                            v.as_str().and_then(|s| s.parse::<u64>().ok())
+                                        })
+                                    });
 
-                            if let (Some(s), Some(p), Some(o)) = (s, p, o) {
-                                triples.push(Triple {
-                                    subject: s,
-                                    predicate: p,
-                                    object: o,
-                                });
+                                if let (Some(s), Some(p), Some(o)) = (s, p, o) {
+                                    triples.push(Triple {
+                                        subject: s,
+                                        predicate: p,
+                                        object: o,
+                                    });
+                                }
                             }
                         }
                     }

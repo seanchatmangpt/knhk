@@ -284,7 +284,13 @@ fn parse_weaver_report(output_dir: &std::path::Path) -> Result<ValidationResult,
     // Extract violations count
     let violations = report_json
         .get("violations")
-        .and_then(|v| v.as_array())
+        .and_then(|v| {
+            if let serde_json::Value::Array(arr) = v {
+                Some(arr)
+            } else {
+                None
+            }
+        })
         .map(|arr| arr.len() as u32)
         .unwrap_or(0);
 
