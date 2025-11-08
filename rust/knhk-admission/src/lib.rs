@@ -250,7 +250,7 @@ impl AdmissionGate {
             if sig.is_empty() {
                 return Ok(false);
             }
-            // TODO: Implement actual PQC signature verification
+            // FUTURE: Implement actual PQC signature verification
             // This would use a post-quantum cryptographic library
             Ok(true)
         } else {

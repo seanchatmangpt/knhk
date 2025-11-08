@@ -14,7 +14,7 @@ use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
-use crate::{Case, WorkflowSpec};
+use crate::WorkflowSpec;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
