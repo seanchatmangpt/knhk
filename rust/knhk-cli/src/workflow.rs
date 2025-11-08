@@ -40,24 +40,19 @@ fn get_runtime() -> &'static Runtime {
 fn get_engine(state_store_path: Option<&str>) -> CnvResult<Arc<WorkflowEngine>> {
     static ENGINE: std::sync::OnceLock<Arc<WorkflowEngine>> = std::sync::OnceLock::new();
 
-    ENGINE
-        .get_or_try_init(|| {
-            let path = state_store_path.unwrap_or("./workflow_db");
-            let state_store = StateStore::new(path).map_err(|e| {
-                clap_noun_verb::NounVerbError::execution_error(format!(
-                    "Failed to create state store: {}",
-                    e
-                ))
-            })?;
-            Ok(Arc::new(WorkflowEngine::new(state_store)))
-        })
-        .map(|engine| Arc::clone(engine))
-        .map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!(
-                "Failed to initialize workflow engine: {}",
-                e
-            ))
-        })
+    ENGINE.get_or_init(|| {
+        let path = state_store_path.unwrap_or("./workflow_db");
+        let state_store = StateStore::new(path).unwrap_or_else(|e| {
+            panic!("Failed to create state store: {}", e);
+        });
+        Arc::new(WorkflowEngine::new(state_store))
+    });
+
+    ENGINE.get().map(Arc::clone).ok_or_else(|| {
+        clap_noun_verb::NounVerbError::execution_error(
+            "Failed to initialize workflow engine".to_string(),
+        )
+    })
 }
 
 /// Parse a workflow from Turtle file

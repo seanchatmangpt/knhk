@@ -161,7 +161,7 @@ mod tests {
         };
         let policy = DefaultRetryPolicy;
 
-        let result =
+        let result: Result<(), WorkflowError> =
             retry_with_backoff(&config, &policy, || async { Err(WorkflowError::Timeout) }).await;
 
         assert!(result.is_err());
@@ -172,7 +172,7 @@ mod tests {
         let config = RetryConfig::default();
         let policy = DefaultRetryPolicy;
 
-        let result = retry_with_backoff(&config, &policy, || async {
+        let result: Result<(), WorkflowError> = retry_with_backoff(&config, &policy, || async {
             Err(WorkflowError::Validation("Invalid input".to_string()))
         })
         .await;

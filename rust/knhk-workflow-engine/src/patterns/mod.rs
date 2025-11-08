@@ -114,6 +114,11 @@ impl PatternRegistry {
     pub fn list_patterns(&self) -> Vec<PatternId> {
         self.list()
     }
+
+    /// Check if a pattern is registered
+    pub fn has_pattern(&self, pattern_id: &PatternId) -> bool {
+        self.patterns.contains_key(pattern_id)
+    }
 }
 
 impl Default for PatternRegistry {

@@ -17,7 +17,7 @@ use thiserror::Error;
 pub type WorkflowResult<T> = Result<T, WorkflowError>;
 
 /// Comprehensive error types for workflow engine
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum WorkflowError {
     /// Parsing errors
     #[error("Parse error: {0}")]
