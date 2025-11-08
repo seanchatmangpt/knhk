@@ -308,8 +308,6 @@ impl TapeBuilder {
         let mut pos = 0usize;
         let mut struct_idx = 0usize;
         let _field_idx = 0u8;
-        let mut in_object = false;
-        let _expecting_key = true;
 
         // Skip leading whitespace
         while pos < json.len() && json[pos].is_ascii_whitespace() {
@@ -339,7 +337,6 @@ impl TapeBuilder {
                             aux: 0,
                             payload: 0,
                         });
-                        in_object = true;
                         pos += 1;
                     }
                     b'}' => {
@@ -348,7 +345,6 @@ impl TapeBuilder {
                             aux: 0,
                             payload: 0,
                         });
-                        in_object = false;
                         pos += 1;
                     }
                     b'[' => {

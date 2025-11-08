@@ -369,11 +369,16 @@ mod otel_tests {
         // Test verifies the API works without requiring infrastructure
         let result = tracer.export();
 
-        // Export should either succeed (if collector available) or fail gracefully
-        assert!(
-            result.is_ok() || result.is_err(),
-            "Export should return a Result"
-        );
+        // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+        match result {
+            Ok(_) => {
+                // Success case - telemetry exported to collector
+            }
+            Err(e) => {
+                // Error case - collector not available or network error, verify error message
+                assert!(!e.is_empty(), "Error message should not be empty");
+            }
+        }
     }
 
     /// Test: Weaver live-check configuration
@@ -488,7 +493,10 @@ mod no_otel_tests {
         // In production, we'd call sidecar operations here
         // They would run successfully but not emit telemetry
 
+        // Assert: Code compiles without otel feature
+        // If we reach here, compilation succeeded - verify by checking feature flag behavior
+        // When otel feature is disabled, telemetry operations should be no-ops or return errors
         // This test verifies the codebase compiles without otel feature
-        assert!(true, "Code compiles without otel feature");
+        // No explicit assertion needed - reaching here means compilation succeeded
     }
 }

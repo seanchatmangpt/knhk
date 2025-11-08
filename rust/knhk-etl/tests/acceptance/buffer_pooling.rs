@@ -115,7 +115,8 @@ mod acceptance_tests {
         match result {
             Ok(_) => {
                 // Pool should have chunked into multiple batches
-                assert!(true, "Pool handled over-capacity by chunking");
+                // Verify by checking that execution succeeded without error
+                // Success means pool handled over-capacity correctly
             }
             Err(e) => {
                 // Or failed gracefully with capacity error

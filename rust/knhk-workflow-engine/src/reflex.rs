@@ -140,9 +140,21 @@ impl ReflexBridge {
             return false;
         }
 
-        // In production, would bind actual hot path executor from knhk-hot
-        // For now, return true if segment is promotable
-        true
+        // Check if segment is promotable to hot path
+        // Segment is promotable if it meets hot path criteria:
+        // 1. Size ≤ 8 (Chatman Constant)
+        // 2. Operations are in H_hot set (ASK, COUNT, COMPARE, VALIDATE)
+        // 3. No external dependencies
+
+        // Check segment size (approximate by checking if it's small)
+        if segment.len() > 8 {
+            return false; // Too large for hot path
+        }
+
+        // Check if segment contains only hot path operations
+        // For now, assume segment is promotable if it's small enough
+        // FUTURE: Add actual operation type checking
+        segment.len() <= 8
     }
 
     /// Check if segment is bound to hot path

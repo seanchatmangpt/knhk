@@ -83,9 +83,16 @@ fn test_weaver_live_check_builder_chain() {
 #[test]
 fn test_weaver_live_check_check_weaver_available() {
     let result = WeaverLiveCheck::check_weaver_available();
-    // Result may be Ok or Err depending on whether weaver is installed
-    // We just verify it returns a Result without panicking
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds (weaver installed) or fails (not installed)
+    match result {
+        Ok(_) => {
+            // Success case - weaver is available
+        }
+        Err(e) => {
+            // Error case - weaver not installed or not in PATH, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 #[test]

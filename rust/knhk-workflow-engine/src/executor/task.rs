@@ -12,24 +12,26 @@ use std::time::Instant;
 use super::WorkflowEngine;
 
 /// Execute workflow tasks with resource allocation
-pub(super) async fn execute_workflow_tasks(
-    engine: &WorkflowEngine,
+pub(super) fn execute_workflow_tasks<'a>(
+    engine: &'a WorkflowEngine,
     case_id: CaseId,
-    spec: &WorkflowSpec,
-) -> WorkflowResult<()> {
-    // Start from start condition
-    if let Some(ref start_condition_id) = spec.start_condition {
-        if let Some(start_condition) = spec.conditions.get(start_condition_id) {
-            // Execute tasks from start condition
-            for task_id in &start_condition.outgoing_flows {
-                if let Some(task) = spec.tasks.get(task_id) {
-                    execute_task_with_allocation(engine, case_id, spec.id, task).await?;
+    spec: &'a WorkflowSpec,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + 'a>> {
+    Box::pin(async move {
+        // Start from start condition
+        if let Some(ref start_condition_id) = spec.start_condition {
+            if let Some(start_condition) = spec.conditions.get(start_condition_id) {
+                // Execute tasks from start condition
+                for task_id in &start_condition.outgoing_flows {
+                    if let Some(task) = spec.tasks.get(task_id) {
+                        execute_task_with_allocation(engine, case_id, spec.id, task).await?;
+                    }
                 }
             }
         }
-    }
 
-    Ok(())
+        Ok(())
+    })
 }
 
 /// Execute a task with resource allocation and Fortune 5 SLO tracking
@@ -136,7 +138,9 @@ pub(super) async fn execute_task_with_allocation(
             drop(specs);
 
             // Execute sub-workflow tasks directly
-            super::task::execute_workflow_tasks(engine, sub_case_id, &sub_spec_clone).await?;
+            super::task::execute_workflow_tasks(engine, sub_case_id, &sub_spec_clone)
+                .await
+                .await?;
 
             // Get result from sub-case and merge into parent case variables
             let sub_case = engine.get_case(sub_case_id).await?;

@@ -106,14 +106,17 @@ fn test_otel_export_to_sidecar() {
         Some(&"test.operation".to_string())
     );
 
-    // Assert: Export succeeds (even if sidecar not running, export should not panic)
-    // Note: In real scenario, sidecar would be running and export would succeed
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
     let export_result = tracer.export();
-    // Export may fail if sidecar not running, but should not panic
-    assert!(
-        export_result.is_ok() || export_result.is_err(),
-        "Export should return Result (ok or err, not panic)"
-    );
+    match export_result {
+        Ok(_) => {
+            // Success case - telemetry exported to sidecar
+        }
+        Err(e) => {
+            // Error case - sidecar not running or network error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: Weaver live-check configuration and endpoint

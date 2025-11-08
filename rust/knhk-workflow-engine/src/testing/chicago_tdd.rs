@@ -123,7 +123,13 @@ impl WorkflowTestFixture {
 
     /// Clean up test resources
     pub fn cleanup(&self) -> WorkflowResult<()> {
-        // In production, would clean up state store
+        // Clean up state store by removing test database
+        let db_path = format!("./test_workflow_db_{}", self.test_counter);
+        if std::path::Path::new(&db_path).exists() {
+            std::fs::remove_dir_all(&db_path).map_err(|e| {
+                WorkflowError::StatePersistence(format!("Failed to cleanup test database: {:?}", e))
+            })?;
+        }
         Ok(())
     }
 }
@@ -533,9 +539,50 @@ impl WorkflowPropertyTester {
         &mut self,
         _spec_id: WorkflowSpecId,
     ) -> WorkflowResult<bool> {
-        // In production, would test for deadlocks
-        // For now, return true (deadlock detection happens at registration)
-        Ok(true)
+        // Test for deadlocks by checking workflow spec structure
+        // Deadlock detection: check for circular dependencies in task flows
+        let spec = self.fixture.engine.get_spec(spec_id).await?;
+
+        // Check for circular dependencies in outgoing_flows
+        let mut visited = std::collections::HashSet::new();
+        let mut rec_stack = std::collections::HashSet::new();
+
+        for task_id in spec.tasks.keys() {
+            if self.has_cycle(&spec, task_id, &mut visited, &mut rec_stack) {
+                return Ok(false); // Deadlock detected
+            }
+        }
+
+        Ok(true) // No deadlock detected
+    }
+
+    fn has_cycle(
+        &self,
+        spec: &crate::parser::WorkflowSpec,
+        task_id: &str,
+        visited: &mut std::collections::HashSet<String>,
+        rec_stack: &mut std::collections::HashSet<String>,
+    ) -> bool {
+        if rec_stack.contains(task_id) {
+            return true; // Cycle detected
+        }
+        if visited.contains(task_id) {
+            return false; // Already processed, no cycle
+        }
+
+        visited.insert(task_id.to_string());
+        rec_stack.insert(task_id.to_string());
+
+        if let Some(task) = spec.tasks.get(task_id) {
+            for next_task_id in &task.outgoing_flows {
+                if self.has_cycle(spec, next_task_id, visited, rec_stack) {
+                    return true;
+                }
+            }
+        }
+
+        rec_stack.remove(task_id);
+        false
     }
 
     /// Test workflow property: Tick budget compliance
@@ -543,8 +590,19 @@ impl WorkflowPropertyTester {
         &mut self,
         _spec_id: WorkflowSpecId,
     ) -> WorkflowResult<bool> {
-        // In production, would verify all tasks complete in ≤8 ticks
-        Ok(true)
+        // Verify all tasks complete in ≤8 ticks by checking task max_ticks constraints
+        let spec = self.fixture.engine.get_spec(spec_id).await?;
+
+        // Check all tasks have max_ticks ≤ 8 (Chatman Constant)
+        for task in spec.tasks.values() {
+            if let Some(max_ticks) = task.max_ticks {
+                if max_ticks > 8 {
+                    return Ok(false); // Task exceeds tick budget
+                }
+            }
+        }
+
+        Ok(true) // All tasks comply with tick budget
     }
 }
 

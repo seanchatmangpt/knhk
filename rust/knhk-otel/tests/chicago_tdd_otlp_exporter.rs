@@ -40,8 +40,16 @@ fn test_otlp_exporter_export_spans_single() {
         status: SpanStatus::Ok,
     };
     let result = exporter.export_spans(&[span]);
-    // May fail if collector not running, but should not panic
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - spans exported to collector
+        }
+        Err(e) => {
+            // Error case - collector not running or network error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 #[test]
@@ -134,6 +142,14 @@ fn test_otlp_exporter_export_metrics_single() {
         attributes: std::collections::BTreeMap::new(),
     };
     let result = exporter.export_metrics(&[metric]);
-    // May fail if collector not running, but should not panic
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - metrics exported to collector
+        }
+        Err(e) => {
+            // Error case - collector not running or network error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }

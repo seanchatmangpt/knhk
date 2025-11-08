@@ -232,8 +232,23 @@ impl AdmissionGate {
             return Ok(false);
         }
 
-        // Check pattern byte matches payload structure
-        // In production, would verify against computational graph
+        // Verify pattern byte matches payload structure
+        // Pattern byte should correspond to a valid workflow pattern (0-43)
+        // Payload should have structure matching the pattern type
+        
+        // Basic validation: pattern byte is in valid range
+        if pattern_byte > 43 {
+            return Ok(false);
+        }
+        
+        // Check payload has required structure for pattern
+        // For now, verify payload is a valid JSON object
+        if !payload.is_object() {
+            return Ok(false);
+        }
+        
+        // FUTURE: Add actual pattern-specific validation against computational graph
+        // For now, return true if basic structure is valid
         Ok(true)
     }
 

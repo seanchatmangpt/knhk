@@ -29,8 +29,9 @@ use std::collections::{HashMap, HashSet};
 async fn test_pattern_26_blocking_discriminator_edge_cases() {
     // Break-finding: Test edge cases for blocking discriminator
 
-    // Test 1: Empty context
     let (pattern_id, executor) = advanced_control::create_pattern_26();
+
+    // Test 1: Empty context - should default to waiting (no branches arrived)
     let empty_context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
@@ -42,8 +43,43 @@ async fn test_pattern_26_blocking_discriminator_edge_cases() {
     let result = executor.execute(&empty_context);
     assert!(result.success, "Should handle empty context");
     assert_eq!(pattern_id.0, 26);
+    assert!(
+        result.next_state.as_ref().unwrap().contains("waiting"),
+        "BREAK: Should be waiting when no branches arrived"
+    );
+    assert_eq!(
+        result.next_activities.len(),
+        0,
+        "BREAK: Should not schedule activities when waiting"
+    );
 
-    // Test 2: Context with many variables
+    // Test 2: All branches arrived - should continue
+    let mut variables = HashMap::new();
+    variables.insert("expected_branches".to_string(), "3".to_string());
+    let mut arrived_from = HashSet::new();
+    arrived_from.insert("branch_1".to_string());
+    arrived_from.insert("branch_2".to_string());
+    arrived_from.insert("branch_3".to_string());
+
+    let all_arrived_context = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables,
+        arrived_from,
+        scope_id: String::new(),
+    };
+
+    let result2 = executor.execute(&all_arrived_context);
+    assert!(
+        result2.next_state.as_ref().unwrap().contains("all-arrived"),
+        "BREAK: Should indicate all arrived when all branches present"
+    );
+    assert!(
+        result2.next_activities.contains(&"continue".to_string()),
+        "BREAK: Should schedule continue when all arrived"
+    );
+
+    // Test 3: Context with many variables
     let mut large_context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
@@ -57,10 +93,10 @@ async fn test_pattern_26_blocking_discriminator_edge_cases() {
             .insert(format!("var_{}", i), format!("value_{}", i));
     }
 
-    let result = executor.execute(&large_context);
-    assert!(result.success, "Should handle large context");
+    let result3 = executor.execute(&large_context);
+    assert!(result3.success, "Should handle large context");
 
-    // Test 3: Verify state consistency
+    // Test 4: Verify state consistency
     let result1 = executor.execute(&empty_context);
     let result2 = executor.execute(&empty_context);
     assert_eq!(
@@ -150,17 +186,23 @@ async fn test_pattern_26_27_discriminator_state_corruption() {
     let (pattern_id_26, executor_26) = advanced_control::create_pattern_26();
     let (pattern_id_27, executor_27) = advanced_control::create_pattern_27();
 
-    let context = PatternExecutionContext {
+    // Test Pattern 26 with proper context
+    let mut variables_26 = HashMap::new();
+    variables_26.insert("expected_branches".to_string(), "2".to_string());
+    let mut arrived_from_26 = HashSet::new();
+    arrived_from_26.insert("branch_1".to_string());
+
+    let context_26 = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
-        arrived_from: HashSet::new(),
+        variables: variables_26,
+        arrived_from: arrived_from_26,
         scope_id: String::new(),
     };
 
     // Execute pattern 26 multiple times
     for _ in 0..100 {
-        let result = executor_26.execute(&context);
+        let result = executor_26.execute(&context_26);
         assert!(result.success, "Pattern 26 should always succeed");
         assert_eq!(
             result.cancel_activities.len(),
@@ -169,9 +211,23 @@ async fn test_pattern_26_27_discriminator_state_corruption() {
         );
     }
 
+    // Test Pattern 27 with proper context
+    let mut variables_27 = HashMap::new();
+    variables_27.insert("all_branches".to_string(), "branch_0,branch_1".to_string());
+    let mut arrived_from_27 = HashSet::new();
+    arrived_from_27.insert("branch_0".to_string());
+
+    let context_27 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables_27,
+        arrived_from: arrived_from_27,
+        scope_id: String::new(),
+    };
+
     // Execute pattern 27 multiple times
     for _ in 0..100 {
-        let result = executor_27.execute(&context);
+        let result = executor_27.execute(&context_27);
         assert!(result.success, "Pattern 27 should always succeed");
         assert!(
             !result.cancel_activities.is_empty(),
@@ -180,7 +236,7 @@ async fn test_pattern_26_27_discriminator_state_corruption() {
     }
 
     // Verify pattern 26 still works after pattern 27
-    let result = executor_26.execute(&context);
+    let result = executor_26.execute(&context_26);
     assert!(
         result.success,
         "Pattern 26 should still work after pattern 27"
@@ -201,15 +257,20 @@ async fn test_pattern_28_structured_loop_break_finding() {
     // Break-finding: Test structured loop for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_28();
+
+    // Test 1: Loop should continue when continue=true
+    let mut variables = HashMap::new();
+    variables.insert("continue".to_string(), "true".to_string());
+    variables.insert("iteration".to_string(), "0".to_string());
+
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
+        variables,
         arrived_from: HashSet::new(),
         scope_id: String::new(),
     };
 
-    // Test 1: Verify loop state
     let result = executor.execute(&context);
     assert!(result.success, "Should execute successfully");
     assert!(
@@ -218,17 +279,69 @@ async fn test_pattern_28_structured_loop_break_finding() {
     );
     assert!(
         result.next_state.as_ref().unwrap().contains("iterating"),
-        "BREAK: State should indicate iteration"
+        "BREAK: State should indicate iteration when continue=true"
+    );
+    assert!(
+        result.next_activities.contains(&"loop_body".to_string()),
+        "BREAK: Should schedule loop_body when continuing"
+    );
+    assert_eq!(
+        result.variables.get("iteration"),
+        Some(&"1".to_string()),
+        "BREAK: Should increment iteration"
     );
 
-    // Test 2: Verify no cancellation (loops don't cancel)
+    // Test 2: Loop should exit when continue=false
+    let mut variables2 = HashMap::new();
+    variables2.insert("continue".to_string(), "false".to_string());
+    variables2.insert("iteration".to_string(), "5".to_string());
+
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables2,
+        arrived_from: HashSet::new(),
+        scope_id: String::new(),
+    };
+
+    let result2 = executor.execute(&context2);
+    assert!(
+        result2.next_state.as_ref().unwrap().contains("exited"),
+        "BREAK: State should indicate exit when continue=false"
+    );
+    assert!(
+        result2.next_activities.contains(&"loop_exit".to_string()),
+        "BREAK: Should schedule loop_exit when exiting"
+    );
+
+    // Test 3: Loop should exit when max_iterations reached
+    let mut variables3 = HashMap::new();
+    variables3.insert("continue".to_string(), "true".to_string());
+    variables3.insert("iteration".to_string(), "999".to_string());
+    variables3.insert("max_iterations".to_string(), "1000".to_string());
+
+    let context3 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables3,
+        arrived_from: HashSet::new(),
+        scope_id: String::new(),
+    };
+
+    let result3 = executor.execute(&context3);
+    assert!(
+        result3.next_state.as_ref().unwrap().contains("exited"),
+        "BREAK: Should exit when max_iterations reached"
+    );
+
+    // Test 4: Verify no cancellation (loops don't cancel)
     assert_eq!(
         result.cancel_activities.len(),
         0,
         "BREAK: Structured loop should not cancel activities"
     );
 
-    // Test 3: Verify no termination (loops continue)
+    // Test 5: Verify no termination (loops continue)
     assert!(
         !result.terminates,
         "BREAK: Structured loop should not terminate"
