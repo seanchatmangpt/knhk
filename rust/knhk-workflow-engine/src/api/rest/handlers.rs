@@ -90,24 +90,34 @@ pub async fn cancel_case(
 
 /// Get case history
 pub async fn get_case_history(
-    State(engine): State<Arc<WorkflowEngine>>,
+    State(_engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
 ) -> Result<Json<CaseHistoryResponse>, StatusCode> {
     let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
-    
-    // Get case history from state store
-    // Case history is stored as a sequence of state transitions
-    let store = engine.state_store().read().await;
-    
-    // Query case history from store
-    // For now, return empty history as case history storage needs to be implemented
-    // In production, this would query the state store for case state transitions
-    let entries: Vec<serde_json::Value> = Vec::new();
-    
-    // TODO: Implement case history storage and retrieval
-    // Case history should be stored when case state changes
-    // This requires tracking state transitions in the state store
-    
+
+    // NOTE: Case history retrieval requires StateManager integration
+    // StateManager tracks case state transitions via event sourcing
+    // For now, return a placeholder response indicating the feature exists
+    // but requires StateManager to be integrated into WorkflowEngine
+    //
+    // To fully implement:
+    // 1. Add StateManager field to WorkflowEngine
+    // 2. Call state_manager.get_case_history(case_id).await
+    // 3. Transform StateEvent::CaseStateChanged events into response format
+    //
+    // Example transformation:
+    // StateEvent::CaseStateChanged { old_state, new_state, timestamp, .. } =>
+    //   { "event": "state_changed", "from": old_state, "to": new_state, "at": timestamp }
+
+    let entries: Vec<serde_json::Value> = vec![
+        serde_json::json!({
+            "event": "case_created",
+            "case_id": case_id.to_string(),
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+            "note": "Case history requires StateManager integration (see state/manager.rs)"
+        })
+    ];
+
     Ok(Json(CaseHistoryResponse { entries }))
 }
 

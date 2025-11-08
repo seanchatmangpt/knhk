@@ -15,7 +15,7 @@ use knhk_hot::KernelType;
 pub type GuardFn = Box<dyn Fn(&RawTriple) -> bool + Send + Sync>;
 
 /// Hook metadata: compiled hook information
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HookMetadata {
     /// Unique hook ID
     pub id: u64,

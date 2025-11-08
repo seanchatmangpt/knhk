@@ -174,6 +174,19 @@ impl StateManager {
         }
     }
 
+    /// Get case history (all events for a specific case)
+    pub async fn get_case_history(&self, case_id: CaseId) -> Vec<StateEvent> {
+        let log = self.event_log.read().await;
+        log.iter()
+            .filter(|event| match event {
+                StateEvent::CaseCreated { case_id: cid, .. } => cid == &case_id,
+                StateEvent::CaseStateChanged { case_id: cid, .. } => cid == &case_id,
+                StateEvent::SpecRegistered { .. } => false,
+            })
+            .cloned()
+            .collect()
+    }
+
     /// Clear cache (for testing/debugging)
     pub async fn clear_cache(&self) {
         let mut spec_cache = self.spec_cache.write().await;
