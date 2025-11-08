@@ -11,7 +11,7 @@ use crate::services::{AdmissionGate, EventSidecar, TimerFired, WorkItemService};
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
-use std::collections::HashMap;
+use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 
@@ -47,8 +47,8 @@ impl WorkflowEngine {
         let engine = Self {
             pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store_arc)),
-            specs: Arc::new(RwLock::new(HashMap::new())),
-            cases: Arc::new(RwLock::new(HashMap::new())),
+            specs: Arc::new(DashMap::new()),
+            cases: Arc::new(DashMap::new()),
             resource_allocator,
             worklet_repository,
             worklet_executor,
@@ -120,8 +120,8 @@ impl WorkflowEngine {
         let engine = Self {
             pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store_arc)),
-            specs: Arc::new(RwLock::new(HashMap::new())),
-            cases: Arc::new(RwLock::new(HashMap::new())),
+            specs: Arc::new(DashMap::new()),
+            cases: Arc::new(DashMap::new()),
             resource_allocator,
             worklet_repository,
             worklet_executor,

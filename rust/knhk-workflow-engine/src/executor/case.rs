@@ -26,10 +26,9 @@ impl WorkflowEngine {
         let case = Case::new(spec_id, data);
         let case_id = case.id;
 
-        // Store case
-        let mut cases = self.cases.write().await;
+        // Store case (lock-free DashMap access)
         let case_clone = case.clone();
-        cases.insert(case_id, case);
+        self.cases.insert(case_id, case);
 
         // Persist to state store
         let store_arc = self.state_store.read().await;
@@ -40,16 +39,18 @@ impl WorkflowEngine {
 
     /// Start a case
     pub async fn start_case(&self, case_id: CaseId) -> WorkflowResult<()> {
-        let mut cases = self.cases.write().await;
-        let case = cases
+        let mut case_ref = self
+            .cases
             .get_mut(&case_id)
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
 
-        case.start()?;
+        case_ref.value_mut().start()?;
+        let case_clone = case_ref.value().clone();
+        drop(case_ref);
 
         // Persist state
         let store_arc = self.state_store.read().await;
-        (*store_arc).save_case(case_id, case)?;
+        (*store_arc).save_case(case_id, &case_clone)?;
 
         Ok(())
     }
@@ -68,25 +69,25 @@ impl WorkflowEngine {
 
         let start_time = Instant::now();
 
-        // Get case
-        let mut cases = self.cases.write().await;
-        let case = cases
+        // Get case (DashMap is thread-safe, no lock needed)
+        let mut case_ref = self
+            .cases
             .get_mut(&case_id)
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
 
         // Start if not already started
-        if case.state == CaseState::Created {
-            case.start()?;
+        if case_ref.value().state == CaseState::Created {
+            case_ref.value_mut().start()?;
         }
 
-        // Get workflow specification
-        let specs = self.specs.read().await;
-        let spec = specs.get(&case.spec_id).ok_or_else(|| {
-            WorkflowError::InvalidSpecification(format!("Workflow {} not found", case.spec_id))
+        // Get workflow specification (DashMap is thread-safe)
+        let spec_id = case_ref.value().spec_id;
+        let spec = self.specs.get(&spec_id).ok_or_else(|| {
+            WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })?;
-        let spec_clone = spec.clone();
-        drop(specs);
-        drop(cases);
+        let spec_clone = spec.value().clone();
+        let case_clone = case_ref.value().clone();
+        drop(case_ref);
 
         // Execute workflow with resource allocation and worklet support
         task::execute_workflow_tasks(self, case_id, &spec_clone).await?;
@@ -110,26 +111,27 @@ impl WorkflowEngine {
 
     /// Cancel a case
     pub async fn cancel_case(&self, case_id: CaseId) -> WorkflowResult<()> {
-        let mut cases = self.cases.write().await;
-        let case = cases
+        let mut case_guard = self
+            .cases
             .get_mut(&case_id)
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
 
-        case.cancel()?;
+        case_guard.value_mut().cancel()?;
 
-        // Persist state
+        // Persist state (clone before dropping guard)
+        let case_clone = case_guard.value().clone();
+        drop(case_guard);
         let store_arc = self.state_store.read().await;
-        (*store_arc).save_case(case_id, case)?;
+        (*store_arc).save_case(case_id, &case_clone)?;
 
         Ok(())
     }
 
     /// Get case status
     pub async fn get_case(&self, case_id: CaseId) -> WorkflowResult<Case> {
-        let cases = self.cases.read().await;
-        cases
+        self.cases
             .get(&case_id)
-            .cloned()
+            .map(|entry| entry.value().clone())
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))
     }
 

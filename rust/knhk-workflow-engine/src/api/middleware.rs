@@ -7,12 +7,15 @@
 //! - Request tracing
 //! - Audit logging
 
+use crate::resilience::{CircuitBreaker, KeyedRateLimiter, RateLimitConfig};
 use axum::{
     extract::Request,
     http::{HeaderMap, StatusCode},
     middleware::Next,
     response::Response,
 };
+use std::sync::Arc;
+use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{info, warn};
@@ -62,7 +65,8 @@ pub async fn auth_middleware(
             StatusCode::UNAUTHORIZED
         })?;
 
-    // Validate token (FUTURE: Integrate with SPIFFE/SPIRE)
+    // Validate token format (Bearer token required)
+    // Note: Full SPIFFE/SPIRE integration would validate mTLS certificates here
     if !auth_header.starts_with("Bearer ") {
         warn!("Invalid authorization header format");
         return Err(StatusCode::UNAUTHORIZED);
@@ -72,25 +76,143 @@ pub async fn auth_middleware(
     Ok(next.run(request).await)
 }
 
+/// Global rate limiter for API middleware (per-client rate limiting)
+static RATE_LIMITER: std::sync::OnceLock<Arc<KeyedRateLimiter<String>>> =
+    std::sync::OnceLock::new();
+
+fn get_rate_limiter() -> Arc<KeyedRateLimiter<String>> {
+    RATE_LIMITER
+        .get_or_init(|| {
+            let config = RateLimitConfig {
+                max_requests: 100,
+                window_seconds: 60,
+                burst_size: Some(20),
+            };
+            // KeyedRateLimiter::new should never fail with valid config
+            // If it does, we panic as this is a critical initialization failure
+            match KeyedRateLimiter::new("api_middleware".to_string(), config) {
+                Ok(limiter) => Arc::new(limiter),
+                Err(e) => {
+                    tracing::error!("Failed to create rate limiter: {}", e);
+                    panic!("Failed to create rate limiter: {} - this is a critical initialization failure", e);
+                }
+            }
+        })
+        .clone()
+}
+
 /// Rate limiting middleware
+///
+/// Implements per-client rate limiting using governor library.
+/// Extracts client identifier from request headers (x-forwarded-for, x-real-ip, or remote address)
+/// and applies rate limits per client.
 pub async fn rate_limit_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
-    // Rate limiting not yet implemented
-    // FUTURE: Implement rate limiting per client with governor or similar
-    // For now, just continue without rate limiting
-    // This is a false positive - we claim to do rate limiting but don't
+    // Extract client identifier from request
+    let client_id = extract_client_id(&request);
+
+    // Check rate limit for this client
+    let limiter = get_rate_limiter();
+    if let Err(_) = limiter.check_key(&client_id) {
+        warn!(
+            client_id = %client_id,
+            "Rate limit exceeded for client"
+        );
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    // Rate limit passed, continue with request
     Ok(next.run(request).await)
 }
 
+/// Extract client identifier from request
+///
+/// Tries to extract client IP from headers in order:
+/// 1. x-forwarded-for (first IP if multiple)
+/// 2. x-real-ip
+/// 3. Remote address from extensions
+/// 4. Falls back to "unknown" if none available
+fn extract_client_id(request: &Request) -> String {
+    // Try x-forwarded-for header (first IP if comma-separated list)
+    if let Some(forwarded) = request.headers().get("x-forwarded-for") {
+        if let Ok(forwarded_str) = forwarded.to_str() {
+            let first_ip = forwarded_str.split(',').next().unwrap_or("").trim();
+            if !first_ip.is_empty() {
+                return first_ip.to_string();
+            }
+        }
+    }
+
+    // Try x-real-ip header
+    if let Some(real_ip) = request.headers().get("x-real-ip") {
+        if let Ok(real_ip_str) = real_ip.to_str() {
+            if !real_ip_str.is_empty() {
+                return real_ip_str.to_string();
+            }
+        }
+    }
+
+    // Try remote address from extensions (set by reverse proxy)
+    if let Some(remote_addr) = request.extensions().get::<std::net::SocketAddr>() {
+        return remote_addr.ip().to_string();
+    }
+
+    // Fallback to "unknown" if no client identifier found
+    "unknown".to_string()
+}
+
+/// Global circuit breaker for API middleware
+static CIRCUIT_BREAKER: std::sync::OnceLock<Arc<CircuitBreaker>> = std::sync::OnceLock::new();
+
+fn get_circuit_breaker() -> Arc<CircuitBreaker> {
+    CIRCUIT_BREAKER
+        .get_or_init(|| {
+            Arc::new(CircuitBreaker::new(
+                5,                       // failure_threshold: open after 5 failures
+                Duration::from_secs(60), // timeout: 60 seconds before half-open
+            ))
+        })
+        .clone()
+}
+
 /// Circuit breaker middleware
+///
+/// Implements circuit breaker pattern to prevent cascading failures.
+/// Tracks request failures and opens circuit after threshold is exceeded.
+/// Automatically transitions to half-open after timeout to test recovery.
 pub async fn circuit_breaker_middleware(
     request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    // Circuit breaker not yet implemented
-    // FUTURE: Implement circuit breaker with failure detection and recovery
-    // For now, just continue without circuit breaking
-    // This is a false positive - we claim to do circuit breaking but don't
-    Ok(next.run(request).await)
+    let circuit_breaker = get_circuit_breaker();
+
+    // Execute request with circuit breaker protection
+    // The circuit breaker's execute() method handles state transitions
+    // and tracks failures automatically
+    let result = circuit_breaker
+        .execute(|| async {
+            let response = next.run(request).await;
+            // Check if response indicates failure
+            if response.status().is_server_error() {
+                Err(crate::error::WorkflowError::ExternalSystem(format!(
+                    "Server error: {}",
+                    response.status()
+                )))
+            } else {
+                Ok(response)
+            }
+        })
+        .await;
+
+    match result {
+        Ok(response) => Ok(response),
+        Err(e) => {
+            warn!(
+                error = %e,
+                "Circuit breaker rejected request"
+            );
+            Err(StatusCode::SERVICE_UNAVAILABLE)
+        }
+    }
 }
 
 /// Request tracing middleware

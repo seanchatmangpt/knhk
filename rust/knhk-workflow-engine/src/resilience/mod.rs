@@ -8,6 +8,6 @@ pub mod timeout;
 
 pub use circuit_breaker::CircuitBreaker;
 pub use dlq::DeadLetterQueue;
-pub use rate_limit::{RateLimitConfig, RateLimiter};
+pub use rate_limit::{KeyedRateLimiter, RateLimitConfig, RateLimiter};
 pub use retry::{RetryConfig, RetryPolicy};
 pub use timeout::{PathType, TimeoutConfig, TimeoutManager};

@@ -12,12 +12,10 @@ impl WorkflowEngine {
     ///
     /// Tries in-memory cache first, then falls back to state store.
     pub async fn get_workflow(&self, spec_id: WorkflowSpecId) -> WorkflowResult<WorkflowSpec> {
-        // Try in-memory first
-        let specs = self.specs.read().await;
-        if let Some(spec) = specs.get(&spec_id) {
-            return Ok(spec.clone());
+        // Try in-memory first (lock-free DashMap access)
+        if let Some(spec) = self.specs.get(&spec_id) {
+            return Ok(spec.value().clone());
         }
-        drop(specs);
 
         // Fallback to state store
         let store_arc = self.state_store.read().await;
@@ -30,7 +28,6 @@ impl WorkflowEngine {
     ///
     /// Returns all workflow specification IDs from in-memory cache.
     pub async fn list_workflows(&self) -> WorkflowResult<Vec<WorkflowSpecId>> {
-        let specs = self.specs.read().await;
-        Ok(specs.keys().cloned().collect())
+        Ok(self.specs.iter().map(|entry| *entry.key()).collect())
     }
 }

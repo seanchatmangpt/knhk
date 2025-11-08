@@ -10,11 +10,21 @@ impl PatternExecutor for CancelActivityInstancePattern {
 
         // Get activity IDs to cancel from variables
         let activity_ids: Vec<String> = if let Some(ids_str) = ctx.variables.get("activity_ids") {
-            ids_str
+            let parsed: Vec<String> = ids_str
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
-                .collect()
+                .collect();
+            // If parsing resulted in empty list, fall back to default
+            if parsed.is_empty() {
+                if ctx.scope_id.is_empty() {
+                    vec!["activity_instance".to_string()]
+                } else {
+                    vec![format!("{}:activity", ctx.scope_id)]
+                }
+            } else {
+                parsed
+            }
         } else if let Some(instance_id) = ctx.variables.get("instance_id") {
             vec![instance_id.clone()]
         } else {

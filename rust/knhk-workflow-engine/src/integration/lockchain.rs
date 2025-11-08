@@ -101,6 +101,11 @@ impl LockchainIntegration {
             .await
     }
 
+    /// Record audit event (public method for audit logger)
+    pub async fn record_audit_event(&self, data: &serde_json::Value) -> WorkflowResult<()> {
+        self.record_event_internal("audit.log", data).await
+    }
+
     /// Internal method to record events
     async fn record_event_internal(
         &self,

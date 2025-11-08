@@ -375,11 +375,37 @@ impl BeatAdmission {
     }
 
     /// Check if admission should throttle (backpressure)
+    ///
+    /// Uses park count as a heuristic: if many deltas are parked, the ring is likely full.
+    /// Also checks if attempting to enqueue would fail by checking park manager state.
     pub fn should_throttle(&self, _domain_id: Option<usize>) -> SidecarResult<bool> {
-        // Check if delta ring is full
-        // Note: RingBuffer doesn't expose is_full() directly, so we check by attempting enqueue
-        // In production, would add is_full() method to RingBuffer
-        Ok(false) // Placeholder - would check ring buffer capacity
+        // Get park count as a heuristic for ring fullness
+        // If many deltas are parked, it indicates the ring is likely full
+        let park_count = self.get_park_count()?;
+
+        // Threshold: if park count exceeds 50% of typical ring capacity, throttle
+        // Typical ring capacity is 8 or 16 (power-of-two), so threshold is 4 or 8
+        // Using conservative threshold of 4 to trigger throttling early
+        if park_count >= 4 {
+            return Ok(true);
+        }
+
+        // Additional check: try to peek at ring state by checking if we can get current tick
+        // If the scheduler is under heavy load, we should throttle
+        // This is a lightweight check that doesn't require enqueueing
+        let current_tick = self.get_current_tick()?;
+
+        // If we're at the end of a cycle (tick 7), the ring might be full from next cycle
+        // This is a conservative heuristic to prevent overloading
+        if current_tick >= 6 {
+            // Check park count again with higher threshold at end of cycle
+            if park_count >= 2 {
+                return Ok(true);
+            }
+        }
+
+        // Ring appears to have capacity
+        Ok(false)
     }
 
     /// Get park count (number of parked deltas)

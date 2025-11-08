@@ -25,9 +25,8 @@ impl WorkflowEngine {
         let detector = DeadlockDetector;
         detector.validate(&spec)?;
 
-        let mut specs = self.specs.write().await;
         let spec_clone = spec.clone();
-        specs.insert(spec.id, spec);
+        self.specs.insert(spec.id, spec);
 
         // Persist to state store
         let store_arc = self.state_store.read().await;

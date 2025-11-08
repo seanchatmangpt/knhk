@@ -258,9 +258,7 @@ pub async fn delete_workflow(
         .map_err(|_| StatusCode::NOT_FOUND)?;
 
     // Remove from in-memory specs
-    let mut specs = engine.specs().write().await;
-    specs.remove(&spec_id);
-    drop(specs);
+    engine.specs().remove(&spec_id);
 
     // Remove from state store
     let store = engine.state_store().write().await;
@@ -351,10 +349,12 @@ pub async fn list_cases(
         Ok(Json(serde_json::json!({ "cases": cases })))
     } else {
         // List all cases (from in-memory cache)
-        let cases_map = engine.cases().read().await;
+        let cases_map = engine.cases();
         let cases: Vec<serde_json::Value> = cases_map
             .iter()
-            .map(|(id, case)| {
+            .map(|entry| {
+                let id = entry.key();
+                let case = entry.value();
                 serde_json::json!({
                     "id": id.to_string(),
                     "workflow_id": case.spec_id.to_string(),

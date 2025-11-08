@@ -11,7 +11,7 @@ use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
-use std::collections::HashMap;
+use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -44,12 +44,12 @@ impl WorkflowEngine {
     }
 
     /// Get specs (for REST API access)
-    pub fn specs(&self) -> &Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>> {
+    pub fn specs(&self) -> &Arc<DashMap<WorkflowSpecId, WorkflowSpec>> {
         &self.specs
     }
 
     /// Get cases (for REST API access)
-    pub fn cases(&self) -> &Arc<RwLock<HashMap<CaseId, Case>>> {
+    pub fn cases(&self) -> &Arc<DashMap<CaseId, Case>> {
         &self.cases
     }
 

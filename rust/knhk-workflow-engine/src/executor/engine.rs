@@ -14,20 +14,20 @@ use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
-use std::collections::HashMap;
+use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-/// Workflow execution engine
+/// Workflow execution engine with enterprise-scale concurrency
 pub struct WorkflowEngine {
     /// Pattern registry
     pub(crate) pattern_registry: Arc<PatternRegistry>,
     /// State store
     pub(crate) state_store: Arc<RwLock<Arc<StateStore>>>,
-    /// Registered workflow specifications
-    pub(crate) specs: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>,
-    /// Active cases
-    pub(crate) cases: Arc<RwLock<HashMap<CaseId, Case>>>,
+    /// Registered workflow specifications (lock-free DashMap for concurrent access)
+    pub(crate) specs: Arc<DashMap<WorkflowSpecId, WorkflowSpec>>,
+    /// Active cases (lock-free DashMap for concurrent access)
+    pub(crate) cases: Arc<DashMap<CaseId, Case>>,
     /// Resource allocator
     pub(crate) resource_allocator: Arc<ResourceAllocator>,
     /// Worklet repository

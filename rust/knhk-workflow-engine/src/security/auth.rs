@@ -155,9 +155,9 @@ impl AuthManager {
         }
 
         // Determine principal type from SPIFFE ID path
-        let principal_type = if path.contains("/user/") {
+        let principal_type = if path.starts_with("user/") || path.contains("/user/") {
             PrincipalType::User
-        } else if path.contains("/system/") {
+        } else if path.starts_with("system/") || path.contains("/system/") {
             PrincipalType::System
         } else {
             PrincipalType::Service // Default for SPIFFE IDs
