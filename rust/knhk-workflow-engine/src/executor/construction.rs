@@ -1,7 +1,7 @@
 //! Workflow engine construction and initialization
 
 use crate::compliance::ProvenanceTracker;
-use crate::error::WorkflowResult;
+use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::Fortune5Config;
 use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
 use crate::patterns::{PatternRegistry, RegisterAllExt};
@@ -152,11 +152,13 @@ impl WorkflowEngine {
         });
 
         // Return the engine (move it out of Arc)
-        Ok(Arc::try_unwrap(engine_arc).unwrap_or_else(|arc| {
-            // If there are multiple references, clone the engine
-            // This should not happen in normal usage
-            arc.clone()
-        }))
+        // Note: We can't clone WorkflowEngine, so we use try_unwrap
+        // If there are multiple references (shouldn't happen), we'll get an error
+        Ok(Arc::try_unwrap(engine_arc).map_err(|_| {
+            WorkflowError::Internal(
+                "Failed to unwrap engine Arc - multiple references exist".to_string(),
+            )
+        })?)
     }
 
     /// Dual-clock projection loop (warm persistence replay)
@@ -170,10 +172,13 @@ impl WorkflowEngine {
             interval.tick().await;
 
             // Get all completed cases from state store
-            let store_arc = engine.state_store.read().await;
             // FUTURE: Query completed cases and replay to external observers
             // For now, just log that projection is running
-            drop(store_arc);
+            let _store_arc = engine.state_store.read().await;
+            // In production, would:
+            // 1. Query completed cases from state store
+            // 2. Replay to external observers (REST/gRPC)
+            // 3. Project nanosecond commits to millisecond legacy time
         }
     }
 }

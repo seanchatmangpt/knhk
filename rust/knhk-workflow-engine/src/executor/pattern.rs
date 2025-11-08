@@ -50,7 +50,7 @@ impl WorkflowEngine {
                 &observations,
             ) {
                 // Store receipt for provenance tracking (lockchain integration)
-                if let Some(lockchain) = self.lockchain_integration.as_ref() {
+                if let Some(_lockchain) = self.lockchain_integration.as_ref() {
                     let receipt_bytes = serde_json::to_vec(&receipt).map_err(|e| {
                         WorkflowError::Internal(format!("Failed to serialize receipt: {}", e))
                     })?;

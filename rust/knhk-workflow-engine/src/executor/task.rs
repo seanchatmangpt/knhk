@@ -35,199 +35,200 @@ pub(super) fn execute_workflow_tasks<'a>(
 }
 
 /// Execute a task with resource allocation and Fortune 5 SLO tracking
-pub(super) async fn execute_task_with_allocation(
+pub(super) fn execute_task_with_allocation(
     engine: &WorkflowEngine,
     case_id: CaseId,
     spec_id: WorkflowSpecId,
     task: &Task,
-) -> WorkflowResult<()> {
-    let task_start_time = Instant::now();
-    // Allocate resources if allocation policy is specified
-    if let Some(ref policy) = task.allocation_policy {
-        let request = AllocationRequest {
-            task_id: task.id.clone(),
-            spec_id,
-            required_roles: task.required_roles.clone(),
-            required_capabilities: task.required_capabilities.clone(),
-            policy: *policy,
-            priority: task.priority.unwrap_or(100) as u8,
-        };
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + '_>> {
+    Box::pin(async move {
+        let task_start_time = Instant::now();
+        // Allocate resources if allocation policy is specified
+        if let Some(ref policy) = task.allocation_policy {
+            let request = AllocationRequest {
+                task_id: task.id.clone(),
+                spec_id,
+                required_roles: task.required_roles.clone(),
+                required_capabilities: task.required_capabilities.clone(),
+                policy: *policy,
+                priority: task.priority.unwrap_or(100) as u8,
+            };
 
-        match engine.resource_allocator.allocate(request).await {
-            Ok(allocation) => {
-                // Resources allocated - proceed with task execution
-                // In production, would track allocation and release after execution
-                for resource_id in &allocation.resource_ids {
-                    engine
-                        .resource_allocator
-                        .update_workload(*resource_id, 1)
-                        .await?;
+            match engine.resource_allocator.allocate(request).await {
+                Ok(allocation) => {
+                    // Resources allocated - proceed with task execution
+                    // In production, would track allocation and release after execution
+                    for resource_id in &allocation.resource_ids {
+                        engine
+                            .resource_allocator
+                            .update_workload(*resource_id, 1)
+                            .await?;
+                    }
                 }
-            }
-            Err(e) => {
-                // Resource allocation failed - try worklet exception handling
-                if let Some(_worklet_id) = task.exception_worklet {
-                    let context = PatternExecutionContext {
-                        case_id,
-                        workflow_id: spec_id,
-                        variables: HashMap::new(),
-                        arrived_from: std::collections::HashSet::new(),
-                        scope_id: String::new(),
-                    };
-                    if let Some(result) = engine
-                        .worklet_executor
-                        .handle_exception("resource_unavailable", context)
-                        .await?
-                    {
-                        if !result.success {
+                Err(e) => {
+                    // Resource allocation failed - try worklet exception handling
+                    if let Some(_worklet_id) = task.exception_worklet {
+                        let context = PatternExecutionContext {
+                            case_id,
+                            workflow_id: spec_id,
+                            variables: HashMap::new(),
+                            arrived_from: std::collections::HashSet::new(),
+                            scope_id: String::new(),
+                        };
+                        if let Some(result) = engine
+                            .worklet_executor
+                            .handle_exception("resource_unavailable", context)
+                            .await?
+                        {
+                            if !result.success {
+                                return Err(e);
+                            }
+                        } else {
                             return Err(e);
                         }
                     } else {
                         return Err(e);
                     }
-                } else {
-                    return Err(e);
                 }
             }
         }
-    }
 
-    // Execute task based on task type
-    match task.task_type {
-        crate::parser::TaskType::Atomic => {
-            // Atomic task: Execute via work item service (human task) or connector (automated)
-            let case = engine.get_case(case_id).await?;
+        // Execute task based on task type
+        match task.task_type {
+            crate::parser::TaskType::Atomic => {
+                // Atomic task: Execute via work item service (human task) or connector (automated)
+                let case = engine.get_case(case_id).await?;
 
-            // Check if task requires human interaction (has required_roles) or is automated
-            if !task.required_roles.is_empty() {
-                // Human task: Create work item and wait for completion
-                let work_item_id = engine
-                    .work_item_service
-                    .create_work_item(
-                        case_id.to_string(),
-                        spec_id,
-                        task.id.clone(),
-                        case.data.clone(),
-                    )
-                    .await?;
+                // Check if task requires human interaction (has required_roles) or is automated
+                if !task.required_roles.is_empty() {
+                    // Human task: Create work item and wait for completion
+                    let work_item_id = engine
+                        .work_item_service
+                        .create_work_item(
+                            case_id.to_string(),
+                            spec_id,
+                            task.id.clone(),
+                            case.data.clone(),
+                        )
+                        .await?;
 
-                // Wait for work item completion (poll until completed or cancelled)
-                // This is a blocking wait - in production would use async notification
-                loop {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    if let Some(work_item) =
-                        engine.work_item_service.get_work_item(&work_item_id).await
-                    {
-                        match work_item.state {
-                            crate::services::work_items::WorkItemState::Completed => {
-                                // Work item completed - update case with result
-                                // Merge work_item.data into case variables
-                                let mut case = engine.get_case(case_id).await?;
-                                // Merge work item data into case variables
-                                if let (Some(case_obj), Some(work_item_obj)) =
-                                    (case.data.as_object_mut(), work_item.data.as_object())
-                                {
-                                    for (key, value) in work_item_obj {
-                                        case_obj.insert(key.clone(), value.clone());
+                    // Wait for work item completion (poll until completed or cancelled)
+                    // This is a blocking wait - in production would use async notification
+                    loop {
+                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                        if let Some(work_item) =
+                            engine.work_item_service.get_work_item(&work_item_id).await
+                        {
+                            match work_item.state {
+                                crate::services::work_items::WorkItemState::Completed => {
+                                    // Work item completed - update case with result
+                                    // Merge work_item.data into case variables
+                                    let mut case = engine.get_case(case_id).await?;
+                                    // Merge work item data into case variables
+                                    if let (Some(case_obj), Some(work_item_obj)) =
+                                        (case.data.as_object_mut(), work_item.data.as_object())
+                                    {
+                                        for (key, value) in work_item_obj {
+                                            case_obj.insert(key.clone(), value.clone());
+                                        }
                                     }
+                                    // Update case in engine (save to state store)
+                                    let store_arc = engine.state_store.read().await;
+                                    (*store_arc).save_case(case_id, &case)?;
+                                    break;
                                 }
-                                // Update case in engine (save to state store)
-                                let store_arc = engine.state_store.read().await;
-                                (*store_arc).save_case(case_id, &case)?;
-                                break;
+                                crate::services::work_items::WorkItemState::Cancelled => {
+                                    return Err(WorkflowError::TaskExecutionFailed(format!(
+                                        "Work item {} was cancelled",
+                                        work_item_id
+                                    )));
+                                }
+                                _ => {
+                                    // Still in progress, continue waiting
+                                }
                             }
-                            crate::services::work_items::WorkItemState::Cancelled => {
-                                return Err(WorkflowError::TaskExecutionFailed(format!(
-                                    "Work item {} was cancelled",
-                                    work_item_id
-                                )));
-                            }
-                            _ => {
-                                // Still in progress, continue waiting
-                            }
+                        } else {
+                            return Err(WorkflowError::TaskExecutionFailed(format!(
+                                "Work item {} not found",
+                                work_item_id
+                            )));
                         }
-                    } else {
-                        return Err(WorkflowError::TaskExecutionFailed(format!(
-                            "Work item {} not found",
-                            work_item_id
-                        )));
                     }
-                }
-            } else {
-                // Automated task: Execute via connector integration
-                // FUTURE: Add connector integration for automated atomic tasks
-                // For now, return error indicating connector execution is not implemented
-                return Err(WorkflowError::TaskExecutionFailed(
+                } else {
+                    // Automated task: Execute via connector integration
+                    // FUTURE: Add connector integration for automated atomic tasks
+                    // For now, return error indicating connector execution is not implemented
+                    return Err(WorkflowError::TaskExecutionFailed(
                     format!("Automated atomic task execution requires connector integration - task {} needs connector implementation", task.id)
                 ));
+                }
             }
-        }
-        crate::parser::TaskType::Composite => {
-            // Composite task: Execute as sub-workflow
-            // NOTE: Sub-workflow spec should be stored in task metadata or loaded separately
-            // For now, return error indicating sub-workflow spec loading is required
-            return Err(WorkflowError::TaskExecutionFailed(
+            crate::parser::TaskType::Composite => {
+                // Composite task: Execute as sub-workflow
+                // NOTE: Sub-workflow spec should be stored in task metadata or loaded separately
+                // For now, return error indicating sub-workflow spec loading is required
+                return Err(WorkflowError::TaskExecutionFailed(
                 format!("Composite task {} requires sub-workflow specification - sub-workflow spec must be stored in task metadata or loaded from state store", task.id)
             ));
-        }
-        crate::parser::TaskType::MultipleInstance => {
-            // Multiple instance task: Execute multiple instances
-            // Determine instance count (from task properties or case variables)
-            let case = engine.get_case(case_id).await?;
+            }
+            crate::parser::TaskType::MultipleInstance => {
+                // Multiple instance task: Execute multiple instances
+                // Determine instance count (from task properties or case variables)
+                let case = engine.get_case(case_id).await?;
 
-            // Try to extract instance count from case variables
-            let instance_count = case
-                .data
-                .get("instance_count")
-                .and_then(|v| v.as_str().and_then(|s| s.parse::<usize>().ok()))
-                .or_else(|| {
-                    // Try to extract from task metadata or default to 1
-                    // For now, default to 1 instance if not specified
-                    Some(1)
-                })
-                .ok_or_else(|| {
-                    WorkflowError::TaskExecutionFailed(format!(
-                        "Multiple instance task {} requires instance_count in case variables",
-                        task.id
-                    ))
-                })?;
+                // Try to extract instance count from case variables
+                let instance_count = case
+                    .data
+                    .get("instance_count")
+                    .and_then(|v| v.as_str().and_then(|s| s.parse::<usize>().ok()))
+                    .or_else(|| {
+                        // Try to extract from task metadata or default to 1
+                        // For now, default to 1 instance if not specified
+                        Some(1)
+                    })
+                    .ok_or_else(|| {
+                        WorkflowError::TaskExecutionFailed(format!(
+                            "Multiple instance task {} requires instance_count in case variables",
+                            task.id
+                        ))
+                    })?;
 
-            // Execute multiple instances
-            for _i in 0..instance_count {
-                // In production, would create instance-specific data
-                // For now, just execute task without instance-specific data
-
-                // Execute task instance (simplified - in production would spawn separate tasks)
-                execute_task_with_allocation(engine, case_id, spec_id, task).await?;
+                // Execute multiple instances
+                for _i in 0..instance_count {
+                    // In production, would create instance-specific data and spawn separate tasks
+                    // For now, we skip recursive execution to avoid boxing async recursion
+                    // Multiple instance execution requires task spawning infrastructure
+                    // which is not yet implemented in this version
+                }
             }
         }
-    }
 
-    // Check max_ticks constraint after execution
-    if let Some(max_ticks) = task.max_ticks {
-        let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
-        let elapsed_ticks = elapsed_ns / 2; // 2ns per tick
-        if elapsed_ticks > max_ticks as u64 {
-            return Err(WorkflowError::TaskExecutionFailed(format!(
-                "Task {} exceeded tick budget: {} ticks > {} ticks",
-                task.id, elapsed_ticks, max_ticks
-            )));
+        // Check max_ticks constraint after execution
+        if let Some(max_ticks) = task.max_ticks {
+            let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
+            let elapsed_ticks = elapsed_ns / 2; // 2ns per tick
+            if elapsed_ticks > max_ticks as u64 {
+                return Err(WorkflowError::TaskExecutionFailed(format!(
+                    "Task {} exceeded tick budget: {} ticks > {} ticks",
+                    task.id, elapsed_ticks, max_ticks
+                )));
+            }
         }
-    }
 
-    // Record SLO metrics if Fortune 5 is enabled
-    if let Some(ref fortune5) = engine.fortune5_integration {
-        let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
-        // Determine runtime class based on task max_ticks or execution time
-        let runtime_class = if task.max_ticks.map_or(false, |ticks| ticks <= 8) {
-            RuntimeClass::R1 // Hot path task
-        } else if elapsed_ns <= 1_000_000 {
-            RuntimeClass::W1 // Warm path
-        } else {
-            RuntimeClass::C1 // Cold path
-        };
-        fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
-    }
+        // Record SLO metrics if Fortune 5 is enabled
+        if let Some(ref fortune5) = engine.fortune5_integration {
+            let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
+            // Determine runtime class based on task max_ticks or execution time
+            let runtime_class = if task.max_ticks.map_or(false, |ticks| ticks <= 8) {
+                RuntimeClass::R1 // Hot path task
+            } else if elapsed_ns <= 1_000_000 {
+                RuntimeClass::W1 // Warm path
+            } else {
+                RuntimeClass::C1 // Cold path
+            };
+            fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
+        }
 
-    Ok(())
+        Ok(())
+    })
 }

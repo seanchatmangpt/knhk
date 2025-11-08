@@ -246,7 +246,7 @@ impl WorkItemService {
     pub async fn submit_work_item(
         &self,
         work_item_id: &str,
-        submission_id: &str,
+        _submission_id: &str,
         payload: serde_json::Value,
     ) -> WorkflowResult<()> {
         let mut items = self.work_items.write().await;

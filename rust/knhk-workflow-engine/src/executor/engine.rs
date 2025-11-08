@@ -19,6 +19,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// Workflow execution engine with enterprise-scale concurrency
+#[derive(Clone)]
 pub struct WorkflowEngine {
     /// Pattern registry
     pub(crate) pattern_registry: Arc<PatternRegistry>,
