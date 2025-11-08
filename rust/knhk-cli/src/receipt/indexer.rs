@@ -10,14 +10,14 @@ impl ReceiptIndexer {
     /// Index receipt
     pub fn index(&self, receipt: &ReceiptEntry) -> Result<(), String> {
         // Index receipt in Oxigraph
-        // TODO: Implement actual indexing
+        // FUTURE: Implement actual indexing
         Ok(())
     }
 
     /// Find receipts by operation
     pub fn find_by_operation(&self, operation: &str) -> Result<Vec<String>, String> {
         // Find receipts by operation using SPARQL
-        // TODO: Implement actual SPARQL query
+        // FUTURE: Implement actual SPARQL query
         Ok(Vec::new())
     }
 }

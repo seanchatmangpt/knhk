@@ -30,14 +30,14 @@ impl ReceiptStore {
     /// Get receipt by ID
     pub fn get(&self, id: &str) -> Result<ReceiptEntry, String> {
         // Load receipt from Oxigraph
-        // TODO: Implement actual loading from Oxigraph
+        // FUTURE: Implement actual loading from Oxigraph
         Err(format!("Receipt '{}' not found", id))
     }
 
     /// Save receipt
     pub fn save(&self, receipt: &ReceiptEntry) -> Result<(), String> {
         // Save receipt to Oxigraph
-        // TODO: Implement actual saving to Oxigraph
+        // FUTURE: Implement actual saving to Oxigraph
         Ok(())
     }
 

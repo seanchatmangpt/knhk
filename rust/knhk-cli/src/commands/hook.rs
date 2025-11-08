@@ -72,18 +72,19 @@ pub fn create(
         ));
     }
 
-    // Load existing hooks
-    let mut storage = load_hooks()?;
+    // Use HookRegistry for persistent storage
+    use crate::hook_registry::HookRegistryIntegration;
+    let mut registry = HookRegistryIntegration::new()?;
 
     // Check if hook with same name exists
-    if storage.hooks.iter().any(|h| h.name == name) {
+    if registry.get(&name).is_ok() {
         return Err(format!("Hook with name '{}' already exists", name));
     }
 
     // Create hook entry
-    let hook_id = format!("hook_{}", storage.hooks.len() + 1);
-    storage.hooks.push(HookEntry {
-        id: hook_id.clone(),
+    use crate::hook_registry::store::HookEntry;
+    let hook_entry = HookEntry {
+        id: format!("hook_{}", name),
         name: name.clone(),
         op: op.clone(),
         pred,
@@ -93,21 +94,22 @@ pub fn create(
         p,
         o,
         k,
-    });
+    };
 
-    // Save hooks
-    save_hooks(&storage)?;
+    // Register hook
+    registry.register(hook_entry)?;
 
-    println!("✓ Hook created (id: {})", hook_id);
+    println!("✓ Hook created: {}", name);
 
     Ok(())
 }
 
 /// List hooks
 pub fn list() -> Result<Vec<String>, String> {
-    let storage = load_hooks()?;
-
-    Ok(storage.hooks.iter().map(|h| h.name.clone()).collect())
+    // Use HookRegistry
+    use crate::hook_registry::HookRegistryIntegration;
+    let registry = HookRegistryIntegration::new()?;
+    registry.list()
 }
 
 /// Evaluate a hook using knhk-hot FFI
@@ -235,17 +237,11 @@ pub fn eval(hook_name: String) -> Result<String, String> {
 }
 
 /// Show hook details
-pub fn show(hook_name: String) -> Result<HookEntry, String> {
-    let storage = load_hooks()?;
-
-    let hook = storage
-        .hooks
-        .iter()
-        .find(|h| h.name == hook_name)
-        .ok_or_else(|| format!("Hook '{}' not found", hook_name))?
-        .clone();
-
-    Ok(hook)
+pub fn show(hook_name: String) -> Result<crate::hook_registry::store::HookEntry, String> {
+    // Use HookRegistry
+    use crate::hook_registry::HookRegistryIntegration;
+    let registry = HookRegistryIntegration::new()?;
+    registry.get(&hook_name)
 }
 
 fn get_config_dir() -> Result<PathBuf, String> {

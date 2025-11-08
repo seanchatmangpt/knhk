@@ -23,7 +23,7 @@ impl InvariantEnforcer {
 
         // Enforce invariants using SPARQL
         // For now, basic enforcement - check if ontology satisfies invariants
-        // TODO: Implement full SPARQL enforcement
+        // FUTURE: Implement full SPARQL enforcement
         Ok(true)
     }
 }

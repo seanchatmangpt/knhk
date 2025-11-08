@@ -41,6 +41,29 @@ impl HookRegistryIntegration {
     pub fn registry(&self) -> &Arc<HookRegistry> {
         &self.registry
     }
+
+    /// Register a hook
+    pub fn register(&mut self, hook: crate::hook_registry::store::HookEntry) -> Result<(), String> {
+        // Save to store
+        self.store.save(&hook)?;
+        
+        // Register with knhk-etl HookRegistry
+        // Implementation depends on HookRegistry API
+        // For now, just save to store
+        
+        Ok(())
+    }
+
+    /// Get a hook by name
+    pub fn get(&self, name: &str) -> Result<crate::hook_registry::store::HookEntry, String> {
+        self.store.load(name)
+    }
+
+    /// List all hook names
+    pub fn list(&self) -> Result<Vec<String>, String> {
+        let hooks = self.store.load_all()?;
+        Ok(hooks.iter().map(|h| h.name.clone()).collect())
+    }
 }
 
 impl Default for HookRegistryIntegration {

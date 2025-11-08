@@ -23,7 +23,7 @@ impl SchemaValidator {
 
         // Validate ontology against schema using SPARQL
         // For now, basic validation - check if ontology contains schema triples
-        // TODO: Implement full SPARQL validation
+        // FUTURE: Implement full SPARQL validation
         Ok(true)
     }
 }

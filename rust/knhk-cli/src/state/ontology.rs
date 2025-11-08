@@ -76,23 +76,23 @@ impl OntologySaver {
     /// Save ontology O to Oxigraph
     pub fn save(&self, graph: &Graph, graph_iri: Option<&str>) -> Result<(), String> {
         let graph_name = graph_iri
-            .map(|iri| NamedNode::new(iri))
+            .map(NamedNode::new)
             .transpose()
             .map_err(|e| format!("Invalid graph IRI: {}", e))?;
 
         for quad in graph.iter() {
             let quad = if let Some(ref name) = graph_name {
                 Quad::new(
-                    quad.subject.clone(),
-                    quad.predicate.clone(),
-                    quad.object.clone(),
+                    quad.subject,
+                    quad.predicate,
+                    quad.object,
                     oxigraph::model::GraphName::NamedNode(name.clone()),
                 )
             } else {
                 Quad::new(
-                    quad.subject.clone(),
-                    quad.predicate.clone(),
-                    quad.object.clone(),
+                    quad.subject,
+                    quad.predicate,
+                    quad.object,
                     oxigraph::model::GraphName::DefaultGraph,
                 )
             };
@@ -123,23 +123,23 @@ impl OntologyMerger {
     /// Merge delta Δ into ontology O
     pub fn merge(&self, delta: &Graph, graph_iri: Option<&str>) -> Result<(), String> {
         let graph_name = graph_iri
-            .map(|iri| NamedNode::new(iri))
+            .map(NamedNode::new)
             .transpose()
             .map_err(|e| format!("Invalid graph IRI: {}", e))?;
 
         for quad in delta.iter() {
             let quad = if let Some(ref name) = graph_name {
                 Quad::new(
-                    quad.subject.clone(),
-                    quad.predicate.clone(),
-                    quad.object.clone(),
+                    quad.subject,
+                    quad.predicate,
+                    quad.object,
                     oxigraph::model::GraphName::NamedNode(name.clone()),
                 )
             } else {
                 Quad::new(
-                    quad.subject.clone(),
-                    quad.predicate.clone(),
-                    quad.object.clone(),
+                    quad.subject,
+                    quad.predicate,
+                    quad.object,
                     oxigraph::model::GraphName::DefaultGraph,
                 )
             };

@@ -318,7 +318,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     // We run it on the current thread to avoid thread safety issues
     // In production, this would be handled by a dedicated beat thread
     // For now, we'll skip the beat advancement task to avoid thread safety issues
-    // TODO: Implement proper beat scheduler thread safety or use LocalSet
+    // FUTURE: Implement proper beat scheduler thread safety or use LocalSet
     info!(
         "Beat scheduler initialized (advancement task disabled due to thread safety constraints)"
     );

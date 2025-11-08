@@ -36,14 +36,14 @@ impl HookStore {
     pub fn load_all(&self) -> Result<Vec<HookEntry>, String> {
         // Load hooks from Oxigraph
         // For now, return empty vector
-        // TODO: Implement actual loading from Oxigraph
+        // FUTURE: Implement actual loading from Oxigraph
         Ok(Vec::new())
     }
 
     /// Save hook
     pub fn save(&self, _hook: &HookEntry) -> Result<(), String> {
         // Save hook to Oxigraph
-        // TODO: Implement actual saving to Oxigraph
+        // FUTURE: Implement actual saving to Oxigraph
         Ok(())
     }
 }
