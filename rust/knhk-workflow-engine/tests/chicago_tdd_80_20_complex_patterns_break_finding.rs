@@ -359,24 +359,26 @@ async fn test_pattern_33_cancel_process_break_finding() {
     // Break-finding: Test cancel process for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_33();
+    let case_id = CaseId::new();
+
+    // Test 1: Cancel process with case_id
     let context = PatternExecutionContext {
-        case_id: CaseId::new(),
+        case_id,
         workflow_id: WorkflowSpecId::new(),
         variables: HashMap::new(),
         arrived_from: HashSet::new(),
         scope_id: String::new(),
     };
 
-    // Test 1: Verify cancellation
     let result = executor.execute(&context);
     assert!(result.success, "Should execute successfully");
     assert!(
         !result.cancel_activities.is_empty(),
         "BREAK: Cancel process should cancel activities"
     );
-    assert_eq!(
-        result.cancel_activities[0], "process_instance",
-        "BREAK: Should cancel process instance"
+    assert!(
+        result.cancel_activities[0].contains("process:"),
+        "BREAK: Should cancel process (format: process:case_id)"
     );
 
     // Test 2: CRITICAL - Verify termination
@@ -393,6 +395,20 @@ async fn test_pattern_33_cancel_process_break_finding() {
     assert!(
         result.next_state.as_ref().unwrap().contains("cancelled"),
         "BREAK: State should indicate cancellation"
+    );
+
+    // Test 4: Cancel process with scope_id
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: HashMap::new(),
+        arrived_from: HashSet::new(),
+        scope_id: "scope_123".to_string(),
+    };
+    let result2 = executor.execute(&context2);
+    assert!(
+        result2.cancel_activities[0].contains("process:scope_123"),
+        "BREAK: Should use scope_id when provided"
     );
 }
 
@@ -530,15 +546,22 @@ async fn test_pattern_39_thread_merge_break_finding() {
     // Break-finding: Test thread merge pattern for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_39();
+
+    // Test 1: All threads arrived - should merge
+    let mut variables = HashMap::new();
+    variables.insert("expected_threads".to_string(), "2".to_string());
+    let mut arrived_from = HashSet::new();
+    arrived_from.insert("thread_1".to_string());
+    arrived_from.insert("thread_2".to_string());
+
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
-        arrived_from: HashSet::new(),
+        variables,
+        arrived_from,
         scope_id: String::new(),
     };
 
-    // Test 1: Verify merge state
     let result = executor.execute(&context);
     assert!(result.success, "Should execute successfully");
     assert!(
@@ -547,14 +570,36 @@ async fn test_pattern_39_thread_merge_break_finding() {
     );
     assert!(
         result.next_state.as_ref().unwrap().contains("merged"),
-        "BREAK: State should indicate merge"
+        "BREAK: State should indicate merge when all threads arrived"
+    );
+    assert!(
+        result.next_activities.contains(&"continue".to_string()),
+        "BREAK: Should schedule continue when all threads merged"
     );
 
-    // Test 2: Verify no activities scheduled (merge completes)
+    // Test 2: Not all threads arrived - should wait
+    let mut variables2 = HashMap::new();
+    variables2.insert("expected_threads".to_string(), "3".to_string());
+    let mut arrived_from2 = HashSet::new();
+    arrived_from2.insert("thread_1".to_string());
+
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables2,
+        arrived_from: arrived_from2,
+        scope_id: String::new(),
+    };
+
+    let result2 = executor.execute(&context2);
+    assert!(
+        result2.next_state.as_ref().unwrap().contains("waiting"),
+        "BREAK: State should indicate waiting when threads not all arrived"
+    );
     assert_eq!(
-        result.next_activities.len(),
+        result2.next_activities.len(),
         0,
-        "BREAK: Thread merge should not schedule new activities"
+        "BREAK: Should not schedule activities when waiting"
     );
 
     // Test 3: Verify no cancellation
@@ -572,29 +617,51 @@ async fn test_pattern_38_39_threading_sequence_break() {
     let (pattern_id_38, executor_38) = advanced_control::create_pattern_38();
     let (pattern_id_39, executor_39) = advanced_control::create_pattern_39();
 
+    // Execute pattern 38 (spawn threads)
+    let mut variables = HashMap::new();
+    variables.insert("thread_count".to_string(), "3".to_string());
+
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
+        variables,
         arrived_from: HashSet::new(),
         scope_id: String::new(),
     };
 
-    // Execute pattern 38 (spawn threads)
     let result_38 = executor_38.execute(&context);
     assert!(result_38.success, "Pattern 38 should succeed");
     assert!(
         !result_38.next_activities.is_empty(),
         "BREAK: Pattern 38 should schedule threads"
     );
-
-    // Execute pattern 39 (merge threads)
-    let result_39 = executor_39.execute(&context);
-    assert!(result_39.success, "Pattern 39 should succeed");
     assert_eq!(
-        result_39.next_activities.len(),
-        0,
-        "BREAK: Pattern 39 should not schedule activities after merge"
+        result_38.next_activities.len(),
+        3,
+        "BREAK: Pattern 38 should schedule 3 threads"
+    );
+
+    // Execute pattern 39 (merge threads) - simulate all threads arrived
+    let mut variables2 = HashMap::new();
+    variables2.insert("expected_threads".to_string(), "3".to_string());
+    let mut arrived_from = HashSet::new();
+    arrived_from.insert("thread_1".to_string());
+    arrived_from.insert("thread_2".to_string());
+    arrived_from.insert("thread_3".to_string());
+
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables2,
+        arrived_from,
+        scope_id: String::new(),
+    };
+
+    let result_39 = executor_39.execute(&context2);
+    assert!(result_39.success, "Pattern 39 should succeed");
+    assert!(
+        result_39.next_activities.contains(&"continue".to_string()),
+        "BREAK: Pattern 39 should schedule continue when all threads merged"
     );
 
     // Verify state transition

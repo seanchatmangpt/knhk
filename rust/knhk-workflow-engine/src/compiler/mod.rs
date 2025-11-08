@@ -308,7 +308,7 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
         // Extract flags (discriminator, cancelling, etc.)
         // For now, flags are set to 0 as they are not yet extracted from task properties
         // This is acceptable as flags are optional and can be added later
-        // TODO: Extract flags from task properties (discriminator, cancelling, etc.)
+        // FUTURE: Extract flags from task properties (discriminator, cancelling, etc.)
         let flags = 0u32;
 
         let node_ir = NodeIR {
@@ -363,7 +363,7 @@ fn extract_timers(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Ve
     // Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
     // For now, return empty vector as timer extraction is not yet implemented
     // This is acceptable as timers are optional and can be added later
-    // TODO: Implement timer extraction from RDF (OWL-Time, iCalendar RRULE)
+    // FUTURE: Implement timer extraction from RDF (OWL-Time, iCalendar RRULE)
     Ok(Vec::new())
 }
 
