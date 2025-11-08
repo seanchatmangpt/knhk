@@ -68,6 +68,53 @@ let emit_result = emit.emit(reflex_result)?;
 - **Guard Validation**: Enforces max_run_len ≤ 8 (Chatman Constant)
 - **Schema Validation**: Validates observations against schema (O ⊨ Σ)
 - **Receipt Generation**: Creates provenance receipts
+- **Hook Orchestration**: Pattern-based hook execution (sequential, parallel, conditional, retry)
+  - See `hook_orchestration` module for details
+  - Integrates with `knhk-patterns` for workflow pattern support
+
+## Hook Orchestration
+
+The Reflex stage supports pattern-based hook orchestration using workflow patterns from `knhk-patterns`:
+
+```rust
+use knhk_etl::hook_orchestration::{HookOrchestrator, HookExecutionContext, HookExecutionPattern};
+use knhk_etl::hook_registry::HookRegistry;
+
+let registry = HookRegistry::new();
+let load_result = pipeline.execute_to_load()?;
+
+// Create execution context
+let context = HookExecutionContext::from_load_result(registry, load_result, 8);
+
+// Execute hooks in parallel
+let pattern = HookExecutionPattern::Parallel(vec![pred1, pred2]);
+let orchestrator = HookOrchestrator::new();
+let results = orchestrator.execute_with_pattern(&context, pattern)?;
+
+// Execute hooks conditionally
+let choices = vec![
+    (Box::new(|ctx| ctx.predicate_runs.len() > 1) as Box<dyn Fn(_) -> _ + Send + Sync>, pred1),
+    (Box::new(|_| true) as Box<dyn Fn(_) -> _ + Send + Sync>, pred2),
+];
+let pattern = HookExecutionPattern::Choice(choices);
+let results = orchestrator.execute_with_pattern(&context, pattern)?;
+
+// Execute hooks with retry
+let pattern = HookExecutionPattern::Retry {
+    predicate: pred1,
+    should_retry: Box::new(|receipt| receipt.ticks == 0),
+    max_attempts: 3,
+};
+let results = orchestrator.execute_with_pattern(&context, pattern)?;
+```
+
+**Pattern Types:**
+- **Sequence**: Execute hooks sequentially
+- **Parallel**: Execute hooks concurrently (requires `parallel` feature)
+- **Choice**: Conditional routing based on execution context
+- **Retry**: Retry logic with exponential backoff
+
+See [knhk-patterns HOOK_INTEGRATION.md](../knhk-patterns/HOOK_INTEGRATION.md) for comprehensive guide.
 
 ## Dependencies
 

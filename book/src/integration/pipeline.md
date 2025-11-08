@@ -22,6 +22,31 @@ pipeline.add_stage(PipelineStage::Emit { lockchain_enabled: true });
 pipeline.run()?;
 ```
 
+## Pattern-Based Hook Execution
+
+The Reflex stage supports pattern-based hook orchestration:
+
+```rust
+use knhk_etl::hook_orchestration::{HookOrchestrator, HookExecutionContext, HookExecutionPattern};
+use knhk_etl::hook_registry::HookRegistry;
+use knhk_etl::ReflexStage;
+
+let reflex = ReflexStage::new();
+let load_result = pipeline.execute_to_load()?;
+
+// Execute with parallel pattern
+let pattern = HookExecutionPattern::Parallel(vec![pred1, pred2]);
+let result = reflex.reflex_with_patterns(load_result, pattern)?;
+```
+
+**Pattern Types:**
+- **Sequence**: Sequential hook execution
+- **Parallel**: Parallel hook execution (SIMD-optimized)
+- **Choice**: Conditional routing based on context
+- **Retry**: Retry logic for transient failures
+
+See [Hook Integration Guide](../../rust/knhk-patterns/HOOK_INTEGRATION.md) for details.
+
 ## Guard Constraints
 
 - **max_run_len ≤ 8**: Enforced at Load stage

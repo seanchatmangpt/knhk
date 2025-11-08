@@ -498,6 +498,7 @@ impl Default for ReflexMap {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::load::{PredRun, SoAArrays};
 
