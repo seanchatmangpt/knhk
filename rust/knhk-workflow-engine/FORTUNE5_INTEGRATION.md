@@ -4,19 +4,6 @@
 
 The workflow engine has been prepared for Fortune 5 enterprise use cases with comprehensive integration of enterprise-grade features.
 
-## Multi-Layered Abstraction Architecture
-
-The workflow engine uses a **multi-layered abstraction architecture** that provides:
-
-- **Facade Layer**: Domain-specific entry points (Legacy, Reflex, Enterprise, API, CLI)
-- **Service Layer**: Business logic abstraction (Workflow, Case, Pattern, Provenance, Resource)
-- **Builder Layer**: Fluent configuration APIs (Engine, Service, Facade builders)
-- **Trait-Based Interfaces**: Extensibility points for custom implementations
-- **Plugin Architecture**: Runtime class executors (R1, W1, C1)
-- **Unified Gateway**: Request routing and runtime class routing
-
-See [ABSTRACTION_ARCHITECTURE_PLAN.md](../ABSTRACTION_ARCHITECTURE_PLAN.md) for detailed architecture documentation.
-
 ## Features Integrated
 
 ### 1. Fortune 5 Integration Manager

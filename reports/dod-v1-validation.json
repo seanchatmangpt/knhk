@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-08T02:03:07Z",
+  "timestamp": "2025-11-08T20:04:53Z",
   "summary": {
     "total_criteria": 19,
     "passed": 12,
@@ -16,7 +16,7 @@
 ,
     "core_no_unwrap": {
       "status": "failed",
-      "message": "Found 166 instances of unwrap()/expect() in production code (threshold exceeded)"
+      "message": "Found 320 instances of unwrap()/expect() in production code (threshold exceeded)"
     }
 ,
     "core_trait_compatibility": {
@@ -51,7 +51,7 @@
 ,
     "core_no_false_positives": {
       "status": "warning",
-      "message": "Found 125 instances of Ok(())"
+      "message": "Found 296 instances of Ok(())"
     }
 ,
     "core_performance": {
@@ -71,7 +71,7 @@
 ,
     "ext_documentation": {
       "status": "warning",
-      "message": "Found 1128 public items without documentation"
+      "message": "Found 2331 public items without documentation"
     }
 ,
     "ext_performance": {
@@ -101,7 +101,7 @@
 ,
     "ext_knhk_specific": {
       "status": "passed",
-      "message": "KNHK-specific requirements met (guard constraints: 150 instances)"
+      "message": "KNHK-specific requirements met (guard constraints: 183 instances)"
     }
   }
 }

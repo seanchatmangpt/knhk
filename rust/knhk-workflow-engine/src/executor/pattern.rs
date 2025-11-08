@@ -55,7 +55,7 @@ impl WorkflowEngine {
                         WorkflowError::Internal(format!("Failed to serialize receipt: {}", e))
                     })?;
                     let store = self.state_store.read().await;
-                    let _ = store.append_receipt(&receipt.id, &receipt_bytes);
+                    let _ = (*store).append_receipt(&receipt.id, &receipt_bytes);
                 }
             }
         }

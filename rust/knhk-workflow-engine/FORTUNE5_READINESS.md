@@ -28,7 +28,6 @@ This document tracks the readiness of the KNHK Workflow Engine for Fortune 5 ent
 - [x] Scalability (Multi-Region, Load Balancing)
 - [x] Reliability (Circuit Breakers, Retries, SLOs)
 - [x] Performance (Hot Path ≤8 ticks, SIMD)
-- [x] Multi-Layered Abstraction Architecture (Facade, Service, Builder, Trait, Plugin, Gateway layers)
 
 ### 4. API & Integration ✅
 - [x] REST API with OpenAPI/Swagger

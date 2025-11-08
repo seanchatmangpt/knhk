@@ -2,46 +2,6 @@
 
 High-level architecture of the KNHK Workflow Engine.
 
-## Multi-Layered Abstraction Architecture
-
-The KNHK Workflow Engine uses a **multi-layered abstraction architecture** that provides:
-
-### 1. Facade Layer (Entry Points)
-- **LegacyFacade**: YAWL-compatible interface for BPM/ERP systems
-- **ReflexFacade**: Hot-path optimized interface (≤8 ticks)
-- **EnterpriseFacade**: Fortune-5 features interface
-- **ApiFacade**: REST/gRPC interface
-- **CliFacade**: Command-line interface
-
-### 2. Service Layer (Business Logic)
-- **WorkflowService**: Core workflow operations
-- **CaseService**: Case lifecycle management
-- **PatternService**: Pattern execution orchestration
-- **ProvenanceService**: Receipt generation and validation
-- **ResourceService**: Resource allocation coordination
-
-### 3. Builder Layer (Configuration)
-- **EngineBuilder**: Fluent API for engine construction
-- **ServiceBuilder**: Service configuration builder
-- **FacadeBuilder**: Facade configuration builder
-
-### 4. Trait-Based Interfaces (Extensibility)
-- **WorkflowExecutor**: Core execution interface
-- **RuntimeClassExecutor**: R1/W1/C1 execution interfaces
-- **ProvenanceProvider**: Receipt generation interface
-- **ResourceProvider**: Resource allocation interface
-
-### 5. Plugin Architecture (Runtime Classes)
-- **R1Executor**: Hot-path executor plugin (≤8 ticks)
-- **W1Executor**: Warm-path executor plugin (≤1ms)
-- **C1Executor**: Cold-path executor plugin (≤500ms)
-
-### 6. Unified Gateway (Routing)
-- **WorkflowGateway**: Routes requests to appropriate facade/service
-- **RuntimeRouter**: Routes to appropriate runtime class executor
-
-See [ABSTRACTION_ARCHITECTURE_PLAN.md](../ABSTRACTION_ARCHITECTURE_PLAN.md) for detailed architecture documentation.
-
 ## Components
 
 ### Workflow Engine

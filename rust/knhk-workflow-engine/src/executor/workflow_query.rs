@@ -21,7 +21,7 @@ impl WorkflowEngine {
 
         // Fallback to state store
         let store_arc = self.state_store.read().await;
-        store_arc.load_spec(&spec_id)?.ok_or_else(|| {
+        (*store_arc).load_spec(&spec_id)?.ok_or_else(|| {
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })
     }

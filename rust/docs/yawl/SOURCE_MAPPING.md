@@ -277,7 +277,7 @@ This document maps extracted YAWL artifacts (9 C4 diagrams, 407 code files) to:
 - `rust/knhk-workflow-engine/src/parser/extractor.rs` - RDF extraction
 - `rust/knhk-unrdf/` - unrdf integration
 
-**WIP**: `rust/knhk-workflow-engine/src/compiler/mod.rs:104` - `unimplemented!("compile_rdf_to_ir")`
+**Status**: ✅ IMPLEMENTED - `rust/knhk-workflow-engine/src/compiler/mod.rs` - Complete μ compiler (A = μ(O))
 
 ### Timebase Integration
 
@@ -292,7 +292,12 @@ This document maps extracted YAWL artifacts (9 C4 diagrams, 407 code files) to:
 
 **WIP Location**: `rust/knhk-workflow-engine/src/compiler/mod.rs:104`
 
-**Status**: `unimplemented!("compile_rdf_to_ir: needs RDF parsing, SHACL validation, SPARQL extraction, and IR generation")`
+**Status**: ✅ IMPLEMENTED - Complete RDF→IR compilation pipeline with:
+- Graph hashing (SHA-256 for provenance H(O))
+- SHACL validation (integrated with knhk-unrdf, feature-gated)
+- RDF extraction (reuses existing extract_workflow_spec)
+- IR lowering (pattern mapping, bitset computation)
+- IR sealing and persistence (hash(A) = hash(μ(O)))
 
 **Extracted Artifacts That Can Help**:
 - `code/rdf_src_lib.rs` - RDF integration reference
@@ -523,7 +528,7 @@ This document maps extracted YAWL artifacts (9 C4 diagrams, 407 code files) to:
 
 ### Partially Mapped (WIP)
 
-- RDF Compiler: ⏳ WIP - `unimplemented!()` in `compiler/mod.rs:104`
+- RDF Compiler: ✅ IMPLEMENTED - Complete μ compiler in `compiler/mod.rs` (A = μ(O))
 - Connection Pooling: ⏳ WIP - `unimplemented!()` in `performance/pooling.rs:53`
 - Connector Execution: ⏳ WIP - `unimplemented!()` in `integration/connectors.rs:37`
 - SPARQL Filter: ⏳ WIP - `unimplemented!()` in `ggen/mod.rs:219`
@@ -539,7 +544,7 @@ This document maps extracted YAWL artifacts (9 C4 diagrams, 407 code files) to:
 
 ## Next Steps
 
-1. **Use extracted RDF code** to implement `compile_rdf_to_ir`
+1. ✅ **RDF compiler implemented** - `compile_rdf_to_ir` fully implemented with complete pipeline
 2. **Add workflow examples** to test suite (`code/*.ttl`, `code/*.xml`)
 3. **Use API examples** for documentation (`code/json_*.json`)
 4. **Reference hot path code** for C implementation validation

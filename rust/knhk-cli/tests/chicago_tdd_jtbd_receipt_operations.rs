@@ -55,12 +55,12 @@ ex:Alice a ex:Person .
         "receipt::list should return Result"
     );
 
-    // If successful, should return Vec<String>
-    if let Ok(receipts) = result {
-        // Receipts may be empty if not yet generated, but list should work
+    // If successful, should return ReceiptEntry
+    if let Ok(receipt_entry) = result {
+        // Receipt entry should have valid ID
         assert!(
-            receipts.iter().all(|r| !r.is_empty()),
-            "Receipt IDs should not be empty"
+            !receipt_entry.id.is_empty(),
+            "Receipt ID should not be empty"
         );
     }
 }

@@ -33,7 +33,7 @@ impl WorkflowEngine {
 
         // Persist to state store
         let store_arc = self.state_store.read().await;
-        store_arc.save_case(case_id, &case_clone)?;
+        (*store_arc).save_case(case_id, &case_clone)?;
 
         Ok(case_id)
     }
@@ -49,7 +49,7 @@ impl WorkflowEngine {
 
         // Persist state
         let store_arc = self.state_store.read().await;
-        store_arc.save_case(case_id, case)?;
+        (*store_arc).save_case(case_id, case)?;
 
         Ok(())
     }
@@ -119,7 +119,7 @@ impl WorkflowEngine {
 
         // Persist state
         let store_arc = self.state_store.read().await;
-        store_arc.save_case(case_id, case)?;
+        (*store_arc).save_case(case_id, case)?;
 
         Ok(())
     }
@@ -136,6 +136,6 @@ impl WorkflowEngine {
     /// List all cases for a workflow specification
     pub async fn list_cases(&self, spec_id: WorkflowSpecId) -> WorkflowResult<Vec<CaseId>> {
         let store = self.state_store.read().await;
-        store.list_cases(&spec_id)
+        (*store).list_cases(&spec_id)
     }
 }

@@ -511,8 +511,8 @@ async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
 #[tokio::test]
 async fn test_state_persistence() -> WorkflowResult<()> {
     // Arrange: Create first engine instance
-    let db_path = "./test_workflow_db_persistence";
-    let state_store = StateStore::new(db_path)?;
+    let db_path = format!("./test_workflow_db_persistence_{}", std::process::id());
+    let state_store = StateStore::new(&db_path)?;
     let engine1 = WorkflowEngine::new(state_store);
 
     // Arrange: Create and register workflow
@@ -554,7 +554,9 @@ async fn test_state_persistence() -> WorkflowResult<()> {
     let case_id = engine1.create_case(spec.id, test_data).await?;
 
     // Act: Create second engine instance with same state store
-    let state_store2 = StateStore::new(db_path)?;
+    // Note: We need to drop engine1 first to release the database lock
+    drop(engine1);
+    let state_store2 = StateStore::new(&db_path)?;
     let engine2 = WorkflowEngine::new(state_store2);
 
     // Assert: Second engine can retrieve workflow

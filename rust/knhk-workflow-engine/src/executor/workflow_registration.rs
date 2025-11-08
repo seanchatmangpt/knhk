@@ -31,7 +31,7 @@ impl WorkflowEngine {
 
         // Persist to state store
         let store_arc = self.state_store.read().await;
-        store_arc.save_spec(&spec_clone)?;
+        (*store_arc).save_spec(&spec_clone)?;
 
         Ok(())
     }

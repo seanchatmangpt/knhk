@@ -167,3 +167,30 @@ Tests use `TestDataBuilder` from `chicago-tdd-tools` to create realistic test da
 - All tests use real collaborators (no mocks)
 - Tests verify behavior, not implementation details
 
+## Implementation Details
+
+### StateStore Access Pattern
+
+The `WorkflowEngine` uses `Arc<RwLock<Arc<StateStore>>>` for state store access:
+- Outer `Arc<RwLock<...>>`: Allows concurrent read access across async tasks
+- Inner `Arc<StateStore>`: Allows sharing the StateStore with services (e.g., TimerService)
+- Access pattern: `(*store).method()` where `store` is obtained via `self.state_store.read().await`
+
+Example:
+```rust
+let store_arc = self.state_store.read().await;
+(*store_arc).save_spec(&spec_clone)?;
+```
+
+### Test Database Isolation
+
+- Each test uses a unique database path to prevent conflicts
+- State persistence test uses process ID in path: `format!("./test_workflow_db_persistence_{}", std::process::id())`
+- Tests must drop engine instances before creating new ones with the same database path to release locks
+
+### Runtime Issues Fixed
+
+1. **Database Lock Conflicts**: Fixed `test_state_persistence` by dropping the first engine instance before creating the second one
+2. **StateStore Type Mismatch**: Fixed compilation errors by properly dereferencing `Arc<StateStore>` when accessing methods
+3. **Compiler Module Imports**: Fixed by using public re-exports from `parser` module instead of private modules
+

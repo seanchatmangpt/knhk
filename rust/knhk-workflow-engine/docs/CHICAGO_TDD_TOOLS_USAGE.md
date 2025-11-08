@@ -135,5 +135,40 @@ cargo test --test chicago_tdd_tools_integration
 
 # Run specific test
 cargo test --test chicago_tdd_tools_integration test_workflow_execution_with_chicago_tdd_tools
+
+# Run with output
+cargo test --test chicago_tdd_tools_integration -- --nocapture
+```
+
+## Current Status
+
+All 12 tests in `tests/chicago_tdd_tools_integration.rs` are passing:
+- ✅ Workflow registration and retrieval
+- ✅ Case creation and state transitions
+- ✅ Multi-task workflow execution
+- ✅ Error handling (invalid workflows, missing cases)
+- ✅ Case cancellation
+- ✅ Multiple workflows and cases
+- ✅ State persistence
+- ✅ Admission gate integration
+- ✅ Engine services access
+- ✅ Complete workflow lifecycle
+
+## Known Patterns
+
+### StateStore Access
+
+When accessing `StateStore` from `WorkflowEngine`, use dereferencing:
+```rust
+let store = engine.state_store().read().await;
+(*store).save_case(case_id, &case)?;
+```
+
+### Test Database Paths
+
+Use unique paths for each test to avoid conflicts:
+```rust
+let db_path = format!("./test_db_{}", std::process::id());
+let state_store = StateStore::new(&db_path)?;
 ```
 
