@@ -1,9 +1,6 @@
 //! Turtle/YAWL workflow parser
 
 use oxigraph::store::Store;
-use oxigraph::store::StoreOptions;
-use oxigraph::Model;
-use rio_turtle::{TurtleError, TurtleParser};
 use std::io::Read;
 use uuid::Uuid;
 
@@ -11,7 +8,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 
 /// Unique identifier for a workflow specification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct WorkflowSpecId(pub Uuid);
+pub struct WorkflowSpecId(#[serde(with = "uuid")] pub Uuid);
 
 impl WorkflowSpecId {
     /// Generate a new spec ID
@@ -139,8 +136,8 @@ pub struct WorkflowParser {
 impl WorkflowParser {
     /// Create a new parser
     pub fn new() -> WorkflowResult<Self> {
-        let store = Store::new(StoreOptions::default())
-            .map_err(|e| WorkflowError::Parse(format!("Failed to create RDF store: {}", e)))?;
+        let store = Store::new()
+            .map_err(|e| WorkflowError::Parse(format!("Failed to create RDF store: {:?}", e)))?;
         Ok(Self { store })
     }
 
@@ -149,9 +146,10 @@ impl WorkflowParser {
         // Parse Turtle into RDF store
         let parser = TurtleParser::new(turtle.as_bytes(), None);
         let mut quads = Vec::new();
-
-        for quad in parser {
-            let quad = quad.map_err(|e| WorkflowError::from(e))?;
+        
+        // TurtleParser implements Iterator trait
+        for quad_result in parser {
+            let quad = quad_result.map_err(|e| WorkflowError::from(e))?;
             quads.push(quad);
         }
 

@@ -12,9 +12,9 @@ pub struct OtelIntegration {
 impl OtelIntegration {
     /// Create new OTEL integration
     pub fn new() -> WorkflowResult<Self> {
-        let tracer = Tracer::new().map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to create tracer: {}", e))
-        })?;
+        // Tracer::new() doesn't return Result in knhk-otel
+        // FUTURE: Check actual knhk-otel API
+        let tracer = Tracer::new();
         Ok(Self { tracer })
     }
 

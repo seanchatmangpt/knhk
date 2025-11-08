@@ -8,7 +8,7 @@ use crate::error::WorkflowResult;
 
 /// Unique identifier for a workflow case
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct CaseId(pub Uuid);
+pub struct CaseId(#[serde(with = "uuid")] pub Uuid);
 
 impl CaseId {
     /// Generate a new case ID
@@ -38,6 +38,7 @@ impl std::fmt::Display for CaseId {
 
 /// Case execution state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum CaseState {
     /// Case is created but not yet started
     Created,
@@ -63,10 +64,13 @@ pub struct Case {
     /// Current state
     pub state: CaseState,
     /// Case creation timestamp
+    #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
     /// Case start timestamp
+    #[serde(with = "chrono::serde::ts_seconds_option")]
     pub started_at: Option<DateTime<Utc>>,
     /// Case completion timestamp
+    #[serde(with = "chrono::serde::ts_seconds_option")]
     pub completed_at: Option<DateTime<Utc>>,
     /// Case data (input/output variables)
     pub data: serde_json::Value,

@@ -3,7 +3,6 @@
 // ACCEPTABLE: Mutex poisoning .expect() is allowed in this module (unrecoverable error)
 #![allow(clippy::expect_used)]
 
-use crate::error::SidecarError;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};

@@ -89,10 +89,9 @@ impl StateStore {
         let prefix = format!("case:");
         let mut cases = Vec::new();
 
-        for result in self
-            .db
-            .scan_prefix(prefix.as_bytes())
-            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?
+        let iter = self.db.scan_prefix(prefix.as_bytes());
+        for result in iter {
+            let (_key, value) = result.map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;
         {
             let (key, value) = result
                 .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;

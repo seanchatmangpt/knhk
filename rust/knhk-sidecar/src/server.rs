@@ -6,7 +6,6 @@ use crate::config::SidecarConfig;
 use crate::error::{SidecarError, SidecarResult};
 use crate::health::HealthChecker;
 use crate::metrics::{LatencyTimer, MetricsCollector};
-use crate::service::KgcSidecarService;
 use crate::tls::{create_tls_server_config, TlsConfig};
 use std::sync::Arc;
 

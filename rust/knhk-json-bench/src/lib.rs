@@ -160,7 +160,6 @@ pub fn parse_json(json_bytes: Vec<u8>) -> Result<Vec<u8>, PatternError> {
 /// Full examples are in `knhk-patterns/src/pipeline_ext.rs`.
 pub fn demonstrate_etl_patterns() -> Result<(), PatternError> {
     use knhk_etl::Pipeline;
-    use knhk_patterns::PipelinePatternExt;
 
     // Create ETL pipeline
     let mut _pipeline = Pipeline::new(

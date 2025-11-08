@@ -29,6 +29,12 @@ fn get_native_hook_registry() -> &'static Mutex<NativeHookRegistry> {
 #[cfg(feature = "native")]
 /// Execute a hook by name (native Rust implementation)
 /// Use case 1: Single hook execution
+///
+/// # Safety
+/// This function dereferences raw pointers. The caller must ensure:
+/// - All pointers are valid and not null
+/// - `result_json` has capacity for at least `result_size` bytes
+/// - All string pointers point to valid null-terminated C strings
 #[no_mangle]
 pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
     hook_name: *const c_char,
@@ -50,14 +56,12 @@ pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
                 let error_msg = r#"{"success":false,"error":"Invalid hook_name encoding"}"#;
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                unsafe {
-                    std::ptr::copy_nonoverlapping(
-                        error_bytes.as_ptr(),
-                        result_json as *mut u8,
-                        copy_len,
-                    );
-                    *result_json.add(copy_len) = 0;
-                }
+                std::ptr::copy_nonoverlapping(
+                    error_bytes.as_ptr(),
+                    result_json as *mut u8,
+                    copy_len,
+                );
+                *result_json.add(copy_len) = 0;
                 return -1;
             }
         }
@@ -70,14 +74,12 @@ pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
                 let error_msg = r#"{"success":false,"error":"Invalid hook_query encoding"}"#;
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                unsafe {
-                    std::ptr::copy_nonoverlapping(
-                        error_bytes.as_ptr(),
-                        result_json as *mut u8,
-                        copy_len,
-                    );
-                    *result_json.add(copy_len) = 0;
-                }
+                std::ptr::copy_nonoverlapping(
+                    error_bytes.as_ptr(),
+                    result_json as *mut u8,
+                    copy_len,
+                );
+                *result_json.add(copy_len) = 0;
                 return -1;
             }
         }
@@ -90,14 +92,12 @@ pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
                 let error_msg = r#"{"success":false,"error":"Invalid turtle_data encoding"}"#;
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                unsafe {
-                    std::ptr::copy_nonoverlapping(
-                        error_bytes.as_ptr(),
-                        result_json as *mut u8,
-                        copy_len,
-                    );
-                    *result_json.add(copy_len) = 0;
-                }
+                std::ptr::copy_nonoverlapping(
+                    error_bytes.as_ptr(),
+                    result_json as *mut u8,
+                    copy_len,
+                );
+                *result_json.add(copy_len) = 0;
                 return -1;
             }
         }
@@ -143,14 +143,12 @@ pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
                 );
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                unsafe {
-                    std::ptr::copy_nonoverlapping(
-                        error_bytes.as_ptr(),
-                        result_json as *mut u8,
-                        copy_len,
-                    );
-                    *result_json.add(copy_len) = 0;
-                }
+                std::ptr::copy_nonoverlapping(
+                    error_bytes.as_ptr(),
+                    result_json as *mut u8,
+                    copy_len,
+                );
+                *result_json.add(copy_len) = 0;
                 -7
             }
         },
@@ -175,7 +173,7 @@ pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
 /// Execute multiple hooks in batch (native Rust implementation)
 /// Use case 2: Batch hook evaluation for efficiency
 #[no_mangle]
-pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
+pub unsafe extern "C" fn knhk_unrdf_execute_hooks_batch_native(
     hooks_json: *const c_char,
     turtle_data: *const c_char,
     result_json: *mut c_char,
@@ -193,14 +191,12 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                 let error_msg = r#"{"success":false,"error":"Invalid hooks_json encoding"}"#;
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                unsafe {
-                    std::ptr::copy_nonoverlapping(
-                        error_bytes.as_ptr(),
-                        result_json as *mut u8,
-                        copy_len,
-                    );
-                    *result_json.add(copy_len) = 0;
-                }
+                std::ptr::copy_nonoverlapping(
+                    error_bytes.as_ptr(),
+                    result_json as *mut u8,
+                    copy_len,
+                );
+                *result_json.add(copy_len) = 0;
                 return -1;
             }
         }
@@ -213,14 +209,12 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                 let error_msg = r#"{"success":false,"error":"Invalid turtle_data encoding"}"#;
                 let error_bytes = error_msg.as_bytes();
                 let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                unsafe {
-                    std::ptr::copy_nonoverlapping(
-                        error_bytes.as_ptr(),
-                        result_json as *mut u8,
-                        copy_len,
-                    );
-                    *result_json.add(copy_len) = 0;
-                }
+                std::ptr::copy_nonoverlapping(
+                    error_bytes.as_ptr(),
+                    result_json as *mut u8,
+                    copy_len,
+                );
+                *result_json.add(copy_len) = 0;
                 return -1;
             }
         }
@@ -344,6 +338,10 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
 
 #[cfg(feature = "native")]
 /// Register a hook in the native registry
+///
+/// # Safety
+/// This function dereferences a raw pointer. The caller must ensure:
+/// - `hook_json` is a valid pointer to a null-terminated C string
 #[no_mangle]
 pub unsafe extern "C" fn knhk_unrdf_register_hook_native(hook_json: *const c_char) -> c_int {
     if hook_json.is_null() {
@@ -375,7 +373,7 @@ pub unsafe extern "C" fn knhk_unrdf_register_hook_native(hook_json: *const c_cha
 #[cfg(feature = "native")]
 /// Deregister a hook from the native registry
 #[no_mangle]
-pub extern "C" fn knhk_unrdf_deregister_hook_native(hook_id: *const c_char) -> c_int {
+pub unsafe extern "C" fn knhk_unrdf_deregister_hook_native(hook_id: *const c_char) -> c_int {
     if hook_id.is_null() {
         return -1;
     }

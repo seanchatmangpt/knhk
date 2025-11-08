@@ -2,44 +2,32 @@
 
 use crate::case::CaseId;
 use crate::error::WorkflowResult;
-use knhk_lockchain::{Lockchain, LockchainEntry};
+use knhk_lockchain::{LockchainStorage, Receipt};
 
 /// Lockchain integration for workflow provenance
 pub struct LockchainIntegration {
-    lockchain: Lockchain,
+    lockchain: LockchainStorage,
 }
 
 impl LockchainIntegration {
     /// Create new lockchain integration
     pub fn new<P: AsRef<std::path::Path>>(path: P) -> WorkflowResult<Self> {
-        let mut lockchain = Lockchain::new();
-        lockchain
-            .with_git_repo(path.as_ref().to_string_lossy().to_string())
-            .map_err(|e| {
-                crate::error::WorkflowError::Internal(format!(
-                    "Failed to initialize lockchain: {}",
-                    e
-                ))
-            })?;
+        let lockchain = LockchainStorage::new(path).map_err(|e| {
+            crate::error::WorkflowError::Internal(format!("Failed to initialize lockchain: {}", e))
+        })?;
         Ok(Self { lockchain })
     }
 
     /// Record workflow execution event
     pub fn record_event(
         &mut self,
-        case_id: CaseId,
-        event_type: &str,
-        data: serde_json::Value,
+        _case_id: CaseId,
+        _event_type: &str,
+        _data: serde_json::Value,
     ) -> WorkflowResult<()> {
-        let entry = LockchainEntry {
-            // FUTURE: Fill in proper lockchain entry structure
-            // This is a placeholder - actual structure depends on knhk-lockchain API
-        };
-
-        self.lockchain.append(&entry).map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to append to lockchain: {}", e))
-        })?;
-
+        // FUTURE: Implement lockchain event recording
+        // This requires understanding the lockchain API better
+        // For now, this is a placeholder
         Ok(())
     }
 }

@@ -387,7 +387,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     if let Some(ref endpoint) = weaver_endpoint {
         #[cfg(feature = "otel")]
         {
-            use knhk_otel::{SpanStatus, Tracer};
+            use knhk_otel::SpanStatus;
             let mut tracer = knhk_otel::Tracer::with_otlp_exporter(endpoint.clone());
             let span_ctx = tracer.start_span("knhk.sidecar.start".to_string(), None);
             tracer.add_attribute(

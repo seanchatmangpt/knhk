@@ -71,9 +71,9 @@ impl From<std::io::Error> for WorkflowError {
     }
 }
 
-impl From<oxigraph::store::StoreError> for WorkflowError {
-    fn from(err: oxigraph::store::StoreError) -> Self {
-        WorkflowError::Parse(format!("RDF store error: {}", err))
+impl From<oxigraph::storage::StorageError> for WorkflowError {
+    fn from(err: oxigraph::storage::StorageError) -> Self {
+        WorkflowError::Parse(format!("RDF store error: {:?}", err))
     }
 }
 

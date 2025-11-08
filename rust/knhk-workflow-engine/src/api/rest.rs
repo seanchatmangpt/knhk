@@ -41,14 +41,13 @@ impl RestApiServer {
         State(engine): State<Arc<WorkflowEngine>>,
         Json(request): Json<RegisterWorkflowRequest>,
     ) -> Result<Json<RegisterWorkflowResponse>, StatusCode> {
+        let spec_id = request.spec.id;
         engine
             .register_workflow(request.spec)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        Ok(Json(RegisterWorkflowResponse {
-            spec_id: request.spec.id,
-        }))
+        Ok(Json(RegisterWorkflowResponse { spec_id }))
     }
 
     /// Get workflow specification

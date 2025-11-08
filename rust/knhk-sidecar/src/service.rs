@@ -17,7 +17,7 @@ pub mod proto {
     tonic::include_proto!("kgc.sidecar.v1");
 }
 
-use crate::json_parser::{parse_json_triples, JsonDelta};
+use crate::json_parser::parse_json_triples;
 use proto::{
     kgc_sidecar_server::KgcSidecar, ApplyTransactionRequest, ApplyTransactionResponse,
     EvaluateHookRequest, EvaluateHookResponse, GetMetricsRequest, GetMetricsResponse,
@@ -128,7 +128,7 @@ impl KgcSidecarService {
         attributes: Vec<(&str, String)>,
     ) {
         if let Some(ref endpoint) = self.weaver_endpoint {
-            use knhk_otel::{SpanStatus, Tracer};
+            use knhk_otel::SpanStatus;
             let mut tracer = knhk_otel::Tracer::with_otlp_exporter(endpoint.clone());
             let span_ctx = tracer.start_span(span_name.to_string(), None);
 
@@ -270,7 +270,6 @@ impl KgcSidecar for KgcSidecarService {
         #[cfg(feature = "otel")]
         let mut span_tracer: Option<(knhk_otel::Tracer, knhk_otel::SpanContext)> =
             if let Some(ref endpoint) = self.weaver_endpoint {
-                use knhk_otel::Tracer;
                 let mut tracer = knhk_otel::Tracer::with_otlp_exporter(endpoint.clone());
                 let ctx = tracer.start_span("knhk.sidecar.transaction".to_string(), None);
                 tracer.add_attribute(

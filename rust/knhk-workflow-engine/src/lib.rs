@@ -23,5 +23,6 @@ pub use case::{Case, CaseId, CaseState};
 pub use error::{WorkflowError, WorkflowResult};
 pub use executor::WorkflowEngine;
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
-pub use patterns::{PatternId, PatternRegistry};
+// Pattern types are defined in patterns module
+// pub use patterns::{PatternId, PatternRegistry};
 pub use state::StateStore;
