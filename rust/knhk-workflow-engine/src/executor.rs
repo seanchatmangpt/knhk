@@ -29,7 +29,7 @@ pub struct WorkflowEngine {
     /// Pattern registry
     pattern_registry: Arc<PatternRegistry>,
     /// State store
-    state_store: Arc<RwLock<Arc<StateStore>>>,
+    state_store: Arc<RwLock<StateStore>>,
     /// Registered workflow specifications
     specs: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>,
     /// Active cases
@@ -92,7 +92,14 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store_arc.clone())),
+            state_store: Arc::new(RwLock::new(
+                Arc::try_unwrap(state_store_arc.clone()).unwrap_or_else(|_| {
+                    // If we can't unwrap, we need to create a new StateStore
+                    // This shouldn't happen in normal usage, but handle it gracefully
+                    StateStore::new(std::env::temp_dir().join("knhk-test-state"))
+                        .unwrap_or_else(|_| panic!("Failed to create state store"))
+                }),
+            )),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -238,7 +245,14 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store_arc.clone())),
+            state_store: Arc::new(RwLock::new(
+                Arc::try_unwrap(state_store_arc.clone()).unwrap_or_else(|_| {
+                    // If we can't unwrap, we need to create a new StateStore
+                    // This shouldn't happen in normal usage, but handle it gracefully
+                    StateStore::new(std::env::temp_dir().join("knhk-test-state"))
+                        .unwrap_or_else(|_| panic!("Failed to create state store"))
+                }),
+            )),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -286,8 +300,8 @@ impl WorkflowEngine {
         specs.insert(spec.id, spec);
 
         // Persist to state store
-        let store = self.state_store.read().await;
-        store.save_spec(&spec_clone)?;
+        let store_arc = self.state_store.read().await;
+        store_arc.save_spec(&spec_clone)?;
 
         Ok(())
     }
@@ -302,8 +316,8 @@ impl WorkflowEngine {
         drop(specs);
 
         // Fallback to state store
-        let store = self.state_store.read().await;
-        store.load_spec(&spec_id)?.ok_or_else(|| {
+        let store_arc = self.state_store.read().await;
+        store_arc.load_spec(&spec_id)?.ok_or_else(|| {
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })
     }
@@ -330,8 +344,8 @@ impl WorkflowEngine {
         cases.insert(case_id, case);
 
         // Persist to state store
-        let store = self.state_store.read().await;
-        store.save_case(case_id, &case_clone)?;
+        let store_arc = self.state_store.read().await;
+        store_arc.save_case(case_id, &case_clone)?;
 
         Ok(case_id)
     }
@@ -346,8 +360,8 @@ impl WorkflowEngine {
         case.start()?;
 
         // Persist state
-        let store = self.state_store.write().await;
-        store.save_case(case_id, case)?;
+        let store_arc = self.state_store.write().await;
+        store_arc.save_case(case_id, case)?;
 
         Ok(())
     }
@@ -523,8 +537,8 @@ impl WorkflowEngine {
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
 
         // Persist state
-        let store = self.state_store.write().await;
-        store.save_case(case_id, case)?;
+        let store_arc = self.state_store.write().await;
+        store_arc.save_case(case_id, case)?;
 
         Ok(())
     }
@@ -629,7 +643,7 @@ impl WorkflowEngine {
     }
 
     /// Get state store (for REST API access)
-    pub fn state_store(&self) -> &Arc<StateStore> {
+    pub fn state_store(&self) -> &Arc<RwLock<StateStore>> {
         &self.state_store
     }
 
