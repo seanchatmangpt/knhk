@@ -145,3 +145,4 @@ KNHK applies simdjson's lessons to knowledge graph operations:
 - Explore [performance philosophy](performance-philosophy.md)
 - See [how simdjson lessons are applied](part4/80-20-implementation.md)
 
+

@@ -12,7 +12,8 @@ pub struct LockchainIntegration {
 impl LockchainIntegration {
     /// Create new lockchain integration
     pub fn new<P: AsRef<std::path::Path>>(path: P) -> WorkflowResult<Self> {
-        let lockchain = LockchainStorage::new(path.as_ref()).map_err(|e| {
+        let path_str = path.as_ref().to_string_lossy().to_string();
+        let lockchain = LockchainStorage::new(&path_str).map_err(|e| {
             crate::error::WorkflowError::Internal(format!(
                 "Failed to initialize lockchain storage: {:?}",
                 e

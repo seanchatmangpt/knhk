@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::case::{Case, CaseId, CaseState};
+use crate::case::{Case, CaseId};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 
 /// Request to register a workflow

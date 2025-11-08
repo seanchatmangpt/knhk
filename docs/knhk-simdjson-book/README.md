@@ -42,3 +42,4 @@ The book is organized into:
 - Explore [Part I: Foundations](part1/what-is-knhk.md)
 - Review [Part IV: Applied Optimizations](part4/80-20-implementation.md)
 
+

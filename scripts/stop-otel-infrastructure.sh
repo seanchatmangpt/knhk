@@ -24,3 +24,4 @@ $COMPOSE_CMD -f docker-compose.otel.yml down
 
 echo "✅ Infrastructure stopped"
 
+

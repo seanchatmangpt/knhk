@@ -182,6 +182,7 @@ impl WorkflowParser {
             workflow_spec_type.as_str()
         );
 
+        #[allow(deprecated)]
         let _query_results = self
             .store
             .query(&query)

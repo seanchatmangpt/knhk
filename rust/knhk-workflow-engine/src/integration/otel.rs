@@ -1,21 +1,14 @@
 //! OTEL integration
 
-use crate::error::WorkflowResult;
-use knhk_otel::Tracer;
 use tracing::{instrument, Span};
 
 /// OTEL integration for workflow engine
-pub struct OtelIntegration {
-    tracer: Tracer,
-}
+pub struct OtelIntegration;
 
 impl OtelIntegration {
     /// Create new OTEL integration
-    pub fn new() -> WorkflowResult<Self> {
-        // Tracer::new() doesn't return Result in knhk-otel
-        // FUTURE: Check actual knhk-otel API
-        let tracer = Tracer::new();
-        Ok(Self { tracer })
+    pub fn new() -> Self {
+        Self
     }
 
     /// Start a span for workflow execution
@@ -39,8 +32,6 @@ impl OtelIntegration {
 
 impl Default for OtelIntegration {
     fn default() -> Self {
-        // Default implementation should not fail
-        // If new() fails, we'll panic as this is a programming error
-        Self::new().unwrap_or_else(|e| panic!("Failed to create OTEL integration: {:?}", e))
+        Self::new()
     }
 }

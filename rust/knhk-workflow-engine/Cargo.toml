@@ -21,6 +21,7 @@ knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
 knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
 knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
+knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 
 # RDF & Turtle parsing
 oxigraph = "0.5"

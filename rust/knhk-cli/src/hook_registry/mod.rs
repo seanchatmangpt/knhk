@@ -4,4 +4,5 @@ pub mod registry;
 pub mod store;
 
 pub use registry::HookRegistryIntegration;
-pub use store::HookStore;
+// Re-exported for internal use only
+// pub use store::HookStore;

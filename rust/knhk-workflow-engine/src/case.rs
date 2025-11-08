@@ -9,7 +9,7 @@ use crate::error::WorkflowResult;
 /// Unique identifier for a workflow case
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct CaseId(pub Uuid);
+pub struct CaseId(#[serde(with = "uuid::serde::compact")] pub Uuid);
 
 impl CaseId {
     /// Generate a new case ID

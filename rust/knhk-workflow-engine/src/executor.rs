@@ -14,8 +14,7 @@ use tokio::sync::RwLock;
 /// Workflow execution engine
 pub struct WorkflowEngine {
     /// Pattern registry
-    /// TODO: Define PatternRegistry type
-    pattern_registry: Arc<()>,
+    pattern_registry: Arc<PatternRegistry>,
     /// State store
     state_store: Arc<RwLock<StateStore>>,
     /// Registered workflow specifications
@@ -28,7 +27,7 @@ impl WorkflowEngine {
     /// Create a new workflow engine
     pub fn new(state_store: StateStore) -> Self {
         Self {
-            pattern_registry: Arc::new(()),
+            pattern_registry: Arc::new(PatternRegistry::new()),
             state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
@@ -54,13 +53,13 @@ impl WorkflowEngine {
     pub async fn create_case(
         &self,
         spec_id: WorkflowSpecId,
-        data: serde_json::Value,
+        _data: serde_json::Value,
     ) -> WorkflowResult<CaseId> {
         // Verify workflow exists
         let _spec = self.get_workflow(spec_id).await?;
 
         // Create case
-        let case = Case::new(spec_id, data);
+        let case = Case::new(spec_id, _data);
         let case_id = case.id;
 
         // Store case
@@ -69,7 +68,7 @@ impl WorkflowEngine {
         cases.insert(case_id, case);
 
         // Persist to state store
-        let mut store = self.state_store.write().await;
+        let store = self.state_store.write().await;
         store.save_case(case_id, &case_clone)?;
 
         Ok(case_id)
@@ -85,7 +84,7 @@ impl WorkflowEngine {
         case.start()?;
 
         // Persist state
-        let mut store = self.state_store.write().await;
+        let store = self.state_store.write().await;
         store.save_case(case_id, case)?;
 
         Ok(())
@@ -106,7 +105,7 @@ impl WorkflowEngine {
 
         // Get workflow specification
         let specs = self.specs.read().await;
-        let spec = specs.get(&case.spec_id).ok_or_else(|| {
+        let _spec = specs.get(&case.spec_id).ok_or_else(|| {
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", case.spec_id))
         })?;
 
@@ -126,10 +125,8 @@ impl WorkflowEngine {
             .get_mut(&case_id)
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
 
-        case.cancel()?;
-
         // Persist state
-        let mut store = self.state_store.write().await;
+        let store = self.state_store.write().await;
         store.save_case(case_id, case)?;
 
         Ok(())
@@ -145,19 +142,20 @@ impl WorkflowEngine {
     }
 
     /// Execute a pattern
-    /// TODO: Implement pattern execution when pattern types are defined
     pub async fn execute_pattern(
         &self,
-        _pattern_id: u32,
-        _context: serde_json::Value,
-    ) -> WorkflowResult<serde_json::Value> {
-        // Pattern execution will be implemented when pattern types are defined
-        Ok(serde_json::json!({}))
+        pattern_id: &PatternId,
+        context: PatternExecutionContext,
+    ) -> WorkflowResult<PatternExecutionResult> {
+        self.pattern_registry
+            .execute(pattern_id, &context)
+            .ok_or_else(|| {
+                WorkflowError::InvalidSpecification(format!("Pattern {} not found", pattern_id))
+            })
     }
 
     /// Get pattern registry
-    /// TODO: Return PatternRegistry when it's defined
-    pub fn pattern_registry(&self) -> &() {
+    pub fn pattern_registry(&self) -> &PatternRegistry {
         &self.pattern_registry
     }
 }

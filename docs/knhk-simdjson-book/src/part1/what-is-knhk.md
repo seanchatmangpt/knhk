@@ -116,3 +116,4 @@ KNHK applies simdjson's performance optimization techniques:
 - Understand [why we combine them](part1/why-combine.md)
 - Explore [performance philosophy](part1/performance-philosophy.md)
 
+

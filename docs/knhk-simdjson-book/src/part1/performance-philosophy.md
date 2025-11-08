@@ -100,3 +100,4 @@ Both KNHK and simdjson maintain code quality despite performance focus:
 - Explore [measurement and validation](part4/measurement.md)
 - Review [best practices](part5/best-practices.md)
 
+

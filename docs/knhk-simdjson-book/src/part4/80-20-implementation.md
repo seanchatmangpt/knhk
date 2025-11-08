@@ -124,3 +124,4 @@ These optimizations target the critical path (hot path operations) and provide:
 - Review [case studies](part6/case-study-memory-reuse.md)
 - Learn [best practices](part5/best-practices.md)
 
+

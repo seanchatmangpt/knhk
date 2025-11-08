@@ -168,3 +168,4 @@ pub struct SoAArrays {
 - See [how optimizations are implemented](part4/80-20-implementation.md)
 - Review [case studies](part6/case-study-memory-reuse.md)
 
+
