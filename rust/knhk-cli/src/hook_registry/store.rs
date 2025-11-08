@@ -59,15 +59,14 @@ impl HookStore {
         let query = Query::parse(query_str, None)
             .map_err(|e| format!("Failed to parse SPARQL query: {}", e))?;
 
-        let results = store
+        let results: oxigraph::sparql::QueryResults = store
             .query(query)
             .map_err(|e| format!("Failed to execute SPARQL query: {}", e))?;
 
         let mut hooks = Vec::new();
 
         if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
-            for solution_result in solutions {
-                let solution = solution_result?;
+            for solution in solutions {
                 let mut id: Option<String> = None;
                 let mut name: Option<String> = None;
                 let mut op: Option<String> = None;
@@ -271,12 +270,10 @@ impl HookStore {
 
         // Insert graph into store
         for triple in graph.iter() {
-            let quad = Quad::new(
-                triple.subject.into(),
-                triple.predicate.into(),
-                triple.object.into(),
-                GraphName::DefaultGraph,
-            );
+            let subject: oxigraph::model::Subject = triple.subject().into();
+            let predicate: oxigraph::model::NamedNode = triple.predicate().into();
+            let object: oxigraph::model::Term = triple.object().into();
+            let quad = Quad::new(subject, predicate, object, GraphName::DefaultGraph);
             store
                 .insert(&quad)
                 .map_err(|e| format!("Failed to insert hook triple into Oxigraph: {}", e))?;

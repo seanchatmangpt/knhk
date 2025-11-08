@@ -1,77 +1,102 @@
-# Integration Tests with Testcontainers
+# OpenTelemetry Infrastructure for E2E Tests
 
-This directory contains integration tests using Testcontainers for real containerized services.
+This directory contains Docker Compose configurations for setting up OpenTelemetry infrastructure required for E2E tests.
 
-## Structure
+## Quick Start
 
-- **Rust Tests** (`../rust/knhk-integration-tests/`): Rust integration tests using the `testcontainers` crate
-- **Docker Compose** (`docker-compose.yml`): Orchestrates test containers
-- **C Integration Tests**: C tests that verify connectivity to containerized services
-
-## Prerequisites
-
-- Docker and Docker Compose installed
-- For Rust tests: Rust toolchain with `cargo`
-
-## Running Tests
-
-### Rust Integration Tests (with testcontainers crate)
-
+### Start Infrastructure
 ```bash
-cd rust/knhk-integration-tests
-cargo test
+./scripts/setup-otel-infrastructure.sh
 ```
 
-### Docker Compose Integration Tests
+### Check Infrastructure Status
+```bash
+./scripts/check-otel-infrastructure.sh
+```
+
+### Stop Infrastructure
+```bash
+./scripts/stop-otel-infrastructure.sh
+```
+
+## Services
+
+### OTLP Collector
+- **HTTP Endpoint**: `http://localhost:4318`
+- **gRPC Endpoint**: `http://localhost:4317`
+- **Metrics**: `http://localhost:8888/metrics`
+- **Config**: `otel-collector-config.yaml`
+
+### Jaeger (Tracing Backend)
+- **UI**: `http://localhost:16686`
+- **gRPC**: `localhost:14250`
+- **HTTP**: `localhost:14268`
+
+### Prometheus (Metrics Backend)
+- **UI**: `http://localhost:9090`
+- **Config**: `prometheus-config.yaml`
+
+### Grafana (Visualization)
+- **UI**: `http://localhost:3000`
+- **Username**: `admin`
+- **Password**: `admin`
+
+## Running E2E Tests
+
+Once infrastructure is running, you can run E2E tests:
 
 ```bash
-# From project root
-make test-integration-docker
+# knhk-otel
+cd rust/knhk-otel
+cargo test --test chicago_tdd_e2e_validation --features std -- --ignored
+cargo test --test chicago_tdd_collector_validation --features std -- --ignored
 
-# Or manually
+# knhk-cli
+cd rust/knhk-cli
+cargo test --test chicago_tdd_otel_e2e --features otel -- --ignored
+
+# knhk-sidecar
+cd rust/knhk-sidecar
+cargo test --test chicago_tdd_otel_e2e --features fortune5 -- --ignored
+
+# knhk-etl
+cd rust/knhk-etl
+cargo test --test chicago_tdd_otel_e2e --features std -- --ignored
+```
+
+## Manual Setup
+
+If you prefer to set up infrastructure manually:
+
+```bash
 cd tests/integration
-docker-compose up -d
-./docker_test.sh
-docker-compose down
+docker compose -f docker-compose.otel.yml up -d
 ```
 
-## Test Containers
+## Troubleshooting
 
-- **Kafka**: Confluent Kafka for connector testing
-- **PostgreSQL**: Database for lockchain storage
-- **OTEL Collector**: OpenTelemetry collector for observability
-- **Redis**: Cache layer (optional)
+### Services Not Starting
+```bash
+# Check logs
+docker compose -f docker-compose.otel.yml logs
 
-## Test Flow
-
-1. **Start containers**: Docker Compose starts all required services
-2. **Health checks**: Verify services are ready
-3. **Run tests**: Execute integration tests against real services
-4. **Cleanup**: Stop and remove containers
-
-## Extending Tests
-
-### Adding a new Rust test:
-
-```rust
-#[tokio::test]
-async fn test_new_feature() -> Result<()> {
-    let docker = Cli::default();
-    let container = docker.run(YourImage::default());
-    // Test logic
-    Ok(())
-}
+# Check container status
+docker compose -f docker-compose.otel.yml ps
 ```
 
-### Adding a new C test:
+### Port Conflicts
+If ports are already in use, modify `docker-compose.otel.yml` to use different ports.
 
-1. Create `test_*.c` in `tests/integration/`
-2. Add build rule to `Makefile`
-3. Add test execution to `docker_test.sh`
+### Weaver Not Found
+Weaver is optional. Install with:
+```bash
+cargo install weaver
+# Or download from:
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
+```
 
-## Notes
+## Configuration Files
 
-- Containers are ephemeral - data is not persisted between test runs
-- Tests run in isolated Docker network
-- All tests use real containerized services (no mocks)
-
+- `docker-compose.otel.yml` - Main Docker Compose configuration
+- `otel-collector-config.yaml` - OTLP collector configuration
+- `prometheus-config.yaml` - Prometheus scrape configuration

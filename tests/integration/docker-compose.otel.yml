@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: knhk-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+      - "8889:8889"   # Prometheus exporter metrics
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=knhk-test-collector
+    networks:
+      - knhk-test-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: knhk-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # Jaeger gRPC
+      - "14268:14268"  # Jaeger HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - knhk-test-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: knhk-prometheus
+    volumes:
+      - ./prometheus-config.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"  # Prometheus UI
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - knhk-test-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: knhk-grafana
+    ports:
+      - "3000:3000"  # Grafana UI
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - knhk-test-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  knhk-test-network:
+    driver: bridge
+
+volumes:
+  grafana-storage:
+

@@ -12,6 +12,7 @@ license = "MIT"
 authors = ["KNHK Team"]
 
 [lib]
+name = "knhk_workflow_engine"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
@@ -23,7 +24,7 @@ knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
 
 # RDF & Turtle parsing
 oxigraph = "0.5"
-rio-turtle = "0.9"
+rio_turtle = "0.8"
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
@@ -69,11 +70,4 @@ tokio-test = "0.4"
 tempfile = "3.8"
 criterion = { version = "0.5", features = ["html_reports"] }
 
-[[bench]]
-name = "pattern_execution"
-harness = false
-
-[[bench]]
-name = "workflow_parsing"
-harness = false
 

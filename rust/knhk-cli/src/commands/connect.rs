@@ -1,7 +1,7 @@
 // rust/knhk-cli/src/commands/connect.rs
 // Connect commands - Connector management with ConnectorRegistry
 
-use knhk_connectors::{DataFormat, SourceType};
+use knhk_connectors::SourceType;
 use std::fs;
 use std::path::PathBuf;
 
