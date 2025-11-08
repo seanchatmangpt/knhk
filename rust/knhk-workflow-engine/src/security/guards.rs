@@ -36,8 +36,7 @@ pub trait GuardFunction: Send + Sync {
 pub struct GuardContext {
     /// Workflow specification
     pub workflow_spec: Option<Arc<WorkflowSpec>>,
-    /// RDF store for SHACL validation
-    #[serde(skip_serializing, skip_deserializing)]
+    /// RDF store for SHACL validation (not serialized)
     pub rdf_store: Option<Arc<Store>>,
     /// Additional context data
     pub metadata: Value,
