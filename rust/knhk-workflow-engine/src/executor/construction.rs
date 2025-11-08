@@ -15,8 +15,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 
-use super::WorkflowEngine;
 use super::events::{start_event_loop, start_timer_loop};
+use super::WorkflowEngine;
 
 impl WorkflowEngine {
     /// Create a new workflow engine with all 43 patterns registered

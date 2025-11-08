@@ -4,7 +4,8 @@
 //! - `engine.rs`: Core engine structure
 //! - `construction.rs`: Engine construction and initialization
 //! - `events.rs`: Event loop handlers (timer, external events)
-//! - `workflow.rs`: Workflow management (register, get, list)
+//! - `workflow_registration.rs`: Workflow registration with validation
+//! - `workflow_query.rs`: Workflow query operations (get, list)
 //! - `case.rs`: Case management (create, start, execute, cancel, get, list)
 //! - `task.rs`: Task execution with resource allocation
 //! - `pattern.rs`: Pattern execution with reflex bridge integration
@@ -19,6 +20,7 @@ mod events;
 mod fortune5;
 mod pattern;
 mod task;
-mod workflow;
+mod workflow_query;
+mod workflow_registration;
 
 pub use engine::WorkflowEngine;
