@@ -66,7 +66,9 @@ impl HookStore {
         let mut hooks = Vec::new();
 
         if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
-            for solution in solutions {
+            for solution_result in solutions {
+                let solution =
+                    solution_result.map_err(|e| format!("Query evaluation error: {}", e))?;
                 let mut id: Option<String> = None;
                 let mut name: Option<String> = None;
                 let mut op: Option<String> = None;
@@ -270,9 +272,9 @@ impl HookStore {
 
         // Insert graph into store
         for triple in graph.iter() {
-            let subject: oxigraph::model::Subject = triple.subject().into();
-            let predicate: oxigraph::model::NamedNode = triple.predicate().into();
-            let object: oxigraph::model::Term = triple.object().into();
+            let subject: oxigraph::model::Subject = triple.subject.into();
+            let predicate: oxigraph::model::NamedNode = triple.predicate.into();
+            let object: oxigraph::model::Term = triple.object.into();
             let quad = Quad::new(subject, predicate, object, GraphName::DefaultGraph);
             store
                 .insert(&quad)
