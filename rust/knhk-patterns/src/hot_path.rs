@@ -149,7 +149,7 @@ pub unsafe fn discriminator_hot(
     // Validate at ingress
     PatternType::Discriminator
         .validate_ingress(num_branches)
-        .map_err(|e| HotPathError::ValidationFailed(e))?;
+        .map_err(HotPathError::ValidationFailed)?;
 
     let result = knhk_pattern_discriminator(ctx, branches as *mut BranchFn, num_branches);
 
@@ -157,6 +157,12 @@ pub unsafe fn discriminator_hot(
 }
 
 /// Hot path discriminator with SIMD optimization
+///
+/// # Safety
+/// - `ctx` must be a valid, non-null pointer to a PatternContext
+/// - `branches` must point to an array of valid C function pointers of length `num_branches`
+/// - All branch functions must not panic and must be safe to call from C
+/// - The `ctx` and `branches` pointers must remain valid for the duration of this call
 pub unsafe fn discriminator_simd_hot(
     ctx: *mut PatternContext,
     branches: *const BranchFn,
@@ -168,7 +174,7 @@ pub unsafe fn discriminator_simd_hot(
 
     PatternType::Discriminator
         .validate_ingress(num_branches)
-        .map_err(|e| HotPathError::ValidationFailed(e))?;
+        .map_err(HotPathError::ValidationFailed)?;
 
     let result = knhk_pattern_discriminator_simd(ctx, branches as *mut BranchFn, num_branches);
 
@@ -183,6 +189,12 @@ pub unsafe fn discriminator_simd_hot(
 ///
 /// **Performance**: ~2 ticks (vs 8-10 ticks in pure Rust)
 /// **Speedup**: 4-5x faster
+///
+/// # Safety
+/// - `ctx` must be a valid, non-null pointer to a PatternContext
+/// - `branches` must point to an array of valid C function pointers of length `num_branches`
+/// - All branch functions must not panic and must be safe to call from C
+/// - The `ctx` and `branches` pointers must remain valid for the duration of this call
 pub unsafe fn implicit_termination_hot(
     ctx: *mut PatternContext,
     branches: *const BranchFn,
@@ -194,7 +206,7 @@ pub unsafe fn implicit_termination_hot(
 
     PatternType::ImplicitTermination
         .validate_ingress(num_branches)
-        .map_err(|e| HotPathError::ValidationFailed(e))?;
+        .map_err(HotPathError::ValidationFailed)?;
 
     let result = knhk_pattern_implicit_termination(ctx, branches as *mut BranchFn, num_branches);
 
@@ -208,6 +220,12 @@ pub unsafe fn implicit_termination_hot(
 /// Hot path cancellation pattern using C kernel
 ///
 /// **Performance**: ~1 tick (vs 3-4 ticks in pure Rust)
+///
+/// # Safety
+/// - `ctx` must be a valid, non-null pointer to a PatternContext
+/// - `branch` must be a valid C function pointer that doesn't panic
+/// - `should_cancel` must be a valid C function pointer for the cancellation condition
+/// - The `ctx` pointer must remain valid for the duration of this call
 pub unsafe fn cancellation_hot(
     ctx: *mut PatternContext,
     branch: BranchFn,
@@ -219,7 +237,7 @@ pub unsafe fn cancellation_hot(
 
     PatternType::Cancellation
         .validate_ingress(1)
-        .map_err(|e| HotPathError::ValidationFailed(e))?;
+        .map_err(HotPathError::ValidationFailed)?;
 
     let result = knhk_pattern_cancellation(ctx, branch, should_cancel);
 
@@ -236,6 +254,11 @@ pub fn create_context(capacity: u32) -> *mut PatternContext {
 }
 
 /// Destroy a pattern context and free its memory
+///
+/// # Safety
+/// - `ctx` must be a valid pointer previously returned by `create_context`
+/// - `ctx` must not be used after this call
+/// - This function must only be called once per context
 pub unsafe fn destroy_context(ctx: *mut PatternContext) {
     if !ctx.is_null() {
         knhk_pattern_context_destroy(ctx);
@@ -243,6 +266,11 @@ pub unsafe fn destroy_context(ctx: *mut PatternContext) {
 }
 
 /// Add data to a pattern context
+///
+/// # Safety
+/// - `ctx` must be a valid pointer to a PatternContext
+/// - `ctx` must have been created by `create_context` and not yet destroyed
+/// - The context must have sufficient capacity for the new data
 pub unsafe fn context_add_data(ctx: *mut PatternContext, data: u64) -> bool {
     if ctx.is_null() {
         return false;
@@ -263,7 +291,7 @@ pub fn get_tick_budget(pattern_type: PatternType) -> u32 {
 pub fn validate_pattern(pattern_type: PatternType, num_branches: u32) -> HotPathResult<()> {
     pattern_type
         .validate_ingress(num_branches)
-        .map_err(|e| HotPathError::ValidationFailed(e))
+        .map_err(HotPathError::ValidationFailed)
 }
 
 // ============================================================================

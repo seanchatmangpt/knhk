@@ -2,6 +2,14 @@
 name = "knhk-otel"
 version = "1.0.0"
 edition = "2021"
+description = "OpenTelemetry integration for KNHK RDF processing framework"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-otel"
+keywords = ["rdf", "opentelemetry", "observability", "telemetry", "weaver"]
+categories = ["development-tools::profiling", "network-programming"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]

@@ -1,0 +1,66 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sac/knhk/rust/knhk-hot/Cargo.toml
+workspace: /Users/sac/knhk/rust/Cargo.toml
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/lib.rs (target/debug/deps/knhk_aot-0e95253927418eab)
+
+running 2 tests
+test template_analyzer::tests::test_analyze_ground_triple ... FAILED
+test template_analyzer::tests::test_analyze_variable_triple ... FAILED
+
+failures:
+
+---- template_analyzer::tests::test_analyze_ground_triple stdout ----
+
+thread 'template_analyzer::tests::test_analyze_ground_triple' panicked at knhk-aot/src/template_analyzer.rs:226:40:
+Failed to analyze ground triple template: "Invalid term: {"
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:1765:5
+   3: core::result::Result<T,E>::expect
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:1119:23
+   4: knhk_aot::template_analyzer::tests::test_analyze_ground_triple
+             at ./src/template_analyzer.rs:226:40
+   5: knhk_aot::template_analyzer::tests::test_analyze_ground_triple::{{closure}}
+             at ./src/template_analyzer.rs:223:36
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/ops/function.rs:253:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/ops/function.rs:253:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- template_analyzer::tests::test_analyze_variable_triple stdout ----
+
+thread 'template_analyzer::tests::test_analyze_variable_triple' panicked at knhk-aot/src/template_analyzer.rs:236:40:
+Failed to analyze variable triple template: "Invalid term: {"
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:1765:5
+   3: core::result::Result<T,E>::expect
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:1119:23
+   4: knhk_aot::template_analyzer::tests::test_analyze_variable_triple
+             at ./src/template_analyzer.rs:236:40
+   5: knhk_aot::template_analyzer::tests::test_analyze_variable_triple::{{closure}}
+             at ./src/template_analyzer.rs:233:38
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/ops/function.rs:253:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/ops/function.rs:253:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+
+failures:
+    template_analyzer::tests::test_analyze_ground_triple
+    template_analyzer::tests::test_analyze_variable_triple
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `-p knhk-aot --lib`

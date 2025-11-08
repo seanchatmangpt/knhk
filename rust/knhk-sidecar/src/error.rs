@@ -1,7 +1,7 @@
 // knhk-sidecar: Error types with structured diagnostics
 
-use thiserror::Error;
 use std::collections::BTreeMap;
+use thiserror::Error;
 
 /// Structured error context (similar to Weaver's DiagnosticMessage)
 #[derive(Debug, Clone)]
@@ -91,79 +91,49 @@ pub type SidecarResult<T> = Result<T, SidecarError>;
 #[non_exhaustive]
 pub enum SidecarError {
     #[error("Network error: {context}")]
-    NetworkError {
-        context: ErrorContext,
-    },
+    NetworkError { context: ErrorContext },
 
     #[error("Validation error: {context}")]
-    ValidationError {
-        context: ErrorContext,
-    },
+    ValidationError { context: ErrorContext },
 
     #[error("Validation failed: {context}")]
-    ValidationFailed {
-        context: ErrorContext,
-    },
+    ValidationFailed { context: ErrorContext },
 
     #[error("Transaction failed: {context}")]
-    TransactionFailed {
-        context: ErrorContext,
-    },
+    TransactionFailed { context: ErrorContext },
 
     #[error("Query failed: {context}")]
-    QueryFailed {
-        context: ErrorContext,
-    },
+    QueryFailed { context: ErrorContext },
 
     #[error("Hook evaluation failed: {context}")]
-    HookEvaluationFailed {
-        context: ErrorContext,
-    },
+    HookEvaluationFailed { context: ErrorContext },
 
     #[error("Request timeout: {context}")]
-    TimeoutError {
-        context: ErrorContext,
-    },
+    TimeoutError { context: ErrorContext },
 
     #[error("Circuit breaker is open: {context}")]
-    CircuitBreakerOpen {
-        context: ErrorContext,
-    },
+    CircuitBreakerOpen { context: ErrorContext },
 
     #[error("TLS error: {context}")]
-    TlsError {
-        context: ErrorContext,
-    },
+    TlsError { context: ErrorContext },
 
     #[error("Batch error: {context}")]
-    BatchError {
-        context: ErrorContext,
-    },
+    BatchError { context: ErrorContext },
 
     #[error("Retry exhausted: {context}")]
-    RetryExhausted {
-        context: ErrorContext,
-    },
+    RetryExhausted { context: ErrorContext },
 
     #[error("Configuration error: {context}")]
-    ConfigError {
-        context: ErrorContext,
-    },
+    ConfigError { context: ErrorContext },
 
     #[error("gRPC error: {context}")]
-    GrpcError {
-        context: ErrorContext,
-    },
+    GrpcError { context: ErrorContext },
 
     #[error("Internal error: {context}")]
-    InternalError {
-        context: ErrorContext,
-    },
+    InternalError { context: ErrorContext },
 
     #[error("Pipeline error: {context}")]
-    PipelineError {
-        context: ErrorContext,
-    },
+    PipelineError { context: ErrorContext },
 }
 
 impl SidecarError {
@@ -210,16 +180,28 @@ impl SidecarError {
     #[cfg(feature = "otel")]
     pub fn record_to_span(&self, tracer: &mut knhk_otel::Tracer, span_ctx: knhk_otel::SpanContext) {
         use knhk_otel::{SpanEvent, SpanStatus};
-        
+
         // Add error attributes to span
-        tracer.add_attribute(span_ctx.clone(), "error.code".to_string(), self.code().to_string());
-        tracer.add_attribute(span_ctx.clone(), "error.message".to_string(), self.to_string());
-        
+        tracer.add_attribute(
+            span_ctx.clone(),
+            "error.code".to_string(),
+            self.code().to_string(),
+        );
+        tracer.add_attribute(
+            span_ctx.clone(),
+            "error.message".to_string(),
+            self.to_string(),
+        );
+
         // Add context attributes
         for (key, value) in &self.context().attributes {
-            tracer.add_attribute(span_ctx.clone(), format!("error.{}", key).to_string(), value.clone());
+            tracer.add_attribute(
+                span_ctx.clone(),
+                format!("error.{}", key).to_string(),
+                value.clone(),
+            );
         }
-        
+
         // Add error event
         let error_event = SpanEvent {
             name: "error".to_string(),
@@ -237,7 +219,7 @@ impl SidecarError {
             },
         };
         tracer.add_event(span_ctx.clone(), error_event);
-        
+
         // End span with error status
         tracer.end_span(span_ctx, SpanStatus::Error);
     }
@@ -362,4 +344,3 @@ pub fn is_guard_violation(err: &SidecarError) -> bool {
         SidecarError::ValidationError { .. } | SidecarError::BatchError { .. }
     )
 }
-

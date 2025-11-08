@@ -1,20 +1,20 @@
 // knhk-sidecar: Retry logic with exponential backoff
 
+use crate::error::{is_retryable_error, SidecarError, SidecarResult};
 use tokio::time::{sleep, Duration};
-use crate::error::{SidecarError, SidecarResult, is_retryable_error};
 
 /// Retry configuration
 #[derive(Debug, Clone)]
 pub struct RetryConfig {
     /// Maximum number of retries
     pub max_retries: u32,
-    
+
     /// Initial delay in milliseconds
     pub initial_delay_ms: u64,
-    
+
     /// Maximum delay in milliseconds
     pub max_delay_ms: u64,
-    
+
     /// Backoff multiplier
     pub multiplier: f64,
 }
@@ -65,14 +65,15 @@ impl RetryExecutor {
 
                     // Don't retry if we've exhausted retries
                     if attempt >= self.config.max_retries {
-                        return Err(SidecarError::retry_exhausted(
-                            format!("Max retries ({}) exceeded. Last error: {}", self.config.max_retries, e)
-                        ));
+                        return Err(SidecarError::retry_exhausted(format!(
+                            "Max retries ({}) exceeded. Last error: {}",
+                            self.config.max_retries, e
+                        )));
                     }
 
                     // Wait before retry with exponential backoff
                     sleep(Duration::from_millis(delay_ms)).await;
-                    
+
                     // Calculate next delay
                     delay_ms = ((delay_ms as f64) * self.config.multiplier) as u64;
                     if delay_ms > self.config.max_delay_ms {
@@ -111,14 +112,15 @@ impl RetryExecutor {
 
                     // Don't retry if we've exhausted retries
                     if attempt >= self.config.max_retries {
-                        return Err(SidecarError::retry_exhausted(
-                            format!("Max retries ({}) exceeded. Last error: {}", self.config.max_retries, e)
-                        ));
+                        return Err(SidecarError::retry_exhausted(format!(
+                            "Max retries ({}) exceeded. Last error: {}",
+                            self.config.max_retries, e
+                        )));
                     }
 
                     // Wait before retry (blocking)
                     std::thread::sleep(Duration::from_millis(delay_ms));
-                    
+
                     // Calculate next delay
                     delay_ms = ((delay_ms as f64) * self.config.multiplier) as u64;
                     if delay_ms > self.config.max_delay_ms {
@@ -134,4 +136,3 @@ impl RetryExecutor {
         }))
     }
 }
-

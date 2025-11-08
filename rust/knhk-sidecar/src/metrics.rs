@@ -3,10 +3,10 @@
 // ACCEPTABLE: Mutex poisoning .expect() is allowed in this module (unrecoverable error)
 #![allow(clippy::expect_used)]
 
-use std::sync::{Arc, Mutex};
-use std::collections::VecDeque;
-use std::time::{Duration, Instant};
 use crate::error::SidecarError;
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 /// Request metrics
 #[derive(Debug, Clone, Default)]
@@ -117,7 +117,10 @@ impl MetricsCollector {
     pub fn record_request(&self, success: bool) {
         // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
         // See Rust std docs: https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
-        let mut metrics = self.requests.lock().expect("Metrics mutex poisoned - unrecoverable state");
+        let mut metrics = self
+            .requests
+            .lock()
+            .expect("Metrics mutex poisoned - unrecoverable state");
         metrics.total += 1;
         if success {
             metrics.success += 1;
@@ -128,7 +131,10 @@ impl MetricsCollector {
 
     /// Record latency
     pub fn record_latency(&self, latency_ms: u64) {
-        let mut latencies = self.latencies.lock().expect("Latency metrics mutex poisoned - unrecoverable state");
+        let mut latencies = self
+            .latencies
+            .lock()
+            .expect("Latency metrics mutex poisoned - unrecoverable state");
         latencies.push_back(latency_ms);
         if latencies.len() > self.max_latency_samples {
             latencies.pop_front();
@@ -137,7 +143,10 @@ impl MetricsCollector {
 
     /// Record batch size
     pub fn record_batch_size(&self, size: usize) {
-        let mut batch_sizes = self.batch_sizes.lock().expect("Batch metrics mutex poisoned - unrecoverable state");
+        let mut batch_sizes = self
+            .batch_sizes
+            .lock()
+            .expect("Batch metrics mutex poisoned - unrecoverable state");
         batch_sizes.push_back(size);
         if batch_sizes.len() > self.max_latency_samples {
             batch_sizes.pop_front();
@@ -146,7 +155,10 @@ impl MetricsCollector {
 
     /// Update circuit breaker metrics
     pub fn update_circuit_breaker(&self, state: String, failure_count: u32, success_count: u32) {
-        let mut cb = self.circuit_breaker.lock().expect("Circuit breaker metrics mutex poisoned - unrecoverable state");
+        let mut cb = self
+            .circuit_breaker
+            .lock()
+            .expect("Circuit breaker metrics mutex poisoned - unrecoverable state");
         cb.state = state;
         cb.failure_count = failure_count;
         cb.success_count = success_count;
@@ -154,7 +166,10 @@ impl MetricsCollector {
 
     /// Record retry
     pub fn record_retry(&self, success: bool) {
-        let mut retry = self.retry.lock().expect("Retry metrics mutex poisoned - unrecoverable state");
+        let mut retry = self
+            .retry
+            .lock()
+            .expect("Retry metrics mutex poisoned - unrecoverable state");
         retry.total_retries += 1;
         if success {
             retry.successful_retries += 1;
@@ -165,20 +180,28 @@ impl MetricsCollector {
 
     /// Get metrics snapshot
     pub fn snapshot(&self) -> MetricsSnapshot {
-        let requests = self.requests.lock().expect("Metrics mutex poisoned - unrecoverable state").clone();
-        
+        let requests = self
+            .requests
+            .lock()
+            .expect("Metrics mutex poisoned - unrecoverable state")
+            .clone();
+
         // Calculate latency percentiles
-        let mut latencies = self.latencies.lock().expect("Latency metrics mutex poisoned - unrecoverable state").clone();
+        let mut latencies = self
+            .latencies
+            .lock()
+            .expect("Latency metrics mutex poisoned - unrecoverable state")
+            .clone();
         let mut latency_vec: Vec<u64> = latencies.iter().cloned().collect();
         latency_vec.sort();
-        
+
         let latency = if latency_vec.is_empty() {
             LatencyMetrics::default()
         } else {
             let p50_idx = (latency_vec.len() as f64 * 0.5) as usize;
             let p95_idx = (latency_vec.len() as f64 * 0.95) as usize;
             let p99_idx = (latency_vec.len() as f64 * 0.99) as usize;
-            
+
             LatencyMetrics {
                 p50_ms: latency_vec.get(p50_idx).copied().unwrap_or(0),
                 p95_ms: latency_vec.get(p95_idx).copied().unwrap_or(0),
@@ -187,16 +210,20 @@ impl MetricsCollector {
         };
 
         // Calculate batch metrics
-        let batch_sizes = self.batch_sizes.lock().expect("Batch metrics mutex poisoned - unrecoverable state").clone();
+        let batch_sizes = self
+            .batch_sizes
+            .lock()
+            .expect("Batch metrics mutex poisoned - unrecoverable state")
+            .clone();
         let batch_vec: Vec<usize> = batch_sizes.iter().cloned().collect();
-        
+
         let batch = if batch_vec.is_empty() {
             BatchMetrics::default()
         } else {
             let sum: usize = batch_vec.iter().sum();
             let avg = sum as f64 / batch_vec.len() as f64;
             let max = batch_vec.iter().max().copied().unwrap_or(0);
-            
+
             BatchMetrics {
                 total_batches: batch_vec.len() as u64,
                 avg_batch_size: avg,
@@ -204,8 +231,16 @@ impl MetricsCollector {
             }
         };
 
-        let circuit_breaker = self.circuit_breaker.lock().expect("Circuit breaker metrics mutex poisoned - unrecoverable state").clone();
-        let retry = self.retry.lock().expect("Retry metrics mutex poisoned - unrecoverable state").clone();
+        let circuit_breaker = self
+            .circuit_breaker
+            .lock()
+            .expect("Circuit breaker metrics mutex poisoned - unrecoverable state")
+            .clone();
+        let retry = self
+            .retry
+            .lock()
+            .expect("Retry metrics mutex poisoned - unrecoverable state")
+            .clone();
 
         MetricsSnapshot {
             requests,
@@ -218,11 +253,27 @@ impl MetricsCollector {
 
     /// Reset metrics
     pub fn reset(&self) {
-        *self.requests.lock().expect("Metrics mutex poisoned - unrecoverable state") = RequestMetrics::default();
-        *self.latencies.lock().expect("Latency metrics mutex poisoned - unrecoverable state") = VecDeque::new();
-        *self.batch_sizes.lock().expect("Batch metrics mutex poisoned - unrecoverable state") = VecDeque::new();
-        *self.circuit_breaker.lock().expect("Circuit breaker metrics mutex poisoned - unrecoverable state") = CircuitBreakerMetrics::default();
-        *self.retry.lock().expect("Retry metrics mutex poisoned - unrecoverable state") = RetryMetrics::default();
+        *self
+            .requests
+            .lock()
+            .expect("Metrics mutex poisoned - unrecoverable state") = RequestMetrics::default();
+        *self
+            .latencies
+            .lock()
+            .expect("Latency metrics mutex poisoned - unrecoverable state") = VecDeque::new();
+        *self
+            .batch_sizes
+            .lock()
+            .expect("Batch metrics mutex poisoned - unrecoverable state") = VecDeque::new();
+        *self
+            .circuit_breaker
+            .lock()
+            .expect("Circuit breaker metrics mutex poisoned - unrecoverable state") =
+            CircuitBreakerMetrics::default();
+        *self
+            .retry
+            .lock()
+            .expect("Retry metrics mutex poisoned - unrecoverable state") = RetryMetrics::default();
     }
 }
 
@@ -248,4 +299,3 @@ impl LatencyTimer {
         duration
     }
 }
-

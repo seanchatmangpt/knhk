@@ -2,6 +2,14 @@
 name = "knhk-lockchain"
 version = "1.0.0"
 edition = "2021"
+description = "Distributed locking mechanism with receipt-based verification"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-lockchain"
+keywords = ["distributed", "locking", "consensus", "blockchain", "verification"]
+categories = ["concurrency", "cryptography"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [dependencies]
 blake3 = "1.5"

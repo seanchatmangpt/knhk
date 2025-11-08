@@ -262,7 +262,10 @@ fn validate_simd_speedup() {
     println!("\nScalar Implementation:");
     println!("  Time: {:?}", scalar_time);
     println!("  Hits: {}", scalar_hits);
-    println!("  Ops/sec: {:.0}", iterations as f64 / scalar_time.as_secs_f64());
+    println!(
+        "  Ops/sec: {:.0}",
+        iterations as f64 / scalar_time.as_secs_f64()
+    );
 
     #[cfg(target_arch = "x86_64")]
     {
@@ -280,7 +283,10 @@ fn validate_simd_speedup() {
         println!("\nSIMD AVX2 Implementation:");
         println!("  Time: {:?}", simd_time);
         println!("  Hits: {}", simd_hits);
-        println!("  Ops/sec: {:.0}", iterations as f64 / simd_time.as_secs_f64());
+        println!(
+            "  Ops/sec: {:.0}",
+            iterations as f64 / simd_time.as_secs_f64()
+        );
 
         let speedup = scalar_time.as_secs_f64() / simd_time.as_secs_f64();
         println!("\nSpeedup: {:.2}x", speedup);

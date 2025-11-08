@@ -1,6 +1,6 @@
 # KNHK v1.0.0 Release Notes
 
-**Release Date**: November 7, 2025
+**Release Date**: January 2025
 **Status**: Production Ready ✅
 **Validation**: OpenTelemetry Weaver Schema Validated
 
@@ -16,7 +16,7 @@ KNHK v1.0.0 is the first production-ready release of the Knowledge Hot/Warm/Cold
 - **Deterministic Execution**: Tick-based scheduling guarantees predictable performance
 - **Hot Path Guarantee**: All critical operations complete in ≤8 ticks (Chatman Constant)
 - **Beat Scheduler**: Coordinates fiber lifecycle across 8-beat epochs
-- **Performance Validated**: `make test-performance-v04` verifies tick budgets
+- **Performance Validated**: Hot path operations verified ≤8 ticks
 
 ```bash
 # Verify hot path performance
@@ -61,7 +61,7 @@ weaver registry live-check --registry registry/
 
 #### 5. **Code Quality & Safety**
 - **Zero Warnings**: `cargo clippy --workspace -- -D warnings` compliance
-- **No Unsafe Unwraps**: WAVE 4 bulk remediation of `.unwrap()` and `.expect()`
+- **No Unsafe Unwraps**: Comprehensive remediation of `.unwrap()` and `.expect()`
 - **Proper Error Handling**: Comprehensive `Result<T, E>` usage across codebase
 - **Chicago TDD Tests**: Behavior-focused testing with AAA pattern
 - **Weaver Schema Coverage**: All telemetry validated against OTel schemas
@@ -453,15 +453,15 @@ We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for g
 
 ### Core Documentation
 - **README**: [/README.md](../README.md)
-- **Architecture**: [/docs/C4_ARCHITECTURE.md](../docs/C4_ARCHITECTURE.md)
-- **CHANGELOG**: [/docs/CHANGELOG.md](../docs/CHANGELOG.md)
-- **DFLSS Workflows**: [/docs/DFLSS_WORKFLOWS.md](../docs/DFLSS_WORKFLOWS.md)
+- **Architecture**: [/docs/architecture.md](architecture.md)
+- **CHANGELOG**: [/docs/CHANGELOG.md](CHANGELOG.md)
+- **Quick Start**: [/docs/QUICK_START.md](QUICK_START.md)
 
 ### Technical Guides
-- **Weaver Integration**: [/docs/WEAVER_INTEGRATION.md](../docs/WEAVER_INTEGRATION.md)
-- **Chicago TDD**: [/docs/CHICAGO_TDD.md](../docs/CHICAGO_TDD.md)
-- **Performance Guide**: [/docs/PERFORMANCE.md](../docs/PERFORMANCE.md)
-- **Policy Engine**: [/docs/POLICY_ENGINE.md](../docs/POLICY_ENGINE.md)
+- **Weaver Integration**: [/docs/WEAVER.md](WEAVER.md)
+- **Chicago TDD**: [/docs/CHICAGO_TDD.md](CHICAGO_TDD.md)
+- **Performance Guide**: [/docs/performance.md](performance.md)
+- **Integration Guide**: [/docs/integration-guide.md](integration-guide.md)
 
 ### API Documentation
 ```bash
@@ -490,8 +490,7 @@ Special thanks to the contributors who made this release possible.
 
 - **GitHub Issues**: https://github.com/seanchatmangpt/knhk/issues
 - **Discussions**: https://github.com/seanchatmangpt/knhk/discussions
-- **Documentation**: https://knhk.readthedocs.io (coming soon)
-- **Email**: support@knhk.io
+- **Documentation**: See [docs/INDEX.md](INDEX.md)
 
 ---
 
@@ -506,3 +505,4 @@ KNHK is released under the MIT License. See [LICENSE](../LICENSE) for details.
 We're excited to see what you build with deterministic ETL pipelines and schema-first observability.
 
 For questions, issues, or contributions, please visit our [GitHub repository](https://github.com/seanchatmangpt/knhk).
+

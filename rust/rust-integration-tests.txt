@@ -1,0 +1,218 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sac/knhk/rust/knhk-hot/Cargo.toml
+workspace: /Users/sac/knhk/rust/Cargo.toml
+   Compiling knhk-validation v1.0.0 (/Users/sac/knhk/rust/knhk-validation)
+   Compiling knhk-warm v1.0.0 (/Users/sac/knhk/rust/knhk-warm)
+   Compiling knhk-etl v1.0.0 (/Users/sac/knhk/rust/knhk-etl)
+   Compiling knhk-patterns v1.0.0 (/Users/sac/knhk/rust/knhk-patterns)
+   Compiling knhk-integration-tests v1.0.0 (/Users/sac/knhk/rust/knhk-integration-tests)
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/query.rs:4:5
+  |
+4 | use knhk_warm::query::{ask_to_json, construct_to_json, select_to_json, QueryError};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/edge_cases.rs:4:5
+  |
+4 | use knhk_warm::query::QueryError;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/cache.rs:4:5
+  |
+4 | use knhk_warm::query::QueryMetrics;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/executor.rs:5:5
+  |
+5 | use knhk_warm::query::QueryExecutionResult;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_etl::path_selector`
+ --> knhk-warm/tests/executor.rs:4:15
+  |
+4 | use knhk_etl::path_selector::QueryPath;
+  |               ^^^^^^^^^^^^^ could not find `path_selector` in `knhk_etl`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/executor.rs:6:5
+  |
+6 | use knhk_warm::{WarmPathExecutor, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/chicago_tdd_hot_path_complete.rs:9:5
+  |
+9 | use knhk_warm::*;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/edge_cases.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/query.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_construct, execute_describe, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+warning: unused import: `BeatSchedulerError`
+  --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:47:47
+   |
+47 | use knhk_etl::beat_scheduler::{BeatScheduler, BeatSchedulerError};
+   |                                               ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/cache.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+warning: unused variable: `cycle`
+  --> knhk-etl/tests/chicago_tdd_beat_scheduler.rs:17:9
+   |
+17 |     let cycle = scheduler.current_cycle();
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_cycle`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused import: `super::*`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:335:9
+    |
+335 |     use super::*;
+    |         ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+Some errors have detailed explanations: E0432, E0433.
+For more information about an error, try `rustc --explain E0432`.
+warning: unused imports: `Arc` and `Mutex`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:336:21
+    |
+336 |     use std::sync::{Arc, Mutex};
+    |                     ^^^  ^^^^^
+
+warning: unused import: `std::thread`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:337:9
+    |
+337 |     use std::thread;
+    |         ^^^^^^^^^^^
+
+error: could not compile `knhk-warm` (test "executor") due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `knhk-warm` (test "query") due to 2 previous errors
+warning: unused variable: `scheduler`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:53:17
+   |
+53 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+   |                 ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scheduler`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `triples`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:56:13
+   |
+56 |         let triples = vec![RawTriple {
+   |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_triples`
+
+warning: variable does not need to be mutable
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:53:13
+   |
+53 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+   |             ----^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `scheduler`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:77:17
+   |
+77 |         let mut scheduler = BeatScheduler::new(1, 1, 1).expect("Should create scheduler");
+   |                 ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scheduler`
+
+warning: unused variable: `triples`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:80:13
+   |
+80 |         let triples = vec![
+   |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_triples`
+
+warning: variable does not need to be mutable
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:77:13
+   |
+77 |         let mut scheduler = BeatScheduler::new(1, 1, 1).expect("Should create scheduler");
+   |             ----^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unused variable: `scheduler`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:110:17
+    |
+110 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+    |                 ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scheduler`
+
+warning: unused variable: `triples`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:113:13
+    |
+113 |         let triples = vec![RawTriple {
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_triples`
+
+warning: variable does not need to be mutable
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:110:13
+    |
+110 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `knhk-warm` (test "cache") due to 2 previous errors
+error: could not compile `knhk-warm` (test "chicago_tdd_hot_path_complete") due to 1 previous error
+warning: unused variable: `expected`
+  --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:77:26
+   |
+77 |     for (i, (&observed, &expected)) in observed_ticks
+   |                          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expected`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `delta`
+   --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:395:25
+    |
+395 |     fn is_deterministic(delta: &[RawTriple], run_len: usize) -> bool {
+    |                         ^^^^^ help: if this is intentional, prefix it with an underscore: `_delta`
+
+warning: unused variable: `soa_valid`
+   --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:594:9
+    |
+594 |     let soa_valid = SoAArrays {
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_soa_valid`
+
+error: could not compile `knhk-warm` (test "edge_cases") due to 2 previous errors
+warning: `knhk-etl` (test "chicago_tdd_beat_scheduler") generated 1 warning
+warning: `knhk-etl` (test "regression_unwrap_fixes") generated 12 warnings (run `cargo fix --test "regression_unwrap_fixes"` to apply 6 suggestions)
+warning: `knhk-etl` (test "chicago_tdd_architecture_refinements") generated 4 warnings (run `cargo fix --test "chicago_tdd_architecture_refinements"` to apply 1 suggestion)

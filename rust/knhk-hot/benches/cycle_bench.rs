@@ -115,31 +115,15 @@ impl BenchmarkResult {
         println!("\n{}", "=".repeat(80));
         println!("Benchmark: {}", self.name);
         println!("{}", "=".repeat(80));
-        println!(
-            "{:<40} : {:>12.2} cycles/op",
-            "Best",
-            self.cycles_per_op()
-        );
+        println!("{:<40} : {:>12.2} cycles/op", "Best", self.cycles_per_op());
         println!(
             "{:<40} : {:>12.2} instrs/op",
             "",
             self.instructions_per_op()
         );
-        println!(
-            "{:<40} : {:>12.2} IPC",
-            "",
-            self.best_counters.ipc()
-        );
-        println!(
-            "{:<40} : {:>12.2} ns/op",
-            "",
-            self.ns_per_op()
-        );
-        println!(
-            "{:<40} : {:>12.0} ops/sec",
-            "",
-            self.ops_per_sec()
-        );
+        println!("{:<40} : {:>12.2} IPC", "", self.best_counters.ipc());
+        println!("{:<40} : {:>12.2} ns/op", "", self.ns_per_op());
+        println!("{:<40} : {:>12.0} ops/sec", "", self.ops_per_sec());
         println!(
             "{:<40} : {:>12.2}%",
             "Cache miss rate",
@@ -150,11 +134,7 @@ impl BenchmarkResult {
             "Branch miss rate",
             self.best_counters.branch_miss_rate() * 100.0
         );
-        println!(
-            "{:<40} : {:>12} iterations",
-            "Sample size",
-            self.iterations
-        );
+        println!("{:<40} : {:>12} iterations", "Sample size", self.iterations);
 
         // KNHK-specific validation
         let ticks = self.cycles_per_op();
@@ -363,7 +343,11 @@ fn main() {
     // Benchmark 3: Pattern discriminator dispatch (function pointer call)
     let result3 = harness.measure("pattern_discriminator_dispatch", || {
         let pattern_type = black_box(9usize);
-        let dispatch_fn = if pattern_type == 9 { dummy_pattern_fn } else { dummy_pattern_fn };
+        let dispatch_fn = if pattern_type == 9 {
+            dummy_pattern_fn
+        } else {
+            dummy_pattern_fn
+        };
         black_box(dispatch_fn(pattern_type as u64))
     });
     result3.print_report();

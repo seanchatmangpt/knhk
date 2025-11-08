@@ -7,4 +7,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .compile(&["proto/kgc-sidecar.proto"], &["proto"])?;
     Ok(())
 }
-

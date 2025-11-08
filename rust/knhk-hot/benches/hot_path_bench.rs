@@ -12,22 +12,16 @@ use std::hint::black_box;
 fn create_test_context() -> *mut PatternContext {
     // Allocate aligned memory for context
     unsafe {
-        let layout = std::alloc::Layout::from_size_align(
-            std::mem::size_of::<PatternContext>(),
-            64,
-        )
-        .unwrap();
+        let layout =
+            std::alloc::Layout::from_size_align(std::mem::size_of::<PatternContext>(), 64).unwrap();
         std::alloc::alloc_zeroed(layout) as *mut PatternContext
     }
 }
 
 fn destroy_test_context(ctx: *mut PatternContext) {
     unsafe {
-        let layout = std::alloc::Layout::from_size_align(
-            std::mem::size_of::<PatternContext>(),
-            64,
-        )
-        .unwrap();
+        let layout =
+            std::alloc::Layout::from_size_align(std::mem::size_of::<PatternContext>(), 64).unwrap();
         std::alloc::dealloc(ctx as *mut u8, layout);
     }
 }
@@ -50,10 +44,8 @@ fn bench_pattern_timeout() -> BenchmarkResult {
     let timeout_ms = 1000u64;
 
     let harness = BenchmarkHarness::new(1000, 10000);
-    let result = harness.measure("Pattern 20: Timeout (hot path)", || {
-        unsafe {
-            cpu_dispatch::knhk_pattern_timeout(ctx, test_branch, timeout_ms, test_fallback)
-        }
+    let result = harness.measure("Pattern 20: Timeout (hot path)", || unsafe {
+        cpu_dispatch::knhk_pattern_timeout(ctx, test_branch, timeout_ms, test_fallback)
     });
 
     destroy_test_context(ctx);
@@ -151,14 +143,7 @@ fn bench_branchless_dispatch() -> BenchmarkResult {
         idx = (idx + 1) % pattern_types.len();
         let pattern_type = pattern_types[idx];
 
-        unsafe {
-            cpu_dispatch::knhk_dispatch_pattern(
-                pattern_type,
-                ctx,
-                std::ptr::null_mut(),
-                0,
-            )
-        }
+        unsafe { cpu_dispatch::knhk_dispatch_pattern(pattern_type, ctx, std::ptr::null_mut(), 0) }
     });
 
     destroy_test_context(ctx);

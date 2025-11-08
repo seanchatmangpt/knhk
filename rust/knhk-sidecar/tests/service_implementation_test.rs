@@ -3,7 +3,7 @@
 // Tests actual behavior through state verification (no mocks)
 
 use knhk_sidecar::config::SidecarConfig;
-use knhk_sidecar::service::{KgcSidecarService, proto};
+use knhk_sidecar::service::{proto, KgcSidecarService};
 use proto::kgc_sidecar_server::KgcSidecar;
 use tonic::Request;
 
@@ -24,7 +24,9 @@ fn create_test_service() -> KgcSidecarService {
 async fn test_apply_transaction_with_valid_rdf() {
     // Arrange: Create service and prepare valid RDF data
     let service = create_test_service();
-    let rdf_data = b"<http://example.org/alice> <http://example.org/knows> <http://example.org/bob> .".to_vec();
+    let rdf_data =
+        b"<http://example.org/alice> <http://example.org/knows> <http://example.org/bob> ."
+            .to_vec();
 
     let request = Request::new(proto::ApplyTransactionRequest {
         rdf_data,
@@ -38,13 +40,19 @@ async fn test_apply_transaction_with_valid_rdf() {
     assert!(response.is_ok(), "Transaction should succeed");
     let response = response.unwrap().into_inner();
     assert!(response.committed, "Transaction should be committed");
-    assert!(!response.transaction_id.is_empty(), "Transaction ID should be generated");
+    assert!(
+        !response.transaction_id.is_empty(),
+        "Transaction ID should be generated"
+    );
     assert!(response.receipt.is_some(), "Receipt should be present");
     assert!(response.errors.is_empty(), "No errors should be present");
 
     // Assert: Receipt has valid data
     let receipt = response.receipt.unwrap();
-    assert!(!receipt.receipt_id.is_empty(), "Receipt ID should be present");
+    assert!(
+        !receipt.receipt_id.is_empty(),
+        "Receipt ID should be present"
+    );
     assert!(receipt.ticks > 0, "Receipt should have tick count");
     assert!(receipt.span_id > 0, "Receipt should have span ID");
 }
@@ -64,10 +72,16 @@ async fn test_apply_transaction_with_invalid_utf8() {
     let response = service.apply_transaction(request).await;
 
     // Assert: Transaction failed with proper error
-    assert!(response.is_err(), "Transaction should fail with invalid UTF-8");
+    assert!(
+        response.is_err(),
+        "Transaction should fail with invalid UTF-8"
+    );
     let err = response.err().unwrap();
     assert_eq!(err.code(), tonic::Code::InvalidArgument);
-    assert!(err.message().contains("Invalid UTF-8"), "Error message should mention UTF-8");
+    assert!(
+        err.message().contains("Invalid UTF-8"),
+        "Error message should mention UTF-8"
+    );
 }
 
 #[tokio::test]
@@ -85,11 +99,17 @@ async fn test_apply_transaction_with_invalid_rdf_syntax() {
     let response = service.apply_transaction(request).await;
 
     // Assert: Transaction failed but response is Ok (error in response body)
-    assert!(response.is_ok(), "Response should be Ok even if transaction failed");
+    assert!(
+        response.is_ok(),
+        "Response should be Ok even if transaction failed"
+    );
     let response = response.unwrap().into_inner();
     assert!(!response.committed, "Transaction should not be committed");
     assert!(!response.errors.is_empty(), "Errors should be present");
-    assert!(response.errors[0].contains("Ingest failed"), "Error should mention ingest failure");
+    assert!(
+        response.errors[0].contains("Ingest failed"),
+        "Error should mention ingest failure"
+    );
 }
 
 #[tokio::test]
@@ -100,7 +120,8 @@ async fn test_apply_transaction_with_multiple_triples() {
         <http://example.org/alice> <http://example.org/knows> <http://example.org/bob> .
         <http://example.org/alice> <http://example.org/age> \"30\" .
         <http://example.org/bob> <http://example.org/age> \"32\" .
-    ".to_vec();
+    "
+    .to_vec();
 
     let request = Request::new(proto::ApplyTransactionRequest {
         rdf_data,
@@ -111,7 +132,10 @@ async fn test_apply_transaction_with_multiple_triples() {
     let response = service.apply_transaction(request).await;
 
     // Assert: Transaction succeeded
-    assert!(response.is_ok(), "Transaction should succeed with multiple triples");
+    assert!(
+        response.is_ok(),
+        "Transaction should succeed with multiple triples"
+    );
     let response = response.unwrap().into_inner();
     assert!(response.committed, "Transaction should be committed");
     assert!(response.receipt.is_some(), "Receipt should be present");
@@ -139,8 +163,10 @@ async fn test_query_ask_returns_boolean() {
 
     let result = response.result.unwrap();
     assert!(!result.bindings.is_empty(), "Should have result bindings");
-    assert!(result.bindings[0].value == "true" || result.bindings[0].value == "false",
-            "ASK query should return boolean");
+    assert!(
+        result.bindings[0].value == "true" || result.bindings[0].value == "false",
+        "ASK query should return boolean"
+    );
 }
 
 #[tokio::test]
@@ -167,14 +193,19 @@ async fn test_query_select_with_rdf_data() {
 
     let result = response.result.unwrap();
     assert!(!result.bindings.is_empty(), "Should have result bindings");
-    assert!(result.bindings[0].value.contains("example.org"), "Should contain subject IRI");
+    assert!(
+        result.bindings[0].value.contains("example.org"),
+        "Should contain subject IRI"
+    );
 }
 
 #[tokio::test]
 async fn test_query_construct_returns_triples() {
     // Arrange: Create service with RDF data for CONSTRUCT query
     let service = create_test_service();
-    let rdf_data = b"<http://example.org/alice> <http://example.org/knows> <http://example.org/bob> .".to_vec();
+    let rdf_data =
+        b"<http://example.org/alice> <http://example.org/knows> <http://example.org/bob> ."
+            .to_vec();
 
     let request = Request::new(proto::QueryRequest {
         query_type: 2, // CONSTRUCT
@@ -193,8 +224,14 @@ async fn test_query_construct_returns_triples() {
     assert!(response.result.is_some(), "Result should be present");
 
     let result = response.result.unwrap();
-    assert!(!result.bindings.is_empty(), "Should have constructed triples");
-    assert!(result.bindings[0].value.contains("<http"), "Should be N-Triples format");
+    assert!(
+        !result.bindings.is_empty(),
+        "Should have constructed triples"
+    );
+    assert!(
+        result.bindings[0].value.contains("<http"),
+        "Should be N-Triples format"
+    );
 }
 
 #[tokio::test]
@@ -218,7 +255,10 @@ async fn test_query_with_empty_data_returns_empty_results() {
     assert!(response.result.is_some(), "Result should be present");
 
     let result = response.result.unwrap();
-    assert!(result.bindings.is_empty(), "Should have no results with empty data");
+    assert!(
+        result.bindings.is_empty(),
+        "Should have no results with empty data"
+    );
 }
 
 #[tokio::test]
@@ -240,7 +280,10 @@ async fn test_validate_graph_with_valid_rdf() {
     let response = response.unwrap().into_inner();
     assert!(response.valid, "Graph should be valid");
     assert!(response.errors.is_empty(), "No errors should be present");
-    assert!(response.warnings.is_empty(), "No warnings should be present");
+    assert!(
+        response.warnings.is_empty(),
+        "No warnings should be present"
+    );
 }
 
 #[tokio::test]
@@ -258,11 +301,17 @@ async fn test_validate_graph_with_invalid_utf8() {
     let response = service.validate_graph(request).await;
 
     // Assert: Validation failed
-    assert!(response.is_ok(), "Response should be Ok even if validation failed");
+    assert!(
+        response.is_ok(),
+        "Response should be Ok even if validation failed"
+    );
     let response = response.unwrap().into_inner();
     assert!(!response.valid, "Graph should be invalid");
     assert!(!response.errors.is_empty(), "Errors should be present");
-    assert!(response.errors[0].contains("Invalid UTF-8"), "Error should mention UTF-8");
+    assert!(
+        response.errors[0].contains("Invalid UTF-8"),
+        "Error should mention UTF-8"
+    );
 }
 
 #[tokio::test]
@@ -280,11 +329,17 @@ async fn test_validate_graph_with_invalid_rdf_syntax() {
     let response = service.validate_graph(request).await;
 
     // Assert: Validation failed
-    assert!(response.is_ok(), "Response should be Ok even if validation failed");
+    assert!(
+        response.is_ok(),
+        "Response should be Ok even if validation failed"
+    );
     let response = response.unwrap().into_inner();
     assert!(!response.valid, "Graph should be invalid");
     assert!(!response.errors.is_empty(), "Errors should be present");
-    assert!(response.errors[0].contains("Parse failed"), "Error should mention parse failure");
+    assert!(
+        response.errors[0].contains("Parse failed"),
+        "Error should mention parse failure"
+    );
 }
 
 #[tokio::test]
@@ -311,7 +366,10 @@ async fn test_evaluate_hook_with_valid_rdf() {
 
     // Assert: Receipt has valid data
     let receipt = response.receipt.unwrap();
-    assert!(!receipt.receipt_id.is_empty(), "Receipt ID should be present");
+    assert!(
+        !receipt.receipt_id.is_empty(),
+        "Receipt ID should be present"
+    );
     assert!(receipt.ticks > 0, "Receipt should have tick count");
 }
 
@@ -330,10 +388,16 @@ async fn test_evaluate_hook_with_invalid_utf8() {
     let response = service.evaluate_hook(request).await;
 
     // Assert: Hook evaluation failed
-    assert!(response.is_err(), "Hook evaluation should fail with invalid UTF-8");
+    assert!(
+        response.is_err(),
+        "Hook evaluation should fail with invalid UTF-8"
+    );
     let err = response.err().unwrap();
     assert_eq!(err.code(), tonic::Code::InvalidArgument);
-    assert!(err.message().contains("Invalid UTF-8"), "Error message should mention UTF-8");
+    assert!(
+        err.message().contains("Invalid UTF-8"),
+        "Error message should mention UTF-8"
+    );
 }
 
 #[tokio::test]
@@ -363,7 +427,8 @@ async fn test_evaluate_hook_with_multiple_triples() {
     let rdf_data = b"
         <http://example.org/event1> <http://example.org/type> \"test\" .
         <http://example.org/event2> <http://example.org/type> \"test\" .
-    ".to_vec();
+    "
+    .to_vec();
 
     let request = Request::new(proto::EvaluateHookRequest {
         hook_id: "test_hook".to_string(),
@@ -374,7 +439,10 @@ async fn test_evaluate_hook_with_multiple_triples() {
     let response = service.evaluate_hook(request).await;
 
     // Assert: Hook evaluation succeeded
-    assert!(response.is_ok(), "Hook evaluation should succeed with multiple triples");
+    assert!(
+        response.is_ok(),
+        "Hook evaluation should succeed with multiple triples"
+    );
     let response = response.unwrap().into_inner();
     assert!(response.fired, "Hook should fire");
     assert!(response.receipt.is_some(), "Receipt should be present");
@@ -393,7 +461,10 @@ async fn test_health_check_returns_healthy() {
     assert!(response.is_ok(), "Health check should succeed");
     let response = response.unwrap().into_inner();
     assert_eq!(response.status, 1, "Status should be HEALTHY (1)");
-    assert!(response.message.contains("healthy"), "Message should indicate healthy state");
+    assert!(
+        response.message.contains("healthy"),
+        "Message should indicate healthy state"
+    );
     assert!(response.timestamp_ms > 0, "Timestamp should be present");
 }
 
@@ -403,11 +474,14 @@ async fn test_get_metrics_returns_valid_metrics() {
     let service = create_test_service();
 
     // Execute a transaction to generate metrics
-    let rdf_data = b"<http://example.org/s> <http://example.org/p> <http://example.org/o> .".to_vec();
-    let _ = service.apply_transaction(Request::new(proto::ApplyTransactionRequest {
-        rdf_data,
-        transaction_metadata: std::collections::HashMap::new(),
-    })).await;
+    let rdf_data =
+        b"<http://example.org/s> <http://example.org/p> <http://example.org/o> .".to_vec();
+    let _ = service
+        .apply_transaction(Request::new(proto::ApplyTransactionRequest {
+            rdf_data,
+            transaction_metadata: std::collections::HashMap::new(),
+        }))
+        .await;
 
     // Act: Get metrics
     let request = Request::new(proto::GetMetricsRequest {});
@@ -420,8 +494,14 @@ async fn test_get_metrics_returns_valid_metrics() {
 
     let metrics = response.metrics.unwrap();
     assert!(metrics.total_requests > 0, "Total requests should be > 0");
-    assert!(metrics.total_transactions > 0, "Total transactions should be > 0");
-    assert!(metrics.last_request_time_ms > 0, "Last request time should be present");
+    assert!(
+        metrics.total_transactions > 0,
+        "Total transactions should be > 0"
+    );
+    assert!(
+        metrics.last_request_time_ms > 0,
+        "Last request time should be present"
+    );
 }
 
 #[tokio::test]
@@ -437,7 +517,8 @@ async fn test_concurrent_transactions() {
             let rdf_data = format!(
                 "<http://example.org/tx{}> <http://example.org/type> \"transaction\" .",
                 i
-            ).into_bytes();
+            )
+            .into_bytes();
 
             let request = Request::new(proto::ApplyTransactionRequest {
                 rdf_data,

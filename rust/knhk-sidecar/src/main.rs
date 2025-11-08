@@ -8,4 +8,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = SidecarConfig::from_env();
     run(config).await
 }
-

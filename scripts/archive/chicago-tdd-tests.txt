@@ -1,0 +1,1679 @@
+🧪 Running Rust tests...
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🧪 KNHK Rust Test Suite Runner[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mEnsuring C library is built...[0m
+[0;32m✅ C library ready[0m
+
+[0;34m┌─ Testing knhk-config...[0m
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+.. 2/6
+test_load_config_from_file --- FAILED
+test_config_connector_section --- FAILED
+test_config_validation --- FAILED
+test_env_var_override --- FAILED
+
+failures:
+
+---- test_load_config_from_file stdout ----
+[TEST] Load Config From File
+
+thread 'test_load_config_from_file' panicked at knhk-config/tests/config_test.rs:28:57:
+Failed to load config: "Failed to parse config file /Users/sac/.cache/tmp/knhk_test_config/config.toml: TOML parse error at line 10, column 8\n   |\n10 | calhost:9092\"]\n   |        ^\nexpected `.`, `=`\n"
+
+---- test_config_connector_section stdout ----
+[TEST] Configuration Connector Section
+
+thread 'test_config_connector_section' panicked at knhk-config/tests/config_test.rs:198:57:
+Failed to load config: "Failed to parse config file /Users/sac/.cache/tmp/knhk_test_config/config.toml: TOML parse error at line 10, column 8\n   |\n10 | calhost:9092\"]\n   |        ^\nexpected `.`, `=`\n"
+
+---- test_config_validation stdout ----
+[TEST] Configuration Validation
+
+thread 'test_config_validation' panicked at knhk-config/tests/config_test.rs:114:5:
+Should load valid config
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- test_env_var_override stdout ----
+[TEST] Environment Variable Override
+
+thread 'test_env_var_override' panicked at knhk-config/tests/config_test.rs:63:61:
+Failed to load config: "Failed to parse config file /Users/sac/.cache/tmp/knhk_test_config/config.toml: TOML parse error at line 10, column 8\n   |\n10 | calhost:9092\"]\n   |        ^\nexpected `.`, `=`\n"
+
+
+failures:
+    test_config_connector_section
+    test_config_validation
+    test_env_var_override
+    test_load_config_from_file
+
+test result: FAILED. 2 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test config_test`
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-otel...[0m
+
+running 22 tests
+......................
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[0;32m└─ ✅ PASSED[0m
+
+[0;34m┌─ Testing knhk-aot...[0m
+
+running 9 tests
+....... 7/9
+template_analyzer::tests::test_analyze_ground_triple --- FAILED
+template_analyzer::tests::test_analyze_variable_triple --- FAILED
+
+failures:
+
+---- template_analyzer::tests::test_analyze_ground_triple stdout ----
+
+thread 'template_analyzer::tests::test_analyze_ground_triple' panicked at knhk-aot/src/template_analyzer.rs:226:40:
+Failed to analyze ground triple template: "Invalid term: {"
+
+---- template_analyzer::tests::test_analyze_variable_triple stdout ----
+
+thread 'template_analyzer::tests::test_analyze_variable_triple' panicked at knhk-aot/src/template_analyzer.rs:236:40:
+Failed to analyze variable triple template: "Invalid term: {"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    template_analyzer::tests::test_analyze_ground_triple
+    template_analyzer::tests::test_analyze_variable_triple
+
+test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-hot...[0m
+
+running 35 tests
+................... 19/35
+beat_ffi::tests::test_beat_init --- FAILED
+...............
+failures:
+
+---- beat_ffi::tests::test_beat_init stdout ----
+
+thread 'beat_ffi::tests::test_beat_init' panicked at knhk-hot/src/beat_ffi.rs:86:9:
+assertion `left == right` failed
+  left: 2
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    beat_ffi::tests::test_beat_init
+
+test result: FAILED. 34 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-warm...[0m
+warning: variable does not need to be mutable
+  --> knhk-etl/src/emit.rs:92:13
+   |
+92 |         let mut receipts_written = 0;
+   |             ----^^^^^^^^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+  --> knhk-etl/src/emit.rs:94:13
+   |
+94 |         let mut lockchain_hashes = Vec::new();
+   |             ----^^^^^^^^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unused variable: `soa`
+   --> knhk-etl/src/reflex_map.rs:179:28
+    |
+179 |     fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
+    |                            ^^^ help: if this is intentional, prefix it with an underscore: `_soa`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `run`
+   --> knhk-etl/src/reflex_map.rs:179:45
+    |
+179 |     fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
+    |                                             ^^^ help: if this is intentional, prefix it with an underscore: `_run`
+
+warning: method `compute_mu_hash_for_run` is never used
+   --> knhk-etl/src/reflex_map.rs:339:8
+    |
+ 62 | impl ReflexMap {
+    | -------------- method in this implementation
+...
+339 |     fn compute_mu_hash_for_run(&self, soa: &SoAArrays, run: &PredRun) -> u64 {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/edge_cases.rs:4:5
+  |
+4 | use knhk_warm::query::QueryError;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/query.rs:4:5
+  |
+4 | use knhk_warm::query::{ask_to_json, construct_to_json, select_to_json, QueryError};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/errors.rs:4:5
+  |
+4 | use knhk_warm::query::{
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/graph.rs:4:5
+  |
+4 | use knhk_warm::query::execute_select;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/cache.rs:4:5
+  |
+4 | use knhk_warm::query::QueryMetrics;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/graph.rs:5:5
+  |
+5 | use knhk_warm::WarmPathGraph;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/examples/warm_path_query.rs:4:5
+  |
+4 | use knhk_warm::{execute_ask, execute_construct, execute_describe, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/errors.rs:7:5
+  |
+7 | use knhk_warm::WarmPathExecutor;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/edge_cases.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/chicago_tdd_hot_path_complete.rs:9:5
+  |
+9 | use knhk_warm::*;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/cache.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_etl::path_selector`
+ --> knhk-warm/tests/performance.rs:4:15
+  |
+4 | use knhk_etl::path_selector::{select_path, QueryPath};
+  |               ^^^^^^^^^^^^^ could not find `path_selector` in `knhk_etl`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_warm`
+ --> knhk-warm/tests/executor.rs:5:5
+  |
+5 | use knhk_warm::query::QueryExecutionResult;
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/query.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_construct, execute_describe, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/warm_path_test.rs:9:5
+  |
+9 | use knhk_warm::{WarmPathConstruct8, WarmPathError, WarmPathResult};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/errors.rs:8:5
+  |
+8 | use knhk_warm::{WarmPathError, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/performance.rs:5:5
+  |
+5 | use knhk_warm::{execute_ask, execute_select, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_etl::path_selector`
+ --> knhk-warm/tests/executor.rs:4:15
+  |
+4 | use knhk_etl::path_selector::QueryPath;
+  |               ^^^^^^^^^^^^^ could not find `path_selector` in `knhk_etl`
+
+error[E0432]: unresolved import `knhk_warm`
+ --> knhk-warm/tests/executor.rs:6:5
+  |
+6 | use knhk_warm::{WarmPathExecutor, WarmPathGraph};
+  |     ^^^^^^^^^ use of unresolved module or unlinked crate `knhk_warm`
+  |
+  = help: if you wanted to use a crate named `knhk_warm`, use `cargo add knhk_warm` to add it to your `Cargo.toml`
+
+warning: unused import: `remove_file`
+ --> knhk-warm/tests/graph.rs:7:15
+  |
+7 | use std::fs::{remove_file, File};
+  |               ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `Ctx`
+ --> knhk-warm/tests/warm_path_test.rs:8:16
+  |
+8 | use knhk_hot::{Ctx, Engine, Ir, Op, Receipt, Run};
+  |                ^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `GlobalAlloc`, `Layout`, and `System`
+  --> knhk-warm/tests/warm_path_test.rs:10:18
+   |
+10 | use std::alloc::{GlobalAlloc, Layout, System};
+   |                  ^^^^^^^^^^^  ^^^^^^  ^^^^^^
+
+Some errors have detailed explanations: E0432, E0433.
+For more information about an error, try `rustc --explain E0432`.
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `knhk-warm` (test "query") due to 2 previous errors
+error: could not compile `knhk-warm` (test "executor") due to 3 previous errors
+error: could not compile `knhk-warm` (example "warm_path_query") due to 1 previous error
+error: could not compile `knhk-warm` (test "errors") due to 3 previous errors
+error: could not compile `knhk-warm` (test "graph") due to 2 previous errors; 1 warning emitted
+error: could not compile `knhk-warm` (test "cache") due to 2 previous errors
+error: could not compile `knhk-warm` (test "chicago_tdd_hot_path_complete") due to 1 previous error
+error: could not compile `knhk-warm` (test "performance") due to 2 previous errors
+error: could not compile `knhk-warm` (test "edge_cases") due to 2 previous errors
+error[E0133]: call to unsafe function `Engine::new` is unsafe and requires unsafe function or block
+   --> knhk-warm/tests/warm_path_test.rs:146:22
+    |
+146 |     let mut engine = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ call to unsafe function
+    |
+    = note: consult the function's documentation for information on how to avoid undefined behavior
+
+Some errors have detailed explanations: E0133, E0432.
+For more information about an error, try `rustc --explain E0133`.
+error: could not compile `knhk-warm` (test "warm_path_test") due to 2 previous errors; 2 warnings emitted
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-unrdf...[0m
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[0;32m└─ ✅ PASSED[0m
+
+[0;34m┌─ Testing knhk-lockchain...[0m
+
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[0;32m└─ ✅ PASSED[0m
+
+[0;34m┌─ Testing knhk-validation...[0m
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 17 tests
+.................
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 10 tests
+..... 5/10
+test_cli_binary_exists --- FAILED
+test_cli_help_command --- FAILED
+...
+failures:
+
+---- test_cli_binary_exists stdout ----
+
+thread 'test_cli_binary_exists' panicked at knhk-validation/tests/v0_4_0_validation.rs:10:5:
+CLI binary should exist: CLI binary not found
+
+---- test_cli_help_command stdout ----
+
+thread 'test_cli_help_command' panicked at knhk-validation/tests/v0_4_0_validation.rs:17:5:
+CLI --help should work: CLI binary not found
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    test_cli_binary_exists
+    test_cli_help_command
+
+test result: FAILED. 8 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test v0_4_0_validation`
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-connectors...[0m
+
+running 23 tests
+................. 17/23
+kafka::tests::test_kafka_connector_init --- FAILED
+kafka::tests::test_kafka_connector_reconnect --- FAILED
+kafka::tests::test_kafka_connector_fetch_delta --- FAILED
+...
+failures:
+
+---- kafka::tests::test_kafka_connector_init stdout ----
+
+thread 'kafka::tests::test_kafka_connector_init' panicked at knhk-connectors/src/kafka.rs:581:9:
+assertion failed: connector.initialize(spec).is_ok()
+
+---- kafka::tests::test_kafka_connector_reconnect stdout ----
+
+thread 'kafka::tests::test_kafka_connector_reconnect' panicked at knhk-connectors/src/kafka.rs:809:9:
+assertion failed: connector.reconnect().is_ok()
+
+---- kafka::tests::test_kafka_connector_fetch_delta stdout ----
+
+thread 'kafka::tests::test_kafka_connector_fetch_delta' panicked at knhk-connectors/src/kafka.rs:682:9:
+assertion failed: connector.initialize(spec).is_ok()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    kafka::tests::test_kafka_connector_fetch_delta
+    kafka::tests::test_kafka_connector_init
+    kafka::tests::test_kafka_connector_reconnect
+
+test result: FAILED. 20 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-etl...[0m
+warning: unused import: `PipelineError`
+ --> knhk-etl/examples/hot_path_optimizations.rs:9:5
+  |
+9 |     PipelineError,
+  |     ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `cycle`
+  --> knhk-etl/tests/chicago_tdd_beat_scheduler.rs:17:9
+   |
+17 |     let cycle = scheduler.current_cycle();
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_cycle`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused import: `super::*`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:335:9
+    |
+335 |     use super::*;
+    |         ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `Arc` and `Mutex`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:336:21
+    |
+336 |     use std::sync::{Arc, Mutex};
+    |                     ^^^  ^^^^^
+
+warning: unused import: `std::thread`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:337:9
+    |
+337 |     use std::thread;
+    |         ^^^^^^^^^^^
+
+warning: unused import: `BeatSchedulerError`
+  --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:47:47
+   |
+47 | use knhk_etl::beat_scheduler::{BeatScheduler, BeatSchedulerError};
+   |                                               ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `scheduler`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:53:17
+   |
+53 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+   |                 ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scheduler`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `triples`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:56:13
+   |
+56 |         let triples = vec![RawTriple {
+   |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_triples`
+
+warning: variable does not need to be mutable
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:53:13
+   |
+53 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+   |             ----^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `scheduler`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:77:17
+   |
+77 |         let mut scheduler = BeatScheduler::new(1, 1, 1).expect("Should create scheduler");
+   |                 ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scheduler`
+
+warning: unused variable: `triples`
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:80:13
+   |
+80 |         let triples = vec![
+   |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_triples`
+
+warning: variable does not need to be mutable
+  --> knhk-etl/tests/regression_unwrap_fixes.rs:77:13
+   |
+77 |         let mut scheduler = BeatScheduler::new(1, 1, 1).expect("Should create scheduler");
+   |             ----^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unused variable: `scheduler`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:110:17
+    |
+110 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+    |                 ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scheduler`
+
+warning: unused variable: `triples`
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:113:13
+    |
+113 |         let triples = vec![RawTriple {
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_triples`
+
+warning: variable does not need to be mutable
+   --> knhk-etl/tests/regression_unwrap_fixes.rs:110:13
+    |
+110 |         let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Should create scheduler");
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `expected`
+  --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:77:26
+   |
+77 |     for (i, (&observed, &expected)) in observed_ticks
+   |                          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expected`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `delta`
+   --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:395:25
+    |
+395 |     fn is_deterministic(delta: &[RawTriple], run_len: usize) -> bool {
+    |                         ^^^^^ help: if this is intentional, prefix it with an underscore: `_delta`
+
+warning: unused variable: `soa_valid`
+   --> knhk-etl/tests/chicago_tdd_architecture_refinements.rs:594:9
+    |
+594 |     let soa_valid = SoAArrays {
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_soa_valid`
+
+warning: unexpected `cfg` condition value: `profiling`
+   --> knhk-etl/src/buffer_pool.rs:405:11
+    |
+405 |     #[cfg(feature = "profiling")]
+    |           ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `grpc`, `knhk-lockchain`, `knhk-otel`, `parallel`, `rayon`, `std`, and `tokio-runtime`
+    = help: consider adding `profiling` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused variable: `receipts`
+   --> knhk-etl/src/beat_scheduler.rs:654:13
+    |
+654 |         let receipts = scheduler.get_cycle_receipts();
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_receipts`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> knhk-etl/src/hot_path_engine.rs:209:9
+    |
+209 |         drop(buffers1);
+    |         ^^^^^--------^
+    |              |
+    |              argument has type `&load::SoAArrays`
+    |
+    = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+    |
+209 -         drop(buffers1);
+209 +         let _ = buffers1;
+    |
+
+
+running 104 tests
+................. 17/104
+beat_scheduler::tests::test_beat_scheduler_advance_beat --- FAILED
+..... 23/104
+fiber::tests::test_fiber_execute_exceeds_budget --- FAILED
+....................................... 63/104
+reflex_map::tests::test_reflex_map_hash_verification --- FAILED
+. 65/104
+reflex_map::tests::test_reflex_map_idempotence --- FAILED
+............ 78/104
+runtime_class::tests::test_r1_data_size_limit --- FAILED
+............... 94/104
+tests::test_ingest_stage_invalid_syntax --- FAILED
+..... 100/104
+tests::test_ingest_stage_literals --- FAILED
+tests::test_ingest_stage_blank_nodes --- FAILED
+beat_scheduler::tests::test_lockchain_integration --- FAILED
+tests::test_emit_stage --- FAILED
+
+failures:
+
+---- beat_scheduler::tests::test_beat_scheduler_advance_beat stdout ----
+
+thread 'beat_scheduler::tests::test_beat_scheduler_advance_beat' panicked at knhk-etl/src/beat_scheduler.rs:525:13:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- fiber::tests::test_fiber_execute_exceeds_budget stdout ----
+
+thread 'fiber::tests::test_fiber_execute_exceeds_budget' panicked at knhk-etl/src/fiber.rs:458:17:
+assertion `left == right` failed
+  left: RunLengthExceeded
+ right: TickBudgetExceeded
+
+---- reflex_map::tests::test_reflex_map_hash_verification stdout ----
+
+thread 'reflex_map::tests::test_reflex_map_hash_verification' panicked at knhk-etl/src/reflex_map.rs:564:14:
+Reflex map application should succeed: ReflexError("Hash mismatch: hash(A)=14695981039346656037 != hash(μ(O))=3781737826569876258")
+
+---- reflex_map::tests::test_reflex_map_idempotence stdout ----
+
+thread 'reflex_map::tests::test_reflex_map_idempotence' panicked at knhk-etl/src/reflex_map.rs:529:14:
+First reflex_map application should succeed: ReflexError("Hash mismatch: hash(A)=14695981039346656037 != hash(μ(O))=3781737826569876258")
+
+---- runtime_class::tests::test_r1_data_size_limit stdout ----
+
+thread 'runtime_class::tests::test_r1_data_size_limit' panicked at knhk-etl/src/runtime_class.rs:175:18:
+R1 classification should succeed: "Unable to classify operation: ASK_SP with data_size: 9"
+
+---- tests::test_ingest_stage_invalid_syntax stdout ----
+
+thread 'tests::test_ingest_stage_invalid_syntax' panicked at knhk-etl/src/lib.rs:264:13:
+assertion failed: msg.contains("parse error")
+
+---- tests::test_ingest_stage_literals stdout ----
+
+thread 'tests::test_ingest_stage_literals' panicked at knhk-etl/src/lib.rs:207:9:
+assertion `left == right` failed
+  left: "\"Hello\"@en"
+ right: "\"Alice\""
+
+---- tests::test_ingest_stage_blank_nodes stdout ----
+
+thread 'tests::test_ingest_stage_blank_nodes' panicked at knhk-etl/src/lib.rs:189:9:
+assertion `left == right` failed
+  left: "\"Bob\"^^http://www.w3.org/2001/XMLSchema#string"
+ right: "\"Alice\""
+
+---- beat_scheduler::tests::test_lockchain_integration stdout ----
+
+thread 'beat_scheduler::tests::test_lockchain_integration' panicked at knhk-etl/src/beat_scheduler.rs:645:13:
+assertion `left == right` failed
+  left: 3
+ right: 0
+
+---- tests::test_emit_stage stdout ----
+
+thread 'tests::test_emit_stage' panicked at knhk-etl/src/lib.rs:461:9:
+assertion failed: result.is_ok()
+
+
+failures:
+    beat_scheduler::tests::test_beat_scheduler_advance_beat
+    beat_scheduler::tests::test_lockchain_integration
+    fiber::tests::test_fiber_execute_exceeds_budget
+    reflex_map::tests::test_reflex_map_hash_verification
+    reflex_map::tests::test_reflex_map_idempotence
+    runtime_class::tests::test_r1_data_size_limit
+    tests::test_emit_stage
+    tests::test_ingest_stage_blank_nodes
+    tests::test_ingest_stage_invalid_syntax
+    tests::test_ingest_stage_literals
+
+test result: FAILED. 94 passed; 10 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.14s
+
+error: test failed, to rerun pass `--lib`
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-sidecar...[0m
+error: current package believes it's in a workspace when it's not:
+current:   /Users/sac/knhk/rust/knhk-sidecar/Cargo.toml
+workspace: /Users/sac/knhk/rust/Cargo.toml
+
+this may be fixable by adding `knhk-sidecar` to the `workspace.members` array of the manifest located at: /Users/sac/knhk/rust/Cargo.toml
+Alternatively, to keep it out of the workspace, add the package to the `workspace.exclude` array, or add an empty `[workspace]` table to the package's manifest.
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m┌─ Testing knhk-cli...[0m
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[0;32m└─ ✅ PASSED[0m
+
+[0;34m┌─ Testing knhk-integration-tests...[0m
+warning: unexpected `cfg` condition value: `std`
+ --> knhk-integration-tests/tests/construct8_pipeline.rs:9:7
+  |
+9 | #[cfg(feature = "std")]
+  |       ^^^^^^^^^^^^^^^ help: remove the condition
+  |
+  = note: no expected values for `feature`
+  = help: consider adding `std` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `std`
+   --> knhk-integration-tests/tests/construct8_pipeline.rs:162:7
+    |
+162 | #[cfg(feature = "std")]
+    |       ^^^^^^^^^^^^^^^ help: remove the condition
+    |
+    = note: no expected values for `feature`
+    = help: consider adding `std` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `std`
+   --> knhk-integration-tests/tests/construct8_pipeline.rs:292:7
+    |
+292 | #[cfg(feature = "std")]
+    |       ^^^^^^^^^^^^^^^ help: remove the condition
+    |
+    = note: no expected values for `feature`
+    = help: consider adding `std` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused imports: `IngestStage`, `PipelineError`, and `RawTriple`
+ --> knhk-integration-tests/tests/construct8_pipeline.rs:6:16
+  |
+6 | use knhk_etl::{IngestStage, PipelineError, RawTriple};
+  |                ^^^^^^^^^^^  ^^^^^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `Engine`, `Ir`, `Op`, `Receipt`, and `Run`
+ --> knhk-integration-tests/tests/construct8_pipeline.rs:7:16
+  |
+7 | use knhk_hot::{Engine, Ir, Op, Receipt, Run};
+  |                ^^^^^^  ^^  ^^  ^^^^^^^  ^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `knhk_patterns`
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:10:5
+   |
+10 | use knhk_patterns::{
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `knhk_patterns`
+   |
+   = help: if you wanted to use a crate named `knhk_patterns`, use `cargo add knhk_patterns` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_patterns`
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:10:5
+   |
+10 | use knhk_patterns::{
+   |     ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `knhk_patterns`
+   |
+   = help: if you wanted to use a crate named `knhk_patterns`, use `cargo add knhk_patterns` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_patterns`
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:37:9
+   |
+37 |     use knhk_patterns::PipelinePatternExt;
+   |         ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `knhk_patterns`
+   |
+   = help: if you wanted to use a crate named `knhk_patterns`, use `cargo add knhk_patterns` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_patterns`
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:93:9
+   |
+93 |     use knhk_patterns::PipelinePatternExt;
+   |         ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `knhk_patterns`
+   |
+   = help: if you wanted to use a crate named `knhk_patterns`, use `cargo add knhk_patterns` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `knhk_connectors::KafkaConnector`
+  --> knhk-integration-tests/src/main.rs:21:39
+   |
+21 |     use knhk_connectors::{DataFormat, KafkaConnector};
+   |                                       ^^^^^^^^^^^^^^ no `KafkaConnector` in the root
+   |
+   = help: consider importing this struct instead:
+           knhk_connectors::kafka::KafkaConnector
+
+warning: unused import: `testcontainers::ImageExt`
+ --> knhk-integration-tests/src/main.rs:9:9
+  |
+9 |     use testcontainers::ImageExt;
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `testcontainers::ImageExt`
+  --> knhk-integration-tests/src/main.rs:38:9
+   |
+38 |     use testcontainers::ImageExt;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `testcontainers::ImageExt`
+  --> knhk-integration-tests/src/main.rs:68:9
+   |
+68 |     use testcontainers::ImageExt;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `testcontainers::ImageExt`
+   --> knhk-integration-tests/src/main.rs:107:9
+    |
+107 |     use testcontainers::ImageExt;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0412]: cannot find type `HookCondition` in this scope
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:61:19
+   |
+61 |             }) as HookCondition,
+   |                   ^^^^^^^^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `HookCondition` in this scope
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:66:20
+   |
+66 |                 as HookCondition,
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `HookRetryCondition` in this scope
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:90:71
+   |
+90 |         Arc::new(|receipt: &knhk_etl::Receipt| receipt.ticks == 0) as HookRetryCondition;
+   |                                                                       ^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `HookCondition` in this scope
+   --> knhk-integration-tests/tests/pattern_hook_integration.rs:163:16
+    |
+163 |             as HookCondition,
+    |                ^^^^^^^^^^^^^ not found in this scope
+
+warning: unused imports: `HookExecutionContext`, `PredRun`, and `SoAArrays`
+ --> knhk-integration-tests/tests/pattern_hook_integration.rs:5:26
+  |
+5 |     hook_orchestration::{HookExecutionContext, HookExecutionPattern},
+  |                          ^^^^^^^^^^^^^^^^^^^^
+6 |     hook_registry::HookRegistry,
+7 |     load::{PredRun, SoAArrays},
+  |            ^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `query_request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:212:29
+    |
+212 |                 query_type: query_request::QueryType::Ask as i32,
+    |                             ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `query_request`
+    |
+    = help: if you wanted to use a crate named `query_request`, use `cargo add query_request` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `query_request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:254:25
+    |
+254 |             query_type: query_request::QueryType::Ask as i32,
+    |                         ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `query_request`
+    |
+    = help: if you wanted to use a crate named `query_request`, use `cargo add query_request` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `health_status`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:270:9
+    |
+270 |         health_status::HealthStatus::HealthStatusHealthy as i32,
+    |         ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `health_status`
+    |
+    = help: if you wanted to use a crate named `health_status`, use `cargo add health_status` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `query_request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:490:25
+    |
+490 |             query_type: query_request::QueryType::Ask as i32,
+    |                         ^^^^^^^^^^^^^ use of unresolved module or unlinked crate `query_request`
+    |
+    = help: if you wanted to use a crate named `query_request`, use `cargo add query_request` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:131:28
+    |
+131 |     let validate_request = Request::new(ValidateGraphRequest {
+    |                            ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `ValidateGraphRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:131:41
+    |
+131 |     let validate_request = Request::new(ValidateGraphRequest {
+    |                                         ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:161:24
+    |
+161 |     let hook_request = Request::new(EvaluateHookRequest {
+    |                        ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `EvaluateHookRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:161:37
+    |
+161 |     let hook_request = Request::new(EvaluateHookRequest {
+    |                                     ^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:173:27
+    |
+173 |     let metrics_request = Request::new(GetMetricsRequest {});
+    |                           ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `GetMetricsRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:173:40
+    |
+173 |     let metrics_request = Request::new(GetMetricsRequest {});
+    |                                        ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:211:27
+    |
+211 |             let request = Request::new(QueryRequest {
+    |                           ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `QueryRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:211:40
+    |
+211 |             let request = Request::new(QueryRequest {
+    |                                        ^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:226:27
+    |
+226 |     let metrics_request = Request::new(GetMetricsRequest {});
+    |                           ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `GetMetricsRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:226:40
+    |
+226 |     let metrics_request = Request::new(GetMetricsRequest {});
+    |                                        ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:253:16
+    |
+253 |         .query(Request::new(QueryRequest {
+    |                ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `QueryRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:253:29
+    |
+253 |         .query(Request::new(QueryRequest {
+    |                             ^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:260:26
+    |
+260 |     let health_request = Request::new(HealthCheckRequest {});
+    |                          ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `HealthCheckRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:260:39
+    |
+260 |     let health_request = Request::new(HealthCheckRequest {});
+    |                                       ^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:276:22
+    |
+276 |         .get_metrics(Request::new(GetMetricsRequest {}))
+    |                      ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `GetMetricsRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:276:35
+    |
+276 |         .get_metrics(Request::new(GetMetricsRequest {}))
+    |                                   ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:460:19
+    |
+460 |     let request = Request::new(ApplyTransactionRequest {
+    |                   ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `ApplyTransactionRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:460:32
+    |
+460 |     let request = Request::new(ApplyTransactionRequest {
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:489:16
+    |
+489 |         .query(Request::new(QueryRequest {
+    |                ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `QueryRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:489:29
+    |
+489 |         .query(Request::new(QueryRequest {
+    |                             ^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:496:28
+    |
+496 |         .apply_transaction(Request::new(ApplyTransactionRequest {
+    |                            ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `ApplyTransactionRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:496:41
+    |
+496 |         .apply_transaction(Request::new(ApplyTransactionRequest {
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:504:22
+    |
+504 |         .get_metrics(Request::new(GetMetricsRequest {}))
+    |                      ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `GetMetricsRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:504:35
+    |
+504 |         .get_metrics(Request::new(GetMetricsRequest {}))
+    |                                   ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Request`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:535:28
+    |
+535 |         .apply_transaction(Request::new(ApplyTransactionRequest {
+    |                            ^^^^^^^ use of undeclared type `Request`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:18:12
+    |
+ 17 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 18 | use tonic::Request;
+    |            ^^^^^^^
+help: consider importing this struct
+    |
+ 10 + use std::error::Request;
+    |
+
+error[E0422]: cannot find struct, variant or union type `ApplyTransactionRequest` in this scope
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:535:41
+    |
+535 |         .apply_transaction(Request::new(ApplyTransactionRequest {
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+warning: unexpected `cfg` condition value: `sidecar`
+  --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:11:7
+   |
+11 | #[cfg(feature = "sidecar")]
+   |       ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+   |
+   = note: no expected values for `feature`
+   = help: consider adding `sidecar` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `sidecar`
+  --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:13:7
+   |
+13 | #[cfg(feature = "sidecar")]
+   |       ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+   |
+   = note: no expected values for `feature`
+   = help: consider adding `sidecar` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `sidecar`
+  --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:15:7
+   |
+15 | #[cfg(feature = "sidecar")]
+   |       ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+   |
+   = note: no expected values for `feature`
+   = help: consider adding `sidecar` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `sidecar`
+  --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:17:7
+   |
+17 | #[cfg(feature = "sidecar")]
+   |       ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+   |
+   = note: no expected values for `feature`
+   = help: consider adding `sidecar` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `sidecar`
+  --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:24:7
+   |
+24 | #[cfg(feature = "sidecar")]
+   |       ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+   |
+   = note: no expected values for `feature`
+   = help: consider adding `sidecar` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `sidecar`
+  --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:87:7
+   |
+87 | #[cfg(feature = "sidecar")]
+   |       ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+   |
+   = note: no expected values for `feature`
+   = help: consider adding `sidecar` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `sidecar`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:375:11
+    |
+375 | #[cfg(all(feature = "sidecar", feature = "otel"))]
+    |           ^^^^^^^^^^^^^^^^^^^ help: remove the condition
+    |
+    = note: no expected values for `feature`
+    = help: consider adding `sidecar` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `otel`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:375:32
+    |
+375 | #[cfg(all(feature = "sidecar", feature = "otel"))]
+    |                                ^^^^^^^^^^^^^^^^ help: remove the condition
+    |
+    = note: no expected values for `feature`
+    = help: consider adding `otel` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `otel`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:413:7
+    |
+413 | #[cfg(feature = "otel")]
+    |       ^^^^^^^^^^^^^^^^ help: remove the condition
+    |
+    = note: no expected values for `feature`
+    = help: consider adding `otel` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:127:18
+    |
+127 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:128:19
+    |
+128 |     let sidecar = KgcSidecarService::new(config);
+    |                   ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:153:18
+    |
+153 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:154:19
+    |
+154 |     let sidecar = KgcSidecarService::new(config);
+    |                   ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:194:18
+    |
+194 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:195:39
+    |
+195 |     let sidecar = std::sync::Arc::new(KgcSidecarService::new(config));
+    |                                       ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:248:18
+    |
+248 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:249:19
+    |
+249 |     let sidecar = KgcSidecarService::new(config);
+    |                   ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:455:18
+    |
+455 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:456:19
+    |
+456 |     let sidecar = KgcSidecarService::new(config);
+    |                   ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:484:18
+    |
+484 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:485:19
+    |
+485 |     let sidecar = KgcSidecarService::new(config);
+    |                   ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SidecarConfig`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:526:18
+    |
+526 |     let config = SidecarConfig::default();
+    |                  ^^^^^^^^^^^^^ use of undeclared type `SidecarConfig`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:12:27
+    |
+ 11 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 12 | use knhk_sidecar::config::SidecarConfig;
+    |                           ^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `KgcSidecarService`
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:527:19
+    |
+527 |     let sidecar = KgcSidecarService::new(config);
+    |                   ^^^^^^^^^^^^^^^^^ use of undeclared type `KgcSidecarService`
+    |
+note: found an item that was configured out
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:16:39
+    |
+ 15 | #[cfg(feature = "sidecar")]
+    |       ------------------- the item is gated behind the `sidecar` feature
+ 16 | use knhk_sidecar::service::{proto::*, KgcSidecarService};
+    |                                       ^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:340:9
+    |
+340 |     let mut pipeline = Pipeline::new(
+    |         ----^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> knhk-integration-tests/tests/chicago_tdd_integration_complete.rs:554:9
+    |
+554 |     let mut pipeline = Pipeline::new(
+    |         ----^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+Some errors have detailed explanations: E0422, E0433.
+For more information about an error, try `rustc --explain E0422`.
+error: could not compile `knhk-integration-tests` (test "chicago_tdd_integration_complete") due to 44 previous errors; 11 warnings emitted
+error[E0599]: no method named `start` found for struct `testcontainers_modules::kafka::Kafka` in the current scope
+  --> knhk-integration-tests/src/main.rs:13:44
+   |
+13 |     let kafka_container = Kafka::default().start().await?;
+   |                                            ^^^^^ method not found in `testcontainers_modules::kafka::Kafka`
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `start` are implemented but not in scope; perhaps you want to import one of them
+   |
+ 6 + use testcontainers::runners::AsyncRunner;
+   |
+ 6 + use testcontainers::runners::SyncRunner;
+   |
+
+error[E0599]: no method named `start` found for struct `testcontainers_modules::kafka::Kafka` in the current scope
+  --> knhk-integration-tests/src/main.rs:42:44
+   |
+42 |     let kafka_container = Kafka::default().start().await?;
+   |                                            ^^^^^ method not found in `testcontainers_modules::kafka::Kafka`
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `start` are implemented but not in scope; perhaps you want to import one of them
+   |
+ 6 + use testcontainers::runners::AsyncRunner;
+   |
+ 6 + use testcontainers::runners::SyncRunner;
+   |
+
+error[E0599]: no method named `start` found for struct `Postgres` in the current scope
+  --> knhk-integration-tests/src/main.rs:72:50
+   |
+72 |     let postgres_container = Postgres::default().start().await?;
+   |                                                  ^^^^^ method not found in `Postgres`
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `start` are implemented but not in scope; perhaps you want to import one of them
+   |
+ 6 + use testcontainers::runners::AsyncRunner;
+   |
+ 6 + use testcontainers::runners::SyncRunner;
+   |
+
+error[E0599]: no method named `start` found for struct `testcontainers_modules::kafka::Kafka` in the current scope
+   --> knhk-integration-tests/src/main.rs:111:44
+    |
+111 |     let kafka_container = Kafka::default().start().await?;
+    |                                            ^^^^^ method not found in `testcontainers_modules::kafka::Kafka`
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `start` are implemented but not in scope; perhaps you want to import one of them
+    |
+  6 + use testcontainers::runners::AsyncRunner;
+    |
+  6 + use testcontainers::runners::SyncRunner;
+    |
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `knhk-integration-tests` (bin "integration_test" test) due to 5 previous errors; 4 warnings emitted
+error[E0599]: no method named `execute_hooks_parallel` found for struct `Pipeline` in the current scope
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:38:27
+   |
+38 |     let result = pipeline.execute_hooks_parallel(&registry, predicates);
+   |                           ^^^^^^^^^^^^^^^^^^^^^^ method not found in `Pipeline`
+
+error[E0599]: no method named `execute_hooks_conditional` found for struct `Pipeline` in the current scope
+   --> knhk-integration-tests/tests/pattern_hook_integration.rs:72:27
+    |
+ 72 |     let result = pipeline.execute_hooks_conditional(&registry, choices);
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `execute_to_load` with a similar name, but with different arguments
+   --> /Users/sac/knhk/rust/knhk-etl/src/pipeline.rs:208:5
+    |
+208 |     pub fn execute_to_load(&mut self) -> Result<crate::load::LoadResult, PipelineError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `execute_hooks_with_retry` found for struct `Pipeline` in the current scope
+  --> knhk-integration-tests/tests/pattern_hook_integration.rs:94:27
+   |
+94 |     let result = pipeline.execute_hooks_with_retry(&registry, 100u64, should_retry, 3);
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `Pipeline`
+
+Some errors have detailed explanations: E0412, E0432, E0433, E0599.
+For more information about an error, try `rustc --explain E0412`.
+error: could not compile `knhk-integration-tests` (test "pattern_hook_integration") due to 11 previous errors; 1 warning emitted
+[0;31m└─ ❌ FAILED[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m📊 Test Summary[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+Total crates tested: 13
+[0;32mPassed: 4[0m
+[0;31mFailed: 9[0m
+
+[0;31mFailed crates:[0m
+  [0;31m• knhk-config[0m
+  [0;31m• knhk-aot[0m
+  [0;31m• knhk-hot[0m
+  [0;31m• knhk-warm[0m
+  [0;31m• knhk-validation[0m
+  [0;31m• knhk-connectors[0m
+  [0;31m• knhk-etl[0m
+  [0;31m• knhk-sidecar[0m
+  [0;31m• knhk-integration-tests[0m
+
+make: *** [test-rust] Error 1

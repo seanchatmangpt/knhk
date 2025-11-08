@@ -132,10 +132,7 @@ fn test_dispatcher_selects_optimal_implementation() {
     let features = CpuFeatures::get();
     let has_simd = features.has_neon || features.has_avx2 || features.has_avx512;
 
-    println!(
-        "CPU has SIMD: {} (arch: {})",
-        has_simd, features.arch_name
-    );
+    println!("CPU has SIMD: {} (arch: {})", has_simd, features.arch_name);
 
     // If SIMD is available, dispatcher should select SIMD versions
     // If not, it should select generic fallback
@@ -183,8 +180,7 @@ fn test_architecture_name_format() {
     assert!(
         has_valid_prefix,
         "Architecture name '{}' should start with one of {:?}",
-        features.arch_name,
-        valid_prefixes
+        features.arch_name, valid_prefixes
     );
 }
 

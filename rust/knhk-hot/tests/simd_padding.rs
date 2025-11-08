@@ -7,7 +7,6 @@ mod simd_padding_tests {
     /// ACCEPTANCE CRITERIA (Lesson #5 from simdjson):
     /// Ring buffers must have 64-byte padding for SIMD safety
     /// SIMD operations can read beyond array without segfault
-
     use std::ptr;
 
     /// Test: Ring buffer allocations include 64-byte padding
@@ -23,8 +22,7 @@ mod simd_padding_tests {
 
         // Assert: Allocation includes 64-byte (8×u64) padding
         assert_eq!(
-            allocated_size,
-            expected_size,
+            allocated_size, expected_size,
             "Ring buffer must allocate 64 extra bytes for SIMD padding"
         );
     }
@@ -156,8 +154,7 @@ mod simd_padding_tests {
 
         // Assert: Zero branches (padding eliminates bounds checks)
         assert_eq!(
-            branch_count,
-            0,
+            branch_count, 0,
             "SIMD scan with padding must have zero branches"
         );
     }

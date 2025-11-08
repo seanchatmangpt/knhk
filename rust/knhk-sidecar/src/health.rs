@@ -32,24 +32,41 @@ impl HealthChecker {
     pub fn status(&self) -> HealthStatus {
         // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
         // See Rust std docs: https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
-        self.status.lock().expect("Health status mutex poisoned - unrecoverable state").clone()
+        self.status
+            .lock()
+            .expect("Health status mutex poisoned - unrecoverable state")
+            .clone()
     }
 
     pub fn set_healthy(&self) {
-        *self.status.lock().expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Healthy;
+        *self
+            .status
+            .lock()
+            .expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Healthy;
     }
 
     pub fn set_degraded(&self, reason: String) {
-        *self.status.lock().expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Degraded(reason);
+        *self
+            .status
+            .lock()
+            .expect("Health status mutex poisoned - unrecoverable state") =
+            HealthStatus::Degraded(reason);
     }
 
     pub fn set_unhealthy(&self, reason: String) {
-        *self.status.lock().expect("Health status mutex poisoned - unrecoverable state") = HealthStatus::Unhealthy(reason);
+        *self
+            .status
+            .lock()
+            .expect("Health status mutex poisoned - unrecoverable state") =
+            HealthStatus::Unhealthy(reason);
     }
 
     pub async fn check(&self) -> HealthStatus {
         let now = Instant::now();
-        let mut last_check = self.last_check.lock().expect("Health last_check mutex poisoned - unrecoverable state");
+        let mut last_check = self
+            .last_check
+            .lock()
+            .expect("Health last_check mutex poisoned - unrecoverable state");
 
         if let Some(last) = *last_check {
             if now.duration_since(last) < self.check_interval {
@@ -92,4 +109,3 @@ impl Default for HealthChecker {
         Self::new(5000) // 5 second check interval
     }
 }
-

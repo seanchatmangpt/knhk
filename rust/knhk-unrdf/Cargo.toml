@@ -2,6 +2,14 @@
 name = "knhk-unrdf"
 version = "1.0.0"
 edition = "2021"
+description = "RDF utilities and helpers for the KNHK framework"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-unrdf"
+keywords = ["rdf", "sparql", "utilities", "tera", "templates"]
+categories = ["parsing", "template-engine"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [lib]
 crate-type = ["rlib", "cdylib", "staticlib"]

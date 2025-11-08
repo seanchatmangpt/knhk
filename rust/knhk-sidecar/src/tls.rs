@@ -1,24 +1,24 @@
 // knhk-sidecar: TLS configuration and setup
 
+use crate::error::{SidecarError, SidecarResult};
 use std::fs;
 use std::path::Path;
-use crate::error::{SidecarError, SidecarResult};
 
 /// TLS configuration
 #[derive(Debug, Clone)]
 pub struct TlsConfig {
     /// TLS enabled
     pub enabled: bool,
-    
+
     /// Certificate file path
     pub cert_file: Option<String>,
-    
+
     /// Private key file path
     pub key_file: Option<String>,
-    
+
     /// CA certificate file path (for mTLS)
     pub ca_file: Option<String>,
-    
+
     /// mTLS enabled
     pub mtls_enabled: bool,
 }
@@ -68,26 +68,28 @@ impl TlsConfig {
         // Validate certificate file exists
         if let Some(ref cert_file) = self.cert_file {
             if !Path::new(cert_file).exists() {
-                return Err(SidecarError::tls_error(
-                    format!("Certificate file not found: {}", cert_file)
-                ));
+                return Err(SidecarError::tls_error(format!(
+                    "Certificate file not found: {}",
+                    cert_file
+                )));
             }
         } else {
             return Err(SidecarError::tls_error(
-                "Certificate file required when TLS is enabled".to_string()
+                "Certificate file required when TLS is enabled".to_string(),
             ));
         }
 
         // Validate key file exists
         if let Some(ref key_file) = self.key_file {
             if !Path::new(key_file).exists() {
-                return Err(SidecarError::tls_error(
-                    format!("Key file not found: {}", key_file)
-                ));
+                return Err(SidecarError::tls_error(format!(
+                    "Key file not found: {}",
+                    key_file
+                )));
             }
         } else {
             return Err(SidecarError::tls_error(
-                "Key file required when TLS is enabled".to_string()
+                "Key file required when TLS is enabled".to_string(),
             ));
         }
 
@@ -95,13 +97,14 @@ impl TlsConfig {
         if self.mtls_enabled {
             if let Some(ref ca_file) = self.ca_file {
                 if !Path::new(ca_file).exists() {
-                    return Err(SidecarError::tls_error(
-                        format!("CA certificate file not found: {}", ca_file)
-                    ));
+                    return Err(SidecarError::tls_error(format!(
+                        "CA certificate file not found: {}",
+                        ca_file
+                    )));
                 }
             } else {
                 return Err(SidecarError::tls_error(
-                    "CA certificate file required when mTLS is enabled".to_string()
+                    "CA certificate file required when mTLS is enabled".to_string(),
                 ));
             }
         }
@@ -112,42 +115,53 @@ impl TlsConfig {
     /// Load certificate
     pub fn load_cert(&self) -> SidecarResult<Vec<u8>> {
         if let Some(ref cert_file) = self.cert_file {
-            fs::read(cert_file)
-                .map_err(|e| SidecarError::tls_error(
-                    format!("Failed to read certificate file {}: {}", cert_file, e)
+            fs::read(cert_file).map_err(|e| {
+                SidecarError::tls_error(format!(
+                    "Failed to read certificate file {}: {}",
+                    cert_file, e
                 ))
+            })
         } else {
-            Err(SidecarError::tls_error("Certificate file not configured".to_string()))
+            Err(SidecarError::tls_error(
+                "Certificate file not configured".to_string(),
+            ))
         }
     }
 
     /// Load private key
     pub fn load_key(&self) -> SidecarResult<Vec<u8>> {
         if let Some(ref key_file) = self.key_file {
-            fs::read(key_file)
-                .map_err(|e| SidecarError::tls_error(
-                    format!("Failed to read key file {}: {}", key_file, e)
-                ))
+            fs::read(key_file).map_err(|e| {
+                SidecarError::tls_error(format!("Failed to read key file {}: {}", key_file, e))
+            })
         } else {
-            Err(SidecarError::tls_error("Key file not configured".to_string()))
+            Err(SidecarError::tls_error(
+                "Key file not configured".to_string(),
+            ))
         }
     }
 
     /// Load CA certificate
     pub fn load_ca(&self) -> SidecarResult<Vec<u8>> {
         if let Some(ref ca_file) = self.ca_file {
-            fs::read(ca_file)
-                .map_err(|e| SidecarError::tls_error(
-                    format!("Failed to read CA certificate file {}: {}", ca_file, e)
+            fs::read(ca_file).map_err(|e| {
+                SidecarError::tls_error(format!(
+                    "Failed to read CA certificate file {}: {}",
+                    ca_file, e
                 ))
+            })
         } else {
-            Err(SidecarError::tls_error("CA certificate file not configured".to_string()))
+            Err(SidecarError::tls_error(
+                "CA certificate file not configured".to_string(),
+            ))
         }
     }
 }
 
 /// Create TLS server config for tonic
-pub fn create_tls_server_config(config: &TlsConfig) -> SidecarResult<tonic::transport::ServerTlsConfig> {
+pub fn create_tls_server_config(
+    config: &TlsConfig,
+) -> SidecarResult<tonic::transport::ServerTlsConfig> {
     config.validate()?;
 
     let cert = config.load_cert()?;
@@ -155,8 +169,7 @@ pub fn create_tls_server_config(config: &TlsConfig) -> SidecarResult<tonic::tran
 
     let identity = tonic::transport::Identity::from_pem(cert, key);
 
-    let mut server_config = tonic::transport::ServerTlsConfig::new()
-        .identity(identity);
+    let mut server_config = tonic::transport::ServerTlsConfig::new().identity(identity);
 
     // Configure mTLS if enabled
     if config.mtls_enabled {
@@ -169,7 +182,9 @@ pub fn create_tls_server_config(config: &TlsConfig) -> SidecarResult<tonic::tran
 }
 
 /// Create TLS client config for tonic
-pub fn create_tls_client_config(config: &TlsConfig) -> SidecarResult<tonic::transport::ClientTlsConfig> {
+pub fn create_tls_client_config(
+    config: &TlsConfig,
+) -> SidecarResult<tonic::transport::ClientTlsConfig> {
     config.validate()?;
 
     let mut client_config = tonic::transport::ClientTlsConfig::new();
@@ -192,4 +207,3 @@ pub fn create_tls_client_config(config: &TlsConfig) -> SidecarResult<tonic::tran
 
     Ok(client_config)
 }
-

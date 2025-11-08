@@ -2,6 +2,14 @@
 name = "knhk-hot"
 version = "1.0.0"
 edition = "2021"
+description = "Hot path optimization engine with SIMD acceleration for RDF"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-hot"
+keywords = ["rdf", "simd", "performance", "optimization", "hot-path"]
+categories = ["algorithms", "no-std"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [lib]
 name = "knhk_hot"

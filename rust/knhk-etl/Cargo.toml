@@ -2,6 +2,14 @@
 name = "knhk-etl"
 version = "1.0.0"
 edition = "2021"
+description = "ETL pipeline framework for RDF processing with Chicago TDD"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-etl"
+keywords = ["rdf", "etl", "pipeline", "chicago-tdd", "processing"]
+categories = ["database", "development-tools"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
@@ -34,6 +42,7 @@ knhk-otel = []
 knhk-lockchain = []
 tokio-runtime = []
 parallel = ["rayon"]
+profiling = []
 [dev-dependencies]
 # Test dependencies
 knhk-unrdf = { path = "../knhk-unrdf" }

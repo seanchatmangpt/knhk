@@ -3,11 +3,11 @@
 // ACCEPTABLE: Mutex poisoning .expect() is allowed in this module (unrecoverable error)
 #![allow(clippy::expect_used)]
 
+use crate::error::{SidecarError, SidecarResult};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 use tokio::time::{sleep, Duration, Instant};
-use crate::error::{SidecarError, SidecarResult};
 
 /// Batched request with response channel
 pub struct BatchedRequest<T> {
@@ -20,7 +20,7 @@ pub struct BatchedRequest<T> {
 pub struct BatchConfig {
     /// Batch window in milliseconds
     pub batch_window_ms: u64,
-    
+
     /// Maximum batch size
     pub max_batch_size: usize,
 }
@@ -55,19 +55,25 @@ impl<T> BatchCollector<T> {
 
         // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
         // See Rust std docs: https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
-        let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
+        let mut pending = self
+            .pending
+            .lock()
+            .expect("Batch pending mutex poisoned - unrecoverable state");
         pending.push(BatchedRequest {
             request,
             response_tx: tx,
         });
-        
+
         rx
     }
 
     /// Collect batch (non-blocking, returns immediately if batch is ready)
     pub fn collect_batch(&self) -> Option<Vec<BatchedRequest<T>>> {
-        let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
-        
+        let mut pending = self
+            .pending
+            .lock()
+            .expect("Batch pending mutex poisoned - unrecoverable state");
+
         if pending.is_empty() {
             return None;
         }
@@ -94,7 +100,10 @@ impl<T> BatchCollector<T> {
 
             // Check if timeout reached
             if start.elapsed() >= timeout {
-                let mut pending = self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state");
+                let mut pending = self
+                    .pending
+                    .lock()
+                    .expect("Batch pending mutex poisoned - unrecoverable state");
                 if !pending.is_empty() {
                     return std::mem::take(&mut *pending);
                 }
@@ -108,14 +117,24 @@ impl<T> BatchCollector<T> {
 
     /// Get current pending count
     pub fn pending_count(&self) -> usize {
-        self.pending.lock().expect("Batch pending mutex poisoned - unrecoverable state").len()
+        self.pending
+            .lock()
+            .expect("Batch pending mutex poisoned - unrecoverable state")
+            .len()
     }
 }
 
 /// Batch processor for handling batched requests
 pub struct BatchProcessor<T, R> {
     config: BatchConfig,
-    processor: Arc<dyn Fn(Vec<T>) -> std::pin::Pin<Box<dyn std::future::Future<Output = SidecarResult<Vec<R>>> + Send>> + Send + Sync>,
+    processor: Arc<
+        dyn Fn(
+                Vec<T>,
+            )
+                -> std::pin::Pin<Box<dyn std::future::Future<Output = SidecarResult<Vec<R>>> + Send>>
+            + Send
+            + Sync,
+    >,
 }
 
 impl<T, R> BatchProcessor<T, R>
@@ -131,9 +150,7 @@ where
     {
         Self {
             config,
-            processor: Arc::new(move |requests| {
-                Box::pin(processor(requests))
-            }),
+            processor: Arc::new(move |requests| Box::pin(processor(requests))),
         }
     }
 
@@ -144,7 +161,11 @@ where
             return Err(SidecarError::BatchError {
                 context: crate::error::ErrorContext::new(
                     "SIDECAR_BATCH_SIZE_EXCEEDED",
-                    format!("Batch size {} exceeds maximum {}", requests.len(), self.config.max_batch_size)
+                    format!(
+                        "Batch size {} exceeds maximum {}",
+                        requests.len(),
+                        self.config.max_batch_size
+                    ),
                 ),
             });
         }
@@ -187,13 +208,16 @@ where
         loop {
             // Collect batch with timeout
             let batched_requests = self.collector.collect_batch_with_timeout().await;
-            
+
             if batched_requests.is_empty() {
                 continue;
             }
 
             // Extract requests
-            let requests: Vec<T> = batched_requests.iter().map(|br| br.request.clone()).collect();
+            let requests: Vec<T> = batched_requests
+                .iter()
+                .map(|br| br.request.clone())
+                .collect();
             let response_channels: Vec<oneshot::Sender<SidecarResult<R>>> = batched_requests
                 .into_iter()
                 .map(|br| br.response_tx)
@@ -217,4 +241,3 @@ where
         }
     }
 }
-

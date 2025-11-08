@@ -6,10 +6,10 @@ use crate::error::PipelineError;
 use crate::load::SoAArrays;
 
 /// Reusable hot path engine with memory reuse
-/// 
+///
 /// Pattern from simdjson: reuse buffers across operations to keep memory hot in cache.
 /// This reduces allocation overhead and improves cache locality for hot path operations.
-/// 
+///
 /// # Performance Benefits
 /// - Reuses SoAArrays buffers (avoids allocation on every operation)
 /// - Keeps buffers hot in L1 cache
@@ -40,10 +40,10 @@ impl HotPathEngine {
     }
 
     /// Create hot path engine with specified max capacity
-    /// 
+    ///
     /// # Arguments
     /// * `max_capacity` - Maximum number of triples engine can handle (must be ≤ 8)
-    /// 
+    ///
     /// # Returns
     /// * `Err` if max_capacity exceeds 8 (guard violation)
     pub fn with_max_capacity(max_capacity: usize) -> Result<Self, PipelineError> {
@@ -53,7 +53,7 @@ impl HotPathEngine {
                 max_capacity
             )));
         }
-        
+
         Ok(Self {
             soa_buffers: SoAArrays::new(),
             max_capacity,
@@ -62,7 +62,7 @@ impl HotPathEngine {
     }
 
     /// Get mutable reference to SoAArrays buffers
-    /// 
+    ///
     /// Buffers are reused across operations, keeping memory hot in cache.
     /// Caller should clear/initialize buffers before use.
     pub fn get_buffers_mut(&mut self) -> &mut SoAArrays {
@@ -75,7 +75,7 @@ impl HotPathEngine {
     }
 
     /// Set maximum capacity (for server loops)
-    /// 
+    ///
     /// Prevents unbounded growth in long-running processes.
     /// Capacity can grow up to max_capacity but never exceeds it.
     pub fn set_max_capacity(&mut self, max_capacity: usize) -> Result<(), PipelineError> {
@@ -85,12 +85,12 @@ impl HotPathEngine {
                 max_capacity
             )));
         }
-        
+
         self.max_capacity = max_capacity;
         if self.current_capacity > max_capacity {
             self.current_capacity = max_capacity;
         }
-        
+
         Ok(())
     }
 
@@ -105,20 +105,20 @@ impl HotPathEngine {
     }
 
     /// Clear buffers (zero out arrays)
-    /// 
+    ///
     /// Useful when reusing engine for new operations.
     pub fn clear(&mut self) {
         self.soa_buffers = SoAArrays::new();
     }
 
     /// Load triples into reusable buffers
-    /// 
+    ///
     /// Reuses existing buffers, only allocates if needed.
     /// This keeps memory hot in cache and reduces allocation overhead.
-    /// 
+    ///
     /// # Arguments
     /// * `triples` - Slice of (subject, predicate, object) tuples
-    /// 
+    ///
     /// # Returns
     /// * `Ok(SoAArrays)` - Reusable buffers with loaded triples
     /// * `Err` - If triple count exceeds capacity or guard constraints
@@ -179,7 +179,7 @@ mod tests {
     fn test_load_triples() {
         let mut engine = HotPathEngine::new();
         let triples = vec![(1, 100, 1000), (2, 100, 2000), (3, 100, 3000)];
-        
+
         let buffers = engine.load_triples(&triples).unwrap();
         assert_eq!(buffers.s[0], 1);
         assert_eq!(buffers.p[0], 100);
@@ -191,7 +191,7 @@ mod tests {
     fn test_load_triples_exceeds_capacity() {
         let mut engine = HotPathEngine::with_max_capacity(4).unwrap();
         let triples = vec![(1, 100, 1000); 5]; // 5 triples > 4 capacity
-        
+
         let result = engine.load_triples(&triples);
         assert!(result.is_err());
     }
@@ -199,18 +199,18 @@ mod tests {
     #[test]
     fn test_buffer_reuse() {
         let mut engine = HotPathEngine::new();
-        
+
         // First operation
         let triples1 = vec![(1, 100, 1000)];
         let buffers1 = engine.load_triples(&triples1).unwrap();
         assert_eq!(buffers1.s[0], 1);
-        
+
         // Second operation reuses buffers (drop first reference first)
         drop(buffers1);
         let triples2 = vec![(2, 200, 2000)];
         let buffers2 = engine.load_triples(&triples2).unwrap();
         assert_eq!(buffers2.s[0], 2);
-        
+
         // Verify buffers were reused (same memory location)
         assert_eq!(buffers2.s[0], 2);
     }
@@ -220,9 +220,8 @@ mod tests {
         let mut engine = HotPathEngine::new();
         engine.set_max_capacity(4).unwrap();
         assert_eq!(engine.max_capacity(), 4);
-        
+
         let result = engine.set_max_capacity(9);
         assert!(result.is_err());
     }
 }
-

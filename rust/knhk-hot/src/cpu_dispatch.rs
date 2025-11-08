@@ -89,7 +89,10 @@ impl CpuFeatures {
 
     /// Print detected features for debugging
     pub fn log_features(&self) {
-        eprintln!("[KNHK CPU Dispatch] Detected architecture: {}", self.arch_name);
+        eprintln!(
+            "[KNHK CPU Dispatch] Detected architecture: {}",
+            self.arch_name
+        );
         eprintln!("  NEON:   {}", self.has_neon);
         eprintln!("  SVE:    {}", self.has_sve);
         eprintln!("  AVX2:   {}", self.has_avx2);
@@ -139,12 +142,18 @@ pub struct PatternContext {
 pub type BranchFn = extern "C" fn(*mut PatternContext) -> bool;
 
 /// Pattern discriminator function signature
-pub type DiscriminatorFn =
-    unsafe extern "C" fn(ctx: *mut PatternContext, branches: *const BranchFn, num_branches: u32) -> PatternResult;
+pub type DiscriminatorFn = unsafe extern "C" fn(
+    ctx: *mut PatternContext,
+    branches: *const BranchFn,
+    num_branches: u32,
+) -> PatternResult;
 
 /// Pattern parallel split function signature
-pub type ParallelSplitFn =
-    unsafe extern "C" fn(ctx: *mut PatternContext, branches: *const BranchFn, num_branches: u32) -> PatternResult;
+pub type ParallelSplitFn = unsafe extern "C" fn(
+    ctx: *mut PatternContext,
+    branches: *const BranchFn,
+    num_branches: u32,
+) -> PatternResult;
 
 /// Pattern synchronization function signature
 pub type SynchronizationFn = unsafe extern "C" fn(

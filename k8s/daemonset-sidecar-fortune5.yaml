@@ -1,0 +1,171 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: knhk-sidecar-fortune5
+  namespace: kgc
+  labels:
+    app: knhk
+    component: sidecar
+    fortune5: "true"
+spec:
+  selector:
+    matchLabels:
+      app: knhk
+      component: sidecar
+      fortune5: "true"
+  template:
+    metadata:
+      labels:
+        app: knhk
+        component: sidecar
+        fortune5: "true"
+    spec:
+      # Fortune 5: Service account for SPIFFE/SPIRE
+      serviceAccountName: knhk-sidecar
+      containers:
+        - name: knhk-sidecar
+          image: knhk-sidecar:fortune5
+          ports:
+            - containerPort: 50051
+              name: grpc
+          env:
+            # Basic configuration
+            - name: KGC_SIDECAR_ADDRESS
+              value: "0.0.0.0:50051"
+            - name: KGC_SIDECAR_CLIENT_WARM_ORCHESTRATOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: WARM_ORCHESTRATOR_ENDPOINT
+            - name: KGC_SIDECAR_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: SIDECAR_BATCH_SIZE
+            - name: KGC_SIDECAR_BATCH_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: SIDECAR_BATCH_TIMEOUT_MS
+            # Fortune 5: SPIFFE/SPIRE configuration
+            - name: KGC_SIDECAR_SPIFFE_ENABLED
+              value: "true"
+            - name: KGC_SIDECAR_SPIFFE_SOCKET
+              value: "/tmp/spire-agent/public/api.sock"
+            - name: KGC_SIDECAR_SPIFFE_TRUST_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: knhk-spiffe
+                  key: trust-domain
+            - name: KGC_SIDECAR_SPIFFE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: knhk-spiffe
+                  key: spiffe-id
+            # Fortune 5: KMS configuration
+            - name: KGC_SIDECAR_KMS_PROVIDER
+              valueFrom:
+                secretKeyRef:
+                  name: knhk-kms
+                  key: provider
+            - name: KGC_SIDECAR_KMS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: knhk-kms
+                  key: region
+            - name: KGC_SIDECAR_KMS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: knhk-kms
+                  key: key-id
+            - name: KGC_SIDECAR_KEY_ROTATION_INTERVAL_HOURS
+              value: "24"  # Fortune 5 requirement: ≤24h
+            # Fortune 5: Multi-region configuration
+            - name: KGC_SIDECAR_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: REGION
+            - name: KGC_SIDECAR_PRIMARY_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: PRIMARY_REGION
+            - name: KGC_SIDECAR_CROSS_REGION_SYNC_ENABLED
+              value: "true"
+            - name: KGC_SIDECAR_RECEIPT_SYNC_ENDPOINTS
+              valueFrom:
+                configMapKeyRef:
+                  name: knhk-config
+                  key: RECEIPT_SYNC_ENDPOINTS
+            - name: KGC_SIDECAR_QUORUM_THRESHOLD
+              value: "2"  # Require 2 regions for quorum
+            # Fortune 5: SLO configuration
+            - name: KGC_SIDECAR_SLO_R1_P99_MAX_NS
+              value: "2"  # Fortune 5 requirement: ≤2ns
+            - name: KGC_SIDECAR_SLO_W1_P99_MAX_MS
+              value: "1"  # Fortune 5 requirement: ≤1ms
+            - name: KGC_SIDECAR_SLO_C1_P99_MAX_MS
+              value: "500"  # Fortune 5 requirement: ≤500ms
+            - name: KGC_SIDECAR_SLO_ADMISSION_STRATEGY
+              value: "strict"  # Reject if SLO cannot be met
+            # Fortune 5: Promotion gates configuration
+            - name: KGC_SIDECAR_PROMOTION_ENVIRONMENT
+              value: "production"
+            - name: KGC_SIDECAR_AUTO_ROLLBACK_ENABLED
+              value: "true"
+            - name: KGC_SIDECAR_SLO_THRESHOLD
+              value: "0.95"  # Rollback if SLO drops below 95%
+            # Weaver configuration
+            - name: KGC_SIDECAR_WEAVER_ENABLED
+              value: "true"
+            - name: KGC_SIDECAR_WEAVER_REGISTRY
+              value: "/registry"
+          volumeMounts:
+            # Fortune 5: SPIFFE/SPIRE socket mount
+            - name: spire-agent-socket
+              mountPath: /tmp/spire-agent/public
+              readOnly: true
+            # Fortune 5: Weaver registry mount
+            - name: weaver-registry
+              mountPath: /registry
+              readOnly: true
+            # Fortune 5: KMS credentials (if using file-based)
+            - name: kms-credentials
+              mountPath: /etc/kms
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"  # Increased for Fortune 5 features
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        # Fortune 5: SPIFFE/SPIRE agent socket
+        - name: spire-agent-socket
+          hostPath:
+            path: /tmp/spire-agent/public
+            type: DirectoryOrCreate
+        # Fortune 5: Weaver registry
+        - name: weaver-registry
+          configMap:
+            name: knhk-weaver-registry
+        # Fortune 5: KMS credentials (if using file-based)
+        - name: kms-credentials
+          secret:
+            secretName: knhk-kms-credentials
+            optional: true
+

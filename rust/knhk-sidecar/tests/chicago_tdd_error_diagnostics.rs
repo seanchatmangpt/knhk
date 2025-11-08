@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 fn test_error_context_creates_with_code_and_message() {
     // Arrange: Create error context
     let context = ErrorContext::new("TEST_ERROR", "Test error message");
-    
+
     // Act: Verify context fields
     // Assert: Code and message are set correctly
     assert_eq!(context.code, "TEST_ERROR");
@@ -27,11 +27,14 @@ fn test_error_context_adds_attributes() {
     let context = ErrorContext::new("TEST_ERROR", "Test message")
         .with_attribute("stage", "ingest")
         .with_attribute("rdf_bytes", "1024");
-    
+
     // Act: Verify attributes
     // Assert: Attributes are stored correctly
     assert_eq!(context.attributes.get("stage"), Some(&"ingest".to_string()));
-    assert_eq!(context.attributes.get("rdf_bytes"), Some(&"1024".to_string()));
+    assert_eq!(
+        context.attributes.get("rdf_bytes"),
+        Some(&"1024".to_string())
+    );
     assert_eq!(context.attributes.len(), 2);
 }
 
@@ -39,9 +42,9 @@ fn test_error_context_adds_attributes() {
 #[test]
 fn test_error_context_adds_source_location() {
     // Arrange: Create error context with source location
-    let context = ErrorContext::new("TEST_ERROR", "Test message")
-        .with_source_location("service.rs:205");
-    
+    let context =
+        ErrorContext::new("TEST_ERROR", "Test message").with_source_location("service.rs:205");
+
     // Act: Verify source location
     // Assert: Source location is set
     assert_eq!(context.source_location, Some("service.rs:205".to_string()));
@@ -54,7 +57,7 @@ fn test_error_context_adds_otel_correlation() {
     let context = ErrorContext::new("TEST_ERROR", "Test message")
         .with_span_id("abc123")
         .with_trace_id("def456");
-    
+
     // Act: Verify OTEL IDs
     // Assert: Span and trace IDs are set
     assert_eq!(context.span_id, Some("abc123".to_string()));
@@ -71,10 +74,10 @@ fn test_error_context_serializes_to_json() {
         .with_source_location("service.rs:205")
         .with_span_id("abc123")
         .with_trace_id("def456");
-    
+
     // Act: Serialize to JSON
     let json_result = context.to_json();
-    
+
     // Assert: JSON is valid and contains all fields
     assert!(json_result.is_ok());
     let json_str = json_result.unwrap();
@@ -92,14 +95,17 @@ fn test_sidecar_error_creates_with_context() {
     // Arrange: Create error with context
     let error = SidecarError::transaction_failed(
         ErrorContext::new("SIDECAR_TRANSACTION_FAILED", "Transaction failed")
-            .with_attribute("stage", "ingest")
+            .with_attribute("stage", "ingest"),
     );
-    
+
     // Act: Verify error context
     // Assert: Error has correct code and context
     assert_eq!(error.code(), "SIDECAR_TRANSACTION_FAILED");
     assert_eq!(error.context().message, "Transaction failed");
-    assert_eq!(error.context().attributes.get("stage"), Some(&"ingest".to_string()));
+    assert_eq!(
+        error.context().attributes.get("stage"),
+        Some(&"ingest".to_string())
+    );
 }
 
 /// Test: SidecarError convenience constructors work
@@ -110,7 +116,7 @@ fn test_sidecar_error_convenience_constructors() {
     let validation_error = SidecarError::validation_error("Validation failed");
     let query_error = SidecarError::query_failed("Query execution failed");
     let hook_error = SidecarError::hook_evaluation_failed("Hook evaluation failed");
-    
+
     // Assert: Errors have correct codes
     assert_eq!(network_error.code(), "SIDECAR_NETWORK_ERROR");
     assert_eq!(validation_error.code(), "SIDECAR_VALIDATION_ERROR");
@@ -126,12 +132,12 @@ fn test_sidecar_error_serializes_to_json() {
     let error = SidecarError::transaction_failed(
         ErrorContext::new("SIDECAR_INGEST_FAILED", "Ingest failed")
             .with_attribute("stage", "ingest")
-            .with_attribute("rdf_bytes", "1024")
+            .with_attribute("rdf_bytes", "1024"),
     );
-    
+
     // Act: Serialize to JSON
     let json_result = error.to_json();
-    
+
     // Assert: JSON is valid and contains error information
     assert!(json_result.is_ok());
     let json_str = json_result.unwrap();
@@ -148,24 +154,27 @@ fn test_sidecar_error_records_to_otel_span() {
     // Arrange: Create error and tracer
     let error = SidecarError::transaction_failed(
         ErrorContext::new("SIDECAR_INGEST_FAILED", "Ingest failed")
-            .with_attribute("stage", "ingest")
+            .with_attribute("stage", "ingest"),
     );
-    
+
     let mut tracer = knhk_otel::Tracer::new();
     let span_ctx = tracer.start_span("test.operation".to_string(), None);
-    
+
     // Act: Record error to span
     error.record_to_span(&mut tracer, span_ctx.clone());
-    
+
     // Assert: Span has error attributes and status
     let spans = tracer.spans();
     assert_eq!(spans.len(), 1);
     let span = &spans[0];
     assert_eq!(span.status, knhk_otel::SpanStatus::Error);
     assert!(span.attributes.contains_key("error.code"));
-    assert_eq!(span.attributes.get("error.code"), Some(&"SIDECAR_INGEST_FAILED".to_string()));
+    assert_eq!(
+        span.attributes.get("error.code"),
+        Some(&"SIDECAR_INGEST_FAILED".to_string())
+    );
     assert!(span.attributes.contains_key("error.message"));
-    
+
     // Verify error event was added
     assert!(!span.events.is_empty());
     let error_event = span.events.iter().find(|e| e.name == "error");
@@ -179,10 +188,10 @@ fn test_sidecar_error_records_to_otel_span() {
 fn test_sidecar_error_from_tonic_status() {
     // Arrange: Create tonic status
     let status = tonic::Status::invalid_argument("Invalid argument");
-    
+
     // Act: Convert to SidecarError
     let error: SidecarError = status.into();
-    
+
     // Assert: Error has correct code and gRPC code attribute
     assert_eq!(error.code(), "SIDECAR_GRPC_ERROR");
     assert!(error.context().attributes.contains_key("grpc_code"));
@@ -194,7 +203,7 @@ fn test_sidecar_error_from_pipeline_error() {
     // Arrange: Create pipeline error (using a simple one)
     // Note: This test depends on actual PipelineError structure
     // For now, we test that conversion works
-    
+
     // Act: Verify error type is preserved
     // Assert: PipelineError converts correctly
     // (Actual implementation depends on PipelineError structure)
@@ -209,7 +218,7 @@ fn test_is_retryable_error_identifies_retryable_errors() {
         context: ErrorContext::new("SIDECAR_TIMEOUT", "Timeout"),
     };
     let validation_error = SidecarError::validation_error("Validation failed");
-    
+
     // Act: Check retryability
     // Assert: Network and timeout errors are retryable, validation is not
     use knhk_sidecar::error::is_retryable_error;
@@ -227,7 +236,7 @@ fn test_is_guard_violation_identifies_guard_violations() {
         context: ErrorContext::new("SIDECAR_BATCH_ERROR", "Batch failed"),
     };
     let network_error = SidecarError::network_error("Network failed");
-    
+
     // Act: Check guard violation status
     // Assert: Validation and batch errors are guard violations, network is not
     use knhk_sidecar::error::is_guard_violation;
@@ -246,7 +255,7 @@ fn test_error_context_builder_pattern_chains() {
         .with_source_location("service.rs:205")
         .with_span_id("abc123")
         .with_trace_id("def456");
-    
+
     // Assert: All fields are set correctly
     assert_eq!(context.code, "TEST_ERROR");
     assert_eq!(context.message, "Test message");
@@ -265,14 +274,23 @@ fn test_error_context_with_multiple_attributes() {
         .with_attribute("rdf_bytes", "1024")
         .with_attribute("schema_iri", "urn:knhk:schema:default")
         .with_attribute("operation", "apply_transaction");
-    
+
     // Act: Verify all attributes
     // Assert: All attributes are present
     assert_eq!(context.attributes.len(), 4);
     assert_eq!(context.attributes.get("stage"), Some(&"ingest".to_string()));
-    assert_eq!(context.attributes.get("rdf_bytes"), Some(&"1024".to_string()));
-    assert_eq!(context.attributes.get("schema_iri"), Some(&"urn:knhk:schema:default".to_string()));
-    assert_eq!(context.attributes.get("operation"), Some(&"apply_transaction".to_string()));
+    assert_eq!(
+        context.attributes.get("rdf_bytes"),
+        Some(&"1024".to_string())
+    );
+    assert_eq!(
+        context.attributes.get("schema_iri"),
+        Some(&"urn:knhk:schema:default".to_string())
+    );
+    assert_eq!(
+        context.attributes.get("operation"),
+        Some(&"apply_transaction".to_string())
+    );
 }
 
 /// Test: Error context clone preserves all fields
@@ -284,10 +302,10 @@ fn test_error_context_clone_preserves_fields() {
         .with_source_location("service.rs:205")
         .with_span_id("abc123")
         .with_trace_id("def456");
-    
+
     // Act: Clone context
     let cloned = original.clone();
-    
+
     // Assert: All fields are preserved
     assert_eq!(cloned.code, original.code);
     assert_eq!(cloned.message, original.message);
@@ -301,12 +319,11 @@ fn test_error_context_clone_preserves_fields() {
 #[test]
 fn test_error_context_debug_format() {
     // Arrange: Create error context
-    let context = ErrorContext::new("TEST_ERROR", "Test message")
-        .with_attribute("stage", "ingest");
-    
+    let context = ErrorContext::new("TEST_ERROR", "Test message").with_attribute("stage", "ingest");
+
     // Act: Format as debug string
     let debug_str = format!("{:?}", context);
-    
+
     // Assert: Debug string contains key information
     assert!(debug_str.contains("TEST_ERROR"));
     assert!(debug_str.contains("Test message"));
@@ -317,13 +334,14 @@ fn test_error_context_debug_format() {
 #[test]
 fn test_sidecar_error_debug_format() {
     // Arrange: Create error
-    let error = SidecarError::transaction_failed(
-        ErrorContext::new("SIDECAR_TRANSACTION_FAILED", "Transaction failed")
-    );
-    
+    let error = SidecarError::transaction_failed(ErrorContext::new(
+        "SIDECAR_TRANSACTION_FAILED",
+        "Transaction failed",
+    ));
+
     // Act: Format as debug string
     let debug_str = format!("{:?}", error);
-    
+
     // Assert: Debug string contains error information
     assert!(debug_str.contains("TransactionFailed"));
     assert!(debug_str.contains("SIDECAR_TRANSACTION_FAILED"));
@@ -333,13 +351,14 @@ fn test_sidecar_error_debug_format() {
 #[test]
 fn test_sidecar_error_display_format() {
     // Arrange: Create error
-    let error = SidecarError::transaction_failed(
-        ErrorContext::new("SIDECAR_TRANSACTION_FAILED", "Transaction failed")
-    );
-    
+    let error = SidecarError::transaction_failed(ErrorContext::new(
+        "SIDECAR_TRANSACTION_FAILED",
+        "Transaction failed",
+    ));
+
     // Act: Format as display string
     let display_str = format!("{}", error);
-    
+
     // Assert: Display string contains error message
     assert!(display_str.contains("Transaction failed"));
 }
@@ -349,7 +368,7 @@ fn test_sidecar_error_display_format() {
 fn test_error_context_with_empty_attributes() {
     // Arrange: Create context without attributes
     let context = ErrorContext::new("TEST_ERROR", "Test message");
-    
+
     // Act: Verify attributes
     // Assert: Attributes map is empty
     assert!(context.attributes.is_empty());
@@ -362,10 +381,12 @@ fn test_error_context_attribute_overwrites() {
     let context = ErrorContext::new("TEST_ERROR", "Test message")
         .with_attribute("stage", "ingest")
         .with_attribute("stage", "transform");
-    
+
     // Act: Verify attribute value
     // Assert: Last value overwrites previous
-    assert_eq!(context.attributes.get("stage"), Some(&"transform".to_string()));
+    assert_eq!(
+        context.attributes.get("stage"),
+        Some(&"transform".to_string())
+    );
     assert_eq!(context.attributes.len(), 1);
 }
-

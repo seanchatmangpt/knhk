@@ -1,27 +1,27 @@
 // knhk-sidecar: gRPC server implementation
 
-use std::sync::Arc;
-use crate::error::{SidecarError, SidecarResult};
-use crate::client::SidecarClient;
 use crate::batch::BatchConfig;
-use crate::tls::{TlsConfig, create_tls_server_config};
-use crate::metrics::{MetricsCollector, LatencyTimer};
-use crate::health::HealthChecker;
-use crate::service::KgcSidecarService;
+use crate::client::SidecarClient;
 use crate::config::SidecarConfig;
+use crate::error::{SidecarError, SidecarResult};
+use crate::health::HealthChecker;
+use crate::metrics::{LatencyTimer, MetricsCollector};
+use crate::service::KgcSidecarService;
+use crate::tls::{create_tls_server_config, TlsConfig};
+use std::sync::Arc;
 
 /// Server configuration for sidecar gRPC server
-/// 
+///
 /// Contains all configuration needed to start and run the sidecar server,
 /// including TLS, batching, retry, and beat admission settings.
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
     /// Bind address
     pub bind_address: String,
-    
+
     /// Batch configuration
     pub batch_config: BatchConfig,
-    
+
     /// TLS configuration
     pub tls_config: TlsConfig,
 }
@@ -37,24 +37,24 @@ impl Default for ServerConfig {
 }
 
 /// Sidecar gRPC server
-/// 
+///
 /// Main server struct that manages the gRPC service, client connections, metrics,
 /// health checks, and beat-driven admission control.
-/// 
+///
 /// # Features
-/// 
+///
 /// - gRPC service with beat-driven admission
 /// - TLS/mTLS support
 /// - Request batching and retries
 /// - Circuit breaking
 /// - OTEL telemetry integration
 /// - Weaver live-check validation
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use knhk_sidecar::{SidecarServer, SidecarConfig};
-/// 
+///
 /// let config = SidecarConfig::default();
 /// let server = SidecarServer::new(server_config, client, metrics, health).await?;
 /// server.start().await?;
@@ -121,7 +121,10 @@ impl SidecarServer {
 
     /// Start server
     pub async fn start(&self) -> SidecarResult<()> {
-        let addr = self.config.bind_address.parse()
+        let addr = self
+            .config
+            .bind_address
+            .parse()
             .map_err(|e| SidecarError::config_error(format!("Invalid bind address: {}", e)))?;
 
         // Create gRPC server builder
@@ -130,7 +133,8 @@ impl SidecarServer {
         // Configure TLS if enabled
         if self.config.tls_config.enabled {
             let tls_config = create_tls_server_config(&self.config.tls_config)?;
-            server_builder = server_builder.tls_config(tls_config)
+            server_builder = server_builder
+                .tls_config(tls_config)
                 .map_err(|e| SidecarError::tls_error(format!("Failed to configure TLS: {}", e)))?;
         }
 
@@ -155,22 +159,30 @@ impl SidecarServer {
     /// Handle execute transaction request
     pub async fn handle_execute_transaction(&self, rdf_delta: String) -> SidecarResult<String> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
-        
+
         // Forward to warm orchestrator
         self.client.execute_transaction(rdf_delta).await
     }
 
     /// Handle validate graph request
-    pub async fn handle_validate_graph(&self, graph: String, schema_iri: String) -> SidecarResult<bool> {
+    pub async fn handle_validate_graph(
+        &self,
+        graph: String,
+        schema_iri: String,
+    ) -> SidecarResult<bool> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
-        
+
         self.client.validate_graph(graph, schema_iri).await
     }
 
     /// Handle evaluate hook request
-    pub async fn handle_evaluate_hook(&self, hook_id: String, input_data: String) -> SidecarResult<String> {
+    pub async fn handle_evaluate_hook(
+        &self,
+        hook_id: String,
+        input_data: String,
+    ) -> SidecarResult<String> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
-        
+
         self.client.evaluate_hook(hook_id, input_data).await
     }
 
@@ -196,5 +208,3 @@ impl SidecarServer {
         self.metrics.snapshot()
     }
 }
-
-

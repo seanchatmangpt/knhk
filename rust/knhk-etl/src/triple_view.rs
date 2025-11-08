@@ -5,14 +5,14 @@
 use crate::load::SoAArrays;
 
 /// Zero-copy view into a single triple in SoAArrays
-/// 
+///
 /// Pattern from simdjson: use views instead of copies for zero-copy access.
 /// The view borrows from SoAArrays and provides zero-copy access to triple components.
-/// 
+///
 /// # Lifetime
 /// The view is tied to the lifetime of the SoAArrays it references.
 /// Views become invalid if SoAArrays is dropped or reused.
-/// 
+///
 /// # Performance Benefits
 /// - Zero-copy access (no allocation, no copying)
 /// - Cache-friendly (references existing data)
@@ -24,11 +24,11 @@ pub struct TripleView<'a> {
 
 impl<'a> TripleView<'a> {
     /// Create new triple view
-    /// 
+    ///
     /// # Arguments
     /// * `soa` - Reference to SoAArrays
     /// * `index` - Index of triple (must be < 8)
-    /// 
+    ///
     /// # Safety
     /// Caller must ensure index < 8 and SoAArrays outlives the view.
     #[inline(always)]
@@ -57,7 +57,11 @@ impl<'a> TripleView<'a> {
     /// Get all components as tuple (zero-copy)
     #[inline(always)]
     pub fn as_tuple(&self) -> (u64, u64, u64) {
-        (self.soa.s[self.index], self.soa.p[self.index], self.soa.o[self.index])
+        (
+            self.soa.s[self.index],
+            self.soa.p[self.index],
+            self.soa.o[self.index],
+        )
     }
 
     /// Get index
@@ -68,7 +72,7 @@ impl<'a> TripleView<'a> {
 }
 
 /// Zero-copy iterator over triples in SoAArrays
-/// 
+///
 /// Forward-only iterator (pattern from simdjson On-Demand API).
 /// Iterates over triples in SoAArrays without copying data.
 pub struct TripleIterator<'a> {
@@ -79,7 +83,7 @@ pub struct TripleIterator<'a> {
 
 impl<'a> TripleIterator<'a> {
     /// Create new iterator
-    /// 
+    ///
     /// # Arguments
     /// * `soa` - Reference to SoAArrays
     /// * `len` - Number of triples to iterate (must be ≤ 8)
@@ -196,4 +200,3 @@ mod tests {
         assert_eq!(view.subject(), 1);
     }
 }
-

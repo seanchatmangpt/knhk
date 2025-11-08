@@ -4,7 +4,7 @@
 
 #[cfg(feature = "otel")]
 mod otel_tests {
-    use knhk_otel::{Tracer, SpanStatus, MetricsHelper, WeaverLiveCheck};
+    use knhk_otel::{MetricsHelper, SpanStatus, Tracer, WeaverLiveCheck};
 
     /// Test: All sidecar operations emit spans
     /// Chicago TDD: Test the output (spans emitted) not implementation
@@ -99,13 +99,11 @@ mod otel_tests {
         MetricsHelper::record_warm_path_latency(&mut tracer, 3000, "evaluate_hook"); // 3ms
 
         // Verify latency metrics
-        let latency_metrics = tracer
-            .get_metrics("knhk.warm_path.operations.latency");
+        let latency_metrics = tracer.get_metrics("knhk.warm_path.operations.latency");
         assert_eq!(latency_metrics.len(), 3, "Should record 3 latency metrics");
 
         // Verify count metrics also recorded
-        let count_metrics = tracer
-            .get_metrics("knhk.warm_path.operations.count");
+        let count_metrics = tracer.get_metrics("knhk.warm_path.operations.count");
         assert_eq!(count_metrics.len(), 3, "Should record 3 count metrics");
     }
 

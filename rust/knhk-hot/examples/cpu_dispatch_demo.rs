@@ -32,7 +32,11 @@ fn main() {
 
     println!(
         "SIMD available: {}",
-        if has_simd { "YES (using optimized kernels)" } else { "NO (using generic fallback)" }
+        if has_simd {
+            "YES (using optimized kernels)"
+        } else {
+            "NO (using generic fallback)"
+        }
     );
     println!();
 
@@ -122,7 +126,9 @@ fn main() {
     match features.arch_name {
         name if name.contains("ARM64-NEON") => {
             println!("📊 ARM64 NEON detected:");
-            println!("  - Optimized for: Parallel Split, Synchronization, Multi-Choice, Discriminator");
+            println!(
+                "  - Optimized for: Parallel Split, Synchronization, Multi-Choice, Discriminator"
+            );
             println!("  - NEON vector width: 128 bits (4x u32 or 2x u64 per instruction)");
             println!("  - Expected tick reduction: 30-50% for SIMD patterns");
         }
@@ -133,13 +139,17 @@ fn main() {
         }
         name if name.contains("x86_64-AVX512") => {
             println!("📊 Intel AVX-512 detected:");
-            println!("  - Optimized for: Parallel Split, Synchronization, Multi-Choice, Discriminator");
+            println!(
+                "  - Optimized for: Parallel Split, Synchronization, Multi-Choice, Discriminator"
+            );
             println!("  - AVX-512 vector width: 512 bits (16x u32 or 8x u64 per instruction)");
             println!("  - Expected tick reduction: 50-70% for SIMD patterns");
         }
         name if name.contains("x86_64-AVX2") => {
             println!("📊 Intel AVX2 detected:");
-            println!("  - Optimized for: Parallel Split, Synchronization, Multi-Choice, Discriminator");
+            println!(
+                "  - Optimized for: Parallel Split, Synchronization, Multi-Choice, Discriminator"
+            );
             println!("  - AVX2 vector width: 256 bits (8x u32 or 4x u64 per instruction)");
             println!("  - Expected tick reduction: 40-60% for SIMD patterns");
         }

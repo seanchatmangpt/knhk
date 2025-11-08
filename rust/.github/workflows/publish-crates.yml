@@ -1,0 +1,116 @@
+name: Publish to crates.io
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Publish crates to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          cd rust
+          CARGO_VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path knhk-cli/Cargo.toml | jq -r '.packages[0].version')
+          if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+            echo "Version mismatch: tag=$TAG_VERSION, Cargo.toml=$CARGO_VERSION"
+            exit 1
+          fi
+
+      - name: Publish knhk-otel
+        run: cargo publish --manifest-path rust/knhk-otel/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true  # May already be published
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-lockchain
+        run: cargo publish --manifest-path rust/knhk-lockchain/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-hot
+        run: cargo publish --manifest-path rust/knhk-hot/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-etl
+        run: cargo publish --manifest-path rust/knhk-etl/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-warm
+        run: cargo publish --manifest-path rust/knhk-warm/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-config
+        run: cargo publish --manifest-path rust/knhk-config/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-connectors
+        run: cargo publish --manifest-path rust/knhk-connectors/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish knhk-cli
+        run: cargo publish --manifest-path rust/knhk-cli/Cargo.toml --token ${{ secrets.CARGO_TOKEN }}
+
+      - name: Verify installation
+        run: |
+          sleep 60  # Wait for crates.io to index
+          cargo install knhk
+          knhk --version
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            ```bash
+            cargo install knhk
+            ```
+
+            ## Crates Published
+            - knhk-otel v${{ github.ref_name }}
+            - knhk-lockchain v${{ github.ref_name }}
+            - knhk-hot v${{ github.ref_name }}
+            - knhk-etl v${{ github.ref_name }}
+            - knhk-warm v${{ github.ref_name }}
+            - knhk-config v${{ github.ref_name }}
+            - knhk-connectors v${{ github.ref_name }}
+            - knhk-cli v${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

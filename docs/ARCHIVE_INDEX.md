@@ -1,6 +1,6 @@
 # Archived Documentation Index
 
-**Last Updated**: 2025-01-XX (updated with completion reports archive)
+**Last Updated**: 2025-01-XX (80/20 consolidation complete)
 
 This index catalogs archived documentation organized by category.
 
@@ -10,6 +10,10 @@ This index catalogs archived documentation organized by category.
 docs/archived/
 ├── validation-reports/    # Historical validation reports
 ├── status-reports/        # Status and completion reports
+├── implementation-summaries/  # Completed implementation summaries
+├── planning/             # Planning documents and charters
+│   └── internal/         # Internal planning and analysis docs
+├── research/             # Research and evaluation documents
 ├── weaver-docs/          # Consolidated Weaver documentation
 ├── false-positives/       # False positive analysis reports
 └── [existing archives]   # Previously archived content
@@ -59,7 +63,14 @@ Status and completion reports moved to `archived/status-reports/`:
 **Docs-level status reports:**
 - `STATUS.md` (superseded by `V1-STATUS.md`)
 
-**Completion/final reports (archived 2025-01-XX):**
+**Recently archived (2025-01-XX - 80/20 consolidation):**
+- `FALSE_POSITIVES_RESOLVED.md` (consolidated into `FALSE_POSITIVES_AND_UNFINISHED_WORK.md`)
+- `V1.0.0_RELEASE_CERTIFICATION.md` (historical)
+- `RELEASE_NOTES_v1.0.0.md` (historical)
+- `GO-NO-GO-DECISION.md` (historical decision)
+- `HIVE-QUEEN-IMPLEMENTATION-PLAN.md` (completed)
+- `production-validation-80-20.md` (historical validation)
+- `production-ready-checklist.md` (historical validation)
 - `12-AGENT-SWARM-FINAL-REPORT.md` - 12-agent swarm final report (MISSION COMPLETE)
 - `SPARC_COMPLETION_STRATEGY.md` - SPARC completion strategy
 - `SYSTEM_COMPLETION_ARCHITECTURE.md` - System completion architecture (Design Complete)
@@ -114,17 +125,72 @@ False positive analysis reports moved to `archived/false-positives/`:
 
 **Note**: Key content consolidated into `FALSE_POSITIVES_AND_UNFINISHED_WORK.md`
 
+## Implementation Summaries
+
+Completed implementation summaries moved to `archived/implementation-summaries/`:
+
+**Archived 2025-01-XX (80/20 consolidation):**
+- `80-20-implementation-summary.md` - Historical implementation summary
+- `MU-DELTA-IMPLEMENTATION-SUMMARY.md` - Mu-delta implementation summary
+- `core-80-20-implementation.md` - Core 80/20 implementation details
+- `CARGO_INSTALL_DEPLOYMENT_SUMMARY.md` - Cargo install deployment summary
+- `CRATES_IO_DEPLOYMENT_STATUS.md` - Crates.io deployment status
+- `LOCKCHAIN_IMPLEMENTATION.md` (see `LOCKCHAIN_INTEGRATION_COMPLETE.md` for current status)
+- `BRANCHLESS_FIBER_ANALYSIS.md` (see `BRANCHLESS_C_ENGINE_IMPLEMENTATION.md` for current)
+- `FRAMEWORK_GENERALIZATION_LEARNINGS.md` - Framework generalization learnings
+- `hook-registry-implementation.md` - Hook registry implementation details
+- `hooks-engine-2ns-use-cases.md` - Hooks engine use cases
+- `hooks-engine-stress-tests.md` - Hooks engine stress tests
+
 ## Planning Documents
 
 Planning documents moved to `archived/planning/`:
 
-**Root-level planning files (archived 2025-01-XX):**
+**Internal planning docs (archived 2025-01-XX - 80/20 consolidation):**
+- `CODE_QUALITY_ANALYSIS_WEEK1_WEEK2.md` - Historical code quality analysis
+- `code-quality-analysis-v1.0.0.md` - v1.0 code quality analysis
+- `AGENT_SELECTION_GUIDE.md` - Internal agent selection guide
+- `AGENT_SELECTION_MATRIX.md` - Internal agent selection matrix
+- `AUTOMATION_INFRASTRUCTURE.md` - Automation infrastructure planning
+- `AUTONOMIC_IMPLEMENTATION.md` - Autonomic implementation planning
+- `W1_ROUTING_IMPLEMENTATION.md` - W1 routing implementation details
+- `SINGLE_PIECE_FLOW.md` - Single piece flow planning
+- `KANBAN.md` - Kanban planning document
+- `REFLEX-CONVO.txt` - Historical conversation notes
+- `unwrap-remediation-regression-plan.md` - Regression planning
+- `v1-monitoring-setup-guide.md` - Historical monitoring guide
+- `unrdf-integration-dod.md` - Historical integration DoD
+- `ERROR_HIERARCHY_SUMMARY.md` (see `ERROR_HIERARCHY_ARCHITECTURE.md` for current)
+- `git-hooks-improvements.md` - Git hooks improvements
+- `git-hooks-setup.md` - Git hooks setup guide
+
+**Duplicate guides (archived 2025-01-XX):**
+- `80-20-quick-start.md` (duplicate of `QUICK_START.md`)
+- `integration.md` (duplicate of `integration-guide.md`)
+- `production-readiness-checklist.md` (duplicate of `production-ready-checklist.md`)
+
+**Root-level planning files (previously archived):**
 - `COMPILATION_VERIFICATION_PLAN.md`
 - `COMPREHENSIVE_PACKAGE_CHECK_PLAN.md`
 
 **DFLSS planning documents (archived 2025-01-XX):**
 - `DFLSS_PROJECT_CHARTER.md` (superseded by `DFLSS_DEFINITION_OF_DONE.spr.md`)
 - `DFLSS_PROJECT_CHARTER_DOD.md` (superseded by `DFLSS_DEFINITION_OF_DONE.spr.md`)
+
+## Research & Evaluation Documents
+
+Research and evaluation documents moved to `archived/research/`:
+
+**Archived 2025-01-XX (80/20 consolidation):**
+- `ggen-integration-evaluation.md` - GGen integration evaluation
+- `ggen-integration-guide.md` - GGen integration guide
+- `ggen-rdf-research.md` - GGen RDF research
+- `reflex-capabilities-verification.md` - Reflex capabilities verification
+- `reflex-convo-capabilities-verification.md` - Reflex conversation capabilities verification
+- `runtime-classes-slo-verification.md` - Runtime classes SLO verification
+- `SIMDJSON_OPTIMIZATION_MASTER.md` (see `evidence/SIMDJSON_OPTIMIZATION_SUMMARY.md` for current)
+- `lessons-learned-simdjson.md` (see `evidence/SIMDJSON_LESSONS_FOR_KNHK_v1.0.0.md` for current)
+- `epistemology-generation.md` - Epistemology generation research
 
 ## Product Documentation
 
@@ -167,5 +233,5 @@ Documentation was archived following the 80/20 principle:
 - **20% critical docs** providing **80% of value** remain active
 - Historical reports and duplicates archived
 - Focus on actionable, current information
-- Reduced from ~170 files to ~30-40 active docs
+- Reduced from 61 root-level files to 45 active docs (26% reduction)
 

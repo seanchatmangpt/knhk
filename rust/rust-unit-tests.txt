@@ -1,0 +1,85 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sac/knhk/rust/knhk-hot/Cargo.toml
+workspace: /Users/sac/knhk/rust/Cargo.toml
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling knhk-otel v1.0.0 (/Users/sac/knhk/rust/knhk-otel)
+   Compiling knhk-connectors v1.0.0 (/Users/sac/knhk/rust/knhk-connectors)
+   Compiling knhk-etl v1.0.0 (/Users/sac/knhk/rust/knhk-etl)
+   Compiling knhk-validation v1.0.0 (/Users/sac/knhk/rust/knhk-validation)
+   Compiling knhk-unrdf v1.0.0 (/Users/sac/knhk/rust/knhk-unrdf)
+   Compiling knhk-warm v1.0.0 (/Users/sac/knhk/rust/knhk-warm)
+   Compiling knhk-patterns v1.0.0 (/Users/sac/knhk/rust/knhk-patterns)
+   Compiling knhk-json-bench v0.1.0 (/Users/sac/knhk/rust/knhk-json-bench)
+warning: unexpected `cfg` condition value: `profiling`
+   --> knhk-etl/src/buffer_pool.rs:405:11
+    |
+405 |     #[cfg(feature = "profiling")]
+    |           ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `grpc`, `knhk-lockchain`, `knhk-otel`, `parallel`, `rayon`, `std`, and `tokio-runtime`
+    = help: consider adding `profiling` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused variable: `receipts`
+   --> knhk-etl/src/beat_scheduler.rs:654:13
+    |
+654 |         let receipts = scheduler.get_cycle_receipts();
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_receipts`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> knhk-etl/src/hot_path_engine.rs:209:9
+    |
+209 |         drop(buffers1);
+    |         ^^^^^--------^
+    |              |
+    |              argument has type `&load::SoAArrays`
+    |
+    = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+    |
+209 -         drop(buffers1);
+209 +         let _ = buffers1;
+    |
+
+warning: `knhk-etl` (lib test) generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.43s
+     Running unittests src/lib.rs (target/debug/deps/knhk_aot-93c1061d032d7c9b)
+
+running 9 tests
+test pattern::tests::test_analyze_all_nonzero ... ok
+test pattern::tests::test_analyze_all_zero ... ok
+test specialization::tests::test_detect_all_nonzero ... ok
+test specialization::tests::test_detect_all_zero ... ok
+test tests::test_validate_valid_ask_sp ... ok
+test tests::test_validate_invalid_run_length ... ok
+test tests::test_validate_unique_sp ... ok
+test template_analyzer::tests::test_analyze_ground_triple ... FAILED
+test template_analyzer::tests::test_analyze_variable_triple ... FAILED
+
+failures:
+
+---- template_analyzer::tests::test_analyze_ground_triple stdout ----
+
+thread 'template_analyzer::tests::test_analyze_ground_triple' panicked at knhk-aot/src/template_analyzer.rs:226:40:
+Failed to analyze ground triple template: "Invalid term: {"
+
+---- template_analyzer::tests::test_analyze_variable_triple stdout ----
+
+thread 'template_analyzer::tests::test_analyze_variable_triple' panicked at knhk-aot/src/template_analyzer.rs:236:40:
+Failed to analyze variable triple template: "Invalid term: {"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    template_analyzer::tests::test_analyze_ground_triple
+    template_analyzer::tests::test_analyze_variable_triple
+
+test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p knhk-aot --lib`

@@ -1,7 +1,7 @@
 # KNHK Documentation Index
 
 **Last Updated:** 2025-01-XX  
-**Status:** Consolidated (80/20)
+**Status:** Consolidated (80/20) - 61 files → 45 active docs (26% reduction)
 
 ---
 
@@ -76,14 +76,25 @@ Key evidence files:
 
 ## Status & Current State
 
-- **[V1 Status](V1-STATUS.md)** - Current v1.0 status (canonical status document)
+- **[V1 Release Status](V1-RELEASE-STATUS.md)** - Current v1.0 release status and validation progress
+- **[V1 Status](V1-STATUS.md)** - Historical v1.0 development status
 - **[DFLSS Definition of Done](DFLSS_DEFINITION_OF_DONE.spr.md)** - DFLSS DoD specification
+
+## Release Documentation
+
+- **[Release Notes v1.0.0](RELEASE_NOTES_v1.0.0.md)** - Comprehensive v1.0.0 release notes
+- **[Release Checklist](V1-RELEASE-CHECKLIST.md)** - Pre-release validation checklist
+- **[Release Status](V1-RELEASE-STATUS.md)** - Current release readiness status
+- **[Changelog](CHANGELOG.md)** - Complete version history
 
 ## Archived Documentation
 
-Historical and duplicate documentation has been archived:
+Historical and duplicate documentation has been archived following 80/20 consolidation:
 - **[docs/archived/status-reports/](archived/status-reports/)** - Historical status and completion reports
+- **[docs/archived/implementation-summaries/](archived/implementation-summaries/)** - Completed implementation summaries
 - **[docs/archived/planning/](archived/planning/)** - Planning documents and charters
+  - `archived/planning/internal/` - Internal planning and analysis docs
+- **[docs/archived/research/](archived/research/)** - Research and evaluation documents
 - **[docs/archived/weaver-docs/](archived/weaver-docs/)** - Consolidated Weaver documentation
 - **[docs/archived/product/](archived/product/)** - Product documentation variants
 - **[docs/archived/v1-dod/](archived/v1-dod/)** - Old DoD documents

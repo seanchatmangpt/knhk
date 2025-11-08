@@ -4,11 +4,10 @@
 
 extern crate alloc;
 
-use alloc::format;
-use alloc::vec::Vec;
-use crate::error::PipelineError;
 use crate::load::SoAArrays;
 use crate::reflex::Receipt;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Buffer pool for memory reuse across ETL pipeline operations
 ///
@@ -63,17 +62,7 @@ pub struct BufferPool {
     receipt_next: usize,
 
     /// Total capacity limit (8192 triples)
-    max_capacity: usize,
-
-    /// Profiling: allocation counter (should remain zero in hot path)
-    #[cfg(feature = "profiling")]
-    allocation_count: u64,
-    /// Profiling: cache hit counter
-    #[cfg(feature = "profiling")]
-    cache_hit_count: u64,
-    /// Profiling: cache miss counter
-    #[cfg(feature = "profiling")]
-    cache_miss_count: u64,
+    _max_capacity: usize,
 }
 
 /// Pool errors
@@ -121,13 +110,7 @@ impl BufferPool {
             receipts: Vec::with_capacity(1024),
             receipt_capacity: 1024,
             receipt_next: 0,
-            max_capacity: 8192,
-            #[cfg(feature = "profiling")]
-            allocation_count: 0,
-            #[cfg(feature = "profiling")]
-            cache_hit_count: 0,
-            #[cfg(feature = "profiling")]
-            cache_miss_count: 0,
+            _max_capacity: 8192,
         };
 
         // Pre-allocate SoA buffers (cold path)
@@ -185,19 +168,10 @@ impl BufferPool {
             buf.p = [0; 8];
             buf.o = [0; 8];
 
-            #[cfg(feature = "profiling")]
-            {
-                self.cache_hit_count += 1;
-            }
-
             return Ok(buf);
         }
 
         // Pool exhausted (all buffers in use)
-        #[cfg(feature = "profiling")]
-        {
-            self.cache_miss_count += 1;
-        }
 
         Err(PoolError::ExhaustedCapacity(format!(
             "All {} SoA buffers in use",
@@ -208,9 +182,11 @@ impl BufferPool {
     /// Return SoA buffer to pool (HOT PATH - zero deallocations)
     ///
     /// # Arguments
+    ///
     /// * `buf` - Buffer to return to pool
     ///
     /// # Performance
+    ///
     /// - ZERO deallocations (buffer returned to pool)
     /// - Keeps buffer hot in cache for next operation
     ///
@@ -226,10 +202,12 @@ impl BufferPool {
     /// Get receipt from pool (HOT PATH - zero allocations)
     ///
     /// # Returns
+    ///
     /// * `Ok(Receipt)` - Pre-allocated receipt (ready for use)
     /// * `Err(PoolError)` - Receipt pool exhausted
     ///
     /// # Performance
+    ///
     /// - ZERO allocations (receipt from pre-allocated pool)
     pub fn get_receipt(&mut self) -> Result<Receipt, PoolError> {
         if self.receipt_next >= self.receipt_capacity {
@@ -248,26 +226,6 @@ impl BufferPool {
     /// This is a warm path operation (called between pipeline runs).
     pub fn reset_receipt_pool(&mut self) {
         self.receipt_next = 0;
-    }
-
-    /// Get pool statistics (for profiling)
-    #[cfg(feature = "profiling")]
-    pub fn stats(&self) -> PoolStats {
-        PoolStats {
-            soa_buffers_available: self.soa_buffers.len(),
-            soa_buffers_total: self.max_soa_buffers,
-            receipts_available: self.receipt_capacity - self.receipt_next,
-            receipts_total: self.receipt_capacity,
-            allocation_count: self.allocation_count,
-            cache_hit_count: self.cache_hit_count,
-            cache_miss_count: self.cache_miss_count,
-            cache_hit_rate: if self.cache_hit_count + self.cache_miss_count > 0 {
-                (self.cache_hit_count as f64)
-                    / ((self.cache_hit_count + self.cache_miss_count) as f64)
-            } else {
-                0.0
-            },
-        }
     }
 
     /// Get current capacity usage
@@ -292,28 +250,7 @@ impl BufferPool {
 
         // Reset receipt pool
         self.receipt_next = 0;
-
-        #[cfg(feature = "profiling")]
-        {
-            self.allocation_count = 0;
-            self.cache_hit_count = 0;
-            self.cache_miss_count = 0;
-        }
     }
-}
-
-/// Pool statistics (for profiling and monitoring)
-#[cfg(feature = "profiling")]
-#[derive(Debug, Clone, Copy)]
-pub struct PoolStats {
-    pub soa_buffers_available: usize,
-    pub soa_buffers_total: usize,
-    pub receipts_available: usize,
-    pub receipts_total: usize,
-    pub allocation_count: u64,
-    pub cache_hit_count: u64,
-    pub cache_miss_count: u64,
-    pub cache_hit_rate: f64,
 }
 
 /// Capacity usage snapshot

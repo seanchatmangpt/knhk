@@ -23,6 +23,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // Module declarations
 pub mod runtime_class;
 
+#[cfg(feature = "std")]
+pub mod exporter;
+
+#[cfg(feature = "std")]
+pub mod metrics;
+
+#[cfg(feature = "std")]
+pub mod types;
+
 /// Trace ID (128-bit)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TraceId(pub u128);
@@ -887,6 +896,176 @@ pub fn get_timestamp_ms() -> u64 {
         0
     }
 }
+
+/// Initialize OpenTelemetry tracer with SDK
+///
+/// This function initializes the OpenTelemetry SDK with proper resource configuration,
+/// exporter setup, and tracing-subscriber integration. It follows the same pattern as
+/// clnrm's telemetry initialization.
+///
+/// # Arguments
+/// * `service_name` - Service name for resource attributes
+/// * `service_version` - Service version for resource attributes
+/// * `endpoint` - Optional OTLP endpoint (if None, uses stdout exporter)
+///
+/// # Returns
+/// * `Result<OtelGuard>` - Guard that handles shutdown and flushing on drop
+///
+/// # Errors
+/// * Returns error if SDK initialization fails
+#[cfg(feature = "std")]
+pub fn init_tracer(
+    service_name: &str,
+    service_version: &str,
+    endpoint: Option<&str>,
+) -> Result<OtelGuard, String> {
+    use opentelemetry::global;
+    use opentelemetry::propagation::TextMapCompositePropagator;
+    use opentelemetry::trace::TracerProvider;
+    use opentelemetry::KeyValue;
+    use opentelemetry_sdk::{
+        propagation::{BaggagePropagator, TraceContextPropagator},
+        trace::{RandomIdGenerator, Sampler, SdkTracerProvider},
+        Resource,
+    };
+
+    // Set up propagators
+    global::set_text_map_propagator(TextMapCompositePropagator::new(vec![
+        Box::new(TraceContextPropagator::new()),
+        Box::new(BaggagePropagator::new()),
+    ]));
+
+    // Create resource with service information
+    let resource = Resource::builder_empty()
+        .with_service_name(service_name)
+        .with_attributes([
+            KeyValue::new("service.version", service_version),
+            KeyValue::new("telemetry.sdk.language", "rust"),
+            KeyValue::new("telemetry.sdk.name", "opentelemetry"),
+            KeyValue::new("telemetry.sdk.version", "0.31.0"),
+            KeyValue::new(
+                "service.instance.id",
+                format!("knhk-{}", std::process::id()),
+            ),
+        ])
+        .build();
+
+    // Create exporter based on endpoint
+    let span_exporter: Box<dyn opentelemetry_sdk::trace::SpanExporter> =
+        if let Some(endpoint) = endpoint {
+            // OTLP HTTP exporter
+            std::env::set_var("OTEL_EXPORTER_OTLP_ENDPOINT", endpoint);
+
+            let exporter = opentelemetry_otlp::SpanExporter::builder()
+                .with_http()
+                .build()
+                .map_err(|e| format!("Failed to create OTLP HTTP exporter: {}", e))?;
+
+            Box::new(exporter)
+        } else {
+            // Stdout exporter for development
+            Box::new(opentelemetry_stdout::SpanExporter::default())
+        };
+
+    // Create tracer provider with batch exporter
+    let tracer_provider = SdkTracerProvider::builder()
+        .with_batch_exporter(span_exporter)
+        .with_sampler(Sampler::TraceIdRatioBased(1.0)) // Always sample
+        .with_id_generator(RandomIdGenerator::default())
+        .with_resource(resource.clone())
+        .build();
+
+    // Get tracer and set as global
+    let tracer = tracer_provider.tracer("knhk");
+    global::set_tracer_provider(tracer_provider.clone());
+
+    // Initialize tracing-subscriber with OpenTelemetry layer
+    use tracing_opentelemetry::OpenTelemetryLayer;
+    use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Registry};
+
+    Registry::default()
+        .with(OpenTelemetryLayer::new(tracer))
+        .with(tracing_subscriber::fmt::layer().compact())
+        .init();
+
+    // Create metrics provider
+    let meter_provider = if let Some(endpoint) = endpoint {
+        use opentelemetry_otlp::MetricExporter;
+        use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
+
+        let exporter = MetricExporter::builder()
+            .with_http()
+            .build()
+            .map_err(|e| format!("Failed to create OTLP HTTP metrics exporter: {}", e))?;
+
+        let reader = PeriodicReader::builder(exporter)
+            .with_interval(std::time::Duration::from_secs(1))
+            .build();
+
+        Some(
+            SdkMeterProvider::builder()
+                .with_resource(resource)
+                .with_reader(reader)
+                .build(),
+        )
+    } else {
+        None
+    };
+
+    // Set global meter provider if configured
+    if let Some(ref mp) = meter_provider {
+        global::set_meter_provider(mp.clone());
+    }
+
+    Ok(OtelGuard {
+        tracer_provider,
+        meter_provider,
+    })
+}
+
+/// Guard for managing OpenTelemetry lifecycle
+///
+/// This guard ensures proper shutdown and flushing of telemetry data when dropped.
+/// It follows the same pattern as clnrm's OtelGuard.
+#[cfg(feature = "std")]
+pub struct OtelGuard {
+    tracer_provider: SdkTracerProvider,
+    meter_provider: Option<opentelemetry_sdk::metrics::SdkMeterProvider>,
+}
+
+#[cfg(feature = "std")]
+impl Drop for OtelGuard {
+    fn drop(&mut self) {
+        use std::time::Duration;
+
+        // Force flush traces before shutdown
+        if let Err(e) = self.tracer_provider.force_flush() {
+            eprintln!("Failed to flush traces during shutdown: {}", e);
+        }
+
+        // Give async exports time to complete
+        std::thread::sleep(Duration::from_millis(500));
+
+        // Shutdown tracer provider
+        if let Err(e) = self.tracer_provider.shutdown() {
+            eprintln!("Failed to shutdown tracer provider: {}", e);
+        }
+
+        // Flush and shutdown metrics provider
+        if let Some(mp) = self.meter_provider.take() {
+            if let Err(e) = mp.force_flush() {
+                eprintln!("Failed to flush metrics during shutdown: {}", e);
+            }
+            std::thread::sleep(Duration::from_millis(100));
+            if let Err(e) = mp.shutdown() {
+                eprintln!("Failed to shutdown meter provider: {}", e);
+            }
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+use opentelemetry_sdk::trace::SdkTracerProvider;
 
 #[cfg(test)]
 mod tests {

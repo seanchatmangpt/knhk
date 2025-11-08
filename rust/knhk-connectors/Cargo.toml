@@ -2,6 +2,14 @@
 name = "knhk-connectors"
 version = "1.0.0"
 edition = "2021"
+description = "External connector interfaces for KNHK RDF framework"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-connectors"
+keywords = ["rdf", "kafka", "salesforce", "connectors", "integration"]
+categories = ["database", "network-programming"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]

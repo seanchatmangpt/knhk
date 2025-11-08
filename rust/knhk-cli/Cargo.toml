@@ -2,6 +2,14 @@
 name = "knhk-cli"
 version = "1.0.0"
 edition = "2021"
+description = "High-performance RDF/SPARQL processing CLI with hot path optimization"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-cli"
+keywords = ["rdf", "sparql", "cli", "performance", "simd"]
+categories = ["command-line-utilities", "database"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [dependencies]
 clap-noun-verb = "3.3.0"

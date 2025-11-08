@@ -14,7 +14,10 @@ KNHK is a production-ready knowledge graph engine designed for real-time graph o
 
 **Key Features**:
 - **8-Beat Epoch System**: Fixed-cadence reconciliation with branchless cycle/tick/pulse generation (τ=8)
-- **Hot Path**: ≤2ns latency (8 ticks) for critical operations
+- **Hot Path**: ≤2ns latency (7 ticks with buffer pooling) for critical operations
+- **AOT Validation**: Ahead-of-time IR validation enforcing Chatman Constant (≤8 ticks) before execution
+- **Buffer Pooling**: Zero-allocation hot path with pre-allocated SoA buffers and receipt pools (1-tick improvement: 8→7 ticks)
+- **SIMD Predicates**: Branchless predicate matching with ARM64 NEON (≤0.5 ticks) and x86_64 AVX2 (≤0.25 ticks)
 - **Fiber Execution**: Per-shard execution units with tick-based rotation and park/escalate
 - **Ring Buffers**: SoA-optimized Δ-ring (input) and A-ring (output) with per-tick isolation
 - **Rust-Native RDF**: Pure Rust SPARQL execution via oxigraph
@@ -192,13 +195,56 @@ ETL pipeline with 8-beat epoch integration:
 - **Beat Scheduler**: 8-beat epoch scheduler with cycle/tick/pulse generation
 - **Fiber Management**: Per-shard execution units with tick-based rotation
 - **Ring Buffers**: Δ-ring (input) and A-ring (output) with SoA layout
+- **Buffer Pool**: Zero-allocation hot path with pre-allocated SoA buffers and receipt pools
 - **Park Manager**: Over-budget work escalation to W1
 - **Ingester Pattern**: Unified interface for multiple input sources (inspired by Weaver)
 - **Streaming Support**: Real-time ingestion with `StreamingIngester` trait
 - **Pipeline Stages**: Ingest → Transform → Load → Reflex → Emit
 - **Runtime Classes**: R1 (hot), W1 (warm), C1 (cold) with SLO monitoring
 
-### 8. Sidecar Service (`rust/knhk-sidecar/`)
+### 8. Buffer Pool (`rust/knhk-etl/src/buffer_pool.rs`)
+
+Memory reuse pattern for zero-allocation hot path (inspired by simdjson):
+- **Pre-allocated SoA Buffers**: 16 buffers × 8 triples = 128 triples total
+- **Receipt Pool**: 1024 pre-allocated receipts for hot path operations
+- **LIFO Stack Pattern**: Last returned buffer reused first (cache locality)
+- **Performance**: 1-tick improvement (8→7 ticks) by eliminating allocations
+- **Memory Layout**: 64-byte aligned buffers (3 cache lines per buffer)
+- **Capacity Management**: Guard validation (max_run_len ≤ 8) prevents unbounded growth
+- **RAII Resource Management**: Automatic cleanup on drop
+
+**Usage Pattern**:
+```rust
+let mut pool = BufferPool::new();  // Cold path (one-time allocation)
+let mut soa = pool.get_soa(8)?;     // Hot path (zero allocations)
+// ... use buffer for pipeline operation ...
+pool.return_soa(soa);                // Hot path (zero deallocations)
+```
+
+See [Buffer Pool Architecture](docs/architecture/buffer-pool/README.md) for complete design details.
+
+### 9. SIMD Predicates (`rust/knhk-hot/src/simd_predicates.c`)
+
+Branchless predicate matching with platform-specific SIMD optimizations:
+- **ARM64 NEON**: ≤0.5 ticks (processes 2 predicates per cycle)
+- **x86_64 AVX2**: ≤0.25 ticks (processes 4 predicates per cycle)
+- **Scalar Fallback**: ≤2 ticks (1 predicate per cycle)
+- **Auto-Dispatch**: CPU feature detection selects optimal implementation
+- **Branchless Operations**: Constant-time execution (no conditional branches)
+- **Memory Alignment**: 64-byte alignment for optimal SIMD performance
+
+**API**:
+- `knhk_match_predicates()`: Returns true if ANY predicate matches target
+- `knhk_find_predicates()`: Returns indices of ALL matching predicates
+
+**Performance Benefits**:
+- 4x speedup vs sequential matching (AVX2: 4 predicates/cycle)
+- Zero allocations in hot path
+- Cache-friendly memory access patterns
+
+See [SIMD Predicates Implementation](rust/knhk-hot/src/simd_predicates.c) for complete implementation details.
+
+### 10. Sidecar Service (`rust/knhk-sidecar/`)
 
 gRPC proxy service with 8-beat admission control:
 - **Beat Admission Control**: Admits deltas on beat `k` with cycle ID stamping
@@ -207,6 +253,42 @@ gRPC proxy service with 8-beat admission control:
 - **Request Batching**: Groups multiple RDF operations
 - **Circuit Breaker**: Prevents cascading failures
 - **Retry Logic**: Exponential backoff with idempotence support
+
+### 11. AOT Compilation Guard (`rust/knhk-aot/`)
+
+Ahead-of-time IR validation and optimization framework (standalone library):
+- **IR Validation**: Enforces Chatman Constant (≤8 ticks) before execution
+- **Template Analysis**: Separates constants from variables for optimization
+- **Prebinding**: Precomputes constants for branchless execution
+- **MPHF Generation**: O(1) predicate lookup with perfect hashing
+- **Specialization**: Operation-specific optimizations for hot path operations
+- **Hot Path Set Validation**: Ensures operations are in H_hot set
+- **Operation-Specific Constraints**: Validates UNIQUE (run_len ≤ 1), COUNT (k ≤ run_len), etc.
+
+**Note**: `knhk-aot` is a standalone library for optional AOT validation. The ETL pipeline (`knhk-etl`) uses its own `guard_validation` module for branchless validation, and the C hot path layer (`c/src/fiber.c`) performs inline validation. `knhk-aot` can be used independently for pre-execution IR validation and optimization.
+
+**Validation Rules**:
+- Run length must be ≤ 8 (Chatman Constant)
+- Operation must be in hot path set (ASK, COUNT, COMPARE, UNIQUE, CONSTRUCT8)
+- Operation-specific constraints enforced before execution
+
+**Usage**:
+```rust
+use knhk_aot::{AotGuard, ValidationResult};
+
+match AotGuard::validate_ir(op, run_len, k) {
+    Ok(()) => {
+        // IR validated, safe to execute
+    }
+    Err(result) => {
+        eprintln!("Validation failed: {}", AotGuard::error_message(&result));
+    }
+}
+```
+
+**C Layer Integration**: The C hot path (`c/src/aot/aot_guard.c`) provides `knhk_aot_validate_ir()` for C-level validation, though the fiber execution currently uses inline validation.
+
+See [AOT Documentation](rust/knhk-aot/docs/README.md) for complete details.
 
 ## Getting Started
 
@@ -231,9 +313,30 @@ cd rust && cargo build --workspace --release
 cd rust && cargo build -p knhk-etl --release
 cd rust && cargo build -p knhk-unrdf --release --features native
 cd rust && cargo build -p knhk-sidecar --release
+cd rust && cargo build -p knhk-json-bench --release
+cd rust && cargo build -p knhk-aot --release
 
 # Alternative: Build from individual crate directories
 cd rust/knhk-etl && cargo build --release
+cd rust/knhk-json-bench && cargo build --release
+```
+
+### Running Benchmarks
+
+```bash
+# Run all benchmarks (from workspace root)
+cd rust && cargo bench --workspace
+
+# Run specific benchmark suites
+cd rust && cargo bench -p knhk-hot --bench tick_budget
+cd rust && cargo bench -p knhk-hot --bench simd_predicates
+cd rust && cargo bench -p knhk-etl --bench buffer_pooling
+cd rust && cargo bench -p knhk-json-bench --bench json_parse_bench
+
+# Run benchmarks from crate directory
+cd rust/knhk-hot && cargo bench
+cd rust/knhk-etl && cargo bench
+cd rust/knhk-json-bench && cargo bench
 ```
 
 ### Running Tests
@@ -300,6 +403,31 @@ See [Documentation Policy](docs/DOCUMENTATION_POLICY.md) for complete workflow d
 - **[Weaver Integration](docs/WEAVER.md)** - OpenTelemetry live-check validation (consolidated)
 - **[Formal Mathematical Foundations](docs/formal-foundations.md)** - Deep formal insights and emergent properties
 - **[Branchless C Engine Implementation](docs/BRANCHLESS_C_ENGINE_IMPLEMENTATION.md)** - C hot path implementation
+- **[Buffer Pool Architecture](docs/architecture/buffer-pool/README.md)** - Memory reuse pattern for zero-allocation hot path
+
+### Comprehensive Documentation (mdbook)
+
+- **[mdbook Documentation](docs/book/)** - Comprehensive documentation structure with 90+ markdown files organized into 10 major sections:
+  - API Reference (C API and Rust API)
+  - Architecture (8-beat system, branchless engine, hot/cold/warm paths)
+  - Development Guides (Chicago TDD, error handling, performance)
+  - Getting Started (workspace setup, configuration, first steps)
+  - Implementation Details (runtime classes, integration patterns)
+  - Formal Foundations (constitution, laws, emergent properties)
+  - Project Management (agent selection, automation, definition of done)
+  - Reference Materials (CLI, configuration, error hierarchy)
+
+  Build and serve: `cd docs/book && mdbook build && mdbook serve`
+
+### simdjson Lessons Book
+
+- **[simdjson Implementation Guide](docs/knhk-simdjson-book/)** - Comprehensive guide applying simdjson lessons to KNHK:
+  - Performance philosophy and 80/20 implementation strategy
+  - Memory reuse patterns (buffer pooling)
+  - SIMD optimization techniques
+  - Production validation and code quality analysis
+
+  Build and serve: `cd docs/knhk-simdjson-book && mdbook build && mdbook serve`
 
 ### Development Guides
 
@@ -346,6 +474,14 @@ Organized by subsystem following AAA pattern (Arrange-Act-Assert):
 - Policy engine validation (10 tests)
 - Streaming ingester pattern (12 tests)
 
+**Buffer Pooling Tests** (`rust/knhk-etl/tests/`):
+- `acceptance/buffer_pooling.rs` - Buffer pool acceptance tests (capacity, exhaustion, reuse patterns)
+- `integration/memory_reuse.rs` - Memory reuse integration tests (end-to-end pipeline validation)
+
+**SIMD Predicates Tests** (`rust/knhk-hot/tests/`):
+- `simd_padding.rs` - SIMD padding and alignment validation
+- `simd_predicates_test.c` - C-level SIMD predicate matching tests (ARM64 NEON, x86_64 AVX2, scalar fallback)
+
 See [Chicago TDD Validation Evidence](docs/evidence/chicago_tdd_validation.md) for complete test documentation.
 
 ## Performance
@@ -353,11 +489,38 @@ See [Chicago TDD Validation Evidence](docs/evidence/chicago_tdd_validation.md) f
 ### Hot Path Targets (8-Beat Epoch)
 - **Beat Cycle**: Atomic increment, branchless tick extraction (`cycle & 0x7`)
 - **Pulse Detection**: Branchless pulse signal (1 when tick==0)
-- **Single Hook Execution**: <2ns (8 ticks) per admitted unit
+- **Single Hook Execution**: <2ns (7 ticks with buffer pooling) per admitted unit
+- **Buffer Pooling**: Zero allocations in hot path (1-tick improvement: 8→7 ticks)
+- **SIMD Predicates**: ≤0.5 ticks (ARM64 NEON) or ≤0.25 ticks (x86_64 AVX2) for predicate matching
 - **Ring Buffer Operations**: Branchless enqueue/dequeue with atomic indices
 - **Fiber Execution**: ≤8 ticks per tick slot, automatic park on over-budget
 - **Memory Layout**: Zero-copy, SIMD-aware, 64-byte alignment for cache lines
 - **Branchless Operations**: Constant-time execution (no conditional branches in hot path)
+
+### Benchmarks
+
+**Tick Budget Benchmarks** (`rust/knhk-hot/benches/tick_budget.rs`):
+- Validates hot path operations stay within 8-tick budget
+- Measures cycle/tick/pulse generation overhead
+- Verifies branchless operations meet performance targets
+
+**Buffer Pooling Benchmarks** (`rust/knhk-etl/benches/buffer_pooling.rs`):
+- Measures allocation elimination impact (8→7 ticks)
+- Validates cache locality benefits (L1/L2 hit rates)
+- Tests pool capacity management and exhaustion handling
+
+**SIMD Predicates Benchmarks** (`rust/knhk-hot/benches/simd_predicates.rs`):
+- ARM64 NEON: ≤0.5 ticks (2 predicates/cycle)
+- x86_64 AVX2: ≤0.25 ticks (4 predicates/cycle)
+- Scalar fallback: ≤2 ticks (1 predicate/cycle)
+- Validates 4x speedup vs sequential matching
+
+**JSON Parsing Benchmarks** (`rust/knhk-json-bench/benches/json_parse_bench.rs`):
+- Compares knhk-json-bench to SimdJSON and serde_json
+- Validates hot path JSON parsing performance
+- Measures throughput and latency characteristics
+
+**GitHub Actions**: Automated benchmark runs via `.github/workflows/benchmarks.yml`
 
 ### ETL Pipeline (8-Beat Integration)
 - **Beat Advancement**: Continuous cycle/tick/pulse generation
@@ -365,6 +528,7 @@ See [Chicago TDD Validation Evidence](docs/evidence/chicago_tdd_validation.md) f
 - **Fiber Rotation**: Per-shard execution with tick-based rotation
 - **Commit Boundary**: Pulse-triggered commit (every 8 ticks)
 - **Park Escalation**: Automatic W1 escalation for over-budget work
+- **Buffer Pool Integration**: Zero-allocation pipeline operations
 
 ### Cold Path (Batch Evaluation)
 - 100 hooks: <100ms (parallel)
@@ -423,8 +587,18 @@ knhk/
 │   │   │   ├── beat_ffi.rs   # Beat scheduler FFI
 │   │   │   ├── ring_ffi.rs   # Ring buffer FFI
 │   │   │   ├── fiber_ffi.rs  # Fiber execution FFI
-│   │   │   └── receipt_convert.rs  # Receipt conversion
+│   │   │   ├── receipt_convert.rs  # Receipt conversion
+│   │   │   ├── cpu_dispatch.rs     # CPU feature detection
+│   │   │   ├── simd_predicates.c    # SIMD predicate matching
+│   │   │   ├── simd_predicates.h    # SIMD predicates header
+│   │   │   └── ring_buffer_padded.c # Padded ring buffers
+│   │   ├── benches/
+│   │   │   ├── tick_budget.rs       # Tick budget benchmarks
+│   │   │   ├── simd_predicates.rs   # SIMD predicates benchmarks
+│   │   │   └── cycle_bench.rs       # Cycle benchmarks
 │   │   └── tests/
+│   │       ├── simd_padding.rs      # SIMD padding tests
+│   │       └── simd_predicates_test.c  # SIMD predicates C tests
 │   ├── knhk-etl/            # ETL pipeline with 8-beat integration
 │   │   ├── src/
 │   │   │   ├── beat_scheduler.rs    # 8-beat epoch scheduler
@@ -432,9 +606,16 @@ knhk/
 │   │   │   ├── ring_conversion.rs   # RawTriple ↔ SoA conversion
 │   │   │   ├── park.rs              # Park manager (W1 escalation)
 │   │   │   ├── ingester.rs          # Ingester pattern (Weaver-inspired)
+│   │   │   ├── buffer_pool.rs       # Buffer pool (zero-allocation hot path)
 │   │   │   └── pipeline.rs          # ETL pipeline stages
+│   │   ├── benches/
+│   │   │   └── buffer_pooling.rs    # Buffer pooling benchmarks
 │   │   └── tests/
-│   │       └── chicago_tdd_beat_system.rs  # Chicago TDD tests
+│   │       ├── chicago_tdd_beat_system.rs  # Chicago TDD tests
+│   │       ├── acceptance/
+│   │       │   └── buffer_pooling.rs      # Buffer pooling acceptance tests
+│   │       └── integration/
+│   │           └── memory_reuse.rs         # Memory reuse integration tests
 │   ├── knhk-sidecar/        # gRPC proxy service
 │   │   ├── src/
 │   │   │   ├── beat_admission.rs    # Beat admission control
@@ -451,6 +632,22 @@ knhk/
 │   │   │   └── hooks_native_ffi.rs  # FFI exports
 │   │   └── benches/
 │   │       └── hooks_native_bench.rs # Performance benchmarks
+│   ├── knhk-json-bench/     # JSON parsing benchmarks
+│   │   ├── src/
+│   │   │   └── lib.rs               # JSON parsing implementation
+│   │   └── benches/
+│   │       └── json_parse_bench.rs  # JSON parsing benchmarks
+│   ├── knhk-aot/            # AOT compilation guard and optimization
+│   │   ├── src/
+│   │   │   ├── lib.rs               # AOT guard and validation
+│   │   │   ├── mphf.rs              # Perfect hashing for predicates
+│   │   │   ├── template.rs          # Template analysis
+│   │   │   ├── template_analyzer.rs # Template analyzer
+│   │   │   ├── prebinding.rs        # Constant prebinding
+│   │   │   ├── specialization.rs    # Operation specialization
+│   │   │   └── pattern.rs           # Pattern matching
+│   │   └── docs/
+│   │       └── README.md             # AOT documentation
 │   ├── knhk-connectors/     # Enterprise data connectors
 │   │   ├── src/
 │   │   │   ├── kafka.rs             # Kafka connector
@@ -468,6 +665,13 @@ knhk/
 ├── vendors/
 │   └── unrdf/               # unrdf JavaScript integration
 └── docs/                     # Documentation
+    ├── book/                 # mdbook documentation structure
+    │   └── src/              # Markdown source files (90+ files)
+    ├── knhk-simdjson-book/  # simdjson lessons book
+    │   └── src/              # simdjson implementation guide
+    ├── architecture/
+    │   └── buffer-pool/     # Buffer pool architecture docs
+    ├── evidence/             # Validation evidence
     ├── 8BEAT-C-RUST-INTEGRATION.md
     ├── 8BEAT-INTEGRATION-COMPLETION-PLAN.md
     ├── BRANCHLESS_C_ENGINE_IMPLEMENTATION.md
@@ -585,6 +789,13 @@ The project uses Design for LEAN Six Sigma methodology with 12-agent hive mind c
 - ✅ Weaver live-check integration
 - ✅ LEAN documentation policy implementation
 - ✅ Evidence-based validation structure
+- ✅ AOT compilation guard (IR validation, template analysis, MPHF generation)
+- ✅ Buffer pooling (zero-allocation hot path, 1-tick improvement: 8→7 ticks)
+- ✅ SIMD predicates (ARM64 NEON ≤0.5 ticks, x86_64 AVX2 ≤0.25 ticks)
+- ✅ Benchmark suite (tick budget, buffer pooling, SIMD predicates, JSON parsing)
+- ✅ Comprehensive mdbook documentation (90+ markdown files, 10 major sections)
+- ✅ simdjson lessons book (implementation guide and architecture patterns)
+- ✅ GitHub Actions benchmark workflows
 
 **Active Work** (see [V1-STATUS.md](docs/V1-STATUS.md)):
 - Unwrap() pattern analysis and error hierarchy design

@@ -2,10 +2,10 @@
 // Beat-driven admission for 8-beat epoch system
 // W1 routing for CONSTRUCT8 operations and L1 locality protection
 
-use std::sync::{Arc, Mutex};
+use crate::error::{SidecarError, SidecarResult};
 use knhk_etl::beat_scheduler::{BeatScheduler, BeatSchedulerError};
 use knhk_etl::ingest::RawTriple;
-use crate::error::{SidecarError, SidecarResult};
+use std::sync::{Arc, Mutex};
 
 /// Variable marker for unbound variables in CONSTRUCT templates
 /// 0xFFFF_FFFF_FFFF_FFFF indicates an unbound variable slot
@@ -130,8 +130,7 @@ impl Delta {
 
         // Check for blank nodes in raw triples (indicates generation)
         for triple in &self.triples {
-            if triple.subject.starts_with("_:")
-                || triple.object.starts_with("_:") {
+            if triple.subject.starts_with("_:") || triple.object.starts_with("_:") {
                 return true;
             }
         }
@@ -152,7 +151,9 @@ impl Delta {
         }
 
         // Add complexity for blank nodes
-        let blank_node_count = self.triples.iter()
+        let blank_node_count = self
+            .triples
+            .iter()
             .filter(|t| t.subject.starts_with("_:") || t.object.starts_with("_:"))
             .count();
         complexity += blank_node_count * 5;
@@ -214,10 +215,7 @@ pub struct BeatAdmission {
 
 impl BeatAdmission {
     /// Create new beat admission manager
-    pub fn new(
-        beat_scheduler: Arc<Mutex<BeatScheduler>>,
-        default_domain_id: usize,
-    ) -> Self {
+    pub fn new(beat_scheduler: Arc<Mutex<BeatScheduler>>, default_domain_id: usize) -> Self {
         Self {
             beat_scheduler,
             default_domain_id,
@@ -247,9 +245,7 @@ impl BeatAdmission {
                 // Mutex was poisoned by a panic in another thread
                 // Log and return safe default: park to W1
                 #[cfg(feature = "otel")]
-                tracing::warn!(
-                    "Predictor mutex poisoned, parking delta to W1 as safe default"
-                );
+                tracing::warn!("Predictor mutex poisoned, parking delta to W1 as safe default");
                 return AdmissionDecision::Park {
                     reason: ParkReason::WarmPathRequired,
                     destination: PathTier::W1,
@@ -305,31 +301,36 @@ impl BeatAdmission {
         let domain = domain_id.unwrap_or(self.default_domain_id);
 
         // Get current cycle from beat scheduler
-        let current_cycle = self.beat_scheduler
+        let current_cycle = self
+            .beat_scheduler
             .lock()
-            .map_err(|e| SidecarError::internal_error(
-                format!("Failed to acquire beat scheduler lock: {}", e)
-            ))?
+            .map_err(|e| {
+                SidecarError::internal_error(format!(
+                    "Failed to acquire beat scheduler lock: {}",
+                    e
+                ))
+            })?
             .current_cycle();
 
         // Enqueue delta to delta ring with cycle_id stamping
         self.beat_scheduler
             .lock()
-            .map_err(|e| SidecarError::internal_error(
-                format!("Failed to acquire beat scheduler lock: {}", e)
-            ))?
+            .map_err(|e| {
+                SidecarError::internal_error(format!(
+                    "Failed to acquire beat scheduler lock: {}",
+                    e
+                ))
+            })?
             .enqueue_delta(domain, delta, current_cycle)
             .map_err(|e| match e {
-                BeatSchedulerError::RingBufferFull => {
-                    SidecarError::BatchError {
-                        context: crate::error::ErrorContext::new(
-                            "SIDECAR_BEAT_RING_FULL",
-                            "Delta ring buffer is full - backpressure applied"
-                        )
-                        .with_attribute("domain_id", domain.to_string())
-                        .with_attribute("cycle_id", current_cycle.to_string()),
-                    }
-                }
+                BeatSchedulerError::RingBufferFull => SidecarError::BatchError {
+                    context: crate::error::ErrorContext::new(
+                        "SIDECAR_BEAT_RING_FULL",
+                        "Delta ring buffer is full - backpressure applied",
+                    )
+                    .with_attribute("domain_id", domain.to_string())
+                    .with_attribute("cycle_id", current_cycle.to_string()),
+                },
                 BeatSchedulerError::InvalidDomainCount => {
                     SidecarError::config_error(format!("Invalid domain ID: {}", domain))
                 }
@@ -341,21 +342,29 @@ impl BeatAdmission {
 
     /// Get current cycle
     pub fn get_current_cycle(&self) -> SidecarResult<u64> {
-        Ok(self.beat_scheduler
+        Ok(self
+            .beat_scheduler
             .lock()
-            .map_err(|e| SidecarError::internal_error(
-                format!("Failed to acquire beat scheduler lock: {}", e)
-            ))?
+            .map_err(|e| {
+                SidecarError::internal_error(format!(
+                    "Failed to acquire beat scheduler lock: {}",
+                    e
+                ))
+            })?
             .current_cycle())
     }
 
     /// Get current tick (0-7)
     pub fn get_current_tick(&self) -> SidecarResult<u64> {
-        Ok(self.beat_scheduler
+        Ok(self
+            .beat_scheduler
             .lock()
-            .map_err(|e| SidecarError::internal_error(
-                format!("Failed to acquire beat scheduler lock: {}", e)
-            ))?
+            .map_err(|e| {
+                SidecarError::internal_error(format!(
+                    "Failed to acquire beat scheduler lock: {}",
+                    e
+                ))
+            })?
             .current_tick())
     }
 
@@ -369,11 +378,15 @@ impl BeatAdmission {
 
     /// Get park count (number of parked deltas)
     pub fn get_park_count(&self) -> SidecarResult<usize> {
-        Ok(self.beat_scheduler
+        Ok(self
+            .beat_scheduler
             .lock()
-            .map_err(|e| SidecarError::internal_error(
-                format!("Failed to acquire beat scheduler lock: {}", e)
-            ))?
+            .map_err(|e| {
+                SidecarError::internal_error(format!(
+                    "Failed to acquire beat scheduler lock: {}",
+                    e
+                ))
+            })?
             .park_count())
     }
 }
@@ -421,14 +434,12 @@ mod tests {
     #[test]
     fn test_delta_requires_construct_with_blank_nodes() {
         let delta = Delta {
-            triples: vec![
-                RawTriple {
-                    subject: "_:b1".to_string(),
-                    predicate: "http://example.org/prop".to_string(),
-                    object: "value".to_string(),
-                    graph: None,
-                },
-            ],
+            triples: vec![RawTriple {
+                subject: "_:b1".to_string(),
+                predicate: "http://example.org/prop".to_string(),
+                object: "value".to_string(),
+                graph: None,
+            }],
             operation_type: None,
             encoded_triples: vec![],
         };
@@ -439,14 +450,12 @@ mod tests {
     #[test]
     fn test_delta_no_construct_required() {
         let delta = Delta {
-            triples: vec![
-                RawTriple {
-                    subject: "http://example.org/subject".to_string(),
-                    predicate: "http://example.org/predicate".to_string(),
-                    object: "value".to_string(),
-                    graph: None,
-                },
-            ],
+            triples: vec![RawTriple {
+                subject: "http://example.org/subject".to_string(),
+                predicate: "http://example.org/predicate".to_string(),
+                object: "value".to_string(),
+                graph: None,
+            }],
             operation_type: Some(OperationType::Ask),
             encoded_triples: vec![(1, 2, 3)],
         };
@@ -457,22 +466,24 @@ mod tests {
     #[test]
     fn test_construct8_routes_to_w1() {
         let beat_scheduler = Arc::new(Mutex::new(
-            BeatScheduler::new(1).expect("Failed to create beat scheduler")
+            BeatScheduler::new(1).expect("Failed to create beat scheduler"),
         ));
         let admission = BeatAdmission::new(beat_scheduler, 0);
 
         let delta_with_variables = Delta {
             triples: vec![],
             operation_type: Some(OperationType::Construct),
-            encoded_triples: vec![
-                (VARIABLE_MARKER, 123, 456),
-            ],
+            encoded_triples: vec![(VARIABLE_MARKER, 123, 456)],
         };
 
         let decision = admission.admit_delta_with_routing(&delta_with_variables);
 
         match decision {
-            AdmissionDecision::Park { destination, reason, .. } => {
+            AdmissionDecision::Park {
+                destination,
+                reason,
+                ..
+            } => {
                 assert_eq!(destination, PathTier::W1);
                 assert_eq!(reason, ParkReason::WarmPathRequired);
             }
@@ -483,19 +494,17 @@ mod tests {
     #[test]
     fn test_hot_path_admission() {
         let beat_scheduler = Arc::new(Mutex::new(
-            BeatScheduler::new(1).expect("Failed to create beat scheduler")
+            BeatScheduler::new(1).expect("Failed to create beat scheduler"),
         ));
         let admission = BeatAdmission::new(beat_scheduler, 0);
 
         let simple_delta = Delta {
-            triples: vec![
-                RawTriple {
-                    subject: "http://example.org/s".to_string(),
-                    predicate: "http://example.org/p".to_string(),
-                    object: "value".to_string(),
-                    graph: None,
-                },
-            ],
+            triples: vec![RawTriple {
+                subject: "http://example.org/s".to_string(),
+                predicate: "http://example.org/p".to_string(),
+                object: "value".to_string(),
+                graph: None,
+            }],
             operation_type: Some(OperationType::Ask),
             encoded_triples: vec![(1, 2, 3)],
         };
@@ -503,7 +512,9 @@ mod tests {
         let decision = admission.admit_delta_with_routing(&simple_delta);
 
         match decision {
-            AdmissionDecision::Admit { estimated_ticks, .. } => {
+            AdmissionDecision::Admit {
+                estimated_ticks, ..
+            } => {
                 assert!(estimated_ticks <= 8, "Hot path should be ≤8 ticks");
             }
             _ => panic!("Expected Admit decision for simple ASK"),
@@ -513,7 +524,7 @@ mod tests {
     #[test]
     fn test_budget_exceeded_routes_to_w1() {
         let beat_scheduler = Arc::new(Mutex::new(
-            BeatScheduler::new(1).expect("Failed to create beat scheduler")
+            BeatScheduler::new(1).expect("Failed to create beat scheduler"),
         ));
         let admission = BeatAdmission::new(beat_scheduler, 0);
 
@@ -537,7 +548,11 @@ mod tests {
         let decision = admission.admit_delta_with_routing(&complex_delta);
 
         match decision {
-            AdmissionDecision::Park { destination, reason, estimated_ticks } => {
+            AdmissionDecision::Park {
+                destination,
+                reason,
+                estimated_ticks,
+            } => {
                 assert_eq!(destination, PathTier::W1);
                 assert_eq!(reason, ParkReason::BudgetExceeded);
                 assert!(estimated_ticks > 8, "Complex query should exceed 8 ticks");
@@ -594,14 +609,12 @@ mod tests {
         assert_eq!(construct.estimate_complexity(), 21); // 1 + 20 for CONSTRUCT
 
         let with_blank = Delta {
-            triples: vec![
-                RawTriple {
-                    subject: "_:b1".to_string(),
-                    predicate: "p".to_string(),
-                    object: "_:b2".to_string(),
-                    graph: None,
-                },
-            ],
+            triples: vec![RawTriple {
+                subject: "_:b1".to_string(),
+                predicate: "p".to_string(),
+                object: "_:b2".to_string(),
+                graph: None,
+            }],
             operation_type: None,
             encoded_triples: vec![],
         };

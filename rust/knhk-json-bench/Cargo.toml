@@ -7,9 +7,13 @@ license = "MIT"
 description = "JSON parsing benchmark using knhk-hot and knhk-patterns"
 
 [dependencies]
+# Full KNHK framework stack (reference implementation)
 knhk-hot = { path = "../knhk-hot" }
-# knhk-patterns will be re-enabled after fixing compilation errors
-# knhk-patterns = { path = "../knhk-patterns" }
+knhk-patterns = { path = "../knhk-patterns" }
+knhk-etl = { path = "../knhk-etl" }
+knhk-warm = { path = "../knhk-warm" }
+blake3 = "1.5"
+hex = "0.4"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

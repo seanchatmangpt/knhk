@@ -134,5 +134,21 @@ The sidecar integrates with:
 - ✅ Metrics collection
 - ✅ Server startup implementation (fixed - server actually starts)
 - ✅ Weaver live-check integration for telemetry validation
+- ✅ Basic mTLS support
 - ⚠️ Feature-gated implementations: Some gRPC integrations pending warm orchestrator service
+
+## Fortune 5 Readiness
+
+For Fortune 5 enterprise deployment requirements, see [Fortune 5 Readiness Plan](docs/FORTUNE5_READINESS_PLAN.md).
+
+**Current Status**: Basic production-ready features complete. Fortune 5 features (SPIFFE/SPIRE, HSM/KMS, multi-region) planned for implementation.
+
+**Fortune 5 Requirements**:
+- ⏳ SPIFFE/SPIRE integration (planned)
+- ⏳ HSM/KMS integration (planned)
+- ⏳ Automatic key rotation ≤24h (planned)
+- ⏳ Multi-region support (planned)
+- ⏳ Legal hold functionality (planned)
+- ⏳ SLO-based admission control (planned)
+- ⏳ Formal promotion gates (planned)
 

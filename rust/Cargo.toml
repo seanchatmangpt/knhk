@@ -12,7 +12,7 @@ members = [
     "knhk-validation",
     "knhk-config",
     "knhk-patterns",  # Van der Aalst workflow patterns
-    # "knhk-sidecar",  # Temporarily excluded - 53 async trait errors, Wave 5 technical debt
+    "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
     "knhk-json-bench",  # JSON parsing benchmark using knhk-hot

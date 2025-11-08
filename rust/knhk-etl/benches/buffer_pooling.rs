@@ -48,7 +48,8 @@ impl TrackingAllocator {
 unsafe impl GlobalAlloc for TrackingAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         self.allocations.fetch_add(1, Ordering::SeqCst);
-        self.bytes_allocated.fetch_add(layout.size(), Ordering::SeqCst);
+        self.bytes_allocated
+            .fetch_add(layout.size(), Ordering::SeqCst);
         System.alloc(layout)
     }
 
@@ -311,7 +312,10 @@ fn validate_allocation_reduction() {
     println!("\nBaseline (without pooling):");
     println!("  Allocations: {}", baseline_stats.allocations);
     println!("  Bytes allocated: {}", baseline_stats.bytes_allocated);
-    println!("  Avg bytes/iteration: {}", baseline_stats.bytes_allocated / iterations);
+    println!(
+        "  Avg bytes/iteration: {}",
+        baseline_stats.bytes_allocated / iterations
+    );
 
     // Optimized (with pooling)
     ALLOCATOR.reset();
@@ -325,22 +329,31 @@ fn validate_allocation_reduction() {
     println!("\nOptimized (with pooling):");
     println!("  Allocations: {}", pooled_stats.allocations);
     println!("  Bytes allocated: {}", pooled_stats.bytes_allocated);
-    println!("  Avg bytes/iteration: {}", pooled_stats.bytes_allocated / iterations);
+    println!(
+        "  Avg bytes/iteration: {}",
+        pooled_stats.bytes_allocated / iterations
+    );
 
     // Calculate reduction
-    let allocation_reduction = 100.0
-        * (1.0 - (pooled_stats.allocations as f64 / baseline_stats.allocations as f64));
-    let bytes_reduction =
-        100.0 * (1.0 - (pooled_stats.bytes_allocated as f64 / baseline_stats.bytes_allocated as f64));
+    let allocation_reduction =
+        100.0 * (1.0 - (pooled_stats.allocations as f64 / baseline_stats.allocations as f64));
+    let bytes_reduction = 100.0
+        * (1.0 - (pooled_stats.bytes_allocated as f64 / baseline_stats.bytes_allocated as f64));
 
     println!("\nReduction Metrics:");
     println!("  Allocation count: {:.1}%", allocation_reduction);
     println!("  Bytes allocated: {:.1}%", bytes_reduction);
 
     if allocation_reduction >= 75.0 {
-        println!("\n✅ WEEK 1 TARGET MET: {:.1}% reduction ≥ 75%", allocation_reduction);
+        println!(
+            "\n✅ WEEK 1 TARGET MET: {:.1}% reduction ≥ 75%",
+            allocation_reduction
+        );
     } else {
-        println!("\n❌ WEEK 1 TARGET NOT MET: {:.1}% reduction < 75%", allocation_reduction);
+        println!(
+            "\n❌ WEEK 1 TARGET NOT MET: {:.1}% reduction < 75%",
+            allocation_reduction
+        );
     }
 
     println!("{}", "=".repeat(80));

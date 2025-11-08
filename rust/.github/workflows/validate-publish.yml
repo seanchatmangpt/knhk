@@ -1,0 +1,89 @@
+name: Validate Publication
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    name: Validate crates.io readiness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check package metadata
+        run: |
+          echo "Checking all packages have required metadata..."
+          cd rust
+          for crate in knhk-otel knhk-lockchain knhk-hot knhk-etl knhk-warm knhk-config knhk-connectors knhk-cli; do
+            if [ ! -f "$crate/Cargo.toml" ]; then
+              continue
+            fi
+            echo "Checking $crate..."
+            cd $crate
+            cargo metadata --no-deps --format-version 1 | jq -e '.packages[0].license'
+            cargo metadata --no-deps --format-version 1 | jq -e '.packages[0].description'
+            cargo metadata --no-deps --format-version 1 | jq -e '.packages[0].repository'
+            cd ..
+          done
+
+      - name: Dry-run publish (all crates)
+        run: |
+          cd rust
+          for crate in knhk-otel knhk-lockchain knhk-hot knhk-etl knhk-warm knhk-config knhk-connectors knhk-cli; do
+            if [ ! -f "$crate/Cargo.toml" ]; then
+              continue
+            fi
+            echo "Dry-run publishing $crate..."
+            cargo publish --dry-run --manifest-path $crate/Cargo.toml
+          done
+
+      - name: Check dependency versions
+        run: |
+          echo "Verifying internal dependencies use correct versions..."
+          cd rust
+          JQ=/usr/bin/jq ./scripts/verify-crate-versions.sh
+
+  security-audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run security audit
+        run: cd rust && cargo audit
+
+  build-test:
+    name: Build and test before publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build workspace
+        run: cd rust && cargo build --workspace --release
+
+      - name: Run tests
+        run: cd rust && cargo test --workspace
+
+      - name: Run clippy
+        run: cd rust && cargo clippy --workspace -- -D warnings

@@ -31,42 +31,46 @@ fn read_tsc() -> u64 {
 /// Create test pattern context
 fn create_test_context() -> *mut PatternContext {
     unsafe {
-        let layout = std::alloc::Layout::from_size_align(
-            std::mem::size_of::<PatternContext>(),
-            64,
-        )
-        .unwrap();
+        let layout =
+            std::alloc::Layout::from_size_align(std::mem::size_of::<PatternContext>(), 64).unwrap();
         std::alloc::alloc_zeroed(layout) as *mut PatternContext
     }
 }
 
 fn destroy_test_context(ctx: *mut PatternContext) {
     unsafe {
-        let layout = std::alloc::Layout::from_size_align(
-            std::mem::size_of::<PatternContext>(),
-            64,
-        )
-        .unwrap();
+        let layout =
+            std::alloc::Layout::from_size_align(std::mem::size_of::<PatternContext>(), 64).unwrap();
         std::alloc::dealloc(ctx as *mut u8, layout);
     }
 }
 
-/// Benchmark Pattern 20 (Timeout Discrimination) - Hot path critical
-fn bench_pattern_timeout_ticks(c: &mut Criterion) {
-    extern "C" fn test_branch(_ctx: *mut PatternContext) -> bool {
-        black_box(42u64);
+/// Benchmark Pattern 9 (Discriminator) - Hot path critical
+fn bench_pattern_discriminator_ticks(c: &mut Criterion) {
+    extern "C" fn branch1(_ctx: *mut PatternContext) -> bool {
+        black_box(1u64);
         true
     }
 
-    extern "C" fn test_fallback(_ctx: *mut PatternContext) -> bool {
-        black_box(17u64);
-        false
+    extern "C" fn branch2(_ctx: *mut PatternContext) -> bool {
+        black_box(2u64);
+        true
     }
 
-    let mut group = c.benchmark_group("tick_budget/pattern_timeout");
+    extern "C" fn branch3(_ctx: *mut PatternContext) -> bool {
+        black_box(3u64);
+        true
+    }
+
+    extern "C" fn branch4(_ctx: *mut PatternContext) -> bool {
+        black_box(4u64);
+        true
+    }
+
+    let mut group = c.benchmark_group("tick_budget/pattern_discriminator");
 
     let ctx = create_test_context();
-    let timeout_ms = 1000u64;
+    let branches: Vec<BranchFn> = vec![branch1, branch2, branch3, branch4];
 
     group.bench_function("baseline", |b| {
         b.iter_custom(|iters| {
@@ -74,14 +78,12 @@ fn bench_pattern_timeout_ticks(c: &mut Criterion) {
             let mut total_ticks = 0u64;
 
             for _ in 0..iters {
+                let dispatcher = CpuDispatcher::global();
+                let discriminator_fn = dispatcher.get_discriminator();
+
                 let tick_start = read_tsc();
                 unsafe {
-                    cpu_dispatch::knhk_pattern_timeout(
-                        black_box(ctx),
-                        test_branch,
-                        timeout_ms,
-                        test_fallback,
-                    );
+                    discriminator_fn(black_box(ctx), branches.as_ptr(), branches.len() as u32);
                 }
                 let tick_end = read_tsc();
                 total_ticks += tick_end.wrapping_sub(tick_start);
@@ -104,7 +106,10 @@ fn bench_ring_operations_ticks(c: &mut Criterion) {
 
     // Enqueue benchmark
     group.bench_function("enqueue", |b| {
-        let mut ring = DeltaRing::new(64).expect("Failed to create ring");
+        let ring = DeltaRing::new(64).expect("Failed to create ring");
+        let s = vec![1u64];
+        let p = vec![100u64];
+        let o = vec![200u64];
         let mut tick = 0u64;
 
         b.iter_custom(|iters| {
@@ -113,10 +118,9 @@ fn bench_ring_operations_ticks(c: &mut Criterion) {
 
             for _ in 0..iters {
                 tick = (tick + 1) % 8;
-                let delta = 42u64;
 
                 let tick_start = read_tsc();
-                ring.enqueue(black_box(tick), black_box(delta)).unwrap_or(());
+                let _ = ring.enqueue(black_box(tick), &s, &p, &o, black_box(42u64));
                 let tick_end = read_tsc();
 
                 total_ticks += tick_end.wrapping_sub(tick_start);
@@ -131,12 +135,15 @@ fn bench_ring_operations_ticks(c: &mut Criterion) {
 
     // Dequeue benchmark
     group.bench_function("dequeue", |b| {
-        let mut ring = DeltaRing::new(64).expect("Failed to create ring");
+        let ring = DeltaRing::new(64).expect("Failed to create ring");
 
         // Pre-populate
+        let s = vec![1u64];
+        let p = vec![100u64];
+        let o = vec![200u64];
         for tick in 0..8 {
             for _ in 0..5 {
-                ring.enqueue(tick, 42u64 + tick).unwrap();
+                let _ = ring.enqueue(tick, &s, &p, &o, 42u64 + tick);
             }
         }
 
@@ -150,7 +157,7 @@ fn bench_ring_operations_ticks(c: &mut Criterion) {
                 tick = (tick + 1) % 8;
 
                 let tick_start = read_tsc();
-                let _ = ring.dequeue(black_box(tick));
+                let _ = ring.dequeue(black_box(tick), 8);
                 let tick_end = read_tsc();
 
                 total_ticks += tick_end.wrapping_sub(tick_start);
@@ -187,7 +194,10 @@ fn bench_content_hash_ticks(c: &mut Criterion) {
                 }
 
                 let avg_ticks = total_ticks / iters;
-                println!("\n  Content hash ({} bytes) average ticks: {}", size, avg_ticks);
+                println!(
+                    "\n  Content hash ({} bytes) average ticks: {}",
+                    size, avg_ticks
+                );
 
                 start.elapsed()
             });
@@ -217,33 +227,46 @@ fn validate_tick_budgets() {
 
         let iterations = 10_000;
 
-        // Pattern 20: Timeout Discrimination
+        // Pattern 9: Discriminator
         {
-            extern "C" fn test_branch(_ctx: *mut PatternContext) -> bool {
-                black_box(42u64);
+            extern "C" fn branch1(_ctx: *mut PatternContext) -> bool {
+                black_box(1u64);
                 true
             }
 
-            extern "C" fn test_fallback(_ctx: *mut PatternContext) -> bool {
-                black_box(17u64);
-                false
+            extern "C" fn branch2(_ctx: *mut PatternContext) -> bool {
+                black_box(2u64);
+                true
+            }
+
+            extern "C" fn branch3(_ctx: *mut PatternContext) -> bool {
+                black_box(3u64);
+                true
+            }
+
+            extern "C" fn branch4(_ctx: *mut PatternContext) -> bool {
+                black_box(4u64);
+                true
             }
 
             let ctx = create_test_context();
-            let timeout_ms = 1000u64;
+            let branches: Vec<BranchFn> = vec![branch1, branch2, branch3, branch4];
 
             let mut total_ticks = 0u64;
             for _ in 0..iterations {
+                let dispatcher = CpuDispatcher::global();
+                let discriminator_fn = dispatcher.get_discriminator();
+
                 let start = read_tsc();
                 unsafe {
-                    cpu_dispatch::knhk_pattern_timeout(ctx, test_branch, timeout_ms, test_fallback);
+                    discriminator_fn(ctx, branches.as_ptr(), branches.len() as u32);
                 }
                 let end = read_tsc();
                 total_ticks += end.wrapping_sub(start);
             }
 
             let avg_ticks = (total_ticks as f64) / (iterations as f64);
-            println!("\nPattern 20 (Timeout Discrimination):");
+            println!("\nPattern 9 (Discriminator):");
             println!("  Average: {:.2} ticks", avg_ticks);
 
             if avg_ticks <= 5.0 {
@@ -260,15 +283,17 @@ fn validate_tick_budgets() {
 
         // Ring Buffer Enqueue
         {
-            let mut ring = DeltaRing::new(64).expect("Failed to create ring");
+            let ring = DeltaRing::new(64).expect("Failed to create ring");
+            let s = vec![1u64];
+            let p = vec![100u64];
+            let o = vec![200u64];
             let mut total_ticks = 0u64;
 
             for i in 0..iterations {
                 let tick = (i % 8) as u64;
-                let delta = 42u64;
 
                 let start = read_tsc();
-                ring.enqueue(tick, delta).unwrap_or(());
+                let _ = ring.enqueue(tick, &s, &p, &o, 42u64);
                 let end = read_tsc();
 
                 total_ticks += end.wrapping_sub(start);
@@ -290,12 +315,15 @@ fn validate_tick_budgets() {
 
         // Ring Buffer Dequeue
         {
-            let mut ring = DeltaRing::new(64).expect("Failed to create ring");
+            let ring = DeltaRing::new(64).expect("Failed to create ring");
 
             // Pre-populate
+            let s = vec![1u64];
+            let p = vec![100u64];
+            let o = vec![200u64];
             for tick in 0..8 {
                 for _ in 0..100 {
-                    ring.enqueue(tick, 42u64 + tick).unwrap();
+                    let _ = ring.enqueue(tick, &s, &p, &o, 42u64 + tick);
                 }
             }
 
@@ -305,7 +333,7 @@ fn validate_tick_budgets() {
                 let tick = (i % 8) as u64;
 
                 let start = read_tsc();
-                let _ = ring.dequeue(tick);
+                let _ = ring.dequeue(tick, 8);
                 let end = read_tsc();
 
                 total_ticks += end.wrapping_sub(start);
@@ -331,7 +359,7 @@ fn validate_tick_budgets() {
 
 criterion_group!(
     benches,
-    bench_pattern_timeout_ticks,
+    bench_pattern_discriminator_ticks,
     bench_ring_operations_ticks,
     bench_content_hash_ticks
 );

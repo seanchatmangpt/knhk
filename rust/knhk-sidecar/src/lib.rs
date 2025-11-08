@@ -6,38 +6,46 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
-pub mod error;
 pub mod batch;
-pub mod retry;
-pub mod circuit_breaker;
-pub mod tls;
-pub mod metrics;
-pub mod health;
-pub mod client;
-pub mod server;
-pub mod config;
 pub mod beat_admission; // Beat-driven admission for 8-beat epoch
-pub mod service; // gRPC service with beat-driven admission
+pub mod circuit_breaker;
+pub mod client;
+pub mod config;
+pub mod error;
+pub mod health;
+pub mod metrics;
+pub mod retry;
+pub mod server;
+pub mod service;
+pub mod tls; // gRPC service with beat-driven admission
+             // Fortune 5 modules
+pub mod capacity; // Capacity planning
+pub mod key_rotation; // Automatic key rotation (≤24h)
+pub mod kms; // HSM/KMS integration
+pub mod multi_region; // Multi-region support
+pub mod promotion;
+pub mod slo_admission; // SLO-based admission control
+pub mod spiffe; // SPIFFE/SPIRE integration // Formal promotion gates
 
-pub use error::{SidecarError, SidecarResult};
-pub use server::SidecarServer;
 pub use client::SidecarClient;
 pub use config::SidecarConfig;
+pub use error::{SidecarError, SidecarResult};
+pub use server::SidecarServer;
 
-use std::sync::{Arc, Mutex};
 use std::process::Child;
+use std::sync::{Arc, Mutex};
 use tokio::time::{sleep, Duration};
 
 /// Run the sidecar server with Weaver live-check integration
 #[cfg(feature = "otel")]
 pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::metrics::MetricsCollector;
-    use crate::health::HealthChecker;
-    use crate::server::{SidecarServer, ServerConfig};
     use crate::batch::BatchConfig;
+    use crate::health::HealthChecker;
+    use crate::metrics::MetricsCollector;
+    use crate::server::{ServerConfig, SidecarServer};
     use crate::tls::TlsConfig;
     use knhk_otel::WeaverLiveCheck;
-    use tracing::{info, error, warn};
+    use tracing::{error, info, warn};
 
     // Initialize tracing
     tracing_subscriber::fmt()
@@ -46,7 +54,8 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
 
     // Validate Weaver configuration if enabled
     if config.weaver_enabled {
-        config.validate_weaver_config()
+        config
+            .validate_weaver_config()
             .map_err(|e| format!("Weaver configuration validation failed: {}", e))?;
     }
 
@@ -85,10 +94,10 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         // Start Weaver process
         let process = weaver_builder.start()?;
         let endpoint = format!("http://127.0.0.1:{}", config.weaver_otlp_port);
-        
+
         // Wait for Weaver to initialize (2 seconds)
         sleep(Duration::from_secs(2)).await;
-        
+
         // Verify Weaver is healthy (retry up to 3 times)
         let mut health_check_passed = false;
         for attempt in 1..=3 {
@@ -108,13 +117,13 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                 sleep(Duration::from_secs(1)).await;
             }
         }
-        
+
         if !health_check_passed {
             // Try to stop the process
             let _ = weaver_builder.stop();
             return Err("Weaver started but health check failed after 3 attempts".to_string());
         }
-        
+
         Ok((process, endpoint))
     }
 
@@ -122,7 +131,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     let weaver_process: Arc<Mutex<Option<Child>>> = Arc::new(Mutex::new(None));
     let weaver_endpoint: Option<String> = if config.weaver_enabled && config.enable_otel {
         info!("Starting Weaver live-check for sidecar telemetry validation");
-        
+
         match start_weaver_with_verification(&config).await {
             Ok((process, endpoint)) => {
                 info!(endpoint = %endpoint, "Weaver live-check started and verified successfully");
@@ -141,7 +150,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     // Start background task to monitor Weaver process health
     let weaver_monitor_process = Arc::clone(&weaver_process);
     let weaver_monitor_config = config.clone();
-    
+
     if config.weaver_enabled && weaver_endpoint.is_some() {
         // Clone builder configuration for restart
         let weaver_builder_config = {
@@ -150,7 +159,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                 .with_admin_port(config.weaver_admin_port)
                 .with_format("json".to_string())
                 .with_inactivity_timeout(3600);
-            
+
             if let Some(ref registry) = config.weaver_registry_path {
                 builder = builder.with_registry(registry.clone());
             } else {
@@ -159,7 +168,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                     builder = builder.with_registry(default_registry);
                 }
             }
-            
+
             if let Some(ref output) = config.weaver_output_path {
                 builder = builder.with_output(output.clone());
             } else {
@@ -167,18 +176,18 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                 let _ = std::fs::create_dir_all(&default_output);
                 builder = builder.with_output(default_output);
             }
-            
+
             builder
         };
-        
+
         tokio::spawn(async move {
             let mut restart_count = 0u32;
             let mut last_restart_time = std::time::Instant::now();
             const MAX_RESTARTS_PER_MINUTE: u32 = 5;
-            
+
             loop {
                 sleep(Duration::from_secs(5)).await;
-                
+
                 let mut process_guard = weaver_monitor_process.lock().await;
                 let process_needs_restart = match process_guard.as_mut() {
                     Some(process) => {
@@ -208,7 +217,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                     }
                     None => false, // No process to monitor
                 };
-                
+
                 if process_needs_restart {
                     // Check restart rate limit
                     let elapsed = last_restart_time.elapsed();
@@ -222,16 +231,19 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                         restart_count = 1;
                         last_restart_time = std::time::Instant::now();
                     }
-                    
+
                     // Attempt restart using the builder config
-                    info!("Attempting to restart Weaver process (attempt {})", restart_count);
-                    
+                    info!(
+                        "Attempting to restart Weaver process (attempt {})",
+                        restart_count
+                    );
+
                     // Start process
                     match weaver_builder_config.start() {
                         Ok(new_process) => {
                             // Wait for initialization
                             sleep(Duration::from_secs(2)).await;
-                            
+
                             // Check health
                             let mut health_ok = false;
                             for _ in 1..=3 {
@@ -245,7 +257,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                                     }
                                 }
                             }
-                            
+
                             if health_ok {
                                 info!("Weaver restarted successfully");
                                 *process_guard = Some(new_process);
@@ -278,9 +290,9 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             config.beat_domain_count,
             config.beat_ring_capacity,
         )
-        .map_err(|e| format!("Failed to create beat scheduler: {:?}", e))?
+        .map_err(|e| format!("Failed to create beat scheduler: {:?}", e))?,
     ));
-    
+
     // Start beat advancement task (runs continuously)
     // Note: Uses spawn_blocking since beat scheduler uses std::sync::Mutex
     let beat_scheduler_clone = Arc::clone(&beat_scheduler);
@@ -289,29 +301,29 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         loop {
             let (tick, pulse) = tokio::task::spawn_blocking({
                 let scheduler = Arc::clone(&beat_scheduler_clone);
-                move || {
-                    match scheduler.lock() {
-                        Ok(mut scheduler) => scheduler.advance_beat(),
-                        Err(e) => {
-                            error!(error = %e, "Failed to lock beat scheduler");
-                            (0, false)
-                        }
+                move || match scheduler.lock() {
+                    Ok(mut scheduler) => scheduler.advance_beat(),
+                    Err(e) => {
+                        error!(error = %e, "Failed to lock beat scheduler");
+                        (0, false)
                     }
                 }
-            }).await.unwrap_or_else(|e| {
+            })
+            .await
+            .unwrap_or_else(|e| {
                 error!(error = %e, "Beat advancement task panicked");
                 (0, false)
             });
-            
+
             if pulse {
                 info!(cycle = tick / 8, "Beat pulse - cycle commit boundary");
             }
-            
+
             // Sleep for beat interval (in production, would use precise timing)
             sleep(beat_interval).await;
         }
     });
-    
+
     info!(
         shards = config.beat_shard_count,
         domains = config.beat_domain_count,
@@ -336,16 +348,17 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     client_config.retry_config.max_delay_ms = config.retry_max_delay_ms;
     client_config.circuit_breaker_threshold = config.circuit_breaker_failure_threshold;
     client_config.circuit_breaker_reset_ms = config.circuit_breaker_reset_timeout_ms;
-    
-    let client = SidecarClient::new(client_config, Arc::clone(&metrics)).await
+
+    let client = SidecarClient::new(client_config, Arc::clone(&metrics))
+        .await
         .map_err(|e| format!("Failed to create sidecar client: {}", e))?;
 
     // Create server config
     let server_config = ServerConfig {
         bind_address: config.listen_address.clone(),
         batch_config: BatchConfig {
-            max_size: config.batch_size,
-            timeout: config.batch_timeout(),
+            batch_window_ms: config.batch_timeout_ms,
+            max_batch_size: config.batch_size,
         },
         tls_config: TlsConfig {
             enabled: config.tls_enabled,
@@ -364,23 +377,36 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         Arc::clone(&health),
         weaver_endpoint.clone(),
         Some(beat_admission),
-    ).await
-        .map_err(|e| format!("Failed to create sidecar server: {}", e))?;
+    )
+    .await
+    .map_err(|e| format!("Failed to create sidecar server: {}", e))?;
 
     info!("Sidecar server starting on {}", config.listen_address);
-    
+
     // Export initial telemetry to Weaver if enabled
     if let Some(ref endpoint) = weaver_endpoint {
         #[cfg(feature = "otel")]
         {
-            use knhk_otel::{Tracer, SpanStatus};
+            use knhk_otel::{SpanStatus, Tracer};
             let mut tracer = knhk_otel::Tracer::with_otlp_exporter(endpoint.clone());
             let span_ctx = tracer.start_span("knhk.sidecar.start".to_string(), None);
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.name".to_string(), "sidecar.start".to_string());
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.type".to_string(), "system".to_string());
-            tracer.add_attribute(span_ctx.clone(), "knhk.sidecar.address".to_string(), config.listen_address.clone());
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.name".to_string(),
+                "sidecar.start".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.type".to_string(),
+                "system".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.sidecar.address".to_string(),
+                config.listen_address.clone(),
+            );
             tracer.end_span(span_ctx, SpanStatus::Ok);
-            
+
             if let Err(e) = tracer.export() {
                 warn!(error = %e, "Failed to export initial telemetry to Weaver");
             }
@@ -390,30 +416,28 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     // Start server (this blocks)
     if let Err(e) = server.start().await {
         error!(error = %e, "Sidecar server failed");
-        
+
         // Stop Weaver if it was started
         if config.weaver_enabled {
-            let weaver = WeaverLiveCheck::new()
-                .with_admin_port(config.weaver_admin_port);
+            let weaver = WeaverLiveCheck::new().with_admin_port(config.weaver_admin_port);
             let _ = weaver.stop();
-            
+
             // Also kill the process if still running
             let mut process_guard = weaver_process.lock().await;
             if let Some(mut process) = process_guard.take() {
                 let _ = process.kill();
             }
         }
-        
+
         return Err(e.into());
     }
 
     // Stop Weaver on shutdown
     if config.weaver_enabled {
         info!("Stopping Weaver live-check");
-        let weaver = WeaverLiveCheck::new()
-            .with_admin_port(config.weaver_admin_port);
+        let weaver = WeaverLiveCheck::new().with_admin_port(config.weaver_admin_port);
         let _ = weaver.stop();
-        
+
         // Also kill the process if still running
         let mut process_guard = weaver_process.lock().await;
         if let Some(mut process) = process_guard.take() {
@@ -428,12 +452,12 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
 /// Run the sidecar server without Weaver integration (when OTEL feature disabled)
 #[cfg(not(feature = "otel"))]
 pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::metrics::MetricsCollector;
-    use crate::health::HealthChecker;
-    use crate::server::{SidecarServer, ServerConfig};
     use crate::batch::BatchConfig;
+    use crate::health::HealthChecker;
+    use crate::metrics::MetricsCollector;
+    use crate::server::{ServerConfig, SidecarServer};
     use crate::tls::TlsConfig;
-    use tracing::{info, error};
+    use tracing::{error, info, warn};
 
     // Initialize tracing
     tracing_subscriber::fmt()
@@ -456,16 +480,17 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     client_config.retry_config.max_delay_ms = config.retry_max_delay_ms;
     client_config.circuit_breaker_threshold = config.circuit_breaker_failure_threshold;
     client_config.circuit_breaker_reset_ms = config.circuit_breaker_reset_timeout_ms;
-    
-    let client = SidecarClient::new(client_config, Arc::clone(&metrics)).await
+
+    let client = SidecarClient::new(client_config, Arc::clone(&metrics))
+        .await
         .map_err(|e| format!("Failed to create sidecar client: {}", e))?;
 
     // Create server config
     let server_config = ServerConfig {
         bind_address: config.listen_address.clone(),
         batch_config: BatchConfig {
-            max_size: config.batch_size,
-            timeout: config.batch_timeout(),
+            batch_window_ms: config.batch_timeout_ms,
+            max_batch_size: config.batch_size,
         },
         tls_config: TlsConfig {
             enabled: config.tls_enabled,
@@ -482,10 +507,459 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         client,
         Arc::clone(&metrics),
         Arc::clone(&health),
-    ).await
-        .map_err(|e| format!("Failed to create sidecar server: {}", e))?;
+    )
+    .await
+    .map_err(|e| format!("Failed to create sidecar server: {}", e))?;
+
+    // Fortune 5: Initialize SPIFFE/SPIRE if enabled
+    let spiffe_manager = if config.spiffe_enabled {
+        use crate::spiffe::{SpiffeCertManager, SpiffeConfig};
+        let spiffe_config = SpiffeConfig {
+            socket_path: config
+                .spiffe_socket_path
+                .clone()
+                .unwrap_or_else(|| "/tmp/spire-agent/public/api.sock".to_string()),
+            trust_domain: config
+                .spiffe_trust_domain
+                .clone()
+                .unwrap_or_else(|| "example.com".to_string()),
+            spiffe_id: config.spiffe_id.clone(),
+            refresh_interval: std::time::Duration::from_secs(3600),
+        };
+
+        match SpiffeCertManager::new(spiffe_config) {
+            Ok(mut manager) => {
+                if let Err(e) = manager.load_certificate().await {
+                    warn!(
+                        "SPIFFE certificate loading failed: {}. Continuing without SPIFFE.",
+                        e
+                    );
+                    None
+                } else {
+                    info!("SPIFFE/SPIRE integration initialized");
+                    Some(manager)
+                }
+            }
+            Err(e) => {
+                warn!(
+                    "SPIFFE initialization failed: {}. Continuing without SPIFFE.",
+                    e
+                );
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize KMS if configured
+    let kms_manager = if let Some(ref provider) = config.kms_provider {
+        use crate::kms::{KmsConfig, KmsProvider};
+        let kms_config = match provider.as_str() {
+            "aws" => {
+                let region = config
+                    .kms_region
+                    .clone()
+                    .unwrap_or_else(|| "us-east-1".to_string());
+                let key_id = config.kms_key_id.clone().unwrap_or_else(|| "".to_string());
+                KmsConfig::aws(region, key_id)
+            }
+            "azure" => {
+                let vault_url = config
+                    .kms_vault_url
+                    .clone()
+                    .unwrap_or_else(|| "".to_string());
+                let key_name = config.kms_key_id.clone().unwrap_or_else(|| "".to_string());
+                KmsConfig::azure(vault_url, key_name)
+            }
+            "vault" => {
+                let addr = config
+                    .kms_vault_url
+                    .clone()
+                    .unwrap_or_else(|| "http://localhost:8200".to_string());
+                let mount_path = config
+                    .kms_vault_mount
+                    .clone()
+                    .unwrap_or_else(|| "secret".to_string());
+                let key_name = config.kms_key_id.clone().unwrap_or_else(|| "".to_string());
+                KmsConfig::vault(addr, mount_path, key_name)
+            }
+            _ => {
+                warn!(
+                    "Unknown KMS provider: {}. KMS integration disabled.",
+                    provider
+                );
+                KmsConfig::default()
+            }
+        };
+
+        match crate::kms::KmsManager::new(kms_config) {
+            Ok(manager) => {
+                info!("KMS integration initialized");
+                Some(manager)
+            }
+            Err(e) => {
+                warn!("KMS initialization failed: {}. Continuing without KMS.", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize key rotation manager
+    let key_rotation_manager = if kms_manager.is_some() || spiffe_manager.is_some() {
+        use crate::key_rotation::KeyRotationManager;
+        let rotation_interval =
+            std::time::Duration::from_secs(config.key_rotation_interval_hours * 3600);
+
+        match KeyRotationManager::new(rotation_interval) {
+            Ok(manager) => {
+                // Start background rotation task
+                let _handle = manager.start_background_task();
+                info!(
+                    "Key rotation manager started (interval: {}h)",
+                    config.key_rotation_interval_hours
+                );
+                Some(manager)
+            }
+            Err(e) => {
+                warn!("Key rotation manager initialization failed: {}", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize multi-region support
+    let receipt_sync_manager = if config.cross_region_sync_enabled {
+        use crate::multi_region::{ReceiptSyncManager, RegionConfig};
+        let region_config = RegionConfig {
+            region: config
+                .region
+                .clone()
+                .unwrap_or_else(|| "us-east-1".to_string()),
+            primary_region: config.primary_region.clone(),
+            cross_region_sync_enabled: config.cross_region_sync_enabled,
+            receipt_sync_endpoints: config.receipt_sync_endpoints.clone(),
+            quorum_threshold: config.quorum_threshold,
+        };
+
+        match ReceiptSyncManager::new(region_config) {
+            Ok(manager) => {
+                info!("Multi-region receipt sync initialized");
+                Some(manager)
+            }
+            Err(e) => {
+                warn!(
+                    "Multi-region initialization failed: {}. Continuing without multi-region.",
+                    e
+                );
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize SLO admission controller
+    use crate::slo_admission::{AdmissionStrategy, SloAdmissionController, SloConfig};
+    let slo_config = SloConfig {
+        r1_p99_max_ns: config.slo_r1_p99_max_ns,
+        w1_p99_max_ms: config.slo_w1_p99_max_ms,
+        c1_p99_max_ms: config.slo_c1_p99_max_ms,
+        admission_strategy: if config.slo_admission_strategy == "degrade" {
+            AdmissionStrategy::Degrade
+        } else {
+            AdmissionStrategy::Strict
+        },
+    };
+
+    let slo_controller = match SloAdmissionController::new(slo_config) {
+        Ok(controller) => {
+            info!("SLO admission controller initialized");
+            controller
+        }
+        Err(e) => {
+            return Err(format!("SLO admission controller initialization failed: {}", e).into());
+        }
+    };
+
+    // Fortune 5: Initialize capacity manager
+    use crate::capacity::CapacityManager;
+    let capacity_manager = CapacityManager::new(0.95); // 95% cache hit rate threshold
+    info!("Capacity manager initialized");
+
+    // Fortune 5: Initialize promotion gate manager
+    use crate::promotion::{Environment, PromotionConfig, PromotionGateManager};
+    let promotion_config = PromotionConfig {
+        environment: match config.promotion_environment.as_deref() {
+            Some("canary") => {
+                let traffic = config.promotion_traffic_percent.unwrap_or(10.0);
+                Environment::Canary {
+                    traffic_percent: traffic,
+                }
+            }
+            Some("staging") => Environment::Staging,
+            Some("production") | None => Environment::Production,
+            Some(env) => {
+                warn!(
+                    "Unknown promotion environment: {}. Defaulting to production.",
+                    env
+                );
+                Environment::Production
+            }
+        },
+        feature_flags: Vec::new(), // Can be populated from config
+        auto_rollback_enabled: config.auto_rollback_enabled,
+        slo_threshold: config.slo_threshold,
+        rollback_window_seconds: 300,
+    };
+
+    let promotion_manager = match PromotionGateManager::new(promotion_config, slo_controller) {
+        Ok(manager) => {
+            info!("Promotion gate manager initialized");
+            manager
+        }
+        Err(e) => {
+            return Err(format!("Promotion gate manager initialization failed: {}", e).into());
+        }
+    };
+
+    info!(
+        "Fortune 5 features initialized: SPIFFE={}, KMS={}, Multi-Region={}, SLO={}, Promotion={}",
+        config.spiffe_enabled,
+        config.kms_provider.is_some(),
+        config.cross_region_sync_enabled,
+        true,
+        true
+    );
+
+    // Fortune 5: Initialize SPIFFE/SPIRE if enabled
+    let _spiffe_manager = if config.spiffe_enabled {
+        use crate::spiffe::{SpiffeCertManager, SpiffeConfig};
+        let spiffe_config = SpiffeConfig {
+            socket_path: config
+                .spiffe_socket_path
+                .clone()
+                .unwrap_or_else(|| "/tmp/spire-agent/public/api.sock".to_string()),
+            trust_domain: config
+                .spiffe_trust_domain
+                .clone()
+                .unwrap_or_else(|| "example.com".to_string()),
+            spiffe_id: config.spiffe_id.clone(),
+            refresh_interval: std::time::Duration::from_secs(3600),
+        };
+
+        match SpiffeCertManager::new(spiffe_config) {
+            Ok(mut manager) => {
+                if let Err(e) = manager.load_certificate().await {
+                    warn!(
+                        "SPIFFE certificate loading failed: {}. Continuing without SPIFFE.",
+                        e
+                    );
+                    None
+                } else {
+                    info!("SPIFFE/SPIRE integration initialized");
+                    Some(manager)
+                }
+            }
+            Err(e) => {
+                warn!(
+                    "SPIFFE initialization failed: {}. Continuing without SPIFFE.",
+                    e
+                );
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize KMS if configured
+    let _kms_manager = if let Some(ref provider) = config.kms_provider {
+        use crate::kms::{KmsConfig, KmsProvider};
+        let kms_config = match provider.as_str() {
+            "aws" => {
+                let region = config
+                    .kms_region
+                    .clone()
+                    .unwrap_or_else(|| "us-east-1".to_string());
+                let key_id = config.kms_key_id.clone().unwrap_or_else(|| "".to_string());
+                KmsConfig::aws(region, key_id)
+            }
+            "azure" => {
+                let vault_url = config
+                    .kms_vault_url
+                    .clone()
+                    .unwrap_or_else(|| "".to_string());
+                let key_name = config.kms_key_id.clone().unwrap_or_else(|| "".to_string());
+                KmsConfig::azure(vault_url, key_name)
+            }
+            "vault" => {
+                let addr = config
+                    .kms_vault_url
+                    .clone()
+                    .unwrap_or_else(|| "http://localhost:8200".to_string());
+                let mount_path = config
+                    .kms_vault_mount
+                    .clone()
+                    .unwrap_or_else(|| "secret".to_string());
+                let key_name = config.kms_key_id.clone().unwrap_or_else(|| "".to_string());
+                KmsConfig::vault(addr, mount_path, key_name)
+            }
+            _ => {
+                warn!(
+                    "Unknown KMS provider: {}. KMS integration disabled.",
+                    provider
+                );
+                KmsConfig::default()
+            }
+        };
+
+        match crate::kms::KmsManager::new(kms_config) {
+            Ok(manager) => {
+                info!("KMS integration initialized");
+                Some(manager)
+            }
+            Err(e) => {
+                warn!("KMS initialization failed: {}. Continuing without KMS.", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize key rotation manager
+    let _key_rotation_manager = if _kms_manager.is_some() || _spiffe_manager.is_some() {
+        use crate::key_rotation::KeyRotationManager;
+        let rotation_interval =
+            std::time::Duration::from_secs(config.key_rotation_interval_hours * 3600);
+
+        match KeyRotationManager::new(rotation_interval) {
+            Ok(manager) => {
+                let _handle = manager.start_background_task();
+                info!(
+                    "Key rotation manager started (interval: {}h)",
+                    config.key_rotation_interval_hours
+                );
+                Some(manager)
+            }
+            Err(e) => {
+                warn!("Key rotation manager initialization failed: {}", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize multi-region support
+    let _receipt_sync_manager = if config.cross_region_sync_enabled {
+        use crate::multi_region::{ReceiptSyncManager, RegionConfig};
+        let region_config = RegionConfig {
+            region: config
+                .region
+                .clone()
+                .unwrap_or_else(|| "us-east-1".to_string()),
+            primary_region: config.primary_region.clone(),
+            cross_region_sync_enabled: config.cross_region_sync_enabled,
+            receipt_sync_endpoints: config.receipt_sync_endpoints.clone(),
+            quorum_threshold: config.quorum_threshold,
+        };
+
+        match ReceiptSyncManager::new(region_config) {
+            Ok(manager) => {
+                info!("Multi-region receipt sync initialized");
+                Some(manager)
+            }
+            Err(e) => {
+                warn!(
+                    "Multi-region initialization failed: {}. Continuing without multi-region.",
+                    e
+                );
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Fortune 5: Initialize SLO admission controller
+    use crate::slo_admission::{AdmissionStrategy, SloAdmissionController, SloConfig};
+    let slo_config = SloConfig {
+        r1_p99_max_ns: config.slo_r1_p99_max_ns,
+        w1_p99_max_ms: config.slo_w1_p99_max_ms,
+        c1_p99_max_ms: config.slo_c1_p99_max_ms,
+        admission_strategy: if config.slo_admission_strategy == "degrade" {
+            AdmissionStrategy::Degrade
+        } else {
+            AdmissionStrategy::Strict
+        },
+    };
+
+    let slo_controller = match SloAdmissionController::new(slo_config) {
+        Ok(controller) => {
+            info!("SLO admission controller initialized");
+            controller
+        }
+        Err(e) => {
+            return Err(format!("SLO admission controller initialization failed: {}", e).into());
+        }
+    };
+
+    // Fortune 5: Initialize capacity manager
+    use crate::capacity::CapacityManager;
+    let _capacity_manager = CapacityManager::new(0.95);
+    info!("Capacity manager initialized");
+
+    // Fortune 5: Initialize promotion gate manager
+    use crate::promotion::{Environment, PromotionConfig, PromotionGateManager};
+    let promotion_config = PromotionConfig {
+        environment: match config.promotion_environment.as_deref() {
+            Some("canary") => {
+                let traffic = config.promotion_traffic_percent.unwrap_or(10.0);
+                Environment::Canary {
+                    traffic_percent: traffic,
+                }
+            }
+            Some("staging") => Environment::Staging,
+            Some("production") | None => Environment::Production,
+            Some(env) => {
+                warn!(
+                    "Unknown promotion environment: {}. Defaulting to production.",
+                    env
+                );
+                Environment::Production
+            }
+        },
+        feature_flags: Vec::new(),
+        auto_rollback_enabled: config.auto_rollback_enabled,
+        slo_threshold: config.slo_threshold,
+        rollback_window_seconds: 300,
+    };
+
+    let _promotion_manager = match PromotionGateManager::new(promotion_config, slo_controller) {
+        Ok(manager) => {
+            info!("Promotion gate manager initialized");
+            manager
+        }
+        Err(e) => {
+            return Err(format!("Promotion gate manager initialization failed: {}", e).into());
+        }
+    };
+
+    info!(
+        "Fortune 5 features initialized: SPIFFE={}, KMS={}, Multi-Region={}, SLO={}, Promotion={}",
+        config.spiffe_enabled,
+        config.kms_provider.is_some(),
+        config.cross_region_sync_enabled,
+        true,
+        true
+    );
 
     info!("Sidecar server starting on {}", config.listen_address);
     server.start().await.map_err(|e| e.into())
 }
-

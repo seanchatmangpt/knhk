@@ -7,8 +7,8 @@
 // 4. Verify telemetry emission and metrics
 
 use knhk_sidecar::config::SidecarConfig;
-use knhk_sidecar::service::{KgcSidecarService, proto::*};
 use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
+use knhk_sidecar::service::{proto::*, KgcSidecarService};
 use tonic::Request;
 
 // ============================================================================
@@ -30,12 +30,19 @@ async fn test_apply_transaction_records_metrics() {
     let response = service.apply_transaction(request).await;
 
     // Assert: Verify response structure and metrics updated
-    assert!(response.is_ok(), "Service should handle request without panic");
+    assert!(
+        response.is_ok(),
+        "Service should handle request without panic"
+    );
     let response = response.unwrap().into_inner();
 
     // Verify metrics were recorded
     let metrics_request = Request::new(GetMetricsRequest {});
-    let metrics_response = service.get_metrics(metrics_request).await.unwrap().into_inner();
+    let metrics_response = service
+        .get_metrics(metrics_request)
+        .await
+        .unwrap()
+        .into_inner();
     let metrics = metrics_response.metrics.unwrap();
 
     assert_eq!(metrics.total_requests, 1, "Should record 1 request");
@@ -56,13 +63,25 @@ async fn test_apply_transaction_returns_not_implemented_error() {
     });
 
     // Act: Execute actual transaction
-    let response = service.apply_transaction(request).await.unwrap().into_inner();
+    let response = service
+        .apply_transaction(request)
+        .await
+        .unwrap()
+        .into_inner();
 
     // Assert: Currently returns not implemented (as documented)
-    assert!(!response.committed, "Transaction should not commit until ETL integrated");
-    assert!(!response.errors.is_empty(), "Should report ETL integration pending");
-    assert!(response.errors[0].contains("ETL") || response.errors[0].contains("pending"),
-            "Error should mention ETL integration status");
+    assert!(
+        !response.committed,
+        "Transaction should not commit until ETL integrated"
+    );
+    assert!(
+        !response.errors.is_empty(),
+        "Should report ETL integration pending"
+    );
+    assert!(
+        response.errors[0].contains("ETL") || response.errors[0].contains("pending"),
+        "Error should mention ETL integration status"
+    );
 }
 
 #[tokio::test]
@@ -70,10 +89,8 @@ async fn test_apply_transaction_with_weaver_telemetry() {
     // Arrange: Service with Weaver endpoint configured
     let config = SidecarConfig::default();
     #[cfg(feature = "otel")]
-    let service = KgcSidecarService::new_with_weaver(
-        config,
-        Some("http://localhost:4317".to_string())
-    );
+    let service =
+        KgcSidecarService::new_with_weaver(config, Some("http://localhost:4317".to_string()));
     #[cfg(not(feature = "otel"))]
     let service = KgcSidecarService::new(config);
 
@@ -86,12 +103,24 @@ async fn test_apply_transaction_with_weaver_telemetry() {
     let response = service.apply_transaction(request).await;
 
     // Assert: Request completed and telemetry attempted
-    assert!(response.is_ok(), "Should complete request even if telemetry export fails");
+    assert!(
+        response.is_ok(),
+        "Should complete request even if telemetry export fails"
+    );
 
     // Verify metrics captured telemetry attempt
     let metrics_req = Request::new(GetMetricsRequest {});
-    let metrics = service.get_metrics(metrics_req).await.unwrap().into_inner().metrics.unwrap();
-    assert!(metrics.total_latency_ms > 0, "Should record latency for telemetry");
+    let metrics = service
+        .get_metrics(metrics_req)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
+    assert!(
+        metrics.total_latency_ms > 0,
+        "Should record latency for telemetry"
+    );
 }
 
 // ============================================================================
@@ -113,12 +142,21 @@ async fn test_query_ask_operation_state() {
     let response = service.query(request).await.unwrap().into_inner();
 
     // Assert: Query attempted and state recorded
-    assert_eq!(response.query_type, query_request::QueryType::Ask as i32,
-               "Should preserve query type");
+    assert_eq!(
+        response.query_type,
+        query_request::QueryType::Ask as i32,
+        "Should preserve query type"
+    );
 
     // Verify query metrics updated
     let metrics_req = Request::new(GetMetricsRequest {});
-    let metrics = service.get_metrics(metrics_req).await.unwrap().into_inner().metrics.unwrap();
+    let metrics = service
+        .get_metrics(metrics_req)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
     assert_eq!(metrics.total_queries, 1, "Should record 1 query");
 }
 
@@ -155,7 +193,10 @@ async fn test_query_construct_operation_state() {
     let response = service.query(request).await.unwrap().into_inner();
 
     // Assert
-    assert_eq!(response.query_type, query_request::QueryType::Construct as i32);
+    assert_eq!(
+        response.query_type,
+        query_request::QueryType::Construct as i32
+    );
 }
 
 // ============================================================================
@@ -177,8 +218,14 @@ async fn test_validate_graph_with_shacl_schema() {
     let response = service.validate_graph(request).await.unwrap().into_inner();
 
     // Assert: Validation attempted (currently returns not implemented)
-    assert!(!response.valid, "Validation should indicate not yet implemented");
-    assert!(!response.errors.is_empty(), "Should report implementation status");
+    assert!(
+        !response.valid,
+        "Validation should indicate not yet implemented"
+    );
+    assert!(
+        !response.errors.is_empty(),
+        "Should report implementation status"
+    );
 }
 
 #[tokio::test]
@@ -196,7 +243,10 @@ async fn test_validate_graph_with_empty_data() {
     let response = service.validate_graph(request).await.unwrap().into_inner();
 
     // Assert: Service handles gracefully
-    assert!(!response.errors.is_empty(), "Should handle empty data gracefully");
+    assert!(
+        !response.errors.is_empty(),
+        "Should handle empty data gracefully"
+    );
 }
 
 // ============================================================================
@@ -219,12 +269,24 @@ async fn test_evaluate_hook_with_valid_turtle() {
     let response = service.evaluate_hook(request).await.unwrap().into_inner();
 
     // Assert: Hook evaluation attempted
-    assert!(!response.errors.is_empty(), "Should report implementation status");
+    assert!(
+        !response.errors.is_empty(),
+        "Should report implementation status"
+    );
 
     // Verify metrics recorded hook evaluation
     let metrics_req = Request::new(GetMetricsRequest {});
-    let metrics = service.get_metrics(metrics_req).await.unwrap().into_inner().metrics.unwrap();
-    assert_eq!(metrics.total_hooks_evaluated, 1, "Should record hook evaluation");
+    let metrics = service
+        .get_metrics(metrics_req)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
+    assert_eq!(
+        metrics.total_hooks_evaluated, 1,
+        "Should record hook evaluation"
+    );
 }
 
 #[tokio::test]
@@ -245,8 +307,11 @@ async fn test_evaluate_hook_with_invalid_utf8() {
     // Assert: Error handled properly
     assert!(response.is_err(), "Should return error for invalid UTF-8");
     let status = response.unwrap_err();
-    assert_eq!(status.code(), tonic::Code::InvalidArgument,
-               "Should return InvalidArgument status");
+    assert_eq!(
+        status.code(),
+        tonic::Code::InvalidArgument,
+        "Should return InvalidArgument status"
+    );
 }
 
 // ============================================================================
@@ -265,10 +330,15 @@ async fn test_health_check_initial_healthy_state() {
     let response = service.health_check(request).await.unwrap().into_inner();
 
     // Assert: Initially healthy
-    assert_eq!(response.status, health_status::HealthStatus::HealthStatusHealthy as i32,
-               "Service should start in healthy state");
-    assert!(response.message.contains("healthy") || response.message.contains("Healthy"),
-            "Health message should indicate healthy state");
+    assert_eq!(
+        response.status,
+        health_status::HealthStatus::HealthStatusHealthy as i32,
+        "Service should start in healthy state"
+    );
+    assert!(
+        response.message.contains("healthy") || response.message.contains("Healthy"),
+        "Health message should indicate healthy state"
+    );
     assert!(response.timestamp_ms > 0, "Should include timestamp");
 }
 
@@ -287,8 +357,10 @@ async fn test_health_check_returns_current_timestamp() {
     let after = chrono::Utc::now().timestamp_millis() as u64;
 
     // Assert: Timestamp within reasonable range
-    assert!(response.timestamp_ms >= before && response.timestamp_ms <= after,
-            "Timestamp should be current time");
+    assert!(
+        response.timestamp_ms >= before && response.timestamp_ms <= after,
+        "Timestamp should be current time"
+    );
 }
 
 // ============================================================================
@@ -302,20 +374,26 @@ async fn test_get_metrics_aggregates_all_operations() {
     let service = KgcSidecarService::new(config);
 
     // Perform various operations
-    let _ = service.apply_transaction(Request::new(ApplyTransactionRequest {
-        rdf_data: vec![],
-        schema_iri: "urn:test".to_string(),
-    })).await;
+    let _ = service
+        .apply_transaction(Request::new(ApplyTransactionRequest {
+            rdf_data: vec![],
+            schema_iri: "urn:test".to_string(),
+        }))
+        .await;
 
-    let _ = service.query(Request::new(QueryRequest {
-        query_type: query_request::QueryType::Ask as i32,
-        query_sparql: "ASK { }".to_string(),
-    })).await;
+    let _ = service
+        .query(Request::new(QueryRequest {
+            query_type: query_request::QueryType::Ask as i32,
+            query_sparql: "ASK { }".to_string(),
+        }))
+        .await;
 
-    let _ = service.evaluate_hook(Request::new(EvaluateHookRequest {
-        hook_id: "hook1".to_string(),
-        rdf_data: b"data".to_vec(),
-    })).await;
+    let _ = service
+        .evaluate_hook(Request::new(EvaluateHookRequest {
+            hook_id: "hook1".to_string(),
+            rdf_data: b"data".to_vec(),
+        }))
+        .await;
 
     // Act: Get aggregated metrics
     let request = Request::new(GetMetricsRequest {});
@@ -327,7 +405,10 @@ async fn test_get_metrics_aggregates_all_operations() {
     assert_eq!(metrics.total_transactions, 1, "Should count transactions");
     assert_eq!(metrics.total_queries, 1, "Should count queries");
     assert_eq!(metrics.total_hooks_evaluated, 1, "Should count hooks");
-    assert!(metrics.average_latency_ms >= 0.0, "Should calculate average latency");
+    assert!(
+        metrics.average_latency_ms >= 0.0,
+        "Should calculate average latency"
+    );
 }
 
 #[tokio::test]
@@ -337,15 +418,19 @@ async fn test_get_metrics_calculates_success_failure_ratio() {
     let service = KgcSidecarService::new(config);
 
     // Mix of operations (all currently fail due to not implemented)
-    let _ = service.apply_transaction(Request::new(ApplyTransactionRequest {
-        rdf_data: vec![],
-        schema_iri: "".to_string(),
-    })).await;
+    let _ = service
+        .apply_transaction(Request::new(ApplyTransactionRequest {
+            rdf_data: vec![],
+            schema_iri: "".to_string(),
+        }))
+        .await;
 
-    let _ = service.query(Request::new(QueryRequest {
-        query_type: 0,
-        query_sparql: "".to_string(),
-    })).await;
+    let _ = service
+        .query(Request::new(QueryRequest {
+            query_type: 0,
+            query_sparql: "".to_string(),
+        }))
+        .await;
 
     // Act: Get metrics
     let request = Request::new(GetMetricsRequest {});
@@ -353,8 +438,11 @@ async fn test_get_metrics_calculates_success_failure_ratio() {
     let metrics = response.metrics.unwrap();
 
     // Assert: Success and failure counts recorded
-    assert_eq!(metrics.total_requests, metrics.successful_requests + metrics.failed_requests,
-               "Total should equal success + failure");
+    assert_eq!(
+        metrics.total_requests,
+        metrics.successful_requests + metrics.failed_requests,
+        "Total should equal success + failure"
+    );
 }
 
 // ============================================================================
@@ -388,9 +476,21 @@ async fn test_concurrent_requests_maintain_consistent_metrics() {
 
     // Assert: Metrics consistent
     let request = Request::new(GetMetricsRequest {});
-    let metrics = service.get_metrics(request).await.unwrap().into_inner().metrics.unwrap();
-    assert_eq!(metrics.total_queries, 10, "Should record all concurrent queries");
-    assert_eq!(metrics.total_requests, 10, "Should record all concurrent requests");
+    let metrics = service
+        .get_metrics(request)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
+    assert_eq!(
+        metrics.total_queries, 10,
+        "Should record all concurrent queries"
+    );
+    assert_eq!(
+        metrics.total_requests, 10,
+        "Should record all concurrent requests"
+    );
 }
 
 // ============================================================================
@@ -411,7 +511,10 @@ async fn test_service_handles_malformed_requests_gracefully() {
     let response = service.query(request).await;
 
     // Assert: Service handles gracefully (doesn't panic)
-    assert!(response.is_ok(), "Service should handle invalid input gracefully");
+    assert!(
+        response.is_ok(),
+        "Service should handle invalid input gracefully"
+    );
 }
 
 #[tokio::test]
@@ -421,22 +524,37 @@ async fn test_service_state_persists_across_requests() {
     let service = std::sync::Arc::new(KgcSidecarService::new(config));
 
     // Act: First request
-    let _ = service.query(Request::new(QueryRequest {
-        query_type: query_request::QueryType::Ask as i32,
-        query_sparql: "ASK {}".to_string(),
-    })).await;
+    let _ = service
+        .query(Request::new(QueryRequest {
+            query_type: query_request::QueryType::Ask as i32,
+            query_sparql: "ASK {}".to_string(),
+        }))
+        .await;
 
     // Second request
-    let _ = service.apply_transaction(Request::new(ApplyTransactionRequest {
-        rdf_data: vec![],
-        schema_iri: "".to_string(),
-    })).await;
+    let _ = service
+        .apply_transaction(Request::new(ApplyTransactionRequest {
+            rdf_data: vec![],
+            schema_iri: "".to_string(),
+        }))
+        .await;
 
     // Assert: Cumulative state maintained
-    let metrics = service.get_metrics(Request::new(GetMetricsRequest {}))
-        .await.unwrap().into_inner().metrics.unwrap();
+    let metrics = service
+        .get_metrics(Request::new(GetMetricsRequest {}))
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
 
-    assert_eq!(metrics.total_requests, 2, "State should accumulate across requests");
+    assert_eq!(
+        metrics.total_requests, 2,
+        "State should accumulate across requests"
+    );
     assert_eq!(metrics.total_queries, 1, "Query count should persist");
-    assert_eq!(metrics.total_transactions, 1, "Transaction count should persist");
+    assert_eq!(
+        metrics.total_transactions, 1,
+        "Transaction count should persist"
+    );
 }

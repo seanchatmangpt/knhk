@@ -1,10 +1,10 @@
 // knhk-sidecar: Circuit breaker wrapper
 
+use crate::error::{SidecarError, SidecarResult};
 use knhk_connectors::CircuitBreaker as ConnectorCircuitBreaker;
 use knhk_connectors::CircuitBreakerState;
 use knhk_connectors::ConnectorError;
 use std::sync::{Arc, Mutex};
-use crate::error::{SidecarError, SidecarResult};
 
 /// Circuit breaker wrapper for sidecar use
 /// Reuses knhk-connectors CircuitBreaker but adapts errors
@@ -17,9 +17,10 @@ impl SidecarCircuitBreaker {
     /// Create new circuit breaker
     pub fn new(endpoint: String, failure_threshold: u32, reset_timeout_ms: u64) -> Self {
         Self {
-            inner: Arc::new(Mutex::new(
-                ConnectorCircuitBreaker::new(failure_threshold, reset_timeout_ms)
-            )),
+            inner: Arc::new(Mutex::new(ConnectorCircuitBreaker::new(
+                failure_threshold,
+                reset_timeout_ms,
+            ))),
             endpoint,
         }
     }
@@ -29,15 +30,17 @@ impl SidecarCircuitBreaker {
     where
         F: FnOnce() -> SidecarResult<T>,
     {
-        let mut cb = self.inner.lock()
-            .map_err(|e| SidecarError::internal_error(format!("Failed to acquire circuit breaker lock: {}", e)))?;
+        let mut cb = self.inner.lock().map_err(|e| {
+            SidecarError::internal_error(format!("Failed to acquire circuit breaker lock: {}", e))
+        })?;
 
         // Check circuit breaker state
         match cb.state() {
             CircuitBreakerState::Open => {
-                return Err(SidecarError::circuit_breaker_open(
-                    format!("Circuit breaker is open for endpoint: {}", self.endpoint)
-                ));
+                return Err(SidecarError::circuit_breaker_open(format!(
+                    "Circuit breaker is open for endpoint: {}",
+                    self.endpoint
+                )));
             }
             CircuitBreakerState::HalfOpen | CircuitBreakerState::Closed => {
                 // Proceed with call
@@ -52,9 +55,9 @@ impl SidecarCircuitBreaker {
                     // Convert SidecarError to ConnectorError
                     let msg = e.to_string();
                     match e.code() {
-                        "SIDECAR_NETWORK_ERROR" | "SIDECAR_TIMEOUT_ERROR" | "SIDECAR_GRPC_ERROR" => {
-                            Err(ConnectorError::NetworkError(msg))
-                        }
+                        "SIDECAR_NETWORK_ERROR"
+                        | "SIDECAR_TIMEOUT_ERROR"
+                        | "SIDECAR_GRPC_ERROR" => Err(ConnectorError::NetworkError(msg)),
                         _ => Err(ConnectorError::NetworkError(format!("Error: {}", msg))),
                     }
                 }
@@ -64,32 +67,35 @@ impl SidecarCircuitBreaker {
         // Convert ConnectorError back to SidecarError
         match result {
             Ok(val) => Ok(val),
-            Err(e) => {
-                match e {
-                    ConnectorError::NetworkError(msg) => {
-                        if msg.contains("Circuit breaker is open") {
-                            Err(SidecarError::circuit_breaker_open(
-                                format!("Circuit breaker is open for endpoint: {}", self.endpoint)
-                            ))
-                        } else {
-                            Err(SidecarError::network_error(msg))
-                        }
+            Err(e) => match e {
+                ConnectorError::NetworkError(msg) => {
+                    if msg.contains("Circuit breaker is open") {
+                        Err(SidecarError::circuit_breaker_open(format!(
+                            "Circuit breaker is open for endpoint: {}",
+                            self.endpoint
+                        )))
+                    } else {
+                        Err(SidecarError::network_error(msg))
                     }
-                    ConnectorError::ValidationFailed(msg) => Err(SidecarError::validation_error(msg)),
-                    ConnectorError::SchemaMismatch(msg) => Err(SidecarError::validation_error(msg)),
-                    ConnectorError::GuardViolation(msg) => Err(SidecarError::validation_error(msg)),
-                    ConnectorError::ParseError(msg) => Err(SidecarError::validation_error(msg)),
-                    ConnectorError::IoError(msg) => Err(SidecarError::network_error(msg)),
-                    _ => Err(SidecarError::network_error(format!("Unknown connector error: {:?}", e))),
                 }
-            }
+                ConnectorError::ValidationFailed(msg) => Err(SidecarError::validation_error(msg)),
+                ConnectorError::SchemaMismatch(msg) => Err(SidecarError::validation_error(msg)),
+                ConnectorError::GuardViolation(msg) => Err(SidecarError::validation_error(msg)),
+                ConnectorError::ParseError(msg) => Err(SidecarError::validation_error(msg)),
+                ConnectorError::IoError(msg) => Err(SidecarError::network_error(msg)),
+                _ => Err(SidecarError::network_error(format!(
+                    "Unknown connector error: {:?}",
+                    e
+                ))),
+            },
         }
     }
 
     /// Check if circuit breaker allows calls (for async use)
     pub fn is_open(&self) -> SidecarResult<bool> {
-        let cb = self.inner.lock()
-            .map_err(|e| SidecarError::internal_error(format!("Failed to acquire circuit breaker lock: {}", e)))?;
+        let cb = self.inner.lock().map_err(|e| {
+            SidecarError::internal_error(format!("Failed to acquire circuit breaker lock: {}", e))
+        })?;
         Ok(matches!(cb.state(), CircuitBreakerState::Open))
     }
 
@@ -109,8 +115,9 @@ impl SidecarCircuitBreaker {
 
     /// Get current circuit breaker state
     pub fn state(&self) -> SidecarResult<CircuitBreakerState> {
-        let cb = self.inner.lock()
-            .map_err(|e| SidecarError::internal_error(format!("Failed to acquire circuit breaker lock: {}", e)))?;
+        let cb = self.inner.lock().map_err(|e| {
+            SidecarError::internal_error(format!("Failed to acquire circuit breaker lock: {}", e))
+        })?;
         Ok(cb.state().clone())
     }
 
@@ -139,8 +146,9 @@ impl CircuitBreakerRegistry {
 
     /// Get or create circuit breaker for endpoint
     pub fn get_or_create(&self, endpoint: String) -> SidecarResult<SidecarCircuitBreaker> {
-        let mut breakers = self.breakers.lock()
-            .map_err(|e| SidecarError::internal_error(format!("Failed to acquire registry lock: {}", e)))?;
+        let mut breakers = self.breakers.lock().map_err(|e| {
+            SidecarError::internal_error(format!("Failed to acquire registry lock: {}", e))
+        })?;
 
         if !breakers.contains_key(&endpoint) {
             let cb = SidecarCircuitBreaker::new(
@@ -179,9 +187,10 @@ impl CircuitBreaker {
     /// Create new circuit breaker
     pub fn new(failure_threshold: u32, reset_timeout_ms: u64) -> Self {
         Self {
-            inner: Arc::new(Mutex::new(
-                ConnectorCircuitBreaker::new(failure_threshold, reset_timeout_ms)
-            )),
+            inner: Arc::new(Mutex::new(ConnectorCircuitBreaker::new(
+                failure_threshold,
+                reset_timeout_ms,
+            ))),
         }
     }
 
@@ -203,4 +212,3 @@ impl CircuitBreaker {
         }
     }
 }
-

@@ -1,0 +1,230 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sac/knhk/rust/knhk-hot/Cargo.toml
+workspace: /Users/sac/knhk/rust/Cargo.toml
+   Compiling knhk-otel v1.0.0 (/Users/sac/knhk/rust/knhk-otel)
+   Compiling knhk-connectors v1.0.0 (/Users/sac/knhk/rust/knhk-connectors)
+   Compiling knhk-etl v1.0.0 (/Users/sac/knhk/rust/knhk-etl)
+   Compiling knhk-unrdf v1.0.0 (/Users/sac/knhk/rust/knhk-unrdf)
+warning: unexpected `cfg` condition value: `profiling`
+   --> knhk-etl/src/buffer_pool.rs:405:11
+    |
+405 |     #[cfg(feature = "profiling")]
+    |           ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `grpc`, `knhk-lockchain`, `knhk-otel`, `parallel`, `rayon`, `std`, and `tokio-runtime`
+    = help: consider adding `profiling` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused variable: `receipts`
+   --> knhk-etl/src/beat_scheduler.rs:654:13
+    |
+654 |         let receipts = scheduler.get_cycle_receipts();
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_receipts`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> knhk-etl/src/hot_path_engine.rs:209:9
+    |
+209 |         drop(buffers1);
+    |         ^^^^^--------^
+    |              |
+    |              argument has type `&load::SoAArrays`
+    |
+    = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+    |
+209 -         drop(buffers1);
+209 +         let _ = buffers1;
+    |
+
+warning: `knhk-etl` (lib test) generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.76s
+     Running unittests src/lib.rs (target/debug/deps/knhk_etl-a91c0befbefabbf8)
+
+running 104 tests
+test beat_scheduler::tests::test_beat_scheduler_invalid_shard_count ... ok
+test beat_scheduler::tests::test_beat_scheduler_creation ... ok
+test beat_scheduler::tests::test_beat_scheduler_tick_calculation ... ok
+test buffer_pool::tests::test_buffer_pool_creation ... ok
+test buffer_pool::tests::test_get_soa_buffer ... ok
+test buffer_pool::tests::test_buffer_reuse ... ok
+test buffer_pool::tests::test_get_soa_buffer_invalid_size ... ok
+test buffer_pool::tests::test_receipt_pool ... ok
+test buffer_pool::tests::test_pool_clear ... ok
+test beat_scheduler::tests::test_beat_scheduler_enqueue_delta ... ok
+test beat_scheduler::tests::test_beat_scheduler_integration ... ok
+test buffer_pool::tests::test_pool_exhaustion ... ok
+test buffer_pool::tests::test_receipt_pool_reset ... ok
+test failure_actions::tests::test_c1_failure_async ... ok
+test beat_scheduler::tests::test_beat_scheduler_advance_beat ... FAILED
+test buffer_pool::tests::test_return_soa_buffer ... ok
+test failure_actions::tests::test_c1_failure_empty_operation_id ... ok
+test failure_actions::tests::test_r1_failure_no_escalation ... ok
+test failure_actions::tests::test_w1_failure_cache_degrade ... ok
+test failure_actions::tests::test_w1_failure_max_retries ... ok
+test failure_actions::tests::test_r1_failure_budget_exceeded ... ok
+test failure_actions::tests::test_w1_failure_retry ... ok
+test fiber::tests::test_fiber_creation ... ok
+test fiber::tests::test_fiber_execute_within_budget ... ok
+test fiber::tests::test_fiber_execute_exceeds_budget ... FAILED
+test guard_validation::tests::test_match_ask_sp_branchless ... ok
+test fiber::tests::test_fiber_invalid_budget - should panic ... ok
+test guard_validation::tests::test_match_ask_spo_branchless ... ok
+test guard_validation::tests::test_match_predicate_branchless ... ok
+test guard_validation::tests::test_validate_all_guards_branchless ... ok
+test guard_validation::tests::test_validate_run_len_branchless ... ok
+test guard_validation::tests::test_validate_tick_budget_branchless ... ok
+test hash::tests::test_hash_actions_deterministic ... ok
+test hash::tests::test_hash_delta_deterministic ... ok
+test hash::tests::test_hash_order_dependence ... ok
+test hash::tests::test_hash_soa ... ok
+test hook_registry::tests::test_default_kernel ... ok
+test hook_registry::tests::test_get_hook_by_predicate ... ok
+test hook_registry::tests::test_guard_execution ... ok
+test hook_registry::tests::test_duplicate_predicate_error ... ok
+test hook_registry::tests::test_guard_object_uri ... ok
+test hook_registry::tests::test_hook_registration ... ok
+test hook_registry::tests::test_guard_functions ... ok
+test hook_registry::tests::test_list_hooks ... ok
+test hook_registry::tests::test_unregister_hook ... ok
+test hot_path_engine::tests::test_buffer_reuse ... ok
+test hot_path_engine::tests::test_hot_path_engine_capacity_guard ... ok
+test hot_path_engine::tests::test_hot_path_engine_creation ... ok
+test hot_path_engine::tests::test_hot_path_engine_with_capacity ... ok
+test hot_path_engine::tests::test_load_triples ... ok
+test hot_path_engine::tests::test_load_triples_exceeds_capacity ... ok
+test hot_path_engine::tests::test_set_max_capacity ... ok
+test park::tests::test_execution_result_completed ... ok
+test park::tests::test_execution_result_parked ... ok
+test park::tests::test_park_cause_descriptions ... ok
+test park::tests::test_park_manager ... ok
+test reconcile::tests::test_hook_registry_integration ... ok
+test reconcile::tests::test_reconcile_context_creation ... ok
+test reconcile::tests::test_reconcile_delta_empty ... ok
+test reconcile::tests::test_reconcile_delta_exceeds_bounds ... ok
+test reconcile::tests::test_reconcile_context_invalid_budget - should panic ... ok
+test ring_buffer::tests::test_ring_buffer_creation ... ok
+test reflex_map::tests::test_reflex_map_hash_verification ... FAILED
+test reflex_map::tests::test_reflex_map_idempotence ... FAILED
+test ring_buffer::tests::test_ring_buffer_enqueue_dequeue ... ok
+test ring_buffer::tests::test_ring_buffer_full ... ok
+test ring_buffer::tests::test_ring_buffer_invalid_capacity ... ok
+test ring_buffer::tests::test_ring_buffer_len ... ok
+test ring_buffer::tests::test_ring_buffer_wrap_around ... ok
+test ring_conversion::tests::test_hash_iri ... ok
+test ring_conversion::tests::test_hash_iri_empty ... ok
+test ring_conversion::tests::test_raw_triples_to_soa ... ok
+test ring_conversion::tests::test_soa_to_raw_triples ... ok
+test runtime_class::tests::test_c1_classification ... ok
+test runtime_class::tests::test_metadata ... ok
+test runtime_class::tests::test_r1_classification ... ok
+test runtime_class::tests::test_w1_classification ... ok
+test runtime_class::tests::test_r1_data_size_limit ... FAILED
+test slo_monitor::tests::test_insufficient_samples ... ok
+test slo_monitor::tests::test_p99_calculation ... ok
+test slo_monitor::tests::test_slo_monitor_c1 ... ok
+test slo_monitor::tests::test_slo_monitor_r1 ... ok
+test slo_monitor::tests::test_slo_monitor_r1_violation ... ok
+test slo_monitor::tests::test_slo_monitor_w1 ... ok
+test slo_monitor::tests::test_window_size_limit ... ok
+test tests::test_load_stage_guard ... ok
+test tests::test_load_stage_predicate_grouping ... ok
+test tests::test_reflex_stage_tick_budget ... ok
+test tests::test_receipt_merging ... ok
+test tests::test_pipeline_creation ... ok
+test triple_view::tests::test_soa_arrays_ext ... ok
+test tests::test_transform_stage_hashing ... ok
+test triple_view::tests::test_triple_iterator ... ok
+test triple_view::tests::test_triple_view ... ok
+test tests::test_ingest_stage_invalid_syntax ... FAILED
+test tests::test_ingest_stage_empty_input ... ok
+test tests::test_ingest_stage_base_uri ... ok
+test tests::test_ingest_stage_prefix_resolution ... ok
+test tests::test_ingest_stage_multiple_triples ... ok
+test tests::test_ingest_stage_rdf_parsing ... ok
+test tests::test_ingest_stage_blank_nodes ... FAILED
+test tests::test_ingest_stage_literals ... FAILED
+test beat_scheduler::tests::test_lockchain_integration ... FAILED
+test tests::test_emit_stage ... FAILED
+
+failures:
+
+---- beat_scheduler::tests::test_beat_scheduler_advance_beat stdout ----
+
+thread 'beat_scheduler::tests::test_beat_scheduler_advance_beat' panicked at knhk-etl/src/beat_scheduler.rs:525:13:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- fiber::tests::test_fiber_execute_exceeds_budget stdout ----
+
+thread 'fiber::tests::test_fiber_execute_exceeds_budget' panicked at knhk-etl/src/fiber.rs:458:17:
+assertion `left == right` failed
+  left: RunLengthExceeded
+ right: TickBudgetExceeded
+
+---- reflex_map::tests::test_reflex_map_hash_verification stdout ----
+
+thread 'reflex_map::tests::test_reflex_map_hash_verification' panicked at knhk-etl/src/reflex_map.rs:564:14:
+Reflex map application should succeed: ReflexError("Hash mismatch: hash(A)=14695981039346656037 != hash(μ(O))=3781737826569876258")
+
+---- reflex_map::tests::test_reflex_map_idempotence stdout ----
+
+thread 'reflex_map::tests::test_reflex_map_idempotence' panicked at knhk-etl/src/reflex_map.rs:529:14:
+First reflex_map application should succeed: ReflexError("Hash mismatch: hash(A)=14695981039346656037 != hash(μ(O))=3781737826569876258")
+
+---- runtime_class::tests::test_r1_data_size_limit stdout ----
+
+thread 'runtime_class::tests::test_r1_data_size_limit' panicked at knhk-etl/src/runtime_class.rs:175:18:
+R1 classification should succeed: "Unable to classify operation: ASK_SP with data_size: 9"
+
+---- tests::test_ingest_stage_invalid_syntax stdout ----
+
+thread 'tests::test_ingest_stage_invalid_syntax' panicked at knhk-etl/src/lib.rs:264:13:
+assertion failed: msg.contains("parse error")
+
+---- tests::test_ingest_stage_blank_nodes stdout ----
+
+thread 'tests::test_ingest_stage_blank_nodes' panicked at knhk-etl/src/lib.rs:189:9:
+assertion `left == right` failed
+  left: "\"Bob\"^^http://www.w3.org/2001/XMLSchema#string"
+ right: "\"Alice\""
+
+---- tests::test_ingest_stage_literals stdout ----
+
+thread 'tests::test_ingest_stage_literals' panicked at knhk-etl/src/lib.rs:207:9:
+assertion `left == right` failed
+  left: "\"Hello\"@en"
+ right: "\"Alice\""
+
+---- beat_scheduler::tests::test_lockchain_integration stdout ----
+
+thread 'beat_scheduler::tests::test_lockchain_integration' panicked at knhk-etl/src/beat_scheduler.rs:645:13:
+assertion `left == right` failed
+  left: 3
+ right: 0
+
+---- tests::test_emit_stage stdout ----
+
+thread 'tests::test_emit_stage' panicked at knhk-etl/src/lib.rs:461:9:
+assertion failed: result.is_ok()
+
+
+failures:
+    beat_scheduler::tests::test_beat_scheduler_advance_beat
+    beat_scheduler::tests::test_lockchain_integration
+    fiber::tests::test_fiber_execute_exceeds_budget
+    reflex_map::tests::test_reflex_map_hash_verification
+    reflex_map::tests::test_reflex_map_idempotence
+    runtime_class::tests::test_r1_data_size_limit
+    tests::test_emit_stage
+    tests::test_ingest_stage_blank_nodes
+    tests::test_ingest_stage_invalid_syntax
+    tests::test_ingest_stage_literals
+
+test result: FAILED. 94 passed; 10 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.14s
+
+error: test failed, to rerun pass `-p knhk-etl --lib`

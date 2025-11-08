@@ -369,4 +369,28 @@ This evidence package documents the current validation status for KNHK 8-Beat v1
 
 ---
 
+---
+
+## SimdJSON Optimization Evidence
+
+**Purpose:** Document simdjson optimization patterns applied to KNHK hot path
+
+| Document | Status | Purpose | Size |
+|----------|--------|---------|------|
+| **Master Document** | ✅ COMPLETE | [SIMDJSON_OPTIMIZATION_MASTER.md](../SIMDJSON_OPTIMIZATION_MASTER.md) | Comprehensive overview |
+| **Implementation Report** | ✅ COMPLETE | [SIMDJSON_OPTIMIZATIONS_APPLIED.md](SIMDJSON_OPTIMIZATIONS_APPLIED.md) | Detailed implementation status |
+| **Executive Summary** | ✅ COMPLETE | [SIMDJSON_OPTIMIZATION_SUMMARY.md](SIMDJSON_OPTIMIZATION_SUMMARY.md) | Quick reference |
+| **Lessons Learned** | ✅ COMPLETE | [SIMDJSON_LESSONS_FOR_KNHK_v1.0.0.md](SIMDJSON_LESSONS_FOR_KNHK_v1.0.0.md) | Comprehensive analysis |
+| **Action Plan** | ✅ COMPLETE | [../architecture/simdjson-80-20-action-plan.md](../architecture/simdjson-80-20-action-plan.md) | 4-week roadmap |
+
+**Key Findings:**
+- ✅ **8/8 helper patterns implemented** (100%)
+- ⚠️ **0/5 core architecture implemented** (0%)
+- ✅ **All hot path operations ≤8 ticks** (Chatman Constant compliant)
+- 🎯 **Target: ≤6 ticks** (25% improvement via core pipeline)
+
+**See:** [SIMDJSON_OPTIMIZATION_MASTER.md](../SIMDJSON_OPTIMIZATION_MASTER.md) for complete overview
+
+---
+
 **END OF EVIDENCE PACKAGE**

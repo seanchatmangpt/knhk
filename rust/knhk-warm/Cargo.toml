@@ -2,6 +2,14 @@
 name = "knhk-warm"
 version = "1.0.0"
 edition = "2021"
+description = "Warm path query engine with SPARQL support"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-warm"
+keywords = ["rdf", "sparql", "query", "database", "warm-path"]
+categories = ["database", "parsing"]
+license = "MIT"
+authors = ["KNHK Team"]
 
 [lib]
 name = "knhk_warm"
