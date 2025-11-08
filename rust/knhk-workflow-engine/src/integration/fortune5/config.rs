@@ -62,12 +62,10 @@ impl KmsConfig {
     /// Validate KMS configuration
     pub fn validate(&self) -> WorkflowResult<()> {
         if self.rotation_interval_hours > 24 {
-            return Err(WorkflowError::Validation(
-                format!(
-                    "Key rotation interval {} hours exceeds maximum 24 hours",
-                    self.rotation_interval_hours
-                )
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Key rotation interval {} hours exceeds maximum 24 hours",
+                self.rotation_interval_hours
+            )));
         }
         Ok(())
     }
@@ -125,22 +123,22 @@ impl SloConfig {
     /// Validate SLO configuration
     pub fn validate(&self) -> WorkflowResult<()> {
         if self.r1_p99_max_ns > 2 {
-            return Err(WorkflowError::Validation(
-                format!("R1 P99 max {}ns exceeds maximum 2ns", self.r1_p99_max_ns)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "R1 P99 max {}ns exceeds maximum 2ns",
+                self.r1_p99_max_ns
+            )));
         }
         if self.w1_p99_max_ms > 1 {
-            return Err(WorkflowError::Validation(
-                format!("W1 P99 max {}ms exceeds maximum 1ms", self.w1_p99_max_ms)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "W1 P99 max {}ms exceeds maximum 1ms",
+                self.w1_p99_max_ms
+            )));
         }
         if self.c1_p99_max_ms > 500 {
-            return Err(WorkflowError::Validation(
-                format!(
-                    "C1 P99 max {}ms exceeds maximum 500ms",
-                    self.c1_p99_max_ms
-                )
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "C1 P99 max {}ms exceeds maximum 500ms",
+                self.c1_p99_max_ms
+            )));
         }
         Ok(())
     }
@@ -176,12 +174,10 @@ impl PromotionConfig {
     /// Validate promotion configuration
     pub fn validate(&self) -> WorkflowResult<()> {
         if !(0.0..=1.0).contains(&self.slo_threshold) {
-            return Err(WorkflowError::Validation(
-                format!(
-                    "SLO threshold {} must be between 0.0 and 1.0",
-                    self.slo_threshold
-                )
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "SLO threshold {} must be between 0.0 and 1.0",
+                self.slo_threshold
+            )));
         }
         Ok(())
     }
@@ -210,4 +206,3 @@ pub enum AdmissionStrategy {
     /// Require KMS key
     RequireKms,
 }
-

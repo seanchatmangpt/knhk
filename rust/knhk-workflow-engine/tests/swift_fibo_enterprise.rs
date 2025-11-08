@@ -44,7 +44,7 @@ fn create_enterprise_engine() -> (WorkflowEngine, Fortune5Integration) {
             r1_p99_max_ns: 2,
             w1_p99_max_ms: 1,
             c1_p99_max_ms: 500,
-            admission_strategy: knhk_workflow_engine::integration::AdmissionStrategy::Strict,
+            window_size_seconds: 60,
         }),
         promotion: Some(knhk_workflow_engine::integration::PromotionConfig {
             environment: knhk_workflow_engine::integration::Environment::Production,

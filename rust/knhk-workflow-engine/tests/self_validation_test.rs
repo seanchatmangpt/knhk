@@ -8,7 +8,7 @@ use knhk_workflow_engine::capabilities::{validate_capabilities, CapabilityRegist
 use knhk_workflow_engine::case::{Case, CaseId, CaseState};
 use knhk_workflow_engine::error::WorkflowResult;
 use knhk_workflow_engine::executor::WorkflowEngine;
-use knhk_workflow_engine::parser::WorkflowParser;
+use knhk_workflow_engine::parser::{TaskType, WorkflowParser};
 use knhk_workflow_engine::patterns::PatternRegistry;
 use knhk_workflow_engine::self_validation::SelfValidationManager;
 use knhk_workflow_engine::state::StateStore;
@@ -218,12 +218,13 @@ async fn test_self_validation_mutation_testing() {
         .parse_turtle(&spec_string)
         .expect("Failed to parse workflow");
 
+    let first_task_id = spec.tasks.keys().next().cloned();
     let mut tester = MutationTester::new(spec).unwrap();
 
-    // Apply mutations
-    tester.apply_mutation(MutationOperator::RemoveTask(
-        spec.tasks.keys().next().unwrap().clone(),
-    ));
+    // Apply mutations (only if workflow has tasks)
+    if let Some(task_id) = first_task_id {
+        tester.apply_mutation(MutationOperator::RemoveTask(task_id));
+    }
 
     // Act: Test if mutations are caught
     let caught = tester
@@ -253,7 +254,7 @@ async fn test_mutation_score_for_self_validation() {
     tester.apply_mutation(MutationOperator::RemoveTask("task:validate".to_string()));
     tester.apply_mutation(MutationOperator::ChangeTaskType(
         "task:report".to_string(),
-        crate::parser::TaskType::Composite,
+        TaskType::Composite,
     ));
 
     // Act: Test mutation detection

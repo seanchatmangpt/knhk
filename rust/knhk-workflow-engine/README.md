@@ -27,6 +27,31 @@ This crate provides a complete workflow engine that:
 - **Observability**: OTEL integration for tracing
 - **Provenance**: Lockchain integration for audit trails
 
+## CLI Usage
+
+The workflow engine is integrated into the main `knhk` CLI:
+
+```bash
+# Parse a workflow
+knhk workflow parse examples/simple-sequence.ttl
+
+# Register workflow
+knhk workflow register examples/simple-sequence.ttl
+
+# Create and execute a case
+knhk workflow create <spec-id> --data '{"input":"test"}'
+knhk workflow start <case-id>
+knhk workflow execute <case-id>
+
+# List all patterns
+knhk workflow patterns
+
+# Start REST API server
+knhk workflow serve --port 8080
+```
+
+See **[CLI Integration Guide](examples/CLI_USAGE.md)** for complete CLI documentation.
+
 ## Usage
 
 ```rust

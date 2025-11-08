@@ -14,7 +14,8 @@
 //! - Test data builders for realistic scenarios
 
 use knhk_workflow_engine::case::CaseState;
-use knhk_workflow_engine::patterns::{PatternExecutionResult, PatternId};
+use knhk_workflow_engine::parser::{SplitType, TaskType};
+use knhk_workflow_engine::patterns::PatternId;
 use knhk_workflow_engine::testing::chicago_tdd::*;
 use knhk_workflow_engine::testing::mutation::*;
 use knhk_workflow_engine::testing::property::*;
@@ -121,7 +122,7 @@ async fn test_approval_workflow_with_exclusive_choice() {
         .with_start_condition("condition:start")
         .add_task(
             TaskBuilder::new("task:route", "Route Approval")
-                .with_split_type(crate::parser::SplitType::Xor)
+                .with_split_type(SplitType::Xor)
                 .build(),
         )
         .build();
@@ -157,7 +158,7 @@ async fn test_approval_workflow_mutation_testing() {
     tester.apply_mutation(MutationOperator::RemoveTask("task:approve".to_string()));
     tester.apply_mutation(MutationOperator::ChangeSplitType(
         "task:approve".to_string(),
-        crate::parser::SplitType::Or,
+        SplitType::Or,
     ));
 
     // Act: Test if mutations are caught
@@ -275,7 +276,7 @@ async fn test_mutation_score_validation() {
     ));
     tester.apply_mutation(MutationOperator::ChangeTaskType(
         "task:2".to_string(),
-        crate::parser::TaskType::Composite,
+        TaskType::Composite,
     ));
 
     // Act: Test mutation detection

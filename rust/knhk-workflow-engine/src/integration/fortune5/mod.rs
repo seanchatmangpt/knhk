@@ -18,4 +18,3 @@ mod slo;
 pub use config::*;
 pub use integration::Fortune5Integration;
 pub use slo::{RuntimeClass, SloManager, SloMetrics};
-

@@ -14,6 +14,7 @@
 4. **pipeline** - ETL pipeline operations
 5. **epoch** - Execution epoch operations
 6. **context** - Context management operations
+7. **workflow** - Workflow engine operations ✅
 
 ### Verbs Implemented
 
@@ -50,6 +51,18 @@
 - `create` - Create context
 - `use` - Use context
 
+#### Workflow Verbs ✅
+- `parse` - Parse workflow from Turtle file
+- `register` - Register workflow specification
+- `create` - Create workflow case
+- `start` - Start case execution
+- `execute` - Execute workflow case
+- `get` - Get case status
+- `cancel` - Cancel case
+- `list` - List cases
+- `patterns` - List all 43 patterns
+- `serve` - Start REST API server
+
 ## Usage Pattern
 
 ```bash
@@ -61,12 +74,16 @@ Examples:
 - `knhk connector create kafka-prod --type kafka`
 - `knhk receipt verify receipt-123`
 - `knhk pipeline run --connectors kafka-prod`
+- `knhk workflow parse workflow.ttl` ✅
+- `knhk workflow register workflow.ttl` ✅
+- `knhk workflow patterns` ✅
 
 ## Next Steps
 
-1. Verify clap-noun-verb crate availability
-2. Integrate with actual knhk crates (knhk-hot, knhk-etl, etc.)
+1. ✅ Verify clap-noun-verb crate availability
+2. ✅ Integrate with actual knhk crates (knhk-hot, knhk-etl, knhk-workflow-engine)
 3. Add output formatting (JSON, table)
 4. Add error handling
 5. Add configuration file support
+6. ✅ Add workflow engine integration
 

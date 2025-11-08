@@ -43,6 +43,20 @@ rust/knhk-cli/
 ### Epoch Commands
 - `epoch create <id> <tau> <lambda>` - Create epoch
 
+### Workflow Commands
+- `workflow parse` - Parse workflow from Turtle file
+- `workflow register` - Register workflow specification
+- `workflow create` - Create workflow case
+- `workflow start` - Start case execution
+- `workflow execute` - Execute workflow case
+- `workflow get` - Get case status
+- `workflow cancel` - Cancel case
+- `workflow list` - List cases
+- `workflow patterns` - List all 43 patterns
+- `workflow serve` - Start REST API server
+
+See **[Workflow Commands](WORKFLOW_COMMANDS.md)** for complete documentation.
+
 ### Pipeline Commands
 - `pipeline run [--connectors] [--schema]` - Run ETL pipeline
 

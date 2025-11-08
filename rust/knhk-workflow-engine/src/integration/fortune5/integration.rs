@@ -55,9 +55,10 @@ impl Fortune5Integration {
             }
         }
 
-        let slo_manager = config.slo.as_ref().map(|slo| {
-            Arc::new(SloManager::new(slo.clone()))
-        });
+        let slo_manager = config
+            .slo
+            .as_ref()
+            .map(|slo| Arc::new(SloManager::new(slo.clone())));
 
         let promotion_state = Arc::new(RwLock::new(PromotionState {
             environment: config
@@ -124,7 +125,7 @@ impl Fortune5Integration {
 
         // Check environment-specific rules
         match promotion_config.environment {
-            Environment::Staging => Ok(true), // Staging: always allow
+            Environment::Staging => Ok(true),     // Staging: always allow
             Environment::Development => Ok(true), // Development: always allow
             Environment::Production => Ok(slo_compliant), // Production: require SLO compliance
         }
@@ -151,4 +152,3 @@ impl Fortune5Integration {
         }
     }
 }
-

@@ -40,13 +40,17 @@ knhk receipt <receipt_id>
 # List routes
 knhk route list
 
-# Show configuration
-knhk config show
+# Show workflow patterns
+knhk workflow patterns
 
-# Get help
-knhk --help
-knhk <noun> --help  # e.g., knhk pipeline --help
-```
+# Parse and register workflow
+knhk workflow parse workflow.ttl
+knhk workflow register workflow.ttl
+
+# Create and execute workflow case
+knhk workflow create <spec-id> --data '{"key":"value"}'
+knhk workflow start <case-id>
+knhk workflow execute <case-id>
 
 ## Quick Reference
 
@@ -85,6 +89,8 @@ knhk pipeline status
 - ✅ **Chicago TDD quality assurance** (36/36 tests passing)
 - ✅ **Distributed locking** with receipt verification
 - ✅ **Multi-connector support** (Kafka, Salesforce, custom)
+- ✅ **Workflow engine integration** (43 YAWL patterns, REST API, CLI)
+- ✅ **Enterprise workflow management** (cases, patterns, state persistence)
 
 ## Performance
 
