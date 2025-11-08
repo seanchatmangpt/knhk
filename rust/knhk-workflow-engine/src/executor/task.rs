@@ -155,36 +155,11 @@ pub(super) async fn execute_task_with_allocation(
                 }
             } else {
                 // Automated task: Execute via connector integration
-                // Check if engine has connector integration
-                if let Some(ref connectors) = engine.connector_registry {
-                    // Find appropriate connector for task
-                    if let Some(connector) = connectors.get_connector_for_task(&task.id) {
-                        // Execute task via connector
-                        let result =
-                            connector
-                                .execute_task(&task.id, &case.data)
-                                .await
-                                .map_err(|e| {
-                                    WorkflowError::TaskExecutionFailed(format!(
-                                        "Connector execution failed for task {}: {}",
-                                        task.id, e
-                                    ))
-                                })?;
-
-                        // Update case with connector result
-                        engine.update_case(case_id, result).await?;
-                    } else {
-                        return Err(WorkflowError::TaskExecutionFailed(format!(
-                            "No connector available for automated task {}",
-                            task.id
-                        )));
-                    }
-                } else {
-                    return Err(WorkflowError::TaskExecutionFailed(format!(
-                        "Connector registry not available - task {} requires connector integration",
-                        task.id
-                    )));
-                }
+                // FUTURE: Add connector integration for automated atomic tasks
+                // For now, return error indicating connector execution is not implemented
+                return Err(WorkflowError::TaskExecutionFailed(
+                    format!("Automated atomic task execution requires connector integration - task {} needs connector implementation", task.id)
+                ));
             }
         }
         crate::parser::TaskType::Composite => {

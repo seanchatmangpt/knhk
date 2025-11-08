@@ -259,9 +259,7 @@ impl<T: Timebase + 'static> TimerService<T> {
                             if let Some(ref rrule) = entry.rrule {
                                 // Parse RRULE (iCalendar format: FREQ=DAILY;INTERVAL=1;BYHOUR=9)
                                 // For now, support basic FREQ patterns
-                                if let Some(next_due) =
-                                    Self::parse_rrule_and_calculate_next(rrule, now)
-                                {
+                                if let Some(next_due) = parse_rrule_and_calculate_next(rrule, now) {
                                     // Update timer with next occurrence
                                     let mut timers_write = timers.write().await;
                                     if let Some(timer_entry) = timers_write.get_mut(id) {
@@ -308,6 +306,45 @@ impl<T: Timebase> Clone for TimerService<T> {
             state_store: self.state_store.clone(),
             next_timer_id: Arc::clone(&self.next_timer_id),
         }
+    }
+}
+
+/// Parse RRULE and calculate next occurrence
+fn parse_rrule_and_calculate_next(rrule: &str, current: DateTime<Utc>) -> Option<DateTime<Utc>> {
+    // Parse basic RRULE patterns (FREQ=DAILY|WEEKLY|MONTHLY|YEARLY;INTERVAL=n)
+    let mut freq = None;
+    let mut interval = 1u32;
+
+    for part in rrule.split(';') {
+        if let Some((key, value)) = part.split_once('=') {
+            match key.trim() {
+                "FREQ" => {
+                    freq = Some(value.trim());
+                }
+                "INTERVAL" => {
+                    interval = value.trim().parse().unwrap_or(1);
+                }
+                _ => {} // Ignore other RRULE parameters for now
+            }
+        }
+    }
+
+    if let Some(frequency) = freq {
+        match frequency {
+            "DAILY" => Some(current + chrono::Duration::days(interval as i64)),
+            "WEEKLY" => Some(current + chrono::Duration::weeks(interval as i64)),
+            "MONTHLY" => {
+                // Approximate month as 30 days
+                Some(current + chrono::Duration::days(30 * interval as i64))
+            }
+            "YEARLY" => {
+                // Approximate year as 365 days
+                Some(current + chrono::Duration::days(365 * interval as i64))
+            }
+            _ => None,
+        }
+    } else {
+        None
     }
 }
 

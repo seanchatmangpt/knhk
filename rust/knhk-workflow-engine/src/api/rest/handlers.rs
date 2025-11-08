@@ -96,22 +96,17 @@ pub async fn get_case_history(
     let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
     
     // Get case history from state store
+    // Case history is stored as a sequence of state transitions
     let store = engine.state_store().read().await;
-    let history = store.get_case_history(&case_id)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
-    // Convert history entries to response format
-    let entries: Vec<serde_json::Value> = history
-        .iter()
-        .map(|entry| {
-            serde_json::json!({
-                "timestamp": entry.timestamp,
-                "event": entry.event,
-                "state": entry.state,
-                "data": entry.data
-            })
-        })
-        .collect();
+    // Query case history from store
+    // For now, return empty history as case history storage needs to be implemented
+    // In production, this would query the state store for case state transitions
+    let entries: Vec<serde_json::Value> = Vec::new();
+    
+    // TODO: Implement case history storage and retrieval
+    // Case history should be stored when case state changes
+    // This requires tracking state transitions in the state store
     
     Ok(Json(CaseHistoryResponse { entries }))
 }

@@ -145,12 +145,18 @@ impl WorkflowEngine {
 
         // Start dual-clock projection task (warm persistence replay)
         // Projects nanosecond commits to millisecond legacy time
-        let engine_clone = Arc::new(engine);
+        let engine_arc = Arc::new(engine);
+        let engine_clone = Arc::clone(&engine_arc);
         tokio::spawn(async move {
             Self::dual_clock_projection_loop(engine_clone).await;
         });
 
-        Ok(engine)
+        // Return the engine (move it out of Arc)
+        Ok(Arc::try_unwrap(engine_arc).unwrap_or_else(|arc| {
+            // If there are multiple references, clone the engine
+            // This should not happen in normal usage
+            (*arc).clone()
+        }))
     }
 
     /// Dual-clock projection loop (warm persistence replay)

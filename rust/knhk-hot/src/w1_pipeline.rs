@@ -172,7 +172,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
         while mask != 0 {
             let bit_pos = mask.trailing_zeros() as u32;
             if bit_pos < 8 {
-                index.structural_chars.push(pos + bit_pos);
+                index.structural_chars.push((pos as u32) + bit_pos);
             }
             mask &= mask - 1; // Clear lowest set bit
         }
@@ -182,7 +182,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
         while mask != 0 {
             let bit_pos = mask.trailing_zeros() as u32;
             if bit_pos < 8 {
-                index.structural_chars.push(pos + bit_pos);
+                index.structural_chars.push((pos as u32) + bit_pos);
             }
             mask &= mask - 1; // Clear lowest set bit
         }
