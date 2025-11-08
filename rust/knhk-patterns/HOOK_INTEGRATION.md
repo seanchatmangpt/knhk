@@ -518,10 +518,209 @@ let result = reflex_stage.reflex(load_result)?;
 let result = reflex_stage.reflex_with_patterns(load_result, pattern)?;
 ```
 
+## Cold Path Hook Patterns
+
+### Unrdf Hook Execution
+
+Cold path hooks use SPARQL ASK queries for complex validation:
+
+```rust
+use knhk_unrdf::{init_unrdf, register_hook, execute_hook, HookDefinition, SparqlQueryType};
+use knhk_patterns::unrdf_patterns::{UnrdfSequencePattern, UnrdfParallelPattern};
+
+// Initialize unrdf
+init_unrdf("./vendors/unrdf")?;
+
+// Register hooks
+let hook1 = HookDefinition {
+    id: "check-permission".to_string(),
+    name: "Permission Check".to_string(),
+    hook_type: "ask".to_string(),
+    definition: json!({
+        "when": {
+            "query": "ASK WHERE { ?s <http://example.org/hasPermission> ?o }"
+        }
+    }),
+};
+
+register_hook(&hook1)?;
+
+// Execute hooks with patterns
+let hook_ids = vec!["check-permission".to_string(), "validate-schema".to_string()];
+let pattern = UnrdfSequencePattern::new(hook_ids)?;
+let results = pattern.execute_hooks(turtle_data)?;
+```
+
+### Batch Hook Evaluation
+
+Execute multiple unrdf hooks in parallel:
+
+```rust
+use knhk_patterns::unrdf_patterns::UnrdfParallelPattern;
+use knhk_unrdf::hooks_native::evaluate_hooks_batch_native;
+
+let hook_ids = vec!["hook1".to_string(), "hook2".to_string(), "hook3".to_string()];
+let pattern = UnrdfParallelPattern::new(hook_ids)?;
+let results = pattern.execute_hooks(turtle_data)?;
+```
+
+### Epoch-Based Ordering
+
+Execute hooks in epoch order (Λ):
+
+```rust
+use knhk_unrdf::hooks_native::NativeHookRegistry;
+
+let registry = NativeHookRegistry::new();
+let epoch_order = vec!["hook1".to_string(), "hook2".to_string(), "hook3".to_string()];
+
+// Validate epoch order is ≺-total
+NativeHookRegistry::validate_epoch_order(&epoch_order)?;
+
+// Select hooks in epoch order
+let hooks = registry.select_by_epoch_order(&epoch_order)?;
+```
+
+## Hybrid Hot/Cold Path Patterns
+
+### Conditional Routing Between Paths
+
+Route execution between hot and cold paths based on complexity:
+
+```rust
+use knhk_patterns::hybrid_patterns::HybridChoicePattern;
+use knhk_etl::hook_registry::HookRegistry;
+
+let hot_registry = HookRegistry::new();
+let cold_hook_ids = vec!["complex-policy".to_string()];
+
+let pattern = HybridChoicePattern::new(
+    |context| {
+        // Route to cold path if predicate count > 8
+        context.predicate_runs.len() > 8
+    },
+    hot_registry,
+    cold_hook_ids,
+)?;
+
+let results = pattern.execute(&context)?;
+```
+
+### Sequential Hot → Cold Execution
+
+Execute hot path hooks first, then cold path hooks:
+
+```rust
+use knhk_patterns::hybrid_patterns::HybridSequencePattern;
+
+let hot_predicates = vec![pred1, pred2, pred3];
+let cold_hook_ids = vec!["policy-validation".to_string()];
+
+let pattern = HybridSequencePattern::new(
+    hot_predicates,
+    cold_hook_ids,
+    hot_registry,
+)?;
+
+let results = pattern.execute(&context)?;
+```
+
+### Parallel Hot + Cold Execution
+
+Execute hot and cold path hooks concurrently:
+
+```rust
+use knhk_patterns::hybrid_patterns::HybridParallelPattern;
+
+let hot_predicates = vec![pred1, pred2];
+let cold_hook_ids = vec!["background-policy".to_string()];
+
+let pattern = HybridParallelPattern::new(
+    hot_predicates,
+    cold_hook_ids,
+    hot_registry,
+)?;
+
+let results = pattern.execute(&context)?;
+```
+
+## Performance Considerations
+
+### Hot Path Constraints
+
+- **Tick Budget**: Each hook must complete in ≤8 ticks (2ns)
+- **Zero-Copy**: Use references over clones where possible
+- **SIMD-Aware**: Structure of Arrays (SoA) layout
+- **Branchless**: Constant-time operations for hot path
+
+### Cold Path Flexibility
+
+- **Latency Budget**: >500ms for complex operations
+- **Parallel Execution**: Rayon for batch evaluation
+- **Query Caching**: LRU cache for repeated queries
+- **Constitution Validation**: Schema and invariant checks
+
+### Hybrid Patterns
+
+- **Early Exit**: Hot path failures can skip cold path
+- **Conditional Routing**: Route based on complexity/completeness
+- **Receipt Aggregation**: Merge receipts from both paths
+- **Tick Tracking**: Track ticks separately for hot vs cold
+
+## Examples
+
+### Example 1: Hot Path Parallel Validation
+
+Execute multiple hot path hooks in parallel:
+
+```rust
+use knhk_patterns::hook_patterns::HookParallelPattern;
+use knhk_etl::hook_registry::HookRegistry;
+
+let registry = HookRegistry::new();
+let predicates = vec![pred1, pred2, pred3];
+
+let pattern = HookParallelPattern::new(predicates)?;
+let results = pattern.execute_hooks(&context)?;
+```
+
+### Example 2: Cold Path Batch Evaluation
+
+Execute multiple unrdf hooks in batch:
+
+```rust
+use knhk_patterns::unrdf_patterns::UnrdfParallelPattern;
+
+let hook_ids = vec!["policy1".to_string(), "policy2".to_string()];
+let pattern = UnrdfParallelPattern::new(hook_ids)?;
+let results = pattern.execute_hooks(turtle_data)?;
+```
+
+### Example 3: Hybrid Hot → Cold Pipeline
+
+Execute hot path hooks first, then cold path hooks:
+
+```rust
+use knhk_patterns::hybrid_patterns::HybridSequencePattern;
+
+let hot_predicates = vec![pred1, pred2];
+let cold_hooks = vec!["complex-validation".to_string()];
+
+let pattern = HybridSequencePattern::new(
+    hot_predicates,
+    cold_hooks,
+    hot_registry,
+)?;
+
+let results = pattern.execute(&context)?;
+```
+
 ## References
 
 - [Van der Aalst Workflow Patterns](http://www.workflowpatterns.com/)
 - [KNHK Reflex Architecture](book/src/architecture/reflex.md)
 - [Hook Registry Documentation](rust/knhk-etl/src/hook_registry.rs)
+- [Unrdf Hook Documentation](rust/knhk-unrdf/README.md)
 - [Pattern Documentation](rust/knhk-patterns/PATTERNS.md)
+- [Hot/Cold Path Architecture](docs/v1.0-unrdf-gap-analysis.md)
 

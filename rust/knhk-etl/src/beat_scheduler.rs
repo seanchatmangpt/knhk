@@ -529,7 +529,7 @@ mod tests {
         // Should wrap around to tick 0
         let (tick, pulse) = scheduler.advance_beat();
         assert_eq!(tick, 0);
-        assert_eq!(pulse, true);
+        assert!(pulse);
     }
 
     #[test]
