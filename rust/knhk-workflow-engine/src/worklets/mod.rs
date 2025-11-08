@@ -282,6 +282,7 @@ impl WorkletExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::WorkflowSpecId;
 
     #[tokio::test]
     async fn test_worklet_registration() {

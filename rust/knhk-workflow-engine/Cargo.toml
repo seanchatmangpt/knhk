@@ -86,6 +86,10 @@ default = ["unrdf"]
 unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
 rdf = []
 
+[[example]]
+name = "workflow_weaver_livecheck"
+path = "examples/workflow_weaver_livecheck.rs"
+
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3.8"

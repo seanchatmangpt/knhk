@@ -240,6 +240,7 @@ impl DeadlockDetector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::Task;
 
     #[test]
     fn test_deadlock_detection_no_deadlock() {

@@ -1,0 +1,88 @@
+# Self-Hosting Workflow: Using Workflow Engine to Manage Its Own Build/Test/Deploy
+# This workflow uses the workflow engine to manage its own development lifecycle
+# "Eating our own dog food" - validating the engine by using it for itself
+
+@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix workflow: <http://knhk.org/ns/workflow#> .
+
+<http://knhk.org/workflows/self-hosted>
+    a yawl:WorkflowSpecification ;
+    rdfs:label "Self-Hosting Workflow Engine Development" ;
+    yawl:hasTask <http://knhk.org/workflows/self-hosted/check> ;
+    yawl:hasTask <http://knhk.org/workflows/self-hosted/build> ;
+    yawl:hasTask <http://knhk.org/workflows/self-hosted/test> ;
+    yawl:hasTask <http://knhk.org/workflows/self-hosted/deploy> ;
+    yawl:hasCondition <http://knhk.org/workflows/self-hosted/start> ;
+    yawl:hasCondition <http://knhk.org/workflows/self-hosted/end> .
+
+<http://knhk.org/workflows/self-hosted/start>
+    a yawl:StartCondition ;
+    rdfs:label "Start" .
+
+<http://knhk.org/workflows/self-hosted/check>
+    a yawl:AtomicTask ;
+    rdfs:label "Check Code" ;
+    yawl:splitType yawl:Xor ;
+    yawl:joinType yawl:Xor ;
+    yawl:maxTicks 8 ;
+    yawl:priority 255 ;
+    yawl:useSimd true .
+
+<http://knhk.org/workflows/self-hosted/build>
+    a yawl:AtomicTask ;
+    rdfs:label "Build" ;
+    yawl:splitType yawl:Xor ;
+    yawl:joinType yawl:Xor ;
+    yawl:maxTicks 8 ;
+    yawl:priority 200 ;
+    yawl:useSimd true .
+
+<http://knhk.org/workflows/self-hosted/test>
+    a yawl:AtomicTask ;
+    rdfs:label "Test" ;
+    yawl:splitType yawl:Xor ;
+    yawl:joinType yawl:Xor ;
+    yawl:maxTicks 8 ;
+    yawl:priority 200 ;
+    yawl:useSimd true .
+
+<http://knhk.org/workflows/self-hosted/deploy>
+    a yawl:AtomicTask ;
+    rdfs:label "Deploy" ;
+    yawl:splitType yawl:Xor ;
+    yawl:joinType yawl:Xor ;
+    yawl:maxTicks 8 ;
+    yawl:priority 100 ;
+    yawl:useSimd true .
+
+<http://knhk.org/workflows/self-hosted/end>
+    a yawl:EndCondition ;
+    rdfs:label "End" .
+
+<http://knhk.org/workflows/self-hosted/flow1>
+    a yawl:Flow ;
+    yawl:from <http://knhk.org/workflows/self-hosted/start> ;
+    yawl:to <http://knhk.org/workflows/self-hosted/check> .
+
+<http://knhk.org/workflows/self-hosted/flow2>
+    a yawl:Flow ;
+    yawl:from <http://knhk.org/workflows/self-hosted/check> ;
+    yawl:to <http://knhk.org/workflows/self-hosted/build> .
+
+<http://knhk.org/workflows/self-hosted/flow3>
+    a yawl:Flow ;
+    yawl:from <http://knhk.org/workflows/self-hosted/build> ;
+    yawl:to <http://knhk.org/workflows/self-hosted/test> .
+
+<http://knhk.org/workflows/self-hosted/flow4>
+    a yawl:Flow ;
+    yawl:from <http://knhk.org/workflows/self-hosted/test> ;
+    yawl:to <http://knhk.org/workflows/self-hosted/deploy> .
+
+<http://knhk.org/workflows/self-hosted/flow5>
+    a yawl:Flow ;
+    yawl:from <http://knhk.org/workflows/self-hosted/deploy> ;
+    yawl:to <http://knhk.org/workflows/self-hosted/end> .
+

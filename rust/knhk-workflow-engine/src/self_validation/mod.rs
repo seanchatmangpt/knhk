@@ -3,11 +3,13 @@
 //! Uses the workflow engine to validate itself - "eating our own dog food".
 //! This demonstrates that the engine can manage its own validation and testing.
 
+mod workflow;
+
 use crate::capabilities::{validate_capabilities, CapabilityRegistry, CapabilityValidationReport};
-use crate::case::{Case, CaseId, CaseState};
+use crate::case::{CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::executor::WorkflowEngine;
-use crate::parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
+use crate::parser::{WorkflowParser, WorkflowSpecId};
 use crate::patterns::PatternRegistry;
 use crate::state::StateStore;
 use std::path::Path;
@@ -41,16 +43,13 @@ impl SelfValidationManager {
 
         // Create a workflow case for capability validation
         let spec_id = WorkflowSpecId::new();
-        let case = Case::new(
-            spec_id,
-            serde_json::json!({
-                "validation_type": "capabilities",
-                "timestamp": chrono::Utc::now().to_rfc3339(),
-            }),
-        );
+        let data = serde_json::json!({
+            "validation_type": "capabilities",
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        });
 
         // Execute validation workflow
-        let _case_id = self.engine.create_case(case)?;
+        let _case_id = self.engine.create_case(spec_id, data).await?;
 
         // Validate pattern registry
         self.validate_pattern_registry()?;
@@ -96,19 +95,18 @@ impl SelfValidationManager {
         let _parsed_spec = parser.parse_turtle(&spec)?;
 
         // Create a case for validation
-        let case = Case::new(
-            WorkflowSpecId::new(),
-            serde_json::json!({
-                "validation_type": "engine",
-                "timestamp": chrono::Utc::now().to_rfc3339(),
-            }),
-        );
+        let spec_id = WorkflowSpecId::new();
+        let data = serde_json::json!({
+            "validation_type": "engine",
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        });
 
         // Execute the validation case
-        let case_id = self.engine.create_case(case)?;
+        let case_id = self.engine.create_case(spec_id, data).await?;
 
         // Get case state
-        let case_state = self.engine.get_case(&case_id)?;
+        let case = self.engine.get_case(case_id).await?;
+        let case_state = case.state.clone();
 
         // Validate engine capabilities
         let capability_report = validate_capabilities()?;
@@ -123,58 +121,9 @@ impl SelfValidationManager {
     }
 
     /// Create validation workflow specification
-    fn create_validation_spec(&self) -> WorkflowResult<String> {
-        // Create a simple validation workflow in Turtle format
-        let turtle = r#"
-@prefix yawl: <http://www.yawlfoundation.org/xsd/yawl_20#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-
-<http://knhk.org/workflow/self-validation>
-    rdf:type yawl:WorkflowSpecification ;
-    rdfs:label "Self-Validation Workflow" ;
-    yawl:hasStartCondition <http://knhk.org/workflow/self-validation/start> ;
-    yawl:hasEndCondition <http://knhk.org/workflow/self-validation/end> .
-
-<http://knhk.org/workflow/self-validation/start>
-    rdf:type yawl:Condition ;
-    rdfs:label "Start" .
-
-<http://knhk.org/workflow/self-validation/validate-patterns>
-    rdf:type yawl:Task ;
-    rdf:type yawl:AtomicTask ;
-    rdfs:label "Validate Patterns" ;
-    yawl:splitType "AND" ;
-    yawl:joinType "AND" .
-
-<http://knhk.org/workflow/self-validation/validate-capabilities>
-    rdf:type yawl:Task ;
-    rdf:type yawl:AtomicTask ;
-    rdfs:label "Validate Capabilities" ;
-    yawl:splitType "AND" ;
-    yawl:joinType "AND" .
-
-<http://knhk.org/workflow/self-validation/end>
-    rdf:type yawl:Condition ;
-    rdfs:label "End" .
-
-<http://knhk.org/workflow/self-validation/flow1>
-    rdf:type yawl:Flow ;
-    yawl:source <http://knhk.org/workflow/self-validation/start> ;
-    yawl:target <http://knhk.org/workflow/self-validation/validate-patterns> .
-
-<http://knhk.org/workflow/self-validation/flow2>
-    rdf:type yawl:Flow ;
-    yawl:source <http://knhk.org/workflow/self-validation/validate-patterns> ;
-    yawl:target <http://knhk.org/workflow/self-validation/validate-capabilities> .
-
-<http://knhk.org/workflow/self-validation/flow3>
-    rdf:type yawl:Flow ;
-    yawl:source <http://knhk.org/workflow/self-validation/validate-capabilities> ;
-    yawl:target <http://knhk.org/workflow/self-validation/end> .
-"#;
-
-        Ok(turtle.to_string())
+    pub fn create_validation_spec(&self) -> WorkflowResult<String> {
+        use crate::self_validation::workflow::SELF_VALIDATION_WORKFLOW;
+        Ok(SELF_VALIDATION_WORKFLOW.to_string())
     }
 
     /// Run self-validation workflow
