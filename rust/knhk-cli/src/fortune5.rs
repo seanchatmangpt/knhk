@@ -10,7 +10,7 @@ use clap_noun_verb_macros::verb;
 use serde::Serialize;
 
 // Re-export types from implementation
-pub use fortune5::{TestResult, TestSummary};
+pub use crate::fortune5::{TestResult, TestSummary};
 
 /// Run all Fortune 5 tests
 #[verb] // Noun "fortune5" auto-inferred from filename "fortune5.rs"
@@ -79,7 +79,7 @@ fn validate() -> Result<String> {
 fn status() -> Result<String> {
     #[cfg(feature = "fortune5")]
     {
-        fortune5_impl::show_status().map_err(|e| {
+        fortune5::show_status().map_err(|e| {
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to get Fortune 5 status: {}",
                 e

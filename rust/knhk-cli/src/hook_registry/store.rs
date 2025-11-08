@@ -78,10 +78,11 @@ impl HookStore {
                 let mut o: Option<u64> = None;
                 let mut k: Option<u64> = None;
 
-                for (var, term) in solution.iter() {
-                    if let oxigraph::model::Term::Literal(lit) = term {
-                        let value = lit.value();
-                        match var.as_str() {
+                for var in solution.variables() {
+                    if let Some(term) = solution.get(var) {
+                        if let oxigraph::model::Term::Literal(lit) = term {
+                            let value = lit.value();
+                            match var.as_str() {
                             "id" => id = Some(value.to_string()),
                             "name" => name = Some(value.to_string()),
                             "op" => op = Some(value.to_string()),
@@ -269,9 +270,9 @@ impl HookStore {
         // Insert graph into store
         for triple in graph.iter() {
             let quad = Quad::new(
-                triple.subject().into(),
-                triple.predicate().into(),
-                triple.object().into(),
+                triple.subject.into(),
+                triple.predicate.into(),
+                triple.object.into(),
                 GraphName::DefaultGraph,
             );
             store

@@ -156,8 +156,13 @@ impl IngestStage {
 
         // Try array format: [{"s": "...", "p": "...", "o": "..."}]
         if let Some(arr) = value.as_array() {
-            let arr_vec: Vec<simd_json::OwnedValue> = arr.to_vec();
-            return Self::parse_json_triple_array(&simd_json::OwnedValue::Array(arr_vec.into()));
+            // Convert array slice to owned values and parse directly
+            let mut triples = Vec::new();
+            for item in arr {
+                let triple = Self::parse_json_triple(item)?;
+                triples.push(triple);
+            }
+            return Ok(triples);
         }
 
         Err(PipelineError::IngestError(
