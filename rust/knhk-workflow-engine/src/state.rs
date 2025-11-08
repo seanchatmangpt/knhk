@@ -43,7 +43,7 @@ impl StateStore {
             .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?
         {
             Some(value) => {
-                let spec: WorkflowSpec = serde_json::from_slice(&value).map_err(|e| {
+                let spec: WorkflowSpec = serde_json::from_slice(value.as_ref()).map_err(|e| {
                     WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
                 })?;
                 Ok(Some(spec))
@@ -72,7 +72,7 @@ impl StateStore {
             .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?
         {
             Some(value) => {
-                let case: Case = serde_json::from_slice(&value).map_err(|e| {
+                let case: Case = serde_json::from_slice(value.as_ref()).map_err(|e| {
                     WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
                 })?;
                 Ok(Some(case))
@@ -93,7 +93,7 @@ impl StateStore {
             let (_, value) = result
                 .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
 
-            let case: Case = serde_json::from_slice(&value).map_err(|e| {
+            let case: Case = serde_json::from_slice(value.as_ref()).map_err(|e| {
                 WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
             })?;
 

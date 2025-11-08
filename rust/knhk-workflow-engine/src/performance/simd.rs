@@ -6,6 +6,7 @@
 use std::arch::x86_64::*;
 
 #[cfg(target_arch = "aarch64")]
+#[allow(unused_imports)] // Only used conditionally
 use std::arch::aarch64::*;
 
 /// Check if SIMD is available

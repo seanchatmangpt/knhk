@@ -15,6 +15,10 @@ authors = ["KNHK Team"]
 name = "knhk_workflow_engine"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
+[[bin]]
+name = "knhk-workflow"
+path = "src/bin/knhk-workflow.rs"
+
 [dependencies]
 # KNHK infrastructure
 knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
@@ -47,6 +51,9 @@ prost-types = "0.12"
 axum = { version = "0.7", features = ["json", "multipart"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
 
 # Collections & utilities
 uuid = { version = "1.0", features = ["v4", "serde"] }

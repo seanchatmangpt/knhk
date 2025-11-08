@@ -4,7 +4,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+// Configuration module - HashMap will be used when implementing config loading
 use std::path::Path;
 
 /// Configuration loader

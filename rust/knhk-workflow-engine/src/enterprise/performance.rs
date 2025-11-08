@@ -6,7 +6,7 @@
 //! - Caching strategies
 //! - Performance monitoring
 
-use crate::error::WorkflowResult;
+// Performance configuration - WorkflowResult will be used when implementing validation
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};

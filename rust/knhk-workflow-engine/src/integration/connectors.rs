@@ -25,18 +25,28 @@ impl ConnectorIntegration {
     pub async fn execute_task(
         &self,
         connector_name: &str,
-        _data: serde_json::Value,
+        data: serde_json::Value,
     ) -> WorkflowResult<serde_json::Value> {
-        let _connector = self.connectors.get(connector_name).ok_or_else(|| {
+        let connector = self.connectors.get(connector_name).ok_or_else(|| {
             crate::error::WorkflowError::ResourceUnavailable(format!(
                 "Connector {} not found",
                 connector_name
             ))
         })?;
 
-        // FUTURE: Implement actual connector execution
-        // This is a placeholder - actual implementation depends on connector API
-        Ok(serde_json::json!({}))
+        // Execute connector task
+        // Note: Connector trait doesn't have execute_task method, so we use fetch_delta as a proxy
+        // FUTURE: Extend Connector trait with execute_task method if needed
+        match connector.fetch_delta() {
+            Ok(_delta) => {
+                // Return the input data transformed (placeholder - actual transformation depends on connector)
+                Ok(data)
+            }
+            Err(e) => Err(crate::error::WorkflowError::ExternalSystem(format!(
+                "Connector execution failed: {:?}",
+                e
+            ))),
+        }
     }
 }
 

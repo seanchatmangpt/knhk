@@ -2,9 +2,9 @@
 //!
 //! Provides performance metrics collection and analysis for workflow operations.
 
-use std::collections::HashMap;
+// Metrics module - HashMap will be used when implementing metrics aggregation
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio::sync::RwLock;
 
 /// Performance metric

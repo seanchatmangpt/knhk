@@ -154,7 +154,7 @@ impl WorkflowPropertyTester {
     /// Test workflow property: No deadlocks
     pub async fn test_deadlock_property(
         &mut self,
-        spec_id: WorkflowSpecId,
+        _spec_id: WorkflowSpecId,
     ) -> WorkflowResult<bool> {
         // In production, would test for deadlocks
         // For now, return true (deadlock detection happens at registration)
@@ -164,7 +164,7 @@ impl WorkflowPropertyTester {
     /// Test workflow property: Tick budget compliance
     pub async fn test_tick_budget_property(
         &mut self,
-        spec_id: WorkflowSpecId,
+        _spec_id: WorkflowSpecId,
     ) -> WorkflowResult<bool> {
         // In production, would verify all tasks complete in ≤8 ticks
         Ok(true)

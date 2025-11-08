@@ -5,7 +5,6 @@
 
 use crate::error::WorkflowResult;
 use crate::parser::WorkflowSpec;
-use std::collections::HashMap;
 
 /// Test generator for workflows
 pub struct WorkflowTestGenerator {

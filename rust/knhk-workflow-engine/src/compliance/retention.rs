@@ -2,8 +2,7 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Data retention policies for compliance
 
-// Unused imports removed - will be used when implementing retention
-use crate::error::WorkflowResult;
+// Retention manager implementation
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -6,7 +6,7 @@
 //! - Retry policies
 //! - Promotion gates
 
-use crate::error::WorkflowResult;
+// Reliability configuration - WorkflowResult will be used when implementing validation
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};

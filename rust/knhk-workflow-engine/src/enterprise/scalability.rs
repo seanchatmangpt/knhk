@@ -6,7 +6,7 @@
 //! - State management across instances
 //! - Load balancing
 
-use crate::error::WorkflowResult;
+// Scalability configuration - WorkflowResult will be used when implementing validation
 
 /// Scalability configuration
 #[derive(Debug, Clone)]

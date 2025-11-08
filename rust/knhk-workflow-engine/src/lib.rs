@@ -56,6 +56,7 @@
 #![warn(missing_docs)]
 
 pub mod api;
+pub mod capabilities;
 pub mod case;
 pub mod cluster;
 pub mod compliance;

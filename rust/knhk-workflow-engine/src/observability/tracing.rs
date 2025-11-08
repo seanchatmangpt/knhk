@@ -2,7 +2,7 @@
 //!
 //! Provides distributed tracing for workflow execution using knhk-otel.
 
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use knhk_otel::Tracer;
 use std::sync::Arc;
 
