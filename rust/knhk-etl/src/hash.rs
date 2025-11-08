@@ -12,8 +12,8 @@ use std::collections::hash_map::DefaultHasher;
 #[cfg(feature = "std")]
 use std::hash::Hasher;
 
-use crate::reflex::Action;
 use crate::ingest::RawTriple;
+use crate::reflex::Action;
 
 /// Hash actions for provenance verification
 ///

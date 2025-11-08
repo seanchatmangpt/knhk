@@ -1,9 +1,12 @@
 //! Route commands - Action routing
 
+// Allow non_upper_case_globals - #[verb] macro generates static vars with lowercase names
+#![allow(non_upper_case_globals)]
+
+use crate::commands::route as route_impl;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
-use crate::commands::route as route_impl;
 
 #[derive(Serialize, Debug)]
 struct RouteResult {
@@ -16,7 +19,12 @@ struct RouteResult {
 #[verb] // Noun "route" auto-inferred from filename "route.rs"
 fn install(name: String, kind: String, target: String) -> Result<RouteResult> {
     route_impl::install(name.clone(), kind.clone(), target.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to install route: {}", e)))
+        .map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to install route: {}",
+                e
+            ))
+        })
         .map(|_| RouteResult { name, kind, target })
 }
 
@@ -29,7 +37,8 @@ struct RouteList {
 #[verb] // Noun "route" auto-inferred
 fn list() -> Result<RouteList> {
     route_impl::list()
-        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to list routes: {}", e)))
+        .map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to list routes: {}", e))
+        })
         .map(|routes| RouteList { routes })
 }
-

@@ -6,12 +6,18 @@ use crate::ingest::RawTriple;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+/// Type alias for SoA triple arrays (Subject, Predicate, Object as u64)
+type SoaTriples = (Vec<u64>, Vec<u64>, Vec<u64>);
+
 /// Convert RawTriple to SoA arrays (S, P, O as u64)
 /// Uses hash-based encoding: hash(IRI) → u64
 /// Note: This is a placeholder until MPHF or IRI registry is available
-pub fn raw_triples_to_soa(triples: &[RawTriple]) -> Result<(Vec<u64>, Vec<u64>, Vec<u64>), String> {
+pub fn raw_triples_to_soa(triples: &[RawTriple]) -> Result<SoaTriples, String> {
     if triples.len() > 8 {
-        return Err(format!("Triple count {} exceeds max_run_len 8", triples.len()));
+        return Err(format!(
+            "Triple count {} exceeds max_run_len 8",
+            triples.len()
+        ));
     }
 
     let mut s = Vec::with_capacity(triples.len());
@@ -121,4 +127,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

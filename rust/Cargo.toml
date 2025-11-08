@@ -11,6 +11,7 @@ members = [
     "knhk-aot",
     "knhk-validation",
     "knhk-config",
+    "knhk-patterns",  # Van der Aalst workflow patterns
     # "knhk-sidecar",  # Temporarily excluded - 53 async trait errors, Wave 5 technical debt
     "knhk-cli",
     "knhk-integration-tests",
@@ -25,16 +26,17 @@ authors = ["KNHK Team"]
 [workspace.dependencies]
 # Core system crates (internal)
 knhk-hot = { path = "./knhk-hot", version = "1.0.0" }
-knhk-otel = { path = "./knhk-otel", version = "0.1.0" }
-knhk-connectors = { path = "./knhk-connectors", version = "0.1.0" }
-knhk-lockchain = { path = "./knhk-lockchain", version = "0.1.0" }
-knhk-unrdf = { path = "./knhk-unrdf", version = "0.1.0" }
-knhk-etl = { path = "./knhk-etl", version = "0.1.0" }
-knhk-warm = { path = "./knhk-warm", version = "0.1.0" }
-knhk-aot = { path = "./knhk-aot", version = "0.1.0" }
-knhk-validation = { path = "./knhk-validation", version = "0.1.0" }
-knhk-config = { path = "./knhk-config", version = "0.1.0" }
-knhk-sidecar = { path = "./knhk-sidecar", version = "0.5.0" }
+knhk-otel = { path = "./knhk-otel", version = "1.0.0" }
+knhk-connectors = { path = "./knhk-connectors", version = "1.0.0" }
+knhk-lockchain = { path = "./knhk-lockchain", version = "1.0.0" }
+knhk-unrdf = { path = "./knhk-unrdf", version = "1.0.0" }
+knhk-etl = { path = "./knhk-etl", version = "1.0.0" }
+knhk-warm = { path = "./knhk-warm", version = "1.0.0" }
+knhk-aot = { path = "./knhk-aot", version = "1.0.0" }
+knhk-validation = { path = "./knhk-validation", version = "1.0.0" }
+knhk-config = { path = "./knhk-config", version = "1.0.0" }
+knhk-patterns = { path = "./knhk-patterns", version = "1.0.0" }
+knhk-sidecar = { path = "./knhk-sidecar", version = "1.0.0" }
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }

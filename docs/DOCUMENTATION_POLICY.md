@@ -184,7 +184,7 @@ Sprint End:
 - [x] Pull request template (`.github/PULL_REQUEST_TEMPLATE.md`)
 - [x] Pull system script (`scripts/doc-pull.sh`)
 - [x] Documentation policy (`docs/DOCUMENTATION_POLICY.md`)
-- [ ] Archive duplicate/speculative docs to `docs/archived/`
+- [x] Archive duplicate/speculative docs to `docs/archived/`
 - [ ] Update README.md with pull system usage
 - [ ] Train team on pull system commands
 
@@ -268,6 +268,100 @@ ls /Users/sac/knhk/docs/ | grep -E "(STATUS|DFLSS|8BEAT|WEAVER).md"
 - [x] Eliminated 2.4h transportation waste (100% reduction)
 
 **Result**: 92 evidence files co-located in single directory, 99% faster file access.
+
+---
+
+## Rule 7: Documentation Consolidation (80/20 Principle)
+
+**Problem**: Duplicate documentation creates confusion and maintenance burden:
+- Multiple status files (`STATUS.md`, `V1-STATUS.md`)
+- Multiple Weaver docs (`weaver-integration.md`, `WEAVER.md`)
+- Root-level files scattered across repository
+- Broken links pointing to archived files
+
+**Solution**: Consolidate to single canonical files, archive duplicates, update all links.
+
+### Consolidation Rules
+
+1. **Single Canonical File Per Topic**
+   - Status: `V1-STATUS.md` (canonical), archive `STATUS.md`
+   - Weaver: `WEAVER.md` (canonical), archive `weaver-integration.md`
+   - DFLSS: `DFLSS_DEFINITION_OF_DONE.spr.md` (canonical), archive `DFLSS_PROJECT_CHARTER.md`
+   - Reflex Enterprise: `REFLEX_ENTERPRISE_BLUEPRINT.md` (canonical), archive variants
+
+2. **Archive Structure**
+   - `docs/archived/status-reports/` - Historical status/completion reports
+   - `docs/archived/planning/` - Planning documents and charters
+   - `docs/archived/weaver-docs/` - Consolidated Weaver documentation
+   - `docs/archived/product/` - Product documentation variants
+
+3. **Link Updates**
+   - All internal links updated to point to canonical files
+   - Archive index (`ARCHIVE_INDEX.md`) catalogs all archived files
+   - Documentation index (`INDEX.md`) references only canonical files
+
+### Consolidation Results (2025-01-XX)
+
+**Files Archived**:
+- Root-level: 17 status/completion/fix reports → `docs/archived/status-reports/`
+- Root-level: 2 planning files → `docs/archived/planning/`
+- Docs-level: 1 status file (`STATUS.md`) → `docs/archived/status-reports/`
+- Docs-level: 1 Weaver file (`weaver-integration.md`) → `docs/archived/weaver-docs/`
+- Docs-level: 2 DFLSS files → `docs/archived/planning/`
+- Docs-level: 6 Reflex Enterprise variants → `docs/archived/product/`
+
+**Total**: 29 files archived, single canonical file per topic established
+
+**Links Updated**:
+- `docs/README.md` - Updated Weaver reference
+- `docs/deprecated-apis.md` - Updated status reference
+- `docs/FALSE_POSITIVES_RESOLVED.md` - Updated status reference
+- `docs/CHICAGO_TDD.md` - Updated status reference
+- `rust/knhk-otel/README.md` - Updated Weaver reference
+- `rust/knhk-otel/docs/README.md` - Updated Weaver reference
+- `rust/knhk-unrdf/README.md` - Updated integration reference
+
+**Index Files Updated**:
+- `docs/INDEX.md` - Added status section, updated archive references
+- `docs/ARCHIVE_INDEX.md` - Added newly archived files with categories
+- `docs/EVIDENCE_INDEX.md` - Verified evidence indexing (no changes needed)
+
+### Consolidation Benefits
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Status files | 2 | 1 | 50% reduction |
+| Weaver docs | 2 | 1 | 50% reduction |
+| Root-level docs | 17 | 0 | 100% cleanup |
+| Broken links | 7 | 0 | 100% fixed |
+| Canonical files | Mixed | Clear | Single source of truth |
+
+### Verification
+
+```bash
+# ✅ No root-level status files
+ls *.md | grep -E "(DOD|STATUS|FIXES|GAPS|MISSED|COMPILATION|VALIDATION|DEFINITION|SHELL|QUICK)"
+
+# ✅ Canonical files exist
+ls docs/V1-STATUS.md docs/WEAVER.md docs/DFLSS_DEFINITION_OF_DONE.spr.md
+
+# ✅ Archive structure exists
+ls docs/archived/{status-reports,planning,weaver-docs,product}/
+```
+
+### Implementation (Completed 2025-01-XX)
+
+- [x] Archived 17 root-level status/completion reports
+- [x] Archived 2 root-level planning files
+- [x] Consolidated Weaver documentation (1 canonical file)
+- [x] Consolidated status documentation (1 canonical file)
+- [x] Consolidated DFLSS documentation (1 canonical file)
+- [x] Consolidated Reflex Enterprise documentation (2 canonical files)
+- [x] Updated all index files with canonical references
+- [x] Fixed 7 broken internal links
+- [x] Updated documentation policy with consolidation metrics
+
+**Result**: Single source of truth established for all documentation topics, 29 files archived, zero broken links.
 
 ---
 

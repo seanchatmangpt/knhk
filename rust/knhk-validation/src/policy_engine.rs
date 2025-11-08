@@ -5,19 +5,19 @@
 #![cfg(feature = "policy-engine")]
 
 #[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use alloc::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "std")]
+use std::collections::BTreeMap;
 #[cfg(feature = "std")]
 use std::string::{String, ToString};
 #[cfg(feature = "std")]
 use std::vec::Vec;
-#[cfg(feature = "std")]
-use std::collections::BTreeMap;
-use serde::{Deserialize, Serialize};
 
 /// Policy violation level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -105,7 +105,7 @@ impl PolicyViolation {
 
 /// Policy engine for validating guard constraints, performance budgets, and receipts
 /// Inspired by Weaver's policy engine architecture
-/// 
+///
 /// Supports both built-in policies and custom Rego policies (when rego feature enabled)
 pub struct PolicyEngine {
     /// Built-in policies enabled
@@ -203,11 +203,9 @@ impl PolicyEngine {
                 }
                 BuiltinPolicy::ReceiptValidation => {
                     if let Some((receipt_id, expected_hash, actual_hash)) = &context.receipt {
-                        if let Err(violation) = self.validate_receipt(
-                            receipt_id,
-                            expected_hash,
-                            actual_hash,
-                        ) {
+                        if let Err(violation) =
+                            self.validate_receipt(receipt_id, expected_hash, actual_hash)
+                        {
                             violations.push(violation);
                         }
                     }
@@ -246,7 +244,10 @@ pub struct PolicyContext {
 impl PolicyEngine {
     /// Validate guard constraint (max_run_len ≤ 8)
     pub fn validate_guard_constraint(&self, run_len: u64) -> Result<(), PolicyViolation> {
-        if !self.builtin_policies.contains(&BuiltinPolicy::GuardConstraint) {
+        if !self
+            .builtin_policies
+            .contains(&BuiltinPolicy::GuardConstraint)
+        {
             return Ok(());
         }
 
@@ -269,7 +270,10 @@ impl PolicyEngine {
 
     /// Validate performance budget (ticks ≤ 8)
     pub fn validate_performance_budget(&self, ticks: u32) -> Result<(), PolicyViolation> {
-        if !self.builtin_policies.contains(&BuiltinPolicy::PerformanceBudget) {
+        if !self
+            .builtin_policies
+            .contains(&BuiltinPolicy::PerformanceBudget)
+        {
             return Ok(());
         }
 
@@ -297,7 +301,10 @@ impl PolicyEngine {
         receipt_hash: &[u8],
         expected_hash: &[u8],
     ) -> Result<(), PolicyViolation> {
-        if !self.builtin_policies.contains(&BuiltinPolicy::ReceiptValidation) {
+        if !self
+            .builtin_policies
+            .contains(&BuiltinPolicy::ReceiptValidation)
+        {
             return Ok(());
         }
 
@@ -437,4 +444,3 @@ mod tests {
         assert_eq!(violations.len(), 2);
     }
 }
-

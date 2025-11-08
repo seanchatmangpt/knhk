@@ -2,17 +2,19 @@
 // C-compatible function exports for native hook execution
 
 #[cfg(feature = "native")]
-use crate::hooks_native::{evaluate_hooks_batch_native, execute_hook_by_name_native, NativeHookRegistry};
+use crate::hooks_native::{
+    evaluate_hooks_batch_native, execute_hook_by_name_native, NativeHookRegistry,
+};
 #[cfg(feature = "native")]
 use crate::types::HookDefinition;
+#[cfg(feature = "native")]
+use serde_json::Value as JsonValue;
 #[cfg(feature = "native")]
 use std::ffi::CStr;
 #[cfg(feature = "native")]
 use std::os::raw::{c_char, c_int};
 #[cfg(feature = "native")]
-use std::sync::{OnceLock, Mutex};
-#[cfg(feature = "native")]
-use serde_json::Value as JsonValue;
+use std::sync::{Mutex, OnceLock};
 
 #[cfg(feature = "native")]
 // Global hook registry singleton
@@ -33,10 +35,11 @@ pub extern "C" fn knhk_unrdf_execute_hook_native(
     hook_query: *const c_char,
     turtle_data: *const c_char,
     result_json: *mut c_char,
-    result_size: usize
+    result_size: usize,
 ) -> c_int {
     // Validate NULL pointers
-    if hook_name.is_null() || hook_query.is_null() || turtle_data.is_null() || result_json.is_null() {
+    if hook_name.is_null() || hook_query.is_null() || turtle_data.is_null() || result_json.is_null()
+    {
         return -1;
     }
 
@@ -51,7 +54,7 @@ pub extern "C" fn knhk_unrdf_execute_hook_native(
                     std::ptr::copy_nonoverlapping(
                         error_bytes.as_ptr(),
                         result_json as *mut u8,
-                        copy_len
+                        copy_len,
                     );
                     *result_json.add(copy_len) = 0;
                 }
@@ -71,7 +74,7 @@ pub extern "C" fn knhk_unrdf_execute_hook_native(
                     std::ptr::copy_nonoverlapping(
                         error_bytes.as_ptr(),
                         result_json as *mut u8,
-                        copy_len
+                        copy_len,
                     );
                     *result_json.add(copy_len) = 0;
                 }
@@ -91,7 +94,7 @@ pub extern "C" fn knhk_unrdf_execute_hook_native(
                     std::ptr::copy_nonoverlapping(
                         error_bytes.as_ptr(),
                         result_json as *mut u8,
-                        copy_len
+                        copy_len,
                     );
                     *result_json.add(copy_len) = 0;
                 }
@@ -101,51 +104,56 @@ pub extern "C" fn knhk_unrdf_execute_hook_native(
     };
 
     match execute_hook_by_name_native(hook_name_str, hook_query_str, turtle_data_str) {
-        Ok(result) => {
-            match serde_json::to_string(&result) {
-                Ok(json) => {
-                    let json_bytes = json.as_bytes();
-                    if json_bytes.len() < result_size {
-                        unsafe {
-                            std::ptr::copy_nonoverlapping(
-                                json_bytes.as_ptr(),
-                                result_json as *mut u8,
-                                json_bytes.len()
-                            );
-                            *result_json.add(json_bytes.len()) = 0;
-                        }
-                        0
-                    } else {
-                        let error_msg = format!(r#"{{"success":false,"error":"Result too large: {} bytes, buffer: {} bytes"}}"#, json_bytes.len(), result_size);
-                        let error_bytes = error_msg.as_bytes();
-                        let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
-                        unsafe {
-                            std::ptr::copy_nonoverlapping(
-                                error_bytes.as_ptr(),
-                                result_json as *mut u8,
-                                copy_len
-                            );
-                            *result_json.add(copy_len) = 0;
-                        }
-                        -2
+        Ok(result) => match serde_json::to_string(&result) {
+            Ok(json) => {
+                let json_bytes = json.as_bytes();
+                if json_bytes.len() < result_size {
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(
+                            json_bytes.as_ptr(),
+                            result_json as *mut u8,
+                            json_bytes.len(),
+                        );
+                        *result_json.add(json_bytes.len()) = 0;
                     }
-                }
-                Err(e) => {
-                    let error_msg = format!(r#"{{"success":false,"error":"JSON serialization failed: {}"}}"#, e);
+                    0
+                } else {
+                    let error_msg = format!(
+                        r#"{{"success":false,"error":"Result too large: {} bytes, buffer: {} bytes"}}"#,
+                        json_bytes.len(),
+                        result_size
+                    );
                     let error_bytes = error_msg.as_bytes();
                     let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
                     unsafe {
                         std::ptr::copy_nonoverlapping(
                             error_bytes.as_ptr(),
                             result_json as *mut u8,
-                            copy_len
+                            copy_len,
                         );
                         *result_json.add(copy_len) = 0;
                     }
-                    -7
+                    -2
                 }
             }
-        }
+            Err(e) => {
+                let error_msg = format!(
+                    r#"{{"success":false,"error":"JSON serialization failed: {}"}}"#,
+                    e
+                );
+                let error_bytes = error_msg.as_bytes();
+                let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        error_bytes.as_ptr(),
+                        result_json as *mut u8,
+                        copy_len,
+                    );
+                    *result_json.add(copy_len) = 0;
+                }
+                -7
+            }
+        },
         Err(e) => {
             let error_msg = format!(r#"{{"success":false,"error":"{}"}}"#, e);
             let error_bytes = error_msg.as_bytes();
@@ -154,7 +162,7 @@ pub extern "C" fn knhk_unrdf_execute_hook_native(
                 std::ptr::copy_nonoverlapping(
                     error_bytes.as_ptr(),
                     result_json as *mut u8,
-                    copy_len
+                    copy_len,
                 );
                 *result_json.add(copy_len) = 0;
             }
@@ -171,7 +179,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
     hooks_json: *const c_char,
     turtle_data: *const c_char,
     result_json: *mut c_char,
-    result_size: usize
+    result_size: usize,
 ) -> c_int {
     // Validate NULL pointers
     if hooks_json.is_null() || turtle_data.is_null() || result_json.is_null() {
@@ -189,7 +197,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                     std::ptr::copy_nonoverlapping(
                         error_bytes.as_ptr(),
                         result_json as *mut u8,
-                        copy_len
+                        copy_len,
                     );
                     *result_json.add(copy_len) = 0;
                 }
@@ -209,7 +217,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                     std::ptr::copy_nonoverlapping(
                         error_bytes.as_ptr(),
                         result_json as *mut u8,
-                        copy_len
+                        copy_len,
                     );
                     *result_json.add(copy_len) = 0;
                 }
@@ -229,7 +237,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                 std::ptr::copy_nonoverlapping(
                     error_bytes.as_ptr(),
                     result_json as *mut u8,
-                    copy_len
+                    copy_len,
                 );
                 *result_json.add(copy_len) = 0;
             }
@@ -246,14 +254,17 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
             let results_value = match serde_json::to_value(&results) {
                 Ok(v) => v,
                 Err(e) => {
-                    let error_msg = format!(r#"{{"success":false,"error":"Failed to serialize results: {}"}}"#, e);
+                    let error_msg = format!(
+                        r#"{{"success":false,"error":"Failed to serialize results: {}"}}"#,
+                        e
+                    );
                     let error_bytes = error_msg.as_bytes();
                     let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
                     unsafe {
                         std::ptr::copy_nonoverlapping(
                             error_bytes.as_ptr(),
                             result_json as *mut u8,
-                            copy_len
+                            copy_len,
                         );
                         *result_json.add(copy_len) = 0;
                     }
@@ -261,7 +272,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                 }
             };
             result_obj.insert("results".to_string(), results_value);
-            
+
             match serde_json::to_string(&JsonValue::Object(result_obj)) {
                 Ok(json) => {
                     let json_bytes = json.as_bytes();
@@ -270,20 +281,25 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                             std::ptr::copy_nonoverlapping(
                                 json_bytes.as_ptr(),
                                 result_json as *mut u8,
-                                json_bytes.len()
+                                json_bytes.len(),
                             );
                             *result_json.add(json_bytes.len()) = 0;
                         }
                         0
                     } else {
-                        let error_msg = format!(r#"{{"success":false,"error":"Result too large: {} bytes, buffer: {} bytes"}}"#, json_bytes.len(), result_size);
+                        let error_msg = format!(
+                            r#"{{"success":false,"error":"Result too large: {} bytes, buffer: {} bytes"}}"#,
+                            json_bytes.len(),
+                            result_size
+                        );
                         let error_bytes = error_msg.as_bytes();
-                        let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
+                        let copy_len =
+                            std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
                         unsafe {
                             std::ptr::copy_nonoverlapping(
                                 error_bytes.as_ptr(),
                                 result_json as *mut u8,
-                                copy_len
+                                copy_len,
                             );
                             *result_json.add(copy_len) = 0;
                         }
@@ -291,14 +307,17 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                     }
                 }
                 Err(e) => {
-                    let error_msg = format!(r#"{{"success":false,"error":"JSON serialization failed: {}"}}"#, e);
+                    let error_msg = format!(
+                        r#"{{"success":false,"error":"JSON serialization failed: {}"}}"#,
+                        e
+                    );
                     let error_bytes = error_msg.as_bytes();
                     let copy_len = std::cmp::min(error_bytes.len(), result_size.saturating_sub(1));
                     unsafe {
                         std::ptr::copy_nonoverlapping(
                             error_bytes.as_ptr(),
                             result_json as *mut u8,
-                            copy_len
+                            copy_len,
                         );
                         *result_json.add(copy_len) = 0;
                     }
@@ -314,7 +333,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
                 std::ptr::copy_nonoverlapping(
                     error_bytes.as_ptr(),
                     result_json as *mut u8,
-                    copy_len
+                    copy_len,
                 );
                 *result_json.add(copy_len) = 0;
             }
@@ -326,9 +345,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
 #[cfg(feature = "native")]
 /// Register a hook in the native registry
 #[no_mangle]
-pub extern "C" fn knhk_unrdf_register_hook_native(
-    hook_json: *const c_char
-) -> c_int {
+pub extern "C" fn knhk_unrdf_register_hook_native(hook_json: *const c_char) -> c_int {
     if hook_json.is_null() {
         return -1;
     }
@@ -347,12 +364,10 @@ pub extern "C" fn knhk_unrdf_register_hook_native(
 
     let registry = get_native_hook_registry();
     match registry.lock() {
-        Ok(reg) => {
-            match reg.register(hook) {
-                Ok(_) => 0,
-                Err(_) => -1,
-            }
-        }
+        Ok(reg) => match reg.register(hook) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        },
         Err(_) => -1,
     }
 }
@@ -360,9 +375,7 @@ pub extern "C" fn knhk_unrdf_register_hook_native(
 #[cfg(feature = "native")]
 /// Deregister a hook from the native registry
 #[no_mangle]
-pub extern "C" fn knhk_unrdf_deregister_hook_native(
-    hook_id: *const c_char
-) -> c_int {
+pub extern "C" fn knhk_unrdf_deregister_hook_native(hook_id: *const c_char) -> c_int {
     if hook_id.is_null() {
         return -1;
     }
@@ -376,13 +389,10 @@ pub extern "C" fn knhk_unrdf_deregister_hook_native(
 
     let registry = get_native_hook_registry();
     match registry.lock() {
-        Ok(reg) => {
-            match reg.deregister(hook_id_str) {
-                Ok(_) => 0,
-                Err(_) => -1,
-            }
-        }
+        Ok(reg) => match reg.deregister(hook_id_str) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        },
         Err(_) => -1,
     }
 }
-

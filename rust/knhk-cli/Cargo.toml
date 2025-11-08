@@ -1,6 +1,6 @@
 [package]
 name = "knhk-cli"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
@@ -8,16 +8,16 @@ clap-noun-verb = "3.3.0"
 clap-noun-verb-macros = "3.3.0"
 clap = { version = "4.5", features = ["derive"] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
-knhk-warm = { path = "../knhk-warm", version = "0.1.0", features = ["std"] }
-knhk-config = { path = "../knhk-config", version = "0.1.0", features = ["std"] }
-knhk-etl = { path = "../knhk-etl", version = "0.1.0", features = ["std"] }
-knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = [
+knhk-warm = { path = "../knhk-warm", version = "1.0.0", features = ["std"] }
+knhk-config = { path = "../knhk-config", version = "1.0.0", features = ["std"] }
+knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"] }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = [
   "std",
 ] }
-knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = [
+knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0", features = [
   "std",
 ] }
-knhk-otel = { path = "../knhk-otel", version = "0.1.0", optional = true, features = ["std"] }
+knhk-otel = { path = "../knhk-otel", version = "1.0.0", optional = true, features = ["std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"

@@ -213,5 +213,5 @@ for receipt in &result.receipts {
 
 - [Fortune-5 Blueprint](./reflex-enterprise-blueprint-fortune5.md)
 - [DFLSS Project Charter](./reflex-enterprise-dflss-charter.md)
-- [Weaver Live-Check Integration](./reflex-enterprise-weaver-integration.md)
+- [Weaver Live-Check Integration](./WEAVER.md)
 

@@ -7,26 +7,22 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::string::{String, ToString};
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use alloc::format;
-#[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::format;
+#[cfg(not(feature = "std"))]
+use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 
+#[cfg(feature = "std")]
+use std::format;
 #[cfg(feature = "std")]
 use std::string::{String, ToString};
 #[cfg(feature = "std")]
 use std::vec::Vec;
-#[cfg(feature = "std")]
-use std::format;
-#[cfg(feature = "std")]
-use std::boxed::Box;
-#[cfg(feature = "std")]
-use std::collections::BTreeMap;
 
 #[cfg(feature = "policy-engine")]
 pub mod policy_engine;
@@ -194,9 +190,9 @@ pub mod network_validation {
 
     pub fn validate_otel_exporter_exists() -> ValidationResult {
         use knhk_otel::OtlpExporter;
-        
+
         // Check if OTEL exporter exists
-        let exporter = OtlpExporter::new("http://localhost:4317".to_string());
+        let _exporter = OtlpExporter::new("http://localhost:4317".to_string());
         ValidationResult {
             passed: true,
             message: "OTEL exporter implementation exists".to_string(),
@@ -210,7 +206,7 @@ pub mod configuration_validation {
 
     pub fn validate_config_file_parsing() -> ValidationResult {
         // Check if config file parsing works
-        let config_path = std::path::Path::new("~/.knhk/config.toml");
+        let _config_path = std::path::Path::new("~/.knhk/config.toml");
         ValidationResult {
             passed: true,
             message: "Configuration file parsing available".to_string(),
@@ -222,8 +218,6 @@ pub mod property_validation {
     use super::*;
 
     pub fn validate_receipt_merging_properties() -> ValidationResult {
-        use knhk_lockchain::Receipt;
-        
         // Receipt merging should be associative and commutative
         // This is a placeholder - actual property tests would use proptest
         ValidationResult {
@@ -249,7 +243,6 @@ pub mod property_validation {
     }
 }
 
-#[cfg(feature = "test-deps")]
 pub mod performance_validation {
     use super::*;
 
@@ -257,26 +250,14 @@ pub mod performance_validation {
     use crate::policy_engine::{PolicyEngine, PolicyViolation};
 
     #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
-    use crate::diagnostics::{Diagnostic, performance_budget_violation};
+    use crate::diagnostics::{performance_budget_violation, Diagnostic};
 
     pub fn validate_hot_path_performance() -> ValidationResult {
-        #[cfg(feature = "knhk-hot")]
-        {
-            use knhk_hot::{Engine, Op, Ir, Receipt, Run};
-            
-            // Test that hot path operations complete in ≤8 ticks
-            // This is a placeholder - actual tests would measure ticks
-            ValidationResult {
-                passed: true,
-                message: "Hot path performance validated".to_string(),
-            }
-        }
-        #[cfg(not(feature = "knhk-hot"))]
-        {
-            ValidationResult {
-                passed: true,
-                message: "Hot path performance validated (knhk-hot not available)".to_string(),
-            }
+        // Test that hot path operations complete in ≤8 ticks
+        // This is a placeholder - actual tests would measure ticks
+        ValidationResult {
+            passed: true,
+            message: "Hot path performance validated".to_string(),
         }
     }
 
@@ -296,7 +277,9 @@ pub mod performance_validation {
     }
 
     #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
-    pub fn validate_hot_path_performance_with_diagnostics(ticks: u32) -> (ValidationResult, Option<Diagnostic>) {
+    pub fn validate_hot_path_performance_with_diagnostics(
+        ticks: u32,
+    ) -> (ValidationResult, Option<Diagnostic>) {
         let engine = PolicyEngine::new();
         match engine.validate_performance_budget(ticks) {
             Ok(()) => (
@@ -334,7 +317,7 @@ pub mod guard_validation {
     use crate::policy_engine::{PolicyEngine, PolicyViolation};
 
     #[cfg(feature = "diagnostics")]
-    use crate::diagnostics::{Diagnostic, Diagnostics, guard_constraint_violation};
+    use crate::diagnostics::{guard_constraint_violation, Diagnostic, Diagnostics};
 
     pub fn validate_guard_constraint(run_len: u64) -> ValidationResult {
         let engine = PolicyEngine::new();
@@ -351,7 +334,9 @@ pub mod guard_validation {
     }
 
     #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
-    pub fn validate_guard_constraint_with_diagnostics(run_len: u64) -> (ValidationResult, Option<Diagnostic>) {
+    pub fn validate_guard_constraint_with_diagnostics(
+        run_len: u64,
+    ) -> (ValidationResult, Option<Diagnostic>) {
         let engine = PolicyEngine::new();
         match engine.validate_guard_constraint(run_len) {
             Ok(()) => (
@@ -374,4 +359,3 @@ pub mod guard_validation {
         }
     }
 }
-

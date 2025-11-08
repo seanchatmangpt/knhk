@@ -1,0 +1,68 @@
+@startuml pattern-execution-flow
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam activityStyle rectangle
+
+title Pattern Execution Flow
+
+start
+
+:Create Pattern;
+note right
+  **Ingress Validation:**
+  - Validate branch count
+  - Check tick budget
+  - Verify constraints
+end note
+
+:Pattern Created;
+
+:Execute Pattern;
+
+if (Pattern Type?) then (Sequence)
+  :Execute branches sequentially;
+  :Return single result;
+elseif (Parallel Split) then
+  :Fork to parallel branches;
+  :Execute all branches concurrently;
+  :Collect results;
+  :Return multiple results;
+elseif (Exclusive Choice) then
+  :Evaluate conditions in order;
+  if (Condition matches?) then (yes)
+    :Execute matching branch;
+    :Return single result;
+  else (no)
+    :Error: No condition matched;
+    stop
+  endif
+elseif (Multi-Choice) then
+  :Evaluate all conditions;
+  :Execute all matching branches;
+  :Return multiple results;
+elseif (Arbitrary Cycles) then
+  repeat
+    :Execute branch;
+    :Check condition;
+  repeat while (Should continue? AND < max iterations)
+  :Return single result;
+elseif (Deferred Choice) then
+  repeat
+    :Poll conditions;
+    :Check timeout;
+  repeat while (No match AND < timeout)
+  if (Match found?) then (yes)
+    :Execute matching branch;
+    :Return single result;
+  else (no)
+    :Error: Timeout;
+    stop
+  endif
+endif
+
+:Return PatternResult;
+
+stop
+
+@enduml
+

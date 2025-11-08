@@ -11,23 +11,23 @@ mod error;
 mod tracing;
 
 // Import all noun modules so their verbs are auto-discovered
-mod boot;
-mod connect;
-mod cover;
 mod admit;
-mod reflex;
-mod epoch;
-mod route;
-mod receipt;
-mod pipeline;
-mod metrics;
-mod coverage;
-mod context;
+mod boot;
 mod config;
+mod connect;
+mod context;
+mod cover;
+mod coverage;
+mod epoch;
 mod hook;
+mod metrics;
+mod pipeline;
+mod receipt;
+mod reflex;
+mod route;
 
 use clap_noun_verb::Result as CnvResult;
-use knhk_config::{load_config, config::KnhkConfig, Config};
+use knhk_config::{load_config, Config};
 
 // Global configuration (loaded at startup)
 static CONFIG: std::sync::OnceLock<Config> = std::sync::OnceLock::new();
@@ -39,18 +39,21 @@ fn get_config() -> &'static Config {
                 // Record configuration load metric
                 #[cfg(feature = "otel")]
                 {
-                    use knhk_otel::{Tracer, MetricsHelper};
+                    use knhk_otel::{MetricsHelper, Tracer};
                     let mut tracer = Tracer::new();
                     MetricsHelper::record_config_load(&mut tracer, "file");
                 }
                 config
             }
             Err(e) => {
-                eprintln!("Warning: Failed to load configuration: {}. Using defaults.", e);
+                eprintln!(
+                    "Warning: Failed to load configuration: {}. Using defaults.",
+                    e
+                );
                 // Record configuration error metric
                 #[cfg(feature = "otel")]
                 {
-                    use knhk_otel::{Tracer, MetricsHelper};
+                    use knhk_otel::{MetricsHelper, Tracer};
                     let mut tracer = Tracer::new();
                     MetricsHelper::record_config_error(&mut tracer, "load_failed");
                 }
@@ -68,7 +71,7 @@ fn main() -> CnvResult<()> {
 
     // Load configuration at startup
     let _ = get_config();
-    
+
     // Auto-discover all registered commands and run
     // CNV v3.3.0 automatically discovers all #[verb] functions
     // Nouns are auto-inferred from filenames (boot.rs → "boot", etc.)

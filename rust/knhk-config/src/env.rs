@@ -3,17 +3,17 @@
 
 extern crate alloc;
 
+use crate::config::Config;
+use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use alloc::collections::BTreeMap;
-use crate::config::Config;
 
 #[cfg(feature = "std")]
 use std::env;
 
 /// Load configuration from environment variables
 /// Environment variables override config file values
-/// 
+///
 /// Format: KNHK_<SECTION>_<KEY> for nested values
 /// Examples:
 ///   KNHK_CONTEXT=production
@@ -22,7 +22,7 @@ use std::env;
 #[cfg(feature = "std")]
 pub fn load_env_config() -> BTreeMap<String, String> {
     let mut env_config = BTreeMap::new();
-    
+
     for (key, value) in env::vars() {
         if key.starts_with("KNHK_") {
             // Normalize key (remove KNHK_ prefix, convert to lowercase)
@@ -30,7 +30,7 @@ pub fn load_env_config() -> BTreeMap<String, String> {
             env_config.insert(normalized_key, value);
         }
     }
-    
+
     env_config
 }
 
@@ -48,7 +48,7 @@ pub fn apply_env_overrides(config: &mut Config, env_vars: &BTreeMap<String, Stri
     if let Some(context) = env_vars.get("context") {
         config.knhk.context = context.clone();
     }
-    
+
     // Apply connector overrides (format: connector_<name>_<key>)
     for (key, value) in env_vars.iter() {
         if key.starts_with("connector_") {
@@ -56,7 +56,7 @@ pub fn apply_env_overrides(config: &mut Config, env_vars: &BTreeMap<String, Stri
             if parts.len() >= 3 {
                 let connector_name = parts[1].to_string();
                 let config_key = parts[2].to_string();
-                
+
                 if !config.connectors.contains_key(&connector_name) {
                     // Create default connector config
                     config.connectors.insert(
@@ -71,11 +71,12 @@ pub fn apply_env_overrides(config: &mut Config, env_vars: &BTreeMap<String, Stri
                         },
                     );
                 }
-                
+
                 if let Some(connector) = config.connectors.get_mut(&connector_name) {
                     match config_key.as_str() {
                         "bootstrap_servers" => {
-                            connector.bootstrap_servers = Some(value.split(',').map(|s| s.trim().to_string()).collect());
+                            connector.bootstrap_servers =
+                                Some(value.split(',').map(|s| s.trim().to_string()).collect());
                         }
                         "topic" => {
                             connector.topic = Some(value.clone());
@@ -98,14 +99,14 @@ pub fn apply_env_overrides(config: &mut Config, env_vars: &BTreeMap<String, Stri
                 }
             }
         }
-        
+
         // Apply epoch overrides (format: epoch_<name>_<key>)
         if key.starts_with("epoch_") {
             let parts: Vec<&str> = key.splitn(3, '_').collect();
             if parts.len() >= 3 {
                 let epoch_name = parts[1].to_string();
                 let config_key = parts[2].to_string();
-                
+
                 if !config.epochs.contains_key(&epoch_name) {
                     config.epochs.insert(
                         epoch_name.clone(),
@@ -115,7 +116,7 @@ pub fn apply_env_overrides(config: &mut Config, env_vars: &BTreeMap<String, Stri
                         },
                     );
                 }
-                
+
                 if let Some(epoch) = config.epochs.get_mut(&epoch_name) {
                     match config_key.as_str() {
                         "tau" => {
@@ -153,4 +154,3 @@ mod tests {
         std::env::remove_var("KNHK_CONTEXT");
     }
 }
-

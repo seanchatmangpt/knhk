@@ -369,5 +369,5 @@ KNHK follows semantic conventions for span names and attributes:
 
 - [Architecture](../../../docs/architecture.md) - System architecture
 - [Performance](../../../docs/performance.md) - Performance guide
-- [Weaver Integration](../../../docs/weaver-integration.md) - Weaver.ai integration guide
+- [Weaver Integration](../../../docs/WEAVER.md) - Weaver.ai integration guide (canonical)
 - [Examples](../../../rust/knhk-otel/examples/weaver_live_check.rs) - Weaver live-check example

@@ -4,9 +4,9 @@
 
 #[cfg(feature = "advisor")]
 mod tests {
+    use alloc::collections::BTreeMap;
     use knhk_validation::advisor::*;
     use knhk_validation::policy_engine::PolicyViolation;
-    use alloc::collections::BTreeMap;
 
     #[test]
     fn test_guard_constraint_advisor_detects_violation() {
@@ -24,19 +24,26 @@ mod tests {
                 max_run_len: 8,
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: Violation detected
-        assert!(!violations.is_empty(), "Should detect guard constraint violation");
+        assert!(
+            !violations.is_empty(),
+            "Should detect guard constraint violation"
+        );
         assert_eq!(violations.len(), 1);
-        
+
         match &violations[0] {
-            PolicyViolation::GuardConstraintViolation { actual_run_len, max_run_len, .. } => {
+            PolicyViolation::GuardConstraintViolation {
+                actual_run_len,
+                max_run_len,
+                ..
+            } => {
                 assert_eq!(*actual_run_len, 10);
                 assert_eq!(*max_run_len, 8);
-            },
+            }
             _ => panic!("Should return GuardConstraintViolation"),
         }
     }
@@ -57,12 +64,15 @@ mod tests {
                 max_run_len: 8,
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: No violations
-        assert!(violations.is_empty(), "Should not detect violation for valid input");
+        assert!(
+            violations.is_empty(),
+            "Should not detect violation for valid input"
+        );
     }
 
     #[test]
@@ -81,10 +91,10 @@ mod tests {
                 max_ticks: 8,
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: No violations (ignores non-guard data)
         assert!(violations.is_empty(), "Should ignore non-guard data");
     }
@@ -105,18 +115,25 @@ mod tests {
                 max_ticks: 8,
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: Violation detected
-        assert!(!violations.is_empty(), "Should detect performance budget violation");
-        
+        assert!(
+            !violations.is_empty(),
+            "Should detect performance budget violation"
+        );
+
         match &violations[0] {
-            PolicyViolation::PerformanceBudgetViolation { actual_ticks, max_ticks, .. } => {
+            PolicyViolation::PerformanceBudgetViolation {
+                actual_ticks,
+                max_ticks,
+                ..
+            } => {
                 assert_eq!(*actual_ticks, 10);
                 assert_eq!(*max_ticks, 8);
-            },
+            }
             _ => panic!("Should return PerformanceBudgetViolation"),
         }
     }
@@ -137,12 +154,15 @@ mod tests {
                 max_ticks: 8,
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: No violations
-        assert!(violations.is_empty(), "Should not detect violation for valid input");
+        assert!(
+            violations.is_empty(),
+            "Should not detect violation for valid input"
+        );
     }
 
     #[test]
@@ -161,10 +181,10 @@ mod tests {
                 max_ticks: 16,
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: No violations with custom limit
         assert!(violations.is_empty());
     }
@@ -185,17 +205,17 @@ mod tests {
                 hash: String::new(), // Empty hash
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: Violation detected
         assert!(!violations.is_empty(), "Should detect empty hash violation");
-        
+
         match &violations[0] {
             PolicyViolation::ReceiptValidationViolation { receipt_id, .. } => {
                 assert_eq!(receipt_id, "receipt_001");
-            },
+            }
             _ => panic!("Should return ReceiptValidationViolation"),
         }
     }
@@ -216,12 +236,15 @@ mod tests {
                 hash: "abc123".to_string(), // Valid hash
             },
         };
-        
+
         // Act: Get advice
         let violations = advisor.advise(&input);
-        
+
         // Assert: No violations
-        assert!(violations.is_empty(), "Should not detect violation for valid hash");
+        assert!(
+            violations.is_empty(),
+            "Should not detect violation for valid hash"
+        );
     }
 
     #[test]
@@ -233,7 +256,7 @@ mod tests {
             runtime_class: "R1".to_string(),
             metadata: BTreeMap::new(),
         };
-        
+
         // Act: Test guard constraint violation
         let guard_input = AdvisorInput {
             context: context.clone(),
@@ -243,7 +266,7 @@ mod tests {
             },
         };
         let guard_violations = chain.advise(&guard_input);
-        
+
         // Assert: Violation detected
         assert!(!guard_violations.is_empty());
     }
@@ -254,13 +277,13 @@ mod tests {
         let mut chain = AdvisorChain::new();
         chain.add_advisor(Box::new(GuardConstraintAdvisor::default()));
         chain.add_advisor(Box::new(PerformanceBudgetAdvisor::default()));
-        
+
         let context = AdvisorContext {
             operation_id: "test_op_010".to_string(),
             runtime_class: "R1".to_string(),
             metadata: BTreeMap::new(),
         };
-        
+
         // Act: Test with multiple violations
         let input = AdvisorInput {
             context,
@@ -270,7 +293,7 @@ mod tests {
             },
         };
         let violations = chain.advise(&input);
-        
+
         // Assert: Violations from appropriate advisor
         assert!(!violations.is_empty());
     }
@@ -281,12 +304,12 @@ mod tests {
         let guard_advisor = GuardConstraintAdvisor::default();
         let perf_advisor = PerformanceBudgetAdvisor::default();
         let receipt_advisor = ReceiptValidationAdvisor::default();
-        
+
         // Act: Get names
         let guard_name = guard_advisor.name();
         let perf_name = perf_advisor.name();
         let receipt_name = receipt_advisor.name();
-        
+
         // Assert: Names are unique
         assert_eq!(guard_name, "guard_constraint");
         assert_eq!(perf_name, "performance_budget");
@@ -302,12 +325,12 @@ mod tests {
         let guard_advisor = GuardConstraintAdvisor::default();
         let perf_advisor = PerformanceBudgetAdvisor::default();
         let receipt_advisor = ReceiptValidationAdvisor::default();
-        
+
         // Act: Get priorities
         let guard_priority = guard_advisor.priority();
         let perf_priority = perf_advisor.priority();
         let receipt_priority = receipt_advisor.priority();
-        
+
         // Assert: Priorities are ordered (lower = higher priority)
         assert!(guard_priority < perf_priority);
         assert!(perf_priority < receipt_priority);
@@ -320,7 +343,7 @@ mod tests {
         chain.add_advisor(Box::new(ReceiptValidationAdvisor::default())); // Priority 30
         chain.add_advisor(Box::new(GuardConstraintAdvisor::default())); // Priority 10
         chain.add_advisor(Box::new(PerformanceBudgetAdvisor::default())); // Priority 20
-        
+
         // Act: Chain should sort internally
         // (We can't directly test sorting, but we can verify chain works)
         let context = AdvisorContext {
@@ -336,9 +359,8 @@ mod tests {
             },
         };
         let violations = chain.advise(&input);
-        
+
         // Assert: Chain executes correctly
         assert!(!violations.is_empty());
     }
 }
-

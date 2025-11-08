@@ -10,13 +10,12 @@ extern crate alloc;
 extern crate std;
 
 // Conditional compilation for optional features
-#[cfg(feature = "knhk-otel")]
-use knhk_otel as _;
 #[cfg(feature = "knhk-lockchain")]
 use knhk_lockchain as _;
+#[cfg(feature = "knhk-otel")]
+use knhk_otel as _;
 
 // OpenTelemetry initialization (requires tokio runtime for async OTLP exporter)
-#[allow(unexpected_cfgs)]
 #[cfg(feature = "tokio-runtime")]
 pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
     use opentelemetry_sdk::trace::TracerProvider;
@@ -37,50 +36,49 @@ pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // No-op version for non-tokio builds
-#[allow(unexpected_cfgs)]
 #[cfg(not(feature = "tokio-runtime"))]
 pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
 // Module declarations
-pub mod types;
-pub mod error;
-pub mod ingest;
-pub mod ingester; // Ingester pattern - inspired by Weaver
-pub mod transform;
-pub mod load;
-pub mod reflex;
-pub mod reflex_map;
-pub mod emit;
-pub mod pipeline;
-pub mod runtime_class;
-pub mod slo_monitor;
-pub mod failure_actions;
-pub mod ring_buffer;
-pub mod ring_conversion; // Lock-free ring buffers for 8-beat epoch
-pub mod fiber; // Cooperative fibers for deterministic execution
-pub mod park; // Park/escalate mechanism for over-budget work
 pub mod beat_scheduler; // 8-beat epoch scheduler
+pub mod emit;
+pub mod error;
+pub mod failure_actions;
+pub mod fiber; // Cooperative fibers for deterministic execution
 pub mod hash; // Provenance hashing for LAW: hash(A) = hash(μ(O))
 pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
-pub mod reconcile; // Reconciliation: A = μ(O)
+pub mod ingest;
+pub mod ingester; // Ingester pattern - inspired by Weaver
+pub mod load;
+pub mod park; // Park/escalate mechanism for over-budget work
+pub mod pipeline;
+pub mod reconcile;
+pub mod reflex;
+pub mod reflex_map;
+pub mod ring_buffer;
+pub mod ring_conversion; // Lock-free ring buffers for 8-beat epoch
+pub mod runtime_class;
+pub mod slo_monitor;
+pub mod transform;
+pub mod types; // Reconciliation: A = μ(O)
 
 // Re-exports for convenience
-pub use types::{PipelineStage, PipelineMetrics};
 pub use error::PipelineError;
-pub use ingest::{IngestStage, IngestResult, RawTriple};
-pub use transform::{TransformStage, TransformResult, TypedTriple};
-pub use load::{LoadStage, LoadResult, SoAArrays, PredRun};
-pub use reflex::{ReflexStage, ReflexResult, Action, Receipt};
+pub use ingest::{IngestResult, IngestStage, RawTriple};
+pub use load::{LoadResult, LoadStage, PredRun, SoAArrays};
+pub use reflex::{Action, Receipt, ReflexResult, ReflexStage};
+pub use transform::{TransformResult, TransformStage, TypedTriple};
+pub use types::{PipelineMetrics, PipelineStage};
 // ReflexMap types are exported separately to avoid conflicts with reflex::Action/Receipt
-pub use reflex_map::{ReflexMap, ReflexMapResult};
-pub use emit::{EmitStage, EmitResult};
+pub use emit::{EmitResult, EmitStage};
+pub use ingester::{FileIngester, Ingester, StdinIngester};
 pub use pipeline::Pipeline;
-pub use ingester::{Ingester, FileIngester, StdinIngester};
+pub use reflex_map::{ReflexMap, ReflexMapResult};
 
 // Hook registry exports
-pub use hook_registry::{HookRegistry, HookRegistryError, HookMetadata, GuardFn};
+pub use hook_registry::{GuardFn, HookMetadata, HookRegistry, HookRegistryError};
 
 // Beat scheduler exports
 pub use beat_scheduler::{BeatScheduler, BeatSchedulerError};
@@ -89,10 +87,11 @@ pub mod integration;
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use alloc::collections::BTreeMap;
-    use alloc::vec;
     use alloc::string::ToString;
+    use alloc::vec;
 
     #[test]
     fn test_pipeline_creation() {
@@ -111,12 +110,15 @@ mod tests {
     fn test_load_stage_guard() {
         let load = LoadStage::new();
         let transform_result = TransformResult {
-            typed_triples: vec![TypedTriple {
-                subject: 1,
-                predicate: 2,
-                object: 3,
-                graph: None,
-            }; 10], // Exceeds max_run_len
+            typed_triples: vec![
+                TypedTriple {
+                    subject: 1,
+                    predicate: 2,
+                    object: 3,
+                    graph: None,
+                };
+                10
+            ], // Exceeds max_run_len
             validation_errors: Vec::new(),
         };
 
@@ -141,7 +143,7 @@ mod tests {
     #[test]
     fn test_ingest_stage_prefix_resolution() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = r#"
             @prefix ex: <http://example.org/> .
             ex:subject ex:predicate ex:object .
@@ -159,7 +161,7 @@ mod tests {
     #[test]
     fn test_ingest_stage_blank_nodes() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = r#"
             _:alice <http://example.org/name> "Alice" .
             _:bob <http://example.org/name> "Bob" .
@@ -178,7 +180,7 @@ mod tests {
     #[test]
     fn test_ingest_stage_literals() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = r#"
             <http://example.org/subject> <http://example.org/name> "Alice" .
             <http://example.org/subject> <http://example.org/age> "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
@@ -197,7 +199,7 @@ mod tests {
     #[test]
     fn test_ingest_stage_base_uri() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = r#"
             @base <http://example.org/> .
             <subject> <predicate> <object> .
@@ -215,7 +217,7 @@ mod tests {
     #[test]
     fn test_ingest_stage_multiple_triples() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = r#"
             <http://example.org/alice> <http://example.org/name> "Alice" .
             <http://example.org/alice> <http://example.org/age> "30" .
@@ -240,10 +242,10 @@ mod tests {
     #[test]
     fn test_ingest_stage_invalid_syntax() {
         let ingest = IngestStage::new(vec!["test".to_string()], "rdf/turtle".to_string());
-        
+
         let content = "<http://example.org/subject> <http://example.org/predicate>";
         let result = ingest.parse_rdf_turtle(content);
-        
+
         assert!(result.is_err());
         if let Err(PipelineError::IngestError(msg)) = result {
             assert!(msg.contains("parse error"));
@@ -255,19 +257,17 @@ mod tests {
     #[test]
     fn test_transform_stage_hashing() {
         let transform = TransformStage::new("urn:knhk:schema:test".to_string(), false);
-        
+
         let ingest_result = IngestResult {
-            triples: vec![
-                RawTriple {
-                    subject: "http://example.org/subject".to_string(),
-                    predicate: "http://example.org/predicate".to_string(),
-                    object: "http://example.org/object".to_string(),
-                    graph: None,
-                }
-            ],
+            triples: vec![RawTriple {
+                subject: "http://example.org/subject".to_string(),
+                predicate: "http://example.org/predicate".to_string(),
+                object: "http://example.org/object".to_string(),
+                graph: None,
+            }],
             metadata: BTreeMap::new(),
         };
-        
+
         let result = transform.transform(ingest_result);
         assert!(result.is_ok());
 
@@ -281,16 +281,31 @@ mod tests {
     #[test]
     fn test_load_stage_predicate_grouping() {
         let load = LoadStage::new();
-        
+
         let transform_result = TransformResult {
             typed_triples: vec![
-                TypedTriple { subject: 1, predicate: 100, object: 10, graph: None },
-                TypedTriple { subject: 2, predicate: 100, object: 20, graph: None },
-                TypedTriple { subject: 3, predicate: 200, object: 30, graph: None },
+                TypedTriple {
+                    subject: 1,
+                    predicate: 100,
+                    object: 10,
+                    graph: None,
+                },
+                TypedTriple {
+                    subject: 2,
+                    predicate: 100,
+                    object: 20,
+                    graph: None,
+                },
+                TypedTriple {
+                    subject: 3,
+                    predicate: 200,
+                    object: 30,
+                    graph: None,
+                },
             ],
             validation_errors: Vec::new(),
         };
-        
+
         let result = load.load(transform_result);
         assert!(result.is_ok());
 
@@ -305,19 +320,23 @@ mod tests {
     #[test]
     fn test_reflex_stage_tick_budget() {
         let reflex = ReflexStage::new();
-        
+
         let mut soa = SoAArrays::new();
         soa.s[0] = 1;
         soa.p[0] = 100;
         soa.o[0] = 10;
-        
-        let run = PredRun { pred: 100, off: 0, len: 1 };
-        
+
+        let run = PredRun {
+            pred: 100,
+            off: 0,
+            len: 1,
+        };
+
         let load_result = LoadResult {
             soa_arrays: soa,
             runs: vec![run],
         };
-        
+
         let result = reflex.reflex(load_result);
         assert!(result.is_ok());
 
@@ -348,7 +367,7 @@ mod tests {
         let span_id1 = generate_test_span_id();
         let span_id2 = generate_test_span_id();
         let expected_merged_span_id = span_id1 ^ span_id2;
-        
+
         let receipt1 = Receipt {
             id: "r1".to_string(),
             cycle_id: 1,
@@ -372,9 +391,9 @@ mod tests {
             span_id: span_id2,
             a_hash: 0xEF00,
         };
-        
+
         let merged = ReflexStage::merge_receipts(&[receipt1, receipt2]);
-        
+
         assert_eq!(merged.ticks, 6); // Max ticks
         assert_eq!(merged.lanes, 16); // Sum lanes
         assert_eq!(merged.span_id, expected_merged_span_id); // XOR merge
@@ -415,13 +434,11 @@ mod tests {
         };
 
         let reflex_result = ReflexResult {
-            actions: vec![
-                Action {
-                    id: "action1".to_string(),
-                    payload: vec![1, 2, 3],
-                    receipt_id: "receipt1".to_string(),
-                }
-            ],
+            actions: vec![Action {
+                id: "action1".to_string(),
+                payload: vec![1, 2, 3],
+                receipt_id: "receipt1".to_string(),
+            }],
             receipts: vec![receipt],
             max_ticks: 4,
             c1_failure_actions: Vec::new(),

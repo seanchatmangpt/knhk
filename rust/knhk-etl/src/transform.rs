@@ -2,10 +2,10 @@
 // Stage 2: Transform
 // Typed by Σ, constrained by Q
 
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
-use alloc::string::String;
 use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 use crate::error::PipelineError;
 use crate::ingest::IngestResult;
@@ -13,7 +13,7 @@ use crate::ingest::IngestResult;
 /// Stage 2: Transform
 /// Typed by Σ, constrained by Q
 /// Transform stage for schema validation and transformation
-/// 
+///
 /// Validates triples against schema and performs transformations required
 /// for downstream processing.
 pub struct TransformStage {
@@ -32,7 +32,7 @@ impl TransformStage {
     }
 
     /// Transform raw triples to typed, validated triples
-    /// 
+    ///
     /// Production implementation:
     /// 1. Validate against Σ schema (O ⊨ Σ)
     /// 2. Check Q invariants (preserve(Q))
@@ -85,28 +85,35 @@ impl TransformStage {
     }
 
     /// Validate triple against schema (O ⊨ Σ)
-    /// 
+    ///
     /// Validates IRI format and schema namespace matching.
     /// Uses cache for repeated validations.
-    /// 
+    ///
     /// Note: Full schema registry integration is planned for v1.0.
     /// Current implementation validates IRI format and namespace matching.
     fn validate_schema(&self, subject: &str, predicate: &str) -> Result<(), String> {
         // Check schema IRI prefix match
-        if !self.schema_iri.is_empty() {
-            if !subject.starts_with(&self.schema_iri) && !predicate.starts_with(&self.schema_iri) {
-                // Check cache first
-                let cache_key = format!("{}:{}", subject, predicate);
-                if let Some(&valid) = self.schema_cache.get(&cache_key) {
-                    if !valid {
-                        return Err(format!("Schema validation failed for {} {}", subject, predicate));
-                    }
-                } else {
-                    // Validate IRI format (must contain namespace separator)
-                    let valid = predicate.contains(":") || subject.contains(":");
-                    if !valid {
-                        return Err(format!("Schema validation failed: invalid IRI format for {} {}", subject, predicate));
-                    }
+        if !self.schema_iri.is_empty()
+            && !subject.starts_with(&self.schema_iri)
+            && !predicate.starts_with(&self.schema_iri)
+        {
+            // Check cache first
+            let cache_key = format!("{}:{}", subject, predicate);
+            if let Some(&valid) = self.schema_cache.get(&cache_key) {
+                if !valid {
+                    return Err(format!(
+                        "Schema validation failed for {} {}",
+                        subject, predicate
+                    ));
+                }
+            } else {
+                // Validate IRI format (must contain namespace separator)
+                let valid = predicate.contains(":") || subject.contains(":");
+                if !valid {
+                    return Err(format!(
+                        "Schema validation failed: invalid IRI format for {} {}",
+                        subject, predicate
+                    ));
                 }
             }
         }
@@ -123,9 +130,8 @@ pub struct TransformResult {
 
 #[derive(Debug, Clone)]
 pub struct TypedTriple {
-    pub subject: u64,    // Hashed IRI
-    pub predicate: u64,   // Hashed IRI
-    pub object: u64,     // Hashed value
+    pub subject: u64,   // Hashed IRI
+    pub predicate: u64, // Hashed IRI
+    pub object: u64,    // Hashed value
     pub graph: Option<u64>,
 }
-

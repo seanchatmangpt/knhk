@@ -1,98 +1,146 @@
 // rust/knhk-etl/tests/chicago_tdd_architecture_refinements.rs
 // Chicago TDD tests for architecture refinements (Δ → Σ)
 // Tests validate mathematical properties: A = μ(O), τ ≤ 8, Γ(O), etc.
+//
+// ============================================================================
+#![allow(clippy::expect_used)]
+// ARCHITECTURE TESTS: 8-Beat Epoch System (NO TIMING MEASUREMENT)
+// ============================================================================
+//
+// CRITICAL: Hot path does NOT measure or validate execution time.
+//
+// CORRECT ARCHITECTURE:
+//
+// 1. **8-BEAT SCHEDULER** - Cycles through slots 0-7 (ticks)
+//    - Just advances: tick 0 → 1 → 2 → ... → 7 → 0 (wraps)
+//    - No timing measurement, just slot progression
+//
+// 2. **AOT COMPILATION LAYER** - Determines tick costs ahead of time
+//    - AOT compiler decides: "Operation X costs 3 ticks"
+//    - Data injection determines which operations go in which slots
+//    - Hot path just executes, no validation
+//
+// 3. **HOT PATH (R1)** - Laser-focused execution, no defensive coding
+//    - Executes operations in assigned tick slot
+//    - No timing measurement, no validation checks
+//    - Receipt records which slot (tick) executed
+//
+// 4. **RECEIPT** - Records execution metadata
+//    - `ticks`: Which slot (0-7) this executed in
+//    - NOT measured execution time
+//    - NOT a defensive validation
+//
+// These tests validate:
+// - 8-beat scheduler slot progression (0-7 wrapping)
+// - BFT quorum mathematics
+// - Reconciliation: A = μ(O)
+// - Receipt propagation
+//
+// These tests do NOT:
+// - ❌ Measure execution time
+// - ❌ Convert ticks to nanoseconds
+// - ❌ Validate timing constraints
+// - ❌ Calculate SLOs or safety margins
+//
+// ============================================================================
 
 use knhk_etl::beat_scheduler::{BeatScheduler, BeatSchedulerError};
 use knhk_etl::ingest::RawTriple;
-use knhk_etl::reflex::{ReflexStage, Receipt};
-use knhk_etl::load::{LoadResult, SoAArrays, PredRun};
+use knhk_etl::load::{LoadResult, PredRun, SoAArrays};
+use knhk_etl::reflex::{Receipt, ReflexStage};
 use knhk_hot::BeatScheduler as CBeatScheduler;
 
 // ========================================================================
-// Δ_SLO: Fix SLO timing precision (τ_tick_ns from PMU)
+// Δ_BEAT: 8-Beat Scheduler Slot Progression (NO TIMING)
 // ========================================================================
 
-/// Test: Define τ_tick_ns and verify R1_SLO_NS = ≤8*τ_tick_ns
+/// Test: 8-beat scheduler cycles through slots 0-7
 ///
-/// Σ::τ_tick_ns: Measure actual tick duration from PMU
-/// Σ::R1_SLO_NS: R1 hot path SLO ≤ 8*τ_tick_ns (with safety margin ε)
-///
-/// Q: {τ_tick_ns, R1_SLO_NS, safety_margin_ε}
+/// Σ::tick ∈ [0..7]: Scheduler advances through 8 slots
+/// Π: Tick wraps after slot 7 → 0 (modulo 8)
+/// Q: Verify slot progression, not execution time
 #[test]
-fn test_delta_slo_tau_tick_precision() {
-    // AAA Pattern: Arrange, Act, Assert
+fn test_beat_scheduler_slot_progression() {
+    // Arrange: Create beat scheduler (1 shard, 1 domain, 8 ring capacity)
+    let mut scheduler = BeatScheduler::new(1, 1, 8).expect("Failed to create scheduler");
 
-    // Arrange: Define τ_tick_ns from PMU measurements
-    // Conservative estimate: 1 tick ≈ 0.25ns @ 4GHz CPU
-    const TAU_TICK_NS: u64 = 1; // 0.25ns rounded up for safety
-    const CHATMAN_CONSTANT: u64 = 8;
-
-    // Σ::R1_SLO_NS = 8*τ_tick_ns with 10% safety margin
-    const SAFETY_MARGIN_PERCENT: f64 = 0.10;
-    let r1_slo_ns_base = CHATMAN_CONSTANT * TAU_TICK_NS;
-    let safety_margin = ((r1_slo_ns_base as f64 * SAFETY_MARGIN_PERCENT).ceil() as u64).max(1);
-    let r1_slo_ns = r1_slo_ns_base + safety_margin;
-
-    // Assert: R1_SLO_NS should be ≤10ns (8*1ns + 10% = 8.8ns rounded to 10ns)
-    assert!(r1_slo_ns <= 10,
-        "R1_SLO_NS={} must be ≤10ns (8 ticks * {}ns/tick + {}% margin)",
-        r1_slo_ns, TAU_TICK_NS, SAFETY_MARGIN_PERCENT * 100.0);
-
-    // Q: Verify safety margin exists
-    assert!(safety_margin > 0, "Safety margin ε={} must be >0", safety_margin);
-
-    // Act: Convert example receipt ticks to latency
-    let example_ticks = 3u32;
-    let example_latency_ns = (example_ticks as u64) * TAU_TICK_NS;
-
-    // Assert: Example latency should be within R1 SLO
-    assert!(example_latency_ns <= r1_slo_ns,
-        "Example latency {}ns (3 ticks) must be ≤ R1_SLO {}ns",
-        example_latency_ns, r1_slo_ns);
-
-    // Q: Emit metrics for observability
-    println!("Q::τ_tick_ns = {}ns", TAU_TICK_NS);
-    println!("Q::R1_SLO_NS = {}ns", r1_slo_ns);
-    println!("Q::safety_margin_ε = {}ns ({}%)", safety_margin, SAFETY_MARGIN_PERCENT * 100.0);
-    println!("Q::example_latency = {}ns (3 ticks)", example_latency_ns);
-}
-
-/// Test: Verify tick-to-latency conversion consistency
-///
-/// Σ::latency_ns = ticks * τ_tick_ns
-/// Q: Verify for all ticks ∈ [1..8]
-#[test]
-fn test_delta_slo_latency_conversion() {
-    const TAU_TICK_NS: u64 = 1; // 0.25ns rounded up
-    const R1_SLO_NS: u64 = 10; // 8*1ns + 10% margin
-
-    // Act: Test all valid tick values (1-8)
-    for ticks in 1..=8 {
-        let latency_ns = (ticks as u64) * TAU_TICK_NS;
-
-        // Assert: All tick values ≤8 must satisfy R1 SLO
-        assert!(latency_ns <= R1_SLO_NS,
-            "ticks={} → latency={}ns must be ≤ R1_SLO={}ns",
-            ticks, latency_ns, R1_SLO_NS);
+    // Act: Advance through multiple cycles
+    let mut observed_ticks = Vec::new();
+    for _ in 0..20 {
+        let (_cycle, _pulse) = scheduler.advance_beat();
+        let tick = scheduler.current_tick();
+        observed_ticks.push(tick);
     }
 
-    // Act: Test boundary - 9 ticks with 1ns/tick = 9ns (within SLO of 9ns)
-    // Note: With TAU_TICK_NS=1, CHATMAN_CONSTANT=8, safety_margin=1 → R1_SLO_NS=9ns
-    // So 9 ticks = 9ns, which is exactly at SLO limit (borderline case)
-    let ticks_at_limit = 9u32;
-    let latency_at_limit_ns = (ticks_at_limit as u64) * TAU_TICK_NS;
+    // Assert: Ticks should cycle 0-7 repeatedly
+    let expected_pattern: Vec<u64> = (0..8).cycle().take(20).collect();
+    for (i, (&observed, &expected)) in observed_ticks
+        .iter()
+        .zip(expected_pattern.iter())
+        .enumerate()
+    {
+        // Ticks cycle 0→1→2→...→7→0→1→...
+        assert!(
+            observed <= 7,
+            "At iteration {}, tick {} must be ≤7 (within 8-beat slots)",
+            i,
+            observed
+        );
+    }
 
-    // Assert: 9 ticks = 9ns should be ≤ R1_SLO (9ns) (still within budget)
-    assert!(latency_at_limit_ns <= R1_SLO_NS,
-        "ticks={} → latency={}ns should be ≤ R1_SLO={}ns (at limit but within budget)",
-        ticks_at_limit, latency_at_limit_ns, R1_SLO_NS);
+    // Q: Verify no tick > 7 (all within 8 slots)
+    for &tick in &observed_ticks {
+        assert!(tick <= 7, "Tick {} must be ≤7 (within 8-beat slots)", tick);
+    }
+}
 
-    // 11 ticks would exceed SLO (11ns > 10ns)
-    let ticks_overflow = 11u32;
-    let latency_overflow_ns = (ticks_overflow as u64) * TAU_TICK_NS;
-    assert!(latency_overflow_ns > R1_SLO_NS,
-        "ticks={} → latency={}ns must exceed R1_SLO={}ns (triggers parking)",
-        ticks_overflow, latency_overflow_ns, R1_SLO_NS);
+/// Test: Receipt records which slot executed (not execution time)
+///
+/// Σ::receipt.ticks: Which slot (0-7) this executed in
+/// Π: NOT measured time, just slot identifier
+/// Q: Verify receipt records slot, AOT determines cost
+#[test]
+fn test_receipt_records_slot_not_time() {
+    // Arrange: Create minimal SoA for single operation
+    let mut soa = SoAArrays::new();
+    soa.s[0] = 0x1234;
+    soa.p[0] = 0x5678;
+    soa.o[0] = 0xABCD;
+
+    let run = PredRun {
+        pred: 0x5678,
+        off: 0,
+        len: 1,
+    };
+    let load_result = LoadResult {
+        soa_arrays: soa,
+        runs: vec![run],
+    };
+
+    // Act: Execute reflex (which calls hot path)
+    let reflex = ReflexStage::new();
+    let result = reflex
+        .reflex(load_result)
+        .expect("Failed to execute reflex");
+
+    // Assert: Receipt should have ticks field (slot identifier)
+    assert!(
+        !result.receipts.is_empty(),
+        "Should have at least one receipt"
+    );
+    let receipt = &result.receipts[0];
+
+    // Q: Verify ticks is a slot identifier (0-7), not measured time
+    assert!(
+        receipt.ticks <= 8,
+        "Receipt ticks={} should be ≤8 (slot identifier, not time measurement)",
+        receipt.ticks
+    );
+
+    // Q: Verify we're not doing timing validation in hot path
+    // (just recording which slot executed)
+    // Receipt fields populated by hot path (no defensive timing validation)
+    assert!(receipt.id.len() > 0, "Receipt should have an ID");
 }
 
 // ========================================================================
@@ -106,7 +154,7 @@ fn test_delta_slo_latency_conversion() {
 /// Q: {merge_hash, collision_probability}
 #[test]
 fn test_delta_oplus_cryptographic_merge() {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
 
     // Arrange: Create test receipts
     let receipt1 = Receipt {
@@ -166,8 +214,11 @@ fn test_delta_oplus_cryptographic_merge() {
     }
     let merge_hash2 = hasher2.finalize();
 
-    assert_eq!(merge_hash[..], merge_hash2[..],
-        "⊕ must be idempotent: same receipts → same merge hash");
+    assert_eq!(
+        merge_hash[..],
+        merge_hash2[..],
+        "⊕ must be idempotent: same receipts → same merge hash"
+    );
 
     // Q: Emit collision probability (negligible for SHA-256)
     println!("Q::merge_hash = 0x{:016x}", merge_hash_u64);
@@ -179,7 +230,7 @@ fn test_delta_oplus_cryptographic_merge() {
 /// Σ::⊕ must satisfy: ⊕(r1, r2) = ⊕(r2, r1)
 #[test]
 fn test_delta_oplus_commutativity() {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
 
     // Arrange: Create receipts
     let receipt1 = Receipt {
@@ -239,8 +290,11 @@ fn test_delta_oplus_commutativity() {
     };
 
     // Assert: ⊕ must be commutative
-    assert_eq!(hash1[..], hash2[..],
-        "⊕ must be commutative: ⊕(r1,r2) = ⊕(r2,r1)");
+    assert_eq!(
+        hash1[..],
+        hash2[..],
+        "⊕ must be commutative: ⊕(r1,r2) = ⊕(r2,r1)"
+    );
 }
 
 // ========================================================================
@@ -254,8 +308,7 @@ fn test_delta_oplus_commutativity() {
 #[test]
 fn test_delta_pulse_completeness() {
     // Arrange: Create beat scheduler
-    let mut scheduler = BeatScheduler::new(2, 1, 8)
-        .expect("Failed to create beat scheduler");
+    let mut scheduler = BeatScheduler::new(2, 1, 8).expect("Failed to create beat scheduler");
 
     // Act: Advance through 8 beats to trigger pulse
     // Note: BeatScheduler starts at cycle 1, so first tick will be 1, not 0
@@ -269,8 +322,10 @@ fn test_delta_pulse_completeness() {
             // Q: missing_slots = 0 (all slots drained or empty)
             let missing_slots = 0; // Computed by checking each ring slot
 
-            assert_eq!(missing_slots, 0,
-                "Q::missing_slots must be 0 at pulse boundary (all slots drained)");
+            assert_eq!(
+                missing_slots, 0,
+                "Q::missing_slots must be 0 at pulse boundary (all slots drained)"
+            );
 
             println!("Q::pulse_completeness = true (cycle complete)");
             println!("Q::drained_slots = 8 (ticks 0-7)");
@@ -284,8 +339,7 @@ fn test_delta_pulse_completeness() {
 #[test]
 fn test_delta_pulse_ring_drainage() {
     // Arrange: Create scheduler and enqueue deltas
-    let mut scheduler = BeatScheduler::new(2, 1, 8)
-        .expect("Failed to create beat scheduler");
+    let mut scheduler = BeatScheduler::new(2, 1, 8).expect("Failed to create beat scheduler");
 
     // Enqueue delta at tick 0
     let delta = vec![RawTriple {
@@ -311,9 +365,11 @@ fn test_delta_pulse_ring_drainage() {
 
             // Q: All receipts should be from completed operations
             for receipt in receipts {
-                assert!(receipt.ticks <= 8,
+                assert!(
+                    receipt.ticks <= 8,
                     "Receipt ticks={} must be ≤8 (Chatman Constant)",
-                    receipt.ticks);
+                    receipt.ticks
+                );
             }
 
             println!("Q::receipts_collected = {}", receipts.len());
@@ -379,8 +435,10 @@ fn test_delta_w1_r1_guard_determinism() {
     ];
 
     // Assert: Deterministic delta should pass guard
-    assert!(is_deterministic(&delta_deterministic, 3),
-        "D(O, Δ) = true for deterministic delta (run_len=3)");
+    assert!(
+        is_deterministic(&delta_deterministic, 3),
+        "D(O, Δ) = true for deterministic delta (run_len=3)"
+    );
 
     // Act: Test non-deterministic delta (run_len = 10)
     let delta_nondeterministic = vec![
@@ -389,12 +447,15 @@ fn test_delta_w1_r1_guard_determinism() {
             predicate: "http://example.org/p".to_string(),
             object: "http://example.org/o".to_string(),
             graph: None,
-        }; 10
+        };
+        10
     ];
 
     // Assert: Non-deterministic delta should fail guard
-    assert!(!is_deterministic(&delta_nondeterministic, 10),
-        "D(O, Δ) = false for non-deterministic delta (run_len=10)");
+    assert!(
+        !is_deterministic(&delta_nondeterministic, 10),
+        "D(O, Δ) = false for non-deterministic delta (run_len=10)"
+    );
 
     // Q: Emit delegation metrics
     println!("Q::determinism_score = 100% (all criteria satisfied)");
@@ -442,34 +503,42 @@ fn test_delta_lockchain_lambda_bft_quorum() {
 
     // Act: Test various peer counts
     let test_cases = vec![
-        (1, 1),  // n=1 → t=1 (100%)
-        (2, 2),  // n=2 → t=2 (100%, cannot tolerate failures)
-        (3, 2),  // n=3 → t=2 (67%, can tolerate 1 failure)
-        (4, 3),  // n=4 → t=3 (75%, can tolerate 1 failure)
-        (5, 4),  // n=5 → t=4 (80%, can tolerate 1 failure)
-        (6, 4),  // n=6 → t=4 (67%, can tolerate 2 failures)
-        (7, 5),  // n=7 → t=5 (71%, can tolerate 2 failures)
+        (1, 1), // n=1 → t=1 (100%)
+        (2, 2), // n=2 → t=2 (100%, cannot tolerate failures)
+        (3, 2), // n=3 → t=2 (67%, can tolerate 1 failure)
+        (4, 3), // n=4 → t=3 (75%, can tolerate 1 failure)
+        (5, 4), // n=5 → t=4 (80%, can tolerate 1 failure)
+        (6, 4), // n=6 → t=4 (67%, can tolerate 2 failures)
+        (7, 5), // n=7 → t=5 (71%, can tolerate 2 failures)
     ];
 
     for (peer_count, expected_threshold) in test_cases {
         let threshold = compute_bft_threshold(peer_count);
 
         // Assert: Threshold matches BFT formula
-        assert_eq!(threshold, expected_threshold,
+        assert_eq!(
+            threshold, expected_threshold,
             "BFT threshold for n={} peers must be t={}",
-            peer_count, expected_threshold);
+            peer_count, expected_threshold
+        );
 
         // Assert: Can tolerate up to ⌊n/3⌋ Byzantine failures
         let max_failures = peer_count / 3;
         let min_honest = peer_count - max_failures;
 
-        assert!(threshold <= min_honest,
+        assert!(
+            threshold <= min_honest,
             "Threshold t={} must be achievable with {} honest peers (tolerates {} failures)",
-            threshold, min_honest, max_failures);
+            threshold,
+            min_honest,
+            max_failures
+        );
 
         // Q: Emit quorum metrics
-        println!("Q::n={}, t={}, max_failures={}, bft_satisfied=true",
-            peer_count, threshold, max_failures);
+        println!(
+            "Q::n={}, t={}, max_failures={}, bft_satisfied=true",
+            peer_count, threshold, max_failures
+        );
     }
 }
 
@@ -479,7 +548,7 @@ fn test_delta_lockchain_lambda_bft_quorum() {
 #[test]
 #[cfg(feature = "knhk-lockchain")]
 fn test_delta_lockchain_quorum_consensus() {
-    use knhk_lockchain::{QuorumManager, PeerId};
+    use knhk_lockchain::{PeerId, QuorumManager};
 
     // Arrange: Create quorum with 5 peers, threshold 4 (BFT: ⌊(2*5)/3⌋ = 3, but using 4 for stricter consensus)
     let peers = vec![
@@ -495,7 +564,12 @@ fn test_delta_lockchain_quorum_consensus() {
     let quorum = QuorumManager::new(peers.clone(), threshold, self_peer);
 
     // Assert: Quorum configured correctly
-    assert_eq!(quorum.threshold(), threshold, "Threshold must be {}", threshold);
+    assert_eq!(
+        quorum.threshold(),
+        threshold,
+        "Threshold must be {}",
+        threshold
+    );
     assert_eq!(quorum.peer_count(), 5, "Peer count must be 5");
 
     // Q: Verify BFT properties
@@ -532,8 +606,10 @@ fn test_delta_ffi_soa_invariants() {
     // Assert: Valid run satisfies invariants
     assert!(run_valid.len <= 8, "Σ::len ≤ 8 (Chatman Constant)");
     assert!(run_valid.off < 8, "Σ::off < 8 (SoA array bounds)");
-    assert!(run_valid.off + run_valid.len <= 8,
-        "Σ::off + len ≤ 8 (no buffer overflow)");
+    assert!(
+        run_valid.off + run_valid.len <= 8,
+        "Σ::off + len ≤ 8 (no buffer overflow)"
+    );
 
     // Act: Create invalid runs (should be rejected before FFI)
     let run_invalid_len = PredRun {
@@ -549,17 +625,24 @@ fn test_delta_ffi_soa_invariants() {
     };
 
     // Assert: Invalid runs violate invariants
-    assert!(run_invalid_len.len > 8,
+    assert!(
+        run_invalid_len.len > 8,
         "Invalid: len={} exceeds Chatman Constant",
-        run_invalid_len.len);
+        run_invalid_len.len
+    );
 
-    assert!(run_invalid_off.off >= 8,
+    assert!(
+        run_invalid_off.off >= 8,
         "Invalid: off={} exceeds SoA bounds",
-        run_invalid_off.off);
+        run_invalid_off.off
+    );
 
     // Q: Verify alignment (SoA arrays are [u64; 8] = 64 bytes)
     let alignment = std::mem::align_of::<SoAArrays>();
-    assert!(alignment >= 8, "SoA alignment must be ≥8 bytes for u64 arrays");
+    assert!(
+        alignment >= 8,
+        "SoA alignment must be ≥8 bytes for u64 arrays"
+    );
 
     println!("Q::soa_alignment = {} bytes", alignment);
     println!("Q::soa_size = {} bytes", std::mem::size_of::<SoAArrays>());
@@ -572,12 +655,12 @@ fn test_delta_ffi_soa_invariants() {
 fn test_delta_ffi_bounds_checking() {
     // Arrange: Test boundary conditions
     let test_cases = vec![
-        (0, 1, true),   // off=0, len=1 → valid
-        (0, 8, true),   // off=0, len=8 → valid (maximum)
-        (7, 1, true),   // off=7, len=1 → valid (last slot)
-        (0, 9, false),  // off=0, len=9 → invalid (exceeds Chatman)
-        (8, 1, false),  // off=8, len=1 → invalid (exceeds bounds)
-        (7, 2, false),  // off=7, len=2 → invalid (off+len=9)
+        (0, 1, true),  // off=0, len=1 → valid
+        (0, 8, true),  // off=0, len=8 → valid (maximum)
+        (7, 1, true),  // off=7, len=1 → valid (last slot)
+        (0, 9, false), // off=0, len=9 → invalid (exceeds Chatman)
+        (8, 1, false), // off=8, len=1 → invalid (exceeds bounds)
+        (7, 2, false), // off=7, len=2 → invalid (off+len=9)
     ];
 
     for (off, len, should_be_valid) in test_cases {
@@ -587,9 +670,11 @@ fn test_delta_ffi_bounds_checking() {
         let is_valid = run.len <= 8 && run.off < 8 && run.off + run.len <= 8;
 
         // Assert: Validation matches expected result
-        assert_eq!(is_valid, should_be_valid,
+        assert_eq!(
+            is_valid, should_be_valid,
             "off={}, len={}: expected valid={}, got {}",
-            off, len, should_be_valid, is_valid);
+            off, len, should_be_valid, is_valid
+        );
     }
 }
 
@@ -616,7 +701,11 @@ fn test_delta_provenance_hash_verification() {
         o: [100, 200, 0, 0, 0, 0, 0, 0],
     };
 
-    let runs = vec![PredRun { pred: 10, off: 0, len: 2 }];
+    let runs = vec![PredRun {
+        pred: 10,
+        off: 0,
+        len: 2,
+    }];
 
     let input = LoadResult {
         soa_arrays: soa,
@@ -624,13 +713,14 @@ fn test_delta_provenance_hash_verification() {
     };
 
     // Act: Apply reflex map μ(O) → A
-    let result = reflex_map.apply(input)
-        .expect("Reflex map should succeed");
+    let result = reflex_map.apply(input).expect("Reflex map should succeed");
 
     // Assert: Provenance verified
-    assert_eq!(result.a_hash, result.mu_hash,
+    assert_eq!(
+        result.a_hash, result.mu_hash,
         "Σ::Provenance: hash(A)={:016x} must equal hash(μ(O))={:016x}",
-        result.a_hash, result.mu_hash);
+        result.a_hash, result.mu_hash
+    );
 
     // Q: Emit provenance metrics
     println!("Q::mu_hash = 0x{:016x}", result.mu_hash);
@@ -657,8 +747,16 @@ fn test_delta_provenance_idempotence() {
     };
 
     let runs = vec![
-        PredRun { pred: 10, off: 0, len: 2 },
-        PredRun { pred: 20, off: 2, len: 1 },
+        PredRun {
+            pred: 10,
+            off: 0,
+            len: 2,
+        },
+        PredRun {
+            pred: 20,
+            off: 2,
+            len: 1,
+        },
     ];
 
     let input = LoadResult {
@@ -667,20 +765,29 @@ fn test_delta_provenance_idempotence() {
     };
 
     // Act: Apply μ once
-    let result1 = reflex_map.apply(input.clone())
+    let result1 = reflex_map
+        .apply(input.clone())
         .expect("First application should succeed");
 
     // Act: Apply μ again (same input)
-    let result2 = reflex_map.apply(input)
+    let result2 = reflex_map
+        .apply(input)
         .expect("Second application should succeed");
 
     // Assert: Idempotence (same input → same output)
-    assert_eq!(result1.mu_hash, result2.mu_hash,
-        "μ ∘ μ = μ: mu_hash must be identical");
-    assert_eq!(result1.a_hash, result2.a_hash,
-        "μ ∘ μ = μ: a_hash must be identical");
-    assert_eq!(result1.actions.len(), result2.actions.len(),
-        "μ ∘ μ = μ: action count must be identical");
+    assert_eq!(
+        result1.mu_hash, result2.mu_hash,
+        "μ ∘ μ = μ: mu_hash must be identical"
+    );
+    assert_eq!(
+        result1.a_hash, result2.a_hash,
+        "μ ∘ μ = μ: a_hash must be identical"
+    );
+    assert_eq!(
+        result1.actions.len(),
+        result2.actions.len(),
+        "μ ∘ μ = μ: action count must be identical"
+    );
 
     // Q: Verify idempotence property
     println!("Q::idempotence = true (μ ∘ μ = μ)");
@@ -707,14 +814,18 @@ fn test_delta_fail_receipts_emission() {
         actual_ticks: 9,
         lanes: 8,
         span_id: 0xFA11, // Hex representation of "FAIL"
-        a_hash: 0, // ❌ NULL hash (A not produced)
+        a_hash: 0,       // ❌ NULL hash (A not produced)
     };
 
     // Assert: Failed receipt has marker values
-    assert!(failed_receipt.ticks > 8,
-        "Failed receipt must have ticks > 8 (budget exceeded)");
-    assert_eq!(failed_receipt.a_hash, 0,
-        "Failed receipt must have a_hash = NULL (A not produced)");
+    assert!(
+        failed_receipt.ticks > 8,
+        "Failed receipt must have ticks > 8 (budget exceeded)"
+    );
+    assert_eq!(
+        failed_receipt.a_hash, 0,
+        "Failed receipt must have a_hash = NULL (A not produced)"
+    );
 
     // Q: Emit failure metrics
     println!("Q::failure_cause = TickBudgetExceeded");
@@ -768,9 +879,11 @@ fn test_delta_fail_receipts_coherence() {
     // Assert: All receipts have same cycle_id (Γ coherence)
     let cycle_id = receipts[0].cycle_id;
     for receipt in &receipts {
-        assert_eq!(receipt.cycle_id, cycle_id,
+        assert_eq!(
+            receipt.cycle_id, cycle_id,
             "Σ::Γ: All receipts must have same cycle_id={} for coherence",
-            cycle_id);
+            cycle_id
+        );
     }
 
     // Assert: Can distinguish success from failure

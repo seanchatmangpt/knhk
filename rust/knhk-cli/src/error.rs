@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// CLI error type
 #[derive(Error, Debug)]
+#[allow(dead_code)] // FUTURE: CLI error handling
 pub enum CliError {
     #[error("Configuration error: {0}")]
     Config(String),
@@ -24,5 +25,5 @@ pub enum CliError {
     NotFound(String),
 }
 
+#[allow(dead_code)] // FUTURE: CLI result type
 pub type Result<T> = std::result::Result<T, CliError>;
-

@@ -5,18 +5,17 @@
 // CRITICAL: Enforce proper error handling - no unwrap/expect in production code
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
-
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
 #[cfg(feature = "std")]
 extern crate std;
 
-use alloc::vec::Vec;
-use alloc::string::String;
 use alloc::collections::BTreeMap;
 use alloc::format;
+use alloc::string::String;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -167,7 +166,7 @@ impl WeaverLiveCheck {
     /// Check if Weaver binary is available in PATH
     pub fn check_weaver_available() -> Result<(), String> {
         use std::process::Command;
-        
+
         // Try to run weaver --version to check if it exists
         match Command::new("weaver").arg("--version").output() {
             Ok(output) => {
@@ -191,19 +190,25 @@ impl WeaverLiveCheck {
     pub fn check_health(&self) -> Result<bool, String> {
         use reqwest::blocking::Client;
         use std::time::Duration;
-        
+
         let client = Client::builder()
             .timeout(Duration::from_secs(2))
             .build()
             .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-        
+
         // Try common health check endpoints
         let health_endpoints = vec![
-            format!("http://{}:{}/health", self.otlp_grpc_address, self.admin_port),
-            format!("http://{}:{}/status", self.otlp_grpc_address, self.admin_port),
+            format!(
+                "http://{}:{}/health",
+                self.otlp_grpc_address, self.admin_port
+            ),
+            format!(
+                "http://{}:{}/status",
+                self.otlp_grpc_address, self.admin_port
+            ),
             format!("http://{}:{}/", self.otlp_grpc_address, self.admin_port),
         ];
-        
+
         for url in health_endpoints {
             match client.get(&url).send() {
                 Ok(response) => {
@@ -219,12 +224,18 @@ impl WeaverLiveCheck {
                 }
             }
         }
-        
+
         // If all endpoints failed, check if port is listening
         // This is a basic connectivity check
-        match std::net::TcpStream::connect(format!("{}:{}", self.otlp_grpc_address, self.admin_port)) {
+        match std::net::TcpStream::connect(format!(
+            "{}:{}",
+            self.otlp_grpc_address, self.admin_port
+        )) {
             Ok(_) => Ok(true), // Port is open, assume Weaver is running
-            Err(_) => Err(format!("Weaver admin endpoint not responding on {}:{}", self.otlp_grpc_address, self.admin_port)),
+            Err(_) => Err(format!(
+                "Weaver admin endpoint not responding on {}:{}",
+                self.otlp_grpc_address, self.admin_port
+            )),
         }
     }
 
@@ -234,9 +245,9 @@ impl WeaverLiveCheck {
         // Check Weaver binary availability first
         Self::check_weaver_available()?;
         use std::process::Command;
-        
+
         let mut cmd = Command::new("weaver");
-        
+
         cmd.args(["registry", "live-check"]);
 
         if let Some(ref registry) = self.registry_path {
@@ -252,7 +263,7 @@ impl WeaverLiveCheck {
         if let Some(ref output) = self.output {
             cmd.args(["--output", output]);
         }
-        
+
         cmd.spawn()
             .map_err(|e| {
                 if e.kind() == std::io::ErrorKind::NotFound {
@@ -267,14 +278,14 @@ impl WeaverLiveCheck {
     pub fn stop(&self) -> Result<(), String> {
         use reqwest::blocking::Client;
         use std::time::Duration;
-        
+
         let client = Client::builder()
             .timeout(Duration::from_secs(5))
             .build()
             .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-        
+
         let url = format!("http://{}:{}/stop", self.otlp_grpc_address, self.admin_port);
-        
+
         match client.post(&url).send() {
             Ok(_) => Ok(()),
             Err(e) => Err(format!("Failed to stop Weaver live-check: {}", e)),
@@ -301,7 +312,7 @@ impl OtlpExporter {
     pub fn new(endpoint: String) -> Self {
         Self { endpoint }
     }
-    
+
     pub fn export_spans(&self, spans: &[Span]) -> Result<(), String> {
         if spans.is_empty() {
             return Ok(());
@@ -311,19 +322,19 @@ impl OtlpExporter {
         {
             use reqwest::blocking::Client;
             use std::time::Duration;
-            
+
             // Build OTLP JSON payload
             let payload = self.build_otlp_spans_payload(spans);
-            
+
             // Create HTTP client
             let client = Client::builder()
                 .timeout(Duration::from_secs(30))
                 .build()
                 .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-            
+
             // Send spans to OTLP endpoint (traces endpoint)
             let traces_endpoint = format!("{}/v1/traces", self.endpoint.trim_end_matches('/'));
-            
+
             match client
                 .post(&traces_endpoint)
                 .json(&payload)
@@ -340,53 +351,60 @@ impl OtlpExporter {
                 Err(e) => Err(format!("OTLP export failed: {}", e)),
             }
         }
-        
+
         #[cfg(not(all(feature = "std", feature = "reqwest")))]
         {
-            // Fallback: log spans (for no_std or when reqwest not available)
-            eprintln!("OTLP Export to {}: {} spans (HTTP client not available)", self.endpoint, spans.len());
+            // Fallback: cannot export spans (for no_std or when reqwest not available)
+            // Error message already contains context
             Err(format!("OTLP export not available: reqwest feature not enabled. Cannot export {} spans without HTTP client.", spans.len()))
         }
     }
-    
+
     #[cfg(all(feature = "std", feature = "serde_json"))]
     fn build_otlp_spans_payload(&self, spans: &[Span]) -> serde_json::Value {
         use serde_json::json;
-        
-        let spans_json: Vec<_> = spans.iter().map(|span| {
-            let mut span_json = json!({
-                "traceId": format!("{:032x}", span.context.trace_id.0),
-                "spanId": format!("{:016x}", span.context.span_id.0),
-                "name": span.name,
-                "startTimeUnixNano": span.start_time_ms * 1_000_000,
-                "endTimeUnixNano": span.end_time_ms.unwrap_or(span.start_time_ms) * 1_000_000,
-                "status": {
-                    "code": match span.status {
-                        SpanStatus::Ok => 1,
-                        SpanStatus::Error => 2,
-                        SpanStatus::Unset => 0,
+
+        let spans_json: Vec<_> = spans
+            .iter()
+            .map(|span| {
+                let mut span_json = json!({
+                    "traceId": format!("{:032x}", span.context.trace_id.0),
+                    "spanId": format!("{:016x}", span.context.span_id.0),
+                    "name": span.name,
+                    "startTimeUnixNano": span.start_time_ms * 1_000_000,
+                    "endTimeUnixNano": span.end_time_ms.unwrap_or(span.start_time_ms) * 1_000_000,
+                    "status": {
+                        "code": match span.status {
+                            SpanStatus::Ok => 1,
+                            SpanStatus::Error => 2,
+                            SpanStatus::Unset => 0,
+                        }
                     }
+                });
+
+                // Add parent span ID if present
+                if let Some(parent_id) = span.context.parent_span_id {
+                    span_json["parentSpanId"] = json!(format!("{:016x}", parent_id.0));
                 }
-            });
-            
-            // Add parent span ID if present
-            if let Some(parent_id) = span.context.parent_span_id {
-                span_json["parentSpanId"] = json!(format!("{:016x}", parent_id.0));
-            }
-            
-            // Add attributes
-            if !span.attributes.is_empty() {
-                span_json["attributes"] = json!(span.attributes.iter().map(|(k, v)| {
-                    json!({
-                        "key": k,
-                        "value": {"stringValue": v}
-                    })
-                }).collect::<Vec<_>>());
-            }
-            
-            span_json
-        }).collect();
-        
+
+                // Add attributes
+                if !span.attributes.is_empty() {
+                    span_json["attributes"] = json!(span
+                        .attributes
+                        .iter()
+                        .map(|(k, v)| {
+                            json!({
+                                "key": k,
+                                "value": {"stringValue": v}
+                            })
+                        })
+                        .collect::<Vec<_>>());
+                }
+
+                span_json
+            })
+            .collect();
+
         json!({
             "resourceSpans": [{
                 "resource": {},
@@ -397,13 +415,13 @@ impl OtlpExporter {
             }]
         })
     }
-    
+
     #[cfg(not(all(feature = "std", feature = "serde_json")))]
     fn build_otlp_spans_payload(&self, _spans: &[Span]) -> String {
         // Fallback: return empty JSON
         "{}".to_string()
     }
-    
+
     pub fn export_metrics(&self, metrics: &[Metric]) -> Result<(), String> {
         if metrics.is_empty() {
             return Ok(());
@@ -413,19 +431,19 @@ impl OtlpExporter {
         {
             use reqwest::blocking::Client;
             use std::time::Duration;
-            
+
             // Build OTLP JSON payload
             let payload = self.build_otlp_metrics_payload(metrics);
-            
+
             // Create HTTP client
             let client = Client::builder()
                 .timeout(Duration::from_secs(30))
                 .build()
                 .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-            
+
             // Send metrics to OTLP endpoint (metrics endpoint)
             let metrics_endpoint = format!("{}/v1/metrics", self.endpoint.trim_end_matches('/'));
-            
+
             match client
                 .post(&metrics_endpoint)
                 .json(&payload)
@@ -442,51 +460,58 @@ impl OtlpExporter {
                 Err(e) => Err(format!("OTLP export failed: {}", e)),
             }
         }
-        
+
         #[cfg(not(all(feature = "std", feature = "reqwest")))]
         {
-            // Fallback: log metrics (for no_std or when reqwest not available)
-            eprintln!("OTLP Export to {}: {} metrics (HTTP client not available)", self.endpoint, metrics.len());
+            // Fallback: cannot export metrics (for no_std or when reqwest not available)
+            // Error message already contains context
             Err(format!("OTLP export not available: reqwest feature not enabled. Cannot export {} metrics without HTTP client.", metrics.len()))
         }
     }
-    
+
     #[cfg(all(feature = "std", feature = "serde_json"))]
     fn build_otlp_metrics_payload(&self, metrics: &[Metric]) -> serde_json::Value {
         use serde_json::json;
-        
-        let metrics_json: Vec<_> = metrics.iter().map(|metric| {
-            let value_json = match &metric.value {
-                MetricValue::Counter(c) => json!({
-                    "asInt": format!("{}", c)
-                }),
-                MetricValue::Gauge(g) => json!({
-                    "asDouble": *g
-                }),
-                MetricValue::Histogram(h) => json!({
-                    "asInt": format!("{}", h.len())
-                }),
-            };
-            
-            let mut metric_json = json!({
-                "name": metric.name,
-                "timestamp": metric.timestamp_ms * 1_000_000,
-                "value": value_json
-            });
-            
-            // Add attributes
-            if !metric.attributes.is_empty() {
-                metric_json["attributes"] = json!(metric.attributes.iter().map(|(k, v)| {
-                    json!({
-                        "key": k,
-                        "value": {"stringValue": v}
-                    })
-                }).collect::<Vec<_>>());
-            }
-            
-            metric_json
-        }).collect();
-        
+
+        let metrics_json: Vec<_> = metrics
+            .iter()
+            .map(|metric| {
+                let value_json = match &metric.value {
+                    MetricValue::Counter(c) => json!({
+                        "asInt": format!("{}", c)
+                    }),
+                    MetricValue::Gauge(g) => json!({
+                        "asDouble": *g
+                    }),
+                    MetricValue::Histogram(h) => json!({
+                        "asInt": format!("{}", h.len())
+                    }),
+                };
+
+                let mut metric_json = json!({
+                    "name": metric.name,
+                    "timestamp": metric.timestamp_ms * 1_000_000,
+                    "value": value_json
+                });
+
+                // Add attributes
+                if !metric.attributes.is_empty() {
+                    metric_json["attributes"] = json!(metric
+                        .attributes
+                        .iter()
+                        .map(|(k, v)| {
+                            json!({
+                                "key": k,
+                                "value": {"stringValue": v}
+                            })
+                        })
+                        .collect::<Vec<_>>());
+                }
+
+                metric_json
+            })
+            .collect();
+
         json!({
             "resourceMetrics": [{
                 "resource": {},
@@ -497,7 +522,7 @@ impl OtlpExporter {
             }]
         })
     }
-    
+
     #[cfg(not(all(feature = "std", feature = "serde_json")))]
     fn build_otlp_metrics_payload(&self, _metrics: &[Metric]) -> String {
         // Fallback: return empty JSON
@@ -522,7 +547,7 @@ impl Tracer {
             exporter: None,
         }
     }
-    
+
     #[cfg(feature = "std")]
     pub fn with_otlp_exporter(endpoint: String) -> Self {
         Self {
@@ -531,11 +556,12 @@ impl Tracer {
             exporter: Some(OtlpExporter::new(endpoint)),
         }
     }
-    
+
     #[cfg(feature = "std")]
     pub fn export(&mut self) -> Result<(), String> {
-        let exporter = self.exporter.as_mut()
-            .ok_or_else(|| "No OTLP exporter configured. Cannot export telemetry without exporter.".to_string())?;
+        let exporter = self.exporter.as_mut().ok_or_else(|| {
+            "No OTLP exporter configured. Cannot export telemetry without exporter.".to_string()
+        })?;
 
         exporter.export_spans(&self.spans)?;
         exporter.export_metrics(&self.metrics)?;
@@ -575,7 +601,11 @@ impl Tracer {
 
     /// End a span
     pub fn end_span(&mut self, context: SpanContext, status: SpanStatus) {
-        if let Some(span) = self.spans.iter_mut().find(|s| s.context.span_id == context.span_id) {
+        if let Some(span) = self
+            .spans
+            .iter_mut()
+            .find(|s| s.context.span_id == context.span_id)
+        {
             span.end_time_ms = Some(get_timestamp_ms());
             span.status = status;
         }
@@ -583,14 +613,22 @@ impl Tracer {
 
     /// Add event to span
     pub fn add_event(&mut self, context: SpanContext, event: SpanEvent) {
-        if let Some(span) = self.spans.iter_mut().find(|s| s.context.span_id == context.span_id) {
+        if let Some(span) = self
+            .spans
+            .iter_mut()
+            .find(|s| s.context.span_id == context.span_id)
+        {
             span.events.push(event);
         }
     }
 
     /// Add attribute to span
     pub fn add_attribute(&mut self, context: SpanContext, key: String, value: String) {
-        if let Some(span) = self.spans.iter_mut().find(|s| s.context.span_id == context.span_id) {
+        if let Some(span) = self
+            .spans
+            .iter_mut()
+            .find(|s| s.context.span_id == context.span_id)
+        {
             span.attributes.insert(key, value);
         }
     }
@@ -699,7 +737,7 @@ impl MetricsHelper {
             },
         };
         tracer.record_metric(metric);
-        
+
         // Also record count
         let count_metric = Metric {
             name: "knhk.warm_path.operations.count".to_string(),
@@ -778,13 +816,14 @@ impl MetricsHelper {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
     fn test_tracer_span() {
         let mut tracer = Tracer::new();
         let context = tracer.start_span("test_span".to_string(), None);
-        
+
         tracer.add_attribute(context.clone(), "key".to_string(), "value".to_string());
         tracer.end_span(context, SpanStatus::Ok);
 
@@ -808,7 +847,7 @@ mod tests {
         #[test]
         fn test_weaver_live_check_defaults() {
             let weaver = WeaverLiveCheck::new();
-            
+
             // Verify default values match expected configuration
             assert_eq!(weaver.otlp_grpc_address, "127.0.0.1");
             assert_eq!(weaver.otlp_grpc_port, 4317);
@@ -830,7 +869,7 @@ mod tests {
                 .with_inactivity_timeout(120)
                 .with_format("ansi".to_string())
                 .with_output("./test-output".to_string());
-            
+
             // Verify all values are set correctly
             assert_eq!(weaver.registry_path, Some("./test-registry".to_string()));
             assert_eq!(weaver.otlp_grpc_address, "localhost");
@@ -847,7 +886,7 @@ mod tests {
             let weaver = WeaverLiveCheck::new()
                 .with_otlp_address("localhost".to_string())
                 .with_otlp_port(4317);
-            
+
             let endpoint = weaver.otlp_endpoint();
             assert_eq!(endpoint, "localhost:4317");
         }
@@ -857,12 +896,18 @@ mod tests {
         fn test_weaver_default_trait() {
             let weaver_default = WeaverLiveCheck::default();
             let weaver_new = WeaverLiveCheck::new();
-            
+
             // Verify Default and new() produce identical configurations
-            assert_eq!(weaver_default.otlp_grpc_address, weaver_new.otlp_grpc_address);
+            assert_eq!(
+                weaver_default.otlp_grpc_address,
+                weaver_new.otlp_grpc_address
+            );
             assert_eq!(weaver_default.otlp_grpc_port, weaver_new.otlp_grpc_port);
             assert_eq!(weaver_default.admin_port, weaver_new.admin_port);
-            assert_eq!(weaver_default.inactivity_timeout, weaver_new.inactivity_timeout);
+            assert_eq!(
+                weaver_default.inactivity_timeout,
+                weaver_new.inactivity_timeout
+            );
             assert_eq!(weaver_default.format, weaver_new.format);
         }
 
@@ -878,11 +923,11 @@ mod tests {
                 .with_inactivity_timeout(120)
                 .with_format("ansi".to_string())
                 .with_output("./test-output".to_string());
-            
+
             // Verify endpoint format is correct (used in command construction)
             let endpoint = weaver.otlp_endpoint();
             assert_eq!(endpoint, "127.0.0.1:9999");
-            
+
             // Verify all configuration values are set (required for command)
             assert!(weaver.registry_path.is_some());
             assert_eq!(weaver.otlp_grpc_port, 9999);
@@ -897,28 +942,42 @@ mod tests {
         #[test]
         fn test_export_telemetry_to_weaver() {
             let mut tracer = Tracer::new();
-            
+
             // Create a span with semantic convention attributes
             let span_ctx = tracer.start_span("knhk.operation.execute".to_string(), None);
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.name".to_string(), "boot.init".to_string());
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.type".to_string(), "system".to_string());
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.name".to_string(),
+                "boot.init".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.type".to_string(),
+                "system".to_string(),
+            );
             tracer.end_span(span_ctx, SpanStatus::Ok);
-            
+
             // Record metrics
             MetricsHelper::record_hook_latency(&mut tracer, 5, "ASK_SP");
             MetricsHelper::record_receipt(&mut tracer, "receipt-123");
-            
+
             // Verify telemetry was created correctly
             assert_eq!(tracer.spans().len(), 1);
             assert_eq!(tracer.metrics().len(), 2);
-            
+
             // Verify span has correct attributes
-            let span = tracer.spans().first().unwrap();
+            let span = tracer.spans().first().expect("Expected at least one span in tracer");
             assert_eq!(span.name, "knhk.operation.execute");
-            assert_eq!(span.attributes.get("knhk.operation.name"), Some(&"boot.init".to_string()));
-            assert_eq!(span.attributes.get("knhk.operation.type"), Some(&"system".to_string()));
+            assert_eq!(
+                span.attributes.get("knhk.operation.name"),
+                Some(&"boot.init".to_string())
+            );
+            assert_eq!(
+                span.attributes.get("knhk.operation.type"),
+                Some(&"system".to_string())
+            );
             assert_eq!(span.status, SpanStatus::Ok);
-            
+
             // Verify metrics have correct values
             let metrics = tracer.metrics();
             assert_eq!(metrics[0].name, "knhk.hook.latency.ticks");
@@ -932,7 +991,7 @@ mod tests {
             let _weaver = WeaverLiveCheck::new()
                 .with_otlp_address("localhost".to_string())
                 .with_admin_port(9998);
-            
+
             // Verify the URL format matches expected pattern
             // Note: This tests the URL construction logic, not the actual HTTP call
             let expected_url = format!("http://{}:{}/stop", "localhost", 9998);
@@ -949,35 +1008,47 @@ mod tests {
                 .with_otlp_port(4317)
                 .with_admin_port(8080)
                 .with_format("json".to_string());
-            
+
             // Verify configuration
             assert_eq!(weaver.otlp_endpoint(), "127.0.0.1:4317");
-            
+
             // Step 2: Create tracer with OTLP exporter
-            let mut tracer = Tracer::with_otlp_exporter(format!("http://{}", weaver.otlp_endpoint()));
-            
+            let mut tracer =
+                Tracer::with_otlp_exporter(format!("http://{}", weaver.otlp_endpoint()));
+
             // Step 3: Generate telemetry
             let span_ctx = tracer.start_span("knhk.boot.init".to_string(), None);
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.name".to_string(), "boot.init".to_string());
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.type".to_string(), "system".to_string());
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.name".to_string(),
+                "boot.init".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.type".to_string(),
+                "system".to_string(),
+            );
             tracer.end_span(span_ctx, SpanStatus::Ok);
-            
+
             MetricsHelper::record_operation(&mut tracer, "boot.init", true);
-            
+
             // Step 4: Verify telemetry was created
             assert_eq!(tracer.spans().len(), 1);
             assert_eq!(tracer.metrics().len(), 1);
-            
+
             // Step 5: Verify span has semantic convention attributes
-            let span = tracer.spans().first().unwrap();
+            let span = tracer.spans().first().expect("Expected at least one span in tracer");
             assert_eq!(span.name, "knhk.boot.init");
             assert!(span.attributes.contains_key("knhk.operation.name"));
             assert!(span.attributes.contains_key("knhk.operation.type"));
-            
+
             // Step 6: Verify metrics have correct attributes
-            let metric = tracer.metrics().first().unwrap();
+            let metric = tracer.metrics().first().expect("Expected at least one metric in tracer");
             assert_eq!(metric.name, "knhk.operation.executed");
-            assert_eq!(metric.attributes.get("operation"), Some(&"boot.init".to_string()));
+            assert_eq!(
+                metric.attributes.get("operation"),
+                Some(&"boot.init".to_string())
+            );
             assert_eq!(metric.attributes.get("success"), Some(&"true".to_string()));
         }
 
@@ -988,11 +1059,14 @@ mod tests {
             // Test without registry
             let weaver_no_registry = WeaverLiveCheck::new();
             assert_eq!(weaver_no_registry.registry_path, None);
-            
+
             // Test with registry
-            let weaver_with_registry = WeaverLiveCheck::new()
-                .with_registry("./my-registry".to_string());
-            assert_eq!(weaver_with_registry.registry_path, Some("./my-registry".to_string()));
+            let weaver_with_registry =
+                WeaverLiveCheck::new().with_registry("./my-registry".to_string());
+            assert_eq!(
+                weaver_with_registry.registry_path,
+                Some("./my-registry".to_string())
+            );
         }
 
         /// Test: WeaverLiveCheck with optional output directory
@@ -1002,11 +1076,14 @@ mod tests {
             // Test without output
             let weaver_no_output = WeaverLiveCheck::new();
             assert_eq!(weaver_no_output.output, None);
-            
+
             // Test with output
-            let weaver_with_output = WeaverLiveCheck::new()
-                .with_output("./weaver-reports".to_string());
-            assert_eq!(weaver_with_output.output, Some("./weaver-reports".to_string()));
+            let weaver_with_output =
+                WeaverLiveCheck::new().with_output("./weaver-reports".to_string());
+            assert_eq!(
+                weaver_with_output.output,
+                Some("./weaver-reports".to_string())
+            );
         }
 
         /// Test: Semantic convention compliance in spans
@@ -1014,18 +1091,26 @@ mod tests {
         #[test]
         fn test_semantic_convention_compliance() {
             let mut tracer = Tracer::new();
-            
+
             // Create span with semantic convention attributes
             let span_ctx = tracer.start_span("knhk.metrics.weaver.start".to_string(), None);
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.name".to_string(), "weaver.start".to_string());
-            tracer.add_attribute(span_ctx.clone(), "knhk.operation.type".to_string(), "validation".to_string());
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.name".to_string(),
+                "weaver.start".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.operation.type".to_string(),
+                "validation".to_string(),
+            );
             tracer.end_span(span_ctx, SpanStatus::Ok);
-            
+
             // Verify span name follows convention: knhk.<noun>.<verb>
-            let span = tracer.spans().first().unwrap();
+            let span = tracer.spans().first().expect("Expected at least one span in tracer");
             assert!(span.name.starts_with("knhk."));
             assert!(span.name.contains("."));
-            
+
             // Verify required semantic convention attributes exist
             assert!(span.attributes.contains_key("knhk.operation.name"));
             assert!(span.attributes.contains_key("knhk.operation.type"));
@@ -1036,29 +1121,47 @@ mod tests {
         #[test]
         fn test_weaver_operation_metrics() {
             let mut tracer = Tracer::new();
-            
+
             // Record Weaver start operation
             MetricsHelper::record_operation(&mut tracer, "weaver.start", true);
-            
+
             // Record Weaver stop operation
             MetricsHelper::record_operation(&mut tracer, "weaver.stop", true);
-            
+
             // Record Weaver validate operation
             MetricsHelper::record_operation(&mut tracer, "weaver.validate", true);
-            
+
             // Verify all metrics were recorded
             assert_eq!(tracer.metrics().len(), 3);
-            
+
             // Verify each metric has correct attributes
             let metrics = tracer.metrics();
-            assert_eq!(metrics[0].attributes.get("operation"), Some(&"weaver.start".to_string()));
-            assert_eq!(metrics[1].attributes.get("operation"), Some(&"weaver.stop".to_string()));
-            assert_eq!(metrics[2].attributes.get("operation"), Some(&"weaver.validate".to_string()));
-            
+            assert_eq!(
+                metrics[0].attributes.get("operation"),
+                Some(&"weaver.start".to_string())
+            );
+            assert_eq!(
+                metrics[1].attributes.get("operation"),
+                Some(&"weaver.stop".to_string())
+            );
+            assert_eq!(
+                metrics[2].attributes.get("operation"),
+                Some(&"weaver.validate".to_string())
+            );
+
             // Verify all operations succeeded
-            assert_eq!(metrics[0].attributes.get("success"), Some(&"true".to_string()));
-            assert_eq!(metrics[1].attributes.get("success"), Some(&"true".to_string()));
-            assert_eq!(metrics[2].attributes.get("success"), Some(&"true".to_string()));
+            assert_eq!(
+                metrics[0].attributes.get("success"),
+                Some(&"true".to_string())
+            );
+            assert_eq!(
+                metrics[1].attributes.get("success"),
+                Some(&"true".to_string())
+            );
+            assert_eq!(
+                metrics[2].attributes.get("success"),
+                Some(&"true".to_string())
+            );
         }
 
         /// Test: Error handling for failed operations
@@ -1066,14 +1169,17 @@ mod tests {
         #[test]
         fn test_weaver_operation_failure_metrics() {
             let mut tracer = Tracer::new();
-            
+
             // Record failed operation
             MetricsHelper::record_operation(&mut tracer, "weaver.start", false);
-            
+
             // Verify metric was recorded with failure status
-            let metric = tracer.metrics().first().unwrap();
+            let metric = tracer.metrics().first().expect("Expected at least one metric in tracer");
             assert_eq!(metric.attributes.get("success"), Some(&"false".to_string()));
-            assert_eq!(metric.attributes.get("operation"), Some(&"weaver.start".to_string()));
+            assert_eq!(
+                metric.attributes.get("operation"),
+                Some(&"weaver.start".to_string())
+            );
         }
 
         /// Test: WeaverLiveCheck configuration persistence
@@ -1084,23 +1190,23 @@ mod tests {
                 .with_registry("./reg1".to_string())
                 .with_otlp_port(1111)
                 .with_admin_port(2222);
-            
+
             // Verify configuration persists
             assert_eq!(weaver.registry_path, Some("./reg1".to_string()));
             assert_eq!(weaver.otlp_grpc_port, 1111);
             assert_eq!(weaver.admin_port, 2222);
-            
+
             // Create new instance with different config
             let weaver2 = WeaverLiveCheck::new()
                 .with_registry("./reg2".to_string())
                 .with_otlp_port(3333)
                 .with_admin_port(4444);
-            
+
             // Verify configurations are independent
             assert_eq!(weaver2.registry_path, Some("./reg2".to_string()));
             assert_eq!(weaver2.otlp_grpc_port, 3333);
             assert_eq!(weaver2.admin_port, 4444);
-            
+
             // Verify original weaver configuration unchanged
             assert_eq!(weaver.otlp_grpc_port, 1111);
             assert_eq!(weaver.admin_port, 2222);
@@ -1181,4 +1287,3 @@ pub fn get_timestamp_ms() -> u64 {
         0
     }
 }
-

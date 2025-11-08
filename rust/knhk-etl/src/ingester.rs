@@ -2,9 +2,9 @@
 // Ingester Pattern - Inspired by Weaver's ingester architecture
 // Provides unified interface for multiple input sources (file, stdin, streaming, OTLP)
 
+use crate::error::PipelineError;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::error::PipelineError;
 
 /// Ingested data result
 #[derive(Debug)]
@@ -24,10 +24,10 @@ pub struct IngestedData {
 pub trait Ingester: Send + Sync {
     /// Ingest data from source
     fn ingest(&mut self) -> Result<IngestedData, PipelineError>;
-    
+
     /// Get source identifier
     fn source(&self) -> &str;
-    
+
     /// Check if ingester supports streaming
     fn supports_streaming(&self) -> bool {
         false
@@ -47,7 +47,7 @@ impl FileIngester {
             format_hint: None,
         }
     }
-    
+
     pub fn with_format(mut self, format: String) -> Self {
         self.format_hint = Some(format);
         self
@@ -58,18 +58,17 @@ impl Ingester for FileIngester {
     fn ingest(&mut self) -> Result<IngestedData, PipelineError> {
         #[cfg(feature = "std")]
         {
-            use std::fs;
             use alloc::collections::BTreeMap;
-            
-            let data = fs::read(&self.path)
-                .map_err(|e| PipelineError::IngestError(
-                    format!("Failed to read file {}: {}", self.path, e)
-                ))?;
-            
+            use std::fs;
+
+            let data = fs::read(&self.path).map_err(|e| {
+                PipelineError::IngestError(format!("Failed to read file {}: {}", self.path, e))
+            })?;
+
             let mut metadata = BTreeMap::new();
             metadata.insert("source_type".to_string(), "file".to_string());
             metadata.insert("path".to_string(), self.path.clone());
-            
+
             Ok(IngestedData {
                 data,
                 source: self.path.clone(),
@@ -77,15 +76,15 @@ impl Ingester for FileIngester {
                 metadata,
             })
         }
-        
+
         #[cfg(not(feature = "std"))]
         {
             Err(PipelineError::IngestError(
-                "File ingester requires std feature".to_string()
+                "File ingester requires std feature".to_string(),
             ))
         }
     }
-    
+
     fn source(&self) -> &str {
         &self.path
     }
@@ -96,13 +95,17 @@ pub struct StdinIngester {
     format_hint: Option<String>,
 }
 
+impl Default for StdinIngester {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StdinIngester {
     pub fn new() -> Self {
-        Self {
-            format_hint: None,
-        }
+        Self { format_hint: None }
     }
-    
+
     pub fn with_format(mut self, format: String) -> Self {
         self.format_hint = Some(format);
         self
@@ -113,19 +116,17 @@ impl Ingester for StdinIngester {
     fn ingest(&mut self) -> Result<IngestedData, PipelineError> {
         #[cfg(feature = "std")]
         {
-            use std::io::Read;
             use alloc::collections::BTreeMap;
-            
+            use std::io::Read;
+
             let mut data = Vec::new();
-            std::io::stdin()
-                .read_to_end(&mut data)
-                .map_err(|e| PipelineError::IngestError(
-                    format!("Failed to read from stdin: {}", e)
-                ))?;
-            
+            std::io::stdin().read_to_end(&mut data).map_err(|e| {
+                PipelineError::IngestError(format!("Failed to read from stdin: {}", e))
+            })?;
+
             let mut metadata = BTreeMap::new();
             metadata.insert("source_type".to_string(), "stdin".to_string());
-            
+
             Ok(IngestedData {
                 data,
                 source: "stdin".to_string(),
@@ -133,19 +134,19 @@ impl Ingester for StdinIngester {
                 metadata,
             })
         }
-        
+
         #[cfg(not(feature = "std"))]
         {
             Err(PipelineError::IngestError(
-                "Stdin ingester requires std feature".to_string()
+                "Stdin ingester requires std feature".to_string(),
             ))
         }
     }
-    
+
     fn source(&self) -> &str {
         "stdin"
     }
-    
+
     fn supports_streaming(&self) -> bool {
         true
     }
@@ -166,7 +167,7 @@ impl MemoryIngester {
             format_hint: None,
         }
     }
-    
+
     pub fn with_format(mut self, format: String) -> Self {
         self.format_hint = Some(format);
         self
@@ -176,10 +177,10 @@ impl MemoryIngester {
 impl Ingester for MemoryIngester {
     fn ingest(&mut self) -> Result<IngestedData, PipelineError> {
         use alloc::collections::BTreeMap;
-        
+
         let mut metadata = BTreeMap::new();
         metadata.insert("source_type".to_string(), "memory".to_string());
-        
+
         Ok(IngestedData {
             data: self.data.clone(),
             source: self.source.clone(),
@@ -187,7 +188,7 @@ impl Ingester for MemoryIngester {
             metadata,
         })
     }
-    
+
     fn source(&self) -> &str {
         &self.source
     }
@@ -204,11 +205,11 @@ impl MultiIngester {
             ingesters: Vec::new(),
         }
     }
-    
+
     pub fn add_ingester(&mut self, ingester: Box<dyn Ingester>) {
         self.ingesters.push(ingester);
     }
-    
+
     pub fn ingest_all(&mut self) -> Result<Vec<IngestedData>, PipelineError> {
         let mut results = Vec::new();
         for ingester in &mut self.ingesters {

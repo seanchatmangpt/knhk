@@ -4,9 +4,9 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 use alloc::format;
+use alloc::vec::Vec;
 
 use crate::error::PipelineError;
 use crate::transform::{TransformResult, TypedTriple};
@@ -14,12 +14,18 @@ use crate::transform::{TransformResult, TypedTriple};
 /// Stage 3: Load
 /// SoA-aligned arrays in L1 cache
 /// Load stage for converting triples to SoA (Structure of Arrays) format
-/// 
+///
 /// Converts transformed triples into SoA format for efficient SIMD processing
 /// and hot path execution (≤8 ticks per operation).
 pub struct LoadStage {
-    pub alignment: usize, // Must be 64
+    pub alignment: usize,   // Must be 64
     pub max_run_len: usize, // Must be ≤ 8
+}
+
+impl Default for LoadStage {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LoadStage {
@@ -31,7 +37,7 @@ impl LoadStage {
     }
 
     /// Load triples into SoA arrays
-    /// 
+    ///
     /// Production implementation:
     /// 1. Group by predicate (for run formation)
     /// 2. Ensure run.len ≤ 8
@@ -42,11 +48,11 @@ impl LoadStage {
         // Current implementation enforces single run constraint (run.len ≤ 8)
         // Multiple runs support planned for v1.0
         if input.typed_triples.len() > self.max_run_len {
-            return Err(PipelineError::GuardViolation(
-                format!("Triple count {} exceeds max_run_len {}", 
-                    input.typed_triples.len(), 
-                    self.max_run_len)
-            ));
+            return Err(PipelineError::GuardViolation(format!(
+                "Triple count {} exceeds max_run_len {}",
+                input.typed_triples.len(),
+                self.max_run_len
+            )));
         }
 
         if input.typed_triples.is_empty() {
@@ -61,7 +67,7 @@ impl LoadStage {
         for triple in &input.typed_triples {
             grouped_by_predicate
                 .entry(triple.predicate)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(triple);
         }
 
@@ -73,17 +79,17 @@ impl LoadStage {
         for (predicate, triples) in grouped_by_predicate {
             // Validate run length ≤ 8
             if triples.len() > self.max_run_len {
-                return Err(PipelineError::GuardViolation(
-                    format!("Predicate run length {} exceeds max_run_len {}", 
-                        triples.len(), 
-                        self.max_run_len)
-                ));
+                return Err(PipelineError::GuardViolation(format!(
+                    "Predicate run length {} exceeds max_run_len {}",
+                    triples.len(),
+                    self.max_run_len
+                )));
             }
 
             // Ensure we don't exceed SoA array capacity
             if offset as usize + triples.len() > 8 {
                 return Err(PipelineError::LoadError(
-                    format!("Total triples exceed SoA capacity of 8")
+                    "Total triples exceed SoA capacity of 8".to_string(),
                 ));
             }
 
@@ -108,10 +114,11 @@ impl LoadStage {
         // Verify 64-byte alignment (arrays are already aligned via #[repr(align(64))])
         // This is a compile-time guarantee, but we verify at runtime for safety
         let soa_ptr = &soa as *const SoAArrays as *const u8 as usize;
-        if soa_ptr % self.alignment != 0 {
-            return Err(PipelineError::LoadError(
-                format!("SoA arrays not properly aligned to {} bytes", self.alignment)
-            ));
+        if !soa_ptr.is_multiple_of(self.alignment) {
+            return Err(PipelineError::LoadError(format!(
+                "SoA arrays not properly aligned to {} bytes",
+                self.alignment
+            )));
         }
 
         Ok(LoadResult {
@@ -136,6 +143,12 @@ pub struct SoAArrays {
     pub o: [u64; 8],
 }
 
+impl Default for SoAArrays {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SoAArrays {
     pub fn new() -> Self {
         Self {
@@ -152,4 +165,3 @@ pub struct PredRun {
     pub off: u64,
     pub len: u64, // Must be ≤ 8
 }
-

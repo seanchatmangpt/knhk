@@ -4,9 +4,9 @@
 
 extern crate alloc;
 
-use knhk_etl::*;
-use alloc::vec::Vec;
 use alloc::string::ToString;
+use alloc::vec::Vec;
+use knhk_etl::*;
 
 #[test]
 fn test_pipeline_creation() {
@@ -17,7 +17,7 @@ fn test_pipeline_creation() {
         true,
         vec!["https://webhook.example.com".to_string()],
     );
-    
+
     // Assert: Pipeline created with correct configuration
     assert_eq!(pipeline.load.max_run_len, 8);
     assert_eq!(pipeline.reflex.tick_budget, 8);
@@ -38,10 +38,10 @@ fn test_load_stage_guard_enforcement() {
         ],
         validation_errors: Vec::new(),
     };
-    
+
     // Act: Try to load
     let result = load.load(transform_result);
-    
+
     // Assert: Load fails due to guard violation
     assert!(result.is_err());
     if let Err(PipelineError::GuardViolation(msg)) = result {
@@ -57,16 +57,31 @@ fn test_load_stage_predicate_grouping() {
     let load = LoadStage::new();
     let transform_result = TransformResult {
         typed_triples: vec![
-            TypedTriple { subject: 1, predicate: 100, object: 10, graph: None },
-            TypedTriple { subject: 2, predicate: 100, object: 20, graph: None },
-            TypedTriple { subject: 3, predicate: 200, object: 30, graph: None },
+            TypedTriple {
+                subject: 1,
+                predicate: 100,
+                object: 10,
+                graph: None,
+            },
+            TypedTriple {
+                subject: 2,
+                predicate: 100,
+                object: 20,
+                graph: None,
+            },
+            TypedTriple {
+                subject: 3,
+                predicate: 200,
+                object: 30,
+                graph: None,
+            },
         ],
         validation_errors: Vec::new(),
     };
-    
+
     // Act: Load triples
     let result = load.load(transform_result);
-    
+
     // Assert: Triples grouped by predicate into runs
     assert!(result.is_ok());
     let load_result = result.unwrap();
@@ -81,22 +96,26 @@ fn test_load_stage_predicate_grouping() {
 fn test_reflex_stage_tick_budget_enforcement() {
     // Arrange: Create reflex stage and load result
     let reflex = ReflexStage::new();
-    
+
     let mut soa = SoAArrays::new();
     soa.s[0] = 1;
     soa.p[0] = 100;
     soa.o[0] = 10;
-    
-    let run = PredRun { pred: 100, off: 0, len: 1 };
-    
+
+    let run = PredRun {
+        pred: 100,
+        off: 0,
+        len: 1,
+    };
+
     let load_result = LoadResult {
         soa_arrays: soa,
         runs: vec![run],
     };
-    
+
     // Act: Execute reflex
     let result = reflex.reflex(load_result);
-    
+
     // Assert: Reflex completes within tick budget
     assert!(result.is_ok());
     let reflex_result = result.unwrap();
@@ -108,27 +127,31 @@ fn test_reflex_stage_tick_budget_enforcement() {
 fn test_reflex_stage_receipt_generation() {
     // Arrange: Create reflex stage and load result
     let reflex = ReflexStage::new();
-    
+
     let mut soa = SoAArrays::new();
     soa.s[0] = 1;
     soa.p[0] = 100;
     soa.o[0] = 10;
-    
-    let run = PredRun { pred: 100, off: 0, len: 1 };
-    
+
+    let run = PredRun {
+        pred: 100,
+        off: 0,
+        len: 1,
+    };
+
     let load_result = LoadResult {
         soa_arrays: soa,
         runs: vec![run],
     };
-    
+
     // Act: Execute reflex
     let result = reflex.reflex(load_result);
-    
+
     // Assert: Receipts generated with required fields
     assert!(result.is_ok());
     let reflex_result = result.unwrap();
     assert!(!reflex_result.receipts.is_empty());
-    
+
     let receipt = &reflex_result.receipts[0];
     assert!(!receipt.id.is_empty());
     assert!(receipt.ticks <= 8); // Within budget
@@ -149,7 +172,7 @@ fn test_receipt_merging() {
         span_id: 0x1234,
         a_hash: 0xABCD,
     };
-    
+
     let receipt2 = Receipt {
         id: "r2".to_string(),
         cycle_id: 2,
@@ -161,15 +184,13 @@ fn test_receipt_merging() {
         span_id: 0x5678,
         a_hash: 0xEF00,
     };
-    
+
     // Act: Merge receipts
     let merged = ReflexStage::merge_receipts(&[receipt1, receipt2]);
-    
+
     // Assert: Merged receipt has correct values
     assert_eq!(merged.ticks, 6); // Max ticks
     assert_eq!(merged.lanes, 16); // Sum lanes
     assert_eq!(merged.span_id, 0x1234 ^ 0x5678); // XOR merge
     assert_eq!(merged.a_hash, 0xABCD ^ 0xEF00); // XOR merge
 }
-
-

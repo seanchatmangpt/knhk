@@ -1,6 +1,6 @@
 [package]
 name = "knhk-validation"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 [lib]
@@ -14,9 +14,9 @@ path = "src/main.rs"
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
 # knhk-etl removed to avoid circular dependency
 # Use knhk-etl types directly when needed, or refactor to break circular dependency
-knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = ["std"] }
-knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0", features = ["std"] }
-knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = ["std"] }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = ["std"] }
+knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0", features = ["std"] }
+knhk-otel = { path = "../knhk-otel", version = "1.0.0", features = ["std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 thiserror = "2.0"

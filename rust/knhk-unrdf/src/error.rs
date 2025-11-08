@@ -72,4 +72,3 @@ impl From<&UnrdfError> for UnrdfErrorCode {
 
 /// Result type for unrdf operations
 pub type UnrdfResult<T> = Result<T, UnrdfError>;
-

@@ -1,6 +1,6 @@
 [package]
 name = "knhk-aot"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 [lib]
@@ -8,7 +8,7 @@ crate-type = ["cdylib", "staticlib"]
 path = "src/lib.rs"
 
 [dependencies]
-knhk-validation = { path = "../knhk-validation", version = "0.1.0", features = ["policy-engine"], optional = true }
+knhk-validation = { path = "../knhk-validation", version = "1.0.0", features = ["policy-engine"], optional = true }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.6"

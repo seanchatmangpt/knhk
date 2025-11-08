@@ -276,6 +276,23 @@ make test-integration-v2     # Integration tests
 - **[Documentation Policy](docs/DOCUMENTATION_POLICY.md)** - LEAN pull-based documentation policy
 - **[Evidence Index](docs/EVIDENCE_INDEX.md)** - Deduplication index for all validation evidence
 
+### Documentation Workflow (Pull System)
+
+KNHK uses a **pull-based documentation system** to eliminate overproduction waste. Generate documentation on-demand using:
+
+```bash
+# Quick status check (30s)
+./scripts/doc-pull.sh status
+
+# Check for blockers (1m)
+./scripts/doc-pull.sh blockers
+
+# Full metrics report (2m)
+./scripts/doc-pull.sh metrics
+```
+
+See [Documentation Policy](docs/DOCUMENTATION_POLICY.md) for complete workflow details.
+
 ### Core Architecture
 
 - **[Repository Overview](REPOSITORY_OVERVIEW.md)** - Complete system overview with formal insights

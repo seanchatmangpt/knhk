@@ -8,6 +8,8 @@ name = "knhk_hot"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
+blake3 = "1.5"
+subtle = "2.5"
 
 [build-dependencies]
 

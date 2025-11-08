@@ -1,0 +1,113 @@
+@startuml pattern-types-diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classStyle rectangle
+
+title Workflow Pattern Types and Relationships
+
+class PatternType {
+  + Sequence
+  + ParallelSplit
+  + Synchronization
+  + ExclusiveChoice
+  + SimpleMerge
+  + MultiChoice
+  + ArbitraryCycles
+  + DeferredChoice
+  --
+  + tick_budget() : u32
+  + validate_ingress(branches: u32) : Result
+  + is_simd_capable() : bool
+}
+
+class SequencePattern {
+  - branches: Vec<BranchFn<T>>
+  --
+  + new(branches) : PatternResult<Self>
+  + execute(input: T) : PatternResult<Vec<T>>
+  + pattern_type() : PatternType
+}
+
+class ParallelSplitPattern {
+  - branches: Vec<BranchFn<T>>
+  - use_simd: bool
+  --
+  + new(branches) : PatternResult<Self>
+  + with_simd(branches, use_simd) : PatternResult<Self>
+  + execute(input: T) : PatternResult<Vec<T>>
+}
+
+class ExclusiveChoicePattern {
+  - choices: Vec<(ConditionFn<T>, BranchFn<T>)>
+  --
+  + new(choices) : PatternResult<Self>
+  + execute(input: T) : PatternResult<Vec<T>>
+}
+
+class MultiChoicePattern {
+  - choices: Vec<(ConditionFn<T>, BranchFn<T>)>
+  - use_simd: bool
+  --
+  + new(choices) : PatternResult<Self>
+  + execute(input: T) : PatternResult<Vec<T>>
+}
+
+class ArbitraryCyclesPattern {
+  - branch: BranchFn<T>
+  - should_continue: ConditionFn<T>
+  - max_iterations: u32
+  --
+  + new(branch, condition, max) : PatternResult<Self>
+  + execute(input: T) : PatternResult<Vec<T>>
+}
+
+class DeferredChoicePattern {
+  - choices: Vec<(ConditionFn<T>, BranchFn<T>)>
+  - timeout_ms: u64
+  --
+  + new(choices, timeout) : PatternResult<Self>
+  + execute(input: T) : PatternResult<Vec<T>>
+}
+
+interface Pattern<T> {
+  + pattern_type() : PatternType
+  + execute(input: T) : PatternResult<Vec<T>>
+  + tick_budget() : u32
+}
+
+PatternType <|-- SequencePattern : uses
+PatternType <|-- ParallelSplitPattern : uses
+PatternType <|-- ExclusiveChoicePattern : uses
+PatternType <|-- MultiChoicePattern : uses
+PatternType <|-- ArbitraryCyclesPattern : uses
+PatternType <|-- DeferredChoicePattern : uses
+
+Pattern <|.. SequencePattern : implements
+Pattern <|.. ParallelSplitPattern : implements
+Pattern <|.. ExclusiveChoicePattern : implements
+Pattern <|.. MultiChoicePattern : implements
+Pattern <|.. ArbitraryCyclesPattern : implements
+Pattern <|.. DeferredChoicePattern : implements
+
+note right of PatternType
+  **Tick Budgets:**
+  - Sequence: 1 tick
+  - ParallelSplit: 2 ticks
+  - Synchronization: 3 ticks
+  - ExclusiveChoice: 2 ticks
+  - SimpleMerge: 1 tick
+  - MultiChoice: 3 ticks
+  - ArbitraryCycles: 2 ticks
+  - DeferredChoice: 3 ticks
+end note
+
+note right of Pattern
+  **Trait Contract:**
+  - Generic over T
+  - Returns Vec<T>
+  - Thread-safe (Send + Sync)
+  - Error handling via PatternResult
+end note
+
+@enduml
+

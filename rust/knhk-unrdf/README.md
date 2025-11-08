@@ -165,6 +165,6 @@ commit_transaction(tx_id)?;
 
 - [Technical Documentation](docs/README.md) - Detailed API reference
 - [Architecture](../../docs/architecture.md) - System architecture
-- [UNRDF Integration](../../docs/unrdf-integration-status.md) - Integration status
+- [UNRDF Integration](../../docs/v1.0-unrdf-integration-plan.md) - Integration plan and status
 - [Cold Path](../../docs/architecture.md#cold-path) - Cold path operations
 

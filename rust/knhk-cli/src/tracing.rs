@@ -3,11 +3,7 @@
 
 #[cfg(feature = "otel")]
 pub fn init_tracing() -> Result<(), String> {
-    use tracing_subscriber::{fmt, EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
-    use tracing_opentelemetry::OpenTelemetryLayer;
-    use opentelemetry::global;
-    use opentelemetry_sdk::Resource;
-    use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
+    use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
     // Check for KNHK_TRACE environment variable (default to "info")
     let trace_level = std::env::var("KNHK_TRACE")
@@ -28,17 +24,19 @@ pub fn init_tracing() -> Result<(), String> {
 
     // Check if OTLP export is enabled
     let otlp_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT").ok();
-    let service_name = std::env::var("OTEL_SERVICE_NAME")
-        .unwrap_or_else(|_| "knhk-cli".to_string());
+    let service_name =
+        std::env::var("OTEL_SERVICE_NAME").unwrap_or_else(|_| "knhk-cli".to_string());
 
     // Initialize subscriber with fmt layer only (OTLP setup requires async runtime)
     // For a CLI tool with simple exports, we use structured logging instead
     tracing_subscriber::registry()
         .with(filter)
-        .with(fmt::layer()
-            .with_target(false)
-            .with_thread_ids(false)
-            .json()) // Output JSON for OTEL ingestion
+        .with(
+            fmt::layer()
+                .with_target(false)
+                .with_thread_ids(false)
+                .json(),
+        ) // Output JSON for OTEL ingestion
         .init();
 
     // Log service info for OTEL correlation
@@ -48,7 +46,7 @@ pub fn init_tracing() -> Result<(), String> {
             "OpenTelemetry service initialized"
         );
     }
-    
+
     Ok(())
 }
 
@@ -57,4 +55,3 @@ pub fn init_tracing() -> Result<(), String> {
     // No-op when OTEL feature is disabled
     Ok(())
 }
-

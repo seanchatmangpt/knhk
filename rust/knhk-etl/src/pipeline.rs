@@ -3,32 +3,32 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
+use crate::emit::{EmitResult, EmitStage};
 use crate::error::PipelineError;
 use crate::ingest::IngestStage;
-use crate::transform::TransformStage;
 use crate::load::LoadStage;
 use crate::reflex::ReflexStage;
-use crate::emit::{EmitStage, EmitResult};
+use crate::transform::TransformStage;
 
 /// Complete ETL pipeline orchestrator
-/// 
+///
 /// Orchestrates the full ETL pipeline: Ingest → Transform → Load → Reflex → Emit
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use knhk_etl::Pipeline;
-/// 
+///
 /// let mut pipeline = Pipeline::new(
 ///     vec!["file://data.nt".to_string()],
 ///     "http://example.org/schema".to_string(),
 ///     false, // lockchain disabled
 ///     vec!["http://localhost:8080".to_string()],
 /// );
-/// 
+///
 /// let result = pipeline.execute();
 /// ```
 pub struct Pipeline {
@@ -195,4 +195,3 @@ impl Pipeline {
         Ok(emit_result)
     }
 }
-

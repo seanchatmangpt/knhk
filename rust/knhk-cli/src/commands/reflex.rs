@@ -1,9 +1,9 @@
 // rust/knhk-cli/src/commands/reflex.rs
 // Reflex commands - Reflex declaration
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
 
 /// Reflex storage entry
 #[derive(Debug, Serialize, Deserialize)]
@@ -49,26 +49,26 @@ pub fn declare(name: String, op: String, pred: u64, off: u64, len: u64) -> Resul
     println!("Declaring reflex: {}", name);
     println!("  Operation: {}", op);
     println!("  Run: pred={}, off={}, len={}", pred, off, len);
-    
+
     // Validate run length ≤ 8
     if len > 8 {
         return Err(format!("Run length {} exceeds max_run_len 8", len));
     }
-    
+
     // Validate operation is in H_hot set
     let op_upper = op.to_uppercase();
     if !HOT_PATH_OPS.iter().any(|&hot_op| hot_op == op_upper) {
         return Err(format!("Operation '{}' is not in hot path set H_hot", op));
     }
-    
+
     // Load existing reflexes
     let mut storage = load_reflexes()?;
-    
+
     // Check if reflex with same name already exists
     if storage.reflexes.iter().any(|r| r.name == name) {
         return Err(format!("Reflex '{}' already exists", name));
     }
-    
+
     // Create reflex entry
     let reflex_id = format!("reflex_{}", storage.reflexes.len() + 1);
     storage.reflexes.push(ReflexEntry {
@@ -80,21 +80,21 @@ pub fn declare(name: String, op: String, pred: u64, off: u64, len: u64) -> Resul
         len,
         epoch: None,
     });
-    
+
     // Save reflexes
     save_reflexes(&storage)?;
-    
+
     println!("  ✓ Operation validated (in H_hot)");
     println!("  ✓ Hook IR compiled");
     println!("✓ Reflex declared (id: {})", reflex_id);
-    
+
     Ok(())
 }
 
 /// List reflexes
 pub fn list() -> Result<Vec<String>, String> {
     let storage = load_reflexes()?;
-    
+
     Ok(storage.reflexes.iter().map(|r| r.name.clone()).collect())
 }
 
@@ -105,7 +105,7 @@ fn get_config_dir() -> Result<PathBuf, String> {
         path.push("knhk");
         Ok(path)
     }
-    
+
     #[cfg(not(target_os = "windows"))]
     {
         let home = std::env::var("HOME").map_err(|_| "HOME not set")?;
@@ -118,19 +118,19 @@ fn get_config_dir() -> Result<PathBuf, String> {
 fn load_reflexes() -> Result<ReflexStorage, String> {
     let config_dir = get_config_dir()?;
     let reflexes_file = config_dir.join("reflexes.json");
-    
+
     if !reflexes_file.exists() {
         return Ok(ReflexStorage {
             reflexes: Vec::new(),
         });
     }
-    
+
     let content = fs::read_to_string(&reflexes_file)
         .map_err(|e| format!("Failed to read reflexes file: {}", e))?;
-    
+
     let storage: ReflexStorage = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse reflexes file: {}", e))?;
-    
+
     Ok(storage)
 }
 
@@ -138,14 +138,13 @@ fn save_reflexes(storage: &ReflexStorage) -> Result<(), String> {
     let config_dir = get_config_dir()?;
     fs::create_dir_all(&config_dir)
         .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    
+
     let reflexes_file = config_dir.join("reflexes.json");
     let content = serde_json::to_string_pretty(storage)
         .map_err(|e| format!("Failed to serialize reflexes: {}", e))?;
-    
+
     fs::write(&reflexes_file, content)
         .map_err(|e| format!("Failed to write reflexes file: {}", e))?;
-    
+
     Ok(())
 }
-

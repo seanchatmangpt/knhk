@@ -1,6 +1,6 @@
 # KNHK Documentation Index
 
-**Last Updated:** 2025-11-06  
+**Last Updated:** 2025-01-XX  
 **Status:** Consolidated (80/20)
 
 ---
@@ -38,8 +38,8 @@
 - **[PMU Implementation](PMU_IMPLEMENTATION_SUMMARY.md)** - Performance measurement
 
 ### Product
+- **[Reflex Enterprise Blueprint](REFLEX_ENTERPRISE_BLUEPRINT.md)** - Product architecture (canonical)
 - **[Reflex Enterprise Press Release](REFLEX_ENTERPRISE_PRESS_RELEASE.md)** - Product announcement
-- **[Reflex Enterprise Blueprint](REFLEX_ENTERPRISE_BLUEPRINT.md)** - Product architecture
 
 ---
 
@@ -74,12 +74,23 @@ Key evidence files:
 
 ---
 
+## Status & Current State
+
+- **[V1 Status](V1-STATUS.md)** - Current v1.0 status (canonical status document)
+- **[DFLSS Definition of Done](DFLSS_DEFINITION_OF_DONE.spr.md)** - DFLSS DoD specification
+
 ## Archived Documentation
 
 Historical and duplicate documentation has been archived:
+- **[docs/archived/status-reports/](archived/status-reports/)** - Historical status and completion reports
+- **[docs/archived/planning/](archived/planning/)** - Planning documents and charters
+- **[docs/archived/weaver-docs/](archived/weaver-docs/)** - Consolidated Weaver documentation
+- **[docs/archived/product/](archived/product/)** - Product documentation variants
 - **[docs/archived/v1-dod/](archived/v1-dod/)** - Old DoD documents
 - **[docs/archived/v1-reports/](archived/v1-reports/)** - Historical status reports
 - **[docs/archived/integration/](archived/integration/)** - Superseded integration docs
+
+See [ARCHIVE_INDEX.md](ARCHIVE_INDEX.md) for complete archive catalog.
 
 ---
 

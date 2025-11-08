@@ -5,10 +5,10 @@
 extern crate alloc;
 extern crate std;
 
-use alloc::string::{String, ToString};
-use alloc::format;
-use crate::reflex::{Receipt, Action};
 use crate::load::LoadResult;
+use crate::reflex::{Action, Receipt};
+use alloc::format;
+use alloc::string::{String, ToString};
 
 /// R1 failure action: drop/park Δ, emit receipt, escalate
 #[derive(Debug, Clone)]
@@ -42,12 +42,12 @@ pub struct C1FailureAction {
 }
 
 /// Handle R1 failure: drop/park Δ, emit receipt, escalate
-/// 
+///
 /// # Arguments
 /// * `delta` - Load result (Δ) to drop or park
 /// * `receipt` - Receipt to emit
 /// * `budget_exceeded` - Whether budget was exceeded (triggers escalation)
-/// 
+///
 /// # Returns
 /// * `Ok(R1FailureAction)` - Failure action taken (park/drop decision)
 /// * `Err(String)` - Error handling failure
@@ -60,15 +60,15 @@ pub fn handle_r1_failure(
     // Current implementation: always park (preserve Δ for later processing)
     // Admission control state checking is handled by the pipeline stage
     // before calling this function
-    
+
     // Record receipt emission (receipt will be emitted by emit stage)
     // This function tracks that receipt needs to be emitted
-    
+
     // Escalate if budget exceeded - record OTEL event
     if budget_exceeded {
         #[cfg(feature = "knhk-otel")]
         {
-            use knhk_otel::{Tracer, Metric, MetricValue};
+            use knhk_otel::{Metric, MetricValue, Tracer};
             use std::time::{SystemTime, UNIX_EPOCH};
 
             let mut tracer = Tracer::new();
@@ -76,14 +76,14 @@ pub fn handle_r1_failure(
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
                 .unwrap_or(0); // Already using unwrap_or(0) - no change needed
-            
+
             // Record escalation event
             let mut attrs = alloc::collections::BTreeMap::new();
             attrs.insert("runtime_class".to_string(), "R1".to_string());
             attrs.insert("receipt_id".to_string(), receipt.id.clone());
             attrs.insert("ticks".to_string(), receipt.ticks.to_string());
             attrs.insert("budget".to_string(), "8".to_string());
-            
+
             let metric = Metric {
                 name: "knhk.r1.budget_exceeded".to_string(),
                 value: MetricValue::Counter(1),
@@ -93,7 +93,7 @@ pub fn handle_r1_failure(
             tracer.record_metric(metric);
         }
     }
-    
+
     Ok(R1FailureAction {
         delta,
         receipt,
@@ -102,12 +102,12 @@ pub fn handle_r1_failure(
 }
 
 /// Handle W1 failure: retry ×N, degrade to cached answer
-/// 
+///
 /// # Arguments
 /// * `retry_count` - Current retry count
 /// * `max_retries` - Maximum retries allowed (default: 3)
 /// * `cached_answer` - Optional cached answer to use
-/// 
+///
 /// # Returns
 /// * `Ok(W1FailureAction)` - Retry action to take
 /// * `Err(String)` - Max retries exceeded
@@ -140,10 +140,10 @@ pub fn handle_w1_failure(
 }
 
 /// Handle C1 failure: async finalize, never block R1
-/// 
+///
 /// # Arguments
 /// * `operation_id` - Operation identifier
-/// 
+///
 /// # Returns
 /// * `Ok(C1FailureAction)` - Async finalization action
 /// * `Err(String)` - Error scheduling async operation
@@ -152,11 +152,11 @@ pub fn handle_c1_failure(_operation_id: &str) -> Result<C1FailureAction, String>
     // Note: Async runtime integration (tokio/async-std) is handled by the caller
     // This function returns an action indicating async finalization is needed
     // The caller is responsible for scheduling the async operation
-    
+
     if _operation_id.is_empty() {
         return Err("Operation ID cannot be empty".to_string());
     }
-    
+
     Ok(C1FailureAction {
         async_finalize: true,
         non_blocking: true,
@@ -186,10 +186,11 @@ impl FailureActionError {
 
 mod tests {
     use super::*;
-    use crate::load::{SoAArrays, PredRun};
-    use alloc::vec;
+    use crate::load::{PredRun, SoAArrays};
     use alloc::string::ToString;
+    use alloc::vec;
 
+    #[allow(dead_code)] // Test utility function
     fn create_test_receipt() -> Receipt {
         Receipt {
             id: "test_receipt".to_string(),
@@ -204,6 +205,7 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)] // Test utility function
     fn create_test_delta() -> LoadResult {
         LoadResult {
             soa_arrays: SoAArrays::new(),
@@ -219,7 +221,7 @@ mod tests {
     fn test_r1_failure_budget_exceeded() {
         let delta = create_test_delta();
         let receipt = create_test_receipt();
-        
+
         let result = handle_r1_failure(delta, receipt.clone(), true);
         assert!(result.is_ok());
         let action = result.expect("R1 failure handling should succeed");
@@ -241,7 +243,7 @@ mod tests {
             span_id: 12345,
             a_hash: 67890,
         };
-        
+
         let result = handle_r1_failure(delta, receipt, false);
         assert!(result.is_ok());
     }
@@ -270,7 +272,7 @@ mod tests {
             payload: vec![1, 2, 3],
             receipt_id: "receipt".to_string(),
         });
-        
+
         let result = handle_w1_failure(3, 3, cached_action);
         assert!(result.is_ok());
 
@@ -292,7 +294,8 @@ mod tests {
     fn test_c1_failure_empty_operation_id() {
         let result = handle_c1_failure("");
         assert!(result.is_err());
-        assert!(result.expect_err("Empty operation ID should fail").contains("cannot be empty"));
+        assert!(result
+            .expect_err("Empty operation ID should fail")
+            .contains("cannot be empty"));
     }
 }
-

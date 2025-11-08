@@ -7,22 +7,21 @@
 extern crate std;
 
 use crate::*;
-use alloc::vec::Vec;
+use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
-use alloc::format;
+use alloc::vec::Vec;
 
+#[cfg(feature = "kafka")]
+use alloc::boxed::Box;
+#[cfg(feature = "kafka")]
+use alloc::sync::Arc;
 #[cfg(feature = "kafka")]
 use rdkafka::{
     consumer::{Consumer, StreamConsumer},
     message::BorrowedMessage,
-    ClientConfig,
-    Message,
+    ClientConfig, Message,
 };
-#[cfg(feature = "kafka")]
-use alloc::sync::Arc;
-#[cfg(feature = "kafka")]
-use alloc::boxed::Box;
 
 /// Connection state for Kafka connector
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,36 +55,38 @@ impl Connector for KafkaConnector {
         // Validate guards
         if spec.guards.max_run_len > 8 {
             return Err(ConnectorError::GuardViolation(
-                "max_run_len must be ≤ 8".to_string()
+                "max_run_len must be ≤ 8".to_string(),
             ));
         }
 
         if spec.guards.max_batch_size == 0 {
             return Err(ConnectorError::GuardViolation(
-                "max_batch_size must be > 0".to_string()
+                "max_batch_size must be > 0".to_string(),
             ));
         }
 
         // Validate schema IRI format
         if spec.schema.is_empty() {
             return Err(ConnectorError::ValidationFailed(
-                "Schema IRI cannot be empty".to_string()
+                "Schema IRI cannot be empty".to_string(),
             ));
         }
 
         // Extract bootstrap servers from source
         match &spec.source {
-            SourceType::Kafka { bootstrap_servers, .. } => {
+            SourceType::Kafka {
+                bootstrap_servers, ..
+            } => {
                 if bootstrap_servers.is_empty() {
                     return Err(ConnectorError::ValidationFailed(
-                        "Bootstrap servers cannot be empty".to_string()
+                        "Bootstrap servers cannot be empty".to_string(),
                     ));
                 }
                 self.bootstrap_servers = bootstrap_servers.clone();
             }
             _ => {
                 return Err(ConnectorError::SchemaMismatch(
-                    "Source type must be Kafka".to_string()
+                    "Source type must be Kafka".to_string(),
                 ));
             }
         }
@@ -93,23 +94,27 @@ impl Connector for KafkaConnector {
         // Validate topic name
         if self.topic.is_empty() {
             return Err(ConnectorError::ValidationFailed(
-                "Topic name cannot be empty".to_string()
+                "Topic name cannot be empty".to_string(),
             ));
         }
 
         // Schema registry validation: validate IRI format
         // Full schema registry integration planned for v1.0
         // Current implementation validates schema IRI format
-        if !spec.schema.starts_with("urn:") && !spec.schema.starts_with("http://") && !spec.schema.starts_with("https://") {
-            return Err(ConnectorError::SchemaMismatch(
-                format!("Invalid schema IRI format: {}", spec.schema)
-            ));
+        if !spec.schema.starts_with("urn:")
+            && !spec.schema.starts_with("http://")
+            && !spec.schema.starts_with("https://")
+        {
+            return Err(ConnectorError::SchemaMismatch(format!(
+                "Invalid schema IRI format: {}",
+                spec.schema
+            )));
         }
-        
+
         self.spec = spec;
         self.state = KafkaConnectionState::Connecting;
         self.reconnect_attempts = 0;
-        
+
         // Establish Kafka connection
         #[cfg(feature = "kafka")]
         {
@@ -124,20 +129,20 @@ impl Connector for KafkaConnector {
                 }
             }
         }
-        
+
         #[cfg(not(feature = "kafka"))]
         {
             // kafka feature is disabled - cannot actually connect
             self.state = KafkaConnectionState::Error("Kafka feature not enabled".to_string());
             Err(ConnectorError::NetworkError(
-                "Cannot initialize Kafka connector: kafka feature not enabled".to_string()
+                "Cannot initialize Kafka connector: kafka feature not enabled".to_string(),
             ))
         }
 
         #[cfg(feature = "kafka")]
         Ok(())
     }
-    
+
     #[cfg(feature = "kafka")]
     fn create_kafka_consumer(&self) -> Result<StreamConsumer, String> {
         let mut config = ClientConfig::new();
@@ -146,22 +151,25 @@ impl Connector for KafkaConnector {
         config.set("enable.partition.eof", "false");
         config.set("session.timeout.ms", "6000");
         config.set("enable.auto.commit", "false");
-        
-        let consumer: StreamConsumer = config.create()
+
+        let consumer: StreamConsumer = config
+            .create()
             .map_err(|e| format!("Failed to create Kafka consumer: {}", e))?;
-        
-        consumer.subscribe(&[&self.topic])
+
+        consumer
+            .subscribe(&[&self.topic])
             .map_err(|e| format!("Failed to subscribe to topic {}: {}", self.topic, e))?;
-        
+
         Ok(consumer)
     }
 
     fn fetch_delta(&mut self) -> Result<Delta, ConnectorError> {
         // Check connection state
         if self.state != KafkaConnectionState::Connected {
-            return Err(ConnectorError::NetworkError(
-                format!("Kafka connector not connected: {:?}", self.state)
-            ));
+            return Err(ConnectorError::NetworkError(format!(
+                "Kafka connector not connected: {:?}",
+                self.state
+            )));
         }
 
         // Kafka message polling and parsing
@@ -172,22 +180,23 @@ impl Connector for KafkaConnector {
         // 3. Convert to triples
         // 4. Validate batch size and lag constraints
         // 5. Return Delta with proper timestamp
-        
+
         let current_timestamp_ms = Self::get_current_timestamp_ms();
-        
+
         // Validate max_lag_ms guard
         if self.last_timestamp_ms > 0 {
             let lag_ms = current_timestamp_ms.saturating_sub(self.last_timestamp_ms);
             if lag_ms > self.spec.guards.max_lag_ms {
-                return Err(ConnectorError::GuardViolation(
-                    format!("Lag {}ms exceeds max_lag_ms {}ms", lag_ms, self.spec.guards.max_lag_ms)
-                ));
+                return Err(ConnectorError::GuardViolation(format!(
+                    "Lag {}ms exceeds max_lag_ms {}ms",
+                    lag_ms, self.spec.guards.max_lag_ms
+                )));
             }
         }
 
         // Fetch messages from Kafka
         let additions = Vec::new();
-        
+
         #[cfg(feature = "kafka")]
         {
             if let Some(ref consumer) = self.consumer {
@@ -214,7 +223,7 @@ impl Connector for KafkaConnector {
                 }
             }
         }
-        
+
         let delta = Delta {
             additions,
             removals: Vec::new(),
@@ -224,18 +233,18 @@ impl Connector for KafkaConnector {
 
         // Update last timestamp
         self.last_timestamp_ms = current_timestamp_ms;
-        
+
         Ok(delta)
     }
 
     fn transform_to_soa(&self, delta: &Delta) -> Result<SoAArrays, ConnectorError> {
         // Validate batch size guard
         if delta.additions.len() > self.spec.guards.max_batch_size {
-            return Err(ConnectorError::GuardViolation(
-                format!("Batch size {} exceeds max {}", 
-                    delta.additions.len(), 
-                    self.spec.guards.max_batch_size)
-            ));
+            return Err(ConnectorError::GuardViolation(format!(
+                "Batch size {} exceeds max {}",
+                delta.additions.len(),
+                self.spec.guards.max_batch_size
+            )));
         }
 
         // Convert triples to SoA (respecting run.len ≤ 8)
@@ -254,34 +263,37 @@ impl Connector for KafkaConnector {
     fn health(&self) -> crate::ConnectorHealth {
         match &self.state {
             KafkaConnectionState::Connected => crate::ConnectorHealth::Healthy,
-            KafkaConnectionState::Connecting => crate::ConnectorHealth::Degraded(
-                "Connecting to Kafka".to_string()
-            ),
-            KafkaConnectionState::Disconnected => crate::ConnectorHealth::Unhealthy(
-                "Disconnected from Kafka".to_string()
-            ),
-            KafkaConnectionState::Error(msg) => crate::ConnectorHealth::Unhealthy(
-                format!("Kafka error: {}", msg)
-            ),
+            KafkaConnectionState::Connecting => {
+                crate::ConnectorHealth::Degraded("Connecting to Kafka".to_string())
+            }
+            KafkaConnectionState::Disconnected => {
+                crate::ConnectorHealth::Unhealthy("Disconnected from Kafka".to_string())
+            }
+            KafkaConnectionState::Error(msg) => {
+                crate::ConnectorHealth::Unhealthy(format!("Kafka error: {}", msg))
+            }
         }
     }
 
     fn start(&mut self) -> Result<(), ConnectorError> {
         // Ensure consumer is subscribed and ready
         if self.state != KafkaConnectionState::Connected {
-            return Err(ConnectorError::NetworkError(
-                format!("Cannot start connector in state: {:?}", self.state)
-            ));
+            return Err(ConnectorError::NetworkError(format!(
+                "Cannot start connector in state: {:?}",
+                self.state
+            )));
         }
 
         #[cfg(feature = "kafka")]
         {
             if let Some(ref consumer) = self.consumer {
                 // Verify subscription is active
-                consumer.subscribe(&[&self.topic])
-                    .map_err(|e| ConnectorError::NetworkError(
-                        format!("Failed to subscribe to topic {}: {}", self.topic, e)
-                    ))?;
+                consumer.subscribe(&[&self.topic]).map_err(|e| {
+                    ConnectorError::NetworkError(format!(
+                        "Failed to subscribe to topic {}: {}",
+                        self.topic, e
+                    ))
+                })?;
             } else {
                 // Consumer not initialized, try to create it
                 match self.create_kafka_consumer() {
@@ -306,10 +318,9 @@ impl Connector for KafkaConnector {
         {
             if let Some(ref consumer) = self.consumer {
                 // Unsubscribe from topics
-                consumer.unsubscribe()
-                    .map_err(|e| ConnectorError::NetworkError(
-                        format!("Failed to unsubscribe: {}", e)
-                    ))?;
+                consumer.unsubscribe().map_err(|e| {
+                    ConnectorError::NetworkError(format!("Failed to unsubscribe: {}", e))
+                })?;
             }
             // Clear consumer reference
             self.consumer = None;
@@ -360,12 +371,11 @@ impl KafkaConnector {
             consumer: None,
         }
     }
-    
+
     #[cfg(feature = "kafka")]
     fn parse_message(&self, msg: &BorrowedMessage<'_>) -> Result<Vec<Triple>, String> {
-        let payload = msg.payload()
-            .ok_or("Message has no payload")?;
-        
+        let payload = msg.payload().ok_or("Message has no payload")?;
+
         match self.format {
             DataFormat::JsonLd => {
                 // Parse JSON-LD message
@@ -374,29 +384,32 @@ impl KafkaConnector {
                 #[cfg(feature = "kafka")]
                 {
                     use alloc::string::String;
-                    
+
                     // Parse JSON (simplified - in production use serde_json)
                     let json_str = core::str::from_utf8(payload)
                         .map_err(|e| format!("Invalid UTF-8: {}", e))?;
-                    
+
                     // Basic JSON parsing for triple extraction
                     // Look for "s", "p", "o" fields
                     let mut triples = Vec::new();
-                    
+
                     // Simple JSON extraction: find numeric values for s/p/o
                     // Current implementation uses basic string matching (acceptable for 80/20)
                     // Full JSON parser with schema mapping planned for v1.0
-                    if json_str.contains("\"s\"") && json_str.contains("\"p\"") && json_str.contains("\"o\"") {
-                    // Extract hash values (simplified)
-                    // For now, generate deterministic hash from payload
-                    // Use simple hash function (FNV-1a) for no_std compatibility
-                    let mut hash = 14695981039346656037u64; // FNV offset basis
-                    const FNV_PRIME: u64 = 1099511628211;
-                    for byte in json_str.as_bytes() {
-                        hash ^= *byte as u64;
-                        hash = hash.wrapping_mul(FNV_PRIME);
-                    }
-                        
+                    if json_str.contains("\"s\"")
+                        && json_str.contains("\"p\"")
+                        && json_str.contains("\"o\"")
+                    {
+                        // Extract hash values (simplified)
+                        // For now, generate deterministic hash from payload
+                        // Use simple hash function (FNV-1a) for no_std compatibility
+                        let mut hash = 14695981039346656037u64; // FNV offset basis
+                        const FNV_PRIME: u64 = 1099511628211;
+                        for byte in json_str.as_bytes() {
+                            hash ^= *byte as u64;
+                            hash = hash.wrapping_mul(FNV_PRIME);
+                        }
+
                         // Create triple with extracted values
                         // Current implementation uses simplified parsing (acceptable for 80/20)
                         // Full JSON parsing with schema mapping planned for v1.0
@@ -407,7 +420,7 @@ impl KafkaConnector {
                             graph: None,
                         });
                     }
-                    
+
                     Ok(triples)
                 }
                 #[cfg(not(feature = "kafka"))]
@@ -418,11 +431,11 @@ impl KafkaConnector {
             DataFormat::RdfTurtle => {
                 // Parse RDF/Turtle (simplified)
                 // For v1.0, basic parsing - in production use proper RDF parser
-                let turtle_str = core::str::from_utf8(payload)
-                    .map_err(|e| format!("Invalid UTF-8: {}", e))?;
-                
+                let turtle_str =
+                    core::str::from_utf8(payload).map_err(|e| format!("Invalid UTF-8: {}", e))?;
+
                 let mut triples = Vec::new();
-                
+
                 // Simple triple extraction: look for "<subject> <predicate> <object>"
                 // Current implementation uses basic string matching (acceptable for 80/20)
                 // Full RDF/Turtle parser integration planned for v1.0
@@ -435,7 +448,7 @@ impl KafkaConnector {
                         hash ^= *byte as u64;
                         hash = hash.wrapping_mul(FNV_PRIME);
                     }
-                    
+
                     triples.push(Triple {
                         subject: hash & 0xFFFFFFFFFFFF,
                         predicate: (hash >> 16) & 0xFFFFFFFFFFFF,
@@ -443,12 +456,10 @@ impl KafkaConnector {
                         graph: None,
                     });
                 }
-                
+
                 Ok(triples)
             }
-            _ => {
-                Err(format!("Unsupported format: {:?}", self.format))
-            }
+            _ => Err(format!("Unsupported format: {:?}", self.format)),
         }
     }
 
@@ -487,11 +498,12 @@ impl KafkaConnector {
     /// Attempt to reconnect
     pub fn reconnect(&mut self) -> Result<(), ConnectorError> {
         if self.reconnect_attempts >= self.max_reconnect_attempts {
-            self.state = KafkaConnectionState::Error(
-                format!("Max reconnect attempts ({}) exceeded", self.max_reconnect_attempts)
-            );
+            self.state = KafkaConnectionState::Error(format!(
+                "Max reconnect attempts ({}) exceeded",
+                self.max_reconnect_attempts
+            ));
             return Err(ConnectorError::NetworkError(
-                "Max reconnect attempts exceeded".to_string()
+                "Max reconnect attempts exceeded".to_string(),
             ));
         }
 
@@ -506,7 +518,7 @@ impl KafkaConnector {
         // Returning error until real reconnection is implemented to prevent false positives
         self.state = KafkaConnectionState::Error("Reconnection not implemented".to_string());
         Err(ConnectorError::NetworkError(
-            "Kafka reconnection not implemented. Manual reinitialization required.".to_string()
+            "Kafka reconnection not implemented. Manual reinitialization required.".to_string(),
         ))
     }
 
@@ -532,6 +544,7 @@ pub struct KafkaMetrics {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use alloc::vec;
 

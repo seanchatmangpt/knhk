@@ -104,4 +104,3 @@ pub enum RdfFormat {
     JsonLd,
     NQuads,
 }
-

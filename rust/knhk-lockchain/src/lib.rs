@@ -9,8 +9,8 @@ pub mod merkle;
 pub mod quorum;
 pub mod storage;
 
-pub use merkle::{MerkleTree, MerkleProof, MerkleError};
-pub use quorum::{QuorumManager, QuorumProof, QuorumError, PeerId};
+pub use merkle::{MerkleError, MerkleProof, MerkleTree};
+pub use quorum::{PeerId, QuorumError, QuorumManager, QuorumProof};
 pub use storage::{LockchainStorage, StorageError};
 
 use thiserror::Error;
@@ -55,17 +55,17 @@ impl Receipt {
             hash_a,
         }
     }
-    
+
     /// Compute receipt hash using URDNA2015 canonicalization + SHA-256
     /// This implements the v1.0 requirement for receipt canonicalization
     pub fn compute_hash(&self, rdf_data: &str) -> Result<[u8; 32], String> {
-        use sha2::{Sha256, Digest};
-        
+        use sha2::{Digest, Sha256};
+
         // Step 1: URDNA2015 canonicalization
         // For 80/20, use oxrdf's canonicalization
         // In production, this would use full URDNA2015 algorithm
         let canonical = Self::urdna2015_canonicalize(rdf_data)?;
-        
+
         // Step 2: SHA-256 hash of canonicalized data + receipt fields
         let mut hasher = Sha256::new();
         hasher.update(canonical.as_bytes());
@@ -74,13 +74,13 @@ impl Receipt {
         hasher.update(self.hook_id.to_le_bytes());
         hasher.update(self.actual_ticks.to_le_bytes());
         hasher.update(self.hash_a.to_le_bytes());
-        
+
         let hash = hasher.finalize();
         let mut result = [0u8; 32];
         result.copy_from_slice(&hash);
         Ok(result)
     }
-    
+
     /// URDNA2015 canonicalization (80/20 implementation)
     /// For v1.0, uses basic normalization (sorting + whitespace normalization)
     /// Full URDNA2015 algorithm deferred to v1.1 (complex algorithm)
@@ -93,9 +93,9 @@ impl Receipt {
         // - Lexical form normalization
         // - IRI normalization
         // These can be implemented in v1.1
-        
+
         let mut lines: Vec<&str> = rdf_data.lines().collect();
-        lines.sort();  // Basic sorting for canonicalization
+        lines.sort(); // Basic sorting for canonicalization
         Ok(lines.join("\n"))
     }
 }

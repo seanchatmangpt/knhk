@@ -3,9 +3,9 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
-use alloc::string::String;
 use alloc::collections::BTreeMap;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 #[derive(Debug, Clone)]
 pub struct TemplateTriple {
@@ -16,13 +16,13 @@ pub struct TemplateTriple {
 
 #[derive(Debug, Clone)]
 pub enum TripleComponent {
-    Constant(u64),      // Hashed IRI or literal
-    Variable(String),  // Variable name (e.g., "?x", "?name")
+    Constant(u64),    // Hashed IRI or literal
+    Variable(String), // Variable name (e.g., "?x", "?name")
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstructTemplate {
-    pub ground_triples: Vec<(u64, u64, u64)>,  // (s, p, o) constants - no variables
+    pub ground_triples: Vec<(u64, u64, u64)>, // (s, p, o) constants - no variables
     pub template_triples: Vec<TemplateTriple>, // Variable triples
     pub variable_bindings: BTreeMap<String, usize>, // Variable name -> binding index
 }
@@ -46,16 +46,18 @@ impl ConstructTemplate {
         let triples = Self::parse_template_triples(template_str)?;
 
         for triple in triples {
-            let is_ground = matches!(&triple.subject, TripleComponent::Constant(_)) &&
-                           matches!(&triple.predicate, TripleComponent::Constant(_)) &&
-                           matches!(&triple.object, TripleComponent::Constant(_));
+            let is_ground = matches!(&triple.subject, TripleComponent::Constant(_))
+                && matches!(&triple.predicate, TripleComponent::Constant(_))
+                && matches!(&triple.object, TripleComponent::Constant(_));
 
             if is_ground {
                 // Extract constants
-                if let (TripleComponent::Constant(s), 
-                       TripleComponent::Constant(p), 
-                       TripleComponent::Constant(o)) = 
-                    (triple.subject, triple.predicate, triple.object) {
+                if let (
+                    TripleComponent::Constant(s),
+                    TripleComponent::Constant(p),
+                    TripleComponent::Constant(o),
+                ) = (triple.subject, triple.predicate, triple.object)
+                {
                     template.ground_triples.push((s, p, o));
                 }
             } else {
@@ -102,4 +104,3 @@ impl Default for ConstructTemplate {
         Self::new()
     }
 }
-

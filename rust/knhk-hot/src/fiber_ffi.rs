@@ -3,8 +3,8 @@
 
 #![allow(non_camel_case_types)]
 
+use crate::ring_ffi::{knhk_assertion_ring_t, knhk_delta_ring_t};
 use crate::{Ctx, Ir, Receipt};
-use crate::ring_ffi::{knhk_delta_ring_t, knhk_assertion_ring_t};
 use std::os::raw::c_int;
 
 /// Fiber execution result
@@ -150,7 +150,7 @@ mod tests {
 
         // Execute fiber
         let result = FiberExecutor::execute(&ctx, &mut ir, 0, 1, 2, 3);
-        
+
         // Should succeed or park (both are valid)
         match result {
             Ok(receipt) => {
@@ -201,9 +201,9 @@ mod tests {
         let cycle_id = 42;
         let shard_id = 3;
         let hook_id = 7;
-        
+
         let result = FiberExecutor::execute(&ctx, &mut ir, 0, cycle_id, shard_id, hook_id);
-        
+
         match result {
             Ok(receipt) => {
                 // Verify receipt contains correct identifiers
@@ -222,7 +222,9 @@ mod tests {
     #[test]
     fn test_fiber_executor_tick_budget_enforcement() {
         // Create test SoA arrays with 8 items (at budget limit)
-        let s_array = [0x1000u64, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000, 0x8000];
+        let s_array = [
+            0x1000u64, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000, 0x8000,
+        ];
         let p_array = [0xabcdu64; 8];
         let o_array = [0x1111u64; 8];
 
@@ -252,11 +254,15 @@ mod tests {
 
         // Execute fiber - should succeed or park
         let result = FiberExecutor::execute(&ctx, &mut ir, 0, 1, 0, 0);
-        
+
         match result {
             Ok(receipt) => {
                 // If succeeds, ticks should be ≤ 8
-                assert!(receipt.ticks <= 8, "Receipt ticks {} exceeds budget", receipt.ticks);
+                assert!(
+                    receipt.ticks <= 8,
+                    "Receipt ticks {} exceeds budget",
+                    receipt.ticks
+                );
             }
             Err(e) => {
                 // Parking is acceptable when budget exceeded
@@ -265,4 +271,3 @@ mod tests {
         }
     }
 }
-

@@ -2,9 +2,9 @@
 // Epoch commands - Epoch operations
 // Production-ready implementation calling Erlang RC layer
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
 use std::process::Command;
 
 /// Epoch storage entry
@@ -29,40 +29,44 @@ pub fn create(id: String, tau: u32, lambda: String) -> Result<(), String> {
     println!("Creating epoch: {}", id);
     println!("  τ (ticks): {}", tau);
     println!("  Λ (plan): {}", lambda);
-    
+
     // Validate tau ≤ 8 (Chatman Constant)
     if tau > 8 {
         return Err(format!("τ {} exceeds Chatman Constant (8 ticks)", tau));
     }
-    
+
     // Parse lambda plan (ordered list of reflex names)
-    let plan: Vec<String> = lambda.split(',')
+    let plan: Vec<String> = lambda
+        .split(',')
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();
-    
+
     if plan.is_empty() {
         return Err("Lambda plan cannot be empty".to_string());
     }
-    
+
     // Validate Λ is ≺-total (deterministic order)
     // Check for duplicates
     let mut seen = std::collections::HashSet::new();
     for reflex_name in &plan {
         if seen.contains(reflex_name) {
-            return Err(format!("Lambda plan contains duplicate reflex '{}' (must be ≺-total)", reflex_name));
+            return Err(format!(
+                "Lambda plan contains duplicate reflex '{}' (must be ≺-total)",
+                reflex_name
+            ));
         }
         seen.insert(reflex_name);
     }
-    
+
     // Load existing epochs
     let mut storage = load_epochs().unwrap_or_else(|_| EpochStorage { epochs: Vec::new() });
-    
+
     // Check if epoch with same id already exists
     if storage.epochs.iter().any(|e| e.id == id) {
         return Err(format!("Epoch '{}' already exists", id));
     }
-    
+
     // Create epoch entry
     storage.epochs.push(EpochEntry {
         id: id.clone(),
@@ -71,14 +75,14 @@ pub fn create(id: String, tau: u32, lambda: String) -> Result<(), String> {
         cover_id: None,
         status: "scheduled".to_string(),
     });
-    
+
     // Save epochs
     save_epochs(&storage)?;
-    
+
     // Call Erlang RC layer: knhk_epoch:schedule(Tau, Plan, CoverId)
     let plan_str = plan.join(",");
     let output = Command::new("erl")
-        .args(&["-noshell", "-eval"])
+        .args(["-noshell", "-eval"])
         .arg(format!(
             "knhk_epoch:schedule(\"{}\", {}, [{}], undefined).",
             id, tau, plan_str
@@ -87,7 +91,7 @@ pub fn create(id: String, tau: u32, lambda: String) -> Result<(), String> {
         .arg("init")
         .arg("stop")
         .output();
-    
+
     match output {
         Ok(result) => {
             if result.status.success() {
@@ -101,7 +105,7 @@ pub fn create(id: String, tau: u32, lambda: String) -> Result<(), String> {
             println!("✓ Epoch created locally (Erlang node not available)");
         }
     }
-    
+
     Ok(())
 }
 
@@ -109,16 +113,24 @@ pub fn create(id: String, tau: u32, lambda: String) -> Result<(), String> {
 /// run(EpochId) -> {A, Receipt}
 pub fn run(id: String) -> Result<(), String> {
     println!("Running epoch: {}", id);
-    
+
     // Load epoch
     let mut storage = load_epochs()?;
-    
+
     // Find epoch index
-    let epoch_idx = storage.epochs.iter().position(|e| e.id == id)
+    let epoch_idx = storage
+        .epochs
+        .iter()
+        .position(|e| e.id == id)
         .ok_or_else(|| format!("Epoch '{}' not found", id))?;
 
-    if storage.epochs[epoch_idx].status != "scheduled" && storage.epochs[epoch_idx].status != "completed" {
-        return Err(format!("Epoch '{}' is already {}", id, storage.epochs[epoch_idx].status));
+    if storage.epochs[epoch_idx].status != "scheduled"
+        && storage.epochs[epoch_idx].status != "completed"
+    {
+        return Err(format!(
+            "Epoch '{}' is already {}",
+            id, storage.epochs[epoch_idx].status
+        ));
     }
 
     // Update status
@@ -127,10 +139,10 @@ pub fn run(id: String) -> Result<(), String> {
 
     // Get epoch reference for execution
     let epoch = &mut storage.epochs[epoch_idx];
-    
+
     // Call Erlang RC layer: Execute epoch
     let output = Command::new("erl")
-        .args(&["-noshell", "-eval"])
+        .args(["-noshell", "-eval"])
         .arg(format!(
             "{{Actions, Receipt}} = knhk_epoch:run(\"{}\"), io:format(\"Actions: ~p~nReceipt: ~p~n\", [Actions, Receipt]).",
             id
@@ -139,7 +151,7 @@ pub fn run(id: String) -> Result<(), String> {
         .arg("init")
         .arg("stop")
         .output();
-    
+
     match output {
         Ok(result) => {
             if result.status.success() {
@@ -157,7 +169,7 @@ pub fn run(id: String) -> Result<(), String> {
             epoch.status = "completed".to_string();
         }
     }
-    
+
     save_epochs(&storage)?;
     Ok(())
 }
@@ -169,7 +181,7 @@ pub fn list() -> Result<Vec<String>, String> {
         Ok(s) => s,
         Err(_) => return Ok(Vec::new()),
     };
-    
+
     Ok(storage.epochs.iter().map(|e| e.id.clone()).collect())
 }
 
@@ -180,7 +192,7 @@ fn get_config_dir() -> Result<PathBuf, String> {
         path.push("knhk");
         Ok(path)
     }
-    
+
     #[cfg(not(target_os = "windows"))]
     {
         let home = std::env::var("HOME").map_err(|_| "HOME not set")?;
@@ -193,19 +205,17 @@ fn get_config_dir() -> Result<PathBuf, String> {
 fn load_epochs() -> Result<EpochStorage, String> {
     let config_dir = get_config_dir()?;
     let epochs_file = config_dir.join("epochs.json");
-    
+
     if !epochs_file.exists() {
-        return Ok(EpochStorage {
-            epochs: Vec::new(),
-        });
+        return Ok(EpochStorage { epochs: Vec::new() });
     }
-    
+
     let content = fs::read_to_string(&epochs_file)
         .map_err(|e| format!("Failed to read epochs file: {}", e))?;
-    
+
     let storage: EpochStorage = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse epochs file: {}", e))?;
-    
+
     Ok(storage)
 }
 
@@ -213,13 +223,12 @@ fn save_epochs(storage: &EpochStorage) -> Result<(), String> {
     let config_dir = get_config_dir()?;
     fs::create_dir_all(&config_dir)
         .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    
+
     let epochs_file = config_dir.join("epochs.json");
     let content = serde_json::to_string_pretty(storage)
         .map_err(|e| format!("Failed to serialize epochs: {}", e))?;
-    
-    fs::write(&epochs_file, content)
-        .map_err(|e| format!("Failed to write epochs file: {}", e))?;
-    
+
+    fs::write(&epochs_file, content).map_err(|e| format!("Failed to write epochs file: {}", e))?;
+
     Ok(())
 }

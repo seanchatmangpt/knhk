@@ -1,0 +1,84 @@
+@startuml knhk-patterns-architecture
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+title knhk-patterns Architecture
+
+package "Application Layer (Rust)" {
+    component [Patterns] as patterns
+    component [Composition] as composition
+    component [Pipeline Ext] as pipeline_ext
+}
+
+package "FFI Layer (Rust ↔ C)" {
+    component [PatternType] as pattern_type
+    component [PatternContext] as pattern_context
+    component [PatternResult] as pattern_result
+    component [Safe Wrappers] as wrappers
+}
+
+package "Hot Path Layer (C)" {
+    component [knhk-hot] as hot_path
+    component [SIMD Optimizations] as simd
+    component [Workflow Patterns C] as c_patterns
+}
+
+package "Integration" {
+    component [knhk-etl Pipeline] as etl
+    component [knhk-config] as config
+}
+
+' Application Layer relationships
+patterns --> pattern_type : uses
+composition --> patterns : composes
+pipeline_ext --> patterns : extends
+pipeline_ext --> etl : extends
+
+' FFI Layer relationships
+pattern_type --> wrappers : wraps
+pattern_context --> wrappers : wraps
+pattern_result --> wrappers : wraps
+wrappers --> c_patterns : calls
+
+' Hot Path Layer relationships
+c_patterns --> simd : uses
+hot_path --> c_patterns : implements
+
+' Integration relationships
+etl --> pipeline_ext : uses
+config --> patterns : configures
+
+note right of patterns
+  **Pattern Implementations:**
+  - SequencePattern
+  - ParallelSplitPattern
+  - SynchronizationPattern
+  - ExclusiveChoicePattern
+  - SimpleMergePattern
+  - MultiChoicePattern
+  - ArbitraryCyclesPattern
+  - DeferredChoicePattern
+end note
+
+note right of composition
+  **Composition Types:**
+  - Sequence
+  - Parallel
+  - Choice
+  - MultiChoice
+  - Retry
+  - Timeout
+  - Atomic
+end note
+
+note right of hot_path
+  **Performance:**
+  - ≤8 tick budget
+  - SIMD optimized
+  - Zero overhead
+  - Ingress validation
+end note
+
+@enduml
+

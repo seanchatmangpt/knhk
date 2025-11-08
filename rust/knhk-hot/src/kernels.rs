@@ -9,12 +9,12 @@ use std::os::raw::c_int;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum KernelType {
-    AskSp = 0,       // ASK(S,P) - hot path
-    CountSpGe = 1,   // COUNT(S,P) >= k
-    AskSpo = 2,      // ASK(S,P,O) - exact match
-    ValidateSp = 3,  // VALIDATE(S,P) - datatype validation
-    UniqueSp = 4,    // UNIQUE(S,P) - single value check
-    CompareO = 5,    // COMPARE O with value
+    AskSp = 0,      // ASK(S,P) - hot path
+    CountSpGe = 1,  // COUNT(S,P) >= k
+    AskSpo = 2,     // ASK(S,P,O) - exact match
+    ValidateSp = 3, // VALIDATE(S,P) - datatype validation
+    UniqueSp = 4,   // UNIQUE(S,P) - single value check
+    CompareO = 5,   // COMPARE O with value
 }
 
 /// Kernel dispatch table entry

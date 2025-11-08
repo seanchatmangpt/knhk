@@ -22,17 +22,17 @@ use std::string::String;
 use knhk_validation::policy_engine::{PolicyEngine, PolicyViolation};
 
 // Module declarations - all modules included
+pub mod mphf;
+pub mod pattern;
+pub mod prebinding;
+pub mod specialization;
 pub mod template;
 pub mod template_analyzer;
-pub mod prebinding;
-pub mod mphf;
-pub mod specialization;
-pub mod pattern;
 
 // Re-exports for convenience
-pub use template::ConstructTemplate;
-pub use prebinding::PreboundIr;
 pub use mphf::{Mphf, MphfCache};
+pub use prebinding::PreboundIr;
+pub use template::ConstructTemplate;
 
 /// Hook IR validation result
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,12 +65,12 @@ impl AotGuard {
                 return Err(ValidationResult::InvalidRunLength);
             }
         }
-        
+
         // Validate operation is in hot path set
         if !Self::is_hot_path_op(op) {
             return Err(ValidationResult::InvalidOperation);
         }
-        
+
         // Check operation-specific constraints
         match op {
             // ASK operations - always valid if run_len ≤ 8
@@ -101,14 +101,15 @@ impl AotGuard {
             _ => Err(ValidationResult::InvalidOperation),
         }
     }
-    
+
     /// Check if operation is in hot path set
     fn is_hot_path_op(op: u32) -> bool {
-        matches!(op, 
+        matches!(
+            op,
             1 | 2 | 3 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 32
         )
     }
-    
+
     /// Get validation error message
     pub fn error_message(result: &ValidationResult) -> String {
         match result {
@@ -123,12 +124,12 @@ impl AotGuard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_validate_valid_ask_sp() {
         assert!(AotGuard::validate_ir(1, 8, 0).is_ok());
     }
-    
+
     #[test]
     fn test_validate_invalid_run_length() {
         assert_eq!(
@@ -136,7 +137,7 @@ mod tests {
             Err(ValidationResult::InvalidRunLength)
         );
     }
-    
+
     #[test]
     fn test_validate_unique_sp() {
         assert!(AotGuard::validate_ir(8, 1, 0).is_ok());
@@ -146,4 +147,3 @@ mod tests {
         );
     }
 }
-

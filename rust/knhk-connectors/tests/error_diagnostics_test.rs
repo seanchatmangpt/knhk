@@ -75,8 +75,14 @@ fn test_retryable_errors() {
     // Assert: Retryable errors identified correctly
     assert!(network_retryable, "Network errors should be retryable");
     assert!(io_retryable, "IO errors should be retryable");
-    assert!(rate_limit_retryable, "Rate limit errors should be retryable");
-    assert!(!validation_retryable, "Validation errors should not be retryable");
+    assert!(
+        rate_limit_retryable,
+        "Rate limit errors should be retryable"
+    );
+    assert!(
+        !validation_retryable,
+        "Validation errors should not be retryable"
+    );
     assert!(!guard_retryable, "Guard violations should not be retryable");
 }
 
@@ -116,7 +122,10 @@ fn test_all_error_types_have_codes() {
     for error in errors {
         let code = error.code();
         assert!(!code.is_empty(), "All errors should have non-empty codes");
-        assert!(code.starts_with("CONNECTOR_"), "Error codes should be prefixed with CONNECTOR_");
+        assert!(
+            code.starts_with("CONNECTOR_"),
+            "Error codes should be prefixed with CONNECTOR_"
+        );
     }
 }
 
@@ -175,6 +184,8 @@ fn test_rate_limit_error_without_retry_after() {
 
     // Assert: Message extracted and error is still retryable
     assert_eq!(msg, "Rate limit exceeded");
-    assert!(retryable, "Rate limit errors should be retryable even without retry_after_ms");
+    assert!(
+        retryable,
+        "Rate limit errors should be retryable even without retry_after_ms"
+    );
 }
-

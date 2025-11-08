@@ -12,7 +12,9 @@ use alloc::vec::Vec;
 pub trait StreamingIngester {
     /// Ingest data and return iterator over items
     /// Returns error if ingestion fails
-    fn ingest(&self) -> Result<Box<dyn Iterator<Item = Result<IngestedItem, IngestError>>>, IngestError>;
+    fn ingest(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = Result<IngestedItem, IngestError>>>, IngestError>;
 }
 
 /// Ingested item (RDF triple, JSON object, etc.)
@@ -74,7 +76,9 @@ impl StreamingRdfIngester {
 
 #[cfg(feature = "std")]
 impl StreamingIngester for StreamingRdfIngester {
-    fn ingest(&self) -> Result<Box<dyn Iterator<Item = Result<IngestedItem, IngestError>>>, IngestError> {
+    fn ingest(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = Result<IngestedItem, IngestError>>>, IngestError> {
         // Note: Full streaming RDF parsing implementation planned for v1.0
         // For now, return empty iterator
         // In production, this would:
@@ -82,7 +86,7 @@ impl StreamingIngester for StreamingRdfIngester {
         // 2. Parse RDF incrementally (Turtle, N-Triples, etc.)
         // 3. Yield triples as they are parsed
         // 4. Handle errors gracefully
-        
+
         Ok(Box::new(Vec::new().into_iter().map(|_| unreachable!())))
     }
 }
@@ -104,7 +108,9 @@ impl StreamingJsonIngester {
 
 #[cfg(feature = "std")]
 impl StreamingIngester for StreamingJsonIngester {
-    fn ingest(&self) -> Result<Box<dyn Iterator<Item = Result<IngestedItem, IngestError>>>, IngestError> {
+    fn ingest(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = Result<IngestedItem, IngestError>>>, IngestError> {
         // Note: Full streaming JSON parsing implementation planned for v1.0
         // For now, return empty iterator
         // In production, this would:
@@ -112,7 +118,7 @@ impl StreamingIngester for StreamingJsonIngester {
         // 2. Parse JSON incrementally (JSON Lines, NDJSON, etc.)
         // 3. Yield JSON objects as they are parsed
         // 4. Handle errors gracefully
-        
+
         Ok(Box::new(Vec::new().into_iter().map(|_| unreachable!())))
     }
 }
@@ -143,7 +149,10 @@ impl StreamingPipelineExecutor {
     }
 
     /// Execute pipeline on streaming input
-    pub fn execute<I>(&self, input: I) -> Result<Box<dyn Iterator<Item = Result<ProcessedItem, ProcessError>>>, ProcessError>
+    pub fn execute<I>(
+        &self,
+        input: I,
+    ) -> Result<Box<dyn Iterator<Item = Result<ProcessedItem, ProcessError>>>, ProcessError>
     where
         I: Iterator<Item = Result<IngestedItem, IngestError>>,
     {
@@ -155,7 +164,7 @@ impl StreamingPipelineExecutor {
         // 3. Generate receipts
         // 4. Yield processed items
         // 5. Handle errors gracefully
-        
+
         Ok(Box::new(Vec::new().into_iter().map(|_| unreachable!())))
     }
 }
@@ -221,7 +230,11 @@ mod tests {
             object: "o".to_string(),
         };
         match item {
-            IngestedItem::Triple { subject, predicate, object } => {
+            IngestedItem::Triple {
+                subject,
+                predicate,
+                object,
+            } => {
                 assert_eq!(subject, "s");
                 assert_eq!(predicate, "p");
                 assert_eq!(object, "o");
@@ -237,4 +250,3 @@ mod tests {
         assert_eq!(error.source, None);
     }
 }
-

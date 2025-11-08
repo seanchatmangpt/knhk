@@ -10,8 +10,7 @@ extern crate std;
 pub mod config;
 pub mod env;
 
-pub use config::Config;
 pub use config::load_config;
-pub use env::load_env_config;
+pub use config::Config;
 pub use env::apply_env_overrides;
-
+pub use env::load_env_config;

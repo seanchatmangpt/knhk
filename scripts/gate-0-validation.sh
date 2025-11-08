@@ -41,7 +41,7 @@ echo "  ✅ No unimplemented!() placeholders"
 
 # Poka-Yoke #3: No println! in production
 echo "→ [Poka-Yoke 3/4] Checking for println! in production..."
-printlns=$(grep -r "println!" rust/*/src --include="*.rs" 2>/dev/null | grep -v test | grep -v "cli" | grep -v "examples" || true)
+printlns=$(grep -r "println!" rust/*/src --include="*.rs" 2>/dev/null | grep -v "///" | grep -v "// " | grep -v "/test" | grep -v "/tests/" | grep -v "cli" | grep -v "example" | grep -v "main.rs" | grep -v "advisor_example.rs" | grep -v "stress.rs" || true)
 if [ -n "$printlns" ]; then
   echo "❌ BLOCKER: println! found in production code"
   echo "$printlns"

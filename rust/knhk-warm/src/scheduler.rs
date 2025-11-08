@@ -1,9 +1,8 @@
 // knhk-warm: Epoch scheduler
 // Implements Λ total order scheduling with τ ≤ 8 ticks enforcement
 
-use std::collections::{HashMap, HashSet, VecDeque};
 use crate::warm_path::WarmPathError;
-use crate::WarmPathResult;
+use std::collections::{HashMap, HashSet};
 
 /// Hook ID type
 pub type HookId = String;
@@ -43,6 +42,7 @@ pub struct EpochScheduler {
 #[derive(Debug, Clone)]
 struct HookMetadata {
     /// Hook ID
+    #[allow(dead_code)] // FUTURE: Hook identification
     id: HookId,
     /// Estimated ticks
     estimated_ticks: u32,
@@ -164,6 +164,7 @@ impl EpochScheduler {
     }
 
     /// Check for cycles in dependency graph
+    #[allow(clippy::only_used_in_recursion)]
     fn has_cycle(
         &self,
         graph: &HashMap<&String, Vec<&String>>,
@@ -261,11 +262,7 @@ impl EpochScheduler {
     }
 
     /// Enforce τ budget on execution plan
-    pub fn enforce_tau_budget(
-        &self,
-        plan: &ExecutionPlan,
-        tau: u32,
-    ) -> Result<(), WarmPathError> {
+    pub fn enforce_tau_budget(&self, plan: &ExecutionPlan, tau: u32) -> Result<(), WarmPathError> {
         if plan.total_ticks > tau {
             return Err(WarmPathError::InvalidInput(format!(
                 "Execution plan total_ticks {} exceeds tau {}",
@@ -292,10 +289,10 @@ mod tests {
         let mut scheduler = EpochScheduler::new();
         scheduler
             .register_hook("hook1".to_string(), 2, vec![])
-            .unwrap();
+            .expect("Failed to register hook1");
         scheduler
             .register_hook("hook2".to_string(), 3, vec!["hook1".to_string()])
-            .unwrap();
+            .expect("Failed to register hook2");
 
         let plan = scheduler
             .schedule_epoch(
@@ -304,7 +301,7 @@ mod tests {
                 8,
                 &["hook1".to_string(), "hook2".to_string()],
             )
-            .unwrap();
+            .expect("Failed to schedule epoch");
 
         assert_eq!(plan.tau, 8);
         assert_eq!(plan.lambda.len(), 2);
@@ -324,7 +321,7 @@ mod tests {
         let mut scheduler = EpochScheduler::new();
         scheduler
             .register_hook("hook1".to_string(), 5, vec![])
-            .unwrap();
+            .expect("Failed to register hook1");
 
         let plan = ExecutionPlan {
             hooks: vec!["hook1".to_string()],
@@ -340,4 +337,3 @@ mod tests {
         assert!(scheduler.enforce_tau_budget(&plan, 4).is_err());
     }
 }
-

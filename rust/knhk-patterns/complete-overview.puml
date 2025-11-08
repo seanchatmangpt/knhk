@@ -1,0 +1,184 @@
+@startuml complete-pattern-overview
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+title Complete Workflow Pattern Overview
+
+package "Pattern 1: Sequence" {
+    component [Input] as seq_in
+    component [Branch1] as seq_b1
+    component [Branch2] as seq_b2
+    component [Branch3] as seq_b3
+    component [Output] as seq_out
+    
+    seq_in --> seq_b1 : execute
+    seq_b1 --> seq_b2 : execute
+    seq_b2 --> seq_b3 : execute
+    seq_b3 --> seq_out : result
+}
+
+package "Pattern 2: Parallel Split" {
+    component [Input] as par_in
+    component [Branch1] as par_b1
+    component [Branch2] as par_b2
+    component [Branch3] as par_b3
+    component [Output1] as par_o1
+    component [Output2] as par_o2
+    component [Output3] as par_o3
+    
+    par_in --> par_b1 : fork
+    par_in --> par_b2 : fork
+    par_in --> par_b3 : fork
+    par_b1 --> par_o1 : result
+    par_b2 --> par_o2 : result
+    par_b3 --> par_o3 : result
+}
+
+package "Pattern 3: Synchronization" {
+    component [Input1] as sync_i1
+    component [Input2] as sync_i2
+    component [Input3] as sync_i3
+    component [Sync Point] as sync_point
+    component [Output] as sync_out
+    
+    sync_i1 --> sync_point : wait
+    sync_i2 --> sync_point : wait
+    sync_i3 --> sync_point : wait
+    sync_point --> sync_out : all ready
+}
+
+package "Pattern 4: Exclusive Choice" {
+    component [Input] as xor_in
+    component [Condition1] as xor_c1
+    component [Condition2] as xor_c2
+    component [Condition3] as xor_c3
+    component [Branch1] as xor_b1
+    component [Branch2] as xor_b2
+    component [Branch3] as xor_b3
+    component [Output] as xor_out
+    
+    xor_in --> xor_c1 : evaluate
+    xor_c1 --> xor_b1 : if true
+    xor_c1 --> xor_c2 : if false
+    xor_c2 --> xor_b2 : if true
+    xor_c2 --> xor_c3 : if false
+    xor_c3 --> xor_b3 : if true
+    xor_b1 --> xor_out : result
+    xor_b2 --> xor_out : result
+    xor_b3 --> xor_out : result
+}
+
+package "Pattern 6: Multi-Choice" {
+    component [Input] as or_in
+    component [Condition1] as or_c1
+    component [Condition2] as or_c2
+    component [Condition3] as or_c3
+    component [Branch1] as or_b1
+    component [Branch2] as or_b2
+    component [Branch3] as or_b3
+    component [Output1] as or_o1
+    component [Output2] as or_o2
+    component [Output3] as or_o3
+    
+    or_in --> or_c1 : evaluate all
+    or_in --> or_c2 : evaluate all
+    or_in --> or_c3 : evaluate all
+    or_c1 --> or_b1 : if true
+    or_c2 --> or_b2 : if true
+    or_c3 --> or_b3 : if true
+    or_b1 --> or_o1 : result
+    or_b2 --> or_o2 : result
+    or_b3 --> or_o3 : result
+}
+
+package "Pattern 10: Arbitrary Cycles" {
+    component [Input] as cycle_in
+    component [Branch] as cycle_branch
+    component [Condition] as cycle_cond
+    component [Output] as cycle_out
+    
+    cycle_in --> cycle_branch : execute
+    cycle_branch --> cycle_cond : check
+    cycle_cond --> cycle_branch : if continue
+    cycle_cond --> cycle_out : if stop
+}
+
+package "Pattern 16: Deferred Choice" {
+    component [Input] as def_in
+    component [Event Poll] as def_poll
+    component [Condition1] as def_c1
+    component [Condition2] as def_c2
+    component [Branch1] as def_b1
+    component [Branch2] as def_b2
+    component [Output] as def_out
+    component [Timeout] as def_timeout
+    
+    def_in --> def_poll : wait
+    def_poll --> def_c1 : check
+    def_poll --> def_c2 : check
+    def_poll --> def_timeout : check
+    def_c1 --> def_b1 : if true
+    def_c2 --> def_b2 : if true
+    def_timeout --> def_out : error
+    def_b1 --> def_out : result
+    def_b2 --> def_out : result
+}
+
+note right of seq_in
+  **Sequence Pattern:**
+  - Sequential execution
+  - 1 tick budget
+  - Single output
+end note
+
+note right of par_in
+  **Parallel Split:**
+  - Concurrent execution
+  - 2 tick budget
+  - SIMD optimized
+  - Multiple outputs
+end note
+
+note right of sync_point
+  **Synchronization:**
+  - Wait for all branches
+  - 3 tick budget
+  - SIMD optimized
+  - Single output
+end note
+
+note right of xor_in
+  **Exclusive Choice:**
+  - Single branch selection
+  - 2 tick budget
+  - First match wins
+  - Single output
+end note
+
+note right of or_in
+  **Multi-Choice:**
+  - Multiple branch selection
+  - 3 tick budget
+  - SIMD optimized
+  - Multiple outputs
+end note
+
+note right of cycle_in
+  **Arbitrary Cycles:**
+  - Loop/retry logic
+  - 2 tick budget
+  - Condition-based stop
+  - Single output
+end note
+
+note right of def_in
+  **Deferred Choice:**
+  - Event-driven
+  - 3 tick budget
+  - Timeout support
+  - Single output
+end note
+
+@enduml
+

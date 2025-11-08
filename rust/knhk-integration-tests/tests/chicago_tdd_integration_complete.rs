@@ -3,13 +3,14 @@
 // Principles:
 // 1. State-based verification (not interaction-based)
 // 2. Real collaborators across all components
+#![allow(clippy::expect_used)]
 // 3. Test full system: Sidecar → ETL → Hot Path → Telemetry
 // 4. Verify Weaver telemetry emission
 
-use knhk_sidecar::service::{KgcSidecarService, proto::*};
-use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
-use knhk_sidecar::config::SidecarConfig;
 use knhk_etl::*;
+use knhk_sidecar::config::SidecarConfig;
+use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
+use knhk_sidecar::service::{proto::*, KgcSidecarService};
 use tonic::Request;
 
 // ============================================================================
@@ -58,12 +59,24 @@ async fn test_full_system_sidecar_to_etl_to_emit() {
     assert!(sidecar_response.is_ok(), "Sidecar should handle request");
 
     assert_eq!(emit_result.receipts_written, 1, "Should write receipts");
-    assert!(emit_result.lockchain_hashes.len() >= 1, "Should generate lockchain hashes");
+    assert!(
+        emit_result.lockchain_hashes.len() >= 1,
+        "Should generate lockchain hashes"
+    );
 
     // Verify sidecar metrics recorded transaction
     let metrics_request = Request::new(GetMetricsRequest {});
-    let metrics = sidecar.get_metrics(metrics_request).await.unwrap().into_inner().metrics.unwrap();
-    assert_eq!(metrics.total_transactions, 1, "Sidecar should record transaction");
+    let metrics = sidecar
+        .get_metrics(metrics_request)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
+    assert_eq!(
+        metrics.total_transactions, 1,
+        "Sidecar should record transaction"
+    );
 }
 
 #[tokio::test]
@@ -84,12 +97,21 @@ async fn test_integration_sidecar_query_to_hot_path() {
     assert!(response.is_ok(), "Sidecar should handle query request");
 
     let query_response = response.unwrap().into_inner();
-    assert_eq!(query_response.query_type, query_request::QueryType::Ask as i32,
-               "Query type should be preserved");
+    assert_eq!(
+        query_response.query_type,
+        query_request::QueryType::Ask as i32,
+        "Query type should be preserved"
+    );
 
     // Verify metrics
     let metrics_request = Request::new(GetMetricsRequest {});
-    let metrics = sidecar.get_metrics(metrics_request).await.unwrap().into_inner().metrics.unwrap();
+    let metrics = sidecar
+        .get_metrics(metrics_request)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
     assert_eq!(metrics.total_queries, 1, "Should record query execution");
 }
 
@@ -113,7 +135,10 @@ async fn test_integration_validate_graph_to_etl() {
 
     let validate_response = response.unwrap().into_inner();
     // Currently not implemented, but should respond
-    assert!(!validate_response.errors.is_empty(), "Should report implementation status");
+    assert!(
+        !validate_response.errors.is_empty(),
+        "Should report implementation status"
+    );
 }
 
 #[tokio::test]
@@ -140,8 +165,17 @@ async fn test_integration_hook_evaluation_to_reflex() {
 
     // Verify metrics recorded hook
     let metrics_request = Request::new(GetMetricsRequest {});
-    let metrics = sidecar.get_metrics(metrics_request).await.unwrap().into_inner().metrics.unwrap();
-    assert_eq!(metrics.total_hooks_evaluated, 1, "Should record hook evaluation");
+    let metrics = sidecar
+        .get_metrics(metrics_request)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
+    assert_eq!(
+        metrics.total_hooks_evaluated, 1,
+        "Should record hook evaluation"
+    );
 }
 
 // ============================================================================
@@ -184,10 +218,22 @@ async fn test_integration_concurrent_sidecar_and_etl_operations() {
 
     // Assert: Consistent state across components
     let metrics_request = Request::new(GetMetricsRequest {});
-    let metrics = sidecar.get_metrics(metrics_request).await.unwrap().into_inner().metrics.unwrap();
+    let metrics = sidecar
+        .get_metrics(metrics_request)
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
 
-    assert_eq!(metrics.total_queries, 5, "Should record all concurrent queries");
-    assert_eq!(metrics.total_requests, 5, "Should record all concurrent requests");
+    assert_eq!(
+        metrics.total_queries, 5,
+        "Should record all concurrent queries"
+    );
+    assert_eq!(
+        metrics.total_requests, 5,
+        "Should record all concurrent requests"
+    );
 }
 
 #[tokio::test]
@@ -197,23 +243,40 @@ async fn test_integration_health_check_reflects_system_state() {
     let sidecar = KgcSidecarService::new(config);
 
     // Perform some operations
-    let _ = sidecar.query(Request::new(QueryRequest {
-        query_type: query_request::QueryType::Ask as i32,
-        query_sparql: "ASK {}".to_string(),
-    })).await;
+    let _ = sidecar
+        .query(Request::new(QueryRequest {
+            query_type: query_request::QueryType::Ask as i32,
+            query_sparql: "ASK {}".to_string(),
+        }))
+        .await;
 
     // Act: Check health
     let health_request = Request::new(HealthCheckRequest {});
-    let health_response = sidecar.health_check(health_request).await.unwrap().into_inner();
+    let health_response = sidecar
+        .health_check(health_request)
+        .await
+        .unwrap()
+        .into_inner();
 
     // Assert: Health reflects system state
-    assert_eq!(health_response.status, health_status::HealthStatus::HealthStatusHealthy as i32,
-               "System should be healthy after successful operations");
+    assert_eq!(
+        health_response.status,
+        health_status::HealthStatus::HealthStatusHealthy as i32,
+        "System should be healthy after successful operations"
+    );
 
     // Verify metrics available
-    let metrics = sidecar.get_metrics(Request::new(GetMetricsRequest {}))
-        .await.unwrap().into_inner().metrics.unwrap();
-    assert!(metrics.total_requests > 0, "Health check should reflect operation history");
+    let metrics = sidecar
+        .get_metrics(Request::new(GetMetricsRequest {}))
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
+    assert!(
+        metrics.total_requests > 0,
+        "Health check should reflect operation history"
+    );
 }
 
 // ============================================================================
@@ -224,10 +287,17 @@ async fn test_integration_health_check_reflects_system_state() {
 fn test_integration_etl_handles_multiple_data_sources() {
     // Arrange: Pipeline with multiple connectors
     let pipeline = Pipeline::new(
-        vec!["kafka".to_string(), "postgres".to_string(), "salesforce".to_string()],
+        vec![
+            "kafka".to_string(),
+            "postgres".to_string(),
+            "salesforce".to_string(),
+        ],
         "urn:knhk:schema:multi_source".to_string(),
         true,
-        vec!["https://webhook1.com".to_string(), "https://webhook2.com".to_string()],
+        vec![
+            "https://webhook1.com".to_string(),
+            "https://webhook2.com".to_string(),
+        ],
     );
 
     let turtle_data = r#"
@@ -248,8 +318,14 @@ fn test_integration_etl_handles_multiple_data_sources() {
     let emit_result = pipeline.emit.emit(reflex_result).unwrap();
 
     // Assert: All sources processed
-    assert_eq!(emit_result.receipts_written, 1, "Should process all sources");
-    assert!(emit_result.lockchain_hashes.len() >= 1, "Should generate hashes");
+    assert_eq!(
+        emit_result.receipts_written, 1,
+        "Should process all sources"
+    );
+    assert!(
+        emit_result.lockchain_hashes.len() >= 1,
+        "Should generate hashes"
+    );
 }
 
 #[test]
@@ -279,8 +355,11 @@ fn test_integration_etl_respects_tick_budget_across_stages() {
     let reflex_result = pipeline.reflex.reflex(load_result).unwrap();
 
     // Assert: Budget respected across all stages
-    assert!(reflex_result.max_ticks <= 8,
-            "Full pipeline must respect 8-tick budget, got {} ticks", reflex_result.max_ticks);
+    assert!(
+        reflex_result.max_ticks <= 8,
+        "Full pipeline must respect 8-tick budget, got {} ticks",
+        reflex_result.max_ticks
+    );
 }
 
 // ============================================================================
@@ -292,10 +371,8 @@ fn test_integration_etl_respects_tick_budget_across_stages() {
 async fn test_integration_sidecar_emits_weaver_telemetry() {
     // Arrange: Sidecar with Weaver endpoint
     let config = SidecarConfig::default();
-    let sidecar = KgcSidecarService::new_with_weaver(
-        config,
-        Some("http://localhost:4317".to_string())
-    );
+    let sidecar =
+        KgcSidecarService::new_with_weaver(config, Some("http://localhost:4317".to_string()));
 
     let request = Request::new(ApplyTransactionRequest {
         rdf_data: b"<s> <p> <o> .".to_vec(),
@@ -306,13 +383,24 @@ async fn test_integration_sidecar_emits_weaver_telemetry() {
     let response = sidecar.apply_transaction(request).await;
 
     // Assert: Telemetry attempted (export may fail if no OTLP receiver)
-    assert!(response.is_ok(), "Should complete even if telemetry export fails");
+    assert!(
+        response.is_ok(),
+        "Should complete even if telemetry export fails"
+    );
 
     // Verify metrics recorded attempt
-    let metrics = sidecar.get_metrics(Request::new(GetMetricsRequest {}))
-        .await.unwrap().into_inner().metrics.unwrap();
+    let metrics = sidecar
+        .get_metrics(Request::new(GetMetricsRequest {}))
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
 
-    assert!(metrics.total_latency_ms > 0, "Should record latency including telemetry");
+    assert!(
+        metrics.total_latency_ms > 0,
+        "Should record latency including telemetry"
+    );
 }
 
 #[tokio::test]
@@ -320,10 +408,8 @@ async fn test_integration_sidecar_emits_weaver_telemetry() {
 async fn test_integration_etl_telemetry_with_sidecar() {
     // Arrange: Full system with telemetry
     let config = SidecarConfig::default();
-    let sidecar = KgcSidecarService::new_with_weaver(
-        config,
-        Some("http://localhost:4317".to_string())
-    );
+    let sidecar =
+        KgcSidecarService::new_with_weaver(config, Some("http://localhost:4317".to_string()));
 
     let pipeline = Pipeline::new(
         vec!["telemetry_test".to_string()],
@@ -335,10 +421,12 @@ async fn test_integration_etl_telemetry_with_sidecar() {
     let turtle = "<http://s> <http://p> <http://o> .";
 
     // Act: Full pipeline with telemetry
-    let _ = sidecar.apply_transaction(Request::new(ApplyTransactionRequest {
-        rdf_data: turtle.as_bytes().to_vec(),
-        schema_iri: "urn:test:schema".to_string(),
-    })).await;
+    let _ = sidecar
+        .apply_transaction(Request::new(ApplyTransactionRequest {
+            rdf_data: turtle.as_bytes().to_vec(),
+            schema_iri: "urn:test:schema".to_string(),
+        }))
+        .await;
 
     let ingest_result = IngestResult {
         triples: pipeline.ingest.parse_rdf_turtle(turtle).unwrap(),
@@ -372,10 +460,16 @@ async fn test_integration_error_propagation_from_etl_to_sidecar() {
     let response = sidecar.apply_transaction(request).await;
 
     // Assert: Error handled gracefully (doesn't panic)
-    assert!(response.is_ok(), "Sidecar should handle ETL errors gracefully");
+    assert!(
+        response.is_ok(),
+        "Sidecar should handle ETL errors gracefully"
+    );
 
     let transaction_response = response.unwrap().into_inner();
-    assert!(!transaction_response.committed, "Transaction should not commit on error");
+    assert!(
+        !transaction_response.committed,
+        "Transaction should not commit on error"
+    );
 }
 
 #[tokio::test]
@@ -385,23 +479,35 @@ async fn test_integration_metrics_consistent_across_error_scenarios() {
     let sidecar = KgcSidecarService::new(config);
 
     // Execute mix of success and failure operations
-    let _ = sidecar.query(Request::new(QueryRequest {
-        query_type: query_request::QueryType::Ask as i32,
-        query_sparql: "ASK {}".to_string(),
-    })).await;
+    let _ = sidecar
+        .query(Request::new(QueryRequest {
+            query_type: query_request::QueryType::Ask as i32,
+            query_sparql: "ASK {}".to_string(),
+        }))
+        .await;
 
-    let _ = sidecar.apply_transaction(Request::new(ApplyTransactionRequest {
-        rdf_data: vec![],
-        schema_iri: "".to_string(),
-    })).await;
+    let _ = sidecar
+        .apply_transaction(Request::new(ApplyTransactionRequest {
+            rdf_data: vec![],
+            schema_iri: "".to_string(),
+        }))
+        .await;
 
     // Act: Get metrics
-    let metrics = sidecar.get_metrics(Request::new(GetMetricsRequest {}))
-        .await.unwrap().into_inner().metrics.unwrap();
+    let metrics = sidecar
+        .get_metrics(Request::new(GetMetricsRequest {}))
+        .await
+        .unwrap()
+        .into_inner()
+        .metrics
+        .unwrap();
 
     // Assert: Metrics consistent
-    assert_eq!(metrics.total_requests, metrics.successful_requests + metrics.failed_requests,
-               "Metrics should account for all requests regardless of outcome");
+    assert_eq!(
+        metrics.total_requests,
+        metrics.successful_requests + metrics.failed_requests,
+        "Metrics should account for all requests regardless of outcome"
+    );
 }
 
 // ============================================================================
@@ -419,16 +525,21 @@ async fn test_integration_end_to_end_latency_acceptable() {
     // Act: Measure end-to-end latency
     let start = std::time::Instant::now();
 
-    let _ = sidecar.apply_transaction(Request::new(ApplyTransactionRequest {
-        rdf_data: turtle.as_bytes().to_vec(),
-        schema_iri: "urn:test:schema".to_string(),
-    })).await;
+    let _ = sidecar
+        .apply_transaction(Request::new(ApplyTransactionRequest {
+            rdf_data: turtle.as_bytes().to_vec(),
+            schema_iri: "urn:test:schema".to_string(),
+        }))
+        .await;
 
     let duration = start.elapsed();
 
     // Assert: Latency acceptable (< 100ms for simple transaction)
-    assert!(duration.as_millis() < 100,
-            "End-to-end transaction should complete in <100ms, got {:?}", duration);
+    assert!(
+        duration.as_millis() < 100,
+        "End-to-end transaction should complete in <100ms, got {:?}",
+        duration
+    );
 }
 
 #[test]
@@ -461,8 +572,14 @@ fn test_integration_etl_pipeline_throughput() {
 
     // Assert: Throughput acceptable
     let triples_per_second = 100.0 / duration.as_secs_f64();
-    println!("ETL pipeline throughput: {:.0} transactions/second", triples_per_second);
+    println!(
+        "ETL pipeline throughput: {:.0} transactions/second",
+        triples_per_second
+    );
 
-    assert!(triples_per_second > 10.0,
-            "Should process >10 transactions/second, got {:.0} tps", triples_per_second);
+    assert!(
+        triples_per_second > 10.0,
+        "Should process >10 transactions/second, got {:.0} tps",
+        triples_per_second
+    );
 }

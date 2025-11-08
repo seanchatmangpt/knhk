@@ -3,10 +3,10 @@
 // Per-shard execution units with tick budget enforcement
 
 use crate::ingest::RawTriple;
+use crate::park::{ExecutionResult, ParkCause};
 use crate::reflex::{Action, Receipt};
-use crate::park::{ParkCause, ExecutionResult};
 use crate::ring_conversion::raw_triples_to_soa;
-use knhk_hot::{FiberExecutor, Ctx, Ir, Op, Run};
+use knhk_hot::{Ctx, FiberExecutor, Ir, Op, Run};
 use tracing::instrument;
 
 /// Fiber state
@@ -29,6 +29,7 @@ pub struct Fiber {
     /// Current tick being processed
     current_tick: u64,
     /// Tick budget per execution (≤8)
+    #[allow(dead_code)] // FUTURE: Will be used for tick budget enforcement
     tick_budget: u32,
     /// Current state
     state: FiberState,
@@ -40,7 +41,10 @@ impl Fiber {
     /// Create new fiber
     pub fn new(shard_id: u32, tick_budget: u32) -> Self {
         if tick_budget > 8 {
-            panic!("Fiber tick_budget {} exceeds Chatman Constant (8)", tick_budget);
+            panic!(
+                "Fiber tick_budget {} exceeds Chatman Constant (8)",
+                tick_budget
+            );
         }
 
         Self {
@@ -121,7 +125,7 @@ impl Fiber {
             } else {
                 Self::compute_hook_id(self.shard_id as u64, 0)
             };
-            
+
             return ExecutionResult::Parked {
                 delta: delta.to_vec(),
                 receipt: self.generate_receipt(tick, 0, cycle_id, hook_id),
@@ -140,10 +144,10 @@ impl Fiber {
         } else {
             Self::compute_hook_id(self.shard_id as u64, 0)
         };
-        
+
         // Execute via C fiber executor (actual hot path execution)
         let action = self.run_mu(tick, delta, cycle_id, hook_id);
-        
+
         // Check if execution was parked by C fiber
         match &action {
             Action { receipt_id, .. } if receipt_id.contains("error") => {
@@ -169,7 +173,7 @@ impl Fiber {
                 } else {
                     Self::compute_hook_id(self.shard_id as u64, 0)
                 };
-                
+
                 ExecutionResult::Parked {
                     delta: delta.to_vec(),
                     receipt: self.generate_receipt(tick, 0, cycle_id, hook_id),
@@ -191,33 +195,31 @@ impl Fiber {
                     parked = false,
                     "Fiber completed execution"
                 );
-                
-                ExecutionResult::Completed {
-                    action,
-                    receipt,
-                }
+
+                ExecutionResult::Completed { action, receipt }
             }
         }
     }
-    
+
     /// Extract receipt from action (receipt_id contains receipt metadata)
     fn extract_receipt_from_action(&self, action: &Action, tick: u64, cycle_id: u64) -> Receipt {
         // Parse receipt_id to extract span_id if available
         // Format: "receipt_{span_id}" or "receipt_{shard_id}_{tick}"
         let span_id = if action.receipt_id.starts_with("receipt_") {
             // Try to extract span_id from receipt_id
-            action.receipt_id
+            action
+                .receipt_id
                 .strip_prefix("receipt_")
                 .and_then(|s| s.parse::<u64>().ok())
-                .unwrap_or(tick as u64)
+                .unwrap_or(tick)
         } else {
-            tick as u64
+            tick
         };
-        
+
         // Extract hook_id from action payload if available, otherwise compute from shard
         // For v1.0, we compute hook_id from shard_id (will be improved with hook registry)
         let hook_id = Self::compute_hook_id(self.shard_id as u64, 0);
-        
+
         Receipt {
             id: action.receipt_id.clone(),
             cycle_id,
@@ -234,6 +236,7 @@ impl Fiber {
     /// Estimate ticks for delta execution
     /// Uses simple heuristic: 1 tick per triple
     /// Note: MPHF + heatmap prediction planned for v1.0
+    #[allow(dead_code)] // FUTURE: Will be used for tick estimation with MPHF
     fn estimate_ticks(&self, delta: &[RawTriple]) -> u32 {
         // Simple heuristic: 1 tick per triple
         // Future: Use MPHF + heatmap for accurate prediction
@@ -251,7 +254,11 @@ impl Fiber {
                 return Action {
                     id: alloc::format!("action_error_{}_{}", self.shard_id, self.current_tick),
                     payload: alloc::format!("Conversion error: {}", e).into_bytes(),
-                    receipt_id: alloc::format!("receipt_error_{}_{}", self.shard_id, self.current_tick),
+                    receipt_id: alloc::format!(
+                        "receipt_error_{}_{}",
+                        self.shard_id,
+                        self.current_tick
+                    ),
                 };
             }
         };
@@ -322,8 +329,13 @@ impl Fiber {
                 let mut payload = alloc::vec::Vec::new();
                 for triple in delta {
                     payload.extend_from_slice(
-                        alloc::format!("{} {} {};", triple.subject, triple.predicate, triple.object)
-                            .as_bytes(),
+                        alloc::format!(
+                            "{} {} {};",
+                            triple.subject,
+                            triple.predicate,
+                            triple.object
+                        )
+                        .as_bytes(),
                     );
                 }
 
@@ -361,9 +373,9 @@ impl Fiber {
             hook_id,
             ticks,
             actual_ticks: ticks,
-            lanes: 1, // Single lane for now
-            span_id: tick as u64, // Use tick as span ID for now
-            a_hash: 0, // Will be computed from action hash
+            lanes: 1,      // Single lane for now
+            span_id: tick, // Use tick as span ID for now
+            a_hash: 0,     // Will be computed from action hash
         }
     }
 
@@ -407,14 +419,12 @@ mod tests {
     #[test]
     fn test_fiber_execute_within_budget() {
         let mut fiber = Fiber::new(0, 8);
-        let delta = vec![
-            RawTriple {
-                subject: "http://example.org/s1".to_string(),
-                predicate: "http://example.org/p1".to_string(),
-                object: "http://example.org/o1".to_string(),
-                graph: None,
-            },
-        ];
+        let delta = vec![RawTriple {
+            subject: "http://example.org/s1".to_string(),
+            predicate: "http://example.org/p1".to_string(),
+            object: "http://example.org/o1".to_string(),
+            graph: None,
+        }];
 
         let result = fiber.execute_tick(0, &delta, 1);
         match result {
@@ -451,4 +461,3 @@ mod tests {
         }
     }
 }
-

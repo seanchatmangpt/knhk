@@ -35,7 +35,7 @@ pub fn detect_pattern(subjects: &[u64; 8], len: usize) -> SpecializationPattern 
     if len == 0 {
         return SpecializationPattern::AllZero;
     }
-    
+
     let mut zero_count = 0;
     let mut non_zero_count = 0;
 
@@ -46,7 +46,7 @@ pub fn detect_pattern(subjects: &[u64; 8], len: usize) -> SpecializationPattern 
             non_zero_count += 1;
         }
     }
-    
+
     if zero_count == len {
         SpecializationPattern::AllZero
     } else if non_zero_count == len {
@@ -61,36 +61,35 @@ pub fn detect_pattern(subjects: &[u64; 8], len: usize) -> SpecializationPattern 
 /// Generate specialization result
 pub fn specialize(pattern: SpecializationPattern, len: usize) -> SpecializationResult {
     let function_name = match pattern {
-        SpecializationPattern::AllNonZero => format!("knhk_construct8_emit_8_all_nonzero_len{}", len),
+        SpecializationPattern::AllNonZero => {
+            format!("knhk_construct8_emit_8_all_nonzero_len{}", len)
+        }
         SpecializationPattern::AllZero => format!("knhk_construct8_emit_8_all_zero_len{}", len),
         SpecializationPattern::Sparse => format!("knhk_construct8_emit_8_sparse_len{}", len),
         SpecializationPattern::Dense => format!("knhk_construct8_emit_8_dense_len{}", len),
     };
-    
+
     let hints = match pattern {
         SpecializationPattern::AllNonZero => {
             vec![
                 "Skip mask generation".to_string(),
                 "Use all-ones mask constant".to_string(),
             ]
-        },
+        }
         SpecializationPattern::AllZero => {
-            vec![
-                "Early return".to_string(),
-                "Set out_mask to 0".to_string(),
-            ]
-        },
+            vec!["Early return".to_string(), "Set out_mask to 0".to_string()]
+        }
         SpecializationPattern::Sparse => {
             vec![
                 "Use sparse computation path".to_string(),
                 "Optimize for zero lanes".to_string(),
             ]
-        },
+        }
         SpecializationPattern::Dense => {
             vec!["Use standard computation".to_string()]
-        },
+        }
     };
-    
+
     SpecializationResult {
         pattern,
         function_name,
@@ -116,4 +115,3 @@ mod tests {
         assert_eq!(pattern, SpecializationPattern::AllNonZero);
     }
 }
-

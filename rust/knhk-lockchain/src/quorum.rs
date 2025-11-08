@@ -63,9 +63,9 @@ impl QuorumProof {
         }
 
         // All votes must be for same root and cycle
-        self.votes.iter().all(|vote| {
-            vote.root == self.root && vote.cycle == self.cycle
-        })
+        self.votes
+            .iter()
+            .all(|vote| vote.root == self.root && vote.cycle == self.cycle)
     }
 
     /// Get vote count
@@ -138,24 +138,22 @@ impl QuorumManager {
                         });
                     }
                 }
-                Err(e) => {
-                    eprintln!("Failed to get vote from {:?}: {}", peer, e);
-                    // Continue trying other peers
+                Err(_e) => {
+                    // Failed to get vote from peer - continue trying other peers
+                    // Error is already captured in Result, no need to log here
                 }
             }
         }
 
-        Err(QuorumError::ThresholdNotReached(votes.len(), self.threshold))
+        Err(QuorumError::ThresholdNotReached(
+            votes.len(),
+            self.threshold,
+        ))
     }
 
     /// Request vote from a peer (mock implementation)
     /// Production version would use actual networking (gRPC, HTTP, etc.)
-    fn request_vote(
-        &self,
-        peer: &PeerId,
-        root: [u8; 32],
-        cycle: u64,
-    ) -> Result<Vote, QuorumError> {
+    fn request_vote(&self, peer: &PeerId, root: [u8; 32], cycle: u64) -> Result<Vote, QuorumError> {
         // Mock implementation: simulate peer voting
         // In production, this would:
         // 1. Send gRPC request to peer
@@ -197,6 +195,7 @@ impl QuorumManager {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
@@ -214,16 +213,14 @@ mod tests {
 
     #[test]
     fn test_quorum_consensus() {
-        let peers = vec![
-            PeerId("peer1".to_string()),
-            PeerId("peer2".to_string()),
-        ];
+        let peers = vec![PeerId("peer1".to_string()), PeerId("peer2".to_string())];
         let manager = QuorumManager::new(peers, 2, PeerId("self".to_string()));
 
         let root = [1u8; 32];
         let cycle = 100;
 
-        let proof = manager.achieve_consensus(root, cycle)
+        let proof = manager
+            .achieve_consensus(root, cycle)
             .expect("failed to achieve consensus");
         assert_eq!(proof.root, root);
         assert_eq!(proof.cycle, cycle);
@@ -238,7 +235,8 @@ mod tests {
         let root = [1u8; 32];
         let cycle = 100;
 
-        let proof = manager.achieve_consensus(root, cycle)
+        let proof = manager
+            .achieve_consensus(root, cycle)
             .expect("failed to achieve consensus");
         assert!(proof.verify(2));
     }

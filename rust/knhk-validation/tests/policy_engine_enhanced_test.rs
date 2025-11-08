@@ -6,7 +6,7 @@
 
 extern crate alloc;
 use alloc::vec;
-use knhk_validation::policy_engine::{PolicyEngine, PolicyContext, PolicyViolation, BuiltinPolicy};
+use knhk_validation::policy_engine::{BuiltinPolicy, PolicyContext, PolicyEngine, PolicyViolation};
 
 #[test]
 fn test_policy_context_creation() {
@@ -142,17 +142,20 @@ fn test_evaluate_all_with_multiple_violations() {
 
     // Assert: All violations detected
     assert_eq!(violations.len(), 3);
-    
-    let guard_violations: Vec<_> = violations.iter()
+
+    let guard_violations: Vec<_> = violations
+        .iter()
         .filter(|v| matches!(v, PolicyViolation::GuardConstraintViolation { .. }))
         .collect();
-    let perf_violations: Vec<_> = violations.iter()
+    let perf_violations: Vec<_> = violations
+        .iter()
         .filter(|v| matches!(v, PolicyViolation::PerformanceBudgetViolation { .. }))
         .collect();
-    let receipt_violations: Vec<_> = violations.iter()
+    let receipt_violations: Vec<_> = violations
+        .iter()
         .filter(|v| matches!(v, PolicyViolation::ReceiptValidationViolation { .. }))
         .collect();
-    
+
     assert_eq!(guard_violations.len(), 1);
     assert_eq!(perf_violations.len(), 1);
     assert_eq!(receipt_violations.len(), 1);
@@ -196,7 +199,10 @@ fn test_evaluate_all_with_partial_context() {
 
     // Assert: Only guard constraint violation detected
     assert_eq!(violations.len(), 1);
-    assert!(matches!(&violations[0], PolicyViolation::GuardConstraintViolation { .. }));
+    assert!(matches!(
+        &violations[0],
+        PolicyViolation::GuardConstraintViolation { .. }
+    ));
 }
 
 #[test]
@@ -215,7 +221,10 @@ fn test_evaluate_all_with_custom_policies() {
 
     // Assert: Only guard constraint violation detected (performance policy not enabled)
     assert_eq!(violations.len(), 1);
-    assert!(matches!(&violations[0], PolicyViolation::GuardConstraintViolation { .. }));
+    assert!(matches!(
+        &violations[0],
+        PolicyViolation::GuardConstraintViolation { .. }
+    ));
 }
 
 #[test]
@@ -223,7 +232,7 @@ fn test_policy_context_additional_fields() {
     // Arrange: Create context with additional fields
     let mut additional = alloc::collections::BTreeMap::new();
     additional.insert("custom_key".to_string(), "custom_value".to_string());
-    
+
     let context = PolicyContext {
         run_len: None,
         ticks: None,
@@ -238,4 +247,3 @@ fn test_policy_context_additional_fields() {
         Some(&"custom_value".to_string())
     );
 }
-

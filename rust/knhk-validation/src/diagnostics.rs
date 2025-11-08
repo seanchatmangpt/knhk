@@ -2,28 +2,28 @@
 // Structured Diagnostics System (inspired by Weaver)
 // Provides rich error context, OTEL integration, and JSON output for CI/CD
 
-#![cfg(feature = "diagnostics")]
-
-#[cfg(not(feature = "std"))]
-use alloc::string::{String, ToString};
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap;
 #[cfg(not(feature = "std"))]
 use alloc::format;
+#[cfg(not(feature = "std"))]
+use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 
-#[cfg(feature = "std")]
-use std::string::{String, ToString};
-#[cfg(feature = "std")]
-use std::vec::Vec;
 #[cfg(feature = "std")]
 use std::collections::BTreeMap;
 #[cfg(feature = "std")]
 use std::format;
+#[cfg(feature = "std")]
+use std::string::{String, ToString};
+#[cfg(feature = "std")]
+use std::vec::Vec;
 
+// Diagnostic trait not currently used but reserved for future error types
 #[cfg(feature = "diagnostics")]
-use miette::{Diagnostic, SourceSpan};
+#[allow(unused_imports)]
+use miette::Diagnostic;
 
 /// Diagnostic message with rich context
 #[derive(Debug, Clone)]
@@ -77,22 +77,22 @@ impl DiagnosticMessage {
             related: Vec::new(),
         }
     }
-    
+
     pub fn with_severity(mut self, severity: Severity) -> Self {
         self.severity = severity;
         self
     }
-    
+
     pub fn with_context(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.context.insert(key.into(), value.into());
         self
     }
-    
+
     pub fn with_span_id(mut self, span_id: impl Into<String>) -> Self {
         self.span_id = Some(span_id.into());
         self
     }
-    
+
     pub fn with_source_location(mut self, file: impl Into<String>, line: u32, column: u32) -> Self {
         self.source_location = Some(SourceLocation {
             file: file.into(),
@@ -101,7 +101,7 @@ impl DiagnosticMessage {
         });
         self
     }
-    
+
     pub fn with_related(mut self, related: DiagnosticMessage) -> Self {
         self.related.push(related);
         self
@@ -120,25 +120,27 @@ impl Diagnostics {
             messages: Vec::new(),
         }
     }
-    
+
     pub fn add(&mut self, message: DiagnosticMessage) {
         self.messages.push(message);
     }
-    
+
     pub fn messages(&self) -> &[DiagnosticMessage] {
         &self.messages
     }
-    
+
     pub fn has_errors(&self) -> bool {
-        self.messages.iter().any(|m| {
-            matches!(m.severity, Severity::Error | Severity::Critical)
-        })
+        self.messages
+            .iter()
+            .any(|m| matches!(m.severity, Severity::Error | Severity::Critical))
     }
-    
+
     pub fn has_warnings(&self) -> bool {
-        self.messages.iter().any(|m| matches!(m.severity, Severity::Warning))
+        self.messages
+            .iter()
+            .any(|m| matches!(m.severity, Severity::Warning))
     }
-    
+
     /// Convert to JSON for CI/CD integration
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
@@ -200,7 +202,6 @@ impl serde::Serialize for Diagnostics {
 }
 
 /// Helper functions for common diagnostic patterns
-
 /// Create a guard constraint violation diagnostic
 pub fn guard_constraint_violation(actual: u64, max: u64) -> DiagnosticMessage {
     DiagnosticMessage::new(
@@ -226,10 +227,17 @@ pub fn performance_budget_violation(actual_ticks: u32, max_ticks: u32) -> Diagno
 }
 
 /// Create an SLO violation diagnostic
-pub fn slo_violation(runtime_class: &str, actual_latency_ns: u64, slo_ns: u64) -> DiagnosticMessage {
+pub fn slo_violation(
+    runtime_class: &str,
+    actual_latency_ns: u64,
+    slo_ns: u64,
+) -> DiagnosticMessage {
     DiagnosticMessage::new(
         "SLO_VIOLATION",
-        format!("{} latency {} ns exceeds SLO {} ns", runtime_class, actual_latency_ns, slo_ns),
+        format!(
+            "{} latency {} ns exceeds SLO {} ns",
+            runtime_class, actual_latency_ns, slo_ns
+        ),
     )
     .with_severity(Severity::Warning)
     .with_context("runtime_class", runtime_class.to_string())
@@ -263,15 +271,16 @@ pub fn policy_violation(policy_name: &str, violation: &str) -> DiagnosticMessage
 #[cfg(feature = "std")]
 pub fn format_diagnostics(diagnostics: &Diagnostics) -> String {
     // format! macro already imported at top of file
-    
+
     let mut output = String::new();
-    
+
     for (i, msg) in diagnostics.messages().iter().enumerate() {
         if i > 0 {
-            output.push_str("\n");
+            output.push('\n');
         }
-        
-        output.push_str(&format!("[{}] {}: {}\n", 
+
+        output.push_str(&format!(
+            "[{}] {}: {}\n",
             match msg.severity {
                 Severity::Info => "INFO",
                 Severity::Warning => "WARN",
@@ -281,22 +290,25 @@ pub fn format_diagnostics(diagnostics: &Diagnostics) -> String {
             msg.code,
             msg.message
         ));
-        
+
         if !msg.context.is_empty() {
             output.push_str("  Context:\n");
             for (key, value) in &msg.context {
                 output.push_str(&format!("    {}: {}\n", key, value));
             }
         }
-        
+
         if let Some(ref span_id) = msg.span_id {
             output.push_str(&format!("  Span ID: {}\n", span_id));
         }
-        
+
         if let Some(ref loc) = msg.source_location {
-            output.push_str(&format!("  Location: {}:{}:{}\n", loc.file, loc.line, loc.column));
+            output.push_str(&format!(
+                "  Location: {}:{}:{}\n",
+                loc.file, loc.line, loc.column
+            ));
         }
-        
+
         if !msg.related.is_empty() {
             output.push_str("  Related:\n");
             for related in &msg.related {
@@ -304,7 +316,7 @@ pub fn format_diagnostics(diagnostics: &Diagnostics) -> String {
             }
         }
     }
-    
+
     output
 }
 

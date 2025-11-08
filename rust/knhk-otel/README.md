@@ -39,4 +39,4 @@ For detailed documentation, see [docs/README.md](docs/README.md).
 
 - [Architecture](../../docs/architecture.md) - System architecture
 - [Performance](../../docs/performance.md) - Performance guide
-- [Weaver Integration](../../docs/weaver-integration.md) - Weaver.ai integration
+- [Weaver Integration](../../docs/WEAVER.md) - Weaver.ai integration (canonical)

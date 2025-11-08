@@ -7,10 +7,10 @@
 extern crate std;
 
 use crate::*;
-use alloc::vec::Vec;
+use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
-use alloc::format;
+use alloc::vec::Vec;
 
 #[cfg(feature = "salesforce")]
 use reqwest::blocking::Client;
@@ -77,47 +77,52 @@ impl Connector for SalesforceConnector {
         // Validate guards
         if spec.guards.max_run_len > 8 {
             return Err(ConnectorError::GuardViolation(
-                "max_run_len must be ≤ 8".to_string()
+                "max_run_len must be ≤ 8".to_string(),
             ));
         }
 
         if spec.guards.max_batch_size == 0 {
             return Err(ConnectorError::GuardViolation(
-                "max_batch_size must be > 0".to_string()
+                "max_batch_size must be > 0".to_string(),
             ));
         }
 
         // Validate schema IRI format
         if spec.schema.is_empty() {
             return Err(ConnectorError::ValidationFailed(
-                "Schema IRI cannot be empty".to_string()
+                "Schema IRI cannot be empty".to_string(),
             ));
         }
 
         // Extract Salesforce-specific configuration
         match &spec.source {
-            SourceType::Salesforce { instance_url, api_version, object_type } => {
+            SourceType::Salesforce {
+                instance_url,
+                api_version,
+                object_type,
+            } => {
                 if instance_url.is_empty() {
                     return Err(ConnectorError::ValidationFailed(
-                        "Instance URL cannot be empty".to_string()
+                        "Instance URL cannot be empty".to_string(),
                     ));
                 }
 
                 if !instance_url.starts_with("https://") {
-                    return Err(ConnectorError::ValidationFailed(
-                        format!("Invalid instance URL format: {}", instance_url)
-                    ));
+                    return Err(ConnectorError::ValidationFailed(format!(
+                        "Invalid instance URL format: {}",
+                        instance_url
+                    )));
                 }
 
                 if api_version.is_empty() {
                     return Err(ConnectorError::ValidationFailed(
-                        "API version cannot be empty".to_string()
+                        "API version cannot be empty".to_string(),
                     ));
                 }
 
                 if object_type.is_empty() {
                     return Err(ConnectorError::ValidationFailed(
-                        "Object type cannot be empty".to_string()
+                        "Object type cannot be empty".to_string(),
                     ));
                 }
 
@@ -127,16 +132,20 @@ impl Connector for SalesforceConnector {
             }
             _ => {
                 return Err(ConnectorError::SchemaMismatch(
-                    "Source type must be Salesforce".to_string()
+                    "Source type must be Salesforce".to_string(),
                 ));
             }
         }
 
         // Validate schema IRI format
-        if !spec.schema.starts_with("urn:") && !spec.schema.starts_with("http://") && !spec.schema.starts_with("https://") {
-            return Err(ConnectorError::SchemaMismatch(
-                format!("Invalid schema IRI format: {}", spec.schema)
-            ));
+        if !spec.schema.starts_with("urn:")
+            && !spec.schema.starts_with("http://")
+            && !spec.schema.starts_with("https://")
+        {
+            return Err(ConnectorError::SchemaMismatch(format!(
+                "Invalid schema IRI format: {}",
+                spec.schema
+            )));
         }
 
         // Schema validation: validate IRI format
@@ -160,7 +169,7 @@ impl Connector for SalesforceConnector {
                 }
             }
         }
-        
+
         #[cfg(not(feature = "salesforce"))]
         {
             // Simulate authentication when salesforce feature is disabled
@@ -183,30 +192,36 @@ impl Connector for SalesforceConnector {
         match &self.state {
             SalesforceConnectionState::Authenticated => {}
             SalesforceConnectionState::RateLimited { retry_after_ms } => {
-                return Err(ConnectorError::NetworkError(
-                    format!("Rate limited, retry after {}ms", retry_after_ms)
-                ));
+                return Err(ConnectorError::NetworkError(format!(
+                    "Rate limited, retry after {}ms",
+                    retry_after_ms
+                )));
             }
             _ => {
-                return Err(ConnectorError::NetworkError(
-                    format!("Salesforce connector not authenticated: {:?}", self.state)
-                ));
+                return Err(ConnectorError::NetworkError(format!(
+                    "Salesforce connector not authenticated: {:?}",
+                    self.state
+                )));
             }
         }
 
         // Check rate limits
         if let Some(ref rate_limit) = self.rate_limit {
             if rate_limit.per_app_api_requests_remaining == 0 {
-                self.state = SalesforceConnectionState::RateLimited { retry_after_ms: 60000 };
+                self.state = SalesforceConnectionState::RateLimited {
+                    retry_after_ms: 60000,
+                };
                 return Err(ConnectorError::NetworkError(
-                    "Per-app API request limit exceeded".to_string()
+                    "Per-app API request limit exceeded".to_string(),
                 ));
             }
 
             if rate_limit.daily_api_requests_remaining == 0 {
-                self.state = SalesforceConnectionState::RateLimited { retry_after_ms: 86400000 };
+                self.state = SalesforceConnectionState::RateLimited {
+                    retry_after_ms: 86400000,
+                };
                 return Err(ConnectorError::NetworkError(
-                    "Daily API request limit exceeded".to_string()
+                    "Daily API request limit exceeded".to_string(),
                 ));
             }
         }
@@ -225,15 +240,16 @@ impl Connector for SalesforceConnector {
         if self.last_timestamp_ms > 0 {
             let lag_ms = current_timestamp_ms.saturating_sub(self.last_timestamp_ms);
             if lag_ms > self.spec.guards.max_lag_ms {
-                return Err(ConnectorError::GuardViolation(
-                    format!("Lag {}ms exceeds max_lag_ms {}ms", lag_ms, self.spec.guards.max_lag_ms)
-                ));
+                return Err(ConnectorError::GuardViolation(format!(
+                    "Lag {}ms exceeds max_lag_ms {}ms",
+                    lag_ms, self.spec.guards.max_lag_ms
+                )));
             }
         }
 
         // Query Salesforce API for changed records
         let additions = Vec::new();
-        
+
         #[cfg(feature = "salesforce")]
         {
             if let Some(ref client) = self.http_client {
@@ -242,12 +258,15 @@ impl Connector for SalesforceConnector {
                         additions.append(&mut triples);
                     }
                     Err(e) => {
-                        return Err(ConnectorError::NetworkError(format!("Salesforce query error: {}", e)));
+                        return Err(ConnectorError::NetworkError(format!(
+                            "Salesforce query error: {}",
+                            e
+                        )));
                     }
                 }
             }
         }
-        
+
         let delta = Delta {
             additions,
             removals: Vec::new(),
@@ -257,8 +276,10 @@ impl Connector for SalesforceConnector {
 
         // Update rate limit (simulate API call)
         if let Some(ref mut rate_limit) = self.rate_limit {
-            rate_limit.per_app_api_requests_remaining = rate_limit.per_app_api_requests_remaining.saturating_sub(1);
-            rate_limit.daily_api_requests_remaining = rate_limit.daily_api_requests_remaining.saturating_sub(1);
+            rate_limit.per_app_api_requests_remaining =
+                rate_limit.per_app_api_requests_remaining.saturating_sub(1);
+            rate_limit.daily_api_requests_remaining =
+                rate_limit.daily_api_requests_remaining.saturating_sub(1);
         }
 
         // Update last timestamp
@@ -270,11 +291,11 @@ impl Connector for SalesforceConnector {
     fn transform_to_soa(&self, delta: &Delta) -> Result<SoAArrays, ConnectorError> {
         // Validate batch size guard
         if delta.additions.len() > self.spec.guards.max_batch_size {
-            return Err(ConnectorError::GuardViolation(
-                format!("Batch size {} exceeds max {}", 
-                    delta.additions.len(), 
-                    self.spec.guards.max_batch_size)
-            ));
+            return Err(ConnectorError::GuardViolation(format!(
+                "Batch size {} exceeds max {}",
+                delta.additions.len(),
+                self.spec.guards.max_batch_size
+            )));
         }
 
         // Convert triples to SoA (respecting run.len ≤ 8)
@@ -293,18 +314,21 @@ impl Connector for SalesforceConnector {
     fn health(&self) -> crate::ConnectorHealth {
         match &self.state {
             SalesforceConnectionState::Authenticated => crate::ConnectorHealth::Healthy,
-            SalesforceConnectionState::Authenticating => crate::ConnectorHealth::Degraded(
-                "Authenticating with Salesforce".to_string()
-            ),
-            SalesforceConnectionState::Disconnected => crate::ConnectorHealth::Unhealthy(
-                "Disconnected from Salesforce".to_string()
-            ),
-            SalesforceConnectionState::RateLimited { retry_after_ms } => crate::ConnectorHealth::Degraded(
-                format!("Rate limited, retry after {}ms", retry_after_ms)
-            ),
-            SalesforceConnectionState::Error(msg) => crate::ConnectorHealth::Unhealthy(
-                format!("Salesforce error: {}", msg)
-            ),
+            SalesforceConnectionState::Authenticating => {
+                crate::ConnectorHealth::Degraded("Authenticating with Salesforce".to_string())
+            }
+            SalesforceConnectionState::Disconnected => {
+                crate::ConnectorHealth::Unhealthy("Disconnected from Salesforce".to_string())
+            }
+            SalesforceConnectionState::RateLimited { retry_after_ms } => {
+                crate::ConnectorHealth::Degraded(format!(
+                    "Rate limited, retry after {}ms",
+                    retry_after_ms
+                ))
+            }
+            SalesforceConnectionState::Error(msg) => {
+                crate::ConnectorHealth::Unhealthy(format!("Salesforce error: {}", msg))
+            }
         }
     }
 
@@ -364,13 +388,14 @@ impl Connector for SalesforceConnector {
             }
             SalesforceConnectionState::RateLimited { .. } => {
                 return Err(ConnectorError::NetworkError(
-                    "Cannot start connector while rate limited".to_string()
+                    "Cannot start connector while rate limited".to_string(),
                 ));
             }
             _ => {
-                return Err(ConnectorError::NetworkError(
-                    format!("Cannot start connector in state: {:?}", self.state)
-                ));
+                return Err(ConnectorError::NetworkError(format!(
+                    "Cannot start connector in state: {:?}",
+                    self.state
+                )));
             }
         }
 
@@ -439,11 +464,14 @@ impl SalesforceConnector {
             http_client: None,
         }
     }
-    
+
     #[cfg(feature = "salesforce")]
     fn authenticate(&self) -> Result<(), String> {
-        if self.client_id.is_none() || self.client_secret.is_none() ||
-           self.username.is_none() || self.password.is_none() {
+        if self.client_id.is_none()
+            || self.client_secret.is_none()
+            || self.username.is_none()
+            || self.password.is_none()
+        {
             return Err("OAuth2 credentials not set".to_string());
         }
 
@@ -456,16 +484,18 @@ impl SalesforceConnector {
         // Returning error until real OAuth2 is implemented to prevent false positives
         Err("OAuth2 authentication not implemented. Credentials validated but no token exchange performed.".to_string())
     }
-    
+
     #[cfg(feature = "salesforce")]
     fn query_salesforce(&self, client: &Client) -> Result<Vec<Triple>, String> {
         // Build SOQL query for changed records
         let soql = format!(
             "SELECT Id, Name FROM {} WHERE LastModifiedDate > {}",
             self.object_type,
-            self.last_modified_date.as_deref().unwrap_or("1970-01-01T00:00:00Z")
+            self.last_modified_date
+                .as_deref()
+                .unwrap_or("1970-01-01T00:00:00Z")
         );
-        
+
         // HTTP request to Salesforce REST API
         // When salesforce feature is enabled, this makes real HTTP requests
         // Current implementation returns empty (stub for feature-gated code)
@@ -512,16 +542,17 @@ impl SalesforceConnector {
     fn refresh_token(&mut self) -> Result<(), ConnectorError> {
         #[cfg(feature = "salesforce")]
         {
-            let refresh_token = self.token.as_ref()
+            let refresh_token = self
+                .token
+                .as_ref()
                 .and_then(|t| Some(t.refresh_token.clone()))
-                .ok_or_else(|| ConnectorError::AuthenticationError(
-                    "No refresh token available".to_string()
-                ))?;
+                .ok_or_else(|| {
+                    ConnectorError::AuthenticationError("No refresh token available".to_string())
+                })?;
 
-            let client = self.http_client.as_ref()
-                .ok_or_else(|| ConnectorError::AuthenticationError(
-                    "HTTP client not initialized".to_string()
-                ))?;
+            let client = self.http_client.as_ref().ok_or_else(|| {
+                ConnectorError::AuthenticationError("HTTP client not initialized".to_string())
+            })?;
 
             // Build OAuth2 token refresh request
             let token_url = format!("{}/services/oauth2/token", self.instance_url);
@@ -533,34 +564,34 @@ impl SalesforceConnector {
             ];
 
             // Make token refresh request
-            let response = client
-                .post(&token_url)
-                .form(&params)
-                .send()
-                .map_err(|e| ConnectorError::NetworkError(
-                    format!("Token refresh request failed: {}", e)
-                ))?;
+            let response = client.post(&token_url).form(&params).send().map_err(|e| {
+                ConnectorError::NetworkError(format!("Token refresh request failed: {}", e))
+            })?;
 
             if !response.status().is_success() {
                 let status = response.status();
-                return Err(ConnectorError::AuthenticationError(
-                    format!("Token refresh failed with status: {}", status)
-                ));
+                return Err(ConnectorError::AuthenticationError(format!(
+                    "Token refresh failed with status: {}",
+                    status
+                )));
             }
 
             // Parse response
-            let token_data: serde_json::Value = response.json()
-                .map_err(|e| ConnectorError::NetworkError(
-                    format!("Failed to parse token response: {}", e)
-                ))?;
+            let token_data: serde_json::Value = response.json().map_err(|e| {
+                ConnectorError::NetworkError(format!("Failed to parse token response: {}", e))
+            })?;
 
-            let access_token = token_data.get("access_token")
+            let access_token = token_data
+                .get("access_token")
                 .and_then(|v| v.as_str())
-                .ok_or_else(|| ConnectorError::AuthenticationError(
-                    "Missing access_token in response".to_string()
-                ))?;
+                .ok_or_else(|| {
+                    ConnectorError::AuthenticationError(
+                        "Missing access_token in response".to_string(),
+                    )
+                })?;
 
-            let expires_in = token_data.get("expires_in")
+            let expires_in = token_data
+                .get("expires_in")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(7200); // Default 2 hours
 
@@ -568,7 +599,7 @@ impl SalesforceConnector {
             if current_time_ms == 0 {
                 // Timestamp unavailable, cannot set expiration
                 return Err(ConnectorError::NetworkError(
-                    "Timestamp unavailable, cannot refresh token".to_string()
+                    "Timestamp unavailable, cannot refresh token".to_string(),
                 ));
             }
 
@@ -587,7 +618,7 @@ impl SalesforceConnector {
         #[cfg(not(feature = "salesforce"))]
         {
             Err(ConnectorError::NetworkError(
-                "Salesforce feature not enabled".to_string()
+                "Salesforce feature not enabled".to_string(),
             ))
         }
     }
@@ -627,6 +658,7 @@ pub struct SalesforceMetrics {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
@@ -844,7 +876,10 @@ mod tests {
         }
 
         // State should be RateLimited
-        assert!(matches!(connector.state(), SalesforceConnectionState::RateLimited { .. }));
+        assert!(matches!(
+            connector.state(),
+            SalesforceConnectionState::RateLimited { .. }
+        ));
     }
 
     #[test]

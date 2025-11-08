@@ -1,8 +1,8 @@
 // knhk-hot: Receipt conversion utilities
 // Convert between C Receipt and Rust Receipt structures
 
-use crate::Receipt as CReceipt;
 use crate::ffi::Receipt as HotReceipt;
+use crate::Receipt as CReceipt;
 
 /// Receipt structure for ETL (matches knhk-etl::reflex::Receipt)
 /// Note: This is a local copy to avoid circular dependency
@@ -62,4 +62,3 @@ pub fn hot_receipt_to_etl(hot_receipt: &HotReceipt) -> EtlReceipt {
         a_hash: hot_receipt.a_hash,
     }
 }
-

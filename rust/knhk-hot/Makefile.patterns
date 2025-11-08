@@ -1,0 +1,31 @@
+# Makefile.patterns
+# Build system for workflow patterns
+
+CC = clang
+CFLAGS = -O3 -march=native -fPIC -Wall -Wextra
+CFLAGS += -DNDEBUG # Production build
+
+# ARM64-specific optimizations
+ifeq ($(shell uname -m), arm64)
+    CFLAGS += -mcpu=apple-m1
+endif
+
+SOURCES = src/workflow_patterns.c
+OBJECTS = $(SOURCES:.c=.o)
+LIBRARY = libknhk_patterns.a
+
+all: $(LIBRARY)
+
+$(LIBRARY): $(OBJECTS)
+	ar rcs $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(LIBRARY)
+
+test:
+	cd ../knhk-patterns && cargo test
+
+.PHONY: all clean test

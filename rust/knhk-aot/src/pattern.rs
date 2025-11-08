@@ -3,8 +3,8 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 /// Input pattern analysis
 #[derive(Debug, Clone)]
@@ -42,7 +42,7 @@ pub fn analyze_pattern(subjects: &[u64; 8], len: usize) -> PatternAnalysis {
             non_zero_count += 1;
         }
     }
-    
+
     let pattern_type = if zero_count == len {
         PatternType::AllZero
     } else if non_zero_count == len {
@@ -52,7 +52,7 @@ pub fn analyze_pattern(subjects: &[u64; 8], len: usize) -> PatternAnalysis {
     } else {
         PatternType::Dense
     };
-    
+
     PatternAnalysis {
         zero_mask,
         non_zero_count,
@@ -64,7 +64,7 @@ pub fn analyze_pattern(subjects: &[u64; 8], len: usize) -> PatternAnalysis {
 /// Generate optimization hints from pattern
 pub fn generate_hints(analysis: &PatternAnalysis) -> Vec<String> {
     let mut hints = Vec::new();
-    
+
     match analysis.pattern_type {
         PatternType::AllZero => {
             hints.push("Early return: all subjects are zero".to_string());
@@ -82,9 +82,9 @@ pub fn generate_hints(analysis: &PatternAnalysis) -> Vec<String> {
             hints.push("Use standard computation".to_string());
         }
     }
-    
+
     hints.push(format!("Zero mask: 0x{:02x}", analysis.zero_mask));
-    
+
     hints
 }
 
@@ -96,7 +96,7 @@ mod tests {
     fn test_analyze_all_zero() {
         let subjects = [0u64; 8];
         let analysis = analyze_pattern(&subjects, 8);
-        
+
         assert_eq!(analysis.zero_mask, 0xFF);
         assert_eq!(analysis.zero_count, 8);
         assert_eq!(analysis.pattern_type, PatternType::AllZero);
@@ -106,10 +106,9 @@ mod tests {
     fn test_analyze_all_nonzero() {
         let subjects = [1u64, 2u64, 3u64, 4u64, 5u64, 6u64, 7u64, 8u64];
         let analysis = analyze_pattern(&subjects, 8);
-        
+
         assert_eq!(analysis.zero_mask, 0x00);
         assert_eq!(analysis.non_zero_count, 8);
         assert_eq!(analysis.pattern_type, PatternType::AllNonZero);
     }
 }
-

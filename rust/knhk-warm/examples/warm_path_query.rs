@@ -1,7 +1,7 @@
 //! Warm path query examples
 //! Demonstrates SELECT, ASK queries, RDF loading, and cache performance
 
-use knhk_warm::{WarmPathGraph, execute_select, execute_ask, execute_construct, execute_describe};
+use knhk_warm::{execute_ask, execute_construct, execute_describe, execute_select, WarmPathGraph};
 use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ex:Alice ex:age "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
         ex:Bob ex:age "25"^^<http://www.w3.org/2001/XMLSchema#integer> .
     "#;
-    
+
     graph.load_from_turtle(turtle_data)?;
     println!("✓ Loaded {} triples\n", graph.size());
 
@@ -32,11 +32,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ?person ex:age ?age .
         }
     "#;
-    
+
     let start = Instant::now();
     let select_result = execute_select(&graph, select_query)?;
     let duration = start.elapsed();
-    
+
     println!("Query executed in {:?}", duration);
     println!("Found {} bindings:", select_result.bindings.len());
     for binding in &select_result.bindings {
@@ -52,11 +52,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ex:Alice ex:knows ex:Bob .
         }
     "#;
-    
+
     let start = Instant::now();
     let ask_result = execute_ask(&graph, ask_query)?;
     let duration = start.elapsed();
-    
+
     println!("Query executed in {:?}", duration);
     println!("Result: {}\n", ask_result.result);
 
@@ -70,11 +70,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ?person ex:knows ?friend .
         }
     "#;
-    
+
     let start = Instant::now();
     let construct_result = execute_construct(&graph, construct_query)?;
     let duration = start.elapsed();
-    
+
     println!("Query executed in {:?}", duration);
     println!("Constructed {} triples:", construct_result.triples.len());
     for triple in &construct_result.triples {
@@ -90,21 +90,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ?person ex:knows ?friend .
         }
     "#;
-    
+
     // First execution (cache miss)
     let start = Instant::now();
     let _result1 = execute_select(&graph, test_query)?;
     let first_duration = start.elapsed();
-    
+
     // Second execution (cache hit)
     let start = Instant::now();
     let _result2 = execute_select(&graph, test_query)?;
     let second_duration = start.elapsed();
-    
+
     println!("First execution (cache miss): {:?}", first_duration);
     println!("Second execution (cache hit): {:?}", second_duration);
-    println!("Speedup: {:.1}x", 
-        first_duration.as_nanos() as f64 / second_duration.as_nanos() as f64);
+    println!(
+        "Speedup: {:.1}x",
+        first_duration.as_nanos() as f64 / second_duration.as_nanos() as f64
+    );
     println!();
 
     // Example 7: Query metrics
@@ -127,7 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     graph.insert_triple(
         "http://example.org/Dave",
         "http://example.org/knows",
-        "http://example.org/Eve"
+        "http://example.org/Eve",
     )?;
     println!("✓ Inserted triple: Dave knows Eve");
     println!("Graph size: {} triples\n", graph.size());
@@ -138,7 +140,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "SELECT ?s WHERE { ?s <http://example.org/knows> ?o }",
         "ASK { <http://example.org/Alice> <http://example.org/knows> <http://example.org/Bob> }",
     ];
-    
+
     let start = Instant::now();
     for query in &queries {
         if query.trim().to_uppercase().starts_with("SELECT") {
@@ -148,10 +150,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let batch_duration = start.elapsed();
-    
+
     println!("Executed {} queries in {:?}", queries.len(), batch_duration);
-    println!("Average per query: {:?}\n", batch_duration / queries.len() as u32);
+    println!(
+        "Average per query: {:?}\n",
+        batch_duration / queries.len() as u32
+    );
 
     Ok(())
 }
-

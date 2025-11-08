@@ -1,9 +1,12 @@
 //! Pipeline commands - ETL pipeline operations
 
+// Allow non_upper_case_globals - #[verb] macro generates static vars with lowercase names
+#![allow(non_upper_case_globals)]
+
+use crate::commands::pipeline as pipeline_impl;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
-use crate::commands::pipeline as pipeline_impl;
 
 #[derive(Serialize, Debug)]
 struct PipelineResult {
@@ -16,8 +19,14 @@ struct PipelineResult {
 #[verb] // Noun "pipeline" auto-inferred from filename "pipeline.rs"
 fn run(connectors: Option<String>, schema: Option<String>) -> Result<PipelineResult> {
     pipeline_impl::run(connectors.clone(), schema.clone())
-        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to run pipeline: {}", e)))
-        .map(|_| PipelineResult { connectors, schema, success: true })
+        .map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to run pipeline: {}", e))
+        })
+        .map(|_| PipelineResult {
+            connectors,
+            schema,
+            success: true,
+        })
 }
 
 #[derive(Serialize, Debug)]
@@ -29,7 +38,11 @@ struct PipelineStatus {
 #[verb] // Noun "pipeline" auto-inferred
 fn status() -> Result<PipelineStatus> {
     pipeline_impl::status()
-        .map_err(|e| clap_noun_verb::NounVerbError::execution_error(format!("Failed to get pipeline status: {}", e)))
+        .map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to get pipeline status: {}",
+                e
+            ))
+        })
         .map(|status| PipelineStatus { status })
 }
-

@@ -1,6 +1,6 @@
 // Hook Registry Demo - Validates implementation works correctly
 
-use knhk_etl::hook_registry::{HookRegistry, guards};
+use knhk_etl::hook_registry::{guards, HookRegistry};
 use knhk_etl::ingest::RawTriple;
 use knhk_hot::KernelType;
 
@@ -12,28 +12,34 @@ fn main() {
     println!("✓ Created hook registry");
 
     // Register hooks for different predicates
-    let hook1 = registry.register_hook(
-        100, // predicate ID
-        KernelType::AskSp,
-        guards::always_valid,
-        vec!["cardinality >= 1".to_string()],
-    ).unwrap();
+    let hook1 = registry
+        .register_hook(
+            100, // predicate ID
+            KernelType::AskSp,
+            guards::always_valid,
+            vec!["cardinality >= 1".to_string()],
+        )
+        .unwrap();
     println!("✓ Registered hook {} for predicate 100 (AskSp)", hook1);
 
-    let hook2 = registry.register_hook(
-        200,
-        KernelType::ValidateSp,
-        guards::check_subject_nonempty,
-        vec!["subject must be non-empty".to_string()],
-    ).unwrap();
+    let hook2 = registry
+        .register_hook(
+            200,
+            KernelType::ValidateSp,
+            guards::check_subject_nonempty,
+            vec!["subject must be non-empty".to_string()],
+        )
+        .unwrap();
     println!("✓ Registered hook {} for predicate 200 (ValidateSp)", hook2);
 
-    let hook3 = registry.register_hook(
-        300,
-        KernelType::CountSpGe,
-        guards::check_object_integer,
-        vec!["object must be integer".to_string()],
-    ).unwrap();
+    let hook3 = registry
+        .register_hook(
+            300,
+            KernelType::CountSpGe,
+            guards::check_object_integer,
+            vec!["object must be integer".to_string()],
+        )
+        .unwrap();
     println!("✓ Registered hook {} for predicate 300 (CountSpGe)", hook3);
 
     // Test kernel lookup
@@ -102,8 +108,13 @@ fn main() {
     // List all hooks
     println!("\n=== All Registered Hooks ===");
     for hook in registry.list_hooks() {
-        println!("Hook {}: predicate {} → {:?} ({} invariants)",
-            hook.id, hook.predicate, hook.kernel_type, hook.invariants.len());
+        println!(
+            "Hook {}: predicate {} → {:?} ({} invariants)",
+            hook.id,
+            hook.predicate,
+            hook.kernel_type,
+            hook.invariants.len()
+        );
     }
 
     // Test duplicate registration

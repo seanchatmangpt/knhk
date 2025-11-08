@@ -7,7 +7,7 @@ use knhk_validation::*;
 use knhk_validation::policy_engine::PolicyEngine;
 
 #[cfg(feature = "diagnostics")]
-use knhk_validation::diagnostics::{Diagnostics, DiagnosticMessage, Severity};
+use knhk_validation::diagnostics::{DiagnosticMessage, Diagnostics, Severity};
 
 #[cfg(feature = "std")]
 fn main() {
@@ -26,7 +26,7 @@ fn main() {
     report.add_result(cli_validation::validate_cli_command("receipt", &["--help"]));
 
     // Network validation
-    #[cfg(feature = "test-deps")]
+    #[cfg(test)]
     {
         println!("Network Validation:");
         report.add_result(network_validation::validate_http_client_exists());
@@ -42,14 +42,14 @@ fn main() {
     report.add_result(property_validation::validate_receipt_merging_properties());
     report.add_result(property_validation::validate_iri_hashing_properties());
     report.add_result(property_validation::validate_guard_constraints());
-    
+
     #[cfg(feature = "policy-engine")]
     {
         // Use policy engine for guard constraint validation
         let policy_engine = PolicyEngine::new();
         let guard_result = guard_validation::validate_guard_constraint(8);
         report.add_result(guard_result);
-        
+
         let guard_violation = guard_validation::validate_guard_constraint(9);
         report.add_result(guard_violation);
     }
@@ -62,16 +62,18 @@ fn main() {
     //     report.add_result(performance_validation::validate_hot_path_performance());
     // }
     // report.add_result(performance_validation::validate_cli_latency());
-    
+
     #[cfg(all(feature = "policy-engine", feature = "diagnostics"))]
     {
         // Use policy engine with diagnostics for performance validation
-        let (perf_result, diag) = performance_validation::validate_hot_path_performance_with_diagnostics(8);
+        let (perf_result, diag) =
+            performance_validation::validate_hot_path_performance_with_diagnostics(8);
         report.add_result(perf_result);
-        
-        let (perf_violation, violation_diag) = performance_validation::validate_hot_path_performance_with_diagnostics(9);
+
+        let (perf_violation, violation_diag) =
+            performance_validation::validate_hot_path_performance_with_diagnostics(9);
         report.add_result(perf_violation);
-        
+
         if let Some(diag) = violation_diag {
             println!("Performance violation diagnostic: {}", diag.format_ansi());
         }
@@ -85,7 +87,7 @@ fn main() {
     println!("  Failed: {}", report.failed);
     println!("  Warnings: {}", report.warnings);
     println!();
-    
+
     #[cfg(feature = "diagnostics")]
     {
         // Collect diagnostics from validation results
@@ -134,4 +136,3 @@ fn main() {
 fn main() {
     println!("Validation requires std feature");
 }
-

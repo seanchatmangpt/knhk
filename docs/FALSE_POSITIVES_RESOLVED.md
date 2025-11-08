@@ -97,7 +97,7 @@ The codebase now:
 
 ## Related Documentation
 
-- [Current Status](STATUS.md) - Overall implementation status
+- [Current Status](V1-STATUS.md) - Overall implementation status
 - [Chicago TDD](CHICAGO_TDD.md) - Test methodology and coverage
 - [Code Quality Standards](.cursor/rules/build-system-practices.mdc) - Production-ready standards
 

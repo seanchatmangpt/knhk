@@ -1,13 +1,13 @@
 [package]
 name = "knhk-sidecar"
-version = "0.5.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["KNHK Team"]
 description = "KGC Sidecar - gRPC proxy service for enterprise apps with batching, retries, and circuit-breaking"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-knhk-etl = { path = "../knhk-etl", version = "0.1.0", features = ["std"] }
+knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"] }
 tokio = { version = "1.35", features = ["full"] }
 tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 prost = "0.12"

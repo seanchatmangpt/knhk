@@ -1,0 +1,89 @@
+@startuml pipeline-integration
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+title Pipeline Integration with Workflow Patterns
+
+package "knhk-etl" {
+    component [Pipeline] as pipeline
+    component [LoadResult] as load_result
+}
+
+package "knhk-patterns" {
+    component [PipelinePatternExt] as ext_trait
+    component [Pattern Implementations] as patterns
+}
+
+package "Usage Examples" {
+    component [Parallel Validation] as parallel_ex
+    component [Conditional Routing] as conditional_ex
+    component [Retry Logic] as retry_ex
+}
+
+' Trait implementation
+ext_trait ..|> pipeline : extends
+
+' Pattern usage
+ext_trait --> patterns : uses
+parallel_ex --> ext_trait : uses
+conditional_ex --> ext_trait : uses
+retry_ex --> ext_trait : uses
+
+' Data flow
+pipeline --> load_result : produces
+ext_trait --> load_result : processes
+
+note right of ext_trait
+  **Extension Methods:**
+  
+  execute_parallel(processors)
+  - Execute pipeline
+  - Fork to parallel processors
+  - Collect results
+  
+  execute_conditional(choices)
+  - Execute pipeline
+  - Route based on conditions
+  - Execute matching processor
+  
+  execute_with_retry(processor, condition, max)
+  - Execute pipeline
+  - Retry processor until condition met
+  - Respect max attempts
+end note
+
+note right of parallel_ex
+  **Example:**
+  ```rust
+  pipeline.execute_parallel(vec![
+    |result| validate_schema(result),
+    |result| validate_constraints(result),
+    |result| validate_business_rules(result),
+  ])
+  ```
+end note
+
+note right of conditional_ex
+  **Example:**
+  ```rust
+  pipeline.execute_conditional(vec![
+    (|r| r.runs.len() > 100, |r| process_large(r)),
+    (|_| true, |r| process_normal(r)),
+  ])
+  ```
+end note
+
+note right of retry_ex
+  **Example:**
+  ```rust
+  pipeline.execute_with_retry(
+    |r| process_with_retry(r),
+    |r| r.should_retry(),
+    3, // max attempts
+  )
+  ```
+end note
+
+@enduml
+

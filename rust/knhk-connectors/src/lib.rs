@@ -5,18 +5,17 @@
 // CRITICAL: Enforce proper error handling - no unwrap/expect in production code
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
-
 #![no_std]
+extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
-extern crate alloc;
 
-use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::format;
-use alloc::boxed::Box;
+use alloc::string::String;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 
 // HashMap not currently used - reserved for future use
 
@@ -68,19 +67,19 @@ pub enum DataFormat {
 /// S/P/O/G mapping configuration
 #[derive(Debug, Clone)]
 pub struct Mapping {
-    pub subject: String,      // S field path/mapping
-    pub predicate: String,    // P field path/mapping
-    pub object: String,       // O field path/mapping
+    pub subject: String,       // S field path/mapping
+    pub predicate: String,     // P field path/mapping
+    pub object: String,        // O field path/mapping
     pub graph: Option<String>, // G (optional graph context)
 }
 
 /// Admission guards (H constraints)
 #[derive(Debug, Clone)]
 pub struct Guards {
-    pub max_batch_size: usize,      // Max Δ batch size
-    pub max_lag_ms: u64,            // Max ingestion lag
-    pub max_run_len: usize,         // Must be ≤ 8 for hot path
-    pub schema_validation: bool,    // Enforce Σ typing
+    pub max_batch_size: usize,   // Max Δ batch size
+    pub max_lag_ms: u64,         // Max ingestion lag
+    pub max_run_len: usize,      // Must be ≤ 8 for hot path
+    pub schema_validation: bool, // Enforce Σ typing
 }
 
 /// Connector specification
@@ -105,9 +104,9 @@ pub struct Delta {
 /// RDF triple (S, P, O, G)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Triple {
-    pub subject: u64,    // Hashed IRI
-    pub predicate: u64,  // Hashed IRI
-    pub object: u64,     // Hashed value
+    pub subject: u64,       // Hashed IRI
+    pub predicate: u64,     // Hashed IRI
+    pub object: u64,        // Hashed value
     pub graph: Option<u64>, // Optional graph context
 }
 
@@ -252,9 +251,9 @@ impl ConnectorError {
 /// Circuit breaker state
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CircuitBreakerState {
-    Closed,      // Normal operation
-    Open,        // Failing, rejecting requests
-    HalfOpen,   // Testing if recovered
+    Closed,   // Normal operation
+    Open,     // Failing, rejecting requests
+    HalfOpen, // Testing if recovered
 }
 
 /// Circuit breaker for connector failure handling
@@ -294,7 +293,7 @@ impl CircuitBreaker {
                     self.success_count = 0;
                 } else {
                     return Err(ConnectorError::NetworkError(
-                        "Circuit breaker is open".to_string()
+                        "Circuit breaker is open".to_string(),
                     ));
                 }
             }
@@ -310,20 +309,21 @@ impl CircuitBreaker {
             Ok(result) => {
                 self.success_count += 1;
                 if self.state == CircuitBreakerState::HalfOpen
-                    && self.success_count >= self.success_threshold {
-                        self.state = CircuitBreakerState::Closed;
-                        self.failure_count = 0;
-                    }
+                    && self.success_count >= self.success_threshold
+                {
+                    self.state = CircuitBreakerState::Closed;
+                    self.failure_count = 0;
+                }
                 Ok(result)
             }
             Err(e) => {
                 self.failure_count += 1;
                 self.last_failure_time_ms = Self::get_current_time_ms();
-                
+
                 if self.failure_count >= self.failure_threshold {
                     self.state = CircuitBreakerState::Open;
                 }
-                
+
                 Err(e)
             }
         }
@@ -388,17 +388,19 @@ impl ConnectorRegistry {
     pub fn register(&mut self, connector: Box<dyn Connector>) -> Result<(), ConnectorError> {
         let id = connector.id().clone();
         if self.connectors.contains_key(&id) {
-            return Err(ConnectorError::ValidationFailed(
-                format!("Connector {} already registered", id)
-            ));
+            return Err(ConnectorError::ValidationFailed(format!(
+                "Connector {} already registered",
+                id
+            )));
         }
-        
+
         // Initialize circuit breaker for connector
-        self.circuit_breakers.insert(id.clone(), CircuitBreaker::new(5, 60000));
-        
+        self.circuit_breakers
+            .insert(id.clone(), CircuitBreaker::new(5, 60000));
+
         // Initialize metrics
         self.metrics.insert(id.clone(), ConnectorMetrics::default());
-        
+
         self.connectors.insert(id, connector);
         Ok(())
     }
@@ -410,7 +412,9 @@ impl ConnectorRegistry {
 
     /// Get mutable connector by ID
     pub fn get_mut(&mut self, id: &ConnectorId) -> Option<&mut dyn Connector> {
-        self.connectors.get_mut(id).map(|c| c.as_mut() as &mut dyn Connector)
+        self.connectors
+            .get_mut(id)
+            .map(|c| c.as_mut() as &mut dyn Connector)
     }
 
     /// List all connector IDs
@@ -420,20 +424,20 @@ impl ConnectorRegistry {
 
     /// Fetch delta from connector with circuit breaker protection
     pub fn fetch_delta(&mut self, id: &ConnectorId) -> Result<Delta, ConnectorError> {
-        let connector = self.connectors.get_mut(id)
-            .ok_or_else(|| ConnectorError::ValidationFailed(
-                format!("Connector {} not found", id)
-            ))?;
+        let connector = self.connectors.get_mut(id).ok_or_else(|| {
+            ConnectorError::ValidationFailed(format!("Connector {} not found", id))
+        })?;
 
-        let circuit_breaker = self.circuit_breakers.get_mut(id)
-            .ok_or_else(|| ConnectorError::ValidationFailed(
-                format!("Circuit breaker for connector {} not found", id)
-            ))?;
+        let circuit_breaker = self.circuit_breakers.get_mut(id).ok_or_else(|| {
+            ConnectorError::ValidationFailed(format!(
+                "Circuit breaker for connector {} not found",
+                id
+            ))
+        })?;
 
-        let metrics = self.metrics.get_mut(id)
-            .ok_or_else(|| ConnectorError::ValidationFailed(
-                format!("Metrics for connector {} not found", id)
-            ))?;
+        let metrics = self.metrics.get_mut(id).ok_or_else(|| {
+            ConnectorError::ValidationFailed(format!("Metrics for connector {} not found", id))
+        })?;
 
         let current_time_ms = Self::get_current_time_ms();
         metrics.total_requests += 1;
@@ -464,20 +468,18 @@ impl ConnectorRegistry {
 
     /// Start connector
     pub fn start(&mut self, id: &ConnectorId) -> Result<(), ConnectorError> {
-        let connector = self.connectors.get_mut(id)
-            .ok_or_else(|| ConnectorError::ValidationFailed(
-                format!("Connector {} not found", id)
-            ))?;
+        let connector = self.connectors.get_mut(id).ok_or_else(|| {
+            ConnectorError::ValidationFailed(format!("Connector {} not found", id))
+        })?;
 
         connector.start()
     }
 
     /// Stop connector
     pub fn stop(&mut self, id: &ConnectorId) -> Result<(), ConnectorError> {
-        let connector = self.connectors.get_mut(id)
-            .ok_or_else(|| ConnectorError::ValidationFailed(
-                format!("Connector {} not found", id)
-            ))?;
+        let connector = self.connectors.get_mut(id).ok_or_else(|| {
+            ConnectorError::ValidationFailed(format!("Connector {} not found", id))
+        })?;
 
         connector.stop()
     }
@@ -514,6 +516,7 @@ pub mod salesforce;
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
@@ -550,25 +553,28 @@ mod tests {
     #[test]
     fn test_circuit_breaker() {
         let mut cb = CircuitBreaker::new(3, 1000);
-        
+
         // Successful calls
         let result1 = cb.call(|| Ok(42));
         assert!(result1.is_ok());
         assert_eq!(*cb.state(), CircuitBreakerState::Closed);
-        
+
         // Failures
-        let result2: Result<(), ConnectorError> = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
+        let result2: Result<(), ConnectorError> =
+            cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
         assert!(result2.is_err());
-        
-        let result3: Result<(), ConnectorError> = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
+
+        let result3: Result<(), ConnectorError> =
+            cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
         assert!(result3.is_err());
-        
-        let result4: Result<(), ConnectorError> = cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
+
+        let result4: Result<(), ConnectorError> =
+            cb.call(|| Err(ConnectorError::NetworkError("test".to_string())));
         assert!(result4.is_err());
-        
+
         // Should be open now
         assert_eq!(*cb.state(), CircuitBreakerState::Open);
-        
+
         // Calls should fail immediately
         let result5 = cb.call(|| Ok(42));
         assert!(result5.is_err());
@@ -577,17 +583,17 @@ mod tests {
     #[test]
     fn test_connector_registry_with_circuit_breaker() {
         use crate::kafka::KafkaConnector;
-        
+
         let mut registry = ConnectorRegistry::new();
         let connector = Box::new(KafkaConnector::new(
             "test_kafka".to_string(),
             "test.topic".to_string(),
             DataFormat::JsonLd,
         ));
-        
+
         assert!(registry.register(connector).is_ok());
         assert_eq!(registry.list().len(), 1);
-        
+
         // Test circuit breaker state
         let state = registry.circuit_breaker_state(&"test_kafka".to_string());
         assert!(state.is_some());
@@ -600,15 +606,16 @@ mod tests {
     #[test]
     fn test_connector_metrics() {
         use crate::kafka::KafkaConnector;
-        
+
         let mut registry = ConnectorRegistry::new();
         let connector = Box::new(KafkaConnector::new(
             "test_kafka".to_string(),
             "test.topic".to_string(),
             DataFormat::JsonLd,
         ));
-        
-        registry.register(connector)
+
+        registry
+            .register(connector)
             .expect("registering new connector should succeed");
 
         // Get metrics (should be zero initially)
@@ -620,4 +627,3 @@ mod tests {
         assert_eq!(m.failed_requests, 0);
     }
 }
-

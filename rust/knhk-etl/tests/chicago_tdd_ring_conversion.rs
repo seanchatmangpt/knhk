@@ -4,10 +4,10 @@
 
 extern crate alloc;
 
+use alloc::string::ToString;
+use alloc::vec::Vec;
 use knhk_etl::ring_conversion::{raw_triples_to_soa, soa_to_raw_triples};
 use knhk_etl::RawTriple;
-use alloc::vec::Vec;
-use alloc::string::ToString;
 
 #[test]
 fn test_ring_conversion_raw_to_soa() {
@@ -26,11 +26,11 @@ fn test_ring_conversion_raw_to_soa() {
             graph: None,
         },
     ];
-    
+
     // Act: Convert to SoA
     #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     let (S, P, O) = raw_triples_to_soa(&triples).expect("Should convert");
-    
+
     // Assert: SoA arrays have correct length and values
     assert_eq!(S.len(), 2);
     assert_eq!(P.len(), 2);
@@ -49,10 +49,10 @@ fn test_ring_conversion_soa_to_raw() {
     let P = vec![50u64, 50u64];
     #[allow(non_snake_case)] // RDF naming convention
     let O = vec![10u64, 20u64];
-    
+
     // Act: Convert to raw triples
     let triples = soa_to_raw_triples(&S, &P, &O);
-    
+
     // Assert: Raw triples have correct length
     assert_eq!(triples.len(), 2);
     // Note: Subject/predicate/object values are hashed IRIs, so we can't check exact values
@@ -66,10 +66,10 @@ fn test_ring_conversion_soa_to_raw() {
 fn test_ring_conversion_empty_input() {
     // Arrange: Empty triples
     let triples = Vec::new();
-    
+
     // Act: Convert to SoA
     let result = raw_triples_to_soa(&triples);
-    
+
     // Assert: Returns empty arrays
     assert!(result.is_ok());
     #[allow(non_snake_case)] // RDF naming convention
@@ -90,10 +90,10 @@ fn test_ring_conversion_max_run_len() {
             graph: None,
         })
         .collect();
-    
+
     // Act: Convert to SoA
     let result = raw_triples_to_soa(&triples);
-    
+
     // Assert: Conversion succeeds (within max_run_len)
     assert!(result.is_ok());
     #[allow(non_snake_case)] // RDF naming convention
@@ -102,5 +102,3 @@ fn test_ring_conversion_max_run_len() {
     assert_eq!(P.len(), 8);
     assert_eq!(O.len(), 8);
 }
-
-

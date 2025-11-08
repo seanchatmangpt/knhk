@@ -1,6 +1,7 @@
 // rust/knhk-integration-tests/src/main.rs
 // Integration tests using Testcontainers
 // Tests KNHKS components against real containerized services
+#![allow(clippy::expect_used)]
 
 /// Test Kafka connector with real Kafka container
 #[tokio::test]
@@ -17,7 +18,7 @@ async fn test_kafka_connector_integration() -> Result<(), Box<dyn std::error::Er
     println!("Kafka started at {}:{}", kafka_host, kafka_port);
 
     // Create Kafka connector
-    use knhk_connectors::{KafkaConnector, DataFormat};
+    use knhk_connectors::{DataFormat, KafkaConnector};
 
     let connector = KafkaConnector::new(
         "test_kafka".to_string(),
@@ -92,7 +93,10 @@ async fn test_otel_collector_integration() -> Result<(), Box<dyn std::error::Err
     let span = tracer.start_span("test_span".to_string(), None);
 
     // Verify span was created with non-zero span ID (real implementation generates IDs)
-    assert_ne!(span.span_id.0, 0, "Span ID should be non-zero - real implementation generates IDs");
+    assert_ne!(
+        span.span_id.0, 0,
+        "Span ID should be non-zero - real implementation generates IDs"
+    );
 
     Ok(())
 }
@@ -132,4 +136,3 @@ fn main() {
     println!("KNHKS Integration Tests with Testcontainers");
     println!("Run with: cargo test");
 }
-

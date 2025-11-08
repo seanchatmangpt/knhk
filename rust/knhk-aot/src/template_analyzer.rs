@@ -3,10 +3,10 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::string::ToString;
-use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 
 /// Template triple pattern
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,7 +14,11 @@ pub enum TriplePattern {
     /// Ground triple (all constants)
     Ground { s: u64, p: u64, o: u64 },
     /// Variable triple (has variables)
-    Variable { s: Variable, p: Variable, o: Variable },
+    Variable {
+        s: Variable,
+        p: Variable,
+        o: Variable,
+    },
 }
 
 /// Variable binding
@@ -59,20 +63,22 @@ pub enum TriplePosition {
 pub fn analyze_template(template: &str) -> Result<TemplateAnalysis, String> {
     // Parse CONSTRUCT template
     // Format: CONSTRUCT { triple1 . triple2 . ... } WHERE { ... }
-    
+
     let mut ground_triples = Vec::new();
     let mut variable_triples = Vec::new();
     let mut bindings = BTreeMap::new();
-    
+
     // Extract CONSTRUCT clause
-    let construct_start = template.find("CONSTRUCT").ok_or("No CONSTRUCT clause found")?;
+    let construct_start = template
+        .find("CONSTRUCT")
+        .ok_or("No CONSTRUCT clause found")?;
     let construct_end = template.find("WHERE").ok_or("No WHERE clause found")?;
     let construct_clause = &template[construct_start + 9..construct_end].trim();
-    
+
     // Parse triples in CONSTRUCT clause
     // Simplified parser - in production would use full SPARQL parser
     let triples = parse_triples(construct_clause)?;
-    
+
     for (idx, triple) in triples.iter().enumerate() {
         match triple {
             TriplePattern::Ground { s, p, o } => {
@@ -80,10 +86,11 @@ pub fn analyze_template(template: &str) -> Result<TemplateAnalysis, String> {
             }
             TriplePattern::Variable { s, p, o } => {
                 variable_triples.push(triple.clone());
-                
+
                 // Track variable bindings
                 if let Variable::Binding(var) = s {
-                    bindings.entry(var.clone())
+                    bindings
+                        .entry(var.clone())
                         .or_insert_with(Vec::new)
                         .push(BindingInfo {
                             position: TriplePosition::Subject,
@@ -91,7 +98,8 @@ pub fn analyze_template(template: &str) -> Result<TemplateAnalysis, String> {
                         });
                 }
                 if let Variable::Binding(var) = p {
-                    bindings.entry(var.clone())
+                    bindings
+                        .entry(var.clone())
                         .or_insert_with(Vec::new)
                         .push(BindingInfo {
                             position: TriplePosition::Predicate,
@@ -99,7 +107,8 @@ pub fn analyze_template(template: &str) -> Result<TemplateAnalysis, String> {
                         });
                 }
                 if let Variable::Binding(var) = o {
-                    bindings.entry(var.clone())
+                    bindings
+                        .entry(var.clone())
                         .or_insert_with(Vec::new)
                         .push(BindingInfo {
                             position: TriplePosition::Object,
@@ -109,7 +118,7 @@ pub fn analyze_template(template: &str) -> Result<TemplateAnalysis, String> {
             }
         }
     }
-    
+
     Ok(TemplateAnalysis {
         ground_triples,
         variable_triples,
@@ -121,22 +130,22 @@ pub fn analyze_template(template: &str) -> Result<TemplateAnalysis, String> {
 /// Simplified parser - extracts basic patterns
 fn parse_triples(clause: &str) -> Result<Vec<TriplePattern>, String> {
     let mut triples = Vec::new();
-    
+
     // Split by '.' to get individual triples
     let parts: Vec<&str> = clause.split('.').collect();
-    
+
     for part in parts {
         let part = part.trim();
         if part.is_empty() {
             continue;
         }
-        
+
         // Parse triple pattern
         // Format: <s> <p> <o> or ?s <p> ?o etc.
         let triple = parse_triple_pattern(part)?;
         triples.push(triple);
     }
-    
+
     Ok(triples)
 }
 
@@ -146,13 +155,15 @@ fn parse_triple_pattern(pattern: &str) -> Result<TriplePattern, String> {
     if parts.len() < 3 {
         return Err(format!("Invalid triple pattern: {}", pattern));
     }
-    
+
     let s = parse_term(parts[0])?;
     let p = parse_term(parts[1])?;
     let o = parse_term(parts[2])?;
-    
+
     // Check if all are constants (ground triple)
-    if let (Variable::Constant(s_val), Variable::Constant(p_val), Variable::Constant(o_val)) = (&s, &p, &o) {
+    if let (Variable::Constant(s_val), Variable::Constant(p_val), Variable::Constant(o_val)) =
+        (&s, &p, &o)
+    {
         Ok(TriplePattern::Ground {
             s: *s_val,
             p: *p_val,
@@ -189,7 +200,7 @@ fn parse_term(term: &str) -> Result<Variable, String> {
 fn hash_iri(iri: &str) -> u64 {
     const FNV_OFFSET_BASIS: u64 = 14695981039346656037;
     const FNV_PRIME: u64 = 1099511628211;
-    
+
     let mut hash = FNV_OFFSET_BASIS;
     for byte in iri.as_bytes() {
         hash ^= *byte as u64;
@@ -205,13 +216,14 @@ fn hash_literal(literal: &str) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
     fn test_analyze_ground_triple() {
         let template = "CONSTRUCT { <s> <p> <o> } WHERE { ?x <p2> ?y }";
-        let analysis = analyze_template(template).unwrap();
-        
+        let analysis = analyze_template(template).expect("Failed to analyze ground triple template");
+
         assert_eq!(analysis.ground_triples.len(), 1);
         assert_eq!(analysis.variable_triples.len(), 0);
     }
@@ -219,12 +231,11 @@ mod tests {
     #[test]
     fn test_analyze_variable_triple() {
         let template = "CONSTRUCT { ?x <p> ?y } WHERE { ?x <p2> ?y }";
-        let analysis = analyze_template(template).unwrap();
-        
+        let analysis = analyze_template(template).expect("Failed to analyze variable triple template");
+
         assert_eq!(analysis.ground_triples.len(), 0);
         assert_eq!(analysis.variable_triples.len(), 1);
         assert!(analysis.bindings.contains_key("x"));
         assert!(analysis.bindings.contains_key("y"));
     }
 }
-

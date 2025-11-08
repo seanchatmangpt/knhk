@@ -4,13 +4,13 @@
 
 extern crate alloc;
 
+use crate::{Metric, MetricValue, SpanStatus, Tracer};
 use alloc::collections::BTreeMap;
-use alloc::string::ToString;
 use alloc::format;
-use crate::{Tracer, Metric, MetricValue, SpanStatus};
+use alloc::string::ToString;
 
 /// Record runtime class operation count
-/// 
+///
 /// # Arguments
 /// * `tracer` - OTEL tracer
 /// * `class` - Runtime class (R1/W1/C1)
@@ -29,7 +29,7 @@ pub fn record_runtime_class_operation(tracer: &mut Tracer, class: &str) {
 }
 
 /// Record runtime class latency histogram
-/// 
+///
 /// # Arguments
 /// * `tracer` - OTEL tracer
 /// * `class` - Runtime class (R1/W1/C1)
@@ -49,7 +49,7 @@ pub fn record_runtime_class_latency(tracer: &mut Tracer, class: &str, latency_ns
 }
 
 /// Record SLO violation
-/// 
+///
 /// # Arguments
 /// * `tracer` - OTEL tracer
 /// * `class` - Runtime class that violated SLO
@@ -64,11 +64,8 @@ pub fn record_slo_violation(
     violation_percent: f64,
 ) {
     // Create error span for SLO violation
-    let span_context = tracer.start_span(
-        format!("slo_violation_{}", class),
-        None,
-    );
-    
+    let span_context = tracer.start_span(format!("slo_violation_{}", class), None);
+
     tracer.add_attribute(
         span_context.clone(),
         "runtime_class".to_string(),
@@ -89,7 +86,7 @@ pub fn record_slo_violation(
         "violation_percent".to_string(),
         format!("{:.2}", violation_percent),
     );
-    
+
     tracer.end_span(span_context, SpanStatus::Error);
 
     // Record violation metric
@@ -101,8 +98,14 @@ pub fn record_slo_violation(
             let mut attrs = BTreeMap::new();
             attrs.insert("runtime_class".to_string(), class.to_string());
             attrs.insert("p99_latency_ns".to_string(), format!("{}", p99_latency_ns));
-            attrs.insert("slo_threshold_ns".to_string(), format!("{}", slo_threshold_ns));
-            attrs.insert("violation_percent".to_string(), format!("{:.2}", violation_percent));
+            attrs.insert(
+                "slo_threshold_ns".to_string(),
+                format!("{}", slo_threshold_ns),
+            );
+            attrs.insert(
+                "violation_percent".to_string(),
+                format!("{:.2}", violation_percent),
+            );
             attrs
         },
     };
@@ -110,7 +113,7 @@ pub fn record_slo_violation(
 }
 
 /// Record R1 failure action
-/// 
+///
 /// # Arguments
 /// * `tracer` - OTEL tracer
 /// * `action_type` - Action type: "drop", "park", or "escalate"
@@ -136,7 +139,7 @@ pub fn record_r1_failure_action(tracer: &mut Tracer, action_type: &str) {
 }
 
 /// Record W1 failure action
-/// 
+///
 /// # Arguments
 /// * `tracer` - OTEL tracer
 /// * `action_type` - Action type: "retry" or "cache_degrade"
@@ -164,7 +167,7 @@ pub fn record_w1_failure_action(tracer: &mut Tracer, action_type: &str, retry_co
 }
 
 /// Record C1 failure action
-/// 
+///
 /// # Arguments
 /// * `tracer` - OTEL tracer
 /// * `operation_id` - Operation identifier
@@ -208,7 +211,7 @@ mod tests {
     fn test_record_runtime_class_operation() {
         let mut tracer = Tracer::new();
         record_runtime_class_operation(&mut tracer, "R1");
-        
+
         let metrics = tracer.metrics();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name, "knhk.runtime_class.operations.count");
@@ -218,7 +221,7 @@ mod tests {
     fn test_record_runtime_class_latency() {
         let mut tracer = Tracer::new();
         record_runtime_class_latency(&mut tracer, "R1", 2);
-        
+
         let metrics = tracer.metrics();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name, "knhk.runtime_class.operations.latency");
@@ -228,11 +231,11 @@ mod tests {
     fn test_record_slo_violation() {
         let mut tracer = Tracer::new();
         record_slo_violation(&mut tracer, "R1", 5, 2, 150.0);
-        
+
         let metrics = tracer.metrics();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name, "knhk.slo.violations.count");
-        
+
         let spans = tracer.spans();
         assert_eq!(spans.len(), 1);
         assert_eq!(spans[0].status, SpanStatus::Error);
@@ -242,7 +245,7 @@ mod tests {
     fn test_record_r1_failure_action() {
         let mut tracer = Tracer::new();
         record_r1_failure_action(&mut tracer, "escalate");
-        
+
         let metrics = tracer.metrics();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name, "knhk.failure.r1.escalate_count");
@@ -252,7 +255,7 @@ mod tests {
     fn test_record_w1_failure_action() {
         let mut tracer = Tracer::new();
         record_w1_failure_action(&mut tracer, "retry", Some(2));
-        
+
         let metrics = tracer.metrics();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name, "knhk.failure.w1.retry_count");
@@ -262,10 +265,9 @@ mod tests {
     fn test_record_c1_failure_action() {
         let mut tracer = Tracer::new();
         record_c1_failure_action(&mut tracer, "op123");
-        
+
         let metrics = tracer.metrics();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name, "knhk.failure.c1.async_finalize_count");
     }
 }
-

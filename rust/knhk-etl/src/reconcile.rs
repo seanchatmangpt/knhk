@@ -4,16 +4,16 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
-use alloc::string::String;
 use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 
-use crate::ingest::RawTriple;
-use crate::reflex::{Action, Receipt};
 use crate::hash::{hash_actions, hash_delta, hash_soa};
-use crate::load::SoAArrays;
 use crate::hook_registry::HookRegistry;
-use knhk_hot::{KernelType, KernelExecutor};
+use crate::ingest::RawTriple;
+use crate::load::SoAArrays;
+use crate::reflex::{Action, Receipt};
+use knhk_hot::{KernelExecutor, KernelType};
 
 /// Reconciliation error types
 #[derive(Debug, Clone)]
@@ -38,7 +38,11 @@ impl core::fmt::Display for ReconcileError {
                 write!(f, "Budget exceeded: {} > {}", actual, limit)
             }
             ReconcileError::ProvenanceViolation { expected, actual } => {
-                write!(f, "Provenance violation: expected {:#x}, got {:#x}", expected, actual)
+                write!(
+                    f,
+                    "Provenance violation: expected {:#x}, got {:#x}",
+                    expected, actual
+                )
             }
             ReconcileError::InvalidSoa(msg) => write!(f, "Invalid SoA: {}", msg),
             ReconcileError::KernelError(msg) => write!(f, "Kernel error: {}", msg),
@@ -91,7 +95,8 @@ impl ReconcileContext {
         guard: crate::hook_registry::GuardFn,
         invariants: Vec<String>,
     ) -> Result<u64, crate::hook_registry::HookRegistryError> {
-        self.hook_registry.register_hook(predicate, kernel_type, guard, invariants)
+        self.hook_registry
+            .register_hook(predicate, kernel_type, guard, invariants)
     }
 
     /// Reconcile delta: A = μ(O)
@@ -116,9 +121,10 @@ impl ReconcileContext {
 
         // Validate SoA bounds
         if delta.len() > 8 {
-            return Err(ReconcileError::InvalidSoa(
-                format!("Delta length {} exceeds 8", delta.len())
-            ));
+            return Err(ReconcileError::InvalidSoa(format!(
+                "Delta length {} exceeds 8",
+                delta.len()
+            )));
         }
 
         let mut actions = Vec::new();
@@ -137,19 +143,15 @@ impl ReconcileContext {
         for triple in delta {
             if !self.hook_registry.check_guard(predicate, triple) {
                 return Err(ReconcileError::KernelError(
-                    "Guard validation failed".to_string()
+                    "Guard validation failed".to_string(),
                 ));
             }
         }
 
         // Execute kernel via dispatch (branchless)
-        let (cycles, out_mask) = KernelExecutor::execute_dispatch(
-            kernel_type,
-            &soa.s,
-            &soa.p,
-            &soa.o,
-            delta.len(),
-        ).map_err(|e| ReconcileError::KernelError(e))?;
+        let (cycles, out_mask) =
+            KernelExecutor::execute_dispatch(kernel_type, &soa.s, &soa.p, &soa.o, delta.len())
+                .map_err(ReconcileError::KernelError)?;
 
         // Check τ ≤ 8 constraint (convert cycles to ticks)
         let ticks = cycles / self.cycles_per_tick;
@@ -161,16 +163,12 @@ impl ReconcileContext {
         }
 
         // Generate actions from mask (only validated rows)
-        for i in 0..delta.len() {
+        for (i, triple) in delta.iter().enumerate() {
             if (out_mask & (1 << i)) != 0 {
                 // Serialize triple into payload for hash provenance: hash(A) = hash(μ(O))
                 // Format: "subject|predicate|object" (deterministic, matches hash_delta order)
-                let payload = format!(
-                    "{}|{}|{}",
-                    delta[i].subject,
-                    delta[i].predicate,
-                    delta[i].object
-                ).into_bytes();
+                let payload = format!("{}|{}|{}", triple.subject, triple.predicate, triple.object)
+                    .into_bytes();
 
                 actions.push(Action {
                     id: format!("action_{}", i),
@@ -207,39 +205,43 @@ impl ReconcileContext {
         hook_id: u64,
     ) -> Result<(Vec<Action>, Receipt), ReconcileError> {
         if delta.is_empty() {
-            return Ok((Vec::new(), Receipt {
-                id: format!("receipt_{}_{}", cycle_id, tick),
-                cycle_id,
-                shard_id,
-                hook_id,
-                ticks: 0,
-                actual_ticks: 0,
-                lanes: 0,
-                span_id: {
-                    #[cfg(feature = "knhk-otel")]
-                    {
-                        use knhk_otel::generate_span_id;
-                        generate_span_id()
-                    }
-                    #[cfg(not(feature = "knhk-otel"))]
-                    {
-                        use std::time::{SystemTime, UNIX_EPOCH};
-                        let timestamp = SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .map(|d| d.as_nanos() as u64)
-                            .unwrap_or(0);
-                        timestamp.wrapping_mul(0x9e3779b97f4a7c15)
-                    }
-                }, // Generate OTEL-compatible span ID
-                a_hash: 0,
-            }));
+            return Ok((
+                Vec::new(),
+                Receipt {
+                    id: format!("receipt_{}_{}", cycle_id, tick),
+                    cycle_id,
+                    shard_id,
+                    hook_id,
+                    ticks: 0,
+                    actual_ticks: 0,
+                    lanes: 0,
+                    span_id: {
+                        #[cfg(feature = "knhk-otel")]
+                        {
+                            use knhk_otel::generate_span_id;
+                            generate_span_id()
+                        }
+                        #[cfg(not(feature = "knhk-otel"))]
+                        {
+                            use std::time::{SystemTime, UNIX_EPOCH};
+                            let timestamp = SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .map(|d| d.as_nanos() as u64)
+                                .unwrap_or(0);
+                            timestamp.wrapping_mul(0x9e3779b97f4a7c15)
+                        }
+                    }, // Generate OTEL-compatible span ID
+                    a_hash: 0,
+                },
+            ));
         }
 
         // Validate SoA bounds
         if delta.len() > 8 {
-            return Err(ReconcileError::InvalidSoa(
-                format!("Delta length {} exceeds 8", delta.len())
-            ));
+            return Err(ReconcileError::InvalidSoa(format!(
+                "Delta length {} exceeds 8",
+                delta.len()
+            )));
         }
 
         // Extract predicate
@@ -256,19 +258,15 @@ impl ReconcileContext {
         for triple in delta {
             if !self.hook_registry.check_guard(predicate, triple) {
                 return Err(ReconcileError::KernelError(
-                    "Guard validation failed".to_string()
+                    "Guard validation failed".to_string(),
                 ));
             }
         }
 
         // Execute kernel
-        let (cycles, out_mask) = KernelExecutor::execute_dispatch(
-            kernel_type,
-            &soa.s,
-            &soa.p,
-            &soa.o,
-            delta.len(),
-        ).map_err(|e| ReconcileError::KernelError(e))?;
+        let (cycles, out_mask) =
+            KernelExecutor::execute_dispatch(kernel_type, &soa.s, &soa.p, &soa.o, delta.len())
+                .map_err(ReconcileError::KernelError)?;
 
         // Convert cycles to ticks
         let ticks = (cycles / self.cycles_per_tick) as u32;
@@ -283,25 +281,18 @@ impl ReconcileContext {
 
         // Generate actions with payload for hash provenance
         let mut actions = Vec::new();
-        for i in 0..delta.len() {
+        for (i, quad) in delta.iter().enumerate() {
             if (out_mask & (1 << i)) != 0 {
                 // Serialize triple into payload for hash provenance: hash(A) = hash(μ(O))
                 // Format: "subject|predicate|object|graph" (deterministic, matches hash_delta order)
-                let payload = if let Some(ref graph) = delta[i].graph {
+                let payload = if let Some(ref graph) = quad.graph {
                     format!(
                         "{}|{}|{}|{}",
-                        delta[i].subject,
-                        delta[i].predicate,
-                        delta[i].object,
-                        graph
-                    ).into_bytes()
+                        quad.subject, quad.predicate, quad.object, graph
+                    )
+                    .into_bytes()
                 } else {
-                    format!(
-                        "{}|{}|{}",
-                        delta[i].subject,
-                        delta[i].predicate,
-                        delta[i].object
-                    ).into_bytes()
+                    format!("{}|{}|{}", quad.subject, quad.predicate, quad.object).into_bytes()
                 };
 
                 actions.push(Action {
@@ -383,7 +374,12 @@ mod tests {
 
         let result = ctx.reconcile_delta(&delta, &soa, 0);
         assert!(result.is_ok());
-        assert_eq!(result.expect("Empty delta reconciliation should succeed").len(), 0);
+        assert_eq!(
+            result
+                .expect("Empty delta reconciliation should succeed")
+                .len(),
+            0
+        );
     }
 
     #[test]

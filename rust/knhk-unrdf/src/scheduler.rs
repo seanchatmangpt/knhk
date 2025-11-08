@@ -36,9 +36,10 @@ impl EpochScheduler {
     ) -> UnrdfResult<Vec<crate::types::HookResult>> {
         // Validate τ ≤ 8 (Chatman Constant)
         if tau > 8 {
-            return Err(UnrdfError::InvalidInput(
-                format!("τ {} exceeds Chatman Constant (8 ticks)", tau)
-            ));
+            return Err(UnrdfError::InvalidInput(format!(
+                "τ {} exceeds Chatman Constant (8 ticks)",
+                tau
+            )));
         }
 
         // Validate Λ is ≺-total
@@ -62,4 +63,3 @@ impl Default for EpochScheduler {
         Self::new(NativeHookRegistry::new())
     }
 }
-

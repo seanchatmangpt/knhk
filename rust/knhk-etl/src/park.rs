@@ -2,9 +2,9 @@
 // Park/escalate mechanism for 8-beat epoch system
 // Handles demotion of over-budget work to W1
 
-use alloc::vec::Vec;
 use crate::ingest::RawTriple;
 use crate::reflex::Receipt;
+use alloc::vec::Vec;
 
 /// Reason for parking a delta
 #[derive(Debug, Clone, PartialEq)]
@@ -90,9 +90,15 @@ pub struct ParkedDelta {
 }
 
 impl ParkManager {
-
     /// Park a delta (demote to W1)
-    pub fn park(&mut self, delta: Vec<RawTriple>, receipt: Receipt, cause: ParkCause, cycle_id: u64, tick: u64) {
+    pub fn park(
+        &mut self,
+        delta: Vec<RawTriple>,
+        receipt: Receipt,
+        cause: ParkCause,
+        cycle_id: u64,
+        tick: u64,
+    ) {
         self.parked_deltas.push(ParkedDelta {
             delta,
             receipt,
@@ -112,6 +118,12 @@ impl ParkManager {
     /// Get count of parked deltas
     pub fn parked_count(&self) -> usize {
         self.parked_deltas.len()
+    }
+}
+
+impl Default for ParkManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -147,7 +159,7 @@ mod tests {
             cycle_id: 0,
             shard_id: 0,
             hook_id: 0,
-            ticks:5,
+            ticks: 5,
             actual_ticks: 5,
             lanes: 1,
             span_id: 0,
@@ -171,7 +183,7 @@ mod tests {
             cycle_id: 0,
             shard_id: 0,
             hook_id: 0,
-            ticks:10,
+            ticks: 10,
             actual_ticks: 10,
             lanes: 1,
             span_id: 0,
@@ -198,7 +210,7 @@ mod tests {
             cycle_id: 0,
             shard_id: 0,
             hook_id: 0,
-            ticks:10,
+            ticks: 10,
             actual_ticks: 10,
             lanes: 1,
             span_id: 0,
@@ -214,4 +226,3 @@ mod tests {
         assert_eq!(manager.parked_count(), 0);
     }
 }
-

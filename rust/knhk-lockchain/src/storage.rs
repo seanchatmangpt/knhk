@@ -3,11 +3,11 @@
 // Includes Git integration for immutable audit log (v1.0 requirement)
 
 use crate::quorum::QuorumProof;
+use git2::{Oid, Repository, Signature};
 use serde::{Deserialize, Serialize};
 use sled::Db;
-use thiserror::Error;
-use git2::{Repository, Signature, Oid};
 use std::path::Path;
+use thiserror::Error;
 
 /// Storage error types
 #[derive(Debug, Error)]
@@ -20,7 +20,7 @@ pub enum StorageError {
 
     #[error("Root not found for cycle {0}")]
     RootNotFound(u64),
-    
+
     #[error("Git error: {0}")]
     GitError(String),
 }
@@ -38,9 +38,9 @@ pub struct LockchainEntry {
 /// Includes Git integration for immutable audit log (v1.0 requirement)
 pub struct LockchainStorage {
     db: Db,
-    git_repo: Option<Repository>,  // Optional Git repository for audit log
+    git_repo: Option<Repository>, // Optional Git repository for audit log
     #[allow(dead_code)]
-    git_path: Option<String>,       // Git repository path
+    git_path: Option<String>, // Git repository path
 }
 
 impl LockchainStorage {
@@ -50,13 +50,13 @@ impl LockchainStorage {
     /// * `path` - Database directory path
     pub fn new(path: &str) -> Result<Self, StorageError> {
         let db = sled::open(path)?;
-        Ok(Self { 
+        Ok(Self {
             db,
             git_repo: None,
             git_path: None,
         })
     }
-    
+
     /// Create storage instance with Git repository
     ///
     /// # Arguments
@@ -64,7 +64,7 @@ impl LockchainStorage {
     /// * `git_path` - Git repository path (will be initialized if doesn't exist)
     pub fn with_git(db_path: &str, git_path: &str) -> Result<Self, StorageError> {
         let db = sled::open(db_path)?;
-        
+
         // Initialize or open Git repository
         let repo = if Path::new(git_path).exists() {
             Repository::open(git_path)
@@ -73,78 +73,85 @@ impl LockchainStorage {
             Repository::init(git_path)
                 .map_err(|e| StorageError::GitError(format!("Failed to init Git repo: {}", e)))?
         };
-        
+
         Ok(Self {
             db,
             git_repo: Some(repo),
             git_path: Some(git_path.to_string()),
         })
     }
-    
+
     /// Append receipt to Git repository (80/20 implementation)
     /// Creates a commit with receipt data as file content
-    pub fn append_to_git(&mut self, receipt_hash: &[u8; 32], cycle: u64) -> Result<Oid, StorageError> {
+    pub fn append_to_git(
+        &mut self,
+        receipt_hash: &[u8; 32],
+        cycle: u64,
+    ) -> Result<Oid, StorageError> {
         if let Some(ref mut repo) = self.git_repo {
             // Create receipt file content
             let content = format!("cycle: {}\nhash: {}\n", cycle, hex::encode(receipt_hash));
-            
+
             // Write to Git index
-            let mut index = repo.index()
+            let mut index = repo
+                .index()
                 .map_err(|e| StorageError::GitError(format!("Failed to get index: {}", e)))?;
-            
-            let blob_id = repo.blob(content.as_bytes())
+
+            let blob_id = repo
+                .blob(content.as_bytes())
                 .map_err(|e| StorageError::GitError(format!("Failed to create blob: {}", e)))?;
-            
+
             let file_path = format!("receipts/{:020}.txt", cycle);
             let now_secs = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_secs() as i32)
                 .unwrap_or(0);
-            index.add_frombuffer(
-                &git2::IndexEntry {
-                    ctime: git2::IndexTime::new(now_secs, 0),
-                    mtime: git2::IndexTime::new(now_secs, 0),
-                    dev: 0,
-                    ino: 0,
-                    mode: 0o100644,
-                    uid: 0,
-                    gid: 0,
-                    file_size: content.len() as u32,
-                    id: blob_id,
-                    flags: 0,
-                    flags_extended: 0,
-                    path: file_path.as_bytes().to_vec(),
-                },
-                content.as_bytes(),
-            )
-            .map_err(|e| StorageError::GitError(format!("Failed to add to index: {}", e)))?;
-            
-            index.write()
+            index
+                .add_frombuffer(
+                    &git2::IndexEntry {
+                        ctime: git2::IndexTime::new(now_secs, 0),
+                        mtime: git2::IndexTime::new(now_secs, 0),
+                        dev: 0,
+                        ino: 0,
+                        mode: 0o100644,
+                        uid: 0,
+                        gid: 0,
+                        file_size: content.len() as u32,
+                        id: blob_id,
+                        flags: 0,
+                        flags_extended: 0,
+                        path: file_path.as_bytes().to_vec(),
+                    },
+                    content.as_bytes(),
+                )
+                .map_err(|e| StorageError::GitError(format!("Failed to add to index: {}", e)))?;
+
+            index
+                .write()
                 .map_err(|e| StorageError::GitError(format!("Failed to write index: {}", e)))?;
-            
+
             // Create commit
-            let tree_id = index.write_tree()
+            let tree_id = index
+                .write_tree()
                 .map_err(|e| StorageError::GitError(format!("Failed to write tree: {}", e)))?;
-            let tree = repo.find_tree(tree_id)
+            let tree = repo
+                .find_tree(tree_id)
                 .map_err(|e| StorageError::GitError(format!("Failed to find tree: {}", e)))?;
-            
-            let sig = Signature::now("KNHK Lockchain", "knhk@system")
-                .map_err(|e| StorageError::GitError(format!("Failed to create signature: {}", e)))?;
-            
+
+            let sig = Signature::now("KNHK Lockchain", "knhk@system").map_err(|e| {
+                StorageError::GitError(format!("Failed to create signature: {}", e))
+            })?;
+
             let msg = format!("Receipt cycle {}", cycle);
-            let commit_id = repo.commit(
-                Some("HEAD"),
-                &sig,
-                &sig,
-                &msg,
-                &tree,
-                &[],
-            )
-            .map_err(|e| StorageError::GitError(format!("Failed to create commit: {}", e)))?;
-            
+            let commit_id = repo
+                .commit(Some("HEAD"), &sig, &sig, &msg, &tree, &[])
+                .map_err(|e| StorageError::GitError(format!("Failed to create commit: {}", e)))?;
+
             Ok(commit_id)
         } else {
-            Err(StorageError::GitError("Git repository not initialized".to_string()))
+            Err(StorageError::GitError(
+                "Git repository not initialized".to_string(),
+            ))
         }
     }
 
@@ -233,7 +240,11 @@ impl LockchainStorage {
 
     /// Verify audit trail continuity
     /// Checks that all cycles from start to end are present
-    pub fn verify_continuity(&self, start_cycle: u64, end_cycle: u64) -> Result<bool, StorageError> {
+    pub fn verify_continuity(
+        &self,
+        start_cycle: u64,
+        end_cycle: u64,
+    ) -> Result<bool, StorageError> {
         for cycle in start_cycle..=end_cycle {
             if self.get_root(cycle)?.is_none() {
                 return Ok(false);
@@ -267,8 +278,9 @@ impl std::fmt::Debug for LockchainStorage {
     }
 }
 
-#[cfg(test)]
-mod tests {
+    #[cfg(test)]
+    mod tests {
+        #![allow(clippy::expect_used)]
     use super::*;
     use crate::quorum::{PeerId, Vote};
     use std::time::SystemTime;
@@ -299,18 +311,20 @@ mod tests {
 
     #[test]
     fn test_storage_persist_and_get() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-1")
-            .expect("failed to create storage");
+        let storage =
+            LockchainStorage::new("/tmp/knhk-lockchain-test-1").expect("failed to create storage");
         storage.clear().expect("failed to clear storage");
 
         let cycle = 100;
         let root = [1u8; 32];
         let proof = create_test_proof(cycle, root);
 
-        storage.persist_root(cycle, root, proof.clone())
+        storage
+            .persist_root(cycle, root, proof.clone())
             .expect("failed to persist root");
 
-        let retrieved = storage.get_root(cycle)
+        let retrieved = storage
+            .get_root(cycle)
             .expect("failed to get root")
             .expect("root not found");
         assert_eq!(retrieved.cycle, cycle);
@@ -320,8 +334,8 @@ mod tests {
 
     #[test]
     fn test_storage_get_nonexistent() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-2")
-            .expect("failed to create storage");
+        let storage =
+            LockchainStorage::new("/tmp/knhk-lockchain-test-2").expect("failed to create storage");
         storage.clear().expect("failed to clear storage");
 
         let result = storage.get_root(999).expect("failed to query root");
@@ -330,19 +344,21 @@ mod tests {
 
     #[test]
     fn test_storage_range_query() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-3")
-            .expect("failed to create storage");
+        let storage =
+            LockchainStorage::new("/tmp/knhk-lockchain-test-3").expect("failed to create storage");
         storage.clear().expect("failed to clear storage");
 
         // Persist multiple roots
         for cycle in 100..105 {
             let root = [cycle as u8; 32];
             let proof = create_test_proof(cycle, root);
-            storage.persist_root(cycle, root, proof)
+            storage
+                .persist_root(cycle, root, proof)
                 .expect("failed to persist root");
         }
 
-        let entries = storage.get_roots_range(101, 103)
+        let entries = storage
+            .get_roots_range(101, 103)
             .expect("failed to get roots range");
         assert_eq!(entries.len(), 3);
         assert_eq!(entries[0].cycle, 101);
@@ -351,19 +367,21 @@ mod tests {
 
     #[test]
     fn test_storage_latest_root() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-4")
-            .expect("failed to create storage");
+        let storage =
+            LockchainStorage::new("/tmp/knhk-lockchain-test-4").expect("failed to create storage");
         storage.clear().expect("failed to clear storage");
 
         // Persist roots
         for cycle in 100..105 {
             let root = [cycle as u8; 32];
             let proof = create_test_proof(cycle, root);
-            storage.persist_root(cycle, root, proof)
+            storage
+                .persist_root(cycle, root, proof)
                 .expect("failed to persist root");
         }
 
-        let latest = storage.get_latest_root()
+        let latest = storage
+            .get_latest_root()
             .expect("failed to get latest root")
             .expect("no roots found");
         assert_eq!(latest.cycle, 104);
@@ -371,23 +389,26 @@ mod tests {
 
     #[test]
     fn test_storage_continuity() {
-        let storage = LockchainStorage::new("/tmp/knhk-lockchain-test-5")
-            .expect("failed to create storage");
+        let storage =
+            LockchainStorage::new("/tmp/knhk-lockchain-test-5").expect("failed to create storage");
         storage.clear().expect("failed to clear storage");
 
         // Persist continuous range
         for cycle in 100..110 {
             let root = [cycle as u8; 32];
             let proof = create_test_proof(cycle, root);
-            storage.persist_root(cycle, root, proof)
+            storage
+                .persist_root(cycle, root, proof)
                 .expect("failed to persist root");
         }
 
-        assert!(storage.verify_continuity(100, 109)
+        assert!(storage
+            .verify_continuity(100, 109)
             .expect("failed to verify continuity"));
 
         // Gap in range
-        assert!(!storage.verify_continuity(100, 120)
+        assert!(!storage
+            .verify_continuity(100, 120)
             .expect("failed to verify continuity"));
     }
 }

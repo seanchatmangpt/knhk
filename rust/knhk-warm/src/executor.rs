@@ -2,7 +2,7 @@
 //! Routes queries to oxigraph (warm) or unrdf (cold) based on complexity
 
 use crate::graph::WarmPathGraph;
-use crate::query::{QueryError, SelectResult, AskResult, ConstructResult, DescribeResult};
+use crate::query::{AskResult, ConstructResult, DescribeResult, SelectResult};
 #[cfg(feature = "unrdf")]
 use knhk_unrdf::{query_sparql, query_sparql_ask, query_sparql_construct, query_sparql_describe};
 // Path selector removed - use simple routing logic instead
@@ -11,6 +11,7 @@ use std::sync::Arc;
 /// Warm path executor that routes queries to appropriate backend
 pub struct WarmPathExecutor {
     graph: Arc<WarmPathGraph>,
+    #[allow(dead_code)] // FUTURE: unRDF integration flag
     unrdf_initialized: bool,
 }
 
@@ -26,9 +27,8 @@ pub enum QueryExecutionResult {
 impl WarmPathExecutor {
     /// Create new warm path executor
     pub fn new() -> Result<Self, String> {
-        let graph = WarmPathGraph::new()
-            .map_err(|e| format!("Failed to create graph: {}", e))?;
-        
+        let graph = WarmPathGraph::new().map_err(|e| format!("Failed to create graph: {}", e))?;
+
         Ok(Self {
             graph: Arc::new(graph),
             unrdf_initialized: false,
@@ -40,13 +40,13 @@ impl WarmPathExecutor {
     pub fn init_unrdf(&mut self, unrdf_path: &str) -> Result<(), String> {
         knhk_unrdf::init_unrdf(unrdf_path)
             .map_err(|e| format!("Failed to initialize unrdf: {}", e))?;
-        
+
         self.unrdf_initialized = true;
         Ok(())
     }
 
     /// Execute query with automatic path selection
-    /// 
+    ///
     /// Routes queries based on complexity:
     /// - Hot path: Simple ASK, data size ≤8
     /// - Warm path: SPARQL queries, data size ≤10K
@@ -59,9 +59,10 @@ impl WarmPathExecutor {
     }
 
     /// Execute query via hot path (C, ≤2ns)
+    #[allow(dead_code)] // FUTURE: Hot path optimization
     fn execute_hot_path(&self, sparql: &str) -> Result<QueryExecutionResult, String> {
         let query_upper = sparql.trim().to_uppercase();
-        
+
         if query_upper.starts_with("ASK") {
             match crate::hot_path::execute_hot_path_ask(&self.graph, sparql) {
                 Ok(result) => Ok(QueryExecutionResult::Ask(result)),
@@ -87,7 +88,7 @@ impl WarmPathExecutor {
     /// Execute query via warm path (oxigraph)
     fn execute_warm_path(&self, sparql: &str) -> Result<QueryExecutionResult, String> {
         let query_upper = sparql.trim().to_uppercase();
-        
+
         if query_upper.starts_with("SELECT") {
             let result = crate::query::execute_select(&self.graph, sparql)
                 .map_err(|e| format!("SELECT query failed: {}", e))?;
@@ -105,7 +106,10 @@ impl WarmPathExecutor {
                 .map_err(|e| format!("DESCRIBE query failed: {}", e))?;
             Ok(QueryExecutionResult::Describe(result))
         } else {
-            Err(format!("Unsupported query type: {}", query_upper.split_whitespace().next().unwrap_or("unknown")))
+            Err(format!(
+                "Unsupported query type: {}",
+                query_upper.split_whitespace().next().unwrap_or("unknown")
+            ))
         }
     }
 
@@ -113,13 +117,14 @@ impl WarmPathExecutor {
     #[cfg(feature = "unrdf")]
     fn execute_cold_path(&self, sparql: &str) -> Result<QueryExecutionResult, String> {
         let query_upper = sparql.trim().to_uppercase();
-        
+
         if query_upper.starts_with("SELECT") {
-            let result = query_sparql(sparql)
-                .map_err(|e| format!("unrdf SELECT query failed: {}", e))?;
-            
+            let result =
+                query_sparql(sparql).map_err(|e| format!("unrdf SELECT query failed: {}", e))?;
+
             // Convert unrdf QueryResult to SelectResult
-            let bindings = result.bindings
+            let bindings = result
+                .bindings
                 .into_iter()
                 .map(|b| {
                     let mut map = std::collections::BTreeMap::new();
@@ -133,24 +138,25 @@ impl WarmPathExecutor {
                     map
                 })
                 .collect();
-            
+
             Ok(QueryExecutionResult::Select(crate::query::SelectResult {
                 bindings,
                 variables: Vec::new(), // Would extract from result if available
             }))
         } else if query_upper.starts_with("ASK") {
-            let result = query_sparql_ask(sparql)
-                .map_err(|e| format!("unrdf ASK query failed: {}", e))?;
-            
+            let result =
+                query_sparql_ask(sparql).map_err(|e| format!("unrdf ASK query failed: {}", e))?;
+
             Ok(QueryExecutionResult::Ask(crate::query::AskResult {
                 result: result.result,
             }))
         } else if query_upper.starts_with("CONSTRUCT") {
             let result = query_sparql_construct(sparql)
                 .map_err(|e| format!("unrdf CONSTRUCT query failed: {}", e))?;
-            
+
             // Convert unrdf triples to string format
-            let triples = result.triples
+            let triples = result
+                .triples
                 .into_iter()
                 .filter_map(|t| {
                     if let serde_json::Value::Object(obj) = t {
@@ -163,15 +169,16 @@ impl WarmPathExecutor {
                     }
                 })
                 .collect();
-            
-            Ok(QueryExecutionResult::Construct(crate::query::ConstructResult {
-                triples,
-            }))
+
+            Ok(QueryExecutionResult::Construct(
+                crate::query::ConstructResult { triples },
+            ))
         } else if query_upper.starts_with("DESCRIBE") {
             let result = query_sparql_describe(sparql)
                 .map_err(|e| format!("unrdf DESCRIBE query failed: {}", e))?;
-            
-            let triples = result.triples
+
+            let triples = result
+                .triples
                 .into_iter()
                 .filter_map(|t| {
                     if let serde_json::Value::Object(obj) = t {
@@ -184,12 +191,15 @@ impl WarmPathExecutor {
                     }
                 })
                 .collect();
-            
-            Ok(QueryExecutionResult::Describe(crate::query::DescribeResult {
-                triples,
-            }))
+
+            Ok(QueryExecutionResult::Describe(
+                crate::query::DescribeResult { triples },
+            ))
         } else {
-            Err(format!("Unsupported cold path query type: {}", query_upper.split_whitespace().next().unwrap_or("unknown")))
+            Err(format!(
+                "Unsupported cold path query type: {}",
+                query_upper.split_whitespace().next().unwrap_or("unknown")
+            ))
         }
     }
 
@@ -217,4 +227,3 @@ impl Default for WarmPathExecutor {
         })
     }
 }
-

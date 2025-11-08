@@ -1,7 +1,7 @@
 // rust/knhk-etl/examples/lockchain_integration.rs
 // Example of lockchain integration with beat scheduler
 
-use knhk_lockchain::{MerkleTree, QuorumManager, LockchainStorage, PeerId, Receipt};
+use knhk_lockchain::{LockchainStorage, MerkleTree, PeerId, QuorumManager, Receipt};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== KNHK Lockchain Integration Example ===\n");
@@ -21,8 +21,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (i, receipt) in receipts.iter().enumerate() {
         let leaf_hash = merkle_tree.add_receipt(receipt);
-        println!("   Receipt {}: cycle={}, shard={}, ticks={}, hash={:x?}",
-            i, receipt.cycle_id, receipt.shard_id, receipt.actual_ticks, &leaf_hash[..8]);
+        println!(
+            "   Receipt {}: cycle={}, shard={}, ticks={}, hash={:x?}",
+            i,
+            receipt.cycle_id,
+            receipt.shard_id,
+            receipt.actual_ticks,
+            &leaf_hash[..8]
+        );
     }
 
     // Step 3: Compute Merkle root at pulse boundary (tick == 0)
@@ -54,7 +60,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n6. Querying and verifying stored root...");
     if let Some(entry) = storage.get_root(cycle)? {
         println!("   Retrieved cycle: {}", entry.cycle);
-        println!("   Retrieved root: {:x?}...{:x?}", &entry.root[..4], &entry.root[28..]);
+        println!(
+            "   Retrieved root: {:x?}...{:x?}",
+            &entry.root[..4],
+            &entry.root[28..]
+        );
         println!("   Proof votes: {}", entry.proof.vote_count());
         println!("   Verified: {}", entry.proof.verify(3));
     }
@@ -63,7 +73,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n7. Generating Merkle proof for receipt audit...");
     if let Some(proof) = merkle_tree.generate_proof(0) {
         println!("   Proof for receipt 0:");
-        println!("   - Leaf hash: {:x?}...{:x?}", &proof.leaf_hash[..4], &proof.leaf_hash[28..]);
+        println!(
+            "   - Leaf hash: {:x?}...{:x?}",
+            &proof.leaf_hash[..4],
+            &proof.leaf_hash[28..]
+        );
         println!("   - Proof path length: {}", proof.proof_hashes.len());
         println!("   - Verification: {}", proof.verify());
     }

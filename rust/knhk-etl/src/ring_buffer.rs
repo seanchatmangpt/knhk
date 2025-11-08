@@ -2,9 +2,9 @@
 // Lock-free ring buffers for 8-beat epoch system
 // Power-of-two sized, atomic indices, branchless enqueue/dequeue
 
-use core::sync::atomic::{AtomicU64, Ordering};
-use core::cell::UnsafeCell;
 use alloc::vec::Vec;
+use core::cell::UnsafeCell;
+use core::sync::atomic::{AtomicU64, Ordering};
 
 /// Ring buffer error types
 #[derive(Debug, Clone, PartialEq)]
@@ -88,9 +88,7 @@ impl<T> RingBuffer<T> {
 
         // Load item from tail position
         let slot = (tail & self.mask) as usize;
-        let item = unsafe {
-            (&mut *self.buffer.get())[slot].take()
-        }?;
+        let item = unsafe { (&mut *self.buffer.get())[slot].take() }?;
 
         // Advance tail (release semantics for producer visibility)
         self.tail.store(tail + 1, Ordering::Release);
@@ -165,10 +163,10 @@ mod tests {
     #[test]
     fn test_ring_buffer_enqueue_dequeue() {
         let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
-        
+
         assert!(ring.enqueue(1).is_ok());
         assert!(ring.enqueue(2).is_ok());
-        
+
         assert_eq!(ring.dequeue(), Some(1));
         assert_eq!(ring.dequeue(), Some(2));
         assert_eq!(ring.dequeue(), None);
@@ -177,12 +175,12 @@ mod tests {
     #[test]
     fn test_ring_buffer_full() {
         let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
-        
+
         // Fill buffer (capacity is 8, so we can store 7 items before full)
         for i in 0..7 {
             assert!(ring.enqueue(i).is_ok());
         }
-        
+
         // Next enqueue should fail (full)
         assert_eq!(ring.enqueue(7), Err(RingError::Full));
     }
@@ -190,16 +188,16 @@ mod tests {
     #[test]
     fn test_ring_buffer_wrap_around() {
         let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
-        
+
         // Fill and drain to test wrap-around
         for i in 0..7 {
             assert!(ring.enqueue(i).is_ok());
         }
-        
+
         for i in 0..7 {
             assert_eq!(ring.dequeue(), Some(i));
         }
-        
+
         // Should be able to enqueue again after wrap-around
         assert!(ring.enqueue(10).is_ok());
         assert_eq!(ring.dequeue(), Some(10));
@@ -208,15 +206,14 @@ mod tests {
     #[test]
     fn test_ring_buffer_len() {
         let ring = RingBuffer::<u32>::new(8).expect("Ring buffer creation should succeed");
-        
+
         assert_eq!(ring.len(), 0);
-        
+
         ring.enqueue(1).expect("Enqueue should succeed");
         ring.enqueue(2).expect("Enqueue should succeed");
         assert_eq!(ring.len(), 2);
-        
+
         ring.dequeue();
         assert_eq!(ring.len(), 1);
     }
 }
-

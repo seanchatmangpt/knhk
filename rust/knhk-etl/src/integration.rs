@@ -7,9 +7,9 @@ extern crate alloc;
 extern crate std;
 
 use super::*;
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
-use alloc::collections::BTreeMap;
 
 /// Integrated pipeline with all components wired together
 pub struct IntegratedPipeline {
@@ -48,7 +48,10 @@ impl IntegratedPipeline {
     }
 
     /// Set warm path executor for SPARQL query execution
-    pub fn set_warm_path_executor(&mut self, executor: alloc::boxed::Box<dyn WarmPathQueryExecutor>) {
+    pub fn set_warm_path_executor(
+        &mut self,
+        executor: alloc::boxed::Box<dyn WarmPathQueryExecutor>,
+    ) {
         self.warm_path_executor = Some(executor);
     }
 
@@ -61,32 +64,39 @@ impl IntegratedPipeline {
             self.lockchain_enabled,
             self.downstream_endpoints.clone(),
         );
-        
+
         let result = pipeline.execute()?;
-        
+
         // Record OTEL metrics using proper API
         let metrics_recorded = {
             #[cfg(feature = "knhk-otel")]
             {
-                use knhk_otel::{Tracer, Metric, MetricValue, MetricsHelper};
+                use knhk_otel::{Metric, MetricValue, MetricsHelper, Tracer};
                 use std::time::{SystemTime, UNIX_EPOCH};
 
                 let mut tracer = Tracer::new();
-                
+
                 // Record pipeline execution metrics using MetricsHelper
-                MetricsHelper::record_connector_throughput(&mut tracer, "pipeline", result.actions_sent);
-                
+                MetricsHelper::record_connector_throughput(
+                    &mut tracer,
+                    "pipeline",
+                    result.actions_sent,
+                );
+
                 // Record receipt generation
                 if result.receipts_written > 0 {
-                    MetricsHelper::record_receipt(&mut tracer, &format!("pipeline_batch_{}", result.receipts_written));
+                    MetricsHelper::record_receipt(
+                        &mut tracer,
+                        &format!("pipeline_batch_{}", result.receipts_written),
+                    );
                 }
-                
+
                 // Record lockchain writes
                 let timestamp_ms = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .map(|d| d.as_millis() as u64)
                     .unwrap_or(0);
-                
+
                 for hash in &result.lockchain_hashes {
                     let metric = Metric {
                         name: "knhk.lockchain.entry".to_string(),
@@ -100,7 +110,7 @@ impl IntegratedPipeline {
                     };
                     tracer.record_metric(metric);
                 }
-                
+
                 tracer.metrics().len()
             }
             #[cfg(not(feature = "knhk-otel"))]
@@ -119,12 +129,18 @@ impl IntegratedPipeline {
     }
 
     /// Execute warm path query if executor is available
-    pub fn execute_warm_path_query(&self, sparql: &str) -> Result<WarmPathQueryResult, PipelineError> {
+    pub fn execute_warm_path_query(
+        &self,
+        sparql: &str,
+    ) -> Result<WarmPathQueryResult, PipelineError> {
         if let Some(ref executor) = self.warm_path_executor {
-            executor.execute_query(sparql)
+            executor
+                .execute_query(sparql)
                 .map_err(|e| PipelineError::ReflexError(format!("Warm path query failed: {}", e)))
         } else {
-            Err(PipelineError::ReflexError("Warm path executor not configured".to_string()))
+            Err(PipelineError::ReflexError(
+                "Warm path executor not configured".to_string(),
+            ))
         }
     }
 }

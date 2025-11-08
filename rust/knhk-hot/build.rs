@@ -11,4 +11,3 @@ fn main() {
     // Rerun if library changes
     println!("cargo:rerun-if-changed={}/libknhk.a", c_lib_dir);
 }
-

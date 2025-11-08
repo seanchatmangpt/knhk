@@ -25,9 +25,9 @@ pub enum MerkleError {
 /// Builds binary tree bottom-up, computes root hash
 #[derive(Debug)]
 pub struct MerkleTree {
-    leaves: Vec<[u8; 32]>,  // Receipt hashes (leaf nodes)
-    nodes: Vec<[u8; 32]>,   // Internal node hashes
-    root: [u8; 32],         // Merkle root
+    leaves: Vec<[u8; 32]>, // Receipt hashes (leaf nodes)
+    nodes: Vec<[u8; 32]>,  // Internal node hashes
+    root: [u8; 32],        // Merkle root
 }
 
 impl MerkleTree {
@@ -228,6 +228,7 @@ impl MerkleProof {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]

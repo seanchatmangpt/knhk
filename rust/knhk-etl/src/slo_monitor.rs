@@ -4,11 +4,11 @@
 
 extern crate alloc;
 
-use alloc::collections::VecDeque;
-use alloc::vec::Vec;
-use alloc::string::String;
-use alloc::format;
 use crate::runtime_class::RuntimeClass;
+use alloc::collections::VecDeque;
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 /// SLO violation error
 #[derive(Debug, Clone)]
@@ -70,7 +70,7 @@ pub struct SloMonitor {
 
 impl SloMonitor {
     /// Create new SLO monitor
-    /// 
+    ///
     /// # Arguments
     /// * `class` - Runtime class to monitor
     /// * `window_size` - Number of samples to keep in rolling window (default: 1000)
@@ -85,7 +85,7 @@ impl SloMonitor {
     }
 
     /// Record a latency sample
-    /// 
+    ///
     /// # Arguments
     /// * `latency_ns` - Latency in nanoseconds
     pub fn record_latency(&mut self, latency_ns: u64) {
@@ -99,7 +99,7 @@ impl SloMonitor {
     }
 
     /// Calculate p99 latency from current samples
-    /// 
+    ///
     /// # Returns
     /// p99 latency in nanoseconds, or 0 if insufficient samples
     pub fn get_p99_latency(&self) -> u64 {
@@ -124,7 +124,7 @@ impl SloMonitor {
     }
 
     /// Check for SLO violation
-    /// 
+    ///
     /// # Returns
     /// * `Ok(())` - No violation
     /// * `Err(SloViolation)` - SLO threshold exceeded
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn test_slo_monitor_r1_violation() {
         let mut monitor = SloMonitor::new(RuntimeClass::R1, 1000);
-        
+
         // Record samples exceeding SLO
         for _ in 0..100 {
             monitor.record_latency(5); // 5ns > 2ns SLO
@@ -193,7 +193,7 @@ mod tests {
 
         let violation = monitor.check_slo_violation();
         assert!(violation.is_err());
-        
+
         if let Err(v) = violation {
             assert_eq!(v.class, RuntimeClass::R1);
             assert!(v.p99_latency_ns > v.slo_threshold_ns);
@@ -266,4 +266,3 @@ mod tests {
         assert_eq!(monitor.get_p99_latency(), 0);
     }
 }
-

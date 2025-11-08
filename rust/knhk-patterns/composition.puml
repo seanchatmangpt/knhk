@@ -1,0 +1,68 @@
+@startuml pattern-composition
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+title Pattern Composition Examples
+
+package "Basic Patterns" {
+    component [SequencePattern] as seq
+    component [ParallelSplitPattern] as parallel
+    component [ExclusiveChoicePattern] as choice
+    component [MultiChoicePattern] as multi
+    component [ArbitraryCyclesPattern] as cycles
+}
+
+package "Composite Patterns" {
+    component [CompositePattern::Sequence] as comp_seq
+    component [CompositePattern::Parallel] as comp_parallel
+    component [CompositePattern::Choice] as comp_choice
+    component [CompositePattern::Retry] as comp_retry
+}
+
+package "Pattern Builder" {
+    component [PatternBuilder] as builder
+}
+
+' Composition relationships
+comp_seq --> seq : contains
+comp_seq --> parallel : contains
+comp_parallel --> seq : contains
+comp_parallel --> parallel : contains
+comp_choice --> choice : contains
+comp_retry --> cycles : wraps
+
+' Builder relationships
+builder --> comp_seq : builds
+builder --> comp_parallel : builds
+builder --> comp_choice : builds
+builder --> comp_retry : builds
+
+note right of comp_seq
+  **Sequential Composition:**
+  Pattern1 → Pattern2 → Pattern3
+  Execute in order
+end note
+
+note right of comp_parallel
+  **Parallel Composition:**
+  Pattern1 || Pattern2 || Pattern3
+  Execute concurrently
+end note
+
+note right of comp_choice
+  **Conditional Composition:**
+  if condition1: Pattern1
+  else if condition2: Pattern2
+  else: Pattern3
+end note
+
+note right of comp_retry
+  **Retry Composition:**
+  Retry Pattern until:
+  - Condition met, OR
+  - Max attempts reached
+end note
+
+@enduml
+

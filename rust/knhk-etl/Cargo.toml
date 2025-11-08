@@ -1,16 +1,16 @@
 [package]
 name = "knhk-etl"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-knhk-connectors = { path = "../knhk-connectors", version = "0.1.0", features = ["std"] }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = ["std"] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
-knhk-lockchain = { path = "../knhk-lockchain", version = "0.1.0" }
-knhk-otel = { path = "../knhk-otel", version = "0.1.0", features = ["std"] }
+knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
+knhk-otel = { path = "../knhk-otel", version = "1.0.0", features = ["std"] }
 hashbrown = { version = "0.15", default-features = false }
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
 blake3 = { version = "1.5", default-features = false }
@@ -31,6 +31,7 @@ std = []
 grpc = []
 knhk-otel = []
 knhk-lockchain = []
+tokio-runtime = []
 [dev-dependencies]
 # Test dependencies
 knhk-unrdf = { path = "../knhk-unrdf" }

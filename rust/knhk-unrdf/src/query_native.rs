@@ -6,13 +6,13 @@ use crate::error::{UnrdfError, UnrdfResult};
 #[cfg(feature = "native")]
 use crate::types::{QueryResult, SparqlQueryType};
 #[cfg(feature = "native")]
+use oxigraph::io::RdfFormat;
+#[cfg(feature = "native")]
 use oxigraph::model::{NamedNode, Quad, Term, Triple};
 #[cfg(feature = "native")]
 use oxigraph::sparql::QueryResults;
 #[cfg(feature = "native")]
 use oxigraph::store::Store;
-#[cfg(feature = "native")]
-use oxigraph::io::RdfFormat;
 #[cfg(feature = "native")]
 use std::sync::{Arc, Mutex};
 
@@ -35,37 +35,44 @@ impl NativeStore {
 
     /// Load Turtle data into the store
     pub fn load_turtle(&self, turtle_data: &str) -> UnrdfResult<()> {
-        let store = self.store.lock()
+        let store = self
+            .store
+            .lock()
             .map_err(|e| UnrdfError::StoreFailed(format!("Failed to acquire store lock: {}", e)))?;
-        
-        store.load_from_reader(RdfFormat::Turtle, turtle_data.as_bytes())
+
+        store
+            .load_from_reader(RdfFormat::Turtle, turtle_data.as_bytes())
             .map_err(|e| UnrdfError::StoreFailed(format!("Failed to load Turtle data: {}", e)))?;
-        
+
         Ok(())
     }
 
     /// Execute SPARQL query
     pub fn query(&self, query: &str, query_type: SparqlQueryType) -> UnrdfResult<QueryResult> {
-        let store = self.store.lock()
+        let store = self
+            .store
+            .lock()
             .map_err(|e| UnrdfError::QueryFailed(format!("Failed to acquire store lock: {}", e)))?;
-        
-        let results: QueryResults = store.query(query)
+
+        let results: QueryResults = store
+            .query(query)
             .map_err(|e| UnrdfError::QueryFailed(format!("SPARQL query failed: {}", e)))?;
-        
+
         match query_type {
             SparqlQueryType::Select => {
                 match results {
                     QueryResults::Solutions(solutions) => {
                         let mut bindings = Vec::new();
                         for solution_result in solutions {
-                            let solution = solution_result
-                                .map_err(|e| UnrdfError::QueryFailed(format!("Solution error: {}", e)))?;
+                            let solution = solution_result.map_err(|e| {
+                                UnrdfError::QueryFailed(format!("Solution error: {}", e))
+                            })?;
                             let mut binding_obj = serde_json::Map::new();
                             // QuerySolution implements IntoIterator for (&Variable, &Term)
                             for (var, term) in &solution {
                                 binding_obj.insert(
                                     var.as_str().to_string(),
-                                    serde_json::Value::String(term.to_string())
+                                    serde_json::Value::String(term.to_string()),
                                 );
                             }
                             bindings.push(serde_json::Value::Object(binding_obj));
@@ -79,35 +86,45 @@ impl NativeStore {
                             error: None,
                         })
                     }
-                    _ => Err(UnrdfError::QueryFailed("Expected SELECT query results".to_string()))
+                    _ => Err(UnrdfError::QueryFailed(
+                        "Expected SELECT query results".to_string(),
+                    )),
                 }
             }
-            SparqlQueryType::Ask => {
-                match results {
-                    QueryResults::Boolean(b) => {
-                        Ok(QueryResult {
-                            success: true,
-                            query_type: Some("sparql-ask".to_string()),
-                            bindings: None,
-                            boolean: Some(b),
-                            triples: None,
-                            error: None,
-                        })
-                    }
-                    _ => Err(UnrdfError::QueryFailed("Expected ASK query results".to_string()))
-                }
-            }
+            SparqlQueryType::Ask => match results {
+                QueryResults::Boolean(b) => Ok(QueryResult {
+                    success: true,
+                    query_type: Some("sparql-ask".to_string()),
+                    bindings: None,
+                    boolean: Some(b),
+                    triples: None,
+                    error: None,
+                }),
+                _ => Err(UnrdfError::QueryFailed(
+                    "Expected ASK query results".to_string(),
+                )),
+            },
             SparqlQueryType::Construct | SparqlQueryType::Describe => {
                 match results {
                     QueryResults::Graph(triples_iter) => {
                         let mut triples = Vec::new();
                         for triple_result in triples_iter {
-                            let triple = triple_result
-                                .map_err(|e| UnrdfError::QueryFailed(format!("Triple error: {}", e)))?;
+                            let triple = triple_result.map_err(|e| {
+                                UnrdfError::QueryFailed(format!("Triple error: {}", e))
+                            })?;
                             let mut triple_obj = serde_json::Map::new();
-                            triple_obj.insert("subject".to_string(), serde_json::Value::String(triple.subject.to_string()));
-                            triple_obj.insert("predicate".to_string(), serde_json::Value::String(triple.predicate.to_string()));
-                            triple_obj.insert("object".to_string(), serde_json::Value::String(triple.object.to_string()));
+                            triple_obj.insert(
+                                "subject".to_string(),
+                                serde_json::Value::String(triple.subject.to_string()),
+                            );
+                            triple_obj.insert(
+                                "predicate".to_string(),
+                                serde_json::Value::String(triple.predicate.to_string()),
+                            );
+                            triple_obj.insert(
+                                "object".to_string(),
+                                serde_json::Value::String(triple.object.to_string()),
+                            );
                             // CONSTRUCT/DESCRIBE queries return triples, not quads
                             triples.push(serde_json::Value::Object(triple_obj));
                         }
@@ -124,7 +141,9 @@ impl NativeStore {
                             error: None,
                         })
                     }
-                    _ => Err(UnrdfError::QueryFailed("Expected CONSTRUCT/DESCRIBE query results".to_string()))
+                    _ => Err(UnrdfError::QueryFailed(
+                        "Expected CONSTRUCT/DESCRIBE query results".to_string(),
+                    )),
                 }
             }
             SparqlQueryType::Insert | SparqlQueryType::Delete => {
@@ -146,12 +165,15 @@ impl NativeStore {
 
     /// Clear the store
     pub fn clear(&self) -> UnrdfResult<()> {
-        let mut store = self.store.lock()
+        let mut store = self
+            .store
+            .lock()
             .map_err(|e| UnrdfError::StoreFailed(format!("Failed to acquire store lock: {}", e)))?;
 
         // Create new empty store
-        *store = Store::new()
-            .map_err(|e| UnrdfError::StoreFailed(format!("Failed to create replacement store: {}", e)))?;
+        *store = Store::new().map_err(|e| {
+            UnrdfError::StoreFailed(format!("Failed to create replacement store: {}", e))
+        })?;
         Ok(())
     }
 }
@@ -177,13 +199,13 @@ fn term_to_string(term: &Term) -> String {
 /// Execute SPARQL query with data (native Rust implementation)
 pub fn query_sparql_native(query: &str, turtle_data: &str) -> UnrdfResult<QueryResult> {
     use crate::query::detect_query_type;
-    
+
     let query_type = detect_query_type(query);
     let store = NativeStore::new()?;
 
     // Load data
     store.load_turtle(turtle_data)?;
-    
+
     // Execute query
     store.query(query, query_type)
 }
@@ -192,11 +214,10 @@ pub fn query_sparql_native(query: &str, turtle_data: &str) -> UnrdfResult<QueryR
 /// Execute SPARQL query without data (native Rust implementation)
 pub fn query_sparql_native_empty(query: &str) -> UnrdfResult<QueryResult> {
     use crate::query::detect_query_type;
-    
+
     let query_type = detect_query_type(query);
     let store = NativeStore::new()?;
 
     // Execute query on empty store
     store.query(query, query_type)
 }
-

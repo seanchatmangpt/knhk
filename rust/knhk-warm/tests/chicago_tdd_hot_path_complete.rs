@@ -25,9 +25,12 @@ fn test_hot_path_ask_query_within_budget() {
 
     // Assert: Completes within 8 ticks (estimated at ~1μs per tick = 8μs max)
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "ASK query must complete within 8 ticks, got {} ticks ({:?})",
-            max_ticks, duration);
+    assert!(
+        max_ticks <= 8,
+        "ASK query must complete within 8 ticks, got {} ticks ({:?})",
+        max_ticks,
+        duration
+    );
     assert!(result.is_ok(), "ASK query should execute successfully");
 }
 
@@ -44,8 +47,11 @@ fn test_hot_path_select_simple_pattern_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Simple SELECT must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Simple SELECT must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "SELECT query should execute successfully");
 }
 
@@ -62,9 +68,15 @@ fn test_hot_path_construct_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "CONSTRUCT must complete within 8 ticks, got {} ticks", max_ticks);
-    assert!(result.is_ok(), "CONSTRUCT query should execute successfully");
+    assert!(
+        max_ticks <= 8,
+        "CONSTRUCT must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
+    assert!(
+        result.is_ok(),
+        "CONSTRUCT query should execute successfully"
+    );
 }
 
 #[test]
@@ -80,8 +92,11 @@ fn test_hot_path_describe_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "DESCRIBE must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "DESCRIBE must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "DESCRIBE query should execute successfully");
 }
 
@@ -106,8 +121,11 @@ fn test_hot_path_single_triple_pattern_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Single pattern match must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Single pattern match must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Pattern match should succeed");
 }
 
@@ -133,8 +151,11 @@ fn test_hot_path_join_two_patterns_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Two-pattern join must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Two-pattern join must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Join should succeed");
 }
 
@@ -156,8 +177,11 @@ fn test_hot_path_spo_index_lookup_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "SPO index lookup must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "SPO index lookup must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Index lookup should succeed");
 }
 
@@ -175,8 +199,11 @@ fn test_hot_path_pos_index_lookup_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "POS index lookup must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "POS index lookup must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Index lookup should succeed");
 }
 
@@ -194,8 +221,11 @@ fn test_hot_path_osp_index_lookup_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "OSP index lookup must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "OSP index lookup must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Index lookup should succeed");
 }
 
@@ -217,13 +247,19 @@ fn test_hot_path_reflex_single_action_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Single reflex action must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Single reflex action must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Reflex should execute successfully");
 
     let reflex_result = result.unwrap();
-    assert!(reflex_result.max_ticks <= 8, "Reflex reports {} ticks, exceeds 8-tick budget",
-            reflex_result.max_ticks);
+    assert!(
+        reflex_result.max_ticks <= 8,
+        "Reflex reports {} ticks, exceeds 8-tick budget",
+        reflex_result.max_ticks
+    );
 }
 
 #[test]
@@ -240,13 +276,19 @@ fn test_hot_path_reflex_predicate_run_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Predicate run reflex must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Predicate run reflex must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Reflex should execute successfully");
 
     let reflex_result = result.unwrap();
-    assert!(reflex_result.max_ticks <= 8, "Reflex reports {} ticks, exceeds budget",
-            reflex_result.max_ticks);
+    assert!(
+        reflex_result.max_ticks <= 8,
+        "Reflex reports {} ticks, exceeds budget",
+        reflex_result.max_ticks
+    );
 }
 
 // ============================================================================
@@ -267,8 +309,11 @@ fn test_hot_path_cache_hit_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Cache hit must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Cache hit must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_some(), "Cache hit should return value");
 }
 
@@ -285,8 +330,11 @@ fn test_hot_path_cache_miss_within_budget() {
 
     // Assert: Within 8-tick budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Cache miss must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Cache miss must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_none(), "Cache miss should return None");
 }
 
@@ -298,9 +346,9 @@ fn test_hot_path_cache_miss_within_budget() {
 fn test_hot_path_throughput_meets_targets() {
     // Arrange: Batch of queries
     let executor = WarmPathExecutor::new();
-    let queries: Vec<_> = (0..100).map(|i| {
-        Query::new_ask(&format!("ASK {{ ?s ?p <http://o{i}> }}"))
-    }).collect();
+    let queries: Vec<_> = (0..100)
+        .map(|i| Query::new_ask(&format!("ASK {{ ?s ?p <http://o{i}> }}")))
+        .collect();
 
     // Act: Execute batch
     let start = std::time::Instant::now();
@@ -313,16 +361,25 @@ fn test_hot_path_throughput_meets_targets() {
     let avg_duration = duration / 100;
     let avg_ticks = calculate_ticks(avg_duration);
 
-    assert!(avg_ticks <= 8,
-            "Average query time must be ≤8 ticks, got {} ticks", avg_ticks);
+    assert!(
+        avg_ticks <= 8,
+        "Average query time must be ≤8 ticks, got {} ticks",
+        avg_ticks
+    );
 
     // Calculate throughput
     let queries_per_second = 100.0 / duration.as_secs_f64();
-    println!("Hot path throughput: {:.0} queries/second", queries_per_second);
+    println!(
+        "Hot path throughput: {:.0} queries/second",
+        queries_per_second
+    );
 
     // Should achieve >10,000 qps for simple ASK queries
-    assert!(queries_per_second > 1000.0,
-            "Should achieve >1,000 qps, got {:.0} qps", queries_per_second);
+    assert!(
+        queries_per_second > 1000.0,
+        "Should achieve >1,000 qps, got {:.0} qps",
+        queries_per_second
+    );
 }
 
 // ============================================================================
@@ -342,8 +399,11 @@ fn test_hot_path_worst_case_still_within_budget() {
 
     // Assert: Even worst-case within budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Worst-case query must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Worst-case query must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
     assert!(result.is_ok(), "Worst-case query should succeed");
 }
 
@@ -360,12 +420,18 @@ fn test_hot_path_full_predicate_run_worst_case() {
 
     // Assert: Worst-case within budget
     let max_ticks = calculate_ticks(duration);
-    assert!(max_ticks <= 8,
-            "Worst-case reflex must complete within 8 ticks, got {} ticks", max_ticks);
+    assert!(
+        max_ticks <= 8,
+        "Worst-case reflex must complete within 8 ticks, got {} ticks",
+        max_ticks
+    );
 
     let reflex_result = result.unwrap();
-    assert!(reflex_result.max_ticks <= 8, "Worst-case reports {} ticks, exceeds budget",
-            reflex_result.max_ticks);
+    assert!(
+        reflex_result.max_ticks <= 8,
+        "Worst-case reports {} ticks, exceeds budget",
+        reflex_result.max_ticks
+    );
 }
 
 // ============================================================================

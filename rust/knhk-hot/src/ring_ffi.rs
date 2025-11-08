@@ -11,13 +11,13 @@ use std::os::raw::c_int;
 #[derive(Debug)]
 #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
 pub struct knhk_delta_ring_t {
-    pub S: *mut u64,              // Subject array (64B aligned)
-    pub P: *mut u64,              // Predicate array
-    pub O: *mut u64,              // Object array
-    pub cycle_ids: *mut u64,      // Cycle IDs per entry
-    pub flags: *mut u64,          // Entry flags (PARKED, VALID)
-    pub size: u64,                // Power-of-2 size
-    pub size_mask: u64,           // size - 1
+    pub S: *mut u64,         // Subject array (64B aligned)
+    pub P: *mut u64,         // Predicate array
+    pub O: *mut u64,         // Object array
+    pub cycle_ids: *mut u64, // Cycle IDs per entry
+    pub flags: *mut u64,     // Entry flags (PARKED, VALID)
+    pub size: u64,           // Power-of-2 size
+    pub size_mask: u64,      // size - 1
     // Per-tick write/read indices (8 slots)
     pub write_idx: [u64; 8],
     pub read_idx: [u64; 8],
@@ -28,12 +28,12 @@ pub struct knhk_delta_ring_t {
 #[derive(Debug)]
 #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
 pub struct knhk_assertion_ring_t {
-    pub S: *mut u64,              // Subject array (64B aligned)
-    pub P: *mut u64,               // Predicate array
-    pub O: *mut u64,               // Object array
-    pub receipts: *mut Receipt,   // Receipts array (parallel to S/P/O)
-    pub size: u64,                 // Power-of-2 size
-    pub size_mask: u64,            // size - 1
+    pub S: *mut u64,            // Subject array (64B aligned)
+    pub P: *mut u64,            // Predicate array
+    pub O: *mut u64,            // Object array
+    pub receipts: *mut Receipt, // Receipts array (parallel to S/P/O)
+    pub size: u64,              // Power-of-2 size
+    pub size_mask: u64,         // size - 1
     // Per-tick write/read indices (8 slots)
     pub write_idx: [u64; 8],
     pub read_idx: [u64; 8],
@@ -291,7 +291,11 @@ impl AssertionRing {
     /// Returns tuple of (S, P, O, receipts) vectors
     #[allow(clippy::type_complexity)] // FFI tuple matches C API structure
     #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
-    pub fn dequeue(&self, tick: u64, capacity: usize) -> Option<(Vec<u64>, Vec<u64>, Vec<u64>, Vec<Receipt>)> {
+    pub fn dequeue(
+        &self,
+        tick: u64,
+        capacity: usize,
+    ) -> Option<(Vec<u64>, Vec<u64>, Vec<u64>, Vec<Receipt>)> {
         let mut s = vec![0u64; capacity];
         let mut p = vec![0u64; capacity];
         let mut o = vec![0u64; capacity];
@@ -416,7 +420,7 @@ mod tests {
             Ok(r) => r,
             Err(e) => panic!("Failed to create delta ring: {}", e),
         };
-        
+
         // Fill ring at tick 0 multiple times to test wrap-around
         for i in 0..3 {
             let s = vec![0x1000 + i];
@@ -424,7 +428,7 @@ mod tests {
             let o = vec![0x3000 + i];
             assert!(ring.enqueue(0, &s, &p, &o, i).is_ok());
         }
-        
+
         // Dequeue all from tick 0
         for i in 0..3 {
             let result = ring.dequeue(0, 8);
@@ -435,7 +439,7 @@ mod tests {
             };
             assert_eq!(s_out[0], 0x1000 + i);
         }
-        
+
         // Verify ring is empty after wrap-around
         let result = ring.dequeue(0, 8);
         assert!(result.is_none());
@@ -473,7 +477,7 @@ mod tests {
         // Dequeue at tick 0
         let result = ring.dequeue(0, 8);
         assert!(result.is_some());
-        let (s_out, p_out, o_out, receipts) = match result {
+        let (s_out, _p_out, _o_out, receipts) = match result {
             Some(v) => v,
             None => panic!("Expected dequeue result"),
         };
@@ -483,4 +487,3 @@ mod tests {
         assert_eq!(receipts[0].shard_id, 2);
     }
 }
-

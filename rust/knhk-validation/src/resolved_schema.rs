@@ -4,9 +4,9 @@
 
 #![cfg(feature = "schema-resolution")]
 
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
-use alloc::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 /// Schema version identifier
@@ -23,7 +23,11 @@ pub struct SchemaVersion {
 impl SchemaVersion {
     /// Create new schema version
     pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 
     /// Parse version from string (e.g., "1.2.3")
@@ -33,9 +37,15 @@ impl SchemaVersion {
             return Err(format!("Invalid version format: {}", s));
         }
         Ok(Self {
-            major: parts[0].parse().map_err(|_| format!("Invalid major version: {}", parts[0]))?,
-            minor: parts[1].parse().map_err(|_| format!("Invalid minor version: {}", parts[1]))?,
-            patch: parts[2].parse().map_err(|_| format!("Invalid patch version: {}", parts[2]))?,
+            major: parts[0]
+                .parse()
+                .map_err(|_| format!("Invalid major version: {}", parts[0]))?,
+            minor: parts[1]
+                .parse()
+                .map_err(|_| format!("Invalid minor version: {}", parts[1]))?,
+            patch: parts[2]
+                .parse()
+                .map_err(|_| format!("Invalid patch version: {}", parts[2]))?,
         })
     }
 
@@ -271,4 +281,3 @@ mod tests {
         assert!(catalog.find_entry("pred1").is_some());
     }
 }
-

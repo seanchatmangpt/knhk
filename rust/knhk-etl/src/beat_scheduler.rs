@@ -2,19 +2,21 @@
 // 8-beat epoch scheduler with branchless cadence
 // Implements: cycle counter, tick calculation, pulse detection, fiber rotation
 
-use alloc::vec::Vec;
-use alloc::string::String;
 use crate::fiber::Fiber;
-use crate::park::{ParkManager, ExecutionResult};
 use crate::ingest::RawTriple;
-use crate::ring_conversion::{raw_triples_to_soa, soa_to_raw_triples};
-use knhk_hot::BeatScheduler as CBeatScheduler;
-use knhk_hot::{DeltaRing, AssertionRing, Receipt as HotReceipt};
+use crate::park::{ExecutionResult, ParkManager};
 use crate::reflex::Receipt;
-#[cfg(feature = "knhk-lockchain")]
-use knhk_lockchain::{MerkleTree, Receipt as LockchainReceipt, QuorumManager, LockchainStorage, PeerId};
+use crate::ring_conversion::{raw_triples_to_soa, soa_to_raw_triples};
+use alloc::string::String;
+use alloc::vec::Vec;
 #[cfg(feature = "knhk-lockchain")]
 use hex;
+use knhk_hot::BeatScheduler as CBeatScheduler;
+use knhk_hot::{AssertionRing, DeltaRing, Receipt as HotReceipt};
+#[cfg(feature = "knhk-lockchain")]
+use knhk_lockchain::{
+    LockchainStorage, MerkleTree, PeerId, QuorumManager, Receipt as LockchainReceipt,
+};
 
 /// Beat scheduler error types
 #[derive(Debug, Clone, PartialEq)]
@@ -30,28 +32,29 @@ pub enum BeatSchedulerError {
 }
 
 /// 8-beat epoch scheduler
-/// 
+///
 /// Manages cycle counter, ring buffers, and fiber rotation for deterministic execution.
 /// Uses C branchless beat scheduler for cycle/tick/pulse generation (≤8 ticks per beat).
-/// 
+///
 /// # Architecture
-/// 
+///
 /// - **Cycles**: 8-beat cycles (0-7 ticks per cycle)
 /// - **Pulse**: Detected at tick 0 (cycle commit boundary)
 /// - **Fibers**: Cooperative execution units per shard
 /// - **Ring Buffers**: Lock-free SPSC rings for delta/assertion queues
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use knhk_etl::beat_scheduler::BeatScheduler;
-/// 
+///
 /// let mut scheduler = BeatScheduler::new(4, 1, 8)?; // 4 shards, 1 domain, ring capacity 8
 /// let (tick, pulse) = scheduler.advance_beat();
 /// ```
 #[derive(Debug)]
 pub struct BeatScheduler {
     /// C beat scheduler initialized flag
+    #[allow(dead_code)] // FUTURE: C FFI integration flag
     c_beat_initialized: bool,
     /// Delta rings (one per domain) - C SoA rings
     delta_rings: Vec<DeltaRing>,
@@ -80,18 +83,18 @@ pub struct BeatScheduler {
 
 impl BeatScheduler {
     /// Create new beat scheduler
-    /// 
+    ///
     /// Initializes the 8-beat epoch system with specified shard and domain configuration.
-    /// 
+    ///
     /// # Arguments
     /// * `shard_count` - Number of shards (must be ≤8 for 8-beat system, Chatman Constant)
     /// * `domain_count` - Number of reconciliation domains
     /// * `ring_capacity` - Ring buffer capacity (must be power-of-two, typically 8 or 16)
-    /// 
+    ///
     /// # Returns
     /// * `Ok(BeatScheduler)` - Successfully created scheduler
     /// * `Err(BeatSchedulerError)` - Invalid configuration (shard_count > 8 or domain_count == 0)
-    /// 
+    ///
     /// # Errors
     /// Returns `BeatSchedulerError::InvalidShardCount` if shard_count is 0 or > 8
     /// Returns `BeatSchedulerError::InvalidDomainCount` if domain_count is 0
@@ -111,8 +114,7 @@ impl BeatScheduler {
         let mut delta_rings = Vec::with_capacity(domain_count);
         for _ in 0..domain_count {
             delta_rings.push(
-                DeltaRing::new(ring_capacity as u64)
-                    .map_err(|e| BeatSchedulerError::FiberError(e))?,
+                DeltaRing::new(ring_capacity as u64).map_err(BeatSchedulerError::FiberError)?,
             );
         }
 
@@ -120,8 +122,7 @@ impl BeatScheduler {
         let mut assertion_rings = Vec::with_capacity(domain_count);
         for _ in 0..domain_count {
             assertion_rings.push(
-                AssertionRing::new(ring_capacity as u64)
-                    .map_err(|e| BeatSchedulerError::FiberError(e))?,
+                AssertionRing::new(ring_capacity as u64).map_err(BeatSchedulerError::FiberError)?,
             );
         }
 
@@ -170,11 +171,7 @@ impl BeatScheduler {
         let peer_ids: Vec<PeerId> = peers.into_iter().map(PeerId).collect();
         let self_id = PeerId(self_peer_id);
 
-        self.quorum_manager = Some(QuorumManager::new(
-            peer_ids,
-            quorum_threshold,
-            self_id,
-        ));
+        self.quorum_manager = Some(QuorumManager::new(peer_ids, quorum_threshold, self_id));
 
         self.lockchain_storage = Some(
             LockchainStorage::new(storage_path)
@@ -191,36 +188,36 @@ impl BeatScheduler {
     }
 
     /// Advance to next beat and execute fibers
-    /// 
+    ///
     /// Increments the cycle counter, calculates tick (cycle & 0x7), detects pulse (tick == 0),
     /// executes fibers for the current tick, and commits cycle on pulse boundary.
-    /// 
+    ///
     /// # Returns
     /// Tuple of `(tick, pulse)` where:
     /// - `tick`: Current tick value (0-7)
     /// - `pulse`: True when tick == 0 (cycle commit boundary)
-    /// 
+    ///
     /// # Performance
     /// This operation must complete in ≤8 ticks (Chatman Constant) for hot path compliance.
     pub fn advance_beat(&mut self) -> (u64, bool) {
         // Use C branchless beat scheduler
         let cycle = CBeatScheduler::next();
-        
+
         // Branchless tick calculation: cycle & 0x7
         let tick = CBeatScheduler::tick(cycle);
-        
+
         // Branchless pulse detection: pulse == 1 when tick==0
         let pulse_val = CBeatScheduler::pulse(cycle);
         let pulse = pulse_val == 1;
-        
+
         // Execute fibers for current tick
         self.execute_tick(tick);
-        
+
         // Commit on pulse boundary (every 8 ticks)
         if pulse {
             self.commit_cycle();
         }
-        
+
         (tick, pulse)
     }
 
@@ -228,14 +225,14 @@ impl BeatScheduler {
     fn execute_tick(&mut self, tick: u64) {
         let slot = tick as usize;
         let cycle_id = CBeatScheduler::current();
-        
+
         // Rotate through domains and shards
         for domain_id in 0..self.domain_count {
             // Try to dequeue delta from C delta ring at tick slot
             if let Some((s, p, o, _cycle_ids)) = self.delta_rings[domain_id].dequeue(tick, 8) {
                 // Convert SoA arrays back to RawTriple for fiber execution
                 let delta = soa_to_raw_triples(&s, &p, &o);
-                
+
                 // Select fiber based on shard (round-robin or hash-based)
                 let fiber_idx = (domain_id + slot) % self.shard_count;
                 let fiber = &mut self.fibers[fiber_idx];
@@ -257,16 +254,29 @@ impl BeatScheduler {
                             span_id: receipt.span_id,
                             a_hash: receipt.a_hash,
                         };
-                        
+
                         // Convert action payload back to SoA for assertion ring
                         // Note: For now, we use the original delta SoA arrays
-                        if let Err(_e) = self.assertion_rings[domain_id].enqueue(tick, &s, &p, &o, &hot_receipt) {
+                        if let Err(_e) =
+                            self.assertion_rings[domain_id].enqueue(tick, &s, &p, &o, &hot_receipt)
+                        {
                             // Ring full - park the result (use TickBudgetExceeded as closest match)
-                            self.park_manager.park(delta, receipt, crate::park::ParkCause::TickBudgetExceeded, cycle_id, tick);
+                            self.park_manager.park(
+                                delta,
+                                receipt,
+                                crate::park::ParkCause::TickBudgetExceeded,
+                                cycle_id,
+                                tick,
+                            );
                         }
                     }
-                    ExecutionResult::Parked { delta, receipt, cause } => {
-                        self.park_manager.park(delta, receipt, cause, cycle_id, tick);
+                    ExecutionResult::Parked {
+                        delta,
+                        receipt,
+                        cause,
+                    } => {
+                        self.park_manager
+                            .park(delta, receipt, cause, cycle_id, tick);
                     }
                 }
             }
@@ -281,7 +291,9 @@ impl BeatScheduler {
 
         for domain_id in 0..self.domain_count {
             for tick in 0..8 {
-                if let Some((_s, _p, _o, receipts)) = self.assertion_rings[domain_id].dequeue(tick, 8) {
+                if let Some((_s, _p, _o, receipts)) =
+                    self.assertion_rings[domain_id].dequeue(tick, 8)
+                {
                     // Convert C receipts to Rust receipts
                     for hot_receipt in &receipts {
                         let receipt = Receipt {
@@ -405,19 +417,19 @@ impl BeatScheduler {
     }
 
     /// Enqueue delta to delta ring (called by sidecar on admission)
-    /// 
+    ///
     /// Admits a delta into the beat scheduler for processing. The delta is converted to SoA format
     /// and enqueued to the appropriate domain's delta ring at the current tick slot.
-    /// 
+    ///
     /// # Arguments
     /// * `domain_id` - Reconciliation domain ID (must be < domain_count)
     /// * `delta` - Delta triples to enqueue (will be converted to SoA format)
     /// * `cycle_id` - Current cycle ID (stamped by sidecar, used for validation)
-    /// 
+    ///
     /// # Returns
     /// * `Ok(())` - Delta successfully enqueued
     /// * `Err(BeatSchedulerError)` - Invalid domain_id or enqueue failure
-    /// 
+    ///
     /// # Errors
     /// Returns `BeatSchedulerError::InvalidDomainCount` if domain_id >= domain_count
     /// Returns `BeatSchedulerError::FiberError` if SoA conversion or enqueue fails
@@ -432,8 +444,7 @@ impl BeatScheduler {
         }
 
         // Convert RawTriple to SoA arrays
-        let (s, p, o) = raw_triples_to_soa(&delta)
-            .map_err(|e| BeatSchedulerError::FiberError(e))?;
+        let (s, p, o) = raw_triples_to_soa(&delta).map_err(BeatSchedulerError::FiberError)?;
 
         // Get current tick from cycle_id
         let tick = CBeatScheduler::tick(cycle_id);
@@ -441,7 +452,7 @@ impl BeatScheduler {
         // Enqueue to C delta ring at tick slot
         self.delta_rings[domain_id]
             .enqueue(tick, &s, &p, &o, cycle_id)
-            .map_err(|e| BeatSchedulerError::FiberError(e))
+            .map_err(BeatSchedulerError::FiberError)
     }
 
     /// Get current cycle
@@ -507,14 +518,14 @@ mod tests {
             Ok(s) => s,
             Err(e) => panic!("Failed to create beat scheduler: {:?}", e),
         };
-        
+
         // Advance through first 8 beats
         for expected_tick in 0..8 {
             let (tick, pulse) = scheduler.advance_beat();
             assert_eq!(tick, expected_tick);
             assert_eq!(pulse, tick == 0);
         }
-        
+
         // Should wrap around to tick 0
         let (tick, pulse) = scheduler.advance_beat();
         assert_eq!(tick, 0);
@@ -527,14 +538,14 @@ mod tests {
             Ok(s) => s,
             Err(e) => panic!("Failed to create beat scheduler: {:?}", e),
         };
-        
+
         let delta = vec![RawTriple {
             subject: "s1".to_string(),
             predicate: "p1".to_string(),
             object: "o1".to_string(),
             graph: None,
         }];
-        
+
         // Initialize beat scheduler first
         CBeatScheduler::init();
         let cycle_id = CBeatScheduler::current();
@@ -549,7 +560,7 @@ mod tests {
             Ok(s) => s,
             Err(e) => panic!("Failed to create beat scheduler: {:?}", e),
         };
-        
+
         // Enqueue delta
         let delta = vec![RawTriple {
             subject: "http://example.org/s1".to_string(),
@@ -557,14 +568,14 @@ mod tests {
             object: "http://example.org/o1".to_string(),
             graph: None,
         }];
-        
+
         let cycle_id = CBeatScheduler::current();
         assert!(scheduler.enqueue_delta(0, delta, cycle_id).is_ok());
-        
+
         // Advance beat and execute tick
         let (tick, pulse) = scheduler.advance_beat();
         assert!(tick < 8);
-        
+
         // Commit cycle on pulse boundary
         if pulse {
             scheduler.commit_cycle();
@@ -611,7 +622,11 @@ mod tests {
             "self".to_string(),
             "/tmp/knhk-lockchain-test-beat",
         );
-        assert!(result.is_ok(), "Failed to configure lockchain: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to configure lockchain: {:?}",
+            result
+        );
 
         // Enqueue delta
         let delta = vec![RawTriple {
@@ -641,4 +656,3 @@ mod tests {
         // This is expected behavior for the 8-tick system
     }
 }
-

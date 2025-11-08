@@ -3,8 +3,8 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 
 /// Minimal Perfect Hash Function for predicates
 /// Optimizes predicate lookups in hot path
@@ -18,7 +18,7 @@ impl Mphf {
     /// Create MPHF from predicate list
     pub fn new(predicates: Vec<u64>) -> Self {
         let mut hash_table = BTreeMap::new();
-        
+
         // Hash table construction using BTreeMap (O(log n) lookup)
         // Note: Perfect hash (CHD algorithm) planned for v1.0 for O(1) lookup
         for (idx, &pred) in predicates.iter().enumerate() {
@@ -47,7 +47,6 @@ impl Mphf {
     }
 }
 
-
 /// MPHF cache for common predicates
 pub struct MphfCache {
     cache: BTreeMap<Vec<u64>, Mphf>, // Predicate set -> MPHF mapping
@@ -63,7 +62,7 @@ impl MphfCache {
     /// Get or create MPHF for predicate set
     pub fn get_or_create(&mut self, predicates: &[u64]) -> &Mphf {
         let key: Vec<u64> = predicates.to_vec();
-        
+
         if !self.cache.contains_key(&key) {
             let mphf = Mphf::new(key.clone());
             self.cache.insert(key.clone(), mphf);
@@ -86,4 +85,3 @@ impl Default for MphfCache {
         Self::new()
     }
 }
-

@@ -1,0 +1,20 @@
+[package]
+name = "knhk-patterns"
+version = "1.0.0"
+edition = "2021"
+authors = ["KNHK Team"]
+description = "Van der Aalst workflow patterns for KNHK pipeline orchestration"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+knhk-hot = { path = "../knhk-hot" }
+knhk-etl = { path = "../knhk-etl" }
+knhk-config = { path = "../knhk-config" }
+rayon = "1.10"
+crossbeam-channel = "0.5"
+
+[dev-dependencies]
+criterion = "0.5"
+

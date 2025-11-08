@@ -1,7 +1,7 @@
 // rust/knhk-lockchain/examples/full_workflow.rs
 // Complete lockchain workflow: receipts → Merkle tree → quorum → storage
 
-use knhk_lockchain::{MerkleTree, QuorumManager, LockchainStorage, PeerId, Receipt};
+use knhk_lockchain::{LockchainStorage, MerkleTree, PeerId, QuorumManager, Receipt};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== KNHK Lockchain Full Workflow ===\n");
@@ -27,17 +27,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (i, receipt) in receipts.iter().enumerate() {
         let leaf_hash = merkle_tree.add_receipt(receipt);
-        println!("  Tick {}: shard={}, hook={}, ticks={} ✓",
-            i, receipt.shard_id, receipt.hook_id, receipt.actual_ticks);
-        println!("    → Receipt hash: {:x?}...{:x?}",
-            &leaf_hash[..4], &leaf_hash[28..]);
+        println!(
+            "  Tick {}: shard={}, hook={}, ticks={} ✓",
+            i, receipt.shard_id, receipt.hook_id, receipt.actual_ticks
+        );
+        println!(
+            "    → Receipt hash: {:x?}...{:x?}",
+            &leaf_hash[..4],
+            &leaf_hash[28..]
+        );
     }
 
     // Step 2: Pulse boundary - compute Merkle root
     println!("\nSTEP 2: Pulse Boundary (tick == 0)");
     println!("===================================");
     let root = merkle_tree.compute_root();
-    println!("  Merkle root computed from {} receipts", merkle_tree.leaf_count());
+    println!(
+        "  Merkle root computed from {} receipts",
+        merkle_tree.leaf_count()
+    );
     println!("  Root: {:x?}...{:x?}", &root[..8], &root[24..]);
 
     // Step 3: Quorum consensus
@@ -56,7 +64,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("  ✓ Quorum achieved!");
     println!("    Votes collected: {}", proof.vote_count());
-    println!("    Verification: {}", if proof.verify(3) { "✓ PASS" } else { "✗ FAIL" });
+    println!(
+        "    Verification: {}",
+        if proof.verify(3) {
+            "✓ PASS"
+        } else {
+            "✗ FAIL"
+        }
+    );
 
     // Step 4: Persist to storage
     println!("\nSTEP 4: Lockchain Persistence");
@@ -73,10 +88,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("==========================");
     if let Some(entry) = storage.get_root(cycle_id)? {
         println!("  Retrieved entry for cycle {}", entry.cycle);
-        println!("  Root matches: {}",
-            if entry.root == root { "✓ YES" } else { "✗ NO" });
-        println!("  Quorum proof intact: {}",
-            if entry.proof.verify(3) { "✓ YES" } else { "✗ NO" });
+        println!(
+            "  Root matches: {}",
+            if entry.root == root {
+                "✓ YES"
+            } else {
+                "✗ NO"
+            }
+        );
+        println!(
+            "  Quorum proof intact: {}",
+            if entry.proof.verify(3) {
+                "✓ YES"
+            } else {
+                "✗ NO"
+            }
+        );
     }
 
     // Step 6: Individual receipt proof
@@ -86,13 +113,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match merkle_tree.generate_proof(receipt_idx) {
         Ok(proof) => {
             println!("  Generating proof for receipt {}:", receipt_idx);
-            println!("    Leaf hash: {:x?}...{:x?}",
-                &proof.leaf_hash[..4], &proof.leaf_hash[28..]);
+            println!(
+                "    Leaf hash: {:x?}...{:x?}",
+                &proof.leaf_hash[..4],
+                &proof.leaf_hash[28..]
+            );
             println!("    Proof path: {} hashes", proof.proof_hashes.len());
-            println!("    Verification: {}",
-                if proof.verify() { "✓ PASS" } else { "✗ FAIL" });
-            println!("\n  This proves receipt {} was included in cycle {} root",
-                receipt_idx, cycle_id);
+            println!(
+                "    Verification: {}",
+                if proof.verify() {
+                    "✓ PASS"
+                } else {
+                    "✗ FAIL"
+                }
+            );
+            println!(
+                "\n  This proves receipt {} was included in cycle {} root",
+                receipt_idx, cycle_id
+            );
         }
         Err(e) => {
             println!("  ✗ Failed to generate proof: {}", e);
@@ -106,7 +144,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for cycle in 101_u64..=105_u64 {
         let mut tree = MerkleTree::new();
         for i in 0_u32..4_u32 {
-            tree.add_receipt(&Receipt::new(cycle, i, i + 1, 5, 0x1000 * cycle + (i as u64)));
+            tree.add_receipt(&Receipt::new(
+                cycle,
+                i,
+                i + 1,
+                5,
+                0x1000 * cycle + (i as u64),
+            ));
         }
         let root = tree.compute_root();
         let proof = quorum.achieve_consensus(root, cycle)?;
@@ -114,8 +158,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let continuity = storage.verify_continuity(100, 105)?;
-    println!("  Cycles 100-105 continuity: {}",
-        if continuity { "✓ CONTINUOUS" } else { "✗ GAP DETECTED" });
+    println!(
+        "  Cycles 100-105 continuity: {}",
+        if continuity {
+            "✓ CONTINUOUS"
+        } else {
+            "✗ GAP DETECTED"
+        }
+    );
     println!("  Total roots stored: {}", storage.root_count());
 
     // Summary

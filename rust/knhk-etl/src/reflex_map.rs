@@ -4,27 +4,27 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
-use alloc::string::{String, ToString};
-use alloc::format;
 use crate::error::PipelineError;
-use crate::load::{LoadResult, SoAArrays, PredRun};
+use crate::load::{LoadResult, PredRun, SoAArrays};
+use alloc::format;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 /// Reflex map result: A = μ(O)
 #[derive(Debug, Clone)]
 pub struct ReflexMapResult {
     /// Actions A generated from ontology O via reflex map μ
     pub actions: Vec<Action>,
-    
+
     /// Receipts proving hash(A) = hash(μ(O))
     pub receipts: Vec<Receipt>,
-    
+
     /// Maximum ticks used (must be ≤ 8)
     pub max_ticks: u32,
-    
+
     /// Reflex map hash: hash(μ(O))
     pub mu_hash: u64,
-    
+
     /// Actions hash: hash(A)
     pub a_hash: u64,
 }
@@ -44,13 +44,13 @@ pub struct Action {
 #[derive(Debug, Clone)]
 pub struct Receipt {
     pub id: String,
-    pub cycle_id: u64,   // Beat cycle ID (from knhk_beat_next())
-    pub shard_id: u64,   // Shard identifier
-    pub hook_id: u64,    // Hook identifier
-    pub ticks: u32,      // Actual ticks used (≤8)
-    pub lanes: u32,      // SIMD lanes used
-    pub span_id: u64,    // OTEL-compatible span ID
-    pub a_hash: u64,     // hash(A) = hash(μ(O)) fragment
+    pub cycle_id: u64, // Beat cycle ID (from knhk_beat_next())
+    pub shard_id: u64, // Shard identifier
+    pub hook_id: u64,  // Hook identifier
+    pub ticks: u32,    // Actual ticks used (≤8)
+    pub lanes: u32,    // SIMD lanes used
+    pub span_id: u64,  // OTEL-compatible span ID
+    pub a_hash: u64,   // hash(A) = hash(μ(O)) fragment
     pub mu_hash: u64,
 }
 
@@ -68,15 +68,16 @@ impl ReflexMap {
     /// Create a new reflex map with custom tick budget
     pub fn with_tick_budget(tick_budget: u32) -> Result<Self, PipelineError> {
         if tick_budget > 8 {
-            return Err(PipelineError::GuardViolation(
-                format!("Tick budget {} exceeds Chatman Constant (8)", tick_budget)
-            ));
+            return Err(PipelineError::GuardViolation(format!(
+                "Tick budget {} exceeds Chatman Constant (8)",
+                tick_budget
+            )));
         }
         Ok(Self { tick_budget })
     }
 
     /// Apply reflex map: A = μ(O)
-    /// 
+    ///
     /// Production implementation:
     /// 1. Execute hooks for each predicate run
     /// 2. Generate actions from successful hooks
@@ -102,9 +103,10 @@ impl ReflexMap {
         for run in &input.runs {
             // Guard: validate run length ≤ 8
             if run.len > 8 {
-                return Err(PipelineError::GuardViolation(
-                    format!("Run length {} exceeds max_run_len 8", run.len)
-                ));
+                return Err(PipelineError::GuardViolation(format!(
+                    "Run length {} exceeds max_run_len 8",
+                    run.len
+                )));
             }
 
             // Execute hook via C hot path API
@@ -112,10 +114,10 @@ impl ReflexMap {
 
             // Guard: validate tick budget
             if receipt.ticks > self.tick_budget {
-                return Err(PipelineError::ReflexError(
-                    format!("Hook execution {} ticks exceeds budget {} ticks", 
-                        receipt.ticks, self.tick_budget)
-                ));
+                return Err(PipelineError::ReflexError(format!(
+                    "Hook execution {} ticks exceeds budget {} ticks",
+                    receipt.ticks, self.tick_budget
+                )));
             }
 
             max_ticks = max_ticks.max(receipt.ticks);
@@ -152,9 +154,10 @@ impl ReflexMap {
 
         // Verify hash(A) = hash(μ(O))
         if a_hash != mu_hash {
-            return Err(PipelineError::ReflexError(
-                format!("Hash mismatch: hash(A)={} != hash(μ(O))={}", a_hash, mu_hash)
-            ));
+            return Err(PipelineError::ReflexError(format!(
+                "Hash mismatch: hash(A)={} != hash(μ(O))={}",
+                a_hash, mu_hash
+            )));
         }
 
         // Merge receipts via ⊕ (associative merge)
@@ -174,37 +177,40 @@ impl ReflexMap {
 
     /// Execute a single hook using C hot path API via FFI
     fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
-                {
-            use knhk_hot::{Engine, Op, Ir, Receipt as HotReceipt, Run as HotRun};
-            
+        #[cfg(feature = "std")]
+        {
+            use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun};
+
             // Initialize engine with SoA arrays
             // SAFETY: Engine::new requires valid pointers to SoA arrays.
             // We guarantee this by passing pointers from valid Vec<u64> allocations.
             let mut engine = unsafe { Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr()) };
-            
+
             // Guard: validate run length ≤ 8
             if run.len > 8 {
-                return Err(PipelineError::GuardViolation(
-                    format!("Run length {} exceeds max_run_len 8", run.len)
-                ));
+                return Err(PipelineError::GuardViolation(format!(
+                    "Run length {} exceeds max_run_len 8",
+                    run.len
+                )));
             }
-            
+
             // Guard: validate offset bounds
             if run.off >= 8 {
-                return Err(PipelineError::GuardViolation(
-                    format!("Run offset {} exceeds SoA array capacity 8", run.off)
-                ));
+                return Err(PipelineError::GuardViolation(format!(
+                    "Run offset {} exceeds SoA array capacity 8",
+                    run.off
+                )));
             }
-            
+
             let hot_run = HotRun {
                 pred: run.pred,
                 off: run.off,
                 len: run.len,
             };
-            engine.pin_run(hot_run).map_err(|e| {
-                PipelineError::ReflexError(format!("Failed to pin run: {}", e))
-            })?;
-            
+            engine
+                .pin_run(hot_run)
+                .map_err(|e| PipelineError::ReflexError(format!("Failed to pin run: {}", e)))?;
+
             // Create hook IR (ASK_SP operation)
             let s_val = if run.len > 0 && run.off < 8 {
                 soa.s[run.off as usize]
@@ -216,7 +222,7 @@ impl ReflexMap {
             } else {
                 0
             };
-            
+
             let mut ir = Ir {
                 op: Op::AskSp,
                 s: s_val,
@@ -229,20 +235,22 @@ impl ReflexMap {
                 out_mask: 0,
                 construct8_pattern_hint: 0,
             };
-            
+
             // Execute hook
             let mut hot_receipt = HotReceipt::default();
             let result = engine.eval_bool(&mut ir, &mut hot_receipt);
             // eval_bool returns bool, not Result - check result directly
             if !result {
-                return Err(PipelineError::ReflexError("Hook execution returned false".to_string()));
+                return Err(PipelineError::ReflexError(
+                    "Hook execution returned false".to_string(),
+                ));
             }
-            
+
             // Compute mu_hash for this hook
             let mu_hash = self.compute_mu_hash_for_run(soa, run);
-            
+
             // Create receipt
-            return Ok(Receipt {
+            Ok(Receipt {
                 id: format!("receipt_{}", hot_receipt.span_id),
                 cycle_id: hot_receipt.cycle_id,
                 shard_id: hot_receipt.shard_id,
@@ -252,14 +260,14 @@ impl ReflexMap {
                 span_id: hot_receipt.span_id,
                 a_hash: hot_receipt.a_hash,
                 mu_hash,
-            });
+            })
         }
 
         #[cfg(not(feature = "std"))]
         {
             // No-op implementation for no_std
             return Err(PipelineError::ReflexError(
-                "Hot path execution requires std feature".to_string()
+                "Hot path execution requires std feature".to_string(),
             ));
         }
     }
@@ -491,30 +499,36 @@ impl Default for ReflexMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::load::{SoAArrays, PredRun};
+    use crate::load::{PredRun, SoAArrays};
 
     #[test]
     fn test_reflex_map_idempotence() {
         // Test: μ∘μ = μ
         let reflex_map = ReflexMap::new();
-        
+
         let soa = SoAArrays {
             s: [1, 2, 0, 0, 0, 0, 0, 0],
             p: [10, 10, 0, 0, 0, 0, 0, 0],
             o: [100, 200, 0, 0, 0, 0, 0, 0],
         };
 
-        let runs = vec![
-            PredRun { pred: 10, off: 0, len: 2 },
-        ];
+        let runs = vec![PredRun {
+            pred: 10,
+            off: 0,
+            len: 2,
+        }];
 
         let input = LoadResult {
             soa_arrays: soa.clone(),
             runs: runs.clone(),
         };
 
-        let result1 = reflex_map.apply(input.clone()).expect("First reflex_map application should succeed");
-        let result2 = reflex_map.apply(input).expect("Second reflex_map application should succeed");
+        let result1 = reflex_map
+            .apply(input.clone())
+            .expect("First reflex_map application should succeed");
+        let result2 = reflex_map
+            .apply(input)
+            .expect("Second reflex_map application should succeed");
 
         // Same input → same output (idempotence)
         assert_eq!(result1.mu_hash, result2.mu_hash);
@@ -526,27 +540,33 @@ mod tests {
     fn test_reflex_map_hash_verification() {
         // Test: hash(A) = hash(μ(O))
         let reflex_map = ReflexMap::new();
-        
+
         let soa = SoAArrays {
             s: [1, 2, 0, 0, 0, 0, 0, 0],
             p: [10, 10, 0, 0, 0, 0, 0, 0],
             o: [100, 200, 0, 0, 0, 0, 0, 0],
         };
 
-        let runs = vec![
-            PredRun { pred: 10, off: 0, len: 2 },
-        ];
+        let runs = vec![PredRun {
+            pred: 10,
+            off: 0,
+            len: 2,
+        }];
 
         let input = LoadResult {
             soa_arrays: soa,
             runs,
         };
 
-        let result = reflex_map.apply(input).expect("Reflex map application should succeed");
+        let result = reflex_map
+            .apply(input)
+            .expect("Reflex map application should succeed");
 
         // Verify hash(A) = hash(μ(O))
-        assert_eq!(result.a_hash, result.mu_hash, 
-            "hash(A)={} must equal hash(μ(O))={}", result.a_hash, result.mu_hash);
+        assert_eq!(
+            result.a_hash, result.mu_hash,
+            "hash(A)={} must equal hash(μ(O))={}",
+            result.a_hash, result.mu_hash
+        );
     }
 }
-

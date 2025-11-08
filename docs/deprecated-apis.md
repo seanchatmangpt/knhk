@@ -70,6 +70,6 @@ let prepared = SparqlEvaluator::parse_query("CONSTRUCT { ?s ?p ?o } WHERE { ?s ?
 
 ## Related Documentation
 
-- [Current Status](STATUS.md) - Overall implementation status
+- [Current Status](V1-STATUS.md) - Overall implementation status
 - [Ingest Stage](../rust/knhk-etl/src/ingest.rs) - Implementation details
 

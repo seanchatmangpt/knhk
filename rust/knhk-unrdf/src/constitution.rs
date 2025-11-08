@@ -44,17 +44,17 @@ pub fn validate_constitution(
 ) -> UnrdfResult<()> {
     // Check Guard constraint (max_run_len ≤ 8)
     check_guard(hook)?;
-    
+
     // Check Typing constraint (O ⊨ Σ)
     if let Some(schema) = schema {
         check_typing(hook, schema)?;
     }
-    
+
     // Check Invariant constraint (preserve(Q))
     if let Some(invariants) = invariants {
         check_invariant(hook, invariants)?;
     }
-    
+
     Ok(())
 }
 
@@ -63,25 +63,27 @@ pub fn validate_constitution(
 pub fn check_guard(hook: &HookDefinition) -> UnrdfResult<()> {
     // Extract query from hook definition
     let query = extract_query_from_hook(hook)?;
-    
+
     // Check if query references predicates that could exceed run_len
     // For now, we validate that the query structure is valid
     // Note: Full query analysis to ensure ≤8 triples planned for v1.0
-    
+
     // Basic validation: ensure query is not empty
     if query.trim().is_empty() {
-        return Err(UnrdfError::GuardViolation(
-            format!("Hook {} has empty query", hook.id)
-        ));
+        return Err(UnrdfError::GuardViolation(format!(
+            "Hook {} has empty query",
+            hook.id
+        )));
     }
-    
+
     // Validate query is ASK type (required for hooks)
     if !query.trim().to_uppercase().starts_with("ASK") {
-        return Err(UnrdfError::GuardViolation(
-            format!("Hook {} query must be ASK query, got: {}", hook.id, query)
-        ));
+        return Err(UnrdfError::GuardViolation(format!(
+            "Hook {} query must be ASK query, got: {}",
+            hook.id, query
+        )));
     }
-    
+
     Ok(())
 }
 
@@ -89,22 +91,23 @@ pub fn check_guard(hook: &HookDefinition) -> UnrdfResult<()> {
 /// Validates that hook queries reference valid schema predicates/classes
 pub fn check_typing(hook: &HookDefinition, schema: &Schema) -> UnrdfResult<()> {
     let query = extract_query_from_hook(hook)?;
-    
+
     // Extract predicates from query (basic validation for now)
     // Note: Full SPARQL parsing and predicate validation against schema planned for v1.0
-    
+
     // Basic check: ensure query is well-formed
     if query.contains("?") && !query.contains("WHERE") {
-        return Err(UnrdfError::TypingViolation(
-            format!("Hook {} query has variables but no WHERE clause", hook.id)
-        ));
+        return Err(UnrdfError::TypingViolation(format!(
+            "Hook {} query has variables but no WHERE clause",
+            hook.id
+        )));
     }
-    
+
     // Planned for v1.0:
     // - Validate all predicates in query exist in schema.predicates
     // - Validate all classes referenced exist in schema.classes
     // - Validate variable bindings are type-safe
-    
+
     Ok(())
 }
 
@@ -116,17 +119,18 @@ pub fn check_order(hooks: &[HookDefinition]) -> UnrdfResult<()> {
     for hook in hooks {
         let hook_id = hook.id.clone();
         if seen_ids.contains(&hook_id) {
-            return Err(UnrdfError::OrderViolation(
-                format!("Duplicate hook ID '{}' violates ≺-total ordering", hook_id)
-            ));
+            return Err(UnrdfError::OrderViolation(format!(
+                "Duplicate hook ID '{}' violates ≺-total ordering",
+                hook_id
+            )));
         }
         seen_ids.insert(hook_id);
     }
-    
+
     // Planned for v1.0:
     // - Verify hook dependencies form a DAG (no cycles)
     // - Verify ordering is deterministic (same hooks always produce same order)
-    
+
     Ok(())
 }
 
@@ -137,16 +141,17 @@ pub fn check_invariant(hook: &HookDefinition, invariants: &Invariants) -> UnrdfR
     // - Validate hook query doesn't violate any invariants
     // - Validate hook execution preserves invariant predicates
     // - Validate hook doesn't introduce contradictions
-    
+
     // For now, basic validation that hook is well-formed
     let query = extract_query_from_hook(hook)?;
-    
+
     if query.trim().is_empty() {
-        return Err(UnrdfError::InvariantViolation(
-            format!("Hook {} has empty query, cannot preserve invariants", hook.id)
-        ));
+        return Err(UnrdfError::InvariantViolation(format!(
+            "Hook {} has empty query, cannot preserve invariants",
+            hook.id
+        )));
     }
-    
+
     Ok(())
 }
 
@@ -159,9 +164,9 @@ fn extract_query_from_hook(hook: &HookDefinition) -> UnrdfResult<String> {
             }
         }
     }
-    
-    Err(UnrdfError::ConstitutionViolation(
-        format!("Hook {} does not contain a valid SPARQL query in definition.when.query", hook.id)
-    ))
-}
 
+    Err(UnrdfError::ConstitutionViolation(format!(
+        "Hook {} does not contain a valid SPARQL query in definition.when.query",
+        hook.id
+    )))
+}

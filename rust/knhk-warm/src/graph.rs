@@ -1,15 +1,36 @@
 //! Warm path graph wrapper with oxigraph integration
 //! Implements ggen's Graph wrapper pattern with caching
+//!
+//! ## Deprecation Notice
+//!
+//! The `oxigraph::sparql::Query` API is deprecated in oxigraph 0.5.x.
+//! Future versions (v2.0+) should migrate to the new `SparqlEvaluator` pattern:
+//!
+//! ```ignore
+//! // Current (deprecated):
+//! let query = Query::parse(sparql, None)?;
+//! let results = store.query(query)?;
+//!
+//! // Future (recommended):
+//! use oxigraph::sparql::SparqlEvaluator;
+//! let evaluator = SparqlEvaluator::new(store);
+//! let results = evaluator.evaluate(sparql)?;
+//! ```
+//!
+//! This migration is **not blocking for v1.0 release** but should be
+//! addressed in a future major version to stay current with oxigraph.
 
 // ACCEPTABLE: Default trait fallback .expect() is allowed in this module
 #![allow(clippy::expect_used)]
+// Allow deprecated oxigraph::sparql::Query - migration planned for v2.0 (see deprecation notice above)
+#![allow(deprecated)]
 
+use ahash::AHasher;
 use oxigraph::io::RdfFormat;
-use oxigraph::model::{GraphName, NamedNode, NamedOrBlankNode, Quad, Term, Triple};
+use oxigraph::model::{GraphName, NamedNode, Quad, Term};
 use oxigraph::sparql::{Query, QueryResults};
 use oxigraph::store::Store;
 use serde_json::Value as JsonValue;
-use lru::LruCache;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -20,7 +41,6 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc, Mutex,
 };
-use ahash::AHasher;
 
 /// Cached query result
 #[derive(Debug, Clone)]
@@ -70,7 +90,7 @@ pub struct WarmPathGraph {
 
 impl WarmPathGraph {
     /// Create a new warm path graph
-    /// 
+    ///
     /// Cache sizes:
     /// - Query cache: 1000 entries (increased from 100)
     /// - Query plan cache: 1000 entries (parsed SPARQL queries)
@@ -80,9 +100,8 @@ impl WarmPathGraph {
             NonZeroUsize::new(1000).ok_or_else(|| "Invalid cache size".to_string())?;
         let plan_cache_size =
             NonZeroUsize::new(1000).ok_or_else(|| "Invalid plan cache size".to_string())?;
-        
-        let store = Store::new()
-            .map_err(|e| format!("Failed to create oxigraph store: {}", e))?;
+
+        let store = Store::new().map_err(|e| format!("Failed to create oxigraph store: {}", e))?;
 
         Ok(Self {
             inner: store,
@@ -102,12 +121,12 @@ impl WarmPathGraph {
     pub fn load_from_file<P: AsRef<Path>>(&self, path: P) -> Result<(), String> {
         let file = File::open(path.as_ref())
             .map_err(|e| format!("Failed to open file {:?}: {}", path.as_ref(), e))?;
-        
+
         let reader = BufReader::new(file);
         self.inner
             .load_from_reader(RdfFormat::Turtle, reader)
             .map_err(|e| format!("Failed to load RDF from file: {}", e))?;
-        
+
         self.bump_epoch();
         Ok(())
     }
@@ -117,7 +136,7 @@ impl WarmPathGraph {
         self.inner
             .load_from_reader(RdfFormat::Turtle, turtle.as_bytes())
             .map_err(|e| format!("Failed to load Turtle data: {}", e))?;
-        
+
         self.bump_epoch();
         Ok(())
     }
@@ -151,15 +170,15 @@ impl WarmPathGraph {
     }
 
     /// Execute SPARQL query with caching
-    /// 
+    ///
     /// Uses query plan cache to avoid re-parsing identical queries
-    pub fn query(&self, sparql: &str) -> Result<QueryResults, String> {
+    pub fn query(&self, sparql: &str) -> Result<QueryResults<'_>, String> {
         #[cfg(feature = "otel")]
         let start_time = std::time::Instant::now();
-        
+
         #[cfg(feature = "otel")]
         self.query_count.fetch_add(1, Ordering::Relaxed);
-        
+
         let query_hash = self.hash_query(sparql);
         let current_epoch = self.current_epoch();
 
@@ -201,8 +220,7 @@ impl WarmPathGraph {
             }
         } else {
             // Fallback: parse without caching
-            Some(Query::parse(sparql, None)
-                .map_err(|e| format!("Query parse failed: {}", e))?)
+            Some(Query::parse(sparql, None).map_err(|e| format!("Query parse failed: {}", e))?)
         };
 
         // Execute query using parsed query plan
@@ -234,16 +252,16 @@ impl WarmPathGraph {
     /// Record query metric via OTEL
     #[cfg(feature = "otel")]
     fn record_query_metric(&self, sparql: &str, latency_ms: u64, cache_hit: bool) {
-        use knhk_otel::{Tracer, Metric, MetricValue};
+        use knhk_otel::{Metric, MetricValue, Tracer};
         use std::time::{SystemTime, UNIX_EPOCH};
-        
+
         let mut tracer = Tracer::new();
-        
+
         let timestamp_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
-        
+
         // Record query latency
         let latency_metric = Metric {
             name: "knhk.warm.query.latency_ms".to_string(),
@@ -252,17 +270,21 @@ impl WarmPathGraph {
             attributes: {
                 let mut attrs = std::collections::BTreeMap::new();
                 attrs.insert("cache_hit".to_string(), cache_hit.to_string());
-                attrs.insert("query_type".to_string(), 
-                    sparql.trim().to_uppercase()
+                attrs.insert(
+                    "query_type".to_string(),
+                    sparql
+                        .trim()
+                        .to_uppercase()
                         .split_whitespace()
                         .next()
                         .unwrap_or("unknown")
-                        .to_string());
+                        .to_string(),
+                );
                 attrs
             },
         };
         tracer.record_metric(latency_metric);
-        
+
         // Record cache hit rate
         let total_queries = self.query_count.load(Ordering::Relaxed);
         let hits = self.cache_hits.load(Ordering::Relaxed);
@@ -271,7 +293,7 @@ impl WarmPathGraph {
         } else {
             0.0
         };
-        
+
         let hit_rate_metric = Metric {
             name: "knhk.warm.query.cache_hit_rate".to_string(),
             value: MetricValue::Gauge(hit_rate),
@@ -292,7 +314,7 @@ impl WarmPathGraph {
         } else {
             0.0
         };
-        
+
         QueryMetrics {
             total_queries: total,
             cache_hits: hits,
@@ -315,7 +337,7 @@ impl WarmPathGraph {
     /// Convert cached result back to QueryResults
     /// Note: This is a simplified conversion - full conversion would require
     /// storing more information in the cache
-    fn cached_to_query_results(&self, _cached: CachedResult) -> Result<QueryResults, String> {
+    fn cached_to_query_results(&self, _cached: CachedResult) -> Result<QueryResults<'_>, String> {
         // For now, return error to force re-execution
         // In production, would store full QueryResults or reconstruct
         Err("Cache conversion not fully implemented".to_string())
@@ -323,17 +345,16 @@ impl WarmPathGraph {
 
     /// Insert a single triple
     pub fn insert_triple(&self, s: &str, p: &str, o: &str) -> Result<(), String> {
-        let s_node = NamedNode::new(s)
-            .map_err(|e| format!("Invalid subject IRI {}: {}", s, e))?;
-        let p_node = NamedNode::new(p)
-            .map_err(|e| format!("Invalid predicate IRI {}: {}", p, e))?;
+        let s_node = NamedNode::new(s).map_err(|e| format!("Invalid subject IRI {}: {}", s, e))?;
+        let p_node =
+            NamedNode::new(p).map_err(|e| format!("Invalid predicate IRI {}: {}", p, e))?;
         let o_term = Self::parse_term(o)?;
-        
+
         let quad = Quad::new(s_node, p_node, o_term, GraphName::DefaultGraph);
         self.inner
             .insert(&quad)
             .map_err(|e| format!("Failed to insert triple: {}", e))?;
-        
+
         self.bump_epoch();
         Ok(())
     }
@@ -344,17 +365,17 @@ impl WarmPathGraph {
         if term_str.starts_with('<') && term_str.ends_with('>') {
             let iri = &term_str[1..term_str.len() - 1];
             NamedNode::new(iri)
-                .map(|n| Term::NamedNode(n))
+                .map(Term::NamedNode)
                 .map_err(|e| format!("Invalid IRI {}: {}", iri, e))
         } else if term_str.starts_with('"') {
             // Literal parsing - simplified
             NamedNode::new(term_str)
-                .map(|n| Term::NamedNode(n))
+                .map(Term::NamedNode)
                 .map_err(|e| format!("Invalid literal {}: {}", term_str, e))
         } else {
             // Try as named node
             NamedNode::new(term_str)
-                .map(|n| Term::NamedNode(n))
+                .map(Term::NamedNode)
                 .map_err(|e| format!("Invalid term {}: {}", term_str, e))
         }
     }
@@ -366,7 +387,7 @@ impl WarmPathGraph {
                 .insert(quad)
                 .map_err(|e| format!("Failed to insert quad: {}", e))?;
         }
-        
+
         self.bump_epoch();
         Ok(())
     }
@@ -401,7 +422,7 @@ impl Default for WarmPathGraph {
             Self {
                 inner: Store::new().expect(
                     "FATAL: Failed to create fallback Store in WarmPathGraph::default(). \
-                     This indicates a critical system state (likely OOM). Cannot proceed."
+                     This indicates a critical system state (likely OOM). Cannot proceed.",
                 ),
                 epoch: Arc::new(AtomicU64::new(1)),
                 query_cache: Arc::new(Mutex::new(lru::LruCache::new(query_cache_size))),
@@ -416,4 +437,3 @@ impl Default for WarmPathGraph {
         })
     }
 }
-

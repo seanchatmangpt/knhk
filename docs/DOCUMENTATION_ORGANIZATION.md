@@ -41,7 +41,7 @@ This document describes the organization of KNHK documentation files and helps m
 - `performance.md` - Performance docs
 - `code-organization.md` - Code structure
 - `data-flow.md` - Data flow diagrams
-- `weaver-integration.md` - Weaver integration
+- `WEAVER.md` - Weaver integration (canonical)
 - `DOCUMENTATION_GAPS.md` - Undocumented components
 - `v0.4.0-status.md` - v0.4.0 status
 - `v1-requirements.md` - v1.0 requirements

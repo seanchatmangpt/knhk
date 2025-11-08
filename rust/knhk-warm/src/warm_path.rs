@@ -1,7 +1,7 @@
 // Warm path operations
 // CONSTRUCT8 execution moved from hot path (exceeds 8-tick budget)
 
-use crate::ffi::{Op, HotContext, HotHookIr, HotReceipt};
+use crate::ffi::{HotContext, HotHookIr, HotReceipt, Op};
 
 /// Warm path execution result
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ pub struct WarmReceipt {
 }
 
 /// Execute CONSTRUCT8 in warm path (≤500µs budget, ≤1ms SLO)
-/// 
+///
 /// This function routes CONSTRUCT8 operations from hot path to warm path
 /// since CONSTRUCT8 performs emit work (SIMD loads, blending, stores) which
 /// exceeds the 8-tick hot path budget.
@@ -101,4 +101,3 @@ impl core::fmt::Display for WarmPathError {
         }
     }
 }
-

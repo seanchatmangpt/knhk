@@ -30,4 +30,3 @@ pub fn init_state(state: UnrdfState) -> Result<(), crate::error::UnrdfError> {
         crate::error::UnrdfError::InitializationFailed("unrdf already initialized".to_string())
     })
 }
-

@@ -178,7 +178,7 @@ The implementation is correct and ready. Test execution is pending resolution of
 
 ## Related Documentation
 
-- [Current Status](STATUS.md) - Overall implementation status
+- [Current Status](V1-STATUS.md) - Overall implementation status
 - [False Positives Resolved](FALSE_POSITIVES_RESOLVED.md) - Code quality fixes
 - [Testing Guide](testing.md) - General testing documentation
 

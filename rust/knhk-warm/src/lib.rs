@@ -10,19 +10,18 @@
 #[cfg(not(feature = "std"))]
 compile_error!("knhk-warm requires std feature for oxigraph integration");
 
-pub mod ffi;
-pub mod warm_path;
-pub mod graph;
-pub mod query;
 pub mod executor;
+pub mod ffi;
+pub mod graph;
 pub mod hot_path;
+pub mod query;
 pub mod scheduler;
+pub mod warm_path;
 
-pub use warm_path::*;
+pub use executor::WarmPathExecutor;
 pub use graph::WarmPathGraph;
 pub use query::*;
-pub use executor::WarmPathExecutor;
-pub use scheduler::{EpochScheduler, EpochPlan, ExecutionPlan};
+pub use scheduler::{EpochPlan, EpochScheduler, ExecutionPlan};
+pub use warm_path::*;
 // Hot path types are re-exported from ffi module
-pub use ffi::{Op, Ctx, Ir, Receipt, Run};
-
+pub use ffi::{Ctx, Ir, Op, Receipt, Run};

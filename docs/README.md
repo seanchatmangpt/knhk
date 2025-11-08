@@ -26,7 +26,7 @@
 ### Implementation & Patterns
 - **[WEAVER_ANALYSIS_AND_LEARNINGS.md](WEAVER_ANALYSIS_AND_LEARNINGS.md)** - Architectural patterns from Weaver
 - **[WEAVER_IMPLEMENTATION_PLAN.md](WEAVER_IMPLEMENTATION_PLAN.md)** - Active Weaver insights implementation
-- **[weaver-integration.md](weaver-integration.md)** - Weaver integration guide
+- **[WEAVER.md](WEAVER.md)** - Weaver integration guide (canonical)
 
 ### Project Management
 - **[FALSE_POSITIVES_AND_UNFINISHED_WORK.md](FALSE_POSITIVES_AND_UNFINISHED_WORK.md)** - Known issues and unfinished work

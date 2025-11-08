@@ -5,14 +5,14 @@ use crate::template::ConstructTemplate;
 
 #[derive(Debug, Clone)]
 pub struct PreboundIr {
-    pub s_const: Option<u64>,      // Prebound subject constant (None if variable)
-    pub p_const: Option<u64>,      // Prebound predicate constant (None if variable)
-    pub o_const: Option<u64>,      // Prebound object constant (None if variable)
-    pub s_is_var: bool,            // True if subject is variable
-    pub p_is_var: bool,            // True if predicate is variable
-    pub o_is_var: bool,            // True if object is variable
-    pub len_mask_hint: u64,        // Precomputed length mask
-    pub zero_hint: u8,             // Zero-position bitmask hint
+    pub s_const: Option<u64>, // Prebound subject constant (None if variable)
+    pub p_const: Option<u64>, // Prebound predicate constant (None if variable)
+    pub o_const: Option<u64>, // Prebound object constant (None if variable)
+    pub s_is_var: bool,       // True if subject is variable
+    pub p_is_var: bool,       // True if predicate is variable
+    pub o_is_var: bool,       // True if object is variable
+    pub len_mask_hint: u64,   // Precomputed length mask
+    pub zero_hint: u8,        // Zero-position bitmask hint
 }
 
 impl PreboundIr {
@@ -103,4 +103,3 @@ impl Default for PreboundIr {
         Self::new()
     }
 }
-
