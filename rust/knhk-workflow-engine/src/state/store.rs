@@ -15,7 +15,7 @@ pub struct StateStore {
     /// Sled database for cold storage
     db: Db,
     /// Hot cache for reflex core (sub-microsecond access, lock-free DashMap)
-    cache: Arc<ReflexCache>,
+    cache: ReflexCache,
 }
 
 impl StateStore {
@@ -26,7 +26,7 @@ impl StateStore {
         })?;
         Ok(Self {
             db,
-            cache: Arc::new(ReflexCache::new()),
+            cache: ReflexCache::new(),
         })
     }
 
@@ -80,10 +80,9 @@ impl StateStore {
 
     /// Save a case (with cache)
     pub fn save_case(&self, case_id: crate::case::CaseId, case: &Case) -> WorkflowResult<()> {
-        // Update cache first (hot path)
-        let cache = self.cache.blocking_read();
-        cache.insert_case(case_id.clone(), Arc::new(case.clone()));
-        drop(cache);
+        // Update cache first (hot path, lock-free DashMap operation)
+        self.cache
+            .insert_case(case_id.clone(), Arc::new(case.clone()));
 
         // Persist to sled
         let key = format!("case:{}", case_id);
@@ -97,12 +96,10 @@ impl StateStore {
 
     /// Load a case (cache-first)
     pub fn load_case(&self, case_id: &crate::case::CaseId) -> WorkflowResult<Option<Case>> {
-        // Try cache first (hot path)
-        let cache = self.cache.blocking_read();
-        if let Some(case) = cache.get_case(case_id) {
+        // Try cache first (hot path, lock-free DashMap operation)
+        if let Some(case) = self.cache.get_case(case_id) {
             return Ok(Some((*case).clone()));
         }
-        drop(cache);
 
         // Fallback to sled
         let key = format!("case:{}", case_id);
@@ -116,10 +113,9 @@ impl StateStore {
                     WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
                 })?;
 
-                // Update cache
-                let cache = self.cache.blocking_write();
-                cache.insert_case(case.id.clone(), Arc::new(case.clone()));
-                drop(cache);
+                // Update cache (lock-free DashMap operation)
+                self.cache
+                    .insert_case(case.id.clone(), Arc::new(case.clone()));
 
                 Ok(Some(case))
             }

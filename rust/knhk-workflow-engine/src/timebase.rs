@@ -4,10 +4,37 @@
 //! for production and testing scenarios.
 
 use async_trait::async_trait;
-use std::cmp::Reverse;
+use std::cmp::{Ordering, Reverse};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::oneshot;
+
+/// Scheduled task wrapper for BinaryHeap ordering
+struct ScheduledTask {
+    due: Reverse<Instant>,
+    id: u64,
+    sender: oneshot::Sender<()>,
+}
+
+impl PartialEq for ScheduledTask {
+    fn eq(&self, other: &Self) -> bool {
+        self.due == other.due && self.id == other.id
+    }
+}
+
+impl Eq for ScheduledTask {}
+
+impl PartialOrd for ScheduledTask {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.due.cmp(&other.due))
+    }
+}
+
+impl Ord for ScheduledTask {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.due.cmp(&other.due)
+    }
+}
 
 /// Timebase trait for abstracting time operations
 #[async_trait]
@@ -74,16 +101,8 @@ pub struct SimClock {
     mono: Arc<parking_lot::Mutex<Instant>>,
     /// Wall epoch
     wall: Arc<parking_lot::Mutex<SystemTime>>,
-    /// Heap of (due_mono, id, sender)
-    q: Arc<
-        parking_lot::Mutex<
-            std::collections::BinaryHeap<(
-                std::cmp::Reverse<Instant>,
-                u64,
-                tokio::sync::oneshot::Sender<()>,
-            )>,
-        >,
-    >,
+    /// Heap of scheduled tasks
+    q: Arc<parking_lot::Mutex<std::collections::BinaryHeap<ScheduledTask>>>,
     /// Time scale factor
     scale: Arc<parking_lot::Mutex<f64>>,
     /// Next ID for scheduled tasks
@@ -166,10 +185,10 @@ impl SimClock {
         let mut to_wake = Vec::new();
 
         // Pop all due tasks
-        while let Some((Reverse(due), _id, sender)) = q.peek() {
-            if *due <= mono {
-                if let Some((_, _, sender)) = q.pop() {
-                    to_wake.push(sender);
+        while let Some(task) = q.peek() {
+            if task.due.0 <= mono {
+                if let Some(task) = q.pop() {
+                    to_wake.push(task.sender);
                 }
             } else {
                 break;
@@ -223,7 +242,11 @@ impl Timebase for SimClock {
             *n
         };
 
-        self.q.lock().push((std::cmp::Reverse(t), id, tx));
+        self.q.lock().push(ScheduledTask {
+            due: std::cmp::Reverse(t),
+            id,
+            sender: tx,
+        });
 
         // Block until SimClock.warp_mono() runs_due and sends the signal
         let _ = rx.await;

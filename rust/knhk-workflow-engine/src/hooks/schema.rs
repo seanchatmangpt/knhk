@@ -325,19 +325,43 @@ wf:Task a rdf:Class .
                 tasks.insert(
                     "task-1".to_string(),
                     Task {
+                        id: "task-1".to_string(),
                         name: "Task 1".to_string(),
                         task_type: TaskType::Atomic,
+                        split_type: crate::parser::types::SplitType::None,
+                        join_type: crate::parser::types::JoinType::None,
+                        max_ticks: None,
+                        priority: None,
+                        use_simd: false,
+                        input_conditions: Vec::new(),
+                        output_conditions: Vec::new(),
                         incoming_flows: Vec::new(),
                         outgoing_flows: vec!["task-2".to_string()],
+                        allocation_policy: None,
+                        required_roles: Vec::new(),
+                        required_capabilities: Vec::new(),
+                        exception_worklet: None,
                     },
                 );
                 tasks.insert(
                     "task-2".to_string(),
                     Task {
+                        id: "task-2".to_string(),
                         name: "Task 2".to_string(),
                         task_type: TaskType::Atomic,
+                        split_type: crate::parser::types::SplitType::None,
+                        join_type: crate::parser::types::JoinType::None,
+                        max_ticks: None,
+                        priority: None,
+                        use_simd: false,
+                        input_conditions: Vec::new(),
+                        output_conditions: Vec::new(),
                         incoming_flows: vec!["task-1".to_string()],
                         outgoing_flows: Vec::new(),
+                        allocation_policy: None,
+                        required_roles: Vec::new(),
+                        required_capabilities: Vec::new(),
+                        exception_worklet: None,
                     },
                 );
                 tasks

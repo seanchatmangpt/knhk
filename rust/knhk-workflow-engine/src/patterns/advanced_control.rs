@@ -95,7 +95,11 @@ impl PatternExecutor for RecursionPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 29)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -113,7 +117,11 @@ impl PatternExecutor for TransientTriggerPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 30)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }

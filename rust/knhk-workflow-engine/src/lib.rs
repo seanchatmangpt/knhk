@@ -87,7 +87,6 @@ pub mod state;
 pub mod templates;
 pub mod testing;
 pub mod timebase;
-pub mod timer;
 pub mod utils;
 pub mod validation;
 pub mod visualization;

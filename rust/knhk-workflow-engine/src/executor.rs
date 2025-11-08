@@ -13,8 +13,10 @@ use crate::patterns::{
 };
 use crate::resource::{AllocationRequest, ResourceAllocator};
 use crate::security::AuthManager;
-use crate::services::{AdmissionGate, EventSidecar, TimerFired, TimerService, WorkItemService};
+use crate::services::timer::TimerService;
+use crate::services::{AdmissionGate, EventSidecar, TimerFired, WorkItemService};
 use crate::state::StateStore;
+use crate::timebase::SysClock;
 use crate::validation::DeadlockDetector;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
 use std::collections::HashMap;
@@ -39,7 +41,7 @@ pub struct WorkflowEngine {
     /// Worklet executor
     worklet_executor: Arc<WorkletExecutor>,
     /// Timer service
-    timer_service: Arc<TimerService>,
+    timer_service: Arc<TimerService<SysClock>>,
     /// Work item service
     work_item_service: Arc<WorkItemService>,
     /// Admission gate
@@ -77,14 +79,20 @@ impl WorkflowEngine {
         let (event_tx, event_rx) = mpsc::channel::<serde_json::Value>(1024);
 
         // Create services
-        let timer_service = Arc::new(TimerService::new(timer_tx.clone()));
+        let timebase = Arc::new(SysClock);
+        let state_store_arc = Arc::new(state_store);
+        let timer_service = Arc::new(TimerService::new(
+            timebase,
+            timer_tx.clone(),
+            Some(state_store_arc.clone()),
+        ));
         let work_item_service = Arc::new(WorkItemService::new());
         let admission_gate = Arc::new(AdmissionGate::new());
         let event_sidecar = Arc::new(EventSidecar::new(event_tx.clone()));
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store)),
+            state_store: Arc::new(RwLock::new(*state_store_arc)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -201,7 +209,12 @@ impl WorkflowEngine {
         let (event_tx, event_rx) = mpsc::channel::<serde_json::Value>(1024);
 
         // Create services
-        let timer_service = Arc::new(TimerService::new(timer_tx.clone()));
+        let timebase = Arc::new(SysClock);
+        let timer_service = Arc::new(TimerService::new(
+            timebase,
+            timer_tx.clone(),
+            None, // State store not available in with_fortune5
+        ));
         let work_item_service = Arc::new(WorkItemService::new());
         let admission_gate = Arc::new(AdmissionGate::new());
         let event_sidecar = Arc::new(EventSidecar::new(event_tx.clone()));
@@ -224,7 +237,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store)),
+            state_store: Arc::new(RwLock::new(state_store_arc.as_ref().clone())),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -640,7 +653,7 @@ impl WorkflowEngine {
     }
 
     /// Get timer service
-    pub fn timer_service(&self) -> &Arc<TimerService> {
+    pub fn timer_service(&self) -> &Arc<TimerService<SysClock>> {
         &self.timer_service
     }
 

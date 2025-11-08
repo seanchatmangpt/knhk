@@ -8,7 +8,6 @@ use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use dashmap::DashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 /// Hot cache for workflow specs and cases
 #[derive(Clone)]

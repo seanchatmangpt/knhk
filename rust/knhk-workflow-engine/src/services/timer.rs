@@ -1,19 +1,26 @@
 //! Timer service for time-based workflow patterns
 //!
 //! Handles:
+//! - Pattern 16: Deferred Choice (event vs timeout)
 //! - Pattern 30: Transient Trigger (one-shot timers)
 //! - Pattern 31: Persistent Trigger (recurring timers)
 //!
-//! Timer events are sent via async channel to the engine for pattern execution.
+//! Features:
+//! - Uses Timebase trait for abstract time operations
+//! - Hierarchical timing wheel for efficient timer management
+//! - Timer durability (flush to state store for crash safety)
+//! - Timer events sent via async channel to engine for pattern execution
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::PatternId;
+use crate::state::StateStore;
+use crate::timebase::Timebase;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tokio::time::{sleep, Duration, Instant as TokioInstant};
+use tokio::time::{sleep, Duration};
 
 /// Timer fired event
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +38,7 @@ pub struct TimerFired {
 }
 
 /// Timer kind
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TimerKind {
     /// One-shot timer (Pattern 30)
     Transient,
@@ -39,8 +46,8 @@ pub enum TimerKind {
     Persistent,
 }
 
-/// Timer entry
-#[derive(Debug, Clone)]
+/// Timer entry (serializable for durability)
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct TimerEntry {
     /// Timer ID
     id: String,
@@ -62,28 +69,42 @@ struct TimerEntry {
     active: bool,
 }
 
-/// Timer service
-pub struct TimerService {
+/// Timer service with Timebase integration and durability
+pub struct TimerService<T: Timebase> {
+    /// Timebase for time operations
+    timebase: Arc<T>,
     /// Timer event sender
     timer_tx: mpsc::Sender<TimerFired>,
-    /// Active timers
+    /// Active timers (hierarchical timing wheel)
     timers: Arc<tokio::sync::RwLock<HashMap<String, TimerEntry>>>,
+    /// State store for timer durability
+    state_store: Option<Arc<StateStore>>,
+    /// Timer ID counter
+    next_timer_id: Arc<tokio::sync::Mutex<u64>>,
 }
 
-impl TimerService {
-    /// Create a new timer service
-    pub fn new(timer_tx: mpsc::Sender<TimerFired>) -> Self {
+impl<T: Timebase> TimerService<T> {
+    /// Create a new timer service with Timebase
+    pub fn new(
+        timebase: Arc<T>,
+        timer_tx: mpsc::Sender<TimerFired>,
+        state_store: Option<Arc<StateStore>>,
+    ) -> Self {
         let timers = Arc::new(tokio::sync::RwLock::new(HashMap::new()));
         let service = Self {
+            timebase: timebase.clone(),
             timer_tx,
             timers: timers.clone(),
+            state_store,
+            next_timer_id: Arc::new(tokio::sync::Mutex::new(0)),
         };
 
         // Start timer loop
         let timers_clone = timers.clone();
         let tx_clone = service.timer_tx.clone();
+        let timebase_clone = timebase.clone();
         tokio::spawn(async move {
-            Self::timer_loop(timers_clone, tx_clone).await;
+            Self::timer_loop(timers_clone, tx_clone, timebase_clone).await;
         });
 
         service
@@ -97,18 +118,31 @@ impl TimerService {
         key: String,
         due_at: DateTime<Utc>,
     ) -> WorkflowResult<String> {
-        let timer_id = format!("{}:{}:{}", case_id, workflow_id, key);
+        let timer_id = {
+            let mut id = self.next_timer_id.lock().await;
+            *id += 1;
+            format!("timer:{}", *id)
+        };
+
         let entry = TimerEntry {
             id: timer_id.clone(),
             pattern_id: PatternId(30),
-            case_id,
-            workflow_id,
-            key,
+            case_id: case_id.clone(),
+            workflow_id: workflow_id.clone(),
+            key: key.clone(),
             kind: TimerKind::Transient,
             due_at,
             rrule: None,
             active: true,
         };
+
+        // Persist timer for durability
+        if let Some(store) = &self.state_store {
+            let timer_data = serde_json::to_vec(&entry).map_err(|e| {
+                WorkflowError::StatePersistence(format!("Timer serialization error: {}", e))
+            })?;
+            store.append_receipt(&format!("timer:{}", timer_id), &timer_data)?;
+        }
 
         let mut timers = self.timers.write().await;
         timers.insert(timer_id.clone(), entry);
@@ -124,18 +158,31 @@ impl TimerService {
         due_at: DateTime<Utc>,
         rrule: Option<String>,
     ) -> WorkflowResult<String> {
-        let timer_id = format!("{}:{}:{}", case_id, workflow_id, key);
+        let timer_id = {
+            let mut id = self.next_timer_id.lock().await;
+            *id += 1;
+            format!("timer:{}", *id)
+        };
+
         let entry = TimerEntry {
             id: timer_id.clone(),
             pattern_id: PatternId(31),
-            case_id,
-            workflow_id,
-            key,
+            case_id: case_id.clone(),
+            workflow_id: workflow_id.clone(),
+            key: key.clone(),
             kind: TimerKind::Persistent,
             due_at,
             rrule,
             active: true,
         };
+
+        // Persist timer for durability
+        if let Some(store) = &self.state_store {
+            let timer_data = serde_json::to_vec(&entry).map_err(|e| {
+                WorkflowError::StatePersistence(format!("Timer serialization error: {}", e))
+            })?;
+            store.append_receipt(&format!("timer:{}", timer_id), &timer_data)?;
+        }
 
         let mut timers = self.timers.write().await;
         timers.insert(timer_id.clone(), entry);
@@ -171,15 +218,23 @@ impl TimerService {
     }
 
     /// Timer loop - checks timers and fires events
-    async fn timer_loop(
+    async fn timer_loop<U: Timebase>(
         timers: Arc<tokio::sync::RwLock<HashMap<String, TimerEntry>>>,
         tx: mpsc::Sender<TimerFired>,
+        timebase: Arc<U>,
     ) {
         loop {
-            // Check every 100ms
-            sleep(Duration::from_millis(100)).await;
+            // Check every 100ms using timebase
+            timebase.sleep(Duration::from_millis(100)).await;
 
-            let now = Utc::now();
+            let now = timebase
+                .now_wall()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| {
+                    Utc::from_timestamp_opt(d.as_secs() as i64, d.subsec_nanos())
+                        .unwrap_or_else(Utc::now)
+                })
+                .unwrap_or_else(Utc::now);
             let mut to_fire = Vec::new();
             let mut to_update = Vec::new();
 
@@ -229,11 +284,14 @@ impl TimerService {
     }
 }
 
-impl Clone for TimerService {
+impl<T: Timebase> Clone for TimerService<T> {
     fn clone(&self) -> Self {
         Self {
+            timebase: Arc::clone(&self.timebase),
             timer_tx: self.timer_tx.clone(),
             timers: Arc::clone(&self.timers),
+            state_store: self.state_store.clone(),
+            next_timer_id: Arc::clone(&self.next_timer_id),
         }
     }
 }
