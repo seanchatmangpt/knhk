@@ -64,8 +64,9 @@ impl WorkflowEngine {
             .map(|(k, v)| (k.clone(), format!("{:?}", v)))
             .collect();
 
-        let variables = if let Some(obj) = case.data.as_object() {
-            obj.clone()
+        let variables: HashMap<String, serde_json::Value> = if let Some(obj) = case.data.as_object()
+        {
+            obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
         } else {
             HashMap::new()
         };
