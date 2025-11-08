@@ -2,7 +2,13 @@
 // Extension trait to add workflow patterns to KNHK Pipeline
 
 use crate::patterns::{BranchFn, ConditionFn, Pattern, PatternResult};
-use knhk_etl::{EmitResult, Pipeline};
+use crate::hook_patterns::{HookCondition, HookRetryCondition};
+use knhk_etl::{
+    hook_orchestration::{HookExecutionContext, HookExecutionResult},
+    hook_registry::HookRegistry,
+    load::LoadResult,
+    EmitResult, Pipeline,
+};
 
 // ============================================================================
 // Pipeline Extension Trait
@@ -33,6 +39,29 @@ pub trait PipelinePatternExt {
     where
         F: Fn(EmitResult) -> PatternResult<EmitResult> + Send + Sync + 'static,
         C: Fn(&EmitResult) -> bool + Send + Sync + 'static;
+
+    /// Execute hooks in parallel using hook registry
+    fn execute_hooks_parallel(
+        &mut self,
+        hook_registry: &HookRegistry,
+        predicates: Vec<u64>,
+    ) -> PatternResult<HookExecutionResult>;
+
+    /// Execute hooks conditionally using hook registry
+    fn execute_hooks_conditional(
+        &mut self,
+        hook_registry: &HookRegistry,
+        choices: Vec<(HookCondition, u64)>,
+    ) -> PatternResult<HookExecutionResult>;
+
+    /// Execute hooks with retry logic using hook registry
+    fn execute_hooks_with_retry(
+        &mut self,
+        hook_registry: &HookRegistry,
+        predicate: u64,
+        should_retry: HookRetryCondition,
+        max_attempts: u32,
+    ) -> PatternResult<HookExecutionResult>;
 }
 
 impl PipelinePatternExt for Pipeline {
@@ -119,6 +148,83 @@ impl PipelinePatternExt for Pipeline {
             .into_iter()
             .next()
             .ok_or_else(|| crate::patterns::PatternError::ExecutionFailed("No result".to_string()))
+    }
+
+    fn execute_hooks_parallel(
+        &mut self,
+        hook_registry: &HookRegistry,
+        predicates: Vec<u64>,
+    ) -> PatternResult<HookExecutionResult> {
+        use crate::hook_patterns::HookParallelPattern;
+        use crate::hook_patterns::create_hook_context;
+
+        // Execute pipeline up to Load stage
+        let load_result = self
+            .execute_to_load()
+            .map_err(|e| crate::patterns::PatternError::ExecutionFailed(e.message().to_string()))?;
+
+        // Create hook execution context
+        let context = create_hook_context(
+            hook_registry.clone(),
+            load_result,
+            8, // tick budget
+        );
+
+        // Execute hooks in parallel
+        let pattern = HookParallelPattern::new(predicates)?;
+        pattern.execute_hooks(&context)
+    }
+
+    fn execute_hooks_conditional(
+        &mut self,
+        hook_registry: &HookRegistry,
+        choices: Vec<(HookCondition, u64)>,
+    ) -> PatternResult<HookExecutionResult> {
+        use crate::hook_patterns::HookChoicePattern;
+        use crate::hook_patterns::create_hook_context;
+
+        // Execute pipeline up to Load stage
+        let load_result = self
+            .execute_to_load()
+            .map_err(|e| crate::patterns::PatternError::ExecutionFailed(e.message().to_string()))?;
+
+        // Create hook execution context
+        let context = create_hook_context(
+            hook_registry.clone(),
+            load_result,
+            8, // tick budget
+        );
+
+        // Execute hooks conditionally
+        let pattern = HookChoicePattern::new(choices)?;
+        pattern.execute_hooks(&context)
+    }
+
+    fn execute_hooks_with_retry(
+        &mut self,
+        hook_registry: &HookRegistry,
+        predicate: u64,
+        should_retry: HookRetryCondition,
+        max_attempts: u32,
+    ) -> PatternResult<HookExecutionResult> {
+        use crate::hook_patterns::HookRetryPattern;
+        use crate::hook_patterns::create_hook_context;
+
+        // Execute pipeline up to Load stage
+        let load_result = self
+            .execute_to_load()
+            .map_err(|e| crate::patterns::PatternError::ExecutionFailed(e.message().to_string()))?;
+
+        // Create hook execution context
+        let context = create_hook_context(
+            hook_registry.clone(),
+            load_result,
+            8, // tick budget
+        );
+
+        // Execute hooks with retry
+        let pattern = HookRetryPattern::new(predicate, should_retry, max_attempts)?;
+        pattern.execute_hooks(&context)
     }
 }
 

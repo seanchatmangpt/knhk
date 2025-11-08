@@ -194,4 +194,20 @@ impl Pipeline {
 
         Ok(emit_result)
     }
+
+    /// Execute pipeline up to Load stage (for hook orchestration)
+    ///
+    /// Returns LoadResult that can be used for pattern-based hook execution
+    pub fn execute_to_load(&mut self) -> Result<crate::load::LoadResult, PipelineError> {
+        // Stage 1: Ingest
+        let ingest_result = self.ingest.ingest()?;
+
+        // Stage 2: Transform
+        let transform_result = self.transform.transform(ingest_result)?;
+
+        // Stage 3: Load
+        let load_result = self.load.load(transform_result)?;
+
+        Ok(load_result)
+    }
 }

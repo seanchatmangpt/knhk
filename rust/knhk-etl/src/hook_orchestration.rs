@@ -4,7 +4,6 @@
 extern crate alloc;
 
 use alloc::format;
-use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::error::PipelineError;
@@ -234,11 +233,11 @@ impl HookOrchestrator {
 
         #[cfg(feature = "parallel")]
         {
-            use rayon::prelude::*;
-
-            // Execute hooks in parallel using Rayon
+            // Note: Cannot use parallel iteration here because ReflexStage contains RefCell<SloMonitor>
+            // which is not Sync. RefCell is not thread-safe, so we use sequential iteration.
+            // Execute hooks sequentially (RefCell is not Sync, so parallel iteration is not safe)
             let results: Result<Vec<_>, _> = runs
-                .par_iter()
+                .iter()
                 .map(|run| {
                     // Validate tick budget
                     if run.len > context.tick_budget as u64 {
