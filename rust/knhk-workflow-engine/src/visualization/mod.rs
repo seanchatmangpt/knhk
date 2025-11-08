@@ -157,7 +157,7 @@ impl WorkflowVisualizer {
     pub fn render_svg(&self, dot_content: &str) -> WorkflowResult<String> {
         // In production, would call GraphViz `dot` command
         // For now, return error indicating GraphViz is required
-        Err(WorkflowError::ExecutionFailed(
+        Err(WorkflowError::Internal(
             "SVG rendering requires GraphViz. Install with: brew install graphviz".to_string(),
         ))
     }

@@ -31,6 +31,7 @@ mod metrics;
 mod pipeline;
 mod reflex;
 mod route;
+mod workflow;
 
 use clap_noun_verb::Result as CnvResult;
 use knhk_config::{load_config, Config};

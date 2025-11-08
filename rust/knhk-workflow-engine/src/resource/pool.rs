@@ -28,7 +28,9 @@ impl ResourcePool {
         let permit = self.semaphore.acquire().await.map_err(|e| {
             WorkflowError::ResourceUnavailable(format!("Failed to acquire resource: {}", e))
         })?;
-        Ok(ResourcePermit { permit })
+        Ok(ResourcePermit {
+            permit: permit.forget(),
+        })
     }
 
     /// Get available resources count

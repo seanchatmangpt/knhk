@@ -94,7 +94,6 @@ where
                         WorkflowError::StatePersistence(s.clone())
                     }
                     WorkflowError::ExternalSystem(s) => WorkflowError::ExternalSystem(s.clone()),
-                    WorkflowError::Validation(s) => WorkflowError::Validation(s.clone()),
                     WorkflowError::Timeout => WorkflowError::Timeout,
                     WorkflowError::ResourceUnavailable(s) => {
                         WorkflowError::ResourceUnavailable(s.clone())

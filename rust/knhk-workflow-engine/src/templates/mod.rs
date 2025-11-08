@@ -88,7 +88,7 @@ impl TemplateLibrary {
     fn generate_two_stage_approval(params: &Value) -> WorkflowResult<WorkflowSpec> {
         // In production, would generate full workflow spec
         // For now, return error indicating implementation needed
-        Err(WorkflowError::ExecutionFailed(
+        Err(WorkflowError::TaskExecutionFailed(
             "Template instantiation not yet implemented".to_string(),
         ))
     }
@@ -96,7 +96,7 @@ impl TemplateLibrary {
     /// Generate sequential processing workflow
     fn generate_sequential_processing(_params: &Value) -> WorkflowResult<WorkflowSpec> {
         // In production, would generate full workflow spec
-        Err(WorkflowError::ExecutionFailed(
+        Err(WorkflowError::TaskExecutionFailed(
             "Template instantiation not yet implemented".to_string(),
         ))
     }
