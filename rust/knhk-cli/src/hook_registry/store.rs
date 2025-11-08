@@ -33,6 +33,7 @@ impl HookStore {
 
     /// Load all hooks
     pub fn load_all(&self) -> Result<Vec<HookEntry>, String> {
+        #[allow(unused_imports)]
         use oxigraph::model::{GraphName, NamedNode, Quad, Term};
         #[allow(deprecated)]
         use oxigraph::sparql::Query;
@@ -131,6 +132,7 @@ impl HookStore {
 
     /// Save hook
     pub fn save(&self, hook: &HookEntry) -> Result<(), String> {
+        #[allow(unused_imports)]
         use oxigraph::model::{GraphName, NamedNode, Quad, Term};
 
         let store = self.store.store();

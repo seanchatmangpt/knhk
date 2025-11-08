@@ -248,7 +248,7 @@ fn get_config_dir() -> Result<PathBuf, String> {
 }
 
 fn save_delta(triples: &[Triple]) -> Result<(), String> {
-    let _config_dir = get_config_dir()?;
+    let config_dir = get_config_dir()?;
     fs::create_dir_all(&config_dir)
         .map_err(|e| format!("Failed to create config directory: {}", e))?;
 
