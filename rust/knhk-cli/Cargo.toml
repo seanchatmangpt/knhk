@@ -77,4 +77,5 @@ name = "knhk"
 path = "src/main.rs"
 
 [dev-dependencies]
+reqwest = { version = "0.11", features = ["blocking"] }
 tempfile = "3.10"

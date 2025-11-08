@@ -1,0 +1,79 @@
+[package]
+name = "knhk-workflow-engine"
+version = "1.0.0"
+edition = "2021"
+description = "Enterprise workflow engine with full 43-pattern YAWL support"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-workflow-engine"
+keywords = ["workflow", "yawl", "bpmn", "enterprise", "automation"]
+categories = ["development-tools", "web-programming"]
+license = "MIT"
+authors = ["KNHK Team"]
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+# KNHK infrastructure
+knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
+knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
+knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
+
+# RDF & Turtle parsing
+oxigraph = "0.5"
+rio-turtle = "0.9"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# HTTP & gRPC
+tonic = { version = "0.10", features = ["tls", "tls-roots"] }
+tonic-build = "0.10"
+prost = "0.12"
+prost-types = "0.12"
+axum = { version = "0.7", features = ["json", "multipart"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Collections & utilities
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
+hashbrown = { version = "0.15", default-features = false }
+rayon = "1.8"
+
+# Tracing & observability
+tracing = "0.1"
+tracing-opentelemetry = "0.32"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Storage
+sled = "0.34"
+
+[features]
+default = ["unrdf"]
+unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.8"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "pattern_execution"
+harness = false
+
+[[bench]]
+name = "workflow_parsing"
+harness = false
+

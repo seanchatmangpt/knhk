@@ -11,6 +11,7 @@ members = [
     "knhk-validation",
     "knhk-config",
     "knhk-patterns",  # Van der Aalst workflow patterns
+    "knhk-workflow-engine",  # Enterprise YAWL workflow engine
     "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
@@ -35,6 +36,7 @@ knhk-warm = { path = "./knhk-warm", version = "1.0.0" }
 knhk-validation = { path = "./knhk-validation", version = "1.0.0" }
 knhk-config = { path = "./knhk-config", version = "1.0.0" }
 knhk-patterns = { path = "./knhk-patterns", version = "1.0.0" }
+knhk-workflow-engine = { path = "./knhk-workflow-engine", version = "1.0.0" }
 knhk-sidecar = { path = "./knhk-sidecar", version = "1.0.0" }
 
 # Async runtime
