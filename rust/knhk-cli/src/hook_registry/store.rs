@@ -46,4 +46,11 @@ impl HookStore {
         // FUTURE: Implement actual saving to Oxigraph
         Ok(())
     }
+
+    /// Load a hook by name
+    pub fn load(&self, name: &str) -> Result<HookEntry, String> {
+        // Load hook from Oxigraph
+        // FUTURE: Implement actual loading from Oxigraph
+        Err(format!("Hook '{}' not found", name))
+    }
 }

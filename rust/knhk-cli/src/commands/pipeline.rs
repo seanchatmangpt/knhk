@@ -49,7 +49,7 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
         conns.split(',').map(|s| s.trim().to_string()).collect()
     } else {
         // Use all registered connectors
-        connector_registry.list()
+        connector_registry.list()?
     };
 
     if connector_ids.is_empty() {

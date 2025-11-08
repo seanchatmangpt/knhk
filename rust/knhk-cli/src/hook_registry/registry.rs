@@ -46,11 +46,11 @@ impl HookRegistryIntegration {
     pub fn register(&mut self, hook: crate::hook_registry::store::HookEntry) -> Result<(), String> {
         // Save to store
         self.store.save(&hook)?;
-        
+
         // Register with knhk-etl HookRegistry
         // Implementation depends on HookRegistry API
         // For now, just save to store
-        
+
         Ok(())
     }
 
@@ -71,4 +71,3 @@ impl Default for HookRegistryIntegration {
         Self::new().expect("Failed to create hook registry integration")
     }
 }
-
