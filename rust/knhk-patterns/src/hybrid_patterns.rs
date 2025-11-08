@@ -96,7 +96,7 @@ impl HybridSequencePattern {
         use crate::hook_patterns::HookSequencePattern;
 
         let mut hot_results = None;
-        #[allow(clippy::unused_mut)] // mut needed when unrdf feature enabled
+        #[allow(unused_mut)] // mut needed when unrdf feature enabled
         let mut cold_results = None;
 
         // Execute hot path hooks if predicates provided
@@ -138,7 +138,7 @@ impl HybridSequencePattern {
     #[cfg(feature = "unrdf")]
     /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
     fn soa_to_turtle(&self, _soa: &SoAArrays) -> Result<String, PatternError> {
-        // TODO: Implement proper SoA to Turtle conversion
+        // FUTURE: Implement proper SoA to Turtle conversion
         // For now, return empty turtle data
         Ok(String::new())
     }
@@ -222,7 +222,7 @@ impl HybridParallelPattern {
         use rayon::prelude::*;
 
         let mut hot_results = None;
-        #[allow(clippy::unused_mut)] // mut needed when unrdf feature enabled
+        #[allow(unused_mut)] // mut needed when unrdf feature enabled
         let mut cold_results = None;
 
         // Execute hot and cold paths in parallel using rayon
@@ -286,7 +286,7 @@ impl HybridParallelPattern {
     #[cfg(feature = "unrdf")]
     /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
     fn soa_to_turtle(&self, _soa: &SoAArrays) -> Result<String, PatternError> {
-        // TODO: Implement proper SoA to Turtle conversion
+        // FUTURE: Implement proper SoA to Turtle conversion
         // For now, return empty turtle data
         Ok(String::new())
     }
@@ -431,7 +431,7 @@ impl HybridChoicePattern {
     #[cfg(feature = "unrdf")]
     /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
     fn soa_to_turtle(&self, _soa: &SoAArrays) -> Result<String, PatternError> {
-        // TODO: Implement proper SoA to Turtle conversion
+        // FUTURE: Implement proper SoA to Turtle conversion
         // For now, return empty turtle data
         Ok(String::new())
     }

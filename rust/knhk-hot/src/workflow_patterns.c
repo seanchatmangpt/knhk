@@ -23,11 +23,15 @@ static PatternResult pattern_sync_dispatch(PatternContext*, void*, uint32_t);
 static PatternResult pattern_choice_dispatch(PatternContext*, void*, uint32_t);
 static PatternResult pattern_merge_dispatch(PatternContext*, void*, uint32_t);
 static PatternResult pattern_multi_dispatch(PatternContext*, void*, uint32_t);
+static PatternResult pattern_discriminator_dispatch(PatternContext*, void*, uint32_t);
 static PatternResult pattern_cycles_dispatch(PatternContext*, void*, uint32_t);
+static PatternResult pattern_implicit_dispatch(PatternContext*, void*, uint32_t);
 static PatternResult pattern_deferred_dispatch(PatternContext*, void*, uint32_t);
+static PatternResult pattern_timeout_dispatch(PatternContext*, void*, uint32_t);
+static PatternResult pattern_cancellation_dispatch(PatternContext*, void*, uint32_t);
 
-// Branchless dispatch table (16 entries, aligned to cache line)
-static const PatternFn PATTERN_DISPATCH_TABLE[16] __attribute__((aligned(64))) = {
+// Branchless dispatch table (32 entries, aligned to cache line)
+static const PatternFn PATTERN_DISPATCH_TABLE[32] __attribute__((aligned(64))) = {
     NULL,                        // 0: unused
     pattern_sequence_dispatch,   // 1: Sequence
     pattern_parallel_dispatch,   // 2: Parallel Split
@@ -37,13 +41,18 @@ static const PatternFn PATTERN_DISPATCH_TABLE[16] __attribute__((aligned(64))) =
     pattern_multi_dispatch,      // 6: Multi-Choice
     NULL,                        // 7: unused
     NULL,                        // 8: unused
-    NULL,                        // 9: unused
+    pattern_discriminator_dispatch, // 9: Discriminator
     pattern_cycles_dispatch,     // 10: Arbitrary Cycles
-    NULL,                        // 11: unused
+    pattern_implicit_dispatch,   // 11: Implicit Termination
     NULL,                        // 12: unused
     NULL,                        // 13: unused
     NULL,                        // 14: unused
     NULL,                        // 15: unused
+    pattern_deferred_dispatch,   // 16: Deferred Choice
+    NULL, NULL, NULL,            // 17-19: unused
+    pattern_timeout_dispatch,    // 20: Timeout
+    pattern_cancellation_dispatch, // 21: Cancellation
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, // 22-31: unused
 };
 
 // Pattern metadata (cache-aligned)
@@ -53,7 +62,7 @@ typedef struct {
     bool simd_capable;
 } PatternMetadata;
 
-static const PatternMetadata PATTERN_METADATA[17] __attribute__((aligned(64))) = {
+static const PatternMetadata PATTERN_METADATA[22] __attribute__((aligned(64))) = {
     {"Invalid", 0, false},
     {"Sequence", 1, false},
     {"Parallel Split", 2, true},
@@ -63,14 +72,19 @@ static const PatternMetadata PATTERN_METADATA[17] __attribute__((aligned(64))) =
     {"Multi-Choice", 3, true},
     {NULL, 0, false},
     {NULL, 0, false},
-    {NULL, 0, false},
+    {"Discriminator", 3, true},
     {"Arbitrary Cycles", 2, false},
-    {NULL, 0, false},
+    {"Implicit Termination", 2, false},
     {NULL, 0, false},
     {NULL, 0, false},
     {NULL, 0, false},
     {NULL, 0, false},
     {"Deferred Choice", 3, false},
+    {NULL, 0, false},
+    {NULL, 0, false},
+    {NULL, 0, false},
+    {"Timeout", 2, false},
+    {"Cancellation", 1, false},
 };
 
 // ============================================================================

@@ -23,8 +23,12 @@ typedef enum {
     PATTERN_EXCLUSIVE_CHOICE = 4,  // Pattern 4: XOR-split
     PATTERN_SIMPLE_MERGE = 5,      // Pattern 5: XOR-join
     PATTERN_MULTI_CHOICE = 6,      // Pattern 6: OR-split (SIMD-capable)
+    PATTERN_DISCRIMINATOR = 9,     // Pattern 9: First-wins (SIMD-capable)
     PATTERN_ARBITRARY_CYCLES = 10, // Pattern 10: Retry/loop
+    PATTERN_IMPLICIT_TERMINATION = 11, // Pattern 11: Workflow completion
     PATTERN_DEFERRED_CHOICE = 16,  // Pattern 16: Event-driven choice
+    PATTERN_TIMEOUT = 20,          // Pattern 20: Timeout (production)
+    PATTERN_CANCELLATION = 21,     // Pattern 21: Cancellation (production)
 } PatternType;
 
 // ============================================================================
@@ -154,6 +158,35 @@ PatternResult knhk_pattern_arbitrary_cycles(
 );
 
 // ============================================================================
+// Pattern 9: Discriminator (3 ticks, SIMD-capable)
+// Execute branches in parallel, return result from first branch to complete
+// ============================================================================
+
+PatternResult knhk_pattern_discriminator(
+    PatternContext* ctx,
+    BranchFn* branches,
+    uint32_t num_branches
+);
+
+// SIMD-optimized version (parallel branch launch)
+PatternResult knhk_pattern_discriminator_simd(
+    PatternContext* ctx,
+    BranchFn* branches,
+    uint32_t num_branches
+);
+
+// ============================================================================
+// Pattern 11: Implicit Termination (2 ticks)
+// Track active branches and terminate when all complete
+// ============================================================================
+
+PatternResult knhk_pattern_implicit_termination(
+    PatternContext* ctx,
+    BranchFn* branches,
+    uint32_t num_branches
+);
+
+// ============================================================================
 // Pattern 16: Deferred Choice (3 ticks)
 // Wait for first event/condition, then execute corresponding branch
 // ============================================================================
@@ -164,6 +197,37 @@ PatternResult knhk_pattern_deferred_choice(
     BranchFn* branches,
     uint32_t num_branches,
     uint64_t timeout_ticks
+);
+
+// ============================================================================
+// Pattern 20: Timeout (2 ticks)
+// Execute branch with timeout, optional fallback
+// ============================================================================
+
+typedef struct {
+    BranchFn branch;
+    uint64_t timeout_ms;
+    BranchFn fallback;  // Can be NULL
+} TimeoutConfig;
+
+PatternResult knhk_pattern_timeout(
+    PatternContext* ctx,
+    BranchFn branch,
+    uint64_t timeout_ms,
+    BranchFn fallback
+);
+
+// ============================================================================
+// Pattern 21: Cancellation (1 tick)
+// Execute branch with lightweight cancellation check
+// ============================================================================
+
+typedef bool (*CancelFn)(const PatternContext* ctx);
+
+PatternResult knhk_pattern_cancellation(
+    PatternContext* ctx,
+    BranchFn branch,
+    CancelFn should_cancel
 );
 
 // ============================================================================

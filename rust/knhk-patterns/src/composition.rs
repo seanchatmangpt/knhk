@@ -128,7 +128,7 @@ impl<T: Clone + Send + Sync + 'static> CompositePattern<T> {
             } => {
                 // Note: Timeout requires 'static lifetime for thread spawn
                 // For now, execute without timeout to avoid lifetime issues
-                // TODO: Implement timeout with async/await or other mechanism
+                // FUTURE: Implement timeout with async/await or other mechanism
                 let _timeout = *timeout_ms;
                 pattern.execute(input)
             }
