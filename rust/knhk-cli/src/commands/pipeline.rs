@@ -1,6 +1,7 @@
 // rust/knhk-cli/src/commands/pipeline.rs
 // Pipeline commands - ETL pipeline operations
 
+use crate::connector::ConnectorRegistry;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;

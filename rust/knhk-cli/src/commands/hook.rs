@@ -149,7 +149,6 @@ pub fn eval(hook_name: String) -> Result<String, String> {
             s_array[count] = count as u64; // Placeholder
             p_array[count] = hook.pred;
             o_array[count] = count as u64; // Placeholder
-            count += 1;
         }
 
         // Initialize arrays with hook values
