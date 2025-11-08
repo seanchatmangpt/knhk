@@ -50,7 +50,7 @@ knhk workflow patterns
 knhk workflow serve --port 8080
 ```
 
-See **[CLI Integration Guide](examples/CLI_USAGE.md)** for complete CLI documentation.
+See **[CLI Commands](../knhk-cli/docs/WORKFLOW_COMMANDS.md)** for complete CLI documentation.
 
 ## Usage
 

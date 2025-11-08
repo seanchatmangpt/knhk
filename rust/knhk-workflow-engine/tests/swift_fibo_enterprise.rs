@@ -22,6 +22,7 @@ use knhk_workflow_engine::patterns::{
 use knhk_workflow_engine::state::StateStore;
 use knhk_workflow_engine::WorkflowEngine;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tempfile::TempDir;
 
 // ============================================================================
@@ -1157,7 +1158,7 @@ async fn test_enterprise_concurrent_pattern_execution() {
 
     // Arrange
     let (engine, _fortune5) = create_enterprise_engine();
-    let registry = engine.pattern_registry().clone();
+    let engine = Arc::new(engine);
     let spec_id = WorkflowSpecId::new();
 
     // Execute patterns concurrently
@@ -1173,13 +1174,13 @@ async fn test_enterprise_concurrent_pattern_execution() {
             "BNPAFRPPXXX",
         );
 
-        let registry_clone = registry.clone();
+        let engine_clone = engine.clone();
         let handle = tokio::spawn(async move {
             let pattern_id = PatternId(2); // Parallel Split
-            let executor = registry_clone
-                .get(&pattern_id)
-                .expect("Pattern should be registered");
-            executor.execute(&context)
+            engine_clone
+                .execute_pattern(pattern_id, context)
+                .await
+                .expect("Pattern execution should succeed")
         });
         handles.push(handle);
     }
