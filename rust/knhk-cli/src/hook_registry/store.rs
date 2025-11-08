@@ -83,17 +83,18 @@ impl HookStore {
                         if let oxigraph::model::Term::Literal(lit) = term {
                             let value = lit.value();
                             match var.as_str() {
-                            "id" => id = Some(value.to_string()),
-                            "name" => name = Some(value.to_string()),
-                            "op" => op = Some(value.to_string()),
-                            "pred" => pred = value.parse::<u64>().ok(),
-                            "off" => off = value.parse::<u64>().ok(),
-                            "len" => len = value.parse::<u64>().ok(),
-                            "s" => s = value.parse::<u64>().ok(),
-                            "p" => p = value.parse::<u64>().ok(),
-                            "o" => o = value.parse::<u64>().ok(),
-                            "k" => k = value.parse::<u64>().ok(),
-                            _ => {}
+                                "id" => id = Some(value.to_string()),
+                                "name" => name = Some(value.to_string()),
+                                "op" => op = Some(value.to_string()),
+                                "pred" => pred = value.parse::<u64>().ok(),
+                                "off" => off = value.parse::<u64>().ok(),
+                                "len" => len = value.parse::<u64>().ok(),
+                                "s" => s = value.parse::<u64>().ok(),
+                                "p" => p = value.parse::<u64>().ok(),
+                                "o" => o = value.parse::<u64>().ok(),
+                                "k" => k = value.parse::<u64>().ok(),
+                                _ => {}
+                            }
                         }
                     }
                 }
