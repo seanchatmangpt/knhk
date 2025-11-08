@@ -156,7 +156,7 @@ impl IngestStage {
 
         // Try array format: [{"s": "...", "p": "...", "o": "..."}]
         if let Some(arr) = value.as_array() {
-            let arr_vec: Vec<simd_json::OwnedValue> = arr.iter().cloned().collect();
+            let arr_vec: Vec<simd_json::OwnedValue> = arr.to_vec();
             return Self::parse_json_triple_array(&simd_json::OwnedValue::Array(arr_vec.into()));
         }
 
@@ -247,7 +247,7 @@ impl IngestStage {
     /// Parse single triple from JSON value
     #[cfg(feature = "std")]
     fn parse_json_triple(value: &simd_json::OwnedValue) -> Result<RawTriple, PipelineError> {
-        use simd_json::prelude::{ValueAsObject, ValueAsScalar};
+        use simd_json::prelude::ValueAsObject;
         let obj = value.as_object().ok_or_else(|| {
             PipelineError::IngestError("Expected object in JSON triple".to_string())
         })?;
