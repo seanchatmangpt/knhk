@@ -76,9 +76,7 @@ where
                     }
                     WorkflowError::CaseNotFound(s) => WorkflowError::CaseNotFound(s.clone()),
                     WorkflowError::CaseExists(s) => WorkflowError::CaseExists(s.clone()),
-                    WorkflowError::InvalidSpecification(s) => {
-                        WorkflowError::InvalidSpecification(s.clone())
-                    }
+                    WorkflowError::Configuration(s) => WorkflowError::Configuration(s.clone()),
                     WorkflowError::InvalidStateTransition { from, to } => {
                         WorkflowError::InvalidStateTransition {
                             from: from.clone(),
