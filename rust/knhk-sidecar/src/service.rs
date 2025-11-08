@@ -547,7 +547,7 @@ impl KgcSidecar for KgcSidecarService {
                 // SELECT query: Return triples (warm path)
                 1 => {
                     // Parse query data if provided (support JSON and Turtle)
-                    let triples = parse_query_data(&req.data, &req.json_data, &req.data_format)?;
+                    let triples = parse_query_data(&req.data, &req.data_format)?;
 
                     // Return triple subjects as results
                     Ok(triples.iter().map(|t| t.subject.clone()).collect())
@@ -555,7 +555,7 @@ impl KgcSidecar for KgcSidecarService {
                 // CONSTRUCT query: Build new graph
                 2 => {
                     // Parse query data if provided (support JSON and Turtle)
-                    let triples = parse_query_data(&req.data, &req.json_data, &req.data_format)?;
+                    let triples = parse_query_data(&req.data, &req.data_format)?;
 
                     // Return constructed triples as N-Triples format
                     Ok(triples
