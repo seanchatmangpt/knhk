@@ -87,6 +87,60 @@ impl ResourceAllocator {
         }
         Ok(())
     }
+
+    /// Pre-bind resources for a workflow specification (hot-path allocation)
+    ///
+    /// This method performs declarative resource allocation before case activation,
+    /// enabling hot-path allocation for enterprise YAWL workflows. It analyzes
+    /// the workflow specification and pre-allocates resources based on roles,
+    /// capabilities, and organizational ontology.
+    pub async fn allocate_prebound(
+        &self,
+        spec: &crate::parser::WorkflowSpec,
+    ) -> WorkflowResult<HashMap<String, ResourceId>> {
+        let mut prebound = HashMap::new();
+        let resources = self.ctx.resources.read().await;
+
+        // Analyze each task in the workflow specification
+        for (task_id, task) in &spec.tasks {
+            // Build allocation request from task requirements
+            let request = AllocationRequest {
+                task_id: task_id.clone(),
+                spec_id: spec.id,
+                required_roles: task.required_roles.clone(),
+                required_capabilities: task.required_capabilities.clone(),
+                policy: task
+                    .allocation_policy
+                    .unwrap_or(AllocationPolicy::RoundRobin),
+                priority: task.priority.unwrap_or(100),
+            };
+
+            // Find matching resources based on roles and capabilities
+            let mut matching_resources: Vec<&Resource> = resources
+                .values()
+                .filter(|resource| {
+                    resource.available
+                        && (request.required_roles.is_empty()
+                            || resource
+                                .roles
+                                .iter()
+                                .any(|role| request.required_roles.contains(&role.id)))
+                        && (request.required_capabilities.is_empty()
+                            || resource
+                                .capabilities
+                                .iter()
+                                .any(|cap| request.required_capabilities.contains(&cap.id)))
+                })
+                .collect();
+
+            // Select resource based on policy (simplified - full policy logic in allocate())
+            if let Some(resource) = matching_resources.first() {
+                prebound.insert(task_id.clone(), resource.id);
+            }
+        }
+
+        Ok(prebound)
+    }
 }
 
 impl Default for ResourceAllocator {

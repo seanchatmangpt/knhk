@@ -112,7 +112,7 @@ pub async fn rate_limit_middleware(request: Request, next: Next) -> Result<Respo
 
     // Check rate limit for this client
     let limiter = get_rate_limiter();
-    if let Err(_) = limiter.check_key(&client_id) {
+    if limiter.check_key(&client_id).is_err() {
         warn!(
             client_id = %client_id,
             "Rate limit exceeded for client"

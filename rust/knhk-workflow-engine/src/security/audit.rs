@@ -116,11 +116,11 @@ impl AuditLogger {
                 });
 
                 // Record event in lockchain (async call from sync context)
-                // LockchainIntegration contains non-Send types, so we can't spawn a task
+                // LockchainIntegration contains non-Send types (git_repository), so we can't spawn a task
                 // Instead, we'll log a warning that lockchain recording requires async context
                 // In production, this would be handled by a background task that owns the lockchain
                 tracing::warn!(
-                    "Audit event {} not recorded to lockchain: requires async context and lockchain is not Send-safe",
+                    "Audit event {} not recorded to lockchain: lockchain is not Send-safe for task spawning",
                     event.id
                 );
             } else {

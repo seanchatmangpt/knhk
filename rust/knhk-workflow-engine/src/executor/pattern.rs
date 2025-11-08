@@ -92,4 +92,41 @@ impl WorkflowEngine {
 
         Ok(result)
     }
+
+    /// Execute a pattern recursively (for decomposition nets and nested subnets)
+    ///
+    /// This method supports YAWL decomposition nets by recursively executing
+    /// patterns in the `next_patterns` field of the result, maintaining
+    /// proper scoped execution context for nested subnets.
+    pub async fn execute_pattern_recursive(
+        &self,
+        pattern_id: PatternId,
+        context: PatternExecutionContext,
+    ) -> WorkflowResult<PatternExecutionResult> {
+        // Execute the current pattern
+        let result = self.execute_pattern(pattern_id, context.clone()).await?;
+
+        // If the result contains next patterns, execute them recursively
+        if !result.next_patterns.is_empty() {
+            // Create a new context for nested execution with updated scope
+            let mut nested_context = context.clone();
+            nested_context.scope_id = Some(format!(
+                "{}_{}",
+                context.scope_id.as_deref().unwrap_or("root"),
+                pattern_id.0
+            ));
+
+            // Execute each next pattern recursively
+            for next_pattern_id in &result.next_patterns {
+                let next_result = self
+                    .execute_pattern_recursive(PatternId(*next_pattern_id), nested_context.clone())
+                    .await?;
+
+                // Merge results (for now, just continue execution)
+                // In production, would merge variables, updates, etc.
+            }
+        }
+
+        Ok(result)
+    }
 }

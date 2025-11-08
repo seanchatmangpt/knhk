@@ -231,15 +231,6 @@ impl AdmissionGate {
         if pattern_byte > 43 {
             return Ok(false);
         }
-
-        // Verify pattern byte matches payload structure
-        // Pattern byte should correspond to a valid workflow pattern (0-43)
-        // Payload should have structure matching the pattern type
-        
-        // Basic validation: pattern byte is in valid range
-        if pattern_byte > 43 {
-            return Ok(false);
-        }
         
         // Check payload has required structure for pattern
         // For now, verify payload is a valid JSON object

@@ -86,7 +86,6 @@ impl WorkflowEngine {
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })?;
         let spec_clone = spec.value().clone();
-        let case_clone = case_ref.value().clone();
         drop(case_ref);
 
         // Execute workflow with resource allocation and worklet support
