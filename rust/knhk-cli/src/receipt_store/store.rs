@@ -68,7 +68,7 @@ impl ReceiptStore {
     pub fn save(&self, receipt: &ReceiptEntry) -> Result<(), String> {
         // Save receipt to Oxigraph using StateStore
         // Convert ReceiptEntry to RDF triples and store in Oxigraph
-        use oxigraph::model::{GraphName, NamedNode, Quad};
+        use oxigraph::model::{GraphName, NamedNode, Quad, Term};
 
         let store = self.store.store();
 
@@ -86,7 +86,7 @@ impl ReceiptStore {
         let type_quad = Quad::new(
             receipt_subject.clone(),
             rdf_type.clone(),
-            receipt_class.clone(),
+            Term::from(receipt_class),
             GraphName::DefaultGraph,
         );
         store
@@ -104,7 +104,7 @@ impl ReceiptStore {
         let ticks_quad = Quad::new(
             receipt_subject.clone(),
             has_ticks.clone(),
-            ticks_literal.clone(),
+            Term::from(ticks_literal),
             GraphName::DefaultGraph,
         );
         store
@@ -121,7 +121,7 @@ impl ReceiptStore {
         let lanes_quad = Quad::new(
             receipt_subject.clone(),
             has_lanes.clone(),
-            lanes_literal.clone(),
+            Term::from(lanes_literal),
             GraphName::DefaultGraph,
         );
         store
@@ -138,7 +138,7 @@ impl ReceiptStore {
         let span_id_quad = Quad::new(
             receipt_subject.clone(),
             has_span_id.clone(),
-            span_id_literal.clone(),
+            Term::from(span_id_literal),
             GraphName::DefaultGraph,
         );
         store
@@ -155,7 +155,7 @@ impl ReceiptStore {
         let a_hash_quad = Quad::new(
             receipt_subject.clone(),
             has_a_hash.clone(),
-            a_hash_literal.clone(),
+            Term::from(a_hash_literal),
             GraphName::DefaultGraph,
         );
         store
@@ -172,7 +172,7 @@ impl ReceiptStore {
         let timestamp_ms_quad = Quad::new(
             receipt_subject.clone(),
             has_timestamp_ms.clone(),
-            timestamp_ms_literal.clone(),
+            Term::from(timestamp_ms_literal),
             GraphName::DefaultGraph,
         );
         store

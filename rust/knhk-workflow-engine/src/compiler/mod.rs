@@ -305,11 +305,28 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
             0
         };
 
-        // Extract flags (discriminator, cancelling, etc.)
-        // For now, flags are set to 0 as they are not yet extracted from task properties
-        // This is acceptable as flags are optional and can be added later
-        // FUTURE: Extract flags from task properties (discriminator, cancelling, etc.)
-        let flags = 0u32;
+        // Extract flags from task properties (discriminator, cancelling, etc.)
+        let mut flags = 0u32;
+
+        // Check for discriminator flag (bit 0)
+        // Discriminator tasks can choose between multiple paths
+        if task.split_type == crate::parser::SplitType::Or {
+            flags |= 1 << 0; // Set discriminator bit
+        }
+
+        // Check for cancelling flag (bit 1)
+        // Cancelling tasks cancel other tasks when they complete
+        // This is typically set for exception handling tasks
+        if task.task_type == crate::parser::TaskType::Composite {
+            // Composite tasks may have cancelling behavior
+            // Check if task has exception worklet (indicates cancelling behavior)
+            if task.exception_worklet.is_some() {
+                flags |= 1 << 1; // Set cancelling bit
+            }
+        }
+
+        // Additional flags can be extracted from task metadata if available
+        // For now, we extract the basic flags from task structure
 
         let node_ir = NodeIR {
             pattern: pattern_id,

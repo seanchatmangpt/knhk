@@ -34,10 +34,95 @@ impl HookStore {
 
     /// Load all hooks
     pub fn load_all(&self) -> Result<Vec<HookEntry>, String> {
-        // Load hooks from Oxigraph
-        // For now, return empty vector
-        // FUTURE: Implement actual loading from Oxigraph
-        Ok(Vec::new())
+        // Load hooks from Oxigraph using SPARQL query
+        let store = self.store.store();
+        
+        let query = r#"
+            PREFIX knhk: <urn:knhk:>
+            SELECT ?hook_id ?name ?op ?pred ?off ?len ?s ?p ?o ?k
+            WHERE {
+                ?hook_id a knhk:Hook ;
+                    knhk:hasName ?name ;
+                    knhk:hasOp ?op ;
+                    knhk:hasPred ?pred .
+                OPTIONAL { ?hook_id knhk:hasOff ?off . }
+                OPTIONAL { ?hook_id knhk:hasLen ?len . }
+                OPTIONAL { ?hook_id knhk:hasS ?s . }
+                OPTIONAL { ?hook_id knhk:hasP ?p . }
+                OPTIONAL { ?hook_id knhk:hasO ?o . }
+                OPTIONAL { ?hook_id knhk:hasK ?k . }
+            }
+        "#;
+        
+        #[allow(deprecated)]
+        let results = store.query(query)
+            .map_err(|e| format!("SPARQL query failed: {}", e))?;
+        
+        let mut hooks = Vec::new();
+        
+        if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
+            for solution_result in solutions {
+                let solution = solution_result
+                    .map_err(|e| format!("Failed to get solution: {}", e))?;
+                
+                let hook_id_str = solution.get("hook_id")
+                    .map(|term| term.to_string())
+                    .ok_or_else(|| "Missing hook_id".to_string())?;
+                
+                // Extract hook ID from IRI (urn:knhk:hook:ID -> ID)
+                let id = hook_id_str.strip_prefix("urn:knhk:hook:")
+                    .ok_or_else(|| format!("Invalid hook_id format: {}", hook_id_str))?;
+                
+                let name = solution.get("name")
+                    .and_then(|term| term.to_string().strip_prefix('"').and_then(|s| s.strip_suffix('"')))
+                    .map(|s| s.to_string())
+                    .ok_or_else(|| format!("Missing or invalid name for hook {}", id))?;
+                
+                let op = solution.get("op")
+                    .and_then(|term| term.to_string().strip_prefix('"').and_then(|s| s.strip_suffix('"')))
+                    .map(|s| s.to_string())
+                    .ok_or_else(|| format!("Missing or invalid op for hook {}", id))?;
+                
+                let pred = solution.get("pred")
+                    .and_then(|term| term.to_string().parse::<u64>().ok())
+                    .ok_or_else(|| format!("Missing or invalid pred for hook {}", id))?;
+                
+                let off = solution.get("off")
+                    .and_then(|term| term.to_string().parse::<u64>().ok())
+                    .unwrap_or(0);
+                
+                let len = solution.get("len")
+                    .and_then(|term| term.to_string().parse::<u64>().ok())
+                    .unwrap_or(0);
+                
+                let s = solution.get("s")
+                    .and_then(|term| term.to_string().parse::<u64>().ok());
+                
+                let p = solution.get("p")
+                    .and_then(|term| term.to_string().parse::<u64>().ok());
+                
+                let o = solution.get("o")
+                    .and_then(|term| term.to_string().parse::<u64>().ok());
+                
+                let k = solution.get("k")
+                    .and_then(|term| term.to_string().parse::<u64>().ok());
+                
+                hooks.push(HookEntry {
+                    id: id.to_string(),
+                    name,
+                    op,
+                    pred,
+                    off,
+                    len,
+                    s,
+                    p,
+                    o,
+                    k,
+                });
+            }
+        }
+        
+        Ok(hooks)
     }
 
     /// Save hook

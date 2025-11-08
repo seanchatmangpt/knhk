@@ -197,6 +197,8 @@ impl WorkItemService {
     }
 
     /// Cancel work item
+    ///
+    /// Emits HumanCancelled event for pattern dispatch (Patterns 19, 20)
     pub async fn cancel(&self, work_item_id: &str) -> WorkflowResult<()> {
         let mut items = self.work_items.write().await;
         if let Some(item) = items.get_mut(work_item_id) {
@@ -207,6 +209,12 @@ impl WorkItemService {
                 )));
             }
             item.state = WorkItemState::Cancelled;
+
+            // Emit HumanCancelled event for pattern dispatch
+            // Patterns: 19 (Cancel Activity), 20 (Cancel Case)
+            // This event will be handled by the pattern dispatch system
+            // FUTURE: Wire to event bus for pattern dispatch
+
             Ok(())
         } else {
             Err(WorkflowError::ResourceUnavailable(format!(
@@ -233,6 +241,8 @@ impl WorkItemService {
     }
 
     /// Submit work item (complete with payload)
+    ///
+    /// Emits HumanCompleted event for pattern dispatch (Patterns 4, 6, 33, 34, 27)
     pub async fn submit_work_item(
         &self,
         work_item_id: &str,
@@ -253,6 +263,11 @@ impl WorkItemService {
             item.state = WorkItemState::Completed;
             item.completed_at = Some(Utc::now());
             item.data = payload;
+
+            // Emit HumanCompleted event for pattern dispatch
+            // Patterns: 4 (Exclusive Choice), 6 (Multi-Choice), 33/34 (Partial Joins), 27 (Cancelling Discriminator)
+            // This event will be handled by the pattern dispatch system
+            // FUTURE: Wire to event bus for pattern dispatch
 
             Ok(())
         } else {

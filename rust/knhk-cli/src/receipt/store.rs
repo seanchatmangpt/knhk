@@ -32,8 +32,73 @@ impl ReceiptStore {
 
     /// Get receipt by ID
     pub fn get(&self, id: &str) -> Result<ReceiptEntry, String> {
-        // Load receipt from Oxigraph
-        // FUTURE: Implement actual loading from Oxigraph
+        // Load receipt from Oxigraph using SPARQL query
+        use oxigraph::model::{GraphName, NamedNode};
+
+        let store = self.store.store();
+
+        // Create subject IRI for receipt
+        let receipt_subject = NamedNode::new(format!("urn:knhk:receipt:{}", id))
+            .map_err(|e| format!("Failed to create receipt subject IRI: {:?}", e))?;
+
+        // Query for receipt properties
+        let query = format!(
+            r#"
+            PREFIX knhk: <urn:knhk:>
+            SELECT ?ticks ?lanes ?span_id ?a_hash ?timestamp_ms
+            WHERE {{
+                <{}> knhk:hasTicks ?ticks ;
+                      knhk:hasLanes ?lanes ;
+                      knhk:hasSpanId ?span_id ;
+                      knhk:hasAHash ?a_hash ;
+                      knhk:hasTimestampMs ?timestamp_ms .
+            }}
+            "#,
+            receipt_subject.as_str()
+        );
+
+        #[allow(deprecated)]
+        let results = store
+            .query(&query)
+            .map_err(|e| format!("SPARQL query failed: {}", e))?;
+
+        // Parse results and construct ReceiptEntry
+        if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
+            for solution_result in solutions {
+                let solution = solution_result
+                    .map_err(|e| format!("Failed to get solution: {}", e))?;
+                
+                let ticks = solution.get("ticks")
+                    .and_then(|term| term.to_string().parse::<u32>().ok())
+                    .ok_or_else(|| format!("Missing or invalid ticks for receipt {}", id))?;
+                
+                let lanes = solution.get("lanes")
+                    .and_then(|term| term.to_string().parse::<u32>().ok())
+                    .ok_or_else(|| format!("Missing or invalid lanes for receipt {}", id))?;
+                
+                let span_id = solution.get("span_id")
+                    .and_then(|term| term.to_string().parse::<u64>().ok())
+                    .ok_or_else(|| format!("Missing or invalid span_id for receipt {}", id))?;
+                
+                let a_hash = solution.get("a_hash")
+                    .and_then(|term| term.to_string().parse::<u64>().ok())
+                    .ok_or_else(|| format!("Missing or invalid a_hash for receipt {}", id))?;
+                
+                let timestamp_ms = solution.get("timestamp_ms")
+                    .and_then(|term| term.to_string().parse::<u64>().ok())
+                    .ok_or_else(|| format!("Missing or invalid timestamp_ms for receipt {}", id))?;
+                
+                return Ok(ReceiptEntry {
+                    id: id.to_string(),
+                    ticks,
+                    lanes,
+                    span_id,
+                    a_hash,
+                    timestamp_ms,
+                });
+            }
+        }
+        
         Err(format!("Receipt '{}' not found", id))
     }
 

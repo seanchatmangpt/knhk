@@ -49,8 +49,31 @@ impl PolicyEngine {
 
     /// Add a policy rule
     pub fn add_rule(&mut self, rule: PolicyRule) -> WorkflowResult<()> {
-        // FUTURE: Load RDF policy into store when oxigraph API is available
-        // For now, policies are evaluated via rule.enabled flag
+        // Load RDF policy into store
+        use oxigraph::io::RdfFormat;
+
+        // Validate RDF policy format
+        let store = Store::new()
+            .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+
+        store
+            .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
+            .map_err(|e| {
+                WorkflowError::Validation(format!("Invalid RDF policy format: {:?}", e))
+            })?;
+
+        // Load policy into main store
+        let mut main_store = self
+            .rdf_store
+            .write()
+            .map_err(|e| WorkflowError::Internal(format!("Failed to lock store: {:?}", e)))?;
+
+        main_store
+            .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
+            .map_err(|e| {
+                WorkflowError::Internal(format!("Failed to load policy into store: {:?}", e))
+            })?;
+
         self.rules.push(rule);
         Ok(())
     }

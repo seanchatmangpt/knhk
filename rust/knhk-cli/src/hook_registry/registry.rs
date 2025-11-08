@@ -73,13 +73,69 @@ impl HookRegistryIntegration {
 
     /// Create guard function from hook entry
     fn create_guard_fn(
-        _hook: &crate::hook_registry::store::HookEntry,
+        hook: &crate::hook_registry::store::HookEntry,
     ) -> Result<knhk_etl::hook_registry::GuardFn, String> {
-        // For now, create a simple guard that always returns true
-        // Future: Implement proper guard logic based on hook parameters
-        Ok(|_triple: &knhk_etl::ingest::RawTriple| -> bool {
-            // Default guard: accept all triples
-            // This should be replaced with actual validation logic
+        // Create guard function based on hook parameters
+        // Guard checks if triple matches hook's S, P, O, K constraints
+        let s_constraint = hook.s;
+        let p_constraint = hook.p;
+        let o_constraint = hook.o;
+        let k_constraint = hook.k;
+
+        Ok(move |triple: &knhk_etl::ingest::RawTriple| -> bool {
+            // Check predicate constraint (required)
+            if let Some(p) = p_constraint {
+                // Convert predicate IRI to hash for comparison
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+                let mut hasher = DefaultHasher::new();
+                triple.predicate.hash(&mut hasher);
+                let pred_hash = hasher.finish();
+                if pred_hash != p {
+                    return false;
+                }
+            }
+
+            // Check subject constraint (optional)
+            if let Some(s) = s_constraint {
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+                let mut hasher = DefaultHasher::new();
+                triple.subject.hash(&mut hasher);
+                let subj_hash = hasher.finish();
+                if subj_hash != s {
+                    return false;
+                }
+            }
+
+            // Check object constraint (optional)
+            if let Some(o) = o_constraint {
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+                let mut hasher = DefaultHasher::new();
+                triple.object.hash(&mut hasher);
+                let obj_hash = hasher.finish();
+                if obj_hash != o {
+                    return false;
+                }
+            }
+
+            // Check graph constraint (optional)
+            if let Some(k) = k_constraint {
+                if let Some(ref graph) = triple.graph {
+                    use std::collections::hash_map::DefaultHasher;
+                    use std::hash::{Hash, Hasher};
+                    let mut hasher = DefaultHasher::new();
+                    graph.hash(&mut hasher);
+                    let graph_hash = hasher.finish();
+                    if graph_hash != k {
+                        return false;
+                    }
+                } else {
+                    return false; // Hook requires graph but triple has none
+                }
+            }
+
             true
         })
     }
@@ -95,23 +151,20 @@ impl HookRegistryIntegration {
         self.store.save(&hook)?;
 
         // Map HookEntry to register_hook parameters
-        let _kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
-        let _guard = Self::create_guard_fn(&hook)?;
+        let kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
+        let guard = Self::create_guard_fn(&hook)?;
 
         // Register hook with knhk-etl HookRegistry
-        // Note: HookRegistry doesn't support mutable operations through Arc
-        // This is a limitation that needs to be addressed in v1.1
-        // For now, we'll return an error indicating this limitation
-        Err(
-            "Hook registration through Arc not supported. Use a mutable HookRegistry instead."
-                .to_string(),
-        )
-        /*
-        Arc::get_mut(&mut self.registry)
-            .ok_or_else(|| "Cannot get mutable reference to registry".to_string())?
+        // Get mutable reference to HookRegistry
+        let registry = Arc::get_mut(&mut self.registry).ok_or_else(|| {
+            "Cannot get mutable reference to registry - multiple references exist".to_string()
+        })?;
+
+        registry
             .register_hook(hook.pred, kernel_type, guard, vec![])
             .map_err(|e| format!("Failed to register hook with HookRegistry: {:?}", e))?;
-        */
+
+        Ok(())
     }
 
     /// Get a hook by name

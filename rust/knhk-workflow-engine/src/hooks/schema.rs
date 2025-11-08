@@ -171,9 +171,35 @@ impl SchemaRegistry {
                 WorkflowError::Internal(format!("Failed to load workflow spec: {:?}", e))
             })?;
 
-        // FUTURE: Execute SHACL validation queries
-        // For now, perform basic structural validation
+        // Execute SHACL validation queries using unrdf if available
         let mut errors = Vec::new();
+
+        #[cfg(feature = "unrdf")]
+        {
+            use knhk_unrdf::validate_shacl;
+
+            // Convert workflow spec RDF to Turtle
+            let workflow_turtle = self.workflow_spec_to_rdf(spec)?;
+
+            // Load SHACL shapes from schema
+            let shapes_turtle = schema.rdf_content.clone();
+
+            // Execute SHACL validation
+            match validate_shacl(&workflow_turtle, &shapes_turtle) {
+                Ok(result) => {
+                    if !result.conforms {
+                        for violation in result.violations {
+                            errors.push(format!("SHACL violation: {:?}", violation));
+                        }
+                    }
+                }
+                Err(e) => {
+                    errors.push(format!("SHACL validation error: {:?}", e));
+                }
+            }
+        }
+
+        // Perform basic structural validation as fallback
 
         // Validate workflow has at least one task
         if spec.tasks.is_empty() {

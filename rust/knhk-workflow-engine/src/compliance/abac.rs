@@ -260,7 +260,34 @@ impl AbacPolicyEngine {
     async fn get_environment_attributes(&self) -> HashMap<String, String> {
         let mut attrs = HashMap::new();
         attrs.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
-        // FUTURE: Add IP address, region, etc.
+
+        // Add IP address if available
+        #[cfg(feature = "network")]
+        {
+            use std::net::TcpListener;
+            if let Ok(listener) = TcpListener::bind("0.0.0.0:0") {
+                if let Ok(addr) = listener.local_addr() {
+                    attrs.insert("ip".to_string(), addr.ip().to_string());
+                }
+            }
+        }
+
+        // Add region from environment variable or default
+        let region = std::env::var("AWS_REGION")
+            .or_else(|_| std::env::var("REGION"))
+            .unwrap_or_else(|_| "unknown".to_string());
+        attrs.insert("region".to_string(), region);
+
+        // Add hostname if available
+        if let Ok(hostname) = std::env::var("HOSTNAME") {
+            attrs.insert("hostname".to_string(), hostname);
+        } else if let Ok(hostname) = hostname::get() {
+            attrs.insert(
+                "hostname".to_string(),
+                hostname.to_string_lossy().to_string(),
+            );
+        }
+
         attrs
     }
 

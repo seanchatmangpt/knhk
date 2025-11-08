@@ -8,6 +8,7 @@ pub mod aot;
 mod hot_path;
 mod metrics;
 pub mod simd;
+pub mod tick_budget;
 
 pub use analyzer::{
     CaseMetrics, HotPathAnalysis, TickViolation, ViolationSeverity, WorkflowProfiler,

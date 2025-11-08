@@ -47,8 +47,60 @@ impl HardwareAccelerator {
 
     /// Detect GPU availability
     fn detect_gpu() -> bool {
-        // FUTURE: Implement GPU detection
-        // For now, return false
+        // Check for GPU availability using system commands
+        #[cfg(target_os = "linux")]
+        {
+            // Check for NVIDIA GPU
+            if std::process::Command::new("nvidia-smi")
+                .output()
+                .map(|output| output.status.success())
+                .unwrap_or(false)
+            {
+                return true;
+            }
+
+            // Check for AMD GPU
+            if std::process::Command::new("rocm-smi")
+                .output()
+                .map(|output| output.status.success())
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // Check for Metal GPU (Apple Silicon or AMD GPU)
+            if std::process::Command::new("system_profiler")
+                .args(&["SPDisplaysDataType"])
+                .output()
+                .map(|output| {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    stdout.contains("Metal") || stdout.contains("AMD") || stdout.contains("NVIDIA")
+                })
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // Check for GPU via WMI
+            if std::process::Command::new("wmic")
+                .args(&["path", "win32_VideoController", "get", "name"])
+                .output()
+                .map(|output| {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    stdout.contains("NVIDIA") || stdout.contains("AMD") || stdout.contains("Intel")
+                })
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+
         false
     }
 

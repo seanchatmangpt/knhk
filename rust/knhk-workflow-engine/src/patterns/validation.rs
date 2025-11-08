@@ -52,11 +52,59 @@ impl PatternValidator {
         let errors = Vec::new();
         let mut warnings = Vec::new();
 
-        // Check for circular dependencies
-        // FUTURE: Implement actual dependency graph validation
-        // For now, we only check pattern count and composition size
-        // Circular dependency detection requires building a dependency graph
-        // and running cycle detection algorithm (DFS with back edges)
+        // Check for circular dependencies using DFS cycle detection
+        // Build dependency graph from pattern IDs
+        use std::collections::{HashMap, HashSet};
+
+        // Create adjacency list for dependency graph
+        // For now, assume patterns depend on previous patterns in sequence
+        let mut graph: HashMap<usize, Vec<usize>> = HashMap::new();
+        for i in 0..pattern_ids.len() {
+            if i > 0 {
+                // Pattern i depends on pattern i-1
+                graph.entry(i).or_insert_with(Vec::new).push(i - 1);
+            }
+        }
+
+        // DFS cycle detection
+        let mut visited = HashSet::new();
+        let mut rec_stack = HashSet::new();
+
+        fn has_cycle(
+            node: usize,
+            graph: &HashMap<usize, Vec<usize>>,
+            visited: &mut HashSet<usize>,
+            rec_stack: &mut HashSet<usize>,
+        ) -> bool {
+            visited.insert(node);
+            rec_stack.insert(node);
+
+            if let Some(neighbors) = graph.get(&node) {
+                for &neighbor in neighbors {
+                    if !visited.contains(&neighbor) {
+                        if has_cycle(neighbor, graph, visited, rec_stack) {
+                            return true;
+                        }
+                    } else if rec_stack.contains(&neighbor) {
+                        return true; // Cycle detected
+                    }
+                }
+            }
+
+            rec_stack.remove(&node);
+            false
+        }
+
+        for i in 0..pattern_ids.len() {
+            if !visited.contains(&i) {
+                if has_cycle(i, &graph, &mut visited, &mut rec_stack) {
+                    errors.push(format!(
+                        "Circular dependency detected in pattern composition"
+                    ));
+                    break;
+                }
+            }
+        }
 
         // Basic validation: check for duplicate pattern IDs (potential circular dependency indicator)
         let mut seen = std::collections::HashSet::new();

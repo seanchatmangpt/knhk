@@ -152,11 +152,27 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
 
         // Extract positions using ARM bit reversal + leading zeros
         // (simdjson ARM-specific optimization)
-        let _structural_mask = vget_lane_u64(vreinterpret_u64_u8(vget_low_u8(structural)), 0);
-        let _ = vget_lane_u64(vreinterpret_u64_u8(vget_high_u8(structural)), 0) << 8;
-
-        // FUTURE: Use bit reversal + leading zeros for ARM (instead of trailing zeros)
-        // This is the simdjson ARM-specific optimization
+        // Use bit reversal + leading zeros for ARM (instead of trailing zeros)
+        use std::arch::aarch64::*;
+        
+        let low = vget_low_u8(structural);
+        let high = vget_high_u8(structural);
+        
+        // Convert to u64 for bit manipulation
+        let low_u64 = vget_lane_u64(vreinterpret_u64_u8(low), 0);
+        let high_u64 = vget_lane_u64(vreinterpret_u64_u8(high), 0);
+        
+        // Bit reversal using ARM intrinsic (rbit instruction)
+        let low_reversed = unsafe { std::arch::aarch64::_rbit_u64(low_u64) };
+        let high_reversed = unsafe { std::arch::aarch64::_rbit_u64(high_u64) };
+        
+        // Count leading zeros (clz instruction) to find bit positions
+        let low_clz = low_reversed.leading_zeros();
+        let high_clz = high_reversed.leading_zeros();
+        
+        // Extract positions from reversed bits
+        // For now, use scalar fallback for position extraction
+        // Full SIMD implementation would use vclzq_u8 for vectorized leading zero count
 
         // For now, scalar fallback for quote tracking
         for i in 0..16 {

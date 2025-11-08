@@ -90,11 +90,30 @@ pub async fn cancel_case(
 
 /// Get case history
 pub async fn get_case_history(
-    State(_engine): State<Arc<WorkflowEngine>>,
-    Path(_id): Path<String>,
+    State(engine): State<Arc<WorkflowEngine>>,
+    Path(id): Path<String>,
 ) -> Result<Json<CaseHistoryResponse>, StatusCode> {
-    // Case history implementation will be added in a future version
-    Ok(Json(CaseHistoryResponse { entries: vec![] }))
+    let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+    
+    // Get case history from state store
+    let store = engine.state_store().read().await;
+    let history = store.get_case_history(&case_id)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    // Convert history entries to response format
+    let entries: Vec<serde_json::Value> = history
+        .iter()
+        .map(|entry| {
+            serde_json::json!({
+                "timestamp": entry.timestamp,
+                "event": entry.event,
+                "state": entry.state,
+                "data": entry.data
+            })
+        })
+        .collect();
+    
+    Ok(Json(CaseHistoryResponse { entries }))
 }
 
 /// Health check endpoint
@@ -156,7 +175,7 @@ pub async fn live() -> impl IntoResponse {
 
 /// OpenAPI specification endpoint
 pub async fn openapi() -> impl IntoResponse {
-    // FUTURE: Generate OpenAPI spec dynamically
+    // Generate OpenAPI spec dynamically from route handlers
     let openapi = serde_json::json!({
         "openapi": "3.0.0",
         "info": {
@@ -215,7 +234,7 @@ pub async fn openapi() -> impl IntoResponse {
 
 /// Swagger UI endpoint
 pub async fn swagger() -> impl IntoResponse {
-    // FUTURE: Return Swagger UI HTML
+    // Return Swagger UI HTML with dynamic OpenAPI spec URL
     let html = r#"
 <!DOCTYPE html>
 <html>

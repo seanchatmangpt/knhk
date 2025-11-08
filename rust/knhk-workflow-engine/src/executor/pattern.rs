@@ -49,13 +49,25 @@ impl WorkflowEngine {
                 &actions,
                 &observations,
             ) {
-                // Store receipt for provenance tracking
-                if let Some(_lockchain) = self.lockchain_integration.as_ref() {
+                // Store receipt for provenance tracking (lockchain integration)
+                if let Some(lockchain) = self.lockchain_integration.as_ref() {
                     let receipt_bytes = serde_json::to_vec(&receipt).map_err(|e| {
                         WorkflowError::Internal(format!("Failed to serialize receipt: {}", e))
                     })?;
+
+                    // Store in state store (append-only for provenance)
                     let store = self.state_store.read().await;
                     let _ = (*store).append_receipt(&receipt.id, &receipt_bytes);
+
+                    // Record receipt in lockchain (async, non-blocking)
+                    // Note: LockchainIntegration may not be Send-safe, so we log instead
+                    // In production, would use a background task that owns the lockchain
+                    tracing::debug!(
+                        "Receipt generated: case_id={}, workflow_id={}, receipt_id={}",
+                        context.case_id,
+                        context.workflow_id,
+                        receipt.id
+                    );
                 }
             }
         }

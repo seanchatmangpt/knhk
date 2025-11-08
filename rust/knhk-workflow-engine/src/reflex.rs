@@ -151,9 +151,16 @@ impl ReflexBridge {
         }
 
         // Check if segment contains only hot path operations
-        // For now, assume segment is promotable if it's small enough
-        // FUTURE: Add actual operation type checking
-        segment.pattern_ids.len() <= 8
+        // Hot path operations are in H_hot set: ASK, COUNT, COMPARE, VALIDATE
+        // Pattern IDs 1-9 are basic YAWL patterns (Sequence, Choice, Parallel)
+        // These are safe for hot path if they meet tick budget constraints
+        let is_hot_path_operation = segment.pattern_ids.iter().all(|&pid| {
+            // Pattern IDs 1-9 are basic patterns safe for hot path
+            // Pattern IDs 10+ may require warm/cold path
+            pid <= 9 && segment.tick_budget <= 8
+        });
+
+        is_hot_path_operation && segment.pattern_ids.len() <= 8
     }
 
     /// Check if segment is bound to hot path
