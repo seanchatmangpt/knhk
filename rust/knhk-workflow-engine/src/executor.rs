@@ -80,11 +80,10 @@ impl WorkflowEngine {
 
         // Create services
         let timebase = Arc::new(SysClock);
-        let state_store_arc = Arc::new(state_store);
         let timer_service = Arc::new(TimerService::new(
             timebase,
             timer_tx.clone(),
-            Some(state_store_arc.clone()),
+            None, // State persistence handled separately
         ));
         let work_item_service = Arc::new(WorkItemService::new());
         let admission_gate = Arc::new(AdmissionGate::new());
@@ -92,7 +91,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store_arc)),
+            state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
