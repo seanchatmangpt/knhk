@@ -21,16 +21,17 @@ static ENGINE: std::sync::OnceLock<WorkflowEngine> = std::sync::OnceLock::new();
 
 fn get_engine() -> CnvResult<&'static WorkflowEngine> {
     ENGINE.get_or_init(|| WorkflowEngine::new(StateStore::new("workflow_state").unwrap()));
-    ENGINE
-        .get()
-        .ok_or_else(|| "Failed to initialize workflow engine".to_string())
+    ENGINE.get().ok_or_else(|| {
+        clap_noun_verb::NounVerbError::new("Failed to initialize workflow engine".to_string())
+    })
 }
 
 /// Create a new workflow case
 #[verb]
 pub fn create(spec_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
-    let _spec_id_uuid = WorkflowSpecId::parse_str(&spec_id)?;
+    let _spec_id_uuid = WorkflowSpecId::parse_str(&spec_id)
+        .map_err(|e| clap_noun_verb::NounVerbError::new(e.to_string()))?;
     let case_id = CaseId::new();
     // FUTURE: Add async runtime when needed
     println!("Created case: {}", case_id);
@@ -41,7 +42,8 @@ pub fn create(spec_id: String) -> CnvResult<()> {
 #[verb]
 pub fn start(case_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
-    let _case_id_uuid = CaseId::parse_str(&case_id)?;
+    let _case_id_uuid = CaseId::parse_str(&case_id)
+        .map_err(|e| clap_noun_verb::NounVerbError::new(e.to_string()))?;
     // FUTURE: Add async runtime when needed
     println!("Started case: {}", case_id);
     Ok(())
@@ -51,7 +53,8 @@ pub fn start(case_id: String) -> CnvResult<()> {
 #[verb]
 pub fn execute(case_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
-    let _case_id_uuid = CaseId::parse_str(&case_id)?;
+    let _case_id_uuid = CaseId::parse_str(&case_id)
+        .map_err(|e| clap_noun_verb::NounVerbError::new(e.to_string()))?;
     // FUTURE: Add async runtime when needed
     println!("Executed case: {}", case_id);
     Ok(())
@@ -61,7 +64,8 @@ pub fn execute(case_id: String) -> CnvResult<()> {
 #[verb]
 pub fn cancel(case_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
-    let _case_id_uuid = CaseId::parse_str(&case_id)?;
+    let _case_id_uuid = CaseId::parse_str(&case_id)
+        .map_err(|e| clap_noun_verb::NounVerbError::new(e.to_string()))?;
     // FUTURE: Add async runtime when needed
     println!("Cancelled case: {}", case_id);
     Ok(())
@@ -70,7 +74,7 @@ pub fn cancel(case_id: String) -> CnvResult<()> {
 /// List all workflow cases
 #[verb]
 pub fn list() -> CnvResult<()> {
-    let _engine = get_engine().map_err(|e| e.to_string())?;
+    let _engine = get_engine()?;
     // FUTURE: Add async runtime when needed
     println!("No cases found (placeholder)");
     Ok(())
@@ -79,7 +83,7 @@ pub fn list() -> CnvResult<()> {
 /// Execute a workflow pattern
 #[verb]
 pub fn pattern(pattern_id: u32, context: String) -> CnvResult<()> {
-    let _engine = get_engine().map_err(|e| e.to_string())?;
+    let _engine = get_engine()?;
     let _pattern_id = PatternId(pattern_id);
     // FUTURE: Add PatternExecutionContext deserialization when available
     // let _context: PatternExecutionContext =

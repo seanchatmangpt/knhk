@@ -9,8 +9,8 @@
 //! With OTLP endpoint:
 //!   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 cargo run --example workflow_weaver_livecheck
 
-use knhk_otel::SpanStatus;
-use knhk_workflow_engine::integration::OtelIntegration;
+use knhk_otel::{SpanContext, SpanStatus};
+use knhk_workflow_engine::integration::otel::OtelIntegration;
 use knhk_workflow_engine::{
     CaseId, PatternId, StateStore, WorkflowEngine, WorkflowParser, WorkflowSpecId,
 };
@@ -85,7 +85,7 @@ ex:task-process yawl:flowsTo ex:end .
 
     // Start workflow span
     println!("\n4️⃣ Starting workflow execution span...");
-    let workflow_span = otel.start_workflow_span(&spec_id).await?;
+    let workflow_span: Option<SpanContext> = otel.start_workflow_span(&spec_id).await?;
     if let Some(ref span_ctx) = workflow_span {
         otel.add_attribute(
             span_ctx.clone(),
@@ -135,7 +135,7 @@ ex:task-process yawl:flowsTo ex:end .
 
     // Start case span
     println!("\n7️⃣ Starting case execution span...");
-    let case_span = otel.start_case_span(&case_id).await?;
+    let case_span: Option<SpanContext> = otel.start_case_span(&case_id).await?;
     if let Some(ref span_ctx) = case_span {
         otel.add_attribute(
             span_ctx.clone(),
@@ -161,7 +161,8 @@ ex:task-process yawl:flowsTo ex:end .
     // Execute pattern spans (simulating pattern execution)
     println!("\n8️⃣ Executing workflow patterns...");
     for pattern_id in [1u32, 5u32] {
-        let pattern_span = otel.start_pattern_span(&PatternId(pattern_id)).await?;
+        let pattern_span: Option<SpanContext> =
+            otel.start_pattern_span(&PatternId(pattern_id)).await?;
         if let Some(ref span_ctx) = pattern_span {
             otel.add_attribute(
                 span_ctx.clone(),
@@ -217,6 +218,20 @@ ex:task-process yawl:flowsTo ex:end .
     println!("\n9️⃣ Exporting telemetry to OTLP endpoint...");
     otel.export().await?;
     println!("   ✅ Telemetry exported to {}", otlp_endpoint);
+
+    println!("\n✅ Workflow execution complete!");
+    println!("\n📊 Telemetry Summary:");
+    println!("   - Workflow spans: 1");
+    println!("   - Case spans: 1");
+    println!("   - Pattern spans: 2");
+    println!("   - Total spans: 4");
+    println!("\n🔍 Next steps:");
+    println!(
+        "   1. Ensure OTLP collector is running on {}",
+        otlp_endpoint
+    );
+    println!("   2. Run: weaver registry live-check --registry registry/");
+    println!("   3. Verify spans match schema definitions");
 
     Ok(())
 }

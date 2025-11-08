@@ -65,6 +65,7 @@ pub mod constants;
 pub mod enterprise;
 pub mod error;
 pub mod executor;
+pub mod innovation;
 pub mod integration;
 pub mod observability;
 pub mod parser;
@@ -93,6 +94,11 @@ pub use enterprise::{
 };
 pub use error::{WorkflowError, WorkflowResult};
 pub use executor::WorkflowEngine;
+pub use innovation::{
+    DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,
+    HardwareAcceleration, HardwareAccelerator, Property, VerificationResult, Violation,
+    ZeroCopyBytes, ZeroCopyStr, ZeroCopyTriple, ZeroCopyTripleBatch,
+};
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
 pub use patterns::{PatternId, PatternRegistry};
 pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
