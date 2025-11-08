@@ -82,7 +82,7 @@ impl ReconcileContext {
         let _ = self.hook_registry.register_hook(
             predicate,
             kernel_type,
-            guards::always_valid,
+            Box::new(guards::always_valid),
             Vec::new(),
         );
     }

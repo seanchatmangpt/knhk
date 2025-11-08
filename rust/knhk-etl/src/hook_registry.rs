@@ -15,7 +15,7 @@ use knhk_hot::KernelType;
 pub type GuardFn = Box<dyn Fn(&RawTriple) -> bool + Send + Sync>;
 
 /// Hook metadata: compiled hook information
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HookMetadata {
     /// Unique hook ID
     pub id: u64,
@@ -33,7 +33,6 @@ pub struct HookMetadata {
 
 /// Hook registry for predicate-to-kernel mapping
 /// Implements μ ⊣ H: hooks at ingress point
-#[derive(Clone)]
 pub struct HookRegistry {
     /// Predicate ID → Kernel type mapping
     kernel_map: BTreeMap<u64, KernelType>,
@@ -46,6 +45,17 @@ pub struct HookRegistry {
 
     /// Default kernel type for unregistered predicates
     default_kernel: KernelType,
+}
+
+impl Clone for HookRegistry {
+    fn clone(&self) -> Self {
+        Self {
+            kernel_map: self.kernel_map.clone(),
+            guard_map: BTreeMap::new(), // Guard functions cannot be cloned
+            hooks: self.hooks.clone(),
+            default_kernel: self.default_kernel,
+        }
+    }
 }
 
 impl HookRegistry {
@@ -376,7 +386,7 @@ pub mod guards {
 
     /// Compose two guards with AND logic
     pub fn and_guard(guard1: GuardFn, guard2: GuardFn) -> GuardFn {
-        move |triple: &RawTriple| guard1(triple) && guard2(triple)
+        Box::new(move |triple: &RawTriple| guard1(triple) && guard2(triple))
     }
 
     /// Compose two guards with OR logic
