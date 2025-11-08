@@ -7,7 +7,11 @@
 #![deny(clippy::expect_used)]
 
 mod commands;
+mod connector;
 mod error;
+mod hook_registry;
+mod lockchain;
+mod receipt_store;
 mod state;
 mod tracing;
 
@@ -20,10 +24,9 @@ mod context;
 mod cover;
 mod coverage;
 mod epoch;
-mod hook;
+mod fortune5;
 mod metrics;
 mod pipeline;
-mod receipt;
 mod reflex;
 mod route;
 
