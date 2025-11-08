@@ -18,7 +18,7 @@ pub struct SidecarIntegration {
 
 impl SidecarIntegration {
     /// Create new sidecar integration (stub implementation)
-    pub fn new() -> Self {
+    pub fn new(_enabled: bool) -> Self {
         Self { _enabled: false }
     }
 

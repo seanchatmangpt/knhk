@@ -15,7 +15,8 @@ prost-types = "0.12"
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
-knhk-workflow-engine = { path = "../knhk-workflow-engine", version = "1.0.0", optional = true }
+# knhk-workflow-engine dependency removed to avoid circular dependency
+# Sidecar should not depend on workflow engine - they are separate services
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", optional = true }
 simd-json = { version = "0.14", features = ["known-key"] }
@@ -37,8 +38,7 @@ hex = "0.4"
 default = ["otel"]
 otel = ["dep:serde_json", "tracing-subscriber"]
 serde_json = ["dep:serde_json"]
-fortune5 = ["aws-sdk-kms", "aws-config", "reqwest", "workflow"]
-workflow = ["dep:knhk-workflow-engine"]
+fortune5 = ["aws-sdk-kms", "aws-config", "reqwest"]
 
 [build-dependencies]
 tonic-build = "0.10"

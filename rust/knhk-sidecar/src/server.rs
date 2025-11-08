@@ -179,14 +179,25 @@ impl SidecarServer {
             cross_region_sync_enabled: false,
             receipt_sync_endpoints: Vec::new(),
             quorum_threshold: 1,
-            slo_r1_p99_max_ns: 2,
-            slo_w1_p99_max_ms: 1,
-            slo_c1_p99_max_ms: 500,
+            slo_r1_p99_max_ns: Some(2),
+            slo_w1_p99_max_ms: Some(1),
+            slo_c1_p99_max_ms: Some(500),
+            slo_window_size_seconds: Some(60),
+            slo_enabled: false,
+            promotion_enabled: false,
+            promotion_feature_flags: None,
+            promotion_auto_rollback_enabled: None,
+            promotion_slo_threshold: None,
+            promotion_rollback_window_seconds: None,
             slo_admission_strategy: "strict".to_string(),
             promotion_environment: None,
             promotion_traffic_percent: None,
             auto_rollback_enabled: false,
             slo_threshold: 0.99,
+            #[cfg(feature = "workflow")]
+            workflow_enabled: false,
+            #[cfg(feature = "workflow")]
+            workflow_db_path: None,
         };
         let service = KgcSidecarService::new_with_weaver(
             sidecar_config,

@@ -7,7 +7,6 @@ pub mod fortune5;
 mod lockchain;
 mod otel;
 mod registry;
-#[cfg(feature = "sidecar")]
 mod sidecar;
 
 // Re-export integration types
@@ -18,5 +17,4 @@ pub use fortune5::*;
 pub use lockchain::LockchainIntegration;
 pub use otel::OtelIntegration;
 pub use registry::{IntegrationMetadata, IntegrationRegistry, IntegrationStatus};
-#[cfg(feature = "sidecar")]
 pub use sidecar::SidecarIntegration;

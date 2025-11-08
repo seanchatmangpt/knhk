@@ -110,14 +110,25 @@ impl Default for SidecarConfig {
             cross_region_sync_enabled: false,
             receipt_sync_endpoints: Vec::new(),
             quorum_threshold: 1,
-            slo_r1_p99_max_ns: 2,   // Fortune 5 requirement
-            slo_w1_p99_max_ms: 1,   // Fortune 5 requirement
-            slo_c1_p99_max_ms: 500, // Fortune 5 requirement
+            slo_r1_p99_max_ns: Some(2),   // Fortune 5 requirement
+            slo_w1_p99_max_ms: Some(1),   // Fortune 5 requirement
+            slo_c1_p99_max_ms: Some(500), // Fortune 5 requirement
+            slo_window_size_seconds: Some(60),
             slo_admission_strategy: "strict".to_string(),
+            slo_enabled: false,
+            promotion_enabled: false,
             promotion_environment: None,
+            promotion_feature_flags: None,
+            promotion_auto_rollback_enabled: None,
+            promotion_slo_threshold: None,
+            promotion_rollback_window_seconds: None,
             promotion_traffic_percent: None,
             auto_rollback_enabled: false,
             slo_threshold: 0.95,
+            #[cfg(feature = "workflow")]
+            workflow_enabled: false,
+            #[cfg(feature = "workflow")]
+            workflow_db_path: None,
         }
     }
 }
@@ -266,19 +277,39 @@ impl SidecarConfig {
         // Fortune 5: SLO configuration
         if let Ok(ns) = std::env::var("KGC_SIDECAR_SLO_R1_P99_MAX_NS") {
             if let Ok(parsed) = ns.parse::<u64>() {
-                config.slo_r1_p99_max_ns = parsed;
+                config.slo_r1_p99_max_ns = Some(parsed);
             }
         }
 
         if let Ok(ms) = std::env::var("KGC_SIDECAR_SLO_W1_P99_MAX_MS") {
             if let Ok(parsed) = ms.parse::<u64>() {
-                config.slo_w1_p99_max_ms = parsed;
+                config.slo_w1_p99_max_ms = Some(parsed);
             }
         }
 
         if let Ok(ms) = std::env::var("KGC_SIDECAR_SLO_C1_P99_MAX_MS") {
             if let Ok(parsed) = ms.parse::<u64>() {
-                config.slo_c1_p99_max_ms = parsed;
+                config.slo_c1_p99_max_ms = Some(parsed);
+            }
+        }
+
+        if let Ok(enabled) = std::env::var("KGC_SIDECAR_SLO_ENABLED") {
+            config.slo_enabled = enabled == "true" || enabled == "1";
+        }
+
+        if let Ok(enabled) = std::env::var("KGC_SIDECAR_PROMOTION_ENABLED") {
+            config.promotion_enabled = enabled == "true" || enabled == "1";
+        }
+
+        // Workflow engine configuration
+        #[cfg(feature = "workflow")]
+        {
+            if let Ok(enabled) = std::env::var("KGC_SIDECAR_WORKFLOW_ENABLED") {
+                config.workflow_enabled = enabled == "true" || enabled == "1";
+            }
+
+            if let Ok(path) = std::env::var("KGC_SIDECAR_WORKFLOW_DB_PATH") {
+                config.workflow_db_path = Some(path);
             }
         }
 
