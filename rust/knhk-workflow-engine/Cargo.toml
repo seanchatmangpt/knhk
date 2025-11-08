@@ -53,6 +53,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 hashbrown = { version = "0.15", default-features = false }
 rayon = "1.8"
+fastrand = "2.0"
 
 # Tracing & observability
 tracing = "0.1"

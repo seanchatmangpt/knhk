@@ -80,14 +80,18 @@ pub fn create_discriminator_pattern() -> (PatternId, Box<dyn PatternExecutor>) {
 /// Pattern 10: Arbitrary Cycles
 pub fn create_arbitrary_cycles_pattern() -> (PatternId, Box<dyn PatternExecutor>) {
     let max_iterations = 100;
-    let pattern = ArbitraryCyclesPattern::new(max_iterations)
-        .map(|p| Arc::new(p) as Arc<dyn knhk_patterns::Pattern<Value>>)
-        .unwrap_or_else(|_| {
-            Arc::new(
-                ArbitraryCyclesPattern::new(100)
-                    .expect("ArbitraryCyclesPattern with valid cycle count should never fail"),
-            )
-        });
+    let pattern = ArbitraryCyclesPattern::new(
+        Arc::new(|v: Value| Ok(v.clone())),
+        Arc::new(|_| false),
+        max_iterations,
+    )
+    .map(|p| Arc::new(p) as Arc<dyn knhk_patterns::Pattern<Value>>)
+    .unwrap_or_else(|_| {
+        Arc::new(
+            ArbitraryCyclesPattern::new(Arc::new(|v: Value| Ok(v)), Arc::new(|_| false), 100)
+                .expect("ArbitraryCyclesPattern with valid cycle count should never fail"),
+        )
+    });
 
     let adapter = PatternAdapter::new(pattern, "pattern:10:arbitrary-cycles".to_string());
     ("pattern:10:arbitrary-cycles".to_string(), Box::new(adapter))
@@ -95,8 +99,18 @@ pub fn create_arbitrary_cycles_pattern() -> (PatternId, Box<dyn PatternExecutor>
 
 /// Pattern 11: Implicit Termination
 pub fn create_implicit_termination_pattern() -> (PatternId, Box<dyn PatternExecutor>) {
-    let pattern =
-        Arc::new(ImplicitTerminationPattern::new()) as Arc<dyn knhk_patterns::Pattern<Value>>;
+    let branches: Vec<
+        Arc<dyn Fn(Value) -> Result<Value, knhk_patterns::PatternError> + Send + Sync>,
+    > = vec![Arc::new(|v: Value| Ok(v.clone()))];
+
+    let pattern = ImplicitTerminationPattern::new(branches)
+        .map(|p| Arc::new(p) as Arc<dyn knhk_patterns::Pattern<Value>>)
+        .unwrap_or_else(|_| {
+            Arc::new(
+                ImplicitTerminationPattern::new(vec![Arc::new(|v: Value| Ok(v))])
+                    .expect("ArbitraryCyclesPattern with valid cycle count should never fail"),
+            )
+        });
 
     let adapter = PatternAdapter::new(pattern, "pattern:11:implicit-termination".to_string());
     (

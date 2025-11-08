@@ -11,6 +11,28 @@ pub mod trigger;
 
 use std::collections::HashMap;
 
+use crate::error::{WorkflowError, WorkflowResult};
+
+/// Pattern identifier (1-43)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct PatternId(pub u32);
+
+impl PatternId {
+    /// Create pattern ID (must be 1-43)
+    pub fn new(id: u32) -> WorkflowResult<Self> {
+        if id >= 1 && id <= 43 {
+            Ok(Self(id))
+        } else {
+            Err(WorkflowError::PatternNotFound(id))
+        }
+    }
+}
+
+impl std::fmt::Display for PatternId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_'>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 /// Pattern identifier (String format: "pattern:1:sequence", etc.)
 
 /// Pattern metadata
@@ -59,7 +81,6 @@ pub trait PatternExecutor: Send + Sync {
 }
 
 /// Pattern registry
-#[derive(Debug, Clone)]
 pub struct PatternRegistry {
     /// Registered patterns
     patterns: HashMap<PatternId, Box<dyn PatternExecutor>>,
@@ -83,6 +104,11 @@ impl PatternRegistry {
         self.patterns.get(pattern_id).map(|e| e.as_ref())
     }
 
+    /// Get pattern executor
+    pub fn get(&self, pattern_id: &PatternId) -> Option<&dyn PatternExecutor> {
+        self.patterns.get(pattern_id).map(|e| e.as_ref())
+    }
+
     /// Execute a pattern
     pub fn execute(
         &self,
@@ -94,7 +120,7 @@ impl PatternRegistry {
 
     /// List all registered patterns
     pub fn list(&self) -> Vec<PatternId> {
-        self.patterns.keys().copied().collect()
+        self.patterns.keys().cloned().collect()
     }
 
     /// List all registered pattern IDs (alias for list)

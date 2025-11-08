@@ -55,7 +55,11 @@ impl PatternExecutor for PatternAdapter {
             Err(_e) => PatternExecutionResult {
                 success: false,
                 next_state: Some(format!("{}:failed", self.pattern_id)),
-                variables: HashMap::new(),
+                variables: {
+                    let mut vars = HashMap::new();
+                    vars.insert("error".to_string(), e.to_string());
+                    vars
+                },
             },
         }
     }

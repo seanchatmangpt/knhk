@@ -24,10 +24,13 @@ pub struct WorkflowEngine {
 }
 
 impl WorkflowEngine {
-    /// Create a new workflow engine
+    /// Create a new workflow engine with all 43 patterns registered
     pub fn new(state_store: StateStore) -> Self {
+        let mut registry = PatternRegistry::new();
+        crate::patterns::register_all_patterns(&mut registry);
+
         Self {
-            pattern_registry: Arc::new(PatternRegistry::new()),
+            pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
@@ -144,11 +147,11 @@ impl WorkflowEngine {
     /// Execute a pattern
     pub async fn execute_pattern(
         &self,
-        pattern_id: &PatternId,
+        pattern_id: PatternId,
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
         self.pattern_registry
-            .execute(pattern_id, &context)
+            .execute(&pattern_id, &context)
             .ok_or_else(|| {
                 WorkflowError::InvalidSpecification(format!("Pattern {} not found", pattern_id))
             })
