@@ -187,7 +187,7 @@ impl IngestStage {
     /// Parse JSON-LD array format
     #[cfg(feature = "std")]
     fn parse_jsonld_array(value: &simd_json::OwnedValue) -> Result<Vec<RawTriple>, PipelineError> {
-        use simd_json::prelude::{TypedScalarValue, ValueAsArray, ValueAsObject, ValueAsScalar};
+        use simd_json::prelude::{TypedScalarValue, ValueAsArray, ValueAsScalar};
         let arr = value.as_array().ok_or_else(|| {
             PipelineError::IngestError("Expected array in JSON-LD @graph".to_string())
         })?;
@@ -277,7 +277,11 @@ impl IngestStage {
                 // Support both string and number/boolean for object
                 if let Some(s) = v.as_str() {
                     Some(s.to_string())
-                } else if let Some(n) = v.as_number() {
+                } else if let Some(n) = v.as_u64() {
+                    Some(n.to_string())
+                } else if let Some(n) = v.as_i64() {
+                    Some(n.to_string())
+                } else if let Some(n) = v.as_f64() {
                     Some(n.to_string())
                 } else if let Some(b) = v.as_bool() {
                     Some(b.to_string())
