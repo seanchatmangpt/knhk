@@ -7,8 +7,8 @@ use crate::error::WorkflowResult;
 use crate::integration::{
     check::IntegrationHealthChecker, connectors::ConnectorIntegration,
     fortune5::Fortune5Integration, lockchain::LockchainIntegration, otel::OtelIntegration,
-    registry::IntegrationRegistry,
 };
+use crate::parser::WorkflowSpecId;
 use std::sync::Arc;
 
 /// Best practices example: Using all integrations together
