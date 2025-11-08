@@ -131,7 +131,7 @@ impl<T: Clone + Send + Sync + 'static> CompositePattern<T> {
                 // For now, execute without timeout to avoid lifetime issues
                 // TODO: Implement timeout with async/await or other mechanism
                 let _timeout = *timeout_ms;
-                pattern.execute(input)?
+                pattern.execute(input)
             }
 
             CompositePattern::Atomic(pattern) => pattern.execute(input),
@@ -238,31 +238,23 @@ impl<T: Clone + Send + Sync + 'static> Default for PatternBuilder<T> {
 pub fn parallel_validation_with_retry<T: Clone + Send + Sync + 'static>(
     validators: Vec<BranchFn<T>>,
     max_retries: u32,
-) -> CompositePattern<T> {
-    CompositePattern::Retry {
-        pattern: Box::new(
-            ParallelSplitPattern::new(validators)
-                .ok()
-                .map(|p| Box::new(p) as Box<dyn Pattern<T>>)
-                .unwrap(),
-        ),
+) -> Result<CompositePattern<T>, PatternError> {
+    let pattern = ParallelSplitPattern::new(validators)?;
+    Ok(CompositePattern::Retry {
+        pattern: Box::new(pattern) as Box<dyn Pattern<T>>,
         should_continue: Arc::new(|_| true),
         max_attempts: max_retries,
-    }
+    })
 }
 
 /// Conditional routing with timeout
 pub fn conditional_routing_with_timeout<T: Clone + Send + Sync + 'static>(
     choices: Vec<(ConditionFn<T>, BranchFn<T>)>,
     timeout_ms: u64,
-) -> CompositePattern<T> {
-    CompositePattern::Timeout {
-        pattern: Box::new(
-            ExclusiveChoicePattern::new(choices)
-                .ok()
-                .map(|p| Box::new(p) as Box<dyn Pattern<T>>)
-                .unwrap(),
-        ),
+) -> Result<CompositePattern<T>, PatternError> {
+    let pattern = ExclusiveChoicePattern::new(choices)?;
+    Ok(CompositePattern::Timeout {
+        pattern: Box::new(pattern) as Box<dyn Pattern<T>>,
         timeout_ms,
-    }
+    })
 }

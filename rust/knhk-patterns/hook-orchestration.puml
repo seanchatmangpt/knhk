@@ -1,0 +1,63 @@
+@startuml hook-orchestration-flow
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam activityStyle rectangle
+
+title Hook Orchestration Execution Flow
+
+start
+
+:Create Hook Execution Context;
+note right
+  **Context Contains:**
+  - HookRegistry
+  - PredicateRuns
+  - SoAArrays
+  - Tick Budget (≤8)
+end note
+
+:Configure Hook Pattern;
+
+if (Pattern Type?) then (Sequence)
+  :Execute hooks sequentially;
+  :For each predicate in order;
+  :Execute hook via ReflexStage;
+  :Collect receipt;
+  :Return aggregated receipts;
+elseif (Parallel) then
+  :Fork to parallel execution;
+  :Execute all hooks concurrently (Rayon);
+  :Collect receipts from all hooks;
+  :Aggregate receipts (⊕);
+  :Return aggregated receipts;
+elseif (Choice) then
+  :Evaluate conditions in order;
+  if (Condition matches?) then (yes)
+    :Execute matching hook;
+    :Collect receipt;
+    :Return receipt;
+  else (no)
+    :Error: No condition matched;
+    stop
+  endif
+elseif (Retry) then
+  repeat
+    :Execute hook;
+    :Check receipt;
+    :Check retry condition;
+  repeat while (Should retry? AND < max attempts)
+  :Return final receipt;
+endif
+
+:Validate Tick Budget;
+if (All hooks ≤8 ticks?) then (yes)
+  :Return HookExecutionResult;
+else (no)
+  :Error: Tick budget exceeded;
+  stop
+endif
+
+stop
+
+@enduml
+

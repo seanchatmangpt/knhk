@@ -1,7 +1,6 @@
 // rust/knhk-patterns/src/patterns.rs
 // High-level Rust API for workflow patterns
 
-use crate::ffi::PatternType;
 use rayon::prelude::*;
 use std::sync::Arc;
 
@@ -9,6 +8,7 @@ use std::sync::Arc;
 // Core Types
 // ============================================================================
 
+// Re-export PatternType from ffi
 pub use crate::ffi::PatternType;
 
 #[derive(Debug)]
@@ -130,15 +130,22 @@ impl<T: Clone + Send + Sync> Pattern<T> for ParallelSplitPattern<T> {
 
 pub struct SynchronizationPattern<T> {
     use_simd: bool,
+    _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T: Clone + Send + Sync> SynchronizationPattern<T> {
     pub fn new() -> Self {
-        Self { use_simd: false }
+        Self {
+            use_simd: false,
+            _phantom: std::marker::PhantomData,
+        }
     }
 
     pub fn with_simd() -> Self {
-        Self { use_simd: true }
+        Self {
+            use_simd: true,
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 

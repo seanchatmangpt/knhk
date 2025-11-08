@@ -1,0 +1,80 @@
+@startuml hook-integration-architecture
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+title Hook Integration Architecture
+
+package "knhk-patterns" {
+    component [Hook Patterns] as hook_patterns
+    component [HookSequencePattern] as seq_pattern
+    component [HookParallelPattern] as par_pattern
+    component [HookChoicePattern] as choice_pattern
+    component [HookRetryPattern] as retry_pattern
+}
+
+package "knhk-etl" {
+    component [HookOrchestrator] as orchestrator
+    component [HookRegistry] as registry
+    component [ReflexStage] as reflex
+    component [HookExecutionContext] as context
+}
+
+package "Hook Execution" {
+    component [C Hot Path] as hot_path
+    component [Receipt Aggregation] as receipts
+}
+
+' Hook pattern relationships
+hook_patterns --> seq_pattern : contains
+hook_patterns --> par_pattern : contains
+hook_patterns --> choice_pattern : contains
+hook_patterns --> retry_pattern : contains
+
+' Orchestration relationships
+seq_pattern --> orchestrator : uses
+par_pattern --> orchestrator : uses
+choice_pattern --> orchestrator : uses
+retry_pattern --> orchestrator : uses
+
+orchestrator --> registry : wraps
+orchestrator --> context : manages
+orchestrator --> reflex : executes via
+
+' Execution relationships
+reflex --> hot_path : calls
+reflex --> receipts : aggregates
+context --> registry : contains
+context --> reflex : provides data
+
+note right of hook_patterns
+  **Hook Pattern Types:**
+  - Sequential execution
+  - Parallel execution (SIMD)
+  - Conditional routing
+  - Retry logic
+end note
+
+note right of orchestrator
+  **Hook Orchestrator:**
+  - Wraps HookRegistry
+  - Manages execution context
+  - Aggregates receipts
+end note
+
+note right of reflex
+  **Reflex Stage:**
+  - Executes hooks (≤8 ticks)
+  - Calls C hot path API
+  - Generates receipts
+end note
+
+note right of hot_path
+  **C Hot Path:**
+  - SIMD-optimized
+  - ≤8 tick execution
+  - Kernel operations
+end note
+
+@enduml
+

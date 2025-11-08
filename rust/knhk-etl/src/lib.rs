@@ -49,6 +49,7 @@ pub mod failure_actions;
 pub mod fiber; // Cooperative fibers for deterministic execution
 pub mod hash; // Provenance hashing for LAW: hash(A) = hash(μ(O))
 pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
+pub mod hook_orchestration; // Pattern-based hook orchestration
 pub mod ingest;
 pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod load;
@@ -79,6 +80,11 @@ pub use reflex_map::{ReflexMap, ReflexMapResult};
 
 // Hook registry exports
 pub use hook_registry::{GuardFn, HookMetadata, HookRegistry, HookRegistryError};
+
+// Hook orchestration exports
+pub use hook_orchestration::{
+    HookExecutionContext, HookExecutionPattern, HookExecutionResult, HookOrchestrator,
+};
 
 // Beat scheduler exports
 pub use beat_scheduler::{BeatScheduler, BeatSchedulerError};

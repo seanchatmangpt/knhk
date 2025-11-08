@@ -1,0 +1,116 @@
+@startuml hook-pattern-types
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classStyle rectangle
+
+title Hook Pattern Types
+
+class HookExecutionContext {
+  + hook_registry: HookRegistry
+  + predicate_runs: Vec<PredRun>
+  + soa_arrays: SoAArrays
+  + tick_budget: u32
+  --
+  + new(registry, runs, soa, budget) : Self
+}
+
+class HookSequencePattern {
+  - predicates: Vec<u64>
+  --
+  + new(predicates) : PatternResult<Self>
+  + execute_hooks(context: &HookExecutionContext) : PatternResult<HookExecutionResult>
+}
+
+class HookParallelPattern {
+  - predicates: Vec<u64>
+  - use_simd: bool
+  --
+  + new(predicates) : PatternResult<Self>
+  + with_simd(predicates, use_simd) : PatternResult<Self>
+  + execute_hooks(context: &HookExecutionContext) : PatternResult<HookExecutionResult>
+}
+
+class HookChoicePattern {
+  - choices: Vec<(HookCondition, u64)>
+  --
+  + new(choices) : PatternResult<Self>
+  + execute_hooks(context: &HookExecutionContext) : PatternResult<HookExecutionResult>
+}
+
+class HookRetryPattern {
+  - predicate: u64
+  - should_retry: HookCondition
+  - max_attempts: u32
+  --
+  + new(predicate, condition, max) : PatternResult<Self>
+  + execute_hooks(context: &HookExecutionContext) : PatternResult<HookExecutionResult>
+}
+
+class HookExecutionResult {
+  + receipts: Vec<Receipt>
+  + max_ticks: u32
+  + actions: Vec<Action>
+  + aggregated_receipt: Receipt
+  --
+  + merge(receipts: Vec<Receipt>) : Self
+}
+
+class HookCondition {
+  + evaluate(receipt: &Receipt) : bool
+}
+
+HookExecutionContext <|-- HookSequencePattern : uses
+HookExecutionContext <|-- HookParallelPattern : uses
+HookExecutionContext <|-- HookChoicePattern : uses
+HookExecutionContext <|-- HookRetryPattern : uses
+
+HookSequencePattern --> HookExecutionResult : produces
+HookParallelPattern --> HookExecutionResult : produces
+HookChoicePattern --> HookExecutionResult : produces
+HookRetryPattern --> HookExecutionResult : produces
+
+HookChoicePattern --> HookCondition : uses
+HookRetryPattern --> HookCondition : uses
+
+HookExecutionResult --> Receipt : contains
+
+note right of HookSequencePattern
+  **Sequential Execution:**
+  - Execute hooks in order
+  - One receipt per hook
+  - Aggregated result
+end note
+
+note right of HookParallelPattern
+  **Parallel Execution:**
+  - Concurrent hook execution
+  - Rayon-based parallelism
+  - SIMD-optimized
+  - Multiple receipts aggregated
+end note
+
+note right of HookChoicePattern
+  **Conditional Routing:**
+  - Evaluate conditions
+  - Execute first matching hook
+  - Single receipt returned
+end note
+
+note right of HookRetryPattern
+  **Retry Logic:**
+  - Retry on failure
+  - Exponential backoff
+  - Max attempts limit
+  - Final receipt returned
+end note
+
+note right of HookExecutionResult
+  **Receipt Aggregation:**
+  - Merge receipts (⊕)
+  - Track max ticks
+  - Aggregate actions
+  - Verify hash(A) = hash(μ(O))
+end note
+
+@enduml
+

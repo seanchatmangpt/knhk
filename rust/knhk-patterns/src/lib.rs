@@ -9,8 +9,9 @@ pub mod patterns;
 pub mod composition;
 pub mod pipeline_ext;
 
+pub use ffi::PatternType;
 pub use patterns::{
-    Pattern, PatternType, PatternResult, PatternError,
+    Pattern, PatternResult, PatternError,
     SequencePattern, ParallelSplitPattern, SynchronizationPattern,
     ExclusiveChoicePattern, SimpleMergePattern, MultiChoicePattern,
     ArbitraryCyclesPattern, DeferredChoicePattern,

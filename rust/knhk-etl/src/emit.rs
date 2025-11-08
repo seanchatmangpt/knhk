@@ -457,7 +457,7 @@ impl EmitStage {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EmitResult {
     pub receipts_written: usize,
     pub actions_sent: usize,

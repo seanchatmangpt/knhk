@@ -24,14 +24,16 @@ opentelemetry-otlp = "0.31"
 tracing = "0.1"
 tracing-opentelemetry = "0.32"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rayon = { version = "1.10", optional = true }
 
 [features]
-default = ["std", "knhk-otel", "knhk-lockchain"]
+default = ["std", "knhk-otel", "knhk-lockchain", "parallel"]
 std = []
 grpc = []
 knhk-otel = []
 knhk-lockchain = []
 tokio-runtime = []
+parallel = ["rayon"]
 [dev-dependencies]
 # Test dependencies
 knhk-unrdf = { path = "../knhk-unrdf" }

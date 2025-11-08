@@ -506,6 +506,117 @@ let pattern = ArbitraryCyclesPattern::new(
 )?;
 ```
 
+## Hook Patterns
+
+Hook patterns orchestrate knowledge hook execution within the Reflex stage. They enable parallel execution, conditional routing, and retry logic for hooks.
+
+### Hook Sequence Pattern
+
+Execute hooks sequentially in a specific order:
+
+```rust
+use knhk_patterns::hook_patterns::HookSequencePattern;
+use knhk_etl::hook_registry::HookRegistry;
+
+let registry = HookRegistry::new();
+let predicates = vec![predicate1, predicate2, predicate3];
+
+let pattern = HookSequencePattern::new(predicates)?;
+let context = HookExecutionContext {
+    hook_registry: registry,
+    predicate_runs: runs,
+    soa_arrays: soa,
+    tick_budget: 8,
+};
+let results = pattern.execute_hooks(&context)?;
+```
+
+**Use Cases:**
+- Dependent hooks (hook2 depends on hook1)
+- Ordered validation (schema → constraints → business rules)
+- Sequential transformations
+
+### Hook Parallel Pattern
+
+Execute independent hooks concurrently:
+
+```rust
+use knhk_patterns::hook_patterns::HookParallelPattern;
+
+let predicates = vec![predicate1, predicate2, predicate3];
+let pattern = HookParallelPattern::new(predicates)?;
+let results = pattern.execute_hooks(&context)?;
+```
+
+**Use Cases:**
+- Independent validations
+- Parallel schema checks
+- Concurrent constraint validation
+
+**Performance:**
+- Uses Rayon for parallel execution
+- Respects tick budget (≤8 ticks per hook)
+- Aggregates receipts efficiently
+
+### Hook Choice Pattern
+
+Route hook execution based on conditions:
+
+```rust
+use knhk_patterns::hook_patterns::HookChoicePattern;
+
+let choices = vec![
+    (|receipt: &Receipt| receipt.ticks > 4, predicate1),
+    (|receipt: &Receipt| receipt.ticks <= 4, predicate2),
+];
+
+let pattern = HookChoicePattern::new(choices)?;
+let results = pattern.execute_hooks(&context)?;
+```
+
+**Use Cases:**
+- Conditional validation paths
+- Error handling routes
+- Performance-based routing
+
+### Hook Retry Pattern
+
+Retry failed hooks with exponential backoff:
+
+```rust
+use knhk_patterns::hook_patterns::HookRetryPattern;
+
+let pattern = HookRetryPattern::new(
+    predicate,
+    |receipt: &Receipt| receipt.ticks == 0, // Should retry if failed
+    3, // max attempts
+)?;
+let results = pattern.execute_hooks(&context)?;
+```
+
+**Use Cases:**
+- Transient failures
+- Network timeouts
+- Resource contention
+
+### Hook Pattern Composition
+
+Compose hook patterns for complex orchestration:
+
+```rust
+use knhk_patterns::hook_patterns::*;
+
+// Parallel validation followed by conditional routing
+let parallel_pattern = HookParallelPattern::new(vec![pred1, pred2])?;
+let choice_pattern = HookChoicePattern::new(choices)?;
+
+// Execute in sequence
+let results1 = parallel_pattern.execute_hooks(&context)?;
+let results2 = choice_pattern.execute_hooks(&context)?;
+```
+
+See [HOOK_INTEGRATION.md](HOOK_INTEGRATION.md) for comprehensive hook integration guide.
+
 ## Error Handling
 
 All patterns return `PatternResult<T>`:

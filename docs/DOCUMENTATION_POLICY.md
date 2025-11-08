@@ -185,8 +185,8 @@ Sprint End:
 - [x] Pull system script (`scripts/doc-pull.sh`)
 - [x] Documentation policy (`docs/DOCUMENTATION_POLICY.md`)
 - [x] Archive duplicate/speculative docs to `docs/archived/`
-- [ ] Update README.md with pull system usage
-- [ ] Train team on pull system commands
+- [x] Update README.md with pull system usage
+- [ ] Train team on pull system commands (operational task)
 
 ---
 
