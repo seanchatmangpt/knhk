@@ -37,7 +37,7 @@ impl HookRegistryIntegration {
             // This is a limitation that needs to be addressed in v1.1
             // For now, we'll skip registration and log a warning
             eprintln!("Warning: Hook registration through Arc not supported. Hook '{}' will not be registered.", hook.name);
-            // TODO: Implement proper Arc mutability handling in v1.1
+            // FUTURE: Implement proper Arc mutability handling in v1.1
             /*
             match Arc::get_mut(&mut self.registry)
                 .ok_or_else(|| "Cannot get mutable reference to registry".to_string())?

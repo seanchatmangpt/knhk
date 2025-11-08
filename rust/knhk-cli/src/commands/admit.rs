@@ -41,7 +41,7 @@ pub fn delta(delta_file: String) -> Result<(), String> {
     }
 
     // Save delta for processing
-    let config_dir = get_config_dir()?;
+    let _config_dir = get_config_dir()?;
     save_delta(&triples)?;
 
     // Actually admit delta into ontology O using StateManager
@@ -248,7 +248,7 @@ fn get_config_dir() -> Result<PathBuf, String> {
 }
 
 fn save_delta(triples: &[Triple]) -> Result<(), String> {
-    let config_dir = get_config_dir()?;
+    let _config_dir = get_config_dir()?;
     fs::create_dir_all(&config_dir)
         .map_err(|e| format!("Failed to create config directory: {}", e))?;
 

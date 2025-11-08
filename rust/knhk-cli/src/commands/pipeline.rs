@@ -8,8 +8,6 @@ use std::path::PathBuf;
 #[cfg(feature = "std")]
 use knhk_etl::integration::IntegratedPipeline;
 
-use crate::connector::ConnectorRegistry;
-
 /// Pipeline execution status
 #[derive(Debug, Serialize, Deserialize)]
 struct PipelineStatus {
@@ -40,7 +38,6 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
     println!("Executing ETL pipeline...");
 
     // Use ConnectorRegistry to get connectors
-    use crate::connector::ConnectorRegistry;
     let connector_registry = ConnectorRegistry::new()?;
 
     // Determine connectors to use

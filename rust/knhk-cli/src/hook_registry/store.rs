@@ -1,7 +1,6 @@
 //! Hook storage - Stores hooks in Oxigraph
 
 use crate::state::StateStore;
-use oxigraph::model::Quad;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -61,6 +60,7 @@ impl HookStore {
         let query = Query::parse(query_str, None)
             .map_err(|e| format!("Failed to parse SPARQL query: {}", e))?;
 
+        #[allow(deprecated)]
         let results: oxigraph::sparql::QueryResults = store
             .query(query)
             .map_err(|e| format!("Failed to execute SPARQL query: {}", e))?;

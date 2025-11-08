@@ -140,8 +140,7 @@ pub fn eval(hook_name: String) -> Result<String, String> {
         let mut o_array = [0u64; 8];
 
         // Populate arrays from ontology (limited to 8 triples for hot path)
-        let mut count = 0;
-        for _quad_result in ontology.iter() {
+        for (count, _quad_result) in ontology.iter().enumerate() {
             if count >= 8 {
                 break; // Respect max_run_len ≤ 8
             }
