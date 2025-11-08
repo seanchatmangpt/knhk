@@ -122,9 +122,7 @@ impl MetricsCollector {
             tokio::spawn(async move {
                 let mut guard = tracer_clone.write().await;
                 if let Some(ref mut tracer) = *guard {
-                    if let Some(ref mut tracer) = *guard {
-                        tracer.record_metric(metric);
-                    }
+                    tracer.record_metric(metric);
                 }
             });
         }
@@ -145,9 +143,7 @@ impl MetricsCollector {
             tokio::spawn(async move {
                 let mut guard = tracer_clone.write().await;
                 if let Some(ref mut tracer) = *guard {
-                    if let Some(ref mut tracer) = *guard {
-                        tracer.record_metric(metric);
-                    }
+                    tracer.record_metric(metric);
                 }
             });
         }
@@ -173,9 +169,7 @@ impl MetricsCollector {
             tokio::spawn(async move {
                 let mut guard = tracer_clone.write().await;
                 if let Some(ref mut tracer) = *guard {
-                    if let Some(ref mut tracer) = *guard {
-                        tracer.record_metric(metric);
-                    }
+                    tracer.record_metric(metric);
                 }
             });
         }
