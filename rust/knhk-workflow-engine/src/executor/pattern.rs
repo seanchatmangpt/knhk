@@ -112,7 +112,11 @@ impl WorkflowEngine {
             let mut nested_context = context.clone();
             nested_context.scope_id = format!(
                 "{}_{}",
-                if context.scope_id.is_empty() { "root" } else { &context.scope_id },
+                if context.scope_id.is_empty() {
+                    "root"
+                } else {
+                    &context.scope_id
+                },
                 pattern_id.0
             );
 

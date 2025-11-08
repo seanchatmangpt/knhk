@@ -15,20 +15,13 @@ impl PatternExecutor for CancelActivityInstancePattern {
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
                 .collect();
-            // If parsing resulted in empty list, fall back to default
-            if parsed.is_empty() {
-                if ctx.scope_id.is_empty() {
-                    vec!["activity_instance".to_string()]
-                } else {
-                    vec![format!("{}:activity", ctx.scope_id)]
-                }
-            } else {
-                parsed
-            }
+            // If activity_ids was explicitly provided but parsing resulted in empty list,
+            // return empty (don't fall back to default - this is malformed input)
+            parsed
         } else if let Some(instance_id) = ctx.variables.get("instance_id") {
             vec![instance_id.clone()]
         } else {
-            // Default: cancel activity in scope
+            // Default: cancel activity in scope (only when activity_ids not provided)
             if ctx.scope_id.is_empty() {
                 vec!["activity_instance".to_string()]
             } else {

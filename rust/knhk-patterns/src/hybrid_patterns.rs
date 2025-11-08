@@ -136,11 +136,30 @@ impl HybridSequencePattern {
     }
 
     #[cfg(feature = "unrdf")]
-    /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
+    /// Convert SoAArrays to turtle data
     fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
-        // FUTURE: Implement proper SoA to Turtle conversion
-        // For now, return unimplemented to indicate incomplete implementation
-        unimplemented!("soa_to_turtle: needs proper SoAArrays to Turtle conversion implementation - soa has {} triples (s.len={})", soa.s.len(), soa.s.len())
+        // Convert SoA arrays to Turtle format
+        // Since SoA uses u64 hashes, we convert them back to IRIs using hex representation
+        let mut turtle = String::new();
+        turtle.push_str("@prefix knhk: <urn:knhk:> .\n\n");
+
+        // Find the actual length (first zero indicates end, or use all 8 if no zeros)
+        let len = soa.s.iter().position(|&x| x == 0).unwrap_or(8).min(8);
+
+        for i in 0..len {
+            if soa.s[i] == 0 && soa.p[i] == 0 && soa.o[i] == 0 {
+                break; // Stop at first empty triple
+            }
+
+            // Convert u64 hashes to IRIs (using hex representation)
+            let subject = format!("<urn:hash:{:x}>", soa.s[i]);
+            let predicate = format!("<urn:hash:{:x}>", soa.p[i]);
+            let object = format!("<urn:hash:{:x}>", soa.o[i]);
+
+            turtle.push_str(&format!("{} {} {} .\n", subject, predicate, object));
+        }
+
+        Ok(turtle)
     }
 }
 
@@ -284,11 +303,30 @@ impl HybridParallelPattern {
     }
 
     #[cfg(feature = "unrdf")]
-    /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
+    /// Convert SoAArrays to turtle data
     fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
-        // FUTURE: Implement proper SoA to Turtle conversion
-        // For now, return unimplemented to indicate incomplete implementation
-        unimplemented!("soa_to_turtle: needs proper SoAArrays to Turtle conversion implementation - soa has {} triples (s.len={})", soa.s.len(), soa.s.len())
+        // Convert SoA arrays to Turtle format
+        // Since SoA uses u64 hashes, we convert them back to IRIs using hex representation
+        let mut turtle = String::new();
+        turtle.push_str("@prefix knhk: <urn:knhk:> .\n\n");
+
+        // Find the actual length (first zero indicates end, or use all 8 if no zeros)
+        let len = soa.s.iter().position(|&x| x == 0).unwrap_or(8).min(8);
+
+        for i in 0..len {
+            if soa.s[i] == 0 && soa.p[i] == 0 && soa.o[i] == 0 {
+                break; // Stop at first empty triple
+            }
+
+            // Convert u64 hashes to IRIs (using hex representation)
+            let subject = format!("<urn:hash:{:x}>", soa.s[i]);
+            let predicate = format!("<urn:hash:{:x}>", soa.p[i]);
+            let object = format!("<urn:hash:{:x}>", soa.o[i]);
+
+            turtle.push_str(&format!("{} {} {} .\n", subject, predicate, object));
+        }
+
+        Ok(turtle)
     }
 }
 
@@ -429,11 +467,30 @@ impl HybridChoicePattern {
     }
 
     #[cfg(feature = "unrdf")]
-    /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
+    /// Convert SoAArrays to turtle data
     fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
-        // FUTURE: Implement proper SoA to Turtle conversion
-        // For now, return unimplemented to indicate incomplete implementation
-        unimplemented!("soa_to_turtle: needs proper SoAArrays to Turtle conversion implementation - soa has {} triples (s.len={})", soa.s.len(), soa.s.len())
+        // Convert SoA arrays to Turtle format
+        // Since SoA uses u64 hashes, we convert them back to IRIs using hex representation
+        let mut turtle = String::new();
+        turtle.push_str("@prefix knhk: <urn:knhk:> .\n\n");
+
+        // Find the actual length (first zero indicates end, or use all 8 if no zeros)
+        let len = soa.s.iter().position(|&x| x == 0).unwrap_or(8).min(8);
+
+        for i in 0..len {
+            if soa.s[i] == 0 && soa.p[i] == 0 && soa.o[i] == 0 {
+                break; // Stop at first empty triple
+            }
+
+            // Convert u64 hashes to IRIs (using hex representation)
+            let subject = format!("<urn:hash:{:x}>", soa.s[i]);
+            let predicate = format!("<urn:hash:{:x}>", soa.p[i]);
+            let object = format!("<urn:hash:{:x}>", soa.o[i]);
+
+            turtle.push_str(&format!("{} {} {} .\n", subject, predicate, object));
+        }
+
+        Ok(turtle)
     }
 }
 

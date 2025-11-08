@@ -215,6 +215,89 @@ impl WorkItemService {
             )))
         }
     }
+
+    /// Get inbox for a resource (work items assigned to or available for the resource)
+    pub async fn get_inbox(&self, resource_id: &str) -> WorkflowResult<Vec<WorkItem>> {
+        let items = self.work_items.read().await;
+        Ok(items
+            .values()
+            .filter(|item| {
+                // Include items assigned to this resource
+                item.assigned_resource_id.as_ref() == Some(&resource_id.to_string())
+                    // Or items in Created state (available for assignment)
+                    || (item.state == WorkItemState::Created
+                        && item.assigned_resource_id.is_none())
+            })
+            .cloned()
+            .collect())
+    }
+
+    /// Submit work item (complete with payload)
+    pub async fn submit_work_item(
+        &self,
+        work_item_id: &str,
+        submission_id: &str,
+        payload: serde_json::Value,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - must be Claimed or InProgress
+            if item.state != WorkItemState::Claimed && item.state != WorkItemState::InProgress {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in Claimed or InProgress state",
+                    work_item_id
+                )));
+            }
+
+            // Update state and data
+            item.state = WorkItemState::Completed;
+            item.completed_at = Some(Utc::now());
+            item.data = payload;
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Withdraw work item (unclaim)
+    pub async fn withdraw_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - must be Claimed or InProgress
+            if item.state != WorkItemState::Claimed && item.state != WorkItemState::InProgress {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in Claimed or InProgress state",
+                    work_item_id
+                )));
+            }
+
+            // Validate resource
+            if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not assigned to resource {}",
+                    work_item_id, resource_id
+                )));
+            }
+
+            // Withdraw (move back to Assigned state)
+            item.state = WorkItemState::Assigned;
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
 }
 
 impl Default for WorkItemService {

@@ -112,7 +112,7 @@ impl ResourceAllocator {
                 policy: task
                     .allocation_policy
                     .unwrap_or(AllocationPolicy::RoundRobin),
-                priority: task.priority.unwrap_or(100) as u8,
+                priority: task.priority.map(|p| p.min(255) as u8).unwrap_or(100u8),
             };
 
             // Find matching resources based on roles and capabilities
