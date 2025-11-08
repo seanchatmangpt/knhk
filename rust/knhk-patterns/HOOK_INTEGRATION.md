@@ -2,13 +2,90 @@
 
 ## Overview
 
-This guide explains how `knhk-patterns` workflow patterns integrate with knowledge hooks to enable pattern-based hook orchestration within the Reflex stage of the KNHK pipeline.
+This guide explains how `knhk-patterns` workflow patterns integrate with **all** knowledge hook systems in KNHK to enable pattern-based hook orchestration across hot path, cold path, and hybrid execution scenarios.
+
+## Hook Systems in KNHK
+
+KNHK has multiple hook systems serving different purposes:
+
+### 1. Hot Path Hooks (HookRegistry)
+
+**Location**: `knhk-etl::hook_registry::HookRegistry`
+
+**Purpose**: Fast validation hooks executing in the Reflex stage (≤8 ticks)
+
+**Characteristics**:
+- Predicate-based mapping (predicate ID → kernel type)
+- Guard functions for triple validation
+- Executes via C hot path kernels
+- Used in Reflex stage of ETL pipeline
+
+**Use Cases**:
+- Simple existence checks (ASK_SP)
+- Cardinality validation (COUNT_SP_GE)
+- Fast schema validation
+- Real-time guard enforcement
+
+### 2. Cold Path Hooks (unrdf)
+
+**Location**: `knhk-unrdf::hooks` and `knhk-unrdf::hooks_native`
+
+**Purpose**: Complex SPARQL-based hooks for policy-driven automation
+
+**Characteristics**:
+- SPARQL ASK queries for complex conditions
+- Native Rust implementation (oxigraph) or JavaScript (Node.js)
+- Batch evaluation support
+- Constitution validation (Typing, Order, Guard, Invariant)
+- Epoch-based ordering (Λ)
+
+**Use Cases**:
+- Complex policy validation
+- Multi-triple pattern matching
+- Transitive property checks
+- SHACL constraint validation
+- Policy pack execution
+
+### 3. Erlang Hooks (μ-hot ops)
+
+**Location**: `erlang/knhk_rc/src/knhk_hooks.erl`
+
+**Purpose**: Hook installation registry for Erlang runtime
+
+**Characteristics**:
+- Gen_server-based registry
+- Epoch tagging for ordering
+- Guard enforcement (run.len ≤ 8)
+- Installs reflexes as knowledge, not code
+
+**Use Cases**:
+- Distributed hook installation
+- Epoch-based hook ordering
+- Erlang/OTP integration
+
+### 4. CLI Hooks
+
+**Location**: `knhk-cli::commands::hook`
+
+**Purpose**: Command-line hook management and evaluation
+
+**Characteristics**:
+- JSON-based hook storage
+- Hot path FFI integration
+- Hook creation, listing, evaluation
+- Development and testing tools
+
+**Use Cases**:
+- Development workflow
+- Hook testing
+- Manual hook evaluation
+- Hook management CLI
 
 ## Architecture
 
-### Knowledge Hooks
+### Hot Path Hook Architecture
 
-Knowledge hooks are compiled interfaces between ontological laws and runtime reconciliation. They execute during the Reflex stage (≤8 ticks per hook) and enforce invariants on data admitted into the knowledge graph.
+Hot path hooks execute in the Reflex stage (≤8 ticks per hook) and enforce invariants on data admitted into the knowledge graph.
 
 **Hook Definition:**
 - **Predicate**: The RDF predicate this hook validates
@@ -18,6 +95,48 @@ Knowledge hooks are compiled interfaces between ontological laws and runtime rec
 **Formal Definition:**
 ```
 hook(p, q, a): Δ ⊨ Qp  ⇒  μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)
+```
+
+### Cold Path Hook Architecture
+
+Cold path hooks execute complex SPARQL queries via unrdf for policy-driven automation.
+
+**Hook Definition:**
+- **Hook ID**: Unique identifier for the hook
+- **SPARQL Query**: ASK query defining hook condition
+- **Constitution**: Schema and invariant constraints
+- **Epoch Order**: ≺-total ordered execution sequence
+
+**Formal Definition:**
+```
+hook(H, Λ, Σ, Q): ASK { condition } → fired: bool
+where Λ is ≺-total ordered hook sequence
+and ∧(Typing, Order, Guard, Invariant) holds
+```
+
+### Hybrid Architecture
+
+Patterns can orchestrate both hot and cold path hooks together:
+
+```
+┌─────────────────────────────────────────┐
+│         Hot Path Hooks                  │
+│         ≤8 ticks (2ns)                  │
+│         Simple validations              │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│      Pattern Orchestration              │
+│      (Sequence, Parallel, Choice)       │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│         Cold Path Hooks                 │
+│         >500ms                          │
+│         Complex SPARQL queries          │
+└─────────────────────────────────────────┘
 ```
 
 ### Current Hook Execution
