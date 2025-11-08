@@ -167,15 +167,15 @@ mod tests {
     use super::*;
     use crate::parser::{SplitType, TaskType};
 
-    #[test]
-    fn test_mutation_tester_creates() {
+    #[tokio::test]
+    async fn test_mutation_tester_creates() {
         let spec = crate::testing::chicago_tdd::WorkflowSpecBuilder::new("Test").build();
         let tester = MutationTester::new(spec);
         assert!(tester.is_ok());
     }
 
-    #[test]
-    fn test_mutation_remove_task() {
+    #[tokio::test]
+    async fn test_mutation_remove_task() {
         let spec = crate::testing::chicago_tdd::WorkflowSpecBuilder::new("Test")
             .add_task(crate::testing::chicago_tdd::TaskBuilder::new("task:1", "Task 1").build())
             .build();

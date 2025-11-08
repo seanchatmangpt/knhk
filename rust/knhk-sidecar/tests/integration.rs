@@ -63,12 +63,12 @@ mod tests {
         let health = HealthChecker::new();
 
         // Test liveness
-        let (alive, _) = health.check_liveness();
-        assert!(alive);
+        let alive = health.check_liveness();
+        assert!(matches!(alive, knhk_sidecar::health::HealthStatus::Healthy));
 
         // Test readiness
-        let (ready, _) = health.check_readiness();
-        assert!(ready);
+        let ready = health.check_readiness();
+        assert!(matches!(ready, knhk_sidecar::health::HealthStatus::Healthy));
     }
 
     #[test]

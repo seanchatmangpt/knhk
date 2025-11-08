@@ -247,20 +247,9 @@ impl WorkletExecutor {
         worklet_id: WorkletId,
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
-        let _worklet = self.repository.get(worklet_id).await?;
+        let worklet = self.repository.get(worklet_id).await?;
 
-        // Execute worklet workflow specification
-        // This is a simplified implementation - in production would execute
-        // the full workflow spec through the workflow engine
-        Ok(PatternExecutionResult {
-            success: true,
-            next_state: Some(format!("worklet:{}:completed", worklet_id.0)),
-            next_activities: Vec::new(),
-            variables: context.variables,
-            updates: None,
-            cancel_activities: Vec::new(),
-            terminates: false,
-        })
+        unimplemented!("execute_worklet: needs full workflow engine integration to execute worklet workflow specification (worklet_id={}, workflow_spec={:?}) through the workflow engine with proper pattern execution, state management, and result propagation", worklet_id.0, worklet.workflow_spec.id)
     }
 
     /// Handle exception with worklet

@@ -90,7 +90,7 @@ pub(super) async fn execute_task_with_allocation(
         }
     }
 
-    // Execute task (simplified - full implementation would execute actual task logic)
+    // Execute task - must actually execute task logic, not just validate constraints
     // Check max_ticks constraint
     if let Some(max_ticks) = task.max_ticks {
         let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
@@ -102,6 +102,13 @@ pub(super) async fn execute_task_with_allocation(
             )));
         }
     }
+
+    // FUTURE: Execute actual task logic based on task type:
+    // - Atomic: Execute task handler/connector
+    // - Composite: Execute sub-workflow
+    // - MultipleInstance: Execute multiple instances
+    // For now, this is a placeholder that doesn't actually execute the task
+    unimplemented!("execute_task_with_allocation: needs actual task execution implementation for task_id={}, task_type={:?} - must execute task logic (atomic handler, composite sub-workflow, or multiple instance execution) not just validate constraints", task.id, task.task_type);
 
     // Record SLO metrics if Fortune 5 is enabled
     if let Some(ref fortune5) = engine.fortune5_integration {

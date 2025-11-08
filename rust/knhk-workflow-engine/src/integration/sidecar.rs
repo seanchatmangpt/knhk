@@ -24,11 +24,11 @@ impl SidecarIntegration {
 
     /// Initialize sidecar integration (stub - no-op)
     pub async fn initialize(&self) -> WorkflowResult<()> {
-        Ok(())
+        unimplemented!("initialize: needs sidecar integration implementation - sidecar now depends on workflow engine, not the other way around")
     }
 
     /// Refresh sidecar certificates (stub - no-op)
     pub async fn refresh_certificates(&self) -> WorkflowResult<()> {
-        Ok(())
+        unimplemented!("refresh_certificates: needs sidecar integration implementation - sidecar now depends on workflow engine, not the other way around")
     }
 }

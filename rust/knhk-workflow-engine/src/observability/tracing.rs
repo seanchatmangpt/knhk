@@ -51,29 +51,19 @@ impl WorkflowTracer {
         case_id: &str,
     ) -> WorkflowResult<()> {
         if !self.config.enabled {
-            return Ok(());
+            return Ok(()); // Legitimate: tracing disabled, no work to do
         }
 
-        // FUTURE: Implement span creation with knhk-otel API
-        // For now, just log the operation
-        tracing::info!(
-            operation = operation,
-            workflow_id = workflow_id,
-            case_id = case_id,
-            "Workflow operation started"
-        );
-
-        Ok(())
+        unimplemented!("start_span: needs knhk-otel API integration for span creation with proper span context propagation, parent span tracking, and span metadata (operation={}, workflow_id={}, case_id={})", operation, workflow_id, case_id)
     }
 
     /// End current span
     pub fn end_span(&self) -> WorkflowResult<()> {
         if !self.config.enabled {
-            return Ok(());
+            return Ok(()); // Legitimate: tracing disabled, no work to do
         }
 
-        // FUTURE: Implement span ending with knhk-otel API
-        Ok(())
+        unimplemented!("end_span: needs knhk-otel API integration for span ending with proper status code, error recording, and span export")
     }
 
     /// Get tracer instance

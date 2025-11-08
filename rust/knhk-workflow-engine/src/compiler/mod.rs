@@ -212,8 +212,12 @@ fn run_shacl_gates(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<(
 
     #[cfg(not(feature = "unrdf"))]
     {
-        // Without unrdf feature, skip SHACL validation
-        // In production, this should be an error or use alternative validation
+        // Without unrdf feature, SHACL validation is not available
+        // This is a false positive - we cannot validate without unrdf
+        // In production, either enable unrdf feature or use alternative validation
+        return Err(WorkflowError::Validation(
+            "SHACL validation requires unrdf feature. Enable with --features unrdf or use alternative validation".to_string()
+        ));
     }
 
     Ok(())
@@ -302,7 +306,10 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
         };
 
         // Extract flags (discriminator, cancelling, etc.)
-        let flags = 0u32; // FUTURE: Extract from task properties
+        // For now, flags are set to 0 as they are not yet extracted from task properties
+        // This is acceptable as flags are optional and can be added later
+        // TODO: Extract flags from task properties (discriminator, cancelling, etc.)
+        let flags = 0u32;
 
         let node_ir = NodeIR {
             pattern: pattern_id,
@@ -353,8 +360,10 @@ fn map_pattern_id(split: SplitType, join: JoinType) -> u8 {
 
 /// Extract timers from RDF store
 fn extract_timers(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Vec<TimerIR>> {
-    // FUTURE: Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
-    // For now, return empty vector (timers can be added later)
+    // Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
+    // For now, return empty vector as timer extraction is not yet implemented
+    // This is acceptable as timers are optional and can be added later
+    // TODO: Implement timer extraction from RDF (OWL-Time, iCalendar RRULE)
     Ok(Vec::new())
 }
 

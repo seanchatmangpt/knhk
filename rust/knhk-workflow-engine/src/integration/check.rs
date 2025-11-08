@@ -111,34 +111,22 @@ impl IntegrationHealthChecker {
     async fn perform_health_check(&self, name: &str) -> WorkflowResult<()> {
         match name {
             "fortune5" => {
-                // Check Fortune 5 integration
-                // FUTURE: Implement actual health check
-                Ok(())
+                unimplemented!("perform_health_check: needs Fortune 5 integration health check implementation with SPIFFE/SPIRE connectivity verification, KMS availability check, and SLO endpoint validation")
             }
             "lockchain" => {
-                // Check Lockchain integration
-                // FUTURE: Implement actual health check
-                Ok(())
+                unimplemented!("perform_health_check: needs Lockchain integration health check implementation with receipt storage connectivity verification and provenance endpoint validation")
             }
             "connectors" => {
-                // Check Connector integration
-                // FUTURE: Implement actual health check
-                Ok(())
+                unimplemented!("perform_health_check: needs Connector integration health check implementation with Kafka broker connectivity, Salesforce API availability, and connector registry validation")
             }
             "sidecar" => {
-                // Check Sidecar integration
-                // FUTURE: Implement actual health check
-                Ok(())
+                unimplemented!("perform_health_check: needs Sidecar integration health check implementation with gRPC endpoint connectivity and sidecar process status verification")
             }
             "etl" => {
-                // Check ETL integration
-                // FUTURE: Implement actual health check
-                Ok(())
+                unimplemented!("perform_health_check: needs ETL integration health check implementation with pipeline stage availability, Reflex bridge connectivity, and emit endpoint validation")
             }
             "otel" => {
-                // Check OTEL integration
-                // FUTURE: Implement actual health check
-                Ok(())
+                unimplemented!("perform_health_check: needs OTEL integration health check implementation with OTLP exporter connectivity, span export validation, and metrics endpoint verification")
             }
             _ => Err(WorkflowError::ResourceUnavailable(format!(
                 "Unknown integration: {}",

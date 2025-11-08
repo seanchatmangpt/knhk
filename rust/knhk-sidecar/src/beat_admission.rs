@@ -624,14 +624,9 @@ mod tests {
             operation_type: None,
             encoded_triples: vec![],
         };
-        // Blank nodes require CONSTRUCT, so complexity = 1 (base) + 20 (CONSTRUCT) + 2*5 (blank nodes) = 31
-        // But if requires_construct() returns false, it's just 1 + 2*5 = 11
-        // Let's check the actual value
-        let actual = with_blank.estimate_complexity();
-        assert!(
-            actual == 11 || actual == 31,
-            "Complexity should be 11 (no CONSTRUCT) or 31 (with CONSTRUCT), got {}",
-            actual
-        );
+        // Blank nodes trigger requires_construct() to return true
+        // Complexity = 1 (base) + 20 (CONSTRUCT) + 1*5 (triple with blank nodes) = 26
+        // Note: blank_node_count counts triples with blank nodes, not number of blank nodes
+        assert_eq!(with_blank.estimate_complexity(), 26);
     }
 }

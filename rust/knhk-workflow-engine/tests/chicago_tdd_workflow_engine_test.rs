@@ -27,14 +27,22 @@ async fn test_workflow_fixture_creation() {
 #[tokio::test]
 async fn test_workflow_fixture_isolation() {
     // Arrange & Act: Create multiple fixtures
-    let fixture1 = WorkflowTestFixture::new().unwrap();
-    let fixture2 = WorkflowTestFixture::new().unwrap();
-    let fixture3 = WorkflowTestFixture::new().unwrap();
+    let mut fixture1 = WorkflowTestFixture::new().unwrap();
+    let mut fixture2 = WorkflowTestFixture::new().unwrap();
+    let mut fixture3 = WorkflowTestFixture::new().unwrap();
+
+    // Act: Register workflow in fixture1
+    let spec1 = WorkflowSpecBuilder::new("Workflow 1").build();
+    let spec_id1 = fixture1.register_workflow(spec1).await.unwrap();
 
     // Assert: Each fixture is isolated (unique test databases)
-    assert_eq!(fixture1.specs.len(), 0);
+    // fixture1 should have the workflow, others should not
+    assert_eq!(fixture1.specs.len(), 1);
     assert_eq!(fixture2.specs.len(), 0);
     assert_eq!(fixture3.specs.len(), 0);
+    assert!(fixture1.specs.contains_key(&spec_id1));
+    assert!(!fixture2.specs.contains_key(&spec_id1));
+    assert!(!fixture3.specs.contains_key(&spec_id1));
 }
 
 // ============================================================================
@@ -100,10 +108,18 @@ async fn test_create_case_with_test_data_builder() {
         .build_json();
 
     // Act: Create case
-    let case_id = fixture.create_case(spec_id, test_data).await.unwrap();
+    let case_id = fixture
+        .create_case(spec_id, test_data.clone())
+        .await
+        .unwrap();
 
-    // Assert: Case created and tracked
+    // Assert: Case created and tracked, and data is stored correctly
     assert!(fixture.cases.contains(&case_id));
+    let case = fixture.engine.get_case(case_id).await.unwrap();
+    assert_eq!(case.data["key1"], "value1");
+    assert_eq!(case.data["order_id"], "ORD-001");
+    assert_eq!(case.data["total_amount"], "100.00");
+    assert_eq!(case.data["customer_id"], "CUST-001");
 }
 
 #[tokio::test]
@@ -168,7 +184,13 @@ async fn test_create_multiple_cases() {
 async fn test_execute_case() {
     // Arrange: Create fixture, workflow, and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
-    let spec = WorkflowSpecBuilder::new("Test Workflow").build();
+    let spec = WorkflowSpecBuilder::new("Test Workflow")
+        .add_task(
+            TaskBuilder::new("task1", "Task 1")
+                .with_type(TaskType::Atomic)
+                .build(),
+        )
+        .build();
     let spec_id = fixture.register_workflow(spec).await.unwrap();
     let case_id = fixture
         .create_case(spec_id, serde_json::json!({}))
@@ -178,7 +200,14 @@ async fn test_execute_case() {
     // Act: Execute case
     let case = fixture.execute_case(case_id).await.unwrap();
 
-    // Assert: Case executed (may be in various states depending on workflow)
+    // Assert: Case executed and state changed from initial state
+    // Case should not be in Created state after execution
+    assert!(
+        !matches!(case.state, CaseState::Created),
+        "Case should not remain in Created state after execution, got {:?}",
+        case.state
+    );
+    // Case should be in a valid execution state
     assert!(
         matches!(
             case.state,
@@ -193,7 +222,13 @@ async fn test_execute_case() {
 async fn test_execute_case_with_data() {
     // Arrange: Create fixture, workflow, and case with test data
     let mut fixture = WorkflowTestFixture::new().unwrap();
-    let spec = WorkflowSpecBuilder::new("Test Workflow").build();
+    let spec = WorkflowSpecBuilder::new("Test Workflow")
+        .add_task(
+            TaskBuilder::new("task1", "Task 1")
+                .with_type(TaskType::Atomic)
+                .build(),
+        )
+        .build();
     let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     let test_data = TestDataBuilder::new()
@@ -201,12 +236,20 @@ async fn test_execute_case_with_data() {
         .with_customer_data("CUST-001")
         .build_json();
 
-    let case_id = fixture.create_case(spec_id, test_data).await.unwrap();
+    let case_id = fixture
+        .create_case(spec_id, test_data.clone())
+        .await
+        .unwrap();
 
     // Act: Execute case
     let case = fixture.execute_case(case_id).await.unwrap();
 
-    // Assert: Case executed
+    // Assert: Case executed, state changed, and data is preserved
+    assert!(
+        !matches!(case.state, CaseState::Created),
+        "Case should not remain in Created state after execution, got {:?}",
+        case.state
+    );
     assert!(
         matches!(
             case.state,
@@ -215,6 +258,9 @@ async fn test_execute_case_with_data() {
         "Case should be in a valid execution state, got {:?}",
         case.state
     );
+    // Verify test data is preserved
+    assert_eq!(case.data["order_id"], "ORD-001");
+    assert_eq!(case.data["customer_id"], "CUST-001");
 }
 
 // ============================================================================
@@ -233,10 +279,12 @@ async fn test_assert_case_completed() {
         .unwrap();
     let case = fixture.execute_case(case_id).await.unwrap();
 
-    // Act & Assert: Use assertion helper
-    if case.state == CaseState::Completed {
-        fixture.assert_case_completed(&case);
-    }
+    // Act & Assert: Use assertion helper - verify it works correctly
+    // Always test the assertion helper by creating a completed case
+    // This ensures we actually test the assertion, not just skip it
+    let mut completed_case = case;
+    completed_case.state = CaseState::Completed;
+    fixture.assert_case_completed(&completed_case);
 }
 
 #[tokio::test]
@@ -251,10 +299,12 @@ async fn test_assert_case_failed() {
         .unwrap();
     let case = fixture.execute_case(case_id).await.unwrap();
 
-    // Act & Assert: Use assertion helper
-    if case.state == CaseState::Failed {
-        fixture.assert_case_failed(&case);
-    }
+    // Act & Assert: Use assertion helper - verify it works correctly
+    // Always test the assertion helper by creating a failed case
+    // This ensures we actually test the assertion, not just skip it
+    let mut failed_case = case;
+    failed_case.state = CaseState::Failed;
+    fixture.assert_case_failed(&failed_case);
 }
 
 // ============================================================================
@@ -336,12 +386,24 @@ async fn test_full_workflow_lifecycle() {
         .with_customer_data("CUST-001")
         .build_json();
 
-    let case_id = fixture.create_case(spec_id, test_data).await.unwrap();
+    let case_id = fixture
+        .create_case(spec_id, test_data.clone())
+        .await
+        .unwrap();
+
+    // Verify initial state
+    let initial_case = fixture.engine.get_case(case_id).await.unwrap();
+    assert_eq!(initial_case.state, CaseState::Created);
 
     // Act: Execute full lifecycle
     let case = fixture.execute_case(case_id).await.unwrap();
 
-    // Assert: Case completed lifecycle
+    // Assert: Case completed lifecycle - state changed from Created
+    assert_ne!(
+        case.state,
+        CaseState::Created,
+        "Case should not remain in Created state after execution"
+    );
     assert!(
         matches!(
             case.state,
@@ -350,6 +412,9 @@ async fn test_full_workflow_lifecycle() {
         "Case should complete lifecycle, got {:?}",
         case.state
     );
+    // Verify data is preserved through lifecycle
+    assert_eq!(case.data["order_id"], "ORD-001");
+    assert_eq!(case.data["customer_id"], "CUST-001");
 }
 
 #[tokio::test]
@@ -442,13 +507,24 @@ async fn test_register_workflow_with_invalid_spec() {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
-    // Act: Try to register workflow with empty spec
+    // Act: Try to register workflow with empty name (invalid)
     let spec = WorkflowSpecBuilder::new("").build();
     let result = fixture.register_workflow(spec).await;
 
-    // Assert: Registration may succeed or fail depending on validation
-    // This test verifies error handling works correctly
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Registration should either succeed (if empty names are allowed)
+    // or fail (if validation rejects empty names)
+    // Either way, we verify the result is handled correctly
+    match result {
+        Ok(spec_id) => {
+            // If registration succeeds, verify it was actually registered
+            assert!(fixture.specs.contains_key(&spec_id));
+            assert_eq!(fixture.specs.get(&spec_id).unwrap().name, "");
+        }
+        Err(e) => {
+            // If registration fails, verify it's a proper error
+            assert!(!e.to_string().is_empty());
+        }
+    }
 }
 
 #[tokio::test]
@@ -473,12 +549,16 @@ async fn test_create_case_with_invalid_spec_id() {
 
 #[tokio::test]
 async fn test_fixture_cleanup() {
-    // Arrange: Create fixture
-    let fixture = WorkflowTestFixture::new().unwrap();
+    // Arrange: Create fixture and add some state
+    let mut fixture = WorkflowTestFixture::new().unwrap();
+    let spec = WorkflowSpecBuilder::new("Test Workflow").build();
+    let _spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Act: Cleanup fixture
     let result = fixture.cleanup();
 
-    // Assert: Cleanup succeeds
+    // Assert: Cleanup succeeds and doesn't panic
     assert!(result.is_ok());
+    // Verify fixture still exists after cleanup (cleanup doesn't destroy fixture)
+    assert_eq!(fixture.specs.len(), 1);
 }
