@@ -15,7 +15,7 @@ use knhk_hot::KernelType;
 pub type GuardFn = Box<dyn Fn(&RawTriple) -> bool + Send + Sync>;
 
 /// Hook metadata: compiled hook information
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HookMetadata {
     /// Unique hook ID
     pub id: u64,
@@ -49,6 +49,9 @@ pub struct HookRegistry {
 
 impl Clone for HookRegistry {
     fn clone(&self) -> Self {
+        // Note: guard_map cannot be cloned (functions are not Clone)
+        // For now, create a new empty guard_map
+        // In production, would need to re-register guards after cloning
         Self {
             kernel_map: self.kernel_map.clone(),
             guard_map: BTreeMap::new(), // Guard functions cannot be cloned
