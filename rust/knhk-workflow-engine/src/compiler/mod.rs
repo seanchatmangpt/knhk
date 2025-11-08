@@ -44,7 +44,7 @@ pub struct CompileOutput {
 }
 
 /// Workflow IR structure
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct WorkflowIr {
     /// Pattern IDs
     pub pattern_ids: Vec<u32>,
@@ -198,7 +198,7 @@ fn run_shacl_gates(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<(
                 if !result.conforms {
                     return Err(WorkflowError::Validation(format!(
                         "SHACL validation failed: {:?}",
-                        result.results
+                        result.violations
                     )));
                 }
             }

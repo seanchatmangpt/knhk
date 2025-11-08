@@ -6,7 +6,6 @@ use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId
 use std::time::Instant;
 
 use super::provenance;
-use super::workflow_query::WorkflowEngine as _;
 use super::WorkflowEngine;
 
 impl WorkflowEngine {
