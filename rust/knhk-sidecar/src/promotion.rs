@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use tracing::{error, info, warn};
 
 /// Deployment environment
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Environment {
     /// Canary deployment (percentage of traffic)
     Canary { traffic_percent: f64 },

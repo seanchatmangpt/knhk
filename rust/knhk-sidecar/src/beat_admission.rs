@@ -213,6 +213,12 @@ pub struct BeatAdmission {
     predictor: Mutex<LocalityPredictor>,
 }
 
+// SAFETY: BeatAdmission contains raw pointers in BeatScheduler, but we ensure
+// thread safety by only accessing it through the Mutex. The raw pointers are
+// only used within the C FFI layer and are not accessed concurrently.
+unsafe impl Send for BeatAdmission {}
+unsafe impl Sync for BeatAdmission {}
+
 impl BeatAdmission {
     /// Create new beat admission manager
     pub fn new(beat_scheduler: Arc<Mutex<BeatScheduler>>, default_domain_id: usize) -> Self {

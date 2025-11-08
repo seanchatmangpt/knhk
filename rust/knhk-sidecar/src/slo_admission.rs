@@ -195,13 +195,15 @@ impl SloAdmissionController {
                 // Try lower tier
                 if let Some(lower_tier) = requested_class.lower_tier() {
                     let lower_slo = lower_tier.get_slo(&self.config);
-                    if estimated_latency <= lower_slo {
-                        self.metrics.degraded(requested_class, lower_tier);
-                        info!(
-                            "Request degraded from {:?} to {:?} to meet SLO",
-                            requested_class, lower_tier
-                        );
-                        return Ok(Some(lower_tier));
+                    if let Some(lower_slo_duration) = lower_slo {
+                        if estimated_latency <= lower_slo_duration {
+                            self.metrics.degraded(requested_class, lower_tier);
+                            info!(
+                                "Request degraded from {:?} to {:?} to meet SLO",
+                                requested_class, lower_tier
+                            );
+                            return Ok(Some(lower_tier));
+                        }
                     }
                 }
 

@@ -135,7 +135,9 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         match start_weaver_with_verification(&config).await {
             Ok((process, endpoint)) => {
                 info!(endpoint = %endpoint, "Weaver live-check started and verified successfully");
-                *weaver_process.lock().await = Some(process);
+                *weaver_process
+                    .lock()
+                    .map_err(|e| format!("Mutex poisoned: {}", e))? = Some(process);
                 Some(endpoint)
             }
             Err(e) => {
@@ -188,7 +190,10 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             loop {
                 sleep(Duration::from_secs(5)).await;
 
-                let mut process_guard = weaver_monitor_process.lock().await;
+                let mut process_guard = weaver_monitor_process.lock().map_err(|e| {
+                    error!("Mutex poisoned in weaver monitor: {}", e);
+                    return; // Exit the loop
+                })?;
                 let process_needs_restart = match process_guard.as_mut() {
                     Some(process) => {
                         // Check if process is still running
@@ -423,7 +428,10 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             let _ = weaver.stop();
 
             // Also kill the process if still running
-            let mut process_guard = weaver_process.lock().await;
+            let mut process_guard = weaver_process.lock().map_err(|e| {
+                error!("Mutex poisoned: {}", e);
+                return; // Continue with cleanup
+            })?;
             if let Some(mut process) = process_guard.take() {
                 let _ = process.kill();
             }

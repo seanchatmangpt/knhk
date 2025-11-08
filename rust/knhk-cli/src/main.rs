@@ -8,12 +8,14 @@
 
 mod commands;
 mod connector;
+mod dependency;
 mod error;
 mod hook_registry;
 mod lockchain;
 mod receipt_store;
 mod state;
 mod tracing;
+mod validation;
 
 // Import all noun modules so their verbs are auto-discovered
 mod admit;

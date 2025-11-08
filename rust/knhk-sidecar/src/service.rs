@@ -279,11 +279,7 @@ impl KgcSidecar for KgcSidecarService {
             // 1. Ingest: Parse RDF/Turtle
             let ingest = knhk_etl::IngestStage::new(vec!["grpc".to_string()], "turtle".to_string());
             let ingest_result = ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
-                SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_INGEST_FAILED", e.message().to_string())
-                        .with_attribute("stage", "ingest")
-                        .with_attribute("rdf_bytes", turtle_data.len().to_string()),
-                )
+                SidecarError::transaction_failed(format!("SIDECAR_INGEST_FAILED: {}", e.message()))
             })?;
 
             let ingest_result_full = knhk_etl::IngestResult {
@@ -297,47 +293,34 @@ impl KgcSidecar for KgcSidecarService {
                 false, // Disable validation for now
             );
             let transform_result = transform.transform(ingest_result_full).map_err(|e| {
-                SidecarError::transaction_failed(
-                    ErrorContext::new(
-                        "SIDECAR_TRANSFORM_FAILED",
-                        format!("Transform failed: {:?}", e),
-                    )
-                    .with_attribute("stage", "transform"),
-                )
+                SidecarError::transaction_failed(format!("SIDECAR_TRANSFORM_FAILED: {:?}", e))
             })?;
 
             // 3. Load: Create SoA arrays
             let load = knhk_etl::LoadStage::new();
             let load_result = load.load(transform_result).map_err(|e| {
-                SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_LOAD_FAILED", e.message().to_string())
-                        .with_attribute("stage", "load"),
-                )
+                SidecarError::transaction_failed(format!("SIDECAR_LOAD_FAILED: {}", e.message()))
             })?;
 
             // 4. Reflex: Execute hooks (≤8 ticks)
             let reflex = knhk_etl::ReflexStage::new();
             let reflex_result = reflex.reflex(load_result).map_err(|e| {
-                SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_REFLEX_FAILED", e.message().to_string())
-                        .with_attribute("stage", "reflex"),
-                )
+                SidecarError::transaction_failed(format!("SIDECAR_REFLEX_FAILED: {}", e.message()))
             })?;
 
             // 5. Emit: Write receipts and actions
             let emit = knhk_etl::EmitStage::new(true, vec![]);
             let emit_result = emit.emit(reflex_result).map_err(|e| {
-                SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_EMIT_FAILED", e.message().to_string())
-                        .with_attribute("stage", "emit"),
-                )
+                SidecarError::transaction_failed(format!(
+                    "SIDECAR_EMIT_FAILED: {} (stage=emit)",
+                    e.message()
+                ))
             })?;
 
             // Return first receipt as transaction receipt
             reflex_result.receipts.first().cloned().ok_or_else(|| {
                 SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_NO_RECEIPT", "No receipt generated")
-                        .with_attribute("stage", "emit"),
+                    "SIDECAR_NO_RECEIPT: No receipt generated".to_string(),
                 )
             })
         })();
@@ -483,7 +466,7 @@ impl KgcSidecar for KgcSidecarService {
                     let transform =
                         knhk_etl::TransformStage::new("urn:knhk:schema:query".to_string(), false);
                     let transform_result = transform.transform(ingest_result).map_err(|e| {
-                        SidecarError::query_failed(format!("Transform failed: {}", e))
+                        SidecarError::query_failed(format!("Transform failed: {:?}", e))
                     })?;
 
                     let load = knhk_etl::LoadStage::new();
@@ -623,7 +606,7 @@ impl KgcSidecar for KgcSidecarService {
             // 2. Transform with schema validation enabled
             let transform = knhk_etl::TransformStage::new(req.schema_iri.clone(), true);
             let transform_result = transform.transform(ingest_result).map_err(|e| {
-                SidecarError::validation_failed(format!("Schema validation failed: {}", e))
+                SidecarError::validation_failed(format!("Schema validation failed: {:?}", e))
             })?;
 
             // Check for validation errors
