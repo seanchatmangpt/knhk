@@ -309,7 +309,8 @@ impl KgcSidecar for KgcSidecarService {
             })?;
 
             // 5. Emit: Write receipts and actions
-            let emit = knhk_etl::EmitStage::new(true, vec![]);
+            let mut emit = knhk_etl::EmitStage::new(true, vec![]);
+            let receipts = reflex_result.receipts.clone();
             let emit_result = emit.emit(reflex_result).map_err(|e| {
                 SidecarError::transaction_failed(format!(
                     "SIDECAR_EMIT_FAILED: {} (stage=emit)",
@@ -318,7 +319,7 @@ impl KgcSidecar for KgcSidecarService {
             })?;
 
             // Return first receipt as transaction receipt
-            reflex_result.receipts.first().cloned().ok_or_else(|| {
+            receipts.first().cloned().ok_or_else(|| {
                 SidecarError::transaction_failed(
                     "SIDECAR_NO_RECEIPT: No receipt generated".to_string(),
                 )
@@ -338,6 +339,7 @@ impl KgcSidecar for KgcSidecarService {
 
         // Generate transaction ID
         let transaction_id = uuid::Uuid::new_v4().to_string();
+        let transaction_id_clone = transaction_id.clone();
 
         // Export telemetry to Weaver
         self.export_telemetry(
@@ -391,7 +393,7 @@ impl KgcSidecar for KgcSidecarService {
                         lanes: receipt.lanes,
                         span_id: receipt.span_id,
                         a_hash: receipt.a_hash.to_le_bytes().to_vec(),
-                        transaction_id: transaction_id.clone(),
+                        transaction_id: transaction_id_clone,
                         committed: true,
                     }),
                     errors: vec![],
