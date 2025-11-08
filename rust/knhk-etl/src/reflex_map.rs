@@ -44,13 +44,14 @@ pub struct Action {
 #[derive(Debug, Clone)]
 pub struct Receipt {
     pub id: String,
-    pub cycle_id: u64, // Beat cycle ID (from knhk_beat_next())
-    pub shard_id: u64, // Shard identifier
-    pub hook_id: u64,  // Hook identifier
-    pub ticks: u32,    // Actual ticks used (≤8)
-    pub lanes: u32,    // SIMD lanes used
-    pub span_id: u64,  // OTEL-compatible span ID
-    pub a_hash: u64,   // hash(A) = hash(μ(O)) fragment
+    pub cycle_id: u64,     // Beat cycle ID (from knhk_beat_next())
+    pub shard_id: u64,     // Shard identifier
+    pub hook_id: u64,      // Hook identifier
+    pub ticks: u32,        // Estimated/legacy ticks (for compatibility)
+    pub actual_ticks: u32, // PMU-measured actual ticks (≤8 enforced by τ law)
+    pub lanes: u32,        // SIMD lanes used
+    pub span_id: u64,      // OTEL-compatible span ID
+    pub a_hash: u64,       // hash(A) = hash(μ(O)) fragment
     pub mu_hash: u64,
 }
 
@@ -176,10 +177,19 @@ impl ReflexMap {
     }
 
     /// Execute a single hook using C hot path API via FFI
+    ///
+    /// Implements receipt-side tick metering:
+    /// - Start tick counter at μ entry
+    /// - Stop tick counter at receipt finalize
+    /// - Store ticks, actual_ticks, lanes in receipt
+    /// - Prove ≤8 ticks on every hot run
     fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
         #[cfg(feature = "std")]
         {
-            use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun};
+            use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun, TickMeasurement};
+
+            // Start tick measurement at μ entry
+            let mut tick_measurement = TickMeasurement::start();
 
             // Initialize engine with SoA arrays
             // SAFETY: Engine::new requires valid pointers to SoA arrays.
@@ -246,16 +256,31 @@ impl ReflexMap {
                 ));
             }
 
+            // Stop tick measurement at receipt finalize
+            tick_measurement.stop();
+
+            // Get actual ticks from measurement
+            let actual_ticks = tick_measurement.elapsed_ticks().unwrap_or(0);
+
+            // Prove ≤8 ticks on every hot run (Chatman Constant)
+            if actual_ticks > self.tick_budget {
+                return Err(PipelineError::ReflexError(format!(
+                    "Hook execution {} ticks exceeds budget {} ticks (Chatman Constant violation)",
+                    actual_ticks, self.tick_budget
+                )));
+            }
+
             // Compute mu_hash for this hook
             let mu_hash = self.compute_mu_hash_for_run(soa, run);
 
-            // Create receipt
+            // Create receipt with tick metering
             Ok(Receipt {
                 id: format!("receipt_{}", hot_receipt.span_id),
                 cycle_id: hot_receipt.cycle_id,
                 shard_id: hot_receipt.shard_id,
                 hook_id: hot_receipt.hook_id,
-                ticks: hot_receipt.ticks,
+                ticks: hot_receipt.ticks, // Estimated/legacy ticks from C API
+                actual_ticks,             // PMU-measured actual ticks from tick metering
                 lanes: hot_receipt.lanes,
                 span_id: hot_receipt.span_id,
                 a_hash: hot_receipt.a_hash,
@@ -453,6 +478,7 @@ impl ReflexMap {
                 shard_id: 0,
                 hook_id: 0, // Empty receipt has no hook
                 ticks: 0,
+                actual_ticks: 0,
                 lanes: 0,
                 span_id: generate_span_id(), // Generate OTEL-compatible span ID
                 a_hash: 0,
@@ -467,6 +493,7 @@ impl ReflexMap {
             shard_id: receipts[0].shard_id,
             hook_id: receipts[0].hook_id,
             ticks: receipts[0].ticks,
+            actual_ticks: receipts[0].actual_ticks,
             lanes: receipts[0].lanes,
             span_id: receipts[0].span_id,
             a_hash: receipts[0].a_hash,
@@ -474,8 +501,9 @@ impl ReflexMap {
         };
 
         for receipt in receipts.iter().skip(1) {
-            // Max ticks (worst case)
+            // Max ticks (worst case) - both estimated and actual
             merged.ticks = merged.ticks.max(receipt.ticks);
+            merged.actual_ticks = merged.actual_ticks.max(receipt.actual_ticks);
             // Sum lanes
             merged.lanes += receipt.lanes;
             // XOR merge for span_id

@@ -1,0 +1,6 @@
+<split type="OR">
+    <condition>value > 0</condition>
+    <task name="A"/>
+    <condition>value < 10</condition>
+    <task name="B"/>
+</split>

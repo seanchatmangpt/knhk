@@ -1,102 +1,141 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-//! Circuit breaker for workflow engine resilience
+//! Circuit Breaker - Fault tolerance for external dependencies
+//!
+//! Provides:
+//! - Circuit breaker pattern
+//! - Automatic recovery
+//! - Failure tracking
 
 use crate::error::{WorkflowError, WorkflowResult};
-use knhk_connectors::CircuitBreaker as ConnectorCircuitBreaker;
-use knhk_connectors::CircuitBreakerState;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 
-/// Circuit breaker for workflow operations
+/// Circuit breaker state
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CircuitState {
+    /// Circuit is closed (normal operation)
+    Closed,
+    /// Circuit is open (failing, rejecting requests)
+    Open,
+    /// Circuit is half-open (testing recovery)
+    HalfOpen,
+}
+
+/// Circuit breaker for fault tolerance
 pub struct CircuitBreaker {
-    inner: Arc<Mutex<ConnectorCircuitBreaker>>,
-    name: String,
+    /// Current state
+    state: Arc<RwLock<CircuitState>>,
+    /// Failure count
+    failure_count: Arc<RwLock<u32>>,
+    /// Success count (for half-open)
+    success_count: Arc<RwLock<u32>>,
+    /// Last failure time
+    last_failure: Arc<RwLock<Option<Instant>>>,
+    /// Failure threshold
     failure_threshold: u32,
-    reset_timeout: Duration,
+    /// Success threshold (for half-open)
+    success_threshold: u32,
+    /// Timeout for open state
+    timeout: Duration,
 }
 
 impl CircuitBreaker {
-    /// Create a new circuit breaker
-    pub fn new(name: String, failure_threshold: u32, reset_timeout_ms: u64) -> Self {
+    /// Create new circuit breaker
+    pub fn new(failure_threshold: u32, timeout: Duration) -> Self {
         Self {
-            inner: Arc::new(Mutex::new(ConnectorCircuitBreaker::new(
-                failure_threshold,
-                reset_timeout_ms,
-            ))),
-            name,
+            state: Arc::new(RwLock::new(CircuitState::Closed)),
+            failure_count: Arc::new(RwLock::new(0)),
+            success_count: Arc::new(RwLock::new(0)),
+            last_failure: Arc::new(RwLock::new(None)),
             failure_threshold,
-            reset_timeout: Duration::from_millis(reset_timeout_ms),
+            success_threshold: 3,
+            timeout,
         }
     }
 
-    /// Execute a function with circuit breaker protection
-    pub fn call<F, T>(&self, f: F) -> WorkflowResult<T>
+    /// Execute operation with circuit breaker protection
+    pub async fn execute<F, Fut, T>(&self, operation: F) -> WorkflowResult<T>
     where
-        F: FnOnce() -> WorkflowResult<T>,
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = WorkflowResult<T>>,
     {
-        let mut cb = self.inner.lock().map_err(|e| {
-            WorkflowError::Internal(format!("Failed to acquire circuit breaker lock: {}", e))
-        })?;
+        // Check circuit state
+        let state = *self.state.read().await;
 
-        // Check circuit breaker state
-        match cb.state() {
-            CircuitBreakerState::Open => {
-                return Err(WorkflowError::ExternalSystem(format!(
-                    "Circuit breaker is open for {}",
-                    self.name
-                )));
-            }
-            CircuitBreakerState::HalfOpen | CircuitBreakerState::Closed => {
-                // Proceed with call
-            }
-        }
-
-        // Convert WorkflowError to ConnectorError for circuit breaker
-        let result = cb.call(|| {
-            match f() {
-                Ok(val) => Ok(val),
-                Err(e) => {
-                    // Convert WorkflowError to ConnectorError
-                    let msg = e.to_string();
-                    match e {
-                        WorkflowError::ExternalSystem(_)
-                        | WorkflowError::Timeout
-                        | WorkflowError::ResourceUnavailable(_) => {
-                            Err(knhk_connectors::ConnectorError::NetworkError(msg))
-                        }
-                        _ => Err(knhk_connectors::ConnectorError::NetworkError(format!(
-                            "Error: {}",
-                            msg
-                        ))),
+        match state {
+            CircuitState::Open => {
+                // Check if timeout has passed
+                let last_failure = *self.last_failure.read().await;
+                if let Some(last) = last_failure {
+                    if last.elapsed() >= self.timeout {
+                        // Transition to half-open
+                        let mut state = self.state.write().await;
+                        *state = CircuitState::HalfOpen;
+                        let mut success_count = self.success_count.write().await;
+                        *success_count = 0;
+                    } else {
+                        return Err(WorkflowError::ExternalSystem(
+                            "Circuit breaker is open".to_string(),
+                        ));
                     }
+                } else {
+                    return Err(WorkflowError::ExternalSystem(
+                        "Circuit breaker is open".to_string(),
+                    ));
                 }
             }
-        });
+            CircuitState::HalfOpen => {
+                // Allow operation to test recovery
+            }
+            CircuitState::Closed => {
+                // Normal operation
+            }
+        }
 
-        // Convert ConnectorError back to WorkflowError
-        match result {
-            Ok(val) => Ok(val),
-            Err(e) => Err(WorkflowError::ExternalSystem(format!("{:?}", e))),
+        // Execute operation
+        match operation().await {
+            Ok(result) => {
+                // Success - reset failure count
+                let mut failure_count = self.failure_count.write().await;
+                *failure_count = 0;
+
+                // Update state if half-open
+                let state = *self.state.read().await;
+                if state == CircuitState::HalfOpen {
+                    let mut success_count = self.success_count.write().await;
+                    *success_count += 1;
+
+                    if *success_count >= self.success_threshold {
+                        // Transition to closed
+                        let mut state = self.state.write().await;
+                        *state = CircuitState::Closed;
+                        *success_count = 0;
+                    }
+                }
+
+                Ok(result)
+            }
+            Err(e) => {
+                // Failure - increment failure count
+                let mut failure_count = self.failure_count.write().await;
+                *failure_count += 1;
+
+                let mut last_failure = self.last_failure.write().await;
+                *last_failure = Some(Instant::now());
+
+                // Check if threshold exceeded
+                if *failure_count >= self.failure_threshold {
+                    let mut state = self.state.write().await;
+                    *state = CircuitState::Open;
+                }
+
+                Err(e)
+            }
         }
     }
 
-    /// Get current circuit breaker state
-    pub fn state(&self) -> CircuitBreakerState {
-        self.inner
-            .lock()
-            .ok()
-            .and_then(|cb| Some(cb.state().clone()))
-            .unwrap_or_else(|| knhk_connectors::CircuitBreakerState::Open)
-    }
-
-    /// Get circuit breaker name
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-impl Default for CircuitBreaker {
-    fn default() -> Self {
-        Self::new("default".to_string(), 5, 60000)
+    /// Get current state
+    pub async fn get_state(&self) -> CircuitState {
+        *self.state.read().await
     }
 }

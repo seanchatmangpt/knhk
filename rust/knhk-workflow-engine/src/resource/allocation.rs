@@ -1,4 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Resource Allocation System
 //!
 //! Implements YAWL-style resource allocation policies:

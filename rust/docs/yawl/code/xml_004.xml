@@ -1,0 +1,6 @@
+<split type="XOR">
+    <condition>value < 0</condition>
+    <task name="A"/>
+    <condition>value >= 0</condition>
+    <task name="B"/>
+</split>

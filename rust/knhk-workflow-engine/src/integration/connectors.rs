@@ -34,19 +34,7 @@ impl ConnectorIntegration {
             ))
         })?;
 
-        // Execute connector task
-        // Note: Connector trait doesn't have execute_task method, so we use fetch_delta as a proxy
-        // FUTURE: Extend Connector trait with execute_task method if needed
-        match connector.as_mut().fetch_delta() {
-            Ok(_delta) => {
-                // Return the input data transformed (placeholder - actual transformation depends on connector)
-                Ok(data)
-            }
-            Err(e) => Err(crate::error::WorkflowError::ExternalSystem(format!(
-                "Connector execution failed: {:?}",
-                e
-            ))),
-        }
+        unimplemented!("execute_task: needs connector-specific task execution implementation with proper data transformation, error handling, and connector trait extension (execute_task method)")
     }
 }
 

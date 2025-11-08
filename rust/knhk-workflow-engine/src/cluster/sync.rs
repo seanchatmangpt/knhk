@@ -1,5 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! State synchronization for multi-region deployment
 
 use crate::case::Case;
@@ -147,6 +145,8 @@ mod tests {
         let sync = StateSync::new(SyncStrategy::Eventual);
         let case =
             crate::case::Case::new(crate::parser::WorkflowSpecId::new(), serde_json::json!({}));
-        sync.sync_case(&case, "us-east-1").await.unwrap();
+        sync.sync_case(&case, "us-east-1")
+            .await
+            .expect("sync_case should succeed");
     }
 }

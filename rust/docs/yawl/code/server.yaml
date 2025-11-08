@@ -1,0 +1,26 @@
+│       │   │   ├── observed_output
+│       │   │   │   └── data
+│       │   │   │       ├── registry-test-1-single-attr-ref
+│       │   │   │       ├── registry-test-10-duplicate-attr-name
+│       │   │   │       ├── registry-test-10-prefix-refs
+│       │   │   │       ├── registry-test-11-prefix-refs-extends
+│       │   │   │       ├── registry-test-12-duplicate-group-id
+│       │   │   │       ├── registry-test-13-duplicate-metric-name
+│       │   │   │       ├── registry-test-14-annotations
+│       │   │   │       ├── registry-test-15-attr-any
+│       │   │   │       ├── registry-test-16-attr-conflict
+│       │   │   │       ├── registry-test-2-multi-attr-refs
+│       │   │   │       ├── registry-test-3-extends
+│       │   │   │       ├── registry-test-4-events
+│       │   │   │       ├── registry-test-5-metrics
+│       │   │   │       ├── registry-test-6-resources
+│       │   │   │       ├── registry-test-7-spans
+│       │   │   │       ├── registry-test-8-http
+│       │   │   │       ├── registry-test-9-metric-extends
+│       │   │   │       ├── registry-test-lineage-0
+│       │   │   │       ├── registry-test-lineage-1
+│       │   │   │       ├── registry-test-lineage-2
+│       │   │   │       ├── registry-test-lineage-3
+│       │   │   │       ├── registry-test-v2-1-everything
+│       │   │   │       ├── registry-test-v2-2-multifile
+│       │   │   │       └── registry-test-v2-3-both-version

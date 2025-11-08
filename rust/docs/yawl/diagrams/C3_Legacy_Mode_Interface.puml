@@ -1,0 +1,37 @@
+@startuml C3_Legacy_Mode_Interface
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_LEFT_RIGHT()
+
+Container_Boundary(knhk, "KNHK Workflow Engine") {
+  Component(api, "REST/gRPC API", "Import/Export YAWL specs, case operations")
+  Component(parser, "Workflow Parser", "Parse YAWL/Turtle workflow specifications")
+  Component(engine, "Workflow Engine", "Core execution engine with all 43 patterns")
+  Component(reg, "Pattern Registry", "Pattern dispatch and metadata (1-43)")
+  Component(validator, "Workflow Validator", "Validate workflow specifications")
+}
+
+System(legacy, "Legacy YAWL Tooling", "External YAWL systems and modelers")
+Rel(legacy, api, "Import YAWL specs, export cases")
+
+Rel(api, parser, "Parse workflow specifications")
+Rel(parser, engine, "Register workflow specs")
+Rel(engine, reg, "Execute patterns (1-43)")
+Rel(engine, validator, "Validate workflow execution")
+
+note right of reg
+All 43 Van der Aalst patterns supported:
+• Basic Control Flow (1-5)
+• Advanced Branching (6-11)
+• Multiple Instance (12-15)
+• State-Based (16-18)
+• Cancellation (19-25)
+• Advanced Control (26-39)
+• Trigger Patterns (40-43)
+
+YAWL compatibility:
+• Full Turtle/RDF parsing
+• YAWL-compatible execution semantics
+• Legacy workflow import/export
+end note
+@enduml
+

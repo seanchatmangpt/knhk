@@ -1,0 +1,13 @@
+{
+  "pattern_sequence": [1, 2, 3],
+  "deadline": "2025-08-22T00:30:00Z",
+  "priority": "normal",
+  "metadata": {
+    "source": "api",
+    "user_id": "user123"
+  },
+  "input_data": {
+    "param1": "value1",
+    "param2": 42
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "type": "subscribe_metrics",
+  "id": "req_002",
+  "data": {
+    "interval_ms": 1000
+  }
+}

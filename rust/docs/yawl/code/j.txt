@@ -1,0 +1,47 @@
+│   │   └── hive-mind-prompt-swarm-1762487621370-0h4el1d46.txt
+│   └── templates
+├── .lh
+│   ├── .cursor
+│   │   └── commands
+│   ├── .lhignore
+│   ├── docs
+│   ├── erlang
+│   │   └── docs
+│   ├── playground
+│   │   └── dod-validator
+│   ├── registry
+│   ├── rust
+│   │   ├── knhk-aot
+│   │   │   └── src
+│   │   ├── knhk-cli
+│   │   │   └── src
+│   │   ├── knhk-connectors
+│   │   │   └── src
+│   │   ├── knhk-etl
+│   │   │   └── src
+│   │   ├── knhk-integration-tests
+│   │   ├── knhk-lockchain
+│   │   │   └── docs
+│   │   ├── knhk-otel
+│   │   │   └── src
+│   │   ├── knhk-sidecar
+│   │   │   ├── docs
+│   │   │   └── src
+│   │   ├── knhk-unrdf
+│   │   │   └── src
+│   │   ├── knhk-validation
+│   │   │   └── src
+│   │   ├── knhk-warm
+│   │   │   └── examples
+│   │   ├── knhks-aot
+│   │   ├── knhks-cli
+│   │   │   └── src
+│   │   ├── knhks-etl
+│   │   │   └── src
+│   │   └── knhks-integration-tests
+│   └── scripts
+├── .swarm
+│   ├── memory.db
+│   ├── memory.db-shm
+│   └── memory.db-wal
+├── book

@@ -216,9 +216,7 @@ impl GgenGenerator {
 
     /// SPARQL filter for Tera templates
     fn sparql_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
-        // This is a placeholder - in real implementation, would execute SPARQL
-        // For now, return empty array
-        Ok(Value::Array(vec![]))
+        unimplemented!("sparql_filter: needs SPARQL query execution implementation with RDF store integration, query parsing, and result transformation")
     }
 }
 

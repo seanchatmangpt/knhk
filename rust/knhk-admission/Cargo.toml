@@ -1,0 +1,28 @@
+[package]
+name = "knhk-admission"
+version = "1.0.0"
+edition = "2021"
+description = "Admission gate for KNHK with SHACL validation, PB congruence, and PQC verification"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-admission"
+keywords = ["admission", "validation", "shacl", "security"]
+categories = ["algorithms", "authentication"]
+license = "MIT"
+authors = ["KNHK Team"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
+knhk-validation = { path = "../knhk-validation", version = "1.0.0", optional = true }
+
+[features]
+default = []
+unrdf = ["dep:knhk-unrdf"]
+validation = ["dep:knhk-validation"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+

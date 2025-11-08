@@ -1,13 +1,12 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Caching layer for workflow engine
 
 use crate::case::{Case, CaseId};
-// Unused import removed - will be used when implementing cache
+use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use lru::LruCache;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
+use tracing::warn;
 
 /// Cache configuration
 #[derive(Debug, Clone)]
@@ -39,66 +38,92 @@ pub struct WorkflowCache {
 
 impl WorkflowCache {
     /// Create a new workflow cache
-    pub fn new(config: CacheConfig) -> Self {
-        Self {
-            workflow_specs: Arc::new(Mutex::new(LruCache::new(
-                NonZeroUsize::new(config.max_workflow_specs).unwrap(),
-            ))),
-            cases: Arc::new(Mutex::new(LruCache::new(
-                NonZeroUsize::new(config.max_cases).unwrap(),
-            ))),
+    pub fn new(config: CacheConfig) -> WorkflowResult<Self> {
+        let max_specs = NonZeroUsize::new(config.max_workflow_specs).ok_or_else(|| {
+            WorkflowError::Validation("max_workflow_specs must be greater than 0".to_string())
+        })?;
+        let max_cases = NonZeroUsize::new(config.max_cases).ok_or_else(|| {
+            WorkflowError::Validation("max_cases must be greater than 0".to_string())
+        })?;
+
+        Ok(Self {
+            workflow_specs: Arc::new(Mutex::new(LruCache::new(max_specs))),
+            cases: Arc::new(Mutex::new(LruCache::new(max_cases))),
             config,
-        }
+        })
     }
 
     /// Get workflow spec from cache
     pub fn get_workflow_spec(&self, spec_id: &WorkflowSpecId) -> Option<Arc<WorkflowSpec>> {
-        let mut cache = self.workflow_specs.lock().unwrap();
-        cache.get(spec_id).cloned()
+        self.workflow_specs
+            .lock()
+            .ok()
+            .and_then(|mut cache| cache.get(spec_id).cloned())
     }
 
     /// Put workflow spec in cache
     pub fn put_workflow_spec(&self, spec: WorkflowSpec) {
-        let mut cache = self.workflow_specs.lock().unwrap();
-        cache.put(spec.id, Arc::new(spec));
+        if let Ok(mut cache) = self.workflow_specs.lock() {
+            cache.put(spec.id, Arc::new(spec));
+        } else {
+            warn!("Failed to acquire workflow_specs lock in put_workflow_spec");
+        }
     }
 
     /// Get case from cache
     pub fn get_case(&self, case_id: &CaseId) -> Option<Arc<Case>> {
-        let mut cache = self.cases.lock().unwrap();
-        cache.get(case_id).cloned()
+        self.cases
+            .lock()
+            .ok()
+            .and_then(|mut cache| cache.get(case_id).cloned())
     }
 
     /// Put case in cache
     pub fn put_case(&self, case: Case) {
-        let mut cache = self.cases.lock().unwrap();
-        cache.put(case.id, Arc::new(case));
+        if let Ok(mut cache) = self.cases.lock() {
+            cache.put(case.id, Arc::new(case));
+        } else {
+            warn!("Failed to acquire cases lock in put_case");
+        }
     }
 
     /// Invalidate workflow spec cache
     pub fn invalidate_workflow_spec(&self, spec_id: &WorkflowSpecId) {
-        let mut cache = self.workflow_specs.lock().unwrap();
-        cache.pop(spec_id);
+        if let Ok(mut cache) = self.workflow_specs.lock() {
+            cache.pop(spec_id);
+        } else {
+            warn!("Failed to acquire workflow_specs lock in invalidate_workflow_spec");
+        }
     }
 
     /// Invalidate case cache
     pub fn invalidate_case(&self, case_id: &CaseId) {
-        let mut cache = self.cases.lock().unwrap();
-        cache.pop(case_id);
+        if let Ok(mut cache) = self.cases.lock() {
+            cache.pop(case_id);
+        } else {
+            warn!("Failed to acquire cases lock in invalidate_case");
+        }
     }
 
     /// Clear all caches
     pub fn clear(&self) {
-        let mut specs = self.workflow_specs.lock().unwrap();
-        specs.clear();
-        let mut cases = self.cases.lock().unwrap();
-        cases.clear();
+        if let Ok(mut specs) = self.workflow_specs.lock() {
+            specs.clear();
+        } else {
+            warn!("Failed to acquire workflow_specs lock in clear");
+        }
+        if let Ok(mut cases) = self.cases.lock() {
+            cases.clear();
+        } else {
+            warn!("Failed to acquire cases lock in clear");
+        }
     }
 }
 
 impl Default for WorkflowCache {
     fn default() -> Self {
         Self::new(CacheConfig::default())
+            .expect("Default CacheConfig should have valid non-zero values")
     }
 }
 

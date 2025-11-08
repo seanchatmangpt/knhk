@@ -1,0 +1,12 @@
+{
+  "workflows": [
+    {
+      "workflow_id": "wf_01HX8K9...",
+      "status": "running",
+      "start_time": "2025-08-22T00:20:15Z"
+    }
+  ],
+  "total": 1,
+  "limit": 50,
+  "offset": 0
+}

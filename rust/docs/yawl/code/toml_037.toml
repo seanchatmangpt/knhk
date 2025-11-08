@@ -1,0 +1,3 @@
+[dependencies]
+knhk-workflow-engine = { path = "../knhk-workflow-engine" }
+tokio = { version = "1", features = ["full"] }

@@ -55,6 +55,19 @@ pub enum CaseState {
     Suspended,
 }
 
+impl std::fmt::Display for CaseState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CaseState::Created => write!(f, "created"),
+            CaseState::Running => write!(f, "running"),
+            CaseState::Completed => write!(f, "completed"),
+            CaseState::Cancelled => write!(f, "cancelled"),
+            CaseState::Failed => write!(f, "failed"),
+            CaseState::Suspended => write!(f, "suspended"),
+        }
+    }
+}
+
 /// Workflow case (instance)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Case {

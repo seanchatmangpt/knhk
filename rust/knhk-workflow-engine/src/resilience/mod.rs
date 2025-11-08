@@ -1,4 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Enterprise resilience patterns for Fortune 500-level reliability
 
 pub mod circuit_breaker;

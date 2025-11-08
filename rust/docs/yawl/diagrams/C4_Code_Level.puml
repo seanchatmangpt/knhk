@@ -1,0 +1,107 @@
+@startuml C4_Code_Level
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Code.puml
+LAYOUT_TOP_DOWN()
+
+class PatternRegistry {
+  +new(): PatternRegistry
+  +register(pattern_id: PatternId, executor: Box<dyn PatternExecutor>)
+  +get(pattern_id: &PatternId): Option<&dyn PatternExecutor>
+  +execute(id: &PatternId, ctx: &PatternExecutionContext): Option<PatternExecutionResult>
+  +list(): Vec<PatternId>
+  +has_pattern(pattern_id: &PatternId): bool
+}
+
+class PatternExecutor {
+  +execute(ctx: &PatternExecutionContext): PatternExecutionResult
+}
+
+class PatternAdapter {
+  -pattern: Arc<dyn Pattern<Value>>
+  -pattern_id: PatternId
+  +new(pattern: Arc<dyn Pattern<Value>>, pattern_id: PatternId): Self
+}
+
+package "Pattern Executors (All 43 Patterns)" {
+  ' Basic Control Flow (1-5)
+  class P01_Sequence implements PatternExecutor
+  class P02_ParallelSplit implements PatternExecutor
+  class P03_Synchronization implements PatternExecutor
+  class P04_ExclusiveChoice implements PatternExecutor
+  class P05_SimpleMerge implements PatternExecutor
+  
+  ' Advanced Branching (6-11)
+  class P06_MultiChoice implements PatternExecutor
+  class P07_StructuredSynchronizingMerge implements PatternExecutor
+  class P08_MultiMerge implements PatternExecutor
+  class P09_Discriminator implements PatternExecutor
+  class P10_ArbitraryCycles implements PatternExecutor
+  class P11_ImplicitTermination implements PatternExecutor
+  
+  ' Multiple Instance (12-15)
+  class P12_MI_WithoutSync implements PatternExecutor
+  class P13_MI_WithSync implements PatternExecutor
+  class P14_MI_WithDesignTimeKnowledge implements PatternExecutor
+  class P15_MI_WithRuntimeKnowledge implements PatternExecutor
+  
+  ' State-Based (16-18)
+  class P16_DeferredChoice implements PatternExecutor
+  class P17_InterleavedParallelRouting implements PatternExecutor
+  class P18_Milestone implements PatternExecutor
+  
+  ' Cancellation (19-25)
+  class P19_CancelActivity implements PatternExecutor
+  class P20_CancelCase implements PatternExecutor
+  class P21_CancelRegion implements PatternExecutor
+  class P22_CancelMIActivity implements PatternExecutor
+  class P23_CompleteMIActivity implements PatternExecutor
+  class P24_BlockingDiscriminator implements PatternExecutor
+  class P25_CancellingDiscriminator implements PatternExecutor
+  
+  ' Advanced Control (26-39)
+  class P26_Pattern26 implements PatternExecutor
+  class P27_Pattern27 implements PatternExecutor
+  class P28_StructuredLoop implements PatternExecutor
+  class P29_Recursion implements PatternExecutor
+  class P30_TransientTrigger implements PatternExecutor
+  class P31_PersistentTrigger implements PatternExecutor
+  class P32_Pattern32 implements PatternExecutor
+  class P33_StaticPartialJoin implements PatternExecutor
+  class P34_DynamicPartialJoin implements PatternExecutor
+  class P35_GeneralizedAndJoin implements PatternExecutor
+  class P36_LocalSyncMerge implements PatternExecutor
+  class P37_GeneralSyncMerge implements PatternExecutor
+  class P38_ThreadMerge implements PatternExecutor
+  class P39_ThreadSplit implements PatternExecutor
+  
+  ' Trigger Patterns (40-43)
+  class P40_ExplicitTermination implements PatternExecutor
+  class P41_ImplicitTermination2 implements PatternExecutor
+  class P42_MultiEndTermination implements PatternExecutor
+  class P43_TerminationWithCancellation implements PatternExecutor
+}
+
+class WorkflowEngine {
+  -pattern_registry: Arc<PatternRegistry>
+  -state_store: Arc<RwLock<StateStore>>
+  -specs: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>
+  -cases: Arc<RwLock<HashMap<CaseId, Case>>>
+  +new(state_store: StateStore): Self
+  +register_workflow(spec: WorkflowSpec): WorkflowResult<()>
+  +create_case(spec_id: WorkflowSpecId, data: Value): WorkflowResult<CaseId>
+  +execute_pattern(pattern_id: &PatternId, ctx: &PatternExecutionContext): WorkflowResult<PatternExecutionResult>
+}
+
+PatternRegistry -> PatternExecutor : dispatch()
+PatternAdapter ..|> PatternExecutor : implements
+WorkflowEngine --> PatternRegistry : uses
+WorkflowEngine --> PatternExecutor : executes
+
+note bottom
+Pattern Executor Interface:
+• execute(ctx: &PatternExecutionContext): PatternExecutionResult
+• All 43 Van der Aalst patterns implemented
+• PatternAdapter bridges knhk-patterns with workflow engine
+• Each executor handles pattern-specific logic
+end note
+@enduml
+

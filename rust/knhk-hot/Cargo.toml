@@ -41,7 +41,7 @@ name = "simd_predicates"
 harness = false
 
 [[bench]]
-name = "tick_budget"
+name = "w1_pipeline_perf"
 harness = false
 
 [profile.bench]

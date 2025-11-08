@@ -1,5 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Leader election for distributed workflow engine
 
 use crate::error::{WorkflowError, WorkflowResult};
@@ -41,14 +39,18 @@ impl LeaderElection {
 
     /// Check if this node is the leader
     pub fn is_leader(&self) -> bool {
-        let state = self.state.lock().unwrap();
-        *state == LeaderState::Leader
+        self.state
+            .lock()
+            .map(|state| *state == LeaderState::Leader)
+            .unwrap_or(false)
     }
 
     /// Get current leader ID
     pub fn get_leader(&self) -> Option<String> {
-        let leader_id = self.leader_id.lock().unwrap();
-        leader_id.clone()
+        self.leader_id
+            .lock()
+            .ok()
+            .and_then(|leader_id| leader_id.clone())
     }
 
     /// Attempt to become leader
@@ -59,10 +61,14 @@ impl LeaderElection {
 
         // Check if leader lease is expired
         let leader_expired = {
-            let last_heartbeat = self.last_heartbeat.lock().unwrap();
+            let last_heartbeat = self.last_heartbeat.lock().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to acquire heartbeat lock: {}", e))
+            })?;
             let now_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .map_err(|e| {
+                    WorkflowError::Internal(format!("Failed to get system time: {}", e))
+                })?
                 .as_millis() as u64;
             last_heartbeat
                 .map(|hb| now_ms.saturating_sub(hb) >= self.lease_duration.as_millis() as u64)
@@ -71,13 +77,19 @@ impl LeaderElection {
 
         if leader_expired || self.get_leader().is_none() {
             *state = LeaderState::Leader;
-            let mut leader_id = self.leader_id.lock().unwrap();
+            let mut leader_id = self.leader_id.lock().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to acquire leader_id lock: {}", e))
+            })?;
             *leader_id = Some(self.node_id.clone());
-            let mut heartbeat = self.last_heartbeat.lock().unwrap();
+            let mut heartbeat = self.last_heartbeat.lock().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to acquire heartbeat lock: {}", e))
+            })?;
             *heartbeat = Some(
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .map_err(|e| {
+                        WorkflowError::Internal(format!("Failed to get system time: {}", e))
+                    })?
                     .as_millis() as u64,
             );
             Ok(true)
@@ -99,7 +111,9 @@ impl LeaderElection {
         *heartbeat = Some(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .map_err(|e| {
+                    WorkflowError::Internal(format!("Failed to get system time: {}", e))
+                })?
                 .as_millis() as u64,
         );
         Ok(())
@@ -111,7 +125,9 @@ impl LeaderElection {
             WorkflowError::Internal(format!("Failed to acquire leader lock: {}", e))
         })?;
         *state = LeaderState::Follower;
-        let mut leader_id = self.leader_id.lock().unwrap();
+        let mut leader_id = self.leader_id.lock().map_err(|e| {
+            WorkflowError::Internal(format!("Failed to acquire leader_id lock: {}", e))
+        })?;
         *leader_id = None;
         Ok(())
     }
@@ -131,7 +147,9 @@ mod tests {
         let election = LeaderElection::new("node-1".to_string(), 30);
         assert!(!election.is_leader());
 
-        let became_leader = election.try_become_leader().unwrap();
+        let became_leader = election
+            .try_become_leader()
+            .expect("try_become_leader should succeed");
         assert!(became_leader);
         assert!(election.is_leader());
         assert_eq!(election.get_leader(), Some("node-1".to_string()));

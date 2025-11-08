@@ -1,0 +1,5 @@
+<split type="AND">
+    <task name="A"/>
+    <task name="B"/>
+    <task name="C"/>
+</split>

@@ -13,7 +13,9 @@ mod formal;
 mod hardware;
 mod zero_copy;
 
-pub use deterministic::{DeterministicContext, DeterministicExecutor, ExecutionStep};
+pub use deterministic::{
+    DeltaLogEntry, DeterministicContext, DeterministicExecutor, ExecutionStep,
+};
 pub use formal::{FormalVerifier, Property, VerificationResult, Violation};
 pub use hardware::{HardwareAcceleration, HardwareAccelerator};
 pub use zero_copy::{ZeroCopyBytes, ZeroCopyStr, ZeroCopyTriple, ZeroCopyTripleBatch};

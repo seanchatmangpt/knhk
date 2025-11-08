@@ -1,0 +1,8 @@
+│       │       └── templates
+│       │           └── registry
+│       │               └── markdown
+│       │                   └── snippet.md.j2
+│       ├── defaults
+│       │   ├── diagnostic_templates
+│       │   │   ├── ansi
+│       │   │   │   ├── errors.txt.j2

@@ -1,0 +1,6 @@
+<split type="OR">
+    <eventTrigger>eventA</eventTrigger>
+    <task name="A"/>
+    <eventTrigger>eventB</eventTrigger>
+    <task name="B"/>
+</split>

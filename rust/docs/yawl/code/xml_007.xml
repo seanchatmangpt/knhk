@@ -1,0 +1,3 @@
+<task name="A">
+    <loopCondition>value < 10</loopCondition>
+</task>

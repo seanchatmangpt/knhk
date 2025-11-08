@@ -2,6 +2,7 @@
 // Safe wrappers around C FFI for hot path execution
 
 pub mod beat_ffi;
+pub mod bench;
 pub mod content_addr;
 pub mod cpu_dispatch;
 pub mod cycle_counter;

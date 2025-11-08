@@ -1,0 +1,12 @@
+[package]
+name = "knhk-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+knhk-engine = { path = "../../crates/engine" }
+knhk-api-rest = { path = "../../crates/api-rest" }
+axum = "0.7"

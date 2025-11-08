@@ -1,0 +1,46 @@
+@startuml C3_Components_MI_Cancellation
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_LEFT_RIGHT()
+
+Container_Boundary(reg, "Pattern Registry") {
+  Component(mi, "Patterns 12–15\nMultiple Instance", "MI without sync, with sync, design-time knowledge, runtime knowledge")
+  Component(cancel, "Patterns 19–25\nCancellation", "Cancel Activity/Case/Region, MI cancel/complete, Discriminators")
+  Component(joinx, "Patterns 33–37\nPartial/General Joins", "Static/Dynamic partial join, Generalized AND, Local/General sync merge")
+}
+
+Container(alloc, "Resource Allocator")
+Container(engine, "Workflow Engine")
+Rel(engine, reg, "Execute pattern")
+Rel(mi, alloc, "Allocate N instances, collect results")
+Rel(cancel, mi, "Cancel MI instances on policy")
+Rel(joinx, mi, "Synchronize subsets or all instances")
+
+note right of mi
+Patterns:
+• 12: MI Without Sync
+• 13: MI With Sync
+• 14: MI With Design-Time Knowledge
+• 15: MI With Runtime Knowledge
+end note
+
+note right of cancel
+Patterns:
+• 19: Cancel Activity
+• 20: Cancel Case
+• 21: Cancel Region
+• 22: Cancel MI Activity
+• 23: Complete MI Activity
+• 24: Blocking Discriminator
+• 25: Cancelling Discriminator
+end note
+
+note right of joinx
+Patterns:
+• 33: Static Partial Join
+• 34: Dynamic Partial Join
+• 35: Generalized AND-Join
+• 36: Local Sync Merge
+• 37: General Sync Merge
+end note
+@enduml
+

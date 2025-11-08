@@ -1,0 +1,46 @@
+@startuml C3_Components_State_Triggers_Humans
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_LEFT_RIGHT()
+
+Container_Boundary(reg, "Pattern Registry") {
+  Component(statep, "Patterns 16–18\nState-Based", "Deferred Choice, Interleaved Parallel Routing, Milestone")
+  Component(trig, "Patterns 30–31, 40–43\nTriggers/Termination", "Transient/Persistent Triggers, Termination variants")
+  Component(discx, "Patterns 26–29\nAdvanced Control", "Blocking/Cancelling Discriminator, Structured Loop, Recursion")
+}
+
+Container(engine, "Workflow Engine")
+Container(worklets, "Worklet Repository", "Exception handling worklets")
+Container(obs, "Observability", "OTEL integration")
+
+Rel(engine, reg, "Execute pattern")
+Rel(worklets, statep, "Human worklet completion → Pattern 16")
+Rel(obs, trig, "Timer events → Patterns 30/31")
+Rel(obs, statep, "External events → Pattern 16")
+Rel(trig, statep, "Termination/interruption signals")
+
+note right of statep
+Patterns:
+• 16: Deferred Choice
+• 17: Interleaved Parallel Routing
+• 18: Milestone
+end note
+
+note right of trig
+Patterns:
+• 30: Transient Trigger
+• 31: Persistent Trigger
+• 40: Explicit Termination
+• 41: Implicit Termination (variant)
+• 42: Multi-End Termination
+• 43: Termination with Cancellation
+end note
+
+note right of discx
+Patterns:
+• 26: Blocking Discriminator
+• 27: Cancelling Discriminator
+• 28: Structured Loop
+• 29: Recursion
+end note
+@enduml
+

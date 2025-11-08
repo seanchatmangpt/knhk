@@ -1,0 +1,9 @@
+{
+  "type": "metrics_update",
+  "data": {
+    "timestamp": "2025-08-22T00:25:00Z",
+    "active_workflows": 42,
+    "throughput": 12.5,
+    "cpu_usage": 0.73
+  }
+}

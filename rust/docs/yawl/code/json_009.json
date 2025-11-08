@@ -1,0 +1,11 @@
+{
+  "status": "healthy",
+  "timestamp": "2025-08-22T00:25:00Z",
+  "components": {
+    "admission_gate": "healthy",
+    "orchestration_server": "healthy",
+    "resource_monitor": "healthy",
+    "byteactor_cores": "healthy"
+  },
+  "uptime_seconds": 3600
+}

@@ -1,4 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Distributed state management for multi-region deployment
 
 pub mod balancer;

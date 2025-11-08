@@ -1,0 +1,21 @@
+@startuml C1_Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+LAYOUT_LEFT_RIGHT()
+
+Person(user, "Human Actor", "Creates cases, submits work items")
+System(legacy, "Legacy YAWL/BPMN Systems", "External workflow engines and modelers")
+System_Boundary(knhk, "KNHK Workflow Engine") {
+  System(knhk_api, "Workflow Engine API", "REST/gRPC endpoints for workflow operations")
+}
+
+System(ext, "External Event Sources", "APIs, Kafka, Webhooks, External systems")
+System(timer, "Timebase", "NTP/Monotonic Clock for scheduling")
+SystemDb(store, "State Store", "Sled-based persistence for specs, cases, and state")
+
+Rel(user, knhk_api, "Create cases, submit work items, query status")
+Rel(legacy, knhk_api, "Import YAWL specs (Turtle/RDF), YAWL-compatible operations")
+Rel(ext, knhk_api, "External events, webhooks, Kafka messages")
+Rel(timer, knhk_api, "Timer ticks for scheduled tasks")
+Rel(knhk_api, store, "Persist workflow specs, cases, and execution state")
+@enduml
+

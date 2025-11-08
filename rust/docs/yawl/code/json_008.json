@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-08-22T00:25:00Z",
+  "workflows": {
+    "active": 42,
+    "completed_last_hour": 150,
+    "throughput_per_second": 12.5
+  },
+  "resources": {
+    "cores_total": 8,
+    "cores_active": 6,
+    "average_cpu_usage": 0.73
+  },
+  "admission": {
+    "crystals_admitted": 1500,
+    "crystals_rejected": 23,
+    "admission_rate": 0.985
+  }
+}

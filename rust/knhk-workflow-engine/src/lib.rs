@@ -64,14 +64,17 @@ pub mod config;
 pub mod constants;
 pub mod enterprise;
 pub mod error;
+pub mod execution;
 pub mod executor;
 pub mod ggen;
+pub mod hooks;
 pub mod innovation;
 pub mod integration;
 pub mod observability;
 pub mod parser;
 pub mod patterns;
 pub mod performance;
+pub mod reflex;
 pub mod resilience;
 pub mod resource;
 pub mod security;
@@ -94,21 +97,23 @@ pub use enterprise::{
     SecurityConfig,
 };
 pub use error::{WorkflowError, WorkflowResult};
+pub use execution::{ExecutionEngine, ExecutionHandle, ExecutionPipeline, ExecutionStatus, WorkQueue};
 pub use executor::WorkflowEngine;
+pub use state::{StateEvent, StateManager, StateStore};
 pub use ggen::{
     generate_documentation_from_spec, generate_tests_from_spec, generate_workflow_from_rdf,
     GgenGenerator,
 };
 pub use innovation::{
-    DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,
+    DeltaLogEntry, DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,
     HardwareAcceleration, HardwareAccelerator, Property, VerificationResult, Violation,
     ZeroCopyBytes, ZeroCopyStr, ZeroCopyTriple, ZeroCopyTripleBatch,
 };
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
 pub use patterns::{PatternId, PatternRegistry};
 pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
+pub use reflex::{PromotableSegment, PromotionAnalysis, ReflexBridge};
 pub use security::*;
-pub use state::StateStore;
 pub use templates::TemplateLibrary;
 pub use testing::{
     assert_pattern_failure, assert_pattern_has_next_state, assert_pattern_has_variable,

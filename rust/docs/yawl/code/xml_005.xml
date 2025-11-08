@@ -1,0 +1,4 @@
+<join type="XOR">
+    <task name="A"/>
+    <task name="B"/>
+</join>

@@ -1,5 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Provenance tracking with lockchain integration
 
 // Unused imports removed - will be used when implementing provenance tracking
@@ -138,9 +136,11 @@ mod tests {
                 Some("user-1".to_string()),
                 serde_json::json!({}),
             )
-            .unwrap();
+            .expect("record_event should succeed");
 
-        let events = tracker.get_events_for_resource("case-1").unwrap();
+        let events = tracker
+            .get_events_for_resource("case-1")
+            .expect("get_events_for_resource should succeed");
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].id, id);
     }

@@ -1,0 +1,34 @@
+@startuml C3_Components_Basic_Advanced
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_LEFT_RIGHT()
+
+Container_Boundary(reg, "Pattern Registry") {
+  Component(p01_05, "Patterns 1–5\nBasic Control Flow", "Sequence, Parallel Split, Synchronization, Exclusive Choice, Simple Merge")
+  Component(p06_11, "Patterns 6–11\nAdvanced Branching", "Multi-Choice, Structured Synchronizing Merge, Multi-Merge, Discriminator, Arbitrary Cycles, Implicit Termination")
+}
+
+Container(engine, "Workflow Engine")
+Rel(engine, reg, "Execute pattern by ID")
+Rel(reg, p01_05, "Dispatch patterns 1-5")
+Rel(reg, p06_11, "Dispatch patterns 6-11")
+
+note right of p01_05
+Patterns:
+• 1: Sequence
+• 2: Parallel Split (AND-split)
+• 3: Synchronization (AND-join)
+• 4: Exclusive Choice (XOR-split)
+• 5: Simple Merge (XOR-join)
+end note
+
+note right of p06_11
+Patterns:
+• 6: Multi-Choice (OR-split)
+• 7: Structured Synchronizing Merge
+• 8: Multi-Merge
+• 9: Discriminator
+• 10: Arbitrary Cycles
+• 11: Implicit Termination
+end note
+@enduml
+

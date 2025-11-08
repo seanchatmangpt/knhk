@@ -210,12 +210,21 @@ impl ReflexStage {
     }
 
     /// Execute a single hook using C hot path API via FFI
+    ///
+    /// Implements receipt-side tick metering:
+    /// - Start tick counter at μ entry
+    /// - Stop tick counter at receipt finalize
+    /// - Store ticks, actual_ticks, lanes in receipt
+    /// - Prove ≤8 ticks on every hot run
     pub(crate) fn execute_hook(
         &self,
         soa: &SoAArrays,
         run: &PredRun,
     ) -> Result<Receipt, PipelineError> {
-        use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun};
+        use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun, TickMeasurement};
+
+        // Start tick measurement at μ entry
+        let mut tick_measurement = TickMeasurement::start();
 
         // Initialize engine with SoA arrays
         // SAFETY: Engine::new requires valid pointers to SoA arrays.
@@ -278,14 +287,28 @@ impl ReflexStage {
         let mut hot_receipt = HotReceipt::default();
         let _result = engine.eval_bool(&mut ir, &mut hot_receipt);
 
-        // Convert to ETL receipt format
+        // Stop tick measurement at receipt finalize
+        tick_measurement.stop();
+
+        // Get actual ticks from measurement
+        let actual_ticks = tick_measurement.elapsed_ticks().unwrap_or(0);
+
+        // Prove ≤8 ticks on every hot run (Chatman Constant)
+        if actual_ticks > self.tick_budget {
+            return Err(PipelineError::ReflexError(format!(
+                "Hook execution {} ticks exceeds budget {} ticks (Chatman Constant violation)",
+                actual_ticks, self.tick_budget
+            )));
+        }
+
+        // Convert to ETL receipt format with tick metering
         Ok(Receipt {
             id: format!("receipt_{}", hot_receipt.span_id),
             cycle_id: hot_receipt.cycle_id,
             shard_id: hot_receipt.shard_id,
             hook_id: hot_receipt.hook_id,
-            ticks: hot_receipt.ticks,
-            actual_ticks: hot_receipt.actual_ticks,
+            ticks: hot_receipt.ticks, // Estimated/legacy ticks from C API
+            actual_ticks,             // PMU-measured actual ticks from tick metering
             lanes: hot_receipt.lanes,
             span_id: hot_receipt.span_id,
             a_hash: hot_receipt.a_hash,

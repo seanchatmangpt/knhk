@@ -1,11 +1,10 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Data retention policies for compliance
 
 // Retention manager implementation
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing::warn;
 
 /// Retention policy
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,9 +45,12 @@ impl RetentionManager {
     /// Check if resource should be retained
     pub fn should_retain(&self, resource_type: &str, created_at: DateTime<Utc>) -> bool {
         // Check legal hold
-        let legal_holds = self.legal_holds.lock().unwrap();
-        if legal_holds.contains_key(resource_type) {
-            return true;
+        if let Ok(legal_holds) = self.legal_holds.lock() {
+            if legal_holds.contains_key(resource_type) {
+                return true;
+            }
+        } else {
+            warn!("Failed to acquire legal_holds lock in should_retain");
         }
 
         // Check retention policy
@@ -66,20 +68,28 @@ impl RetentionManager {
 
     /// Place resource under legal hold
     pub fn place_legal_hold(&self, resource_type: String) {
-        let mut legal_holds = self.legal_holds.lock().unwrap();
-        legal_holds.insert(resource_type, Utc::now());
+        if let Ok(mut legal_holds) = self.legal_holds.lock() {
+            legal_holds.insert(resource_type, Utc::now());
+        } else {
+            warn!("Failed to acquire legal_holds lock in place_legal_hold");
+        }
     }
 
     /// Release legal hold
     pub fn release_legal_hold(&self, resource_type: &str) {
-        let mut legal_holds = self.legal_holds.lock().unwrap();
-        legal_holds.remove(resource_type);
+        if let Ok(mut legal_holds) = self.legal_holds.lock() {
+            legal_holds.remove(resource_type);
+        } else {
+            warn!("Failed to acquire legal_holds lock in release_legal_hold");
+        }
     }
 
     /// Check if resource is under legal hold
     pub fn is_legal_hold(&self, resource_type: &str) -> bool {
-        let legal_holds = self.legal_holds.lock().unwrap();
-        legal_holds.contains_key(resource_type)
+        self.legal_holds
+            .lock()
+            .map(|legal_holds| legal_holds.contains_key(resource_type))
+            .unwrap_or(false)
     }
 
     /// Get resources eligible for deletion

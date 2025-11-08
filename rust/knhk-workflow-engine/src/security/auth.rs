@@ -1,4 +1,3 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Authentication and authorization for workflow engine
 
 use crate::error::{WorkflowError, WorkflowResult};
@@ -83,15 +82,9 @@ impl AuthManager {
         }
     }
 
-    /// Authenticate a principal (placeholder - would integrate with SPIFFE/SPIRE)
+    /// Authenticate a principal
     pub fn authenticate(&self, token: &str) -> WorkflowResult<Principal> {
-        // FUTURE: Integrate with SPIFFE/SPIRE for mTLS authentication
-        // For now, return a placeholder principal
-        Ok(Principal {
-            id: token.to_string(),
-            principal_type: PrincipalType::Service,
-            attributes: HashMap::new(),
-        })
+        unimplemented!("authenticate: needs SPIFFE/SPIRE integration for mTLS authentication, certificate validation, and SPIFFE ID extraction")
     }
 
     /// Authorize an action

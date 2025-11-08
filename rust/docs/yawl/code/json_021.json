@@ -1,0 +1,14 @@
+{
+  "entries": [
+    {
+      "timestamp": "2025-01-01T00:00:00Z",
+      "event_type": "task_started",
+      "data": { "task_id": "task:task1" }
+    },
+    {
+      "timestamp": "2025-01-01T00:00:01Z",
+      "event_type": "task_completed",
+      "data": { "task_id": "task:task1" }
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+@startuml
+title Reflex Enterprise — C4 Container View: Workflow Engine in Reflex Architecture
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_TOP_DOWN()
+
+System_Boundary(enterprise, "Enterprise System") {
+  Container_Boundary(r1, "R1 Hot Path") {
+    Container(beat, "Beat Scheduler", "8-tick loop", "Schedules workflow execution")
+    Container(fiber, "Fiber Executor", "μ execution ≤8 items", "Executes workflow patterns")
+    Container(rings, "Ring Buffers", "Δ-ring, A-ring", "State buffers")
+    Container(h1, "Guard Layer H₁", "Schema, range, invariants", "Input validation")
+  }
+
+  Container_Boundary(w1, "W1 Warm Path") {
+    Container(etl, "Aggregator / Transform", "Non-critical ETL", "Workflow analytics")
+    Container(h2, "Guard Layer H₂", "Statistical, consistency", "Data validation")
+    Container(muspawn, "μ_spawn() Calls", "Deterministic subops", "Delegate to R1")
+  }
+
+  Container_Boundary(c1, "C1 Cold Path") {
+    Container(analytics, "Analytics / ML", "Training, analysis", "Workflow insights")
+    Container(h3, "Guard Layer H₃", "Causal, provenance", "Provenance validation")
+    Container(router, "Subtask Router", "Dynamic routing", "Route to R1")
+  }
+
+  Container_Boundary(cp, "Control Plane") {
+    Container(orchestrator, "Beat Orchestrator", "Epoch & tick allocator", "Orchestrates execution")
+    Container(validator, "Provenance Validator", "hash(A)=hash(μ(O))", "Validates receipts")
+    Container(metrics, "Metrics Engine", "R1 utilization ratio R≥0.75", "Performance monitoring")
+  }
+}
+
+Container(workflow, "Workflow Engine", "KNHK Workflow Engine", "All 43 patterns")
+
+Rel(beat, fiber, "Dispatches workflow tasks")
+Rel(fiber, rings, "Read/write state")
+Rel(h1, beat, "Validates input")
+Rel(workflow, r1, "Executes hot path patterns")
+
+Rel(w1, muspawn, "Delegates deterministic subtasks")
+Rel(muspawn, r1, "Invokes hot path execution")
+Rel(etl, muspawn, "Partitions heavy ETL")
+Rel(h2, muspawn, "Enforces invariants")
+
+Rel(c1, router, "Routes subtasks")
+Rel(router, r1, "Calls via FFI")
+Rel(h3, validator, "Verifies provenance")
+
+Rel(r1, cp, "Emits receipts + performance data")
+Rel(cp, metrics, "Computes R1 utilization")
+Rel(cp, validator, "Validates drift(A)=0")
+
+note right of workflow
+Workflow Engine Integration:
+• All 43 Van der Aalst patterns
+• YAWL-compatible execution
+• RDF/Turtle workflow definitions
+• Fortune 5 enterprise features
+end note
+
+@enduml
+

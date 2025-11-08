@@ -1,0 +1,4 @@
+│       │   ├── symbolic_test
+│       │   │   └── semconv_registry -> ../../crates/weaver_codegen_test/semconv_registry
+│       │   └── update_markdown
+│       │       ├── markdown

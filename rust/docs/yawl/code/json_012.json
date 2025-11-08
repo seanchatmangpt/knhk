@@ -1,0 +1,9 @@
+{
+  "type": "workflow_update",
+  "data": {
+    "workflow_id": "wf_01HX8K9...",
+    "status": "pattern_completed",
+    "pattern_id": 2,
+    "execution_time_ns": 2100000
+  }
+}
