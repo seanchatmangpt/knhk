@@ -1,32 +1,14 @@
-//! Control Patterns (36-39)
+//! Advanced Control Flow Pattern: Control (36-39)
+use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternExecutor};
 
-use crate::patterns::{
-    PatternExecutionContext, PatternExecutionResult, PatternExecutor, PatternId,
-};
-
-/// Pattern 36: Disable Activity
 pub struct DisableActivityPattern;
-
 impl PatternExecutor for DisableActivityPattern {
-    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult {
-        // Disable activity
-        let activity_id = ctx
-            .variables
-            .get("activity_id")
-            .cloned()
-            .unwrap_or_else(|| "unknown".to_string());
-
-        let mut variables = ctx.variables.clone();
-        variables.insert("activity_disabled".to_string(), activity_id.clone());
-
+    fn execute(&self, _ctx: &PatternExecutionContext) -> PatternExecutionResult {
         PatternExecutionResult {
             success: true,
-            next_state: Some(format!(
-                "pattern:36:disable-activity:{}:disabled",
-                activity_id
-            )),
+            next_state: Some("pattern:36:disable-activity:disabled".to_string()),
             next_activities: Vec::new(),
-            variables,
+            variables: std::collections::HashMap::new(),
             updates: None,
             cancel_activities: Vec::new(),
             terminates: false,
@@ -34,26 +16,14 @@ impl PatternExecutor for DisableActivityPattern {
     }
 }
 
-/// Pattern 37: Skip Activity
 pub struct SkipActivityPattern;
-
 impl PatternExecutor for SkipActivityPattern {
-    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult {
-        // Skip activity
-        let activity_id = ctx
-            .variables
-            .get("activity_id")
-            .cloned()
-            .unwrap_or_else(|| "unknown".to_string());
-
-        let mut variables = ctx.variables.clone();
-        variables.insert("activity_skipped".to_string(), activity_id.clone());
-
+    fn execute(&self, _ctx: &PatternExecutionContext) -> PatternExecutionResult {
         PatternExecutionResult {
             success: true,
-            next_state: Some(format!("pattern:37:skip-activity:{}:skipped", activity_id)),
+            next_state: Some("pattern:37:skip-activity:skipped".to_string()),
             next_activities: Vec::new(),
-            variables,
+            variables: std::collections::HashMap::new(),
             updates: None,
             cancel_activities: Vec::new(),
             terminates: false,
@@ -61,27 +31,14 @@ impl PatternExecutor for SkipActivityPattern {
     }
 }
 
-/// Pattern 38: Activity Instance in Multiple Threads
 pub struct ActivityInstanceMultipleThreadsPattern;
-
 impl PatternExecutor for ActivityInstanceMultipleThreadsPattern {
-    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult {
-        // Execute activity in multiple threads
-        let thread_count: usize = ctx
-            .variables
-            .get("thread_count")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(1);
-
-        let mut variables = ctx.variables.clone();
-        variables.insert("threads_used".to_string(), thread_count.to_string());
-        variables.insert("parallel_execution".to_string(), "true".to_string());
-
+    fn execute(&self, _ctx: &PatternExecutionContext) -> PatternExecutionResult {
         PatternExecutionResult {
             success: true,
-            next_state: Some(format!("pattern:{}:completed", 38)),
-            next_activities: Vec::new(),
-            variables,
+            next_state: Some("pattern:38:activity-instance-multiple-threads:executing".to_string()),
+            next_activities: vec!["thread_1".to_string(), "thread_2".to_string()],
+            variables: std::collections::HashMap::new(),
             updates: None,
             cancel_activities: Vec::new(),
             terminates: false,
@@ -89,21 +46,14 @@ impl PatternExecutor for ActivityInstanceMultipleThreadsPattern {
     }
 }
 
-/// Pattern 39: Thread Merge
 pub struct ThreadMergePattern;
-
 impl PatternExecutor for ThreadMergePattern {
-    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult {
-        // Merge multiple threads
-        let mut variables = ctx.variables.clone();
-        variables.insert("threads_merged".to_string(), "true".to_string());
-        variables.insert("merge_status".to_string(), "success".to_string());
-
+    fn execute(&self, _ctx: &PatternExecutionContext) -> PatternExecutionResult {
         PatternExecutionResult {
             success: true,
-            next_state: Some(format!("pattern:{}:completed", 39)),
+            next_state: Some("pattern:39:thread-merge:merged".to_string()),
             next_activities: Vec::new(),
-            variables,
+            variables: std::collections::HashMap::new(),
             updates: None,
             cancel_activities: Vec::new(),
             terminates: false,

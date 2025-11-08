@@ -19,6 +19,9 @@ mod engine;
 mod events;
 mod fortune5;
 mod pattern;
+mod provenance;
 mod task;
+mod workflow_query;
+mod workflow_registration;
 
 pub use engine::WorkflowEngine;
