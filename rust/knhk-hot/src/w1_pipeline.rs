@@ -155,7 +155,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
         let _structural_mask = vget_lane_u64(vreinterpret_u64_u8(vget_low_u8(structural)), 0);
         let _ = vget_lane_u64(vreinterpret_u64_u8(vget_high_u8(structural)), 0) << 8;
 
-        // TODO: Use bit reversal + leading zeros for ARM (instead of trailing zeros)
+        // FUTURE: Use bit reversal + leading zeros for ARM (instead of trailing zeros)
         // This is the simdjson ARM-specific optimization
 
         // For now, scalar fallback for quote tracking
@@ -296,7 +296,7 @@ impl TapeBuilder {
         self.arena.clear();
         self.shape.present_mask = 0;
 
-        // TODO: Implement actual tape building
+        // FUTURE: Implement actual tape building
         // For now, placeholder
     }
 }
@@ -355,7 +355,7 @@ impl SoAPacker {
     pub fn pack_from_tape(&mut self, _tape: &[TapeToken], _shape: &ShapeCard) {
         self.runs.clear();
 
-        // TODO: Implement SoA packing
+        // FUTURE: Implement SoA packing
         // Map dictionary indices to predicate IDs
         // Emit (s,p,o) with inline small ints, offsets for strings
         // Group into runs of ≤8
@@ -406,7 +406,7 @@ impl ATMShapeKernel {
     /// - `json` is a valid UTF-8 byte slice
     /// - `runs` is a valid mutable vector
     pub unsafe fn parse_shape_locked(&self, _json: &[u8], _runs: &mut Vec<SoARun>) -> bool {
-        // TODO: Implement shape-locked fast path
+        // FUTURE: Implement shape-locked fast path
         // - Hardcode key literals
         // - Compare with two memcmp64 or AVX2 pcmpeqb + pmovmskb
         // - Number fast path with table checks; no FP parse

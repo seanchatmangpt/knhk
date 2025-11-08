@@ -1,6 +1,6 @@
 //! Hook registry integration - Integrates with knhk-etl HookRegistry
 
-use crate::hook_registry::store::HookStore;
+use super::store::HookStore;
 
 use knhk_etl::HookRegistry;
 use std::sync::Arc;
