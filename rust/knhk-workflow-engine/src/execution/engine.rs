@@ -216,6 +216,7 @@ impl PipelineStage for ValidationStage {
 /// Optimization stage - optimizes execution context
 struct OptimizationStage;
 
+#[async_trait]
 impl PipelineStage for OptimizationStage {
     async fn process(
         &self,

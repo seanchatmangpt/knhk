@@ -71,8 +71,70 @@ pub struct PatternExecutionResult {
     pub success: bool,
     /// Next state (if any)
     pub next_state: Option<String>,
+    /// Next activities to schedule
+    pub next_activities: Vec<String>,
     /// Output variables
     pub variables: HashMap<String, String>,
+    /// State updates (for joins, MI tracking)
+    pub updates: Option<serde_json::Value>,
+    /// Activities to cancel
+    pub cancel_activities: Vec<String>,
+    /// Whether this terminates the workflow
+    pub terminates: bool,
+}
+
+impl PatternExecutionResult {
+    /// Create a successful result with next activities
+    pub fn ok(next_activities: Vec<String>) -> Self {
+        Self {
+            success: true,
+            next_state: None,
+            next_activities,
+            variables: HashMap::new(),
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
+        }
+    }
+
+    /// Create a result with updates (for joins, MI)
+    pub fn with_updates(next_activities: Vec<String>, updates: serde_json::Value) -> Self {
+        Self {
+            success: true,
+            next_state: None,
+            next_activities,
+            variables: HashMap::new(),
+            updates: Some(updates),
+            cancel_activities: Vec::new(),
+            terminates: false,
+        }
+    }
+
+    /// Create a cancellation result
+    pub fn cancel_then(next_activities: Vec<String>, cancel_activities: Vec<String>) -> Self {
+        Self {
+            success: true,
+            next_state: None,
+            next_activities,
+            variables: HashMap::new(),
+            updates: None,
+            cancel_activities,
+            terminates: false,
+        }
+    }
+
+    /// Create a termination result
+    pub fn terminate() -> Self {
+        Self {
+            success: true,
+            next_state: None,
+            next_activities: Vec::new(),
+            variables: HashMap::new(),
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: true,
+        }
+    }
 }
 
 /// Pattern executor trait

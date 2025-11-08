@@ -116,4 +116,3 @@ mod tests {
         assert!(mi.threshold_reached());
     }
 }
-
