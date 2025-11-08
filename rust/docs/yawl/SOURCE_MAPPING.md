@@ -290,7 +290,7 @@ This document maps extracted YAWL artifacts (9 C4 diagrams, 407 code files) to:
 
 ### 1. RDF Compiler
 
-**WIP Location**: `rust/knhk-workflow-engine/src/compiler/mod.rs:104`
+**Implementation Location**: `rust/knhk-workflow-engine/src/compiler/mod.rs`
 
 **Status**: ✅ IMPLEMENTED - Complete RDF→IR compilation pipeline with:
 - Graph hashing (SHA-256 for provenance H(O))
