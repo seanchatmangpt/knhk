@@ -1,10 +1,8 @@
 //! Event loop handlers for timer and external events
 
 use crate::case::CaseId;
-use crate::patterns::{
-    PatternExecutionContext, PatternId, PatternRegistry,
-};
 use crate::parser::WorkflowSpecId;
+use crate::patterns::{PatternExecutionContext, PatternId, PatternRegistry};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -12,7 +10,10 @@ use tokio::sync::mpsc;
 use crate::services::TimerFired;
 
 /// Start timer event loop
-pub(crate) fn start_timer_loop(registry: Arc<PatternRegistry>, mut timer_rx: mpsc::Receiver<TimerFired>) {
+pub(crate) fn start_timer_loop(
+    registry: Arc<PatternRegistry>,
+    mut timer_rx: mpsc::Receiver<TimerFired>,
+) {
     tokio::spawn(async move {
         while let Some(tf) = timer_rx.recv().await {
             // Parse IDs from strings
@@ -83,4 +84,3 @@ pub(crate) fn start_event_loop(
         }
     });
 }
-

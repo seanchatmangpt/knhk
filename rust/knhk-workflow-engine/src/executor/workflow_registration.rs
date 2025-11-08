@@ -1,0 +1,39 @@
+//! Workflow registration methods
+//!
+//! Handles workflow specification registration with validation and persistence.
+
+use crate::error::{WorkflowError, WorkflowResult};
+use crate::parser::{WorkflowSpec, WorkflowSpecId};
+use crate::validation::DeadlockDetector;
+
+use super::engine::WorkflowEngine;
+
+impl WorkflowEngine {
+    /// Register a workflow specification with deadlock validation and Fortune 5 checks
+    pub async fn register_workflow(&self, spec: WorkflowSpec) -> WorkflowResult<()> {
+        // Check promotion gate if Fortune 5 is enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            let gate_allowed = fortune5.check_promotion_gate().await?;
+            if !gate_allowed {
+                return Err(WorkflowError::Validation(
+                    "Promotion gate blocked workflow registration".to_string(),
+                ));
+            }
+        }
+
+        // Validate for deadlocks before registration
+        let detector = DeadlockDetector;
+        detector.validate(&spec)?;
+
+        let mut specs = self.specs.write().await;
+        let spec_clone = spec.clone();
+        specs.insert(spec.id, spec);
+
+        // Persist to state store
+        let store_arc = self.state_store.read().await;
+        store_arc.save_spec(&spec_clone)?;
+
+        Ok(())
+    }
+}
+

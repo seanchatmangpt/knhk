@@ -8,6 +8,7 @@ pub mod cancellation;
 pub mod joins;
 pub mod mi;
 pub mod multiple_instance;
+pub mod rdf;
 pub mod state_based;
 pub mod trigger;
 pub mod validation;
@@ -323,7 +324,6 @@ pub fn register_all_patterns(registry: &mut PatternRegistry) {
 }
 
 // RDF support for patterns
-mod rdf;
 pub use rdf::{
     deserialize_context_from_rdf, deserialize_metadata_from_rdf, deserialize_result_from_rdf,
     get_all_pattern_metadata, load_all_metadata_from_rdf, serialize_context_to_rdf,

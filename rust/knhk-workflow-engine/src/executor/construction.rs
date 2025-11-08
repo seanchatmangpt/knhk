@@ -4,7 +4,7 @@ use crate::compliance::ProvenanceTracker;
 use crate::error::WorkflowResult;
 use crate::integration::fortune5::Fortune5Config;
 use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
-use crate::patterns::PatternRegistry;
+use crate::patterns::{PatternRegistry, RegisterAllExt};
 use crate::resource::ResourceAllocator;
 use crate::services::timer::TimerService;
 use crate::services::{AdmissionGate, EventSidecar, TimerFired, WorkItemService};
@@ -22,7 +22,7 @@ impl WorkflowEngine {
     /// Create a new workflow engine with all 43 patterns registered
     pub fn new(state_store: StateStore) -> Self {
         let mut registry = PatternRegistry::new();
-        registry.register_all_patterns();
+        crate::patterns::register_all_patterns(&mut registry);
 
         let resource_allocator = Arc::new(ResourceAllocator::new());
         let worklet_repository = Arc::new(WorkletRepository::new());
@@ -86,7 +86,7 @@ impl WorkflowEngine {
         fortune5_config: Fortune5Config,
     ) -> WorkflowResult<Self> {
         let mut registry = PatternRegistry::new();
-        registry.register_all_patterns();
+        crate::patterns::register_all_patterns(&mut registry);
 
         let resource_allocator = Arc::new(ResourceAllocator::new());
         let worklet_repository = Arc::new(WorkletRepository::new());
@@ -160,4 +160,3 @@ impl WorkflowEngine {
         Ok(engine)
     }
 }
-

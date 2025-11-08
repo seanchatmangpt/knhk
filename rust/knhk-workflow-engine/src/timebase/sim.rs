@@ -1,8 +1,6 @@
-//! Timebase abstraction for deterministic time management
-//!
-//! Provides trait-based clock system with real (`SysClock`) and simulated (`SimClock`) implementations
-//! for production and testing scenarios.
+//! Simulated clock for testing and model runs
 
+use crate::timebase::trait_impl::Timebase;
 use async_trait::async_trait;
 use std::cmp::{Ordering, Reverse};
 use std::sync::Arc;
@@ -33,64 +31,6 @@ impl PartialOrd for ScheduledTask {
 impl Ord for ScheduledTask {
     fn cmp(&self, other: &Self) -> Ordering {
         self.due.cmp(&other.due)
-    }
-}
-
-/// Timebase trait for abstracting time operations
-#[async_trait]
-pub trait Timebase: Send + Sync {
-    /// Get wall clock time (civil time for calendars, SLAs)
-    fn now_wall(&self) -> SystemTime;
-
-    /// Get monotonic time (for timeouts, intervals)
-    fn now_mono(&self) -> Instant;
-
-    /// Get time scale factor (1.0 = real time)
-    fn scale(&self) -> f64;
-
-    /// Sleep for duration (completes when virtual time reaches now + d)
-    async fn sleep(&self, d: Duration);
-
-    /// Sleep until wall clock time
-    async fn sleep_until_wall(&self, t: SystemTime);
-
-    /// Sleep until monotonic time
-    async fn sleep_until_mono(&self, t: Instant);
-}
-
-/// Real clock implementation for production
-#[derive(Clone, Default)]
-pub struct SysClock;
-
-#[async_trait]
-impl Timebase for SysClock {
-    fn now_wall(&self) -> SystemTime {
-        SystemTime::now()
-    }
-
-    fn now_mono(&self) -> Instant {
-        Instant::now()
-    }
-
-    fn scale(&self) -> f64 {
-        1.0
-    }
-
-    async fn sleep(&self, d: Duration) {
-        tokio::time::sleep(d).await;
-    }
-
-    async fn sleep_until_wall(&self, t: SystemTime) {
-        let now = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default();
-        let tgt = t.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
-        let duration = tgt.saturating_sub(now);
-        tokio::time::sleep(duration).await;
-    }
-
-    async fn sleep_until_mono(&self, t: Instant) {
-        tokio::time::sleep_until(t.into()).await;
     }
 }
 
@@ -164,7 +104,7 @@ impl SimClock {
         let month: u32 = parts[1].parse().map_err(|_| "Invalid month")?;
         let day: u32 = parts[2].parse().map_err(|_| "Invalid day")?;
 
-        use chrono::{NaiveDate, NaiveDateTime};
+        use chrono::NaiveDate;
         let date =
             NaiveDate::from_ymd_opt(year, month, day).ok_or_else(|| "Invalid date".to_string())?;
         let datetime = date
@@ -258,20 +198,6 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_sys_clock() {
-        let clock = SysClock;
-        let now_wall = clock.now_wall();
-        let now_mono = clock.now_mono();
-
-        assert!(now_wall > SystemTime::UNIX_EPOCH);
-        assert!(now_mono.elapsed() < Duration::from_secs(1));
-
-        let start = Instant::now();
-        clock.sleep(Duration::from_millis(10)).await;
-        assert!(start.elapsed() >= Duration::from_millis(10));
-    }
-
-    #[tokio::test]
     async fn test_sim_clock_freeze() {
         let clock = Arc::new(SimClock::new(SystemTime::UNIX_EPOCH, Instant::now(), 0.0));
         clock.freeze();
@@ -299,9 +225,13 @@ mod tests {
     async fn test_sim_clock_jump_to_business_day() {
         let clock = Arc::new(SimClock::new(SystemTime::UNIX_EPOCH, Instant::now(), 1.0));
 
-        clock.jump_to_business_day("2025-01-15").unwrap();
+        clock
+            .jump_to_business_day("2025-01-15")
+            .expect("Failed to jump to business day");
         let wall = clock.now_wall();
-        let duration = wall.duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let duration = wall
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Failed to calculate duration");
         assert!(duration.as_secs() > 0);
     }
 }

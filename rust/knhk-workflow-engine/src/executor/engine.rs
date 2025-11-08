@@ -5,7 +5,7 @@ use crate::compliance::ProvenanceTracker;
 use crate::enterprise::EnterpriseConfig;
 use crate::integration::fortune5::Fortune5Integration;
 use crate::integration::{LockchainIntegration, OtelIntegration, SidecarIntegration};
-use crate::parser::WorkflowSpecId;
+use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::patterns::PatternRegistry;
 use crate::resource::ResourceAllocator;
 use crate::security::AuthManager;
@@ -14,7 +14,6 @@ use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
-use crate::WorkflowSpec;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -58,4 +57,3 @@ pub struct WorkflowEngine {
     /// Sidecar integration (if enabled)
     pub(crate) sidecar_integration: Option<Arc<SidecarIntegration>>,
 }
-
