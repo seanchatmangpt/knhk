@@ -124,11 +124,7 @@ impl WorkItemService {
     }
 
     /// Assign work item to a resource
-    pub async fn assign(
-        &self,
-        work_item_id: &str,
-        resource_id: String,
-    ) -> WorkflowResult<()> {
+    pub async fn assign(&self, work_item_id: &str, resource_id: String) -> WorkflowResult<()> {
         let mut items = self.work_items.write().await;
         if let Some(item) = items.get_mut(work_item_id) {
             if item.state != WorkItemState::Created {
@@ -226,4 +222,3 @@ impl Default for WorkItemService {
         Self::new()
     }
 }
-

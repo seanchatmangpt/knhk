@@ -56,6 +56,7 @@
 #![warn(missing_docs)]
 
 pub mod api;
+pub mod cache;
 pub mod capabilities;
 pub mod case;
 pub mod cluster;
@@ -64,6 +65,7 @@ pub mod config;
 pub mod constants;
 pub mod enterprise;
 pub mod error;
+pub mod events;
 pub mod execution;
 pub mod executor;
 pub mod ggen;
@@ -79,9 +81,12 @@ pub mod resilience;
 pub mod resource;
 pub mod security;
 pub mod self_validation;
+pub mod services;
 pub mod state;
 pub mod templates;
 pub mod testing;
+pub mod timebase;
+pub mod timer;
 pub mod utils;
 pub mod validation;
 pub mod visualization;
@@ -111,10 +116,11 @@ pub use innovation::{
     ZeroCopyBytes, ZeroCopyStr, ZeroCopyTriple, ZeroCopyTripleBatch,
 };
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
-pub use patterns::{PatternId, PatternRegistry};
+pub use patterns::{PatternId, PatternRegistry, RegisterAllExt};
 pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
 pub use reflex::{PromotableSegment, PromotionAnalysis, ReflexBridge};
 pub use security::*;
+pub use services::{AdmissionGate, EventSidecar, TimerFired, TimerService, WorkItemService};
 pub use state::{StateEvent, StateManager, StateStore};
 pub use templates::TemplateLibrary;
 pub use testing::{

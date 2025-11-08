@@ -4,6 +4,7 @@
 //! for production and testing scenarios.
 
 use async_trait::async_trait;
+use std::cmp::Reverse;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::oneshot;
@@ -74,7 +75,15 @@ pub struct SimClock {
     /// Wall epoch
     wall: Arc<parking_lot::Mutex<SystemTime>>,
     /// Heap of (due_mono, id, waker)
-    q: Arc<parking_lot::Mutex<std::collections::BinaryHeap<(std::cmp::Reverse<Instant>, u64, futures::future::BoxFuture<'static, ()>)>>>,
+    q: Arc<
+        parking_lot::Mutex<
+            std::collections::BinaryHeap<(
+                std::cmp::Reverse<Instant>,
+                u64,
+                futures::future::BoxFuture<'static, ()>,
+            )>,
+        >,
+    >,
     /// Time scale factor
     scale: Arc<parking_lot::Mutex<f64>>,
     /// Next ID for scheduled tasks
@@ -137,9 +146,11 @@ impl SimClock {
         let day: u32 = parts[2].parse().map_err(|_| "Invalid day")?;
 
         use chrono::{NaiveDate, NaiveDateTime};
-        let date = NaiveDate::from_ymd_opt(year, month, day)
-            .ok_or_else(|| "Invalid date".to_string())?;
-        let datetime = date.and_hms_opt(0, 0, 0).ok_or_else(|| "Invalid datetime".to_string())?;
+        let date =
+            NaiveDate::from_ymd_opt(year, month, day).ok_or_else(|| "Invalid date".to_string())?;
+        let datetime = date
+            .and_hms_opt(0, 0, 0)
+            .ok_or_else(|| "Invalid datetime".to_string())?;
 
         let timestamp = datetime.and_utc().timestamp();
         let system_time = SystemTime::UNIX_EPOCH + Duration::from_secs(timestamp as u64);
@@ -197,7 +208,10 @@ impl Timebase for SimClock {
     }
 
     async fn sleep_until_wall(&self, t: SystemTime) {
-        let now = self.now_wall().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
+        let now = self
+            .now_wall()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default();
         let tgt = t.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
         let duration = tgt.saturating_sub(now);
         self.sleep(duration).await;
@@ -242,11 +256,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sim_clock_freeze() {
-        let clock = Arc::new(SimClock::new(
-            SystemTime::UNIX_EPOCH,
-            Instant::now(),
-            0.0,
-        ));
+        let clock = Arc::new(SimClock::new(SystemTime::UNIX_EPOCH, Instant::now(), 0.0));
         clock.freeze();
 
         let mono1 = clock.now_mono();
@@ -259,11 +269,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sim_clock_warp() {
-        let clock = Arc::new(SimClock::new(
-            SystemTime::UNIX_EPOCH,
-            Instant::now(),
-            1.0,
-        ));
+        let clock = Arc::new(SimClock::new(SystemTime::UNIX_EPOCH, Instant::now(), 1.0));
 
         let mono1 = clock.now_mono();
         clock.warp_mono(Duration::from_secs(10));
@@ -274,11 +280,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sim_clock_jump_to_business_day() {
-        let clock = Arc::new(SimClock::new(
-            SystemTime::UNIX_EPOCH,
-            Instant::now(),
-            1.0,
-        ));
+        let clock = Arc::new(SimClock::new(SystemTime::UNIX_EPOCH, Instant::now(), 1.0));
 
         clock.jump_to_business_day("2025-01-15").unwrap();
         let wall = clock.now_wall();
@@ -286,4 +288,3 @@ mod tests {
         assert!(duration.as_secs() > 0);
     }
 }
-

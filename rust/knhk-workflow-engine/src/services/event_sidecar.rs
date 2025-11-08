@@ -65,4 +65,3 @@ impl Clone for EventSidecar {
         }
     }
 }
-

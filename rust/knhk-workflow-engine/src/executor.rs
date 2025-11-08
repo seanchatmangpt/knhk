@@ -104,39 +104,15 @@ impl WorkflowEngine {
         };
 
         // Start event loops
-        let engine_clone = Arc::new(engine.clone_for_events());
-        Self::start_timer_loop(engine_clone.clone(), timer_rx);
-        Self::start_event_loop(engine_clone, event_rx);
+        let pattern_registry_clone = Arc::clone(&engine.pattern_registry);
+        Self::start_timer_loop(pattern_registry_clone.clone(), timer_rx);
+        Self::start_event_loop(pattern_registry_clone, event_rx);
 
         engine
     }
 
-    /// Clone engine for event loops (minimal clone)
-    fn clone_for_events(&self) -> Self {
-        Self {
-            pattern_registry: Arc::clone(&self.pattern_registry),
-            state_store: Arc::clone(&self.state_store),
-            specs: Arc::clone(&self.specs),
-            cases: Arc::clone(&self.cases),
-            resource_allocator: Arc::clone(&self.resource_allocator),
-            worklet_repository: Arc::clone(&self.worklet_repository),
-            worklet_executor: Arc::clone(&self.worklet_executor),
-            timer_service: Arc::clone(&self.timer_service),
-            work_item_service: Arc::clone(&self.work_item_service),
-            admission_gate: Arc::clone(&self.admission_gate),
-            event_sidecar: Arc::clone(&self.event_sidecar),
-            enterprise_config: self.enterprise_config.as_ref().map(Arc::clone),
-            otel_integration: self.otel_integration.as_ref().map(Arc::clone),
-            lockchain_integration: self.lockchain_integration.as_ref().map(Arc::clone),
-            auth_manager: self.auth_manager.as_ref().map(Arc::clone),
-            provenance_tracker: self.provenance_tracker.as_ref().map(Arc::clone),
-            fortune5_integration: self.fortune5_integration.as_ref().map(Arc::clone),
-            sidecar_integration: self.sidecar_integration.as_ref().map(Arc::clone),
-        }
-    }
-
     /// Start timer event loop
-    fn start_timer_loop(engine: Arc<Self>, mut timer_rx: mpsc::Receiver<TimerFired>) {
+    fn start_timer_loop(registry: Arc<PatternRegistry>, mut timer_rx: mpsc::Receiver<TimerFired>) {
         tokio::spawn(async move {
             while let Some(tf) = timer_rx.recv().await {
                 let ctx = PatternExecutionContext {
@@ -149,15 +125,17 @@ impl WorkflowEngine {
                         vars
                     },
                 };
-                let _ = engine
-                    .execute_pattern(PatternId(tf.pattern_id as u32), ctx)
-                    .await;
+                // Execute pattern 30 or 31 based on timer type
+                let _ = registry.execute(&PatternId(tf.pattern_id as u32), &ctx);
             }
         });
     }
 
     /// Start external event loop (Pattern 16: Deferred Choice)
-    fn start_event_loop(engine: Arc<Self>, mut event_rx: mpsc::Receiver<serde_json::Value>) {
+    fn start_event_loop(
+        registry: Arc<PatternRegistry>,
+        mut event_rx: mpsc::Receiver<serde_json::Value>,
+    ) {
         tokio::spawn(async move {
             while let Some(evt) = event_rx.recv().await {
                 let case_id = evt
@@ -191,7 +169,7 @@ impl WorkflowEngine {
                         vars
                     },
                 };
-                let _ = engine.execute_pattern(PatternId(16), ctx).await; // Pattern 16: Deferred Choice
+                let _ = registry.execute(&PatternId(16), &ctx); // Pattern 16: Deferred Choice
             }
         });
     }
@@ -202,11 +180,21 @@ impl WorkflowEngine {
         fortune5_config: Fortune5Config,
     ) -> WorkflowResult<Self> {
         let mut registry = PatternRegistry::new();
-        crate::patterns::register_all_patterns(&mut registry);
+        registry.register_all_patterns();
 
         let resource_allocator = Arc::new(ResourceAllocator::new());
         let worklet_repository = Arc::new(WorkletRepository::new());
         let worklet_executor = Arc::new(WorkletExecutor::new(worklet_repository.clone()));
+
+        // Create event channels
+        let (timer_tx, timer_rx) = mpsc::channel::<TimerFired>(1024);
+        let (event_tx, event_rx) = mpsc::channel::<serde_json::Value>(1024);
+
+        // Create services
+        let timer_service = Arc::new(TimerService::new(timer_tx.clone()));
+        let work_item_service = Arc::new(WorkItemService::new());
+        let admission_gate = Arc::new(AdmissionGate::new());
+        let event_sidecar = Arc::new(EventSidecar::new(event_tx.clone()));
 
         // Initialize Fortune 5 integration
         let fortune5_integration = Arc::new(Fortune5Integration::new(fortune5_config.clone()));
@@ -224,7 +212,7 @@ impl WorkflowEngine {
             std::env::var("KNHK_LOCKCHAIN_PATH").unwrap_or_else(|_| "./lockchain".to_string());
         let lockchain_integration = Some(Arc::new(LockchainIntegration::new(&lockchain_path)?));
 
-        Ok(Self {
+        let engine = Self {
             pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
@@ -232,6 +220,10 @@ impl WorkflowEngine {
             resource_allocator,
             worklet_repository,
             worklet_executor,
+            timer_service: timer_service.clone(),
+            work_item_service,
+            admission_gate,
+            event_sidecar: event_sidecar.clone(),
             enterprise_config: None,
             fortune5_integration: Some(fortune5_integration),
             otel_integration,
@@ -239,7 +231,14 @@ impl WorkflowEngine {
             auth_manager: None,
             provenance_tracker: Some(Arc::new(ProvenanceTracker::new(true))),
             sidecar_integration: None,
-        })
+        };
+
+        // Start event loops
+        let pattern_registry_clone = Arc::clone(&engine.pattern_registry);
+        Self::start_timer_loop(pattern_registry_clone.clone(), timer_rx);
+        Self::start_event_loop(pattern_registry_clone, event_rx);
+
+        Ok(engine)
     }
 
     /// Register a workflow specification with deadlock validation and Fortune 5 checks
@@ -289,13 +288,16 @@ impl WorkflowEngine {
     pub async fn create_case(
         &self,
         spec_id: WorkflowSpecId,
-        _data: serde_json::Value,
+        data: serde_json::Value,
     ) -> WorkflowResult<CaseId> {
+        // Admission gate: validate case data before execution
+        self.admission_gate.admit(&data)?;
+
         // Verify workflow exists
         let _spec = self.get_workflow(spec_id).await?;
 
         // Create case
-        let case = Case::new(spec_id, _data);
+        let case = Case::new(spec_id, data);
         let case_id = case.id;
 
         // Store case
@@ -553,7 +555,9 @@ impl WorkflowEngine {
             if let Ok(promotable_segments) = reflex_bridge.bind_hot_segments(&workflow_spec) {
                 // Check if this pattern is in a promotable segment
                 for segment in &promotable_segments {
-                    if segment.pattern_ids.contains(&pattern_id.0) && segment.hot_executor_bound {
+                    if segment.pattern_ids.contains(&(pattern_id.0 as u8))
+                        && segment.hot_executor_bound
+                    {
                         // Pattern is promotable - would execute via hot path in production
                         // For now, just record that promotion was considered
                     }
@@ -621,6 +625,26 @@ impl WorkflowEngine {
     /// Get sidecar integration
     pub fn sidecar_integration(&self) -> Option<&SidecarIntegration> {
         self.sidecar_integration.as_deref()
+    }
+
+    /// Get timer service
+    pub fn timer_service(&self) -> &Arc<TimerService> {
+        &self.timer_service
+    }
+
+    /// Get work item service
+    pub fn work_item_service(&self) -> &Arc<WorkItemService> {
+        &self.work_item_service
+    }
+
+    /// Get admission gate
+    pub fn admission_gate(&self) -> &Arc<AdmissionGate> {
+        &self.admission_gate
+    }
+
+    /// Get event sidecar
+    pub fn event_sidecar(&self) -> &Arc<EventSidecar> {
+        &self.event_sidecar
     }
 
     /// Check SLO compliance (Fortune 5 feature)

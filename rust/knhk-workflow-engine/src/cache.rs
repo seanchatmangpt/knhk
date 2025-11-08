@@ -121,4 +121,3 @@ mod tests {
         assert_eq!(stats.case_count, 0);
     }
 }
-

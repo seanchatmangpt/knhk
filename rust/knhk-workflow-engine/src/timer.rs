@@ -129,4 +129,3 @@ mod tests {
         assert_eq!(fired.key, "key1");
     }
 }
-

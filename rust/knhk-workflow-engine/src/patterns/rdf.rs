@@ -846,6 +846,8 @@ pub fn deserialize_context_from_rdf(
                 case_id,
                 workflow_id,
                 variables,
+                arrived_from: std::collections::HashSet::new(),
+                scope_id: String::new(),
             };
 
             Ok((pattern_id, context))

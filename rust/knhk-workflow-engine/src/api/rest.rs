@@ -485,6 +485,8 @@ impl RestApiServer {
             case_id,
             workflow_id: spec_id,
             variables,
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
         };
 
         let result = executor.execute(&context);

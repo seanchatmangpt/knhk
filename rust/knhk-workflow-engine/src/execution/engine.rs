@@ -187,29 +187,26 @@ pub trait PipelineStage: Send + Sync {
 /// Validation stage - validates execution context
 struct ValidationStage;
 
+#[async_trait]
 impl PipelineStage for ValidationStage {
-    fn process(
+    async fn process(
         &self,
         _registry: &PatternRegistry,
         pattern_id: PatternId,
         context: PatternExecutionContext,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>,
-    > {
-        Box::pin(async move {
-            // Validate pattern ID
-            if !(1..=43).contains(&pattern_id.0) {
-                return Err(WorkflowError::PatternNotFound(pattern_id.0));
-            }
+    ) -> WorkflowResult<PatternExecutionContext> {
+        // Validate pattern ID
+        if !(1..=43).contains(&pattern_id.0) {
+            return Err(WorkflowError::PatternNotFound(pattern_id.0));
+        }
 
-            // Validate context
-            if context.variables.is_empty() && pattern_id.0 > 1 {
-                // Some patterns require variables
-                // FUTURE: Add pattern-specific validation
-            }
+        // Validate context
+        if context.variables.is_empty() && pattern_id.0 > 1 {
+            // Some patterns require variables
+            // FUTURE: Add pattern-specific validation
+        }
 
-            Ok(context)
-        })
+        Ok(context)
     }
 }
 

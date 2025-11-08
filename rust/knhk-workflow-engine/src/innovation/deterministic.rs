@@ -8,6 +8,7 @@ use crate::case::{Case, CaseId};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::LockchainIntegration;
 use crate::state::StateStore;
+use hex;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use std::collections::HashMap;
