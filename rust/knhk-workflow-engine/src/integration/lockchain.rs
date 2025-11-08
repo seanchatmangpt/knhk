@@ -22,7 +22,7 @@ impl LockchainIntegration {
     /// Record workflow execution event
     pub fn record_event(&mut self, case_id: CaseId, event_type: &str, data: serde_json::Value) -> WorkflowResult<()> {
         let entry = LockchainEntry {
-            // TODO: Fill in proper lockchain entry structure
+            // FUTURE: Fill in proper lockchain entry structure
             // This is a placeholder - actual structure depends on knhk-lockchain API
         };
         

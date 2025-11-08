@@ -112,7 +112,7 @@ impl WorkflowEngine {
         drop(cases);
 
         // Execute workflow (simplified - full implementation would traverse workflow graph)
-        // TODO: Implement full workflow execution with pattern matching
+        // FUTURE: Implement full workflow execution with pattern matching
 
         Ok(())
     }

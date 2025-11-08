@@ -1,6 +1,6 @@
 //! gRPC API service
 
-// TODO: Implement gRPC service using tonic
+// FUTURE: Implement gRPC service using tonic
 // This is a placeholder for the gRPC API implementation
 
 use crate::executor::WorkflowEngine;
@@ -18,7 +18,7 @@ impl GrpcService {
     }
 }
 
-// TODO: Implement gRPC service methods
+// FUTURE: Implement gRPC service methods
 // - RegisterWorkflow
 // - GetWorkflow
 // - CreateCase

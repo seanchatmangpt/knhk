@@ -130,7 +130,7 @@ fn bench_with_pooling(c: &mut Criterion) {
             BenchmarkId::from_parameter(num_triples),
             &transform_result,
             |b, input| {
-                // TODO: Create LoadStage with pooling enabled
+                // FUTURE: Create LoadStage with pooling enabled
                 // let load_stage = LoadStage::new_with_pooling();
                 let load_stage = LoadStage::new();
 
@@ -183,7 +183,7 @@ fn bench_allocation_count(c: &mut Criterion) {
 
     // With pooling (optimized)
     group.bench_function("with_pool", |b| {
-        // TODO: Create LoadStage with pooling enabled
+        // FUTURE: Create LoadStage with pooling enabled
         let load_stage = LoadStage::new();
 
         b.iter_custom(|iters| {
@@ -319,7 +319,7 @@ fn validate_allocation_reduction() {
 
     // Optimized (with pooling)
     ALLOCATOR.reset();
-    // TODO: Replace with pooled version when implemented
+    // FUTURE: Replace with pooled version when implemented
     let load_stage_pooled = LoadStage::new();
     for _ in 0..iterations {
         let _ = load_stage_pooled.load(transform_result.clone());

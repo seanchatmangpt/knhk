@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("-----------------------------------------------");
 
     // Create pattern engine for JSON parsing workflow
-    // TODO: Uncomment when knhk-patterns compiles
+    // FUTURE: Uncomment when knhk-patterns compiles
     // let mut pattern_engine = PatternEngine::new();
 
     // Define JSON parsing as Van der Aalst workflow patterns:

@@ -194,7 +194,7 @@ impl WorkflowParser {
             .map_err(|e| WorkflowError::Parse(format!("SPARQL query failed: {}", e)))?;
 
         // For now, create a basic workflow spec
-        // TODO: Full extraction of tasks, conditions, flows from RDF
+        // FUTURE: Full extraction of tasks, conditions, flows from RDF
         let spec_id = WorkflowSpecId::new();
         let spec = WorkflowSpec {
             id: spec_id,

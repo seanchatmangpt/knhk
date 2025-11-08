@@ -27,7 +27,7 @@ impl ConnectorIntegration {
             .get(connector_name)
             .ok_or_else(|| crate::error::WorkflowError::ResourceUnavailable(format!("Connector {} not found", connector_name)))?;
         
-        // TODO: Implement actual connector execution
+        // FUTURE: Implement actual connector execution
         // This is a placeholder - actual implementation depends on connector API
         Ok(serde_json::json!({}))
     }

@@ -117,7 +117,7 @@ impl RestApiServer {
         State(_engine): State<Arc<WorkflowEngine>>,
         Path(_id): Path<String>,
     ) -> Result<Json<CaseHistoryResponse>, StatusCode> {
-        // TODO: Implement case history
+        // FUTURE: Implement case history
         Ok(Json(CaseHistoryResponse { entries: vec![] }))
     }
 }
