@@ -1,6 +1,6 @@
 # Archived Documentation Index
 
-**Last Updated**: 2025-01-XX
+**Last Updated**: 2025-01-XX (updated with completion reports archive)
 
 This index catalogs archived documentation organized by category.
 
@@ -58,6 +58,13 @@ Status and completion reports moved to `archived/status-reports/`:
 
 **Docs-level status reports:**
 - `STATUS.md` (superseded by `V1-STATUS.md`)
+
+**Completion/final reports (archived 2025-01-XX):**
+- `12-AGENT-SWARM-FINAL-REPORT.md` - 12-agent swarm final report (MISSION COMPLETE)
+- `SPARC_COMPLETION_STRATEGY.md` - SPARC completion strategy
+- `SYSTEM_COMPLETION_ARCHITECTURE.md` - System completion architecture (Design Complete)
+- `final-completion-plan.md` - Final completion plan
+- `performance-benchmark-final.md` - Final performance benchmark
 
 **Previously archived:**
 - `weaver-learnings-complete.md`

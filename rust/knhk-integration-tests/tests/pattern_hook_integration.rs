@@ -34,6 +34,7 @@ fn test_pipeline_with_parallel_hook_execution() {
     let predicates = vec![100u64, 200u64];
 
     // Act
+    use knhk_patterns::PipelinePatternExt;
     let result = pipeline.execute_hooks_parallel(&registry, predicates);
 
     // Assert: Should execute hooks in parallel (or sequentially if parallel feature disabled)
@@ -89,6 +90,7 @@ fn test_pipeline_with_retry_hook_execution() {
         as HookRetryCondition;
 
     // Act
+    use knhk_patterns::PipelinePatternExt;
     let result = pipeline.execute_hooks_with_retry(&registry, 100u64, should_retry, 3);
 
     // Assert: Should retry on failure
