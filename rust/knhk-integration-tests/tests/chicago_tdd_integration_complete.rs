@@ -15,7 +15,7 @@ use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
 #[cfg(feature = "sidecar")]
 use knhk_sidecar::service::proto::{
     ApplyTransactionRequest, Delta, EvaluateHookRequest, GetMetricsRequest, HealthCheckRequest,
-    QueryRequest, Triple, ValidateGraphRequest,
+    HealthCheckResponse, QueryRequest, QueryResponse, Triple, ValidateGraphRequest,
 };
 #[cfg(feature = "sidecar")]
 use knhk_sidecar::service::KgcSidecarService;
@@ -126,6 +126,7 @@ async fn test_integration_sidecar_query_to_hot_path() {
     assert_eq!(metrics.total_queries, 1, "Should record query execution");
 }
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_validate_graph_to_etl() {
     // Arrange: Graph validation integrated with ETL
@@ -152,6 +153,7 @@ async fn test_integration_validate_graph_to_etl() {
     );
 }
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_hook_evaluation_to_reflex() {
     // Arrange: Hook evaluation integrated with reflex stage
@@ -193,6 +195,7 @@ async fn test_integration_hook_evaluation_to_reflex() {
 // Test Suite: Cross-Component State Consistency
 // ============================================================================
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_concurrent_sidecar_and_etl_operations() {
     // Arrange: Concurrent operations across components
@@ -247,6 +250,7 @@ async fn test_integration_concurrent_sidecar_and_etl_operations() {
     );
 }
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_health_check_reflects_system_state() {
     // Arrange: System with health monitoring
@@ -454,6 +458,7 @@ async fn test_integration_etl_telemetry_with_sidecar() {
 // Test Suite: Error Propagation Across Components
 // ============================================================================
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_error_propagation_from_etl_to_sidecar() {
     // Arrange: System with error scenario
@@ -483,6 +488,7 @@ async fn test_integration_error_propagation_from_etl_to_sidecar() {
     );
 }
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_metrics_consistent_across_error_scenarios() {
     // Arrange

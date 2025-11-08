@@ -4,7 +4,6 @@
 #![allow(clippy::expect_used)]
 
 use crate::error::{SidecarError, SidecarResult};
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 use tokio::time::{sleep, Duration, Instant};

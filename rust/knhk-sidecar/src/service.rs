@@ -5,7 +5,7 @@ extern crate alloc;
 
 use crate::circuit_breaker::CircuitBreaker;
 use crate::config::SidecarConfig;
-use crate::error::{ErrorContext, SidecarError, SidecarResult};
+use crate::error::{SidecarError, SidecarResult};
 use crate::health::HealthChecker;
 use crate::retry::RetryConfig;
 use std::sync::Arc;
@@ -251,7 +251,7 @@ impl KgcSidecar for KgcSidecarService {
         #[cfg(feature = "otel")]
         let mut span_tracer: Option<(knhk_otel::Tracer, knhk_otel::SpanContext)> =
             if let Some(ref endpoint) = self.weaver_endpoint {
-                use knhk_otel::{SpanStatus, Tracer};
+                use knhk_otel::Tracer;
                 let mut tracer = knhk_otel::Tracer::with_otlp_exporter(endpoint.clone());
                 let ctx = tracer.start_span("knhk.sidecar.transaction".to_string(), None);
                 tracer.add_attribute(

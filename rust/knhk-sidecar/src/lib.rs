@@ -250,44 +250,44 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                     let new_process_result = weaver_builder_config.start();
                     drop(process_guard); // Drop guard before await
 
-                    match new_process_result {
-                        Ok(new_process) => {
-                            // Wait for initialization
-                            sleep(Duration::from_secs(2)).await;
-
-                            // Check health
-                            let mut health_ok = false;
-                            for _ in 1..=3 {
-                                match weaver_builder_config.check_health() {
-                                    Ok(true) => {
-                                        health_ok = true;
-                                        break;
-                                    }
-                                    _ => {
-                                        sleep(Duration::from_secs(1)).await;
-                                    }
-                                }
-                            }
-
-                            if health_ok {
-                                info!("Weaver restarted successfully");
-                                let mut process_guard = match weaver_monitor_process.lock() {
-                                    Ok(guard) => guard,
-                                    Err(e) => {
-                                        error!("Mutex poisoned while updating process: {}", e);
-                                        continue;
-                                    }
-                                };
-                                *process_guard = Some(new_process);
-                            } else {
-                                error!("Weaver restart failed health check");
-                                // Will retry on next iteration
-                            }
-                        }
+                    let new_process = match new_process_result {
+                        Ok(process) => process,
                         Err(e) => {
-                            error!(error = %e, "Failed to restart Weaver process");
-                            // Keep trying on next iteration
+                            error!(error = %e, "Failed to start Weaver process");
+                            continue; // Skip this iteration
                         }
+                    };
+
+                    // Wait for initialization
+                    sleep(Duration::from_secs(2)).await;
+
+                    // Check health
+                    let mut health_ok = false;
+                    for _ in 1..=3 {
+                        match weaver_builder_config.check_health() {
+                            Ok(true) => {
+                                health_ok = true;
+                                break;
+                            }
+                            _ => {
+                                sleep(Duration::from_secs(1)).await;
+                            }
+                        }
+                    }
+
+                    if health_ok {
+                        info!("Weaver restarted successfully");
+                        let mut process_guard = match weaver_monitor_process.lock() {
+                            Ok(guard) => guard,
+                            Err(e) => {
+                                error!("Mutex poisoned while updating process: {}", e);
+                                continue;
+                            }
+                        };
+                        *process_guard = Some(new_process);
+                    } else {
+                        error!("Weaver restart failed health check");
+                        // Will retry on next iteration
                     }
                 }
             }

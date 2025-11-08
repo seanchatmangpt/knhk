@@ -48,7 +48,8 @@ pub fn init_tracing() -> Result<Option<knhk_otel::OtelGuard>, String> {
                     .with_thread_ids(false)
                     .json(),
             )
-            .init();
+            .try_init()
+            .map_err(|e| format!("Failed to initialize tracing subscriber: {}", e))?;
 
         return Ok(None);
     }
@@ -99,7 +100,8 @@ pub fn init_tracing() -> Result<Option<knhk_otel::OtelGuard>, String> {
                         .with_thread_ids(false)
                         .json(),
                 )
-                .init();
+                .try_init()
+                .map_err(|e| format!("Failed to initialize tracing subscriber: {}", e))?;
 
             Ok(None)
         }

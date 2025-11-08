@@ -4,7 +4,7 @@
 use crate::error::{SidecarError, SidecarResult};
 use std::path::Path;
 use std::time::Duration;
-use tracing::{info, warn};
+use tracing::info;
 
 /// SPIFFE configuration
 #[derive(Debug, Clone)]
