@@ -172,6 +172,12 @@ pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
 #[cfg(feature = "native")]
 /// Execute multiple hooks in batch (native Rust implementation)
 /// Use case 2: Batch hook evaluation for efficiency
+///
+/// # Safety
+/// This function dereferences raw pointers. The caller must ensure:
+/// - All pointers are valid and not null
+/// - `result_json` has capacity for at least `result_size` bytes
+/// - All string pointers point to valid null-terminated C strings
 #[no_mangle]
 pub unsafe extern "C" fn knhk_unrdf_execute_hooks_batch_native(
     hooks_json: *const c_char,
@@ -372,6 +378,10 @@ pub unsafe extern "C" fn knhk_unrdf_register_hook_native(hook_json: *const c_cha
 
 #[cfg(feature = "native")]
 /// Deregister a hook from the native registry
+///
+/// # Safety
+/// This function dereferences a raw pointer. The caller must ensure:
+/// - `hook_id` is a valid pointer to a null-terminated C string
 #[no_mangle]
 pub unsafe extern "C" fn knhk_unrdf_deregister_hook_native(hook_id: *const c_char) -> c_int {
     if hook_id.is_null() {

@@ -146,7 +146,7 @@ impl WorkflowParser {
         // Parse Turtle into RDF store
         let parser = TurtleParser::new(turtle.as_bytes(), None);
         let mut quads = Vec::new();
-        
+
         // TurtleParser implements Iterator trait
         for quad_result in parser {
             let quad = quad_result.map_err(|e| WorkflowError::from(e))?;
@@ -192,7 +192,7 @@ impl WorkflowParser {
             workflow_spec_type.as_str()
         );
 
-        let query_results = self
+        let _query_results = self
             .store
             .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("SPARQL query failed: {}", e)))?;
@@ -216,17 +216,18 @@ impl WorkflowParser {
     pub fn load_yawl_ontology(&mut self, ontology_path: &std::path::Path) -> WorkflowResult<()> {
         let mut file = std::fs::File::open(ontology_path)
             .map_err(|e| WorkflowError::Parse(format!("Failed to open ontology: {}", e)))?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents)
             .map_err(|e| WorkflowError::Parse(format!("Failed to read ontology: {}", e)))?;
 
-        let parser = TurtleParser::new(contents.as_bytes(), None);
-        for quad in parser {
-            let quad = quad.map_err(|e| WorkflowError::from(e))?;
-            self.store
-                .insert(&quad)
-                .map_err(|e| WorkflowError::from(e))?;
-        }
+        self.store
+            .load_graph(
+                contents.as_slice(),
+                oxigraph::io::GraphFormat::Turtle,
+                oxigraph::model::GraphName::DefaultGraph,
+                None,
+            )
+            .map_err(|e| WorkflowError::Parse(format!("Failed to load ontology: {:?}", e)))?;
 
         Ok(())
     }

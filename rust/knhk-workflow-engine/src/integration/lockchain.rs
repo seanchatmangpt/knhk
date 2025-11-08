@@ -2,7 +2,7 @@
 
 use crate::case::CaseId;
 use crate::error::WorkflowResult;
-use knhk_lockchain::{LockchainStorage, Receipt};
+use knhk_lockchain::LockchainStorage;
 
 /// Lockchain integration for workflow provenance
 pub struct LockchainIntegration {

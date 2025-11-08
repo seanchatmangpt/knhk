@@ -15,7 +15,7 @@ impl StateStore {
     /// Create a new state store
     pub fn new<P: AsRef<Path>>(path: P) -> WorkflowResult<Self> {
         let db = sled::open(path).map_err(|e| {
-            WorkflowError::StatePersistence(format!("Failed to open database: {}", e))
+            WorkflowError::StatePersistence(format!("Failed to open database: {:?}", e))
         })?;
         Ok(Self { db })
     }
@@ -27,7 +27,7 @@ impl StateStore {
             .map_err(|e| WorkflowError::StatePersistence(format!("Serialization error: {}", e)))?;
         self.db
             .insert(key.as_bytes(), value)
-            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;
+            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
         Ok(())
     }
 
@@ -40,7 +40,7 @@ impl StateStore {
         match self
             .db
             .get(key.as_bytes())
-            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?
+            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?
         {
             Some(value) => {
                 let spec: WorkflowSpec = serde_json::from_slice(&value).map_err(|e| {
@@ -59,7 +59,7 @@ impl StateStore {
             .map_err(|e| WorkflowError::StatePersistence(format!("Serialization error: {}", e)))?;
         self.db
             .insert(key.as_bytes(), value)
-            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;
+            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
         Ok(())
     }
 
@@ -69,7 +69,7 @@ impl StateStore {
         match self
             .db
             .get(key.as_bytes())
-            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?
+            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?
         {
             Some(value) => {
                 let case: Case = serde_json::from_slice(&value).map_err(|e| {
@@ -89,12 +89,9 @@ impl StateStore {
         let prefix = format!("case:");
         let mut cases = Vec::new();
 
-        let iter = self.db.scan_prefix(prefix.as_bytes());
-        for result in iter {
-            let (_key, value) = result.map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;
-        {
-            let (key, value) = result
-                .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;
+        for result in self.db.scan_prefix(prefix.as_bytes()) {
+            let (_, value) = result
+                .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
 
             let case: Case = serde_json::from_slice(&value).map_err(|e| {
                 WorkflowError::StatePersistence(format!("Deserialization error: {}", e))

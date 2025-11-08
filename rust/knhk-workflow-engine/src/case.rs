@@ -64,13 +64,10 @@ pub struct Case {
     /// Current state
     pub state: CaseState,
     /// Case creation timestamp
-    #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
     /// Case start timestamp
-    #[serde(with = "chrono::serde::ts_seconds_option")]
     pub started_at: Option<DateTime<Utc>>,
     /// Case completion timestamp
-    #[serde(with = "chrono::serde::ts_seconds_option")]
     pub completed_at: Option<DateTime<Utc>>,
     /// Case data (input/output variables)
     pub data: serde_json::Value,

@@ -89,7 +89,7 @@ impl SidecarClient {
 
     /// Execute transaction
     /// Note: Requires warm orchestrator gRPC service (planned for v1.0)
-    pub async fn execute_transaction(&self, request: String) -> SidecarResult<String> {
+    pub async fn execute_transaction(&self, _request: String) -> SidecarResult<String> {
         let _timer = LatencyTimer::start(Arc::clone(&self.metrics));
 
         // Use circuit breaker and retry
