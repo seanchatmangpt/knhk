@@ -4,6 +4,7 @@
 pub mod beat_ffi;
 pub mod content_addr;
 pub mod cpu_dispatch;
+pub mod cycle_counter;
 pub mod ffi;
 pub mod fiber_ffi;
 pub mod kernels;
@@ -18,6 +19,7 @@ pub use cpu_dispatch::{
     get_discriminator_fn, get_multi_choice_fn, get_parallel_split_fn, get_synchronization_fn,
     init_cpu_dispatch, BranchFn, CpuDispatcher, CpuFeatures, PatternContext, PatternResult,
 };
+pub use cycle_counter::{cycles_to_ticks, read_cycles, read_cycles_precise, TickMeasurement};
 pub use ffi::*;
 pub use fiber_ffi::{FiberExecutor, FiberResult};
 pub use kernels::{KernelExecutor, KernelType};
