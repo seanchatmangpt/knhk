@@ -5,7 +5,6 @@ use crate::patterns::{PatternError, PatternResult};
 use knhk_etl::{
     hook_orchestration::{HookExecutionContext, HookExecutionResult},
     hook_registry::HookRegistry,
-    load::SoAArrays,
 };
 use std::sync::Arc;
 
@@ -97,6 +96,7 @@ impl HybridSequencePattern {
         use crate::hook_patterns::HookSequencePattern;
 
         let mut hot_results = None;
+        #[allow(clippy::unnecessary_mut)] // mut needed when unrdf feature enabled
         let mut cold_results = None;
 
         // Execute hot path hooks if predicates provided
@@ -222,6 +222,7 @@ impl HybridParallelPattern {
         use rayon::prelude::*;
 
         let mut hot_results = None;
+        #[allow(clippy::unnecessary_mut)] // mut needed when unrdf feature enabled
         let mut cold_results = None;
 
         // Execute hot and cold paths in parallel using rayon
