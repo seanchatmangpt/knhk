@@ -104,4 +104,13 @@ impl StateStore {
 
         Ok(cases)
     }
+
+    /// Delete a workflow specification
+    pub fn delete_spec(&self, spec_id: &crate::parser::WorkflowSpecId) -> WorkflowResult<()> {
+        let key = format!("spec:{}", spec_id);
+        self.db
+            .remove(key.as_bytes())
+            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
+        Ok(())
+    }
 }
