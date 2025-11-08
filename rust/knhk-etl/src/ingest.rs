@@ -124,7 +124,7 @@ impl IngestStage {
     /// performance improvements (10-50x faster than Turtle → oxigraph path).
     #[cfg(feature = "std")]
     pub fn parse_json_delta(&self, json_bytes: &[u8]) -> Result<Vec<RawTriple>, PipelineError> {
-        use simd_json::prelude::{TypedScalarValue, ValueAsArray, ValueAsObject, ValueAsScalar};
+        use simd_json::prelude::{ValueAsArray, ValueAsObject};
 
         if json_bytes.is_empty() {
             return Ok(Vec::new());
@@ -247,6 +247,7 @@ impl IngestStage {
     /// Parse single triple from JSON value
     #[cfg(feature = "std")]
     fn parse_json_triple(value: &simd_json::OwnedValue) -> Result<RawTriple, PipelineError> {
+        use simd_json::prelude::ValueAsObject;
         let obj = value.as_object().ok_or_else(|| {
             PipelineError::IngestError("Expected object in JSON triple".to_string())
         })?;

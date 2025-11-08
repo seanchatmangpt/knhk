@@ -67,13 +67,45 @@ impl HookStore {
 
         if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let bindings = solution.iter().collect::<std::collections::HashMap<_, _>>();
+                let mut id: Option<String> = None;
+                let mut name: Option<String> = None;
+                let mut op: Option<String> = None;
+                let mut pred: Option<u64> = None;
+                let mut off: Option<u64> = None;
+                let mut len: Option<u64> = None;
+                let mut s: Option<u64> = None;
+                let mut p: Option<u64> = None;
+                let mut o: Option<u64> = None;
+                let mut k: Option<u64> = None;
 
-                let id = bindings
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| "Missing id in query result".to_string())?
-                    .to_string();
+                for (var, term) in solution.iter() {
+                    if let oxigraph::model::Term::Literal(lit) = term {
+                        let value = lit.value();
+                        match var.as_str() {
+                            "id" => id = Some(value.to_string()),
+                            "name" => name = Some(value.to_string()),
+                            "op" => op = Some(value.to_string()),
+                            "pred" => pred = value.parse::<u64>().ok(),
+                            "off" => off = value.parse::<u64>().ok(),
+                            "len" => len = value.parse::<u64>().ok(),
+                            "s" => s = value.parse::<u64>().ok(),
+                            "p" => p = value.parse::<u64>().ok(),
+                            "o" => o = value.parse::<u64>().ok(),
+                            "k" => k = value.parse::<u64>().ok(),
+                            _ => {}
+                        }
+                    }
+                }
+
+                let id = id.ok_or_else(|| "Missing id in query result".to_string())?;
+                let name = name.ok_or_else(|| "Missing name in query result".to_string())?;
+                let op = op.ok_or_else(|| "Missing op in query result".to_string())?;
+                let pred =
+                    pred.ok_or_else(|| "Missing or invalid pred in query result".to_string())?;
+                let off =
+                    off.ok_or_else(|| "Missing or invalid off in query result".to_string())?;
+                let len =
+                    len.ok_or_else(|| "Missing or invalid len in query result".to_string())?;
 
                 hooks.push(HookEntry {
                     id,
