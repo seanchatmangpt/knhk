@@ -96,7 +96,7 @@ impl HybridSequencePattern {
         use crate::hook_patterns::HookSequencePattern;
 
         let mut hot_results = None;
-        #[allow(clippy::unnecessary_mut)] // mut needed when unrdf feature enabled
+        #[allow(clippy::unused_mut)] // mut needed when unrdf feature enabled
         let mut cold_results = None;
 
         // Execute hot path hooks if predicates provided
@@ -222,7 +222,7 @@ impl HybridParallelPattern {
         use rayon::prelude::*;
 
         let mut hot_results = None;
-        #[allow(clippy::unnecessary_mut)] // mut needed when unrdf feature enabled
+        #[allow(clippy::unused_mut)] // mut needed when unrdf feature enabled
         let mut cold_results = None;
 
         // Execute hot and cold paths in parallel using rayon
