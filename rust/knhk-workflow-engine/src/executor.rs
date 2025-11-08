@@ -5,6 +5,8 @@ use crate::compliance::ProvenanceTracker;
 use crate::enterprise::EnterpriseConfig;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::{Fortune5Config, RuntimeClass};
+#[cfg(feature = "sidecar")]
+use crate::integration::SidecarIntegration;
 use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::patterns::{
@@ -48,6 +50,9 @@ pub struct WorkflowEngine {
     auth_manager: Option<Arc<RwLock<AuthManager>>>,
     /// Provenance tracker (if enabled)
     provenance_tracker: Option<Arc<ProvenanceTracker>>,
+    /// Sidecar integration (if enabled)
+    #[cfg(feature = "sidecar")]
+    sidecar_integration: Option<Arc<SidecarIntegration>>,
 }
 
 impl WorkflowEngine {
@@ -74,6 +79,8 @@ impl WorkflowEngine {
             auth_manager: None,
             provenance_tracker: None,
             fortune5_integration: None,
+            #[cfg(feature = "sidecar")]
+            sidecar_integration: None,
         }
     }
 
@@ -467,6 +474,11 @@ impl WorkflowEngine {
     /// Get Fortune 5 integration (if enabled)
     pub fn fortune5_integration(&self) -> Option<&Fortune5Integration> {
         self.fortune5_integration.as_deref()
+    }
+
+    /// Get sidecar integration
+    pub fn sidecar_integration(&self) -> Option<&SidecarIntegration> {
+        self.sidecar_integration.as_deref()
     }
 
     /// Check SLO compliance (Fortune 5 feature)

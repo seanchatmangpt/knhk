@@ -46,14 +46,26 @@ pub struct SidecarConfig {
     pub cross_region_sync_enabled: bool,
     pub receipt_sync_endpoints: Vec<String>,
     pub quorum_threshold: usize,
-    pub slo_r1_p99_max_ns: u64,
-    pub slo_w1_p99_max_ms: u64,
-    pub slo_c1_p99_max_ms: u64,
+    pub slo_r1_p99_max_ns: Option<u64>,
+    pub slo_w1_p99_max_ms: Option<u64>,
+    pub slo_c1_p99_max_ms: Option<u64>,
+    pub slo_window_size_seconds: Option<u64>,
     pub slo_admission_strategy: String, // "strict" or "degrade"
-    pub promotion_environment: Option<String>, // "canary", "staging", "production"
+    pub slo_enabled: bool,
+    pub promotion_enabled: bool,
+    pub promotion_environment: Option<String>, // "development", "staging", "production"
+    pub promotion_feature_flags: Option<Vec<String>>,
+    pub promotion_auto_rollback_enabled: Option<bool>,
+    pub promotion_slo_threshold: Option<f64>,
+    pub promotion_rollback_window_seconds: Option<u64>,
     pub promotion_traffic_percent: Option<f64>,
     pub auto_rollback_enabled: bool,
     pub slo_threshold: f64,
+    // Workflow engine configuration
+    #[cfg(feature = "workflow")]
+    pub workflow_enabled: bool,
+    #[cfg(feature = "workflow")]
+    pub workflow_db_path: Option<String>,
 }
 
 impl Default for SidecarConfig {

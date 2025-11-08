@@ -65,6 +65,7 @@ pub mod constants;
 pub mod enterprise;
 pub mod error;
 pub mod executor;
+pub mod ggen;
 pub mod innovation;
 pub mod integration;
 pub mod observability;
@@ -94,6 +95,10 @@ pub use enterprise::{
 };
 pub use error::{WorkflowError, WorkflowResult};
 pub use executor::WorkflowEngine;
+pub use ggen::{
+    generate_documentation_from_spec, generate_tests_from_spec, generate_workflow_from_rdf,
+    GgenGenerator,
+};
 pub use innovation::{
     DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,
     HardwareAcceleration, HardwareAccelerator, Property, VerificationResult, Violation,

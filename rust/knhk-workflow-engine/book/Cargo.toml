@@ -1,0 +1,103 @@
+[package]
+name = "knhk-workflow-engine"
+version = "1.0.0"
+edition = "2021"
+description = "Enterprise workflow engine with full 43-pattern YAWL support"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-workflow-engine"
+keywords = ["workflow", "yawl", "bpmn", "enterprise", "automation"]
+categories = ["development-tools", "web-programming"]
+license = "MIT"
+authors = ["KNHK Team"]
+
+[lib]
+name = "knhk_workflow_engine"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[[bin]]
+name = "knhk-workflow"
+path = "src/bin/knhk-workflow.rs"
+
+[dependencies]
+# KNHK infrastructure
+knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
+knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
+knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
+knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
+knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, features = ["fortune5"] }
+chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0" }
+
+# RDF & Turtle parsing
+oxigraph = "0.5"
+rio_turtle = "0.8"
+
+# Template engine (for ggen integration)
+tera = { version = "1.19", features = ["builtins"] }
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# HTTP & gRPC
+tonic = { version = "0.10", features = ["tls", "tls-roots"] }
+tonic-build = "0.10"
+prost = "0.12"
+prost-types = "0.12"
+axum = { version = "0.7", features = ["json", "multipart"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Collections & utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+hashbrown = { version = "0.15", default-features = false }
+rayon = "1.8"
+fastrand = "2.0"
+sha2 = "0.10"
+
+# Rate limiting
+governor = "0.6"
+
+# Caching
+lru = "0.12"
+
+# Metrics
+metrics = "0.23"
+metrics-prometheus = "0.6"
+
+# Tracing & observability
+tracing = "0.1"
+tracing-opentelemetry = "0.32"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Storage
+sled = "0.34"
+
+[features]
+default = ["unrdf"]
+unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
+rdf = []
+sidecar = ["dep:knhk-sidecar"]
+
+[[example]]
+name = "workflow_weaver_livecheck"
+path = "examples/workflow_weaver_livecheck.rs"
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.8"
+criterion = { version = "0.5", features = ["html_reports"] }
+futures = "0.3"
