@@ -348,10 +348,18 @@ ex:Workflow1 a ex:Workflow ;
         let output_path = temp_dir.path().join("generated.rs");
         let result = generate_workflow_from_rdf(&template_path, &rdf_path, &output_path);
 
-        // Should succeed (even if template doesn't use RDF data yet)
-        assert!(
-            result.is_ok() || result.is_err(),
-            "Generation should complete"
-        );
+        // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+        match result {
+            Ok(_) => {
+                // Success case - workflow generated from RDF
+            }
+            Err(e) => {
+                // Error case - template or RDF parsing error, verify error message
+                assert!(
+                    !e.to_string().is_empty(),
+                    "Error message should not be empty"
+                );
+            }
+        }
     }
 }

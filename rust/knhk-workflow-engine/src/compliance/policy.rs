@@ -62,17 +62,11 @@ impl PolicyEngine {
         _action: &str,
         _context: &serde_json::Value,
     ) -> WorkflowResult<PolicyDecision> {
-        // FUTURE: Implement RDF-based policy evaluation using SPARQL
-        // For now, return Allow for all enabled rules
-        for rule in &self.rules {
-            if rule.enabled {
-                // Check if rule applies
-                // This would use SPARQL queries against the RDF store
-                return Ok(PolicyDecision::Allow);
-            }
-        }
-
-        Ok(PolicyDecision::NotApplicable)
+        // RDF-based policy evaluation using SPARQL is not yet implemented
+        // Return error instead of false positive (claiming Allow when we can't evaluate)
+        Err(WorkflowError::Internal(
+            "Policy evaluation requires SPARQL query execution against RDF store - RDF-based policy evaluation not yet implemented".to_string()
+        ))
     }
 
     /// Get all rules

@@ -16,7 +16,7 @@ pub(super) fn execute_workflow_tasks<'a>(
     engine: &'a WorkflowEngine,
     case_id: CaseId,
     spec: &'a WorkflowSpec,
-) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + 'a>> {
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + 'a>> {
     Box::pin(async move {
         // Start from start condition
         if let Some(ref start_condition_id) = spec.start_condition {
@@ -96,83 +96,76 @@ pub(super) async fn execute_task_with_allocation(
     match task.task_type {
         crate::parser::TaskType::Atomic => {
             // Atomic task: Execute via work item service (human task) or connector (automated)
-            // For now, create a work item for human tasks
-            // FUTURE: Add connector integration for automated atomic tasks
             let case = engine.get_case(case_id).await?;
-            let work_item_id = engine
-                .work_item_service
-                .create_work_item(
-                    case_id.to_string(),
-                    spec_id,
-                    task.id.clone(),
-                    case.data.clone(),
-                )
-                .await?;
 
-            // Wait for work item completion (in production, would poll or use async notification)
-            // For now, mark as completed immediately (simplified - real implementation would wait)
-            // This is a placeholder - actual implementation would:
-            // 1. Create work item
-            // 2. Wait for human completion or connector execution
-            // 3. Get result and update case variables
-            engine
-                .work_item_service
-                .complete(work_item_id.as_str(), case.data.clone())
-                .await?;
+            // Check if task requires human interaction (has required_roles) or is automated
+            if !task.required_roles.is_empty() {
+                // Human task: Create work item and wait for completion
+                let work_item_id = engine
+                    .work_item_service
+                    .create_work_item(
+                        case_id.to_string(),
+                        spec_id,
+                        task.id.clone(),
+                        case.data.clone(),
+                    )
+                    .await?;
+
+                // Wait for work item completion (poll until completed or cancelled)
+                // This is a blocking wait - in production would use async notification
+                loop {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                    if let Some(work_item) =
+                        engine.work_item_service.get_work_item(&work_item_id).await
+                    {
+                        match work_item.state {
+                            crate::services::work_items::WorkItemState::Completed => {
+                                // Work item completed - update case with result
+                                // FUTURE: Merge work_item.data into case variables
+                                break;
+                            }
+                            crate::services::work_items::WorkItemState::Cancelled => {
+                                return Err(WorkflowError::TaskExecutionFailed(format!(
+                                    "Work item {} was cancelled",
+                                    work_item_id
+                                )));
+                            }
+                            _ => {
+                                // Still in progress, continue waiting
+                            }
+                        }
+                    } else {
+                        return Err(WorkflowError::TaskExecutionFailed(format!(
+                            "Work item {} not found",
+                            work_item_id
+                        )));
+                    }
+                }
+            } else {
+                // Automated task: Execute via connector integration
+                // FUTURE: Add connector integration for automated atomic tasks
+                // For now, return error indicating connector execution is not implemented
+                return Err(WorkflowError::TaskExecutionFailed(
+                    format!("Automated atomic task execution requires connector integration - task {} needs connector implementation", task.id)
+                ));
+            }
         }
         crate::parser::TaskType::Composite => {
             // Composite task: Execute as sub-workflow
-            // NOTE: This creates a new case for the sub-workflow to avoid infinite recursion
-            // In production, sub-workflow spec would be stored in task metadata or loaded separately
-            // For now, use the same spec (simplified - real implementation would load sub-workflow)
-            let sub_case_id = engine.create_case(spec_id, serde_json::json!({})).await?;
-            engine.start_case(sub_case_id).await?;
-
-            // Execute sub-workflow directly without going through execute_case to avoid recursion
-            // Get workflow specification
-            let specs = engine.specs.read().await;
-            let sub_spec = specs.get(&spec_id).ok_or_else(|| {
-                WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
-            })?;
-            let sub_spec_clone = sub_spec.clone();
-            drop(specs);
-
-            // Execute sub-workflow tasks directly
-            super::task::execute_workflow_tasks(engine, sub_case_id, &sub_spec_clone)
-                .await
-                .await?;
-
-            // Get result from sub-case and merge into parent case variables
-            let sub_case = engine.get_case(sub_case_id).await?;
-            // FUTURE: Merge sub_case.data into parent case variables
+            // NOTE: Sub-workflow spec should be stored in task metadata or loaded separately
+            // For now, return error indicating sub-workflow spec loading is required
+            return Err(WorkflowError::TaskExecutionFailed(
+                format!("Composite task {} requires sub-workflow specification - sub-workflow spec must be stored in task metadata or loaded from state store", task.id)
+            ));
         }
         crate::parser::TaskType::MultipleInstance => {
             // Multiple instance task: Execute multiple instances
-            // Determine instance count (from task properties or variables)
-            let instance_count = 1; // FUTURE: Extract from task properties or case variables
-
-            // Execute instances in parallel (or sequentially based on task configuration)
-            for i in 0..instance_count {
-                let instance_case_id = engine
-                    .create_case(spec_id, serde_json::json!({ "instance": i }))
-                    .await?;
-                engine.start_case(instance_case_id).await?;
-
-                // Execute instance workflow directly to avoid recursion
-                let specs = engine.specs.read().await;
-                let instance_spec = specs.get(&spec_id).ok_or_else(|| {
-                    WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
-                })?;
-                let instance_spec_clone = instance_spec.clone();
-                drop(specs);
-
-                super::task::execute_workflow_tasks(engine, instance_case_id, &instance_spec_clone)
-                    .await?;
-
-                // Collect results from instances
-                let instance_case = engine.get_case(instance_case_id).await?;
-                // FUTURE: Aggregate instance results
-            }
+            // Determine instance count (from task properties or case variables)
+            // FUTURE: Extract instance count from task properties or case variables
+            // For now, return error indicating instance count extraction is required
+            return Err(WorkflowError::TaskExecutionFailed(
+                format!("Multiple instance task {} requires instance count extraction - instance count must be specified in task properties or case variables", task.id)
+            ));
         }
     }
 

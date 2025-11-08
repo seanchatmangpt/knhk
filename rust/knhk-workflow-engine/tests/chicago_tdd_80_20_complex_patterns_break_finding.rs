@@ -428,28 +428,60 @@ async fn test_pattern_28_29_loop_recursion_infinite_break() {
     let (pattern_id_28, executor_28) = advanced_control::create_pattern_28();
     let (pattern_id_29, executor_29) = advanced_control::create_pattern_29();
 
-    let context = PatternExecutionContext {
+    // Test Pattern 28: Loop with max_iterations protection
+    let mut variables_28 = HashMap::new();
+    variables_28.insert("continue".to_string(), "true".to_string());
+    variables_28.insert("iteration".to_string(), "0".to_string());
+    variables_28.insert("max_iterations".to_string(), "1000".to_string());
+
+    let context_28 = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
+        variables: variables_28,
         arrived_from: HashSet::new(),
         scope_id: String::new(),
     };
 
-    // Execute loop many times - should not hang
+    // Execute loop many times - should not hang and should respect max_iterations
     for i in 0..1000 {
-        let result = executor_28.execute(&context);
+        let mut ctx = context_28.clone();
+        ctx.variables.insert("iteration".to_string(), i.to_string());
+        let result = executor_28.execute(&ctx);
         assert!(result.success, "Loop should succeed on iteration {}", i);
         assert!(
             !result.terminates,
             "BREAK: Loop should not terminate unexpectedly on iteration {}",
             i
         );
+
+        // Should exit when max_iterations reached
+        if i >= 999 {
+            assert!(
+                result.next_state.as_ref().unwrap().contains("exited"),
+                "BREAK: Should exit at max_iterations"
+            );
+        }
     }
 
-    // Execute recursion many times - should not hang
-    for i in 0..1000 {
-        let result = executor_29.execute(&context);
+    // Test Pattern 29: Recursion with max_depth protection
+    let mut variables_29 = HashMap::new();
+    variables_29.insert("depth".to_string(), "0".to_string());
+    variables_29.insert("max_depth".to_string(), "100".to_string());
+    variables_29.insert("sub_case_done".to_string(), "false".to_string());
+
+    let context_29 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables_29,
+        arrived_from: HashSet::new(),
+        scope_id: String::new(),
+    };
+
+    // Execute recursion many times - should not hang and should respect max_depth
+    for i in 0..100 {
+        let mut ctx = context_29.clone();
+        ctx.variables.insert("depth".to_string(), i.to_string());
+        let result = executor_29.execute(&ctx);
         assert!(
             result.success,
             "Recursion should succeed on iteration {}",
@@ -460,6 +492,14 @@ async fn test_pattern_28_29_loop_recursion_infinite_break() {
             "BREAK: Recursion should not terminate unexpectedly on iteration {}",
             i
         );
+
+        // Should complete when max_depth reached
+        if i >= 99 {
+            assert!(
+                result.next_state.as_ref().unwrap().contains("completed"),
+                "BREAK: Should complete at max_depth"
+            );
+        }
     }
 }
 
@@ -567,7 +607,25 @@ async fn test_pattern_33_vs_32_cancel_difference() {
     let (pattern_id_32, executor_32) = advanced_control::create_pattern_32();
     let (pattern_id_33, executor_33) = advanced_control::create_pattern_33();
 
-    let context = PatternExecutionContext {
+    // Test Pattern 32: Cancel activity with activity_ids
+    let mut variables_32 = HashMap::new();
+    variables_32.insert(
+        "activity_ids".to_string(),
+        "activity_1,activity_2".to_string(),
+    );
+
+    let context_32 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables_32,
+        arrived_from: HashSet::new(),
+        scope_id: String::new(),
+    };
+
+    let result_32 = executor_32.execute(&context_32);
+
+    // Test Pattern 33: Cancel process
+    let context_33 = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
         variables: HashMap::new(),
@@ -575,8 +633,7 @@ async fn test_pattern_33_vs_32_cancel_difference() {
         scope_id: String::new(),
     };
 
-    let result_32 = executor_32.execute(&context);
-    let result_33 = executor_33.execute(&context);
+    let result_33 = executor_33.execute(&context_33);
 
     // CRITICAL BREAK: Pattern 32 should NOT terminate
     assert!(
@@ -599,6 +656,20 @@ async fn test_pattern_33_vs_32_cancel_difference() {
         !result_33.cancel_activities.is_empty(),
         "BREAK: Pattern 33 should cancel activities"
     );
+
+    // Pattern 32 should cancel specific activities
+    assert!(
+        result_32
+            .cancel_activities
+            .contains(&"activity_1".to_string()),
+        "BREAK: Pattern 32 should cancel specified activities"
+    );
+
+    // Pattern 33 should cancel process
+    assert!(
+        result_33.cancel_activities[0].contains("process:"),
+        "BREAK: Pattern 33 should cancel process"
+    );
 }
 
 // ============================================================================
@@ -610,6 +681,8 @@ async fn test_pattern_38_multiple_threads_break_finding() {
     // Break-finding: Test multiple threads pattern for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_38();
+
+    // Test 1: Default thread count (should be 2)
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
@@ -618,26 +691,43 @@ async fn test_pattern_38_multiple_threads_break_finding() {
         scope_id: String::new(),
     };
 
-    // Test 1: Verify threads are scheduled
     let result = executor.execute(&context);
     assert!(result.success, "Should execute successfully");
     assert!(
         !result.next_activities.is_empty(),
         "BREAK: Multiple threads should schedule activities"
     );
-    assert!(
-        result.next_activities.len() >= 2,
-        "BREAK: Should schedule at least 2 threads"
+    assert_eq!(
+        result.next_activities.len(),
+        2,
+        "BREAK: Should schedule exactly 2 threads by default"
     );
 
-    // Test 2: Verify thread names
+    // Test 2: Custom thread count from variables
+    let mut variables = HashMap::new();
+    variables.insert("thread_count".to_string(), "5".to_string());
+
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables,
+        arrived_from: HashSet::new(),
+        scope_id: String::new(),
+    };
+
+    let result2 = executor.execute(&context2);
+    assert_eq!(
+        result2.next_activities.len(),
+        5,
+        "BREAK: Should schedule 5 threads when thread_count=5"
+    );
     assert!(
-        result.next_activities.contains(&"thread_1".to_string()),
+        result2.next_activities.contains(&"thread_1".to_string()),
         "BREAK: Should schedule thread_1"
     );
     assert!(
-        result.next_activities.contains(&"thread_2".to_string()),
-        "BREAK: Should schedule thread_2"
+        result2.next_activities.contains(&"thread_5".to_string()),
+        "BREAK: Should schedule thread_5"
     );
 
     // Test 3: Verify no cancellation
@@ -793,10 +883,15 @@ async fn test_pattern_38_thread_count_consistency() {
     // Break-finding: Test thread count consistency
 
     let (pattern_id, executor) = advanced_control::create_pattern_38();
+
+    // Test with fixed thread_count
+    let mut variables = HashMap::new();
+    variables.insert("thread_count".to_string(), "3".to_string());
+
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
+        variables,
         arrived_from: HashSet::new(),
         scope_id: String::new(),
     };
@@ -811,6 +906,7 @@ async fn test_pattern_38_thread_count_consistency() {
 
     // All executions should schedule same number of threads
     let first_count = thread_counts[0];
+    assert_eq!(first_count, 3, "BREAK: Should schedule 3 threads");
     for (i, count) in thread_counts.iter().enumerate() {
         assert_eq!(
             *count, first_count,

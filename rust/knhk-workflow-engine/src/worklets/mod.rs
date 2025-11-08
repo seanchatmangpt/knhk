@@ -196,9 +196,14 @@ impl WorkletRepository {
         } else if rule.condition == "false" {
             Ok(false)
         } else {
-            // Default: evaluate as boolean expression
-            // FUTURE: Implement proper expression evaluation
-            Ok(false)
+            // Unknown condition format - cannot evaluate without proper expression evaluator
+            // Return error instead of false positive (claiming rule doesn't match when we can't evaluate)
+            Err(crate::error::WorkflowError::Internal(
+                format!(
+                    "Cannot evaluate worklet rule condition '{}' - proper expression evaluator not implemented. Rule evaluation requires expression parsing and evaluation.",
+                    rule.condition
+                )
+            ))
         }
     }
 

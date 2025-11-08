@@ -260,14 +260,15 @@ impl AdmissionGate {
         let signature = payload.get("signature").and_then(|v| v.as_str());
 
         if let Some(sig) = signature {
-            // In production, would verify PQC signature
-            // For now, check signature is not empty
+            // Verify PQC signature is not empty
             if sig.is_empty() {
                 return Ok(false);
             }
+            
             // FUTURE: Implement actual PQC signature verification
-            // This would use a post-quantum cryptographic library
-            Ok(true)
+            // This would use a post-quantum cryptographic library (e.g., CRYSTALS-Dilithium)
+            // For now, return unimplemented to indicate incomplete implementation
+            unimplemented!("verify_pqc: needs actual PQC signature verification using post-quantum cryptographic library (e.g., CRYSTALS-Dilithium) - signature={}", sig)
         } else {
             // No signature required for admission (optional)
             Ok(true)

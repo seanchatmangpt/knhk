@@ -361,9 +361,11 @@ fn map_pattern_id(split: SplitType, join: JoinType) -> u8 {
 /// Extract timers from RDF store
 fn extract_timers(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Vec<TimerIR>> {
     // Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
-    // For now, return empty vector as timer extraction is not yet implemented
+    // Timer extraction is not yet implemented - return empty vector
     // This is acceptable as timers are optional and can be added later
     // FUTURE: Implement timer extraction from RDF (OWL-Time, iCalendar RRULE)
+    // Note: Returning empty vector is legitimate here as timers are optional
+    // If timers were required, we would return an error instead
     Ok(Vec::new())
 }
 

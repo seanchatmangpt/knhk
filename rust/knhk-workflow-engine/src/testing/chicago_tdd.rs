@@ -7,7 +7,7 @@
 //! **Architecture**: Uses `chicago-tdd-tools` as generic base, extends with workflow-specific functionality.
 
 use crate::case::{Case, CaseId, CaseState};
-use crate::error::WorkflowResult;
+use crate::error::{WorkflowError, WorkflowResult};
 use crate::executor::WorkflowEngine;
 use crate::parser::{JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};
 use crate::patterns::{
@@ -537,11 +537,11 @@ impl WorkflowPropertyTester {
     /// Test workflow property: No deadlocks
     pub async fn test_deadlock_property(
         &mut self,
-        _spec_id: WorkflowSpecId,
+        spec_id: WorkflowSpecId,
     ) -> WorkflowResult<bool> {
         // Test for deadlocks by checking workflow spec structure
         // Deadlock detection: check for circular dependencies in task flows
-        let spec = self.fixture.engine.get_spec(spec_id).await?;
+        let spec = self.fixture.engine.get_workflow(spec_id).await?;
 
         // Check for circular dependencies in outgoing_flows
         let mut visited = std::collections::HashSet::new();
@@ -588,10 +588,10 @@ impl WorkflowPropertyTester {
     /// Test workflow property: Tick budget compliance
     pub async fn test_tick_budget_property(
         &mut self,
-        _spec_id: WorkflowSpecId,
+        spec_id: WorkflowSpecId,
     ) -> WorkflowResult<bool> {
         // Verify all tasks complete in ≤8 ticks by checking task max_ticks constraints
-        let spec = self.fixture.engine.get_spec(spec_id).await?;
+        let spec = self.fixture.engine.get_workflow(spec_id).await?;
 
         // Check all tasks have max_ticks ≤ 8 (Chatman Constant)
         for task in spec.tasks.values() {

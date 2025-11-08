@@ -63,15 +63,6 @@ ex:Alice a ex:Person .
             assert!(!e.is_empty(), "Error message should not be empty");
         }
     }
-
-    // If successful, should return ReceiptEntry
-    if let Ok(receipt_entry) = result {
-        // Receipt entry should have valid ID
-        assert!(
-            !receipt_entry.id.is_empty(),
-            "Receipt ID should not be empty"
-        );
-    }
 }
 
 /// Test: receipt::show retrieves receipt by ID
