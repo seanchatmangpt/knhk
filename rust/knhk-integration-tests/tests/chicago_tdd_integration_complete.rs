@@ -13,7 +13,14 @@ use knhk_sidecar::config::SidecarConfig;
 #[cfg(feature = "sidecar")]
 use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
 #[cfg(feature = "sidecar")]
-use knhk_sidecar::service::{proto::*, KgcSidecarService};
+use knhk_sidecar::service::proto::{health_status, query_request};
+#[cfg(feature = "sidecar")]
+use knhk_sidecar::service::proto::{
+    ApplyTransactionRequest, Delta, EvaluateHookRequest, GetMetricsRequest, HealthCheckRequest,
+    QueryRequest, Triple, ValidateGraphRequest,
+};
+#[cfg(feature = "sidecar")]
+use knhk_sidecar::service::KgcSidecarService;
 #[cfg(feature = "sidecar")]
 use tonic::Request;
 
@@ -520,6 +527,7 @@ async fn test_integration_metrics_consistent_across_error_scenarios() {
 // Test Suite: Performance Integration
 // ============================================================================
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_end_to_end_latency_acceptable() {
     // Arrange: Full system
@@ -531,9 +539,17 @@ async fn test_integration_end_to_end_latency_acceptable() {
     // Act: Measure end-to-end latency
     let start = std::time::Instant::now();
 
+    // Create delta with additions
+    let mut delta = Delta::default();
+    delta.additions.push(Triple {
+        subject: "http://s".to_string(),
+        predicate: "http://p".to_string(),
+        object: "http://o".to_string(),
+    });
+
     let _ = sidecar
         .apply_transaction(Request::new(ApplyTransactionRequest {
-            rdf_data: turtle.as_bytes().to_vec(),
+            delta: Some(delta),
             schema_iri: "urn:test:schema".to_string(),
         }))
         .await;

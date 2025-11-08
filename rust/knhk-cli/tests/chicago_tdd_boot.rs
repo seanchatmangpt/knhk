@@ -44,7 +44,8 @@ fn test_boot_init_with_nonexistent_sigma() {
 
     // Assert: Should return error
     assert!(result.is_err());
-    assert!(result.unwrap_err().contains("not found") || result.unwrap_err().contains("Schema"));
+    let error_msg = result.unwrap_err();
+    assert!(error_msg.contains("not found") || error_msg.contains("Schema"));
 }
 
 /// Test: boot::init with non-existent q file
