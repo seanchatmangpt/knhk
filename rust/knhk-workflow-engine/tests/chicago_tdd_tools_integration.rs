@@ -175,11 +175,9 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
 
     // Assert: Case completes (may be Completed or still Running depending on implementation)
     let case = engine.get_case(case_id).await?;
-    assert_in_range(
-        &case.state,
-        &CaseState::Created,
-        &CaseState::Completed,
-        "Case should be in a valid final state after execution",
+    assert!(
+        case.state == CaseState::Completed || case.state == CaseState::Running,
+        "Case should be in a valid final state after execution"
     );
 
     Ok(())
@@ -285,7 +283,7 @@ async fn test_error_handling_invalid_workflow() {
                 .expect("Should list workflows");
             assert!(workflows.len() >= 0, "Workflows list should be valid");
         }
-        Err(e) => {
+        Err(ref e) => {
             // If registration fails, verify it's a proper error
             assert_error(&result);
             assert!(
