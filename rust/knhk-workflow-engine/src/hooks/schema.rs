@@ -318,7 +318,7 @@ wf:Task a rdf:Class .
             .expect("register_schema should succeed");
 
         let spec = WorkflowSpec {
-            id: "test-workflow".to_string(),
+            id: crate::parser::WorkflowSpecId::new(),
             name: "Test Workflow".to_string(),
             tasks: {
                 let mut tasks = HashMap::new();

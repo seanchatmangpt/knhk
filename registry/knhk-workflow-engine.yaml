@@ -122,11 +122,12 @@ groups:
         type: boolean
         brief: Whether worklet execution succeeded
 
-spans:
+  # Workflow execution span
   - id: knhk.workflow.execute
-    brief: Workflow execution span
+    type: span
     span_kind: internal
     stability: experimental
+    brief: Workflow execution span
     attributes:
       - ref: knhk.workflow.id
       - ref: knhk.workflow.name
@@ -134,20 +135,24 @@ spans:
       - ref: knhk.workflow.pattern_count
       - ref: knhk.workflow.deadlock_validated
   
+  # Case execution span
   - id: knhk.case.execute
-    brief: Case execution span
+    type: span
     span_kind: internal
     stability: experimental
+    brief: Case execution span
     attributes:
       - ref: knhk.case.id
       - ref: knhk.case.workflow_id
       - ref: knhk.case.state
       - ref: knhk.case.priority
   
+  # Pattern execution span
   - id: knhk.pattern.execute
-    brief: Pattern execution span
+    type: span
     span_kind: internal
     stability: experimental
+    brief: Pattern execution span
     attributes:
       - ref: knhk.pattern.id
       - ref: knhk.pattern.name
@@ -155,26 +160,32 @@ spans:
       - ref: knhk.pattern.ticks
       - ref: knhk.pattern.success
   
+  # Resource allocation span
   - id: knhk.resource.allocate
-    brief: Resource allocation span
+    type: span
     span_kind: internal
     stability: experimental
+    brief: Resource allocation span
     attributes:
       - ref: knhk.resource.allocation_policy
       - ref: knhk.resource.allocated_count
       - ref: knhk.resource.allocation_duration_ms
   
+  # Worklet execution span
   - id: knhk.worklet.execute
-    brief: Worklet execution span
+    type: span
     span_kind: internal
     stability: experimental
+    brief: Worklet execution span
     attributes:
       - ref: knhk.worklet.id
       - ref: knhk.worklet.exception_type
       - ref: knhk.worklet.success
 
-metrics:
-  - id: knhk.workflow.execution.duration
+  # Workflow execution duration metric
+  - id: metric.knhk.workflow.execution.duration
+    type: metric
+    metric_name: knhk.workflow.execution.duration
     brief: Workflow execution duration
     unit: ms
     instrument: histogram
@@ -182,7 +193,10 @@ metrics:
     attributes:
       - ref: knhk.workflow.id
   
-  - id: knhk.case.execution.duration
+  # Case execution duration metric
+  - id: metric.knhk.case.execution.duration
+    type: metric
+    metric_name: knhk.case.execution.duration
     brief: Case execution duration
     unit: ms
     instrument: histogram
@@ -190,7 +204,10 @@ metrics:
     attributes:
       - ref: knhk.case.id
   
-  - id: knhk.pattern.execution.duration
+  # Pattern execution duration metric
+  - id: metric.knhk.pattern.execution.duration
+    type: metric
+    metric_name: knhk.pattern.execution.duration
     brief: Pattern execution duration
     unit: ms
     instrument: histogram
@@ -198,13 +215,19 @@ metrics:
     attributes:
       - ref: knhk.pattern.id
   
-  - id: knhk.workflow.deadlock.detections
+  # Deadlock detections metric
+  - id: metric.knhk.workflow.deadlock.detections
+    type: metric
+    metric_name: knhk.workflow.deadlock.detections
     brief: Number of deadlock detections
     unit: "1"
     instrument: counter
     stability: experimental
   
-  - id: knhk.resource.allocation.count
+  # Resource allocation count metric
+  - id: metric.knhk.resource.allocation.count
+    type: metric
+    metric_name: knhk.resource.allocation.count
     brief: Number of resource allocations
     unit: "1"
     instrument: counter
@@ -212,7 +235,10 @@ metrics:
     attributes:
       - ref: knhk.resource.allocation_policy
   
-  - id: knhk.worklet.execution.count
+  # Worklet execution count metric
+  - id: metric.knhk.worklet.execution.count
+    type: metric
+    metric_name: knhk.worklet.execution.count
     brief: Number of worklet executions
     unit: "1"
     instrument: counter
