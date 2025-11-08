@@ -116,28 +116,13 @@ impl AuditLogger {
                 });
 
                 // Record event in lockchain (async call from sync context)
-                // Use tokio runtime handle to call async function
-                if let Ok(handle) = tokio::runtime::Handle::try_current() {
-                    // We're in an async context, can use block_on
-                    let lockchain_clone = lockchain.clone();
-                    let event_data_clone = event_data.clone();
-                    handle.spawn(async move {
-                        // Use internal method to record event
-                        // Since record_event_internal is private, we'll need to create a public method
-                        // or use the existing public methods
-                        if let Err(e) = lockchain_clone.record_audit_event(&event_data_clone).await
-                        {
-                            tracing::warn!("Failed to record audit event in lockchain: {:?}", e);
-                        }
-                    });
-                } else {
-                    // Not in async context - lockchain recording requires async context
-                    // Log warning that event was not recorded to lockchain
-                    tracing::warn!(
-                        "Audit event {} not recorded to lockchain: requires async context",
-                        event.id
-                    );
-                }
+                // LockchainIntegration contains non-Send types, so we can't spawn a task
+                // Instead, we'll log a warning that lockchain recording requires async context
+                // In production, this would be handled by a background task that owns the lockchain
+                tracing::warn!(
+                    "Audit event {} not recorded to lockchain: requires async context and lockchain is not Send-safe",
+                    event.id
+                );
             } else {
                 // Lockchain enabled but no integration instance provided
                 tracing::warn!(
