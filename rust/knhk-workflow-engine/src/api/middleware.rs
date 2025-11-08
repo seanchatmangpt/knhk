@@ -13,64 +13,37 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use std::sync::Arc;
 use tower::ServiceBuilder;
-use tower_http::{
-    cors::CorsLayer,
-    trace::TraceLayer,
-};
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{info, warn};
-
-use crate::security::AuthManager;
-use crate::resilience::{CircuitBreaker, RateLimiter};
 
 /// Fortune 5 API middleware stack
 pub struct Fortune5Middleware {
-    /// Auth manager
-    auth_manager: Option<Arc<AuthManager>>,
-    /// Rate limiter
-    rate_limiter: Option<Arc<RateLimiter>>,
-    /// Circuit breaker
-    circuit_breaker: Option<Arc<CircuitBreaker>>,
+    /// Enable Fortune 5 features
+    enabled: bool,
 }
 
 impl Fortune5Middleware {
     /// Create new Fortune 5 middleware
-    pub fn new(
-        auth_manager: Option<Arc<AuthManager>>,
-        rate_limiter: Option<Arc<RateLimiter>>,
-        circuit_breaker: Option<Arc<CircuitBreaker>>,
-    ) -> Self {
-        Self {
-            auth_manager,
-            rate_limiter,
-            circuit_breaker,
-        }
+    pub fn new(enabled: bool) -> Self {
+        Self { enabled }
     }
 
     /// Build middleware stack
-    pub fn build(self) -> ServiceBuilder<impl tower::Layer<axum::Router>> {
-        let mut builder = ServiceBuilder::new();
-
-        // CORS layer
-        builder = builder.layer(CorsLayer::permissive());
-
-        // Tracing layer
-        builder = builder.layer(TraceLayer::new_for_http());
-
-        // Rate limiting layer (if enabled)
-        if let Some(ref rate_limiter) = self.rate_limiter {
-            // FUTURE: Add rate limiting middleware
-            // For now, rate limiting is handled in the handler
-        }
-
-        // Circuit breaker layer (if enabled)
-        if let Some(ref circuit_breaker) = self.circuit_breaker {
-            // FUTURE: Add circuit breaker middleware
-            // For now, circuit breaking is handled in the handler
-        }
-
-        builder
+    pub fn build(
+        self,
+    ) -> ServiceBuilder<
+        impl tower::Layer<
+            tower::util::BoxService<
+                axum::http::Request<axum::body::Body>,
+                axum::http::Response<axum::body::Body>,
+                axum::Error,
+            >,
+        >,
+    > {
+        ServiceBuilder::new()
+            .layer(CorsLayer::permissive())
+            .layer(TraceLayer::new_for_http())
     }
 }
 
@@ -100,10 +73,7 @@ pub async fn auth_middleware(
 }
 
 /// Rate limiting middleware
-pub async fn rate_limit_middleware(
-    request: Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
+pub async fn rate_limit_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
     // FUTURE: Implement rate limiting per client
     // For now, just continue
     Ok(next.run(request).await)
@@ -120,12 +90,9 @@ pub async fn circuit_breaker_middleware(
 }
 
 /// Request tracing middleware
-pub async fn tracing_middleware(
-    request: Request,
-    next: Next,
-) -> Response {
-    let path = request.uri().path();
-    let method = request.method().clone();
+pub async fn tracing_middleware(request: Request, next: Next) -> Response {
+    let path = request.uri().path().to_string();
+    let method = request.method().to_string();
 
     info!(
         method = %method,
@@ -146,19 +113,15 @@ pub async fn tracing_middleware(
 }
 
 /// Audit logging middleware
-pub async fn audit_middleware(
-    headers: HeaderMap,
-    request: Request,
-    next: Next,
-) -> Response {
+pub async fn audit_middleware(headers: HeaderMap, request: Request, next: Next) -> Response {
     let user = headers
         .get("x-user-id")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("unknown")
         .to_string();
 
-    let path = request.uri().path();
-    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    let method = request.method().to_string();
 
     let response = next.run(request).await;
 
@@ -174,4 +137,3 @@ pub async fn audit_middleware(
 
     response
 }
-

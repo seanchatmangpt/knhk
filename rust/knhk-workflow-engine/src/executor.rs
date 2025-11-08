@@ -90,17 +90,20 @@ impl WorkflowEngine {
         let worklet_executor = Arc::new(WorkletExecutor::new(worklet_repository.clone()));
 
         // Initialize Fortune 5 integration
-        let fortune5_integration = Arc::new(Fortune5Integration::new(fortune5_config));
+        let fortune5_integration = Arc::new(Fortune5Integration::new(fortune5_config.clone()));
 
         // Initialize OTEL integration if enabled in Fortune 5 config
-        let otel_integration = if fortune5_integration.config.slo.is_some() {
+        let otel_integration = if fortune5_config.slo.is_some() {
             Some(Arc::new(OtelIntegration::new(None)))
         } else {
             None
         };
 
         // Initialize lockchain integration for provenance
-        let lockchain_integration = Some(Arc::new(LockchainIntegration::new("./lockchain")?));
+        // Use environment variable or default path
+        let lockchain_path =
+            std::env::var("KNHK_LOCKCHAIN_PATH").unwrap_or_else(|_| "./lockchain".to_string());
+        let lockchain_integration = Some(Arc::new(LockchainIntegration::new(&lockchain_path)?));
 
         Ok(Self {
             pattern_registry: Arc::new(registry),
@@ -279,13 +282,14 @@ impl WorkflowEngine {
         Ok(())
     }
 
-    /// Execute a task with resource allocation
+    /// Execute a task with resource allocation and Fortune 5 SLO tracking
     async fn execute_task_with_allocation(
         &self,
         case_id: CaseId,
         spec_id: WorkflowSpecId,
         task: &crate::parser::Task,
     ) -> WorkflowResult<()> {
+        let task_start_time = Instant::now();
         // Allocate resources if allocation policy is specified
         if let Some(ref policy) = task.allocation_policy {
             let request = AllocationRequest {
@@ -334,6 +338,32 @@ impl WorkflowEngine {
         }
 
         // Execute task (simplified - full implementation would execute actual task logic)
+        // Check max_ticks constraint
+        if let Some(max_ticks) = task.max_ticks {
+            let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
+            let elapsed_ticks = elapsed_ns / 2; // 2ns per tick
+            if elapsed_ticks > max_ticks as u64 {
+                return Err(WorkflowError::TaskExecutionFailed(format!(
+                    "Task {} exceeded tick budget: {} ticks > {} ticks",
+                    task.id, elapsed_ticks, max_ticks
+                )));
+            }
+        }
+
+        // Record SLO metrics if Fortune 5 is enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
+            // Determine runtime class based on task max_ticks or execution time
+            let runtime_class = if task.max_ticks.map_or(false, |ticks| ticks <= 8) {
+                RuntimeClass::R1 // Hot path task
+            } else if elapsed_ns <= 1_000_000 {
+                RuntimeClass::W1 // Warm path
+            } else {
+                RuntimeClass::C1 // Cold path
+            };
+            fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
+        }
+
         Ok(())
     }
 
@@ -439,7 +469,7 @@ impl WorkflowEngine {
         self.fortune5_integration.as_deref()
     }
 
-    /// Check SLO compliance (Fortune 5)
+    /// Check SLO compliance (Fortune 5 feature)
     pub async fn check_slo_compliance(&self) -> WorkflowResult<bool> {
         if let Some(ref fortune5) = self.fortune5_integration {
             fortune5.check_slo_compliance().await

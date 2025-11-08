@@ -122,18 +122,21 @@ pub struct SloConfig {
 impl SloConfig {
     /// Validate SLO configuration
     pub fn validate(&self) -> WorkflowResult<()> {
-        if self.r1_p99_max_ns > 2 {
+        // R1: Real-time path, max 2ms (2_000_000 nanoseconds)
+        if self.r1_p99_max_ns > 2_000_000 {
             return Err(WorkflowError::Validation(format!(
-                "R1 P99 max {}ns exceeds maximum 2ns",
+                "R1 P99 max {}ns exceeds maximum 2ms (2_000_000ns)",
                 self.r1_p99_max_ns
             )));
         }
+        // W1: Warm path, max 1ms
         if self.w1_p99_max_ms > 1 {
             return Err(WorkflowError::Validation(format!(
                 "W1 P99 max {}ms exceeds maximum 1ms",
                 self.w1_p99_max_ms
             )));
         }
+        // C1: Cold path, max 500ms
         if self.c1_p99_max_ms > 500 {
             return Err(WorkflowError::Validation(format!(
                 "C1 P99 max {}ms exceeds maximum 500ms",

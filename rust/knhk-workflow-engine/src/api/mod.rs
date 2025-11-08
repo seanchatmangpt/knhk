@@ -1,6 +1,7 @@
 //! Workflow engine API module
 
 pub mod grpc;
+pub mod middleware;
 pub mod models;
 pub mod rest;
 

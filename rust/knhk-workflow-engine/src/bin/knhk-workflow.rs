@@ -250,7 +250,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Commands::Serve { port, host } => {
             println!("Starting REST API server on {}:{}", host, port);
-            let app = knhk_workflow_engine::api::rest::RestApiServer::new(engine.clone()).router();
+            use knhk_workflow_engine::api::rest::RestApiServer;
+            let app = RestApiServer::new(engine.clone()).router();
             let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
                 .await
                 .map_err(|e| format!("Failed to bind to {}:{}: {}", host, port, e))?;
