@@ -190,40 +190,43 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             loop {
                 sleep(Duration::from_secs(5)).await;
 
-                let mut process_guard = match weaver_monitor_process.lock() {
-                    Ok(guard) => guard,
-                    Err(e) => {
-                        error!("Mutex poisoned in weaver monitor: {}", e);
-                        continue; // Skip this iteration
-                    }
-                };
-                let process_needs_restart = match process_guard.as_mut() {
-                    Some(process) => {
-                        // Check if process is still running
-                        match process.try_wait() {
-                            Ok(Some(status)) => {
-                                warn!(exit_code = ?status.code(), "Weaver process exited unexpectedly");
-                                true
-                            }
-                            Ok(None) => {
-                                // Process still running, check health
-                                let weaver = WeaverLiveCheck::new()
-                                    .with_admin_port(weaver_monitor_config.weaver_admin_port);
-                                match weaver.check_health() {
-                                    Ok(true) => false, // Healthy
-                                    Ok(false) | Err(_) => {
-                                        warn!("Weaver health check failed, process may be unresponsive");
-                                        false // Don't restart yet, might be transient
+                let process_needs_restart = {
+                    let mut process_guard = match weaver_monitor_process.lock() {
+                        Ok(guard) => guard,
+                        Err(e) => {
+                            error!("Mutex poisoned in weaver monitor: {}", e);
+                            continue; // Skip this iteration
+                        }
+                    };
+                    match process_guard.as_mut() {
+                        Some(process) => {
+                            // Check if process is still running
+                            match process.try_wait() {
+                                Ok(Some(status)) => {
+                                    warn!(exit_code = ?status.code(), "Weaver process exited unexpectedly");
+                                    true
+                                }
+                                Ok(None) => {
+                                    // Process still running, check health
+                                    drop(process_guard); // Drop guard before await
+                                    let weaver = WeaverLiveCheck::new()
+                                        .with_admin_port(weaver_monitor_config.weaver_admin_port);
+                                    match weaver.check_health() {
+                                        Ok(true) => false, // Healthy
+                                        Ok(false) | Err(_) => {
+                                            warn!("Weaver health check failed, process may be unresponsive");
+                                            false // Don't restart yet, might be transient
+                                        }
                                     }
                                 }
-                            }
-                            Err(e) => {
-                                error!(error = %e, "Error checking Weaver process status");
-                                false
+                                Err(e) => {
+                                    error!(error = %e, "Error checking Weaver process status");
+                                    false
+                                }
                             }
                         }
+                        None => false, // No process to monitor
                     }
-                    None => false, // No process to monitor
                 };
 
                 if process_needs_restart {
@@ -248,7 +251,6 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
 
                     // Start process
                     let new_process_result = weaver_builder_config.start();
-                    drop(process_guard); // Drop guard before await
 
                     let new_process = match new_process_result {
                         Ok(process) => process,

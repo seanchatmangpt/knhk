@@ -89,8 +89,25 @@ fn test_init_tracing_with_otlp_endpoint() {
     // Act: Initialize tracing
     let result = tracing::init_tracing();
 
-    // Assert: Returns Result (may fail if collector not running, but should not panic)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Returns Result (may fail if collector not running or subscriber already set)
+    // The error "a global default trace dispatcher has already been set" is expected when
+    // running multiple tests together
+    match result {
+        Ok(_) => {
+            // Success case - tracing initialized
+        }
+        Err(e) => {
+            // Error case - may be "global default trace dispatcher has already been set"
+            // or "Failed to initialize OpenTelemetry SDK" or "Failed to initialize tracing subscriber"
+            // All of these are acceptable in test environment
+            assert!(
+                e.contains("global default")
+                    || e.contains("subscriber")
+                    || e.contains("OpenTelemetry")
+                    || e.contains("tracing subscriber")
+            );
+        }
+    }
 }
 
 /// Test: init_tracing with KNHK_TRACE level
