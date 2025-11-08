@@ -75,7 +75,7 @@ impl SecurityManager {
             return Ok(true); // Skip verification if disabled
         }
 
-        // TODO: Implement SPIFFE verification
+        // Note: SPIFFE verification will be implemented when SPIFFE/SPIRE integration is added
         // For now, return true if trust domain matches
         if let Some(ref trust_domain) = self.config.trust_domain {
             Ok(spiffe_id.starts_with(&format!("spiffe://{}", trust_domain)))

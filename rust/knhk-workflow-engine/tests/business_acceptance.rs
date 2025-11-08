@@ -143,6 +143,7 @@ async fn test_order_processing_with_parallel_validation() {
     // Pattern 2: Parallel Split - Check inventory || Check credit
     let result = engine
         .execute_pattern(PatternId(2), ctx.clone())
+        .await
         .expect("Parallel validation should execute");
 
     // Assert: Parallel validation completed with realistic checks
@@ -174,8 +175,8 @@ async fn test_order_processing_with_parallel_validation() {
 // Business Scenario 2: Approval Workflow
 // ============================================================================
 
-#[test]
-fn test_approval_workflow_with_exclusive_choice() {
+#[tokio::test]
+async fn test_approval_workflow_with_exclusive_choice() {
     // Business Requirement: Approval workflow must route to different
     // approvers based on amount threshold. Routing rules:
     // - < $1,000: Auto-approved
@@ -251,8 +252,8 @@ fn test_approval_workflow_with_exclusive_choice() {
     );
 }
 
-#[test]
-fn test_approval_workflow_requires_all_approvers() {
+#[tokio::test]
+async fn test_approval_workflow_requires_all_approvers() {
     // Business Requirement: High-value requests require approval from
     // multiple departments (finance, legal, operations). All must approve.
     // Arrange: Create engine and context
@@ -334,8 +335,8 @@ fn test_approval_workflow_requires_all_approvers() {
 // Business Scenario 3: Document Processing with Multiple Instances
 // ============================================================================
 
-#[test]
-fn test_document_processing_with_multiple_instances() {
+#[tokio::test]
+async fn test_document_processing_with_multiple_instances() {
     // Business Requirement: Process multiple documents in parallel,
     // each document processed independently. Documents may be invoices,
     // contracts, or other business documents.
@@ -408,8 +409,8 @@ fn test_document_processing_with_multiple_instances() {
     );
 }
 
-#[test]
-fn test_document_processing_wait_for_all_completion() {
+#[tokio::test]
+async fn test_document_processing_wait_for_all_completion() {
     // Business Requirement: Batch processing must wait for all documents
     // to complete before finalizing
     // Arrange: Create engine and context
@@ -443,8 +444,8 @@ fn test_document_processing_wait_for_all_completion() {
 // Business Scenario 4: Event-Driven Workflow
 // ============================================================================
 
-#[test]
-fn test_event_driven_workflow_waits_for_external_event() {
+#[tokio::test]
+async fn test_event_driven_workflow_waits_for_external_event() {
     // Business Requirement: Workflow must wait for external event
     // (e.g., customer confirmation) before proceeding
     // Arrange: Create engine and context
@@ -472,8 +473,8 @@ fn test_event_driven_workflow_waits_for_external_event() {
     );
 }
 
-#[test]
-fn test_event_based_trigger_workflow() {
+#[tokio::test]
+async fn test_event_based_trigger_workflow() {
     // Business Requirement: Workflow triggered by external events
     // (e.g., order placed, payment received)
     // Arrange: Create engine and context
@@ -507,8 +508,8 @@ fn test_event_based_trigger_workflow() {
 // Business Scenario 5: Cancellation and Error Handling
 // ============================================================================
 
-#[test]
-fn test_workflow_cancellation_on_user_request() {
+#[tokio::test]
+async fn test_workflow_cancellation_on_user_request() {
     // Business Requirement: Workflow must support cancellation when
     // user requests it. Cancellation must preserve audit trail and
     // notify relevant parties.
@@ -586,8 +587,8 @@ fn test_workflow_cancellation_on_user_request() {
     }
 }
 
-#[test]
-fn test_workflow_timeout_handling() {
+#[tokio::test]
+async fn test_workflow_timeout_handling() {
     // Business Requirement: Workflow must handle timeouts gracefully
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -611,8 +612,8 @@ fn test_workflow_timeout_handling() {
 // Business Scenario 6: Multi-Choice Decision Workflow
 // ============================================================================
 
-#[test]
-fn test_multi_choice_approval_workflow() {
+#[tokio::test]
+async fn test_multi_choice_approval_workflow() {
     // Business Requirement: Some requests require approval from multiple
     // departments (any combination of finance, legal, operations)
     // Arrange: Create engine and context
@@ -646,8 +647,8 @@ fn test_multi_choice_approval_workflow() {
 // Business Scenario 7: Loop-Based Processing
 // ============================================================================
 
-#[test]
-fn test_retry_workflow_with_structured_loop() {
+#[tokio::test]
+async fn test_retry_workflow_with_structured_loop() {
     // Business Requirement: Failed operations should retry up to N times
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -679,8 +680,8 @@ fn test_retry_workflow_with_structured_loop() {
 // Business Scenario 8: Milestone-Based Workflow
 // ============================================================================
 
-#[test]
-fn test_milestone_based_workflow_enables_activity() {
+#[tokio::test]
+async fn test_milestone_based_workflow_enables_activity() {
     // Business Requirement: Certain activities can only execute after
     // milestone is reached (e.g., payment received milestone enables shipping)
     // Arrange: Create engine and context
@@ -710,8 +711,8 @@ fn test_milestone_based_workflow_enables_activity() {
     );
 }
 
-#[test]
-fn test_milestone_based_workflow_blocks_activity() {
+#[tokio::test]
+async fn test_milestone_based_workflow_blocks_activity() {
     // Business Requirement: Activity should be blocked if milestone not reached
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -745,8 +746,8 @@ fn test_milestone_based_workflow_blocks_activity() {
 // Business Scenario 9: Complex Multi-Pattern Workflow
 // ============================================================================
 
-#[test]
-fn test_complex_order_fulfillment_workflow() {
+#[tokio::test]
+async fn test_complex_order_fulfillment_workflow() {
     // Business Requirement: Order fulfillment requires:
     // 1. Parallel validation (inventory + credit)
     // 2. Synchronization (wait for both)
@@ -782,8 +783,8 @@ fn test_complex_order_fulfillment_workflow() {
 // Business Scenario 10: Performance and Scalability
 // ============================================================================
 
-#[test]
-fn test_high_volume_workflow_processing() {
+#[tokio::test]
+async fn test_high_volume_workflow_processing() {
     // Business Requirement: System must handle high volume of workflows
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -816,8 +817,8 @@ fn test_high_volume_workflow_processing() {
 // Business Scenario 11: Error Recovery
 // ============================================================================
 
-#[test]
-fn test_workflow_error_recovery() {
+#[tokio::test]
+async fn test_workflow_error_recovery() {
     // Business Requirement: Workflow must handle errors gracefully and
     // allow recovery
     // Arrange: Create engine and context
@@ -848,8 +849,8 @@ fn test_workflow_error_recovery() {
 // Business Scenario 12: State Persistence
 // ============================================================================
 
-#[test]
-fn test_workflow_state_persistence() {
+#[tokio::test]
+async fn test_workflow_state_persistence() {
     // Business Requirement: Workflow state must be persisted across
     // system restarts
     // Arrange: Create engine and context
@@ -882,8 +883,8 @@ fn test_workflow_state_persistence() {
 // Business Scenario 13: External Integration
 // ============================================================================
 
-#[test]
-fn test_external_trigger_workflow() {
+#[tokio::test]
+async fn test_external_trigger_workflow() {
     // Business Requirement: Workflow must respond to external triggers
     // (e.g., webhook, API call)
     // Arrange: Create engine and context
@@ -922,8 +923,8 @@ fn test_external_trigger_workflow() {
 // Business Scenario 14: Conditional Execution
 // ============================================================================
 
-#[test]
-fn test_conditional_workflow_execution() {
+#[tokio::test]
+async fn test_conditional_workflow_execution() {
     // Business Requirement: Workflow must execute different paths based
     // on business conditions
     // Arrange: Create engine and context
@@ -955,8 +956,8 @@ fn test_conditional_workflow_execution() {
 // Business Scenario 15: Audit and Compliance
 // ============================================================================
 
-#[test]
-fn test_workflow_audit_trail() {
+#[tokio::test]
+async fn test_workflow_audit_trail() {
     // Business Requirement: All workflow executions must be auditable
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -994,8 +995,8 @@ fn test_workflow_audit_trail() {
 // Business Scenario 16: SLA Compliance
 // ============================================================================
 
-#[test]
-fn test_workflow_sla_compliance() {
+#[tokio::test]
+async fn test_workflow_sla_compliance() {
     // Business Requirement: Workflow must complete within SLA time limits
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -1024,8 +1025,8 @@ fn test_workflow_sla_compliance() {
 // Business Scenario 17: Multi-Region Workflow
 // ============================================================================
 
-#[test]
-fn test_multi_region_workflow_execution() {
+#[tokio::test]
+async fn test_multi_region_workflow_execution() {
     // Business Requirement: Workflow must execute correctly across
     // multiple regions
     // Arrange: Create engine and context
@@ -1058,8 +1059,8 @@ fn test_multi_region_workflow_execution() {
 // Business Scenario 18: Data Validation
 // ============================================================================
 
-#[test]
-fn test_workflow_data_validation() {
+#[tokio::test]
+async fn test_workflow_data_validation() {
     // Business Requirement: Workflow must validate input data before processing
     // Arrange: Create engine and context
     let engine = create_test_engine();
@@ -1093,8 +1094,8 @@ fn test_workflow_data_validation() {
 // Business Scenario 19: Workflow Versioning
 // ============================================================================
 
-#[test]
-fn test_workflow_version_compatibility() {
+#[tokio::test]
+async fn test_workflow_version_compatibility() {
     // Business Requirement: Workflow engine must support multiple workflow
     // versions simultaneously
     // Arrange: Create engine and context
@@ -1128,8 +1129,8 @@ fn test_workflow_version_compatibility() {
 // Business Scenario 20: End-to-End Business Process
 // ============================================================================
 
-#[test]
-fn test_end_to_end_order_to_delivery_workflow() {
+#[tokio::test]
+async fn test_end_to_end_order_to_delivery_workflow() {
     // Business Requirement: Complete order-to-delivery process must work
     // end-to-end with all required steps:
     // 1. Order validation (inventory, customer credit)
