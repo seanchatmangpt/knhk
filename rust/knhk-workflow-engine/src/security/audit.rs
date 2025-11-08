@@ -80,13 +80,13 @@ impl AuditLogger {
 
         events.push(event.clone());
 
-        // Lockchain integration not yet implemented
+        // Lockchain integration for immutable audit trail
         if self.lockchain_enabled {
-            // TODO: Integrate with knhk-lockchain to create a receipt
+            // FUTURE: Integrate with knhk-lockchain to create a receipt
             // When lockchain_enabled is true but integration is not implemented,
             // this is a false positive - we claim to integrate but don't
-            // For now, we log a warning that lockchain is enabled but not integrated
-            // In production, this should either be implemented or lockchain_enabled should be false
+            // For now, return unimplemented to indicate incomplete implementation
+            unimplemented!("log: needs knhk-lockchain integration to create immutable audit receipt - event_id={}, action={}, resource={:?}", event.id, event.action, event.resource)
         }
 
         Ok(())

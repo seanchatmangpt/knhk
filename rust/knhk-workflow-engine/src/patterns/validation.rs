@@ -54,6 +54,20 @@ impl PatternValidator {
 
         // Check for circular dependencies
         // FUTURE: Implement actual dependency graph validation
+        // For now, we only check pattern count and composition size
+        // Circular dependency detection requires building a dependency graph
+        // and running cycle detection algorithm (DFS with back edges)
+
+        // Basic validation: check for duplicate pattern IDs (potential circular dependency indicator)
+        let mut seen = std::collections::HashSet::new();
+        for pattern_id in pattern_ids {
+            if !seen.insert(pattern_id) {
+                warnings.push(format!(
+                    "Duplicate pattern ID {} in composition may indicate circular dependency",
+                    pattern_id.0
+                ));
+            }
+        }
 
         // Check pattern count
         if pattern_ids.len() > 100 {

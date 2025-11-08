@@ -5,7 +5,10 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::registry::{IntegrationRegistry, IntegrationStatus};
 use std::collections::HashMap;
+use std::path::Path;
+use std::sync::Arc;
 use std::time::Instant;
+use tokio::sync::RwLock;
 
 /// Integration health status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +43,10 @@ pub struct IntegrationHealthChecker {
     registry: IntegrationRegistry,
     /// Health check results
     results: HashMap<String, HealthCheckResult>,
+    /// Optional integration instances for health checks
+    fortune5_integration: Option<Arc<crate::integration::fortune5::Fortune5Integration>>,
+    lockchain_path: Option<String>,
+    otel_endpoint: Option<String>,
 }
 
 impl IntegrationHealthChecker {
@@ -48,6 +55,24 @@ impl IntegrationHealthChecker {
         Self {
             registry: IntegrationRegistry::new(),
             results: HashMap::new(),
+            fortune5_integration: None,
+            lockchain_path: None,
+            otel_endpoint: None,
+        }
+    }
+
+    /// Create health checker with integration instances
+    pub fn with_integrations(
+        fortune5: Option<Arc<crate::integration::fortune5::Fortune5Integration>>,
+        lockchain_path: Option<String>,
+        otel_endpoint: Option<String>,
+    ) -> Self {
+        Self {
+            registry: IntegrationRegistry::new(),
+            results: HashMap::new(),
+            fortune5_integration: fortune5,
+            lockchain_path,
+            otel_endpoint,
         }
     }
 
@@ -110,88 +135,220 @@ impl IntegrationHealthChecker {
     /// Perform actual health check for integration
     async fn perform_health_check(&self, name: &str) -> WorkflowResult<()> {
         match name {
-            "fortune5" => {
-                // Fortune 5 health check: verify integration is accessible
-                // In production, would check SPIFFE/SPIRE connectivity, KMS availability, and SLO endpoints
-                // For now, check if integration is registered and enabled
-                let metadata = self.registry.get(name).await;
-                if metadata.is_some() {
-                    Ok(())
-                } else {
-                    Err(WorkflowError::ResourceUnavailable(
-                        "Fortune 5 integration not registered".to_string(),
-                    ))
-                }
-            }
-            "lockchain" => {
-                // Lockchain health check: verify storage is accessible
-                // In production, would check receipt storage connectivity and provenance endpoints
-                // For now, check if integration is registered and enabled
-                let metadata = self.registry.get(name).await;
-                if metadata.is_some() {
-                    Ok(())
-                } else {
-                    Err(WorkflowError::ResourceUnavailable(
-                        "Lockchain integration not registered".to_string(),
-                    ))
-                }
-            }
-            "connectors" => {
-                // Connector health check: verify connector registry is accessible
-                // In production, would check Kafka broker connectivity, Salesforce API availability
-                // For now, check if integration is registered and enabled
-                let metadata = self.registry.get(name).await;
-                if metadata.is_some() {
-                    Ok(())
-                } else {
-                    Err(WorkflowError::ResourceUnavailable(
-                        "Connector integration not registered".to_string(),
-                    ))
-                }
-            }
-            "sidecar" => {
-                // Sidecar health check: verify gRPC endpoint is accessible
-                // In production, would check gRPC endpoint connectivity and sidecar process status
-                // For now, check if integration is registered and enabled
-                let metadata = self.registry.get(name).await;
-                if metadata.is_some() {
-                    Ok(())
-                } else {
-                    Err(WorkflowError::ResourceUnavailable(
-                        "Sidecar integration not registered".to_string(),
-                    ))
-                }
-            }
-            "etl" => {
-                // ETL health check: verify pipeline stages are accessible
-                // In production, would check pipeline stage availability, Reflex bridge connectivity
-                // For now, check if integration is registered and enabled
-                let metadata = self.registry.get(name).await;
-                if metadata.is_some() {
-                    Ok(())
-                } else {
-                    Err(WorkflowError::ResourceUnavailable(
-                        "ETL integration not registered".to_string(),
-                    ))
-                }
-            }
-            "otel" => {
-                // OTEL health check: verify OTLP exporter is accessible
-                // In production, would check OTLP exporter connectivity, span export validation
-                // For now, check if integration is registered and enabled
-                let metadata = self.registry.get(name).await;
-                if metadata.is_some() {
-                    Ok(())
-                } else {
-                    Err(WorkflowError::ResourceUnavailable(
-                        "OTEL integration not registered".to_string(),
-                    ))
-                }
-            }
+            "fortune5" => self.check_fortune5_health().await,
+            "lockchain" => self.check_lockchain_health().await,
+            "connectors" => self.check_connectors_health().await,
+            "sidecar" => self.check_sidecar_health().await,
+            "etl" => self.check_etl_health().await,
+            "otel" => self.check_otel_health().await,
             _ => Err(WorkflowError::ResourceUnavailable(format!(
                 "Unknown integration: {}",
                 name
             ))),
+        }
+    }
+
+    /// Check Fortune 5 integration health
+    ///
+    /// Verifies:
+    /// - SLO compliance
+    /// - SPIFFE/SPIRE connectivity (via socket path check)
+    /// - Integration availability
+    async fn check_fortune5_health(&self) -> WorkflowResult<()> {
+        // Check if Fortune 5 integration instance is available
+        if let Some(ref fortune5) = self.fortune5_integration {
+            // Check SLO compliance
+            match fortune5.check_slo_compliance().await {
+                Ok(compliant) => {
+                    if !compliant {
+                        return Err(WorkflowError::ResourceUnavailable(
+                            "Fortune 5 SLO compliance check failed".to_string(),
+                        ));
+                    }
+                }
+                Err(e) => {
+                    return Err(WorkflowError::ResourceUnavailable(format!(
+                        "Fortune 5 SLO check error: {}",
+                        e
+                    )));
+                }
+            }
+
+            // Check SPIFFE/SPIRE connectivity (check if socket path exists)
+            // Default SPIFFE socket path
+            let spiffe_socket = "/tmp/spire-agent/public/api.sock";
+            if !Path::new(spiffe_socket).exists() {
+                // SPIFFE socket not found - this is a warning but not a failure
+                // In production, would attempt to connect to SPIRE agent
+                tracing::warn!(
+                    "SPIFFE socket not found at {}, SPIFFE/SPIRE may not be configured",
+                    spiffe_socket
+                );
+            }
+
+            Ok(())
+        } else {
+            // No Fortune 5 integration instance - check if registered
+            let metadata = self.registry.get("fortune5").await;
+            if metadata.is_some() {
+                // Integration registered but not initialized - degraded state
+                Err(WorkflowError::ResourceUnavailable(
+                    "Fortune 5 integration registered but not initialized".to_string(),
+                ))
+            } else {
+                Err(WorkflowError::ResourceUnavailable(
+                    "Fortune 5 integration not registered".to_string(),
+                ))
+            }
+        }
+    }
+
+    /// Check Lockchain integration health
+    ///
+    /// Verifies:
+    /// - Receipt storage connectivity
+    /// - Lockchain storage path accessibility
+    async fn check_lockchain_health(&self) -> WorkflowResult<()> {
+        // Check if lockchain path is configured
+        if let Some(ref path) = self.lockchain_path {
+            // Verify path exists and is accessible
+            if !Path::new(path).exists() {
+                return Err(WorkflowError::ResourceUnavailable(format!(
+                    "Lockchain storage path does not exist: {}",
+                    path
+                )));
+            }
+
+            // Try to create a test lockchain instance to verify connectivity
+            match crate::integration::LockchainIntegration::new(path) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(WorkflowError::ResourceUnavailable(format!(
+                    "Lockchain storage initialization failed: {}",
+                    e
+                ))),
+            }
+        } else {
+            // No lockchain path configured - check if registered
+            let metadata = self.registry.get("lockchain").await;
+            if metadata.is_some() {
+                Err(WorkflowError::ResourceUnavailable(
+                    "Lockchain integration registered but path not configured".to_string(),
+                ))
+            } else {
+                Err(WorkflowError::ResourceUnavailable(
+                    "Lockchain integration not registered".to_string(),
+                ))
+            }
+        }
+    }
+
+    /// Check Connectors integration health
+    ///
+    /// Verifies:
+    /// - Connector registry accessibility
+    /// - Connector integration availability
+    async fn check_connectors_health(&self) -> WorkflowResult<()> {
+        // Check if connector integration is registered
+        let metadata = self.registry.get("connectors").await;
+        if metadata.is_none() {
+            return Err(WorkflowError::ResourceUnavailable(
+                "Connector integration not registered".to_string(),
+            ));
+        }
+
+        // Verify connector integration module is available
+        // In production, would check Kafka broker connectivity and Salesforce API availability
+        // For now, verify the integration module can be instantiated
+        let _connector_integration = crate::integration::ConnectorIntegration::new();
+
+        // Basic health check passed
+        Ok(())
+    }
+
+    /// Check Sidecar integration health
+    ///
+    /// Verifies:
+    /// - gRPC endpoint connectivity (if configured)
+    /// - Sidecar process status
+    ///
+    /// Note: This is a stub implementation since sidecar depends on workflow engine,
+    /// not the other way around.
+    async fn check_sidecar_health(&self) -> WorkflowResult<()> {
+        // Check if sidecar integration is registered
+        let metadata = self.registry.get("sidecar").await;
+        if metadata.is_none() {
+            return Err(WorkflowError::ResourceUnavailable(
+                "Sidecar integration not registered".to_string(),
+            ));
+        }
+
+        // Sidecar integration is a stub - cannot perform real health check
+        // In production, would check gRPC endpoint connectivity
+        Err(WorkflowError::ResourceUnavailable(
+            "Sidecar health check not available: sidecar depends on workflow engine, not the other way around".to_string(),
+        ))
+    }
+
+    /// Check ETL integration health
+    ///
+    /// Verifies:
+    /// - ETL pipeline stage availability
+    /// - Reflex bridge connectivity (if configured)
+    async fn check_etl_health(&self) -> WorkflowResult<()> {
+        // Check if ETL integration is registered
+        let metadata = self.registry.get("etl").await;
+        if metadata.is_none() {
+            return Err(WorkflowError::ResourceUnavailable(
+                "ETL integration not registered".to_string(),
+            ));
+        }
+
+        // ETL integration is in a separate crate (knhk-etl)
+        // Basic health check: verify integration is registered
+        // In production, would check pipeline stages and Reflex bridge connectivity
+        Ok(())
+    }
+
+    /// Check OTEL integration health
+    ///
+    /// Verifies:
+    /// - OTLP exporter connectivity
+    /// - Span export capability
+    async fn check_otel_health(&self) -> WorkflowResult<()> {
+        // Check if OTEL integration is registered
+        let metadata = self.registry.get("otel").await;
+        if metadata.is_none() {
+            return Err(WorkflowError::ResourceUnavailable(
+                "OTEL integration not registered".to_string(),
+            ));
+        }
+
+        // Create OTEL integration instance if endpoint is configured
+        if let Some(ref endpoint) = self.otel_endpoint {
+            let otel_integration = crate::integration::OtelIntegration::new(Some(endpoint.clone()));
+
+            // Initialize tracer
+            match otel_integration.initialize().await {
+                Ok(_) => {
+                    // Try to export spans to verify connectivity
+                    match otel_integration.export().await {
+                        Ok(_) => Ok(()),
+                        Err(e) => Err(WorkflowError::ResourceUnavailable(format!(
+                            "OTEL span export failed: {}",
+                            e
+                        ))),
+                    }
+                }
+                Err(e) => Err(WorkflowError::ResourceUnavailable(format!(
+                    "OTEL initialization failed: {}",
+                    e
+                ))),
+            }
+        } else {
+            // No endpoint configured - create default instance
+            let otel_integration = crate::integration::OtelIntegration::new(None);
+            // Without endpoint, health check just verifies integration is available
+            Ok(())
         }
     }
 

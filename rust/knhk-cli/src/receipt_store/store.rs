@@ -38,12 +38,11 @@ impl ReceiptStore {
     pub fn save(&self, receipt: &ReceiptEntry) -> Result<(), String> {
         // Save receipt to Oxigraph using StateStore
         // Convert ReceiptEntry to RDF triples and store in Oxigraph
-        use oxigraph::model::{GraphName, Quad};
 
         // Note: This store doesn't have direct access to StateStore
         // FUTURE: Add StateStore reference to ReceiptStore or use OntologySaver
         // For now, return unimplemented to indicate incomplete implementation
-        unimplemented!("save: needs StateStore integration to save receipt {} to Oxigraph - receipt_id={}, ticks={}, span_id={}", receipt.id, receipt.ticks, receipt.span_id)
+        unimplemented!("save: needs StateStore integration to save receipt {} to Oxigraph - ticks={}, span_id={}", receipt.id, receipt.ticks, receipt.span_id)
     }
 
     /// Merge receipts

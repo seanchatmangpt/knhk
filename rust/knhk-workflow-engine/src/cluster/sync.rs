@@ -44,20 +44,18 @@ impl StateSync {
         })?;
         cache.insert(key, serialized);
 
-        // For strong consistency, would replicate to remote regions here
-        // For eventual consistency (default), local cache is sufficient
+        // Sync strategy implementation
         match self.strategy {
             SyncStrategy::Strong => {
                 // Strong consistency: replicate to all regions synchronously
-                // In production, this would use a distributed state store (e.g., etcd, consul)
-                tracing::debug!(
-                    "Strong consistency sync for case {} to region {}",
-                    case.id,
-                    region
-                );
+                // FUTURE: Implement actual replication to remote regions using distributed state store (e.g., etcd, consul)
+                // This is a false positive - we claim to do strong consistency sync but only update local cache
+                // For now, return unimplemented to indicate incomplete implementation
+                unimplemented!("sync_case: needs actual strong consistency replication to remote regions using distributed state store (e.g., etcd, consul) - case_id={}, region={}", case.id, region)
             }
             SyncStrategy::Eventual => {
                 // Eventual consistency: local cache is sufficient
+                // This is correct - eventual consistency only requires local cache
                 tracing::debug!(
                     "Eventual consistency sync for case {} to region {}",
                     case.id,
@@ -66,11 +64,10 @@ impl StateSync {
             }
             SyncStrategy::LastWriteWins => {
                 // Last-write-wins: timestamp-based conflict resolution
-                tracing::debug!(
-                    "Last-write-wins sync for case {} to region {}",
-                    case.id,
-                    region
-                );
+                // FUTURE: Implement timestamp-based conflict resolution
+                // This is a false positive - we claim to do last-write-wins but only update local cache
+                // For now, return unimplemented to indicate incomplete implementation
+                unimplemented!("sync_case: needs actual last-write-wins conflict resolution with timestamp-based resolution - case_id={}, region={}", case.id, region)
             }
         }
 
@@ -91,20 +88,22 @@ impl StateSync {
         })?;
         cache.insert(key, serialized);
 
-        // For strong consistency, would replicate to remote regions here
-        // For eventual consistency (default), local cache is sufficient
+        // Sync strategy implementation
         match self.strategy {
             SyncStrategy::Strong => {
                 // Strong consistency: replicate to all regions synchronously
-                // In production, this would use a distributed state store (e.g., etcd, consul)
+                // TODO: Implement actual replication to remote regions using distributed state store (e.g., etcd, consul)
+                // This is a false positive - we claim to do strong consistency sync but only update local cache
+                // For now, we only update local cache (same as eventual consistency)
                 tracing::debug!(
-                    "Strong consistency sync for spec {} to region {}",
+                    "Strong consistency sync for spec {} to region {} (local cache only - remote replication not yet implemented)",
                     spec.id,
                     region
                 );
             }
             SyncStrategy::Eventual => {
                 // Eventual consistency: local cache is sufficient
+                // This is correct - eventual consistency only requires local cache
                 tracing::debug!(
                     "Eventual consistency sync for spec {} to region {}",
                     spec.id,
@@ -113,8 +112,10 @@ impl StateSync {
             }
             SyncStrategy::LastWriteWins => {
                 // Last-write-wins: timestamp-based conflict resolution
+                // TODO: Implement timestamp-based conflict resolution
+                // For now, we only update local cache (same as eventual consistency)
                 tracing::debug!(
-                    "Last-write-wins sync for spec {} to region {}",
+                    "Last-write-wins sync for spec {} to region {} (local cache only - conflict resolution not yet implemented)",
                     spec.id,
                     region
                 );

@@ -154,7 +154,7 @@ impl SchemaRegistry {
         }
 
         // Load schema into RDF store
-        let mut store = self.rdf_store.write().await;
+        let store = self.rdf_store.write().await;
         store
             .load_from_reader(RdfFormat::Turtle, schema.rdf_content.as_bytes())
             .map_err(|e| {

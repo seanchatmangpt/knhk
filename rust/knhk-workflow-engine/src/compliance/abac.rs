@@ -132,7 +132,7 @@ impl AbacPolicyEngine {
 
         // Load context into RDF store
         let context_rdf = self.context_to_rdf(&context, principal)?;
-        let mut store = self.rdf_store.write().await;
+        let store = self.rdf_store.write().await;
         store
             .load_from_reader(RdfFormat::Turtle, context_rdf.as_bytes())
             .map_err(|e| {

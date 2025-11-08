@@ -23,12 +23,31 @@ impl SidecarIntegration {
     }
 
     /// Initialize sidecar integration (stub - no-op)
+    ///
+    /// NOTE: This is a stub implementation. The sidecar now depends on the workflow engine,
+    /// not the other way around. This stub allows the workflow engine to compile without
+    /// the sidecar dependency.
+    ///
+    /// In production, the sidecar would initialize itself and connect to the workflow engine.
     pub async fn initialize(&self) -> WorkflowResult<()> {
-        unimplemented!("initialize: needs sidecar integration implementation - sidecar now depends on workflow engine, not the other way around")
+        Err(WorkflowError::ResourceUnavailable(
+            "Sidecar integration is not available from workflow engine side. \
+             The sidecar depends on the workflow engine, not the other way around. \
+             To use sidecar functionality, initialize the sidecar separately and connect it to the workflow engine."
+                .to_string(),
+        ))
     }
 
     /// Refresh sidecar certificates (stub - no-op)
+    ///
+    /// NOTE: This is a stub implementation. Certificate refresh should be handled by
+    /// the sidecar itself, not by the workflow engine.
     pub async fn refresh_certificates(&self) -> WorkflowResult<()> {
-        unimplemented!("refresh_certificates: needs sidecar integration implementation - sidecar now depends on workflow engine, not the other way around")
+        Err(WorkflowError::ResourceUnavailable(
+            "Sidecar certificate refresh is not available from workflow engine side. \
+             The sidecar manages its own certificates. \
+             To refresh certificates, use the sidecar's certificate management API."
+                .to_string(),
+        ))
     }
 }

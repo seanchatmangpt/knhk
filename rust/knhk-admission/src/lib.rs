@@ -254,7 +254,11 @@ impl AdmissionGate {
 
     /// Stage 3: PQC Verification (Post-Quantum Cryptographic signature)
     ///
-    /// Verifies post-quantum cryptographic signature if present
+    /// Verifies post-quantum cryptographic signature if present.
+    /// Uses CRYSTALS-Dilithium for signature verification.
+    ///
+    /// Signature format: base64-encoded Dilithium signature
+    /// Public key: expected to be in payload or configured separately
     fn verify_pqc(&self, payload: &Value) -> Result<bool, AdmissionError> {
         // Check for signature field
         let signature = payload.get("signature").and_then(|v| v.as_str());
@@ -264,11 +268,96 @@ impl AdmissionGate {
             if sig.is_empty() {
                 return Ok(false);
             }
-            
-            // FUTURE: Implement actual PQC signature verification
-            // This would use a post-quantum cryptographic library (e.g., CRYSTALS-Dilithium)
-            // For now, return unimplemented to indicate incomplete implementation
-            unimplemented!("verify_pqc: needs actual PQC signature verification using post-quantum cryptographic library (e.g., CRYSTALS-Dilithium) - signature={}", sig)
+
+            #[cfg(feature = "pqc")]
+            {
+                use base64::{engine::general_purpose, Engine as _};
+                use pqcrypto_dilithium::dilithium5;
+
+                // Decode base64 signature
+                let signature_bytes = match general_purpose::STANDARD.decode(sig) {
+                    Ok(bytes) => bytes,
+                    Err(e) => {
+                        return Err(AdmissionError::Validation(format!(
+                            "Invalid base64 signature: {}",
+                            e
+                        )));
+                    }
+                };
+
+                // Get public key from payload or use default (in production, would be configured)
+                let public_key = payload
+                    .get("public_key")
+                    .and_then(|v| v.as_str())
+                    .and_then(|pk| general_purpose::STANDARD.decode(pk).ok())
+                    .or_else(|| {
+                        // Default public key for testing (in production, would be configured)
+                        // This is a placeholder - real implementation would load from KMS or config
+                        None
+                    });
+
+                // Extract message to verify (payload without signature)
+                let mut message_payload = payload.clone();
+                message_payload.as_object_mut().and_then(|obj| {
+                    obj.remove("signature");
+                    Some(())
+                });
+                let message = serde_json::to_vec(&message_payload).map_err(|e| {
+                    AdmissionError::Internal(format!("Failed to serialize message: {}", e))
+                })?;
+
+                // Verify signature if public key is available
+                if let Some(pk_bytes) = public_key {
+                    if pk_bytes.len() != dilithium5::publickeybytes() {
+                        return Err(AdmissionError::Validation(format!(
+                            "Invalid public key length: expected {}, got {}",
+                            dilithium5::publickeybytes(),
+                            pk_bytes.len()
+                        )));
+                    }
+
+                    if signature_bytes.len() != dilithium5::signaturebytes() {
+                        return Err(AdmissionError::Validation(format!(
+                            "Invalid signature length: expected {}, got {}",
+                            dilithium5::signaturebytes(),
+                            signature_bytes.len()
+                        )));
+                    }
+
+                    // Convert to fixed-size arrays
+                    let mut pk_array = [0u8; dilithium5::publickeybytes()];
+                    pk_array.copy_from_slice(&pk_bytes[..dilithium5::publickeybytes()]);
+                    let pk = dilithium5::PublicKey::from_bytes(&pk_array).map_err(|e| {
+                        AdmissionError::Validation(format!("Invalid public key format: {:?}", e))
+                    })?;
+
+                    let mut sig_array = [0u8; dilithium5::signaturebytes()];
+                    sig_array.copy_from_slice(&signature_bytes[..dilithium5::signaturebytes()]);
+                    let sig = dilithium5::DetachedSignature::from_bytes(&sig_array);
+
+                    // Verify signature
+                    match dilithium5::verify_detached_signature(&sig, &message, &pk) {
+                        true => Ok(true),
+                        false => Ok(false),
+                    }
+                } else {
+                    // No public key available - cannot verify
+                    // In production, would return error or fetch from KMS
+                    Err(AdmissionError::Validation(
+                        "Public key not provided for PQC signature verification".to_string(),
+                    ))
+                }
+            }
+
+            #[cfg(not(feature = "pqc"))]
+            {
+                // PQC feature not enabled - return error
+                Err(AdmissionError::Validation(
+                    "PQC signature verification requires 'pqc' feature to be enabled. \
+                     Enable it in Cargo.toml: features = [\"pqc\"]"
+                        .to_string(),
+                ))
+            }
         } else {
             // No signature required for admission (optional)
             Ok(true)

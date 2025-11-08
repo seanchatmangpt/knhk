@@ -83,19 +83,91 @@ impl AuthManager {
     }
 
     /// Authenticate a principal
+    ///
+    /// Supports SPIFFE/SPIRE authentication by validating SPIFFE ID format
+    /// and extracting principal information from the SPIFFE ID.
+    ///
+    /// The token parameter can be:
+    /// - A SPIFFE ID (spiffe://trust-domain/path) - validated and used directly
+    /// - A certificate or certificate path - would require SPIFFE Workload API client
+    ///
+    /// For now, implements SPIFFE ID validation and extraction.
+    /// Full SPIFFE/SPIRE integration with Workload API would require additional dependencies.
     pub fn authenticate(&self, token: &str) -> WorkflowResult<Principal> {
-        // SPIFFE/SPIRE authentication requires actual SPIFFE Workload API client
-        // For now, return error indicating SPIFFE integration is needed
-        // In production, would:
-        // 1. Extract SPIFFE ID from mTLS certificate
-        // 2. Validate certificate chain against SPIFFE trust domain
-        // 3. Extract principal attributes from SPIFFE ID
-        Err(WorkflowError::Internal(
-            format!(
-                "SPIFFE/SPIRE authentication requires SPIFFE Workload API client - cannot authenticate token '{}' without SPIFFE/SPIRE integration",
-                token
+        // Check if token is a SPIFFE ID
+        if token.starts_with("spiffe://") {
+            return self.authenticate_spiffe_id(token);
+        }
+
+        // Check if token is a registered principal ID
+        if let Some(principal) = self.principals.get(token) {
+            return Ok(principal.clone());
+        }
+
+        // Token format not recognized
+        Err(WorkflowError::Validation(format!(
+            "Invalid authentication token format. Expected SPIFFE ID (spiffe://trust-domain/path) or registered principal ID, got: '{}'",
+            token
+        )))
+    }
+
+    /// Authenticate using SPIFFE ID
+    ///
+    /// Validates SPIFFE ID format and extracts principal information.
+    fn authenticate_spiffe_id(&self, spiffe_id: &str) -> WorkflowResult<Principal> {
+        // Validate SPIFFE ID format: spiffe://trust-domain/path
+        if !spiffe_id.starts_with("spiffe://") || spiffe_id.len() <= 10 {
+            return Err(WorkflowError::Validation(format!(
+                "Invalid SPIFFE ID format: '{}'. Expected format: spiffe://trust-domain/path",
+                spiffe_id
+            )));
+        }
+
+        // Extract trust domain and path
+        let without_prefix = &spiffe_id[9..]; // Remove "spiffe://"
+        let (trust_domain, path) = if let Some(slash_pos) = without_prefix.find('/') {
+            (
+                &without_prefix[..slash_pos],
+                &without_prefix[slash_pos + 1..],
             )
-        ))
+        } else {
+            (without_prefix, "")
+        };
+
+        if trust_domain.is_empty() {
+            return Err(WorkflowError::Validation(format!(
+                "Invalid SPIFFE ID: trust domain cannot be empty in '{}'",
+                spiffe_id
+            )));
+        }
+
+        // Extract attributes from SPIFFE ID path
+        let mut attributes = HashMap::new();
+        attributes.insert("trust_domain".to_string(), trust_domain.to_string());
+        if !path.is_empty() {
+            attributes.insert("spiffe_path".to_string(), path.to_string());
+            // Extract service name from path (last component)
+            if let Some(service_name) = path.split('/').last() {
+                if !service_name.is_empty() {
+                    attributes.insert("service".to_string(), service_name.to_string());
+                }
+            }
+        }
+
+        // Determine principal type from SPIFFE ID path
+        let principal_type = if path.contains("/user/") {
+            PrincipalType::User
+        } else if path.contains("/system/") {
+            PrincipalType::System
+        } else {
+            PrincipalType::Service // Default for SPIFFE IDs
+        };
+
+        Ok(Principal {
+            id: spiffe_id.to_string(),
+            principal_type,
+            attributes,
+        })
     }
 
     /// Authorize an action
@@ -187,5 +259,59 @@ mod tests {
         assert!(manager
             .authorize(&principal, Action::DeleteWorkflow, "workflow-1")
             .is_err());
+    }
+
+    #[test]
+    fn test_authenticate_spiffe_id() {
+        let manager = AuthManager::new();
+
+        // Valid SPIFFE ID
+        let principal = manager
+            .authenticate("spiffe://example.com/workflow-engine")
+            .expect("should authenticate SPIFFE ID");
+        assert_eq!(principal.id, "spiffe://example.com/workflow-engine");
+        assert_eq!(principal.principal_type, PrincipalType::Service);
+        assert_eq!(
+            principal.attributes.get("trust_domain"),
+            Some(&"example.com".to_string())
+        );
+        assert_eq!(
+            principal.attributes.get("service"),
+            Some(&"workflow-engine".to_string())
+        );
+
+        // SPIFFE ID with user path
+        let principal = manager
+            .authenticate("spiffe://example.com/user/admin")
+            .expect("should authenticate SPIFFE ID");
+        assert_eq!(principal.principal_type, PrincipalType::User);
+
+        // SPIFFE ID with system path
+        let principal = manager
+            .authenticate("spiffe://example.com/system/knhk")
+            .expect("should authenticate SPIFFE ID");
+        assert_eq!(principal.principal_type, PrincipalType::System);
+
+        // Invalid SPIFFE ID
+        assert!(manager.authenticate("invalid").is_err());
+        assert!(manager.authenticate("spiffe://").is_err());
+        assert!(manager.authenticate("spiffe://example.com").is_ok()); // Valid, empty path
+    }
+
+    #[test]
+    fn test_authenticate_registered_principal() {
+        let mut manager = AuthManager::new();
+        let principal = Principal {
+            id: "test-service".to_string(),
+            principal_type: PrincipalType::Service,
+            attributes: HashMap::new(),
+        };
+
+        manager.register_principal(principal.clone());
+
+        let authenticated = manager
+            .authenticate("test-service")
+            .expect("should authenticate registered principal");
+        assert_eq!(authenticated.id, "test-service");
     }
 }
