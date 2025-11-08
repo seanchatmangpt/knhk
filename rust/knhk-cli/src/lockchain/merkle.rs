@@ -32,7 +32,7 @@ impl MerkleBuilder {
             for chunk in current_level.chunks(2) {
                 if chunk.len() == 2 {
                     let combined = format!("{}{}", chunk[0], chunk[1]);
-                    let hash = self.hash_generator.hash(&combined.as_bytes())?;
+                    let hash = self.hash_generator.hash(combined.as_bytes())?;
                     next_level.push(hash);
                 } else {
                     next_level.push(chunk[0]);

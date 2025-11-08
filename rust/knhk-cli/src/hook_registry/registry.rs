@@ -29,8 +29,8 @@ impl HookRegistryIntegration {
 
         for hook in hooks {
             // Map HookEntry to register_hook parameters
-            let kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
-            let guard = Self::create_guard_fn(&hook)?;
+            let _kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
+            let _guard = Self::create_guard_fn(&hook)?;
 
             // Register hook with knhk-etl HookRegistry
             // Note: HookRegistry doesn't support mutable operations through Arc
@@ -104,16 +104,17 @@ impl HookRegistryIntegration {
         self.store.save(&hook)?;
 
         // Map HookEntry to register_hook parameters
-        let kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
-        let guard = Self::create_guard_fn(&hook)?;
+        let _kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
+        let _guard = Self::create_guard_fn(&hook)?;
 
         // Register hook with knhk-etl HookRegistry
         // Note: HookRegistry doesn't support mutable operations through Arc
         // This is a limitation that needs to be addressed in v1.1
         // For now, we'll return an error indicating this limitation
-        Err(format!(
+        Err(
             "Hook registration through Arc not supported. Use a mutable HookRegistry instead."
-        ))
+                .to_string(),
+        )
         /*
         Arc::get_mut(&mut self.registry)
             .ok_or_else(|| "Cannot get mutable reference to registry".to_string())?

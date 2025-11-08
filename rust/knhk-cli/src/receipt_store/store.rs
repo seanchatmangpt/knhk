@@ -17,14 +17,14 @@ pub struct ReceiptEntry {
 
 /// Receipt store - Stores receipts in Oxigraph
 pub struct ReceiptStore {
-    store: Arc<StateStore>,
+    _store: Arc<StateStore>,
 }
 
 impl ReceiptStore {
     /// Create new receipt store
     pub fn new() -> Result<Self, String> {
-        let store = Arc::new(crate::state::StateStore::new()?);
-        Ok(Self { store })
+        let _store = Arc::new(crate::state::StateStore::new()?);
+        Ok(Self { _store })
     }
 
     /// Get receipt by ID
@@ -35,7 +35,7 @@ impl ReceiptStore {
     }
 
     /// Save receipt
-    pub fn save(&self, receipt: &ReceiptEntry) -> Result<(), String> {
+    pub fn save(&self, _receipt: &ReceiptEntry) -> Result<(), String> {
         // Save receipt to Oxigraph
         // FUTURE: Implement actual saving to Oxigraph
         Ok(())

@@ -1,7 +1,7 @@
 //! Hook storage - Stores hooks in Oxigraph
 
 use crate::state::StateStore;
-use oxigraph::model::{Graph, NamedNode, Quad, TripleRef};
+use oxigraph::model::Quad;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -34,7 +34,8 @@ impl HookStore {
 
     /// Load all hooks
     pub fn load_all(&self) -> Result<Vec<HookEntry>, String> {
-        use oxigraph::model::{NamedNode, Quad, Subject, Term};
+        use oxigraph::model::{GraphName, NamedNode, Quad, Term};
+        #[allow(deprecated)]
         use oxigraph::sparql::Query;
 
         let store = self.store.store();
@@ -56,6 +57,7 @@ impl HookStore {
             }
         "#;
 
+        #[allow(deprecated)]
         let query = Query::parse(query_str, None)
             .map_err(|e| format!("Failed to parse SPARQL query: {}", e))?;
 
@@ -81,22 +83,20 @@ impl HookStore {
                 let mut k: Option<u64> = None;
 
                 for var in solution.variables() {
-                    if let Some(term) = solution.get(var) {
-                        if let oxigraph::model::Term::Literal(lit) = term {
-                            let value = lit.value();
-                            match var.as_str() {
-                                "id" => id = Some(value.to_string()),
-                                "name" => name = Some(value.to_string()),
-                                "op" => op = Some(value.to_string()),
-                                "pred" => pred = value.parse::<u64>().ok(),
-                                "off" => off = value.parse::<u64>().ok(),
-                                "len" => len = value.parse::<u64>().ok(),
-                                "s" => s = value.parse::<u64>().ok(),
-                                "p" => p = value.parse::<u64>().ok(),
-                                "o" => o = value.parse::<u64>().ok(),
-                                "k" => k = value.parse::<u64>().ok(),
-                                _ => {}
-                            }
+                    if let Some(oxigraph::model::Term::Literal(lit)) = solution.get(var) {
+                        let value = lit.value();
+                        match var.as_str() {
+                            "id" => id = Some(value.to_string()),
+                            "name" => name = Some(value.to_string()),
+                            "op" => op = Some(value.to_string()),
+                            "pred" => pred = value.parse::<u64>().ok(),
+                            "off" => off = value.parse::<u64>().ok(),
+                            "len" => len = value.parse::<u64>().ok(),
+                            "s" => s = value.parse::<u64>().ok(),
+                            "p" => p = value.parse::<u64>().ok(),
+                            "o" => o = value.parse::<u64>().ok(),
+                            "k" => k = value.parse::<u64>().ok(),
+                            _ => {}
                         }
                     }
                 }
@@ -131,7 +131,7 @@ impl HookStore {
 
     /// Save hook
     pub fn save(&self, hook: &HookEntry) -> Result<(), String> {
-        use oxigraph::model::{GraphName, NamedNode, Quad, Subject, Term};
+        use oxigraph::model::{GraphName, NamedNode, Quad, Term};
 
         let store = self.store.store();
 
@@ -272,6 +272,7 @@ impl HookStore {
 
         // Insert graph into store
         for triple in graph.iter() {
+            #[allow(deprecated)]
             let subject: oxigraph::model::Subject = triple.subject.into();
             let predicate: oxigraph::model::NamedNode = triple.predicate.into();
             let object: oxigraph::model::Term = triple.object.into();

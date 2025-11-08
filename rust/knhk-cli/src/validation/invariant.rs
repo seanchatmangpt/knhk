@@ -1,8 +1,7 @@
 //! Invariant enforcer - Enforces Q invariants using Oxigraph SPARQL
 
-use crate::state::{InvariantLoader, StateManager};
+use crate::state::StateManager;
 use oxigraph::model::Graph;
-use oxigraph::sparql::{Query, QueryResults};
 
 /// Invariant enforcer - Enforces Q invariants
 pub struct InvariantEnforcer {
@@ -17,9 +16,9 @@ impl InvariantEnforcer {
     }
 
     /// Enforce Q invariants
-    pub fn enforce(&self, ontology: &Graph, invariant_iri: &str) -> Result<bool, String> {
+    pub fn enforce(&self, _ontology: &Graph, invariant_iri: &str) -> Result<bool, String> {
         // Load invariants Q
-        let invariants = self.state_manager.invariant_loader().load(invariant_iri)?;
+        let _invariants = self.state_manager.invariant_loader().load(invariant_iri)?;
 
         // Enforce invariants using SPARQL
         // For now, basic enforcement - check if ontology satisfies invariants

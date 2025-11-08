@@ -2,8 +2,6 @@
 // Hook commands - Knowledge hook operations using knhk-hot FFI
 
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::PathBuf;
 
 /// Hook storage entry
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -22,6 +20,7 @@ pub struct HookEntry {
 
 /// Hook storage
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 struct HookStorage {
     hooks: Vec<HookEntry>,
 }
@@ -142,7 +141,7 @@ pub fn eval(hook_name: String) -> Result<String, String> {
 
         // Populate arrays from ontology (limited to 8 triples for hot path)
         let mut count = 0;
-        for quad_result in ontology.iter() {
+        for _quad_result in ontology.iter() {
             if count >= 8 {
                 break; // Respect max_run_len ≤ 8
             }

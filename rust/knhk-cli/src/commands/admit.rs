@@ -64,11 +64,14 @@ pub fn delta(delta_file: String) -> Result<(), String> {
     let ontology = state_manager.ontology_loader().load()?;
 
     // Parse delta into Graph
-    let mut delta_store = oxigraph::store::Store::new()
+    let delta_store = oxigraph::store::Store::new()
         .map_err(|e| format!("Failed to create Oxigraph store for delta: {}", e))?;
 
     // Try to parse delta as RDF/Turtle
-    if let Err(_) = delta_store.load_from_reader(RdfFormat::Turtle, content.as_bytes()) {
+    if delta_store
+        .load_from_reader(RdfFormat::Turtle, content.as_bytes())
+        .is_err()
+    {
         // If not RDF, create simple graph from triples
         // For now, just merge the triples we parsed
     } else {

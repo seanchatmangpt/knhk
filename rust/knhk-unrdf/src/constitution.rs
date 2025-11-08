@@ -7,26 +7,14 @@ use std::collections::HashSet;
 
 /// Schema representation
 /// Note: Full integration with knhk_sigma (Erlang schema registry) planned for v1.0
+#[derive(Default)]
 pub struct Schema {
     pub predicates: HashSet<String>,
     pub classes: HashSet<String>,
 }
 
-impl Default for Schema {
-    fn default() -> Self {
-        Self {
-            predicates: HashSet::new(),
-            classes: HashSet::new(),
-        }
-    }
-}
-
 /// Invariants representation
 /// Note: Full integration with knhk_q (Erlang invariant registry) planned for v1.0
-pub struct Invariants {
-    pub constraints: Vec<String>,
-}
-
 #[derive(Default)]
 pub struct Invariants {
     pub constraints: Vec<String>,

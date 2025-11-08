@@ -1,6 +1,6 @@
 //! Connector factory - Creates connector instances
 
-use knhk_connectors::{Connector, ConnectorSpec, DataFormat, SourceType};
+use knhk_connectors::{Connector, DataFormat, SourceType};
 use std::collections::BTreeMap;
 
 /// Connector factory - Creates connector instances from source strings

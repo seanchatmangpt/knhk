@@ -103,7 +103,7 @@ pub fn init(sigma: String, q: String) -> Result<PathBuf, String> {
     let state_manager = StateManager::new()?;
 
     // Load schema file and save to Oxigraph
-    let mut schema_store = oxigraph::store::Store::new()
+    let schema_store = oxigraph::store::Store::new()
         .map_err(|e| format!("Failed to create Oxigraph store for schema: {}", e))?;
     schema_store
         .load_from_reader(RdfFormat::Turtle, sigma_content.as_bytes())
@@ -126,7 +126,7 @@ pub fn init(sigma: String, q: String) -> Result<PathBuf, String> {
         .save(&schema_graph, Some(&sigma))?;
 
     // Load invariants file and save to Oxigraph
-    let mut invariant_store = oxigraph::store::Store::new()
+    let invariant_store = oxigraph::store::Store::new()
         .map_err(|e| format!("Failed to create Oxigraph store for invariants: {}", e))?;
     invariant_store
         .load_from_reader(RdfFormat::Turtle, q_content.as_bytes())

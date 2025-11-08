@@ -8,7 +8,6 @@ use blake3;
 #[cfg(feature = "native")]
 use oxigraph::io::RdfFormat;
 #[cfg(feature = "native")]
-#[cfg(feature = "native")]
 use oxigraph::sparql::QueryResults;
 #[cfg(feature = "native")]
 use oxigraph::store::Store;
