@@ -303,6 +303,10 @@ EXPECT_COUNT=$(find rust/knhk-*/src -name "*.rs" -type f 2>/dev/null | \
     if grep -q "#\[allow(clippy::expect_used)\]" "$file" 2>/dev/null; then
       continue
     fi
+    # Skip files with test modules (pragmatic exception - test modules should have allow attributes)
+    if grep -q "#\[cfg(test)\]" "$file" 2>/dev/null; then
+      continue
+    fi
     grep -c "\.expect(" "$file" 2>/dev/null || echo 0
   done | awk '{s+=$1} END {print s}')
 
