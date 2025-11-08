@@ -25,6 +25,17 @@ pub struct ConnectorStorageEntry {
 /// connect(#{name, schema, source, map, guard})
 /// Uses TOML config if available, falls back to JSON for backward compatibility
 pub fn register(name: String, schema: String, source: String) -> Result<(), String> {
+    #[cfg(feature = "otel")]
+    let _span = tracing::span!(
+        tracing::Level::INFO,
+        "knhk.connect.register",
+        knhk.operation.name = "connect.register",
+        knhk.operation.type = "configuration",
+        connector.name = %name
+    );
+    #[cfg(feature = "otel")]
+    let _enter = _span.enter();
+
     println!("Registering connector: {}", name);
 
     // Validate source format (basic check)
@@ -52,11 +63,28 @@ pub fn register(name: String, schema: String, source: String) -> Result<(), Stri
     println!("  ✓ Source: {}", source);
     println!("✓ Connector registered (JSON storage)");
 
+    #[cfg(feature = "otel")]
+    {
+        use knhk_otel::{MetricsHelper, Tracer};
+        let mut tracer = Tracer::new();
+        MetricsHelper::record_operation(&mut tracer, "connect.register", true);
+    }
+
     Ok(())
 }
 
 /// List connectors
 pub fn list() -> Result<Vec<String>, String> {
+    #[cfg(feature = "otel")]
+    let _span = tracing::span!(
+        tracing::Level::INFO,
+        "knhk.connect.list",
+        knhk.operation.name = "connect.list",
+        knhk.operation.type = "query"
+    );
+    #[cfg(feature = "otel")]
+    let _enter = _span.enter();
+
     // Load from JSON storage
     let storage = load_connectors()?;
 

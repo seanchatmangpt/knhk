@@ -141,7 +141,7 @@ impl SidecarServer {
         // Create service with beat admission
         use crate::service::KgcSidecarService;
         let service = KgcSidecarService::new_with_weaver(
-            self.config.clone(), // Pass actual config from server
+            self.config.clone(),
             self.weaver_endpoint.clone(),
             self.beat_admission.clone(),
         );

@@ -1,0 +1,373 @@
+@startuml KNHK Monorepo C4 Architecture
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title KNHK Monorepo - C4 Architecture (Based on Actual Structure)
+
+' ============================================================================
+' System Context
+' ============================================================================
+
+Person(user, "Data Engineer", "Uses CLI to manage RDF pipelines")
+Person(admin, "System Admin", "Manages system configuration and monitoring")
+
+System(knhk_system, "KNHK System", "High-performance RDF/SPARQL processing system")
+
+System_Ext(kafka, "Kafka", "Event streaming platform")
+System_Ext(salesforce, "Salesforce", "CRM data source")
+System_Ext(erlang_node, "Erlang RC Layer", "Cold path SPARQL execution")
+System_Ext(otel_collector, "OTEL Collector", "Observability data collection")
+
+Rel(user, knhk_system, "Uses", "CLI commands")
+Rel(admin, knhk_system, "Manages", "Configuration")
+Rel(knhk_system, kafka, "Ingests data from", "Kafka connectors")
+Rel(knhk_system, salesforce, "Ingests data from", "Salesforce connectors")
+Rel(knhk_system, erlang_node, "Delegates to", "Complex SPARQL queries")
+Rel(knhk_system, otel_collector, "Sends metrics/traces", "OTEL protocol")
+
+' ============================================================================
+' Container Diagram - Monorepo Structure
+' ============================================================================
+
+Container_Boundary(monorepo, "KNHK Monorepo (Rust)") {
+    
+    Container(cli, "knhk-cli", "Rust", "CLI application with noun-verb commands\n(clap-noun-verb 3.3.0)")
+    
+    Container(etl, "knhk-etl", "Rust", "ETL pipeline\nIngest → Transform → Load → Reflex → Emit\nUses: oxigraph, rdkafka")
+    
+    Container(patterns, "knhk-patterns", "Rust", "Workflow orchestration\nVan der Aalst patterns\nUses: rayon")
+    
+    Container(hot, "knhk-hot", "C + Rust", "Hot path operations\nSIMD-optimized (≤8 ticks)\nFFI bindings")
+    
+    Container(connectors, "knhk-connectors", "Rust", "Data source connectors\nKafka, Salesforce, HTTP, File")
+    
+    Container(lockchain, "knhk-lockchain", "Rust", "Merkle-linked receipts\nProvenance tracking")
+    
+    Container(otel, "knhk-otel", "Rust", "OpenTelemetry integration\nMetrics, traces, spans")
+    
+    Container(warm, "knhk-warm", "Rust", "Warm path query engine\nQuery optimization and caching")
+    
+    Container(config, "knhk-config", "Rust", "Configuration management\nTOML/JSON config loading")
+    
+    Container(validation, "knhk-validation", "Rust", "Schema and invariant validation\nWeaver integration")
+    
+    Container(unrdf, "knhk-unrdf", "Rust + JS", "UnRDF integration\nSPARQL 1.1 and SHACL")
+    
+    ContainerDb(oxigraph_store, "Oxigraph Store", "Rust (oxigraph)", "RDF store for O, Σ, Q\nSPARQL queries")
+}
+
+' CLI Dependencies
+Rel(cli, etl, "Uses", "ETL pipeline")
+Rel(cli, patterns, "Uses", "Workflow patterns")
+Rel(cli, hot, "Uses", "Hot path operations")
+Rel(cli, connectors, "Uses", "Connectors")
+Rel(cli, lockchain, "Uses", "Lockchain service")
+Rel(cli, otel, "Uses", "Observability (optional)")
+Rel(cli, warm, "Uses", "Warm path queries")
+Rel(cli, config, "Uses", "Configuration")
+Rel(cli, validation, "Uses", "Validation")
+Rel(cli, oxigraph_store, "Stores/loads", "O, Σ, Q, receipts")
+
+' ETL Dependencies
+Rel(etl, connectors, "Uses", "Data source connectors")
+Rel(etl, hot, "Uses", "Hot path operations")
+Rel(etl, lockchain, "Uses", "Receipt generation")
+Rel(etl, otel, "Uses", "Observability")
+Rel(etl, oxigraph_store, "Stores/loads", "O, Σ, Q")
+Rel(etl, kafka, "Connects to", "Kafka brokers")
+Rel(etl, salesforce, "Connects to", "Salesforce API")
+
+' Patterns Dependencies
+Rel(patterns, etl, "Uses", "ETL pipeline integration")
+Rel(patterns, config, "Uses", "Configuration")
+Rel(patterns, unrdf, "Uses", "UnRDF (optional)")
+
+' Warm Dependencies
+Rel(warm, oxigraph_store, "Queries", "SPARQL queries")
+Rel(warm, erlang_node, "Delegates to", "Complex queries")
+
+' External Systems
+Rel(otel, otel_collector, "Sends data", "OTEL protocol")
+Rel(unrdf, erlang_node, "Delegates to", "SPARQL 1.1")
+
+' ============================================================================
+' Component Diagram - knhk-cli
+' ============================================================================
+
+Container_Boundary(cli_boundary, "knhk-cli") {
+    
+    Component(command_router, "Command Router", "Rust", "Routes noun-verb commands\n(clap-noun-verb 3.3.0)")
+    
+    Component(boot_handler, "Boot Handler", "Rust", "boot init: Initializes Σ and Q")
+    Component(connect_handler, "Connect Handler", "Rust", "connect register/list: Manages connectors")
+    Component(admit_handler, "Admit Handler", "Rust", "admit delta: Admits Δ into O")
+    Component(pipeline_handler, "Pipeline Handler", "Rust", "pipeline run/status: Executes ETL")
+    Component(hook_handler, "Hook Handler", "Rust", "hook create/eval: Manages hooks")
+    Component(epoch_handler, "Epoch Handler", "Rust", "epoch create/run: Manages epochs")
+    Component(receipt_handler, "Receipt Handler", "Rust", "receipt get/merge: Manages receipts")
+    Component(config_handler, "Config Handler", "Rust", "config show: Shows configuration")
+    Component(route_handler, "Route Handler", "Rust", "route list: Lists routes")
+    Component(reflex_handler, "Reflex Handler", "Rust", "reflex declare: Declares reflexes")
+    Component(metrics_handler, "Metrics Handler", "Rust", "metrics get: Gets metrics")
+    Component(coverage_handler, "Coverage Handler", "Rust", "coverage get: Gets coverage")
+    
+    Component(state_manager, "State Manager", "Rust", "Manages O, Σ, Q state\n(To be implemented with Oxigraph)")
+    
+    Component(dependency_checker, "Dependency Checker", "Rust", "Verifies prerequisites\n(To be implemented)")
+}
+
+Rel(user, command_router, "Executes commands")
+Rel(command_router, boot_handler, "Routes to")
+Rel(command_router, connect_handler, "Routes to")
+Rel(command_router, admit_handler, "Routes to")
+Rel(command_router, pipeline_handler, "Routes to")
+Rel(command_router, hook_handler, "Routes to")
+Rel(command_router, epoch_handler, "Routes to")
+Rel(command_router, receipt_handler, "Routes to")
+Rel(command_router, config_handler, "Routes to")
+Rel(command_router, route_handler, "Routes to")
+Rel(command_router, reflex_handler, "Routes to")
+Rel(command_router, metrics_handler, "Routes to")
+Rel(command_router, coverage_handler, "Routes to")
+
+Rel(boot_handler, state_manager, "Saves Σ and Q")
+Rel(admit_handler, state_manager, "Loads O, saves Δ")
+Rel(pipeline_handler, etl, "Executes pipeline")
+Rel(hook_handler, etl, "Uses hook registry")
+Rel(receipt_handler, lockchain, "Retrieves receipts")
+Rel(dependency_checker, boot_handler, "Checks prerequisites")
+Rel(dependency_checker, admit_handler, "Checks prerequisites")
+
+' ============================================================================
+' Component Diagram - knhk-etl
+' ============================================================================
+
+Container_Boundary(etl_boundary, "knhk-etl") {
+    
+    Component(ingest_stage, "Ingest Stage", "Rust", "Parses RDF from connectors")
+    Component(transform_stage, "Transform Stage", "Rust", "Converts to typed triples")
+    Component(load_stage, "Load Stage", "Rust", "Builds SoA arrays")
+    Component(reflex_stage, "Reflex Stage", "Rust", "Executes hooks, validates")
+    Component(emit_stage, "Emit Stage", "Rust", "Emits to downstream")
+    
+    Component(pipeline_orchestrator, "Pipeline Orchestrator", "Rust", "Orchestrates stages")
+    
+    Component(hook_registry, "Hook Registry", "Rust", "Manages knowledge hooks")
+    Component(buffer_pool, "Buffer Pool", "Rust", "Zero-allocation buffer pooling")
+    Component(hot_path_engine, "Hot Path Engine", "Rust", "Delegates to knhk-hot")
+    Component(path_selector, "Path Selector", "Rust", "Routes hot/warm/cold")
+    Component(fiber_executor, "Fiber Executor", "Rust", "Executes fibers with tick budget")
+}
+
+Rel(pipeline_orchestrator, ingest_stage, "Executes")
+Rel(pipeline_orchestrator, transform_stage, "Executes")
+Rel(pipeline_orchestrator, load_stage, "Executes")
+Rel(pipeline_orchestrator, reflex_stage, "Executes")
+Rel(pipeline_orchestrator, emit_stage, "Executes")
+
+Rel(ingest_stage, connectors, "Uses connectors")
+Rel(load_stage, buffer_pool, "Uses buffer pool")
+Rel(load_stage, hot_path_engine, "Uses hot path")
+Rel(reflex_stage, hook_registry, "Executes hooks")
+Rel(emit_stage, lockchain, "Generates receipts")
+Rel(hot_path_engine, hot, "Calls FFI")
+Rel(path_selector, hot_path_engine, "Routes to")
+Rel(path_selector, warm, "Routes to")
+
+' ============================================================================
+' Component Diagram - knhk-patterns
+' ============================================================================
+
+Container_Boundary(patterns_boundary, "knhk-patterns") {
+    
+    Component(sequence_pattern, "Sequence Pattern", "Rust", "Pattern 1: Sequential execution")
+    Component(parallel_pattern, "Parallel Split", "Rust", "Pattern 2: Parallel execution")
+    Component(exclusive_choice, "Exclusive Choice", "Rust", "Pattern 4: XOR-split")
+    Component(multi_choice, "Multi-Choice", "Rust", "Pattern 6: OR-split")
+    Component(arbitrary_cycles, "Arbitrary Cycles", "Rust", "Pattern 10: Retry logic")
+    
+    Component(pattern_builder, "Pattern Builder", "Rust", "Fluent API for pattern composition")
+    Component(pipeline_ext, "Pipeline Extension", "Rust", "PipelinePatternExt trait")
+    Component(hook_patterns, "Hook Patterns", "Rust", "Pattern-based hook orchestration")
+}
+
+Rel(pattern_builder, sequence_pattern, "Composes")
+Rel(pattern_builder, parallel_pattern, "Composes")
+Rel(pattern_builder, exclusive_choice, "Composes")
+Rel(pattern_builder, multi_choice, "Composes")
+Rel(pattern_builder, arbitrary_cycles, "Composes")
+Rel(pipeline_ext, etl, "Extends pipeline")
+Rel(hook_patterns, etl, "Orchestrates hooks")
+
+' ============================================================================
+' Component Diagram - knhk-hot
+' ============================================================================
+
+Container_Boundary(hot_boundary, "knhk-hot") {
+    
+    Component(simd_kernels, "SIMD Kernels", "C", "ARM64 NEON / x86_64 AVX2\nStructural character detection")
+    Component(cpu_dispatcher, "CPU Dispatcher", "Rust", "Runtime CPU feature detection")
+    Component(engine, "Engine", "Rust", "Hot path engine\nFFI bindings to C kernels")
+    Component(w1_pipeline, "W1 Pipeline", "Rust", "Week 1 pipeline\nStructural indexing")
+}
+
+Rel(engine, simd_kernels, "Calls via FFI")
+Rel(cpu_dispatcher, engine, "Selects implementation")
+Rel(w1_pipeline, engine, "Uses engine")
+
+' ============================================================================
+' Component Diagram - knhk-connectors
+' ============================================================================
+
+Container_Boundary(connectors_boundary, "knhk-connectors") {
+    
+    Component(kafka_connector, "Kafka Connector", "Rust", "rdkafka integration\nTopic consumption")
+    Component(salesforce_connector, "Salesforce Connector", "Rust", "Salesforce API integration")
+    Component(http_connector, "HTTP Connector", "Rust", "HTTP/REST integration")
+    Component(file_connector, "File Connector", "Rust", "File system integration")
+    
+    Component(connector_trait, "Connector Trait", "Rust", "Common connector interface")
+}
+
+Rel(kafka_connector, kafka, "Connects to")
+Rel(salesforce_connector, salesforce, "Connects to")
+Rel(connector_trait, kafka_connector, "Defines interface")
+Rel(connector_trait, salesforce_connector, "Defines interface")
+Rel(connector_trait, http_connector, "Defines interface")
+Rel(connector_trait, file_connector, "Defines interface")
+
+' ============================================================================
+' Component Diagram - Oxigraph Store
+' ============================================================================
+
+Container_Boundary(oxigraph_boundary, "Oxigraph Store") {
+    
+    Component(rdf_store, "RDF Store", "Rust (oxigraph)", "Stores RDF graphs\nO, Σ, Q, receipts")
+    Component(sparql_engine, "SPARQL Engine", "Rust (oxigraph)", "SPARQL query execution")
+    Component(transaction_manager, "Transaction Manager", "Rust (oxigraph)", "Atomic transactions")
+}
+
+Rel(rdf_store, sparql_engine, "Queries")
+Rel(transaction_manager, rdf_store, "Manages transactions")
+
+' ============================================================================
+' Component Diagram - knhk-lockchain
+' ============================================================================
+
+Container_Boundary(lockchain_boundary, "knhk-lockchain") {
+    
+    Component(merkle_builder, "Merkle Builder", "Rust", "Builds Merkle tree from receipts")
+    Component(hash_generator, "Hash Generator", "Rust", "SHA-256 hash generation")
+    Component(provenance_tracker, "Provenance Tracker", "Rust", "Tracks operation provenance")
+}
+
+Rel(merkle_builder, hash_generator, "Uses")
+Rel(provenance_tracker, merkle_builder, "Tracks")
+
+' ============================================================================
+' Component Diagram - knhk-otel
+' ============================================================================
+
+Container_Boundary(otel_boundary, "knhk-otel") {
+    
+    Component(metrics_helper, "Metrics Helper", "Rust", "Records metrics")
+    Component(tracer, "Tracer", "Rust", "Generates traces and spans")
+    Component(span_generator, "Span Generator", "Rust", "Generates span IDs")
+}
+
+Rel(metrics_helper, otel_collector, "Sends metrics")
+Rel(tracer, otel_collector, "Sends traces")
+Rel(span_generator, tracer, "Generates spans")
+
+' ============================================================================
+' Component Diagram - knhk-warm
+' ============================================================================
+
+Container_Boundary(warm_boundary, "knhk-warm") {
+    
+    Component(query_optimizer, "Query Optimizer", "Rust", "Optimizes SPARQL queries")
+    Component(cache_manager, "Cache Manager", "Rust", "Manages query cache")
+    Component(query_executor, "Query Executor", "Rust", "Executes warm path queries")
+}
+
+Rel(query_executor, oxigraph_store, "Queries")
+Rel(query_executor, erlang_node, "Delegates complex queries")
+Rel(query_optimizer, query_executor, "Optimizes")
+
+' ============================================================================
+' Component Diagram - knhk-validation
+' ============================================================================
+
+Container_Boundary(validation_boundary, "knhk-validation") {
+    
+    Component(schema_validator, "Schema Validator", "Rust", "Validates O ⊨ Σ")
+    Component(invariant_enforcer, "Invariant Enforcer", "Rust", "Enforces Q invariants")
+    Component(weaver_integration, "Weaver Integration", "Rust", "Weaver schema validation")
+}
+
+Rel(schema_validator, oxigraph_store, "Queries Σ")
+Rel(invariant_enforcer, oxigraph_store, "Queries Q")
+Rel(weaver_integration, schema_validator, "Validates")
+
+' ============================================================================
+' Component Diagram - knhk-unrdf
+' ============================================================================
+
+Container_Boundary(unrdf_boundary, "knhk-unrdf") {
+    
+    Component(sparql_11_engine, "SPARQL 1.1 Engine", "JavaScript", "Full SPARQL 1.1 support")
+    Component(shacl_validator, "SHACL Validator", "JavaScript", "SHACL shape validation")
+    Component(js_bridge, "JS Bridge", "Rust", "Rust-JavaScript bridge")
+}
+
+Rel(js_bridge, sparql_11_engine, "Calls")
+Rel(js_bridge, shacl_validator, "Calls")
+Rel(sparql_11_engine, erlang_node, "Delegates to")
+
+' ============================================================================
+' Technology Stack
+' ============================================================================
+
+note right of cli
+  **Technology Stack:**
+  - Rust (primary language)
+  - C (SIMD kernels)
+  - JavaScript (UnRDF)
+  - clap-noun-verb 3.3.0 (CLI framework)
+  - oxigraph 0.5 (RDF store)
+  - rdkafka 0.36 (Kafka client)
+  - rayon 1.10 (parallel processing)
+  - OpenTelemetry (observability)
+end note
+
+note right of etl
+  **ETL Pipeline Stages:**
+  1. Ingest: Parse RDF from connectors
+  2. Transform: Convert to typed triples
+  3. Load: Build SoA arrays
+  4. Reflex: Execute hooks, validate
+  5. Emit: Generate receipts, emit downstream
+end note
+
+note right of hot
+  **Hot Path Performance:**
+  - ≤8 CPU ticks per operation
+  - SIMD-optimized (NEON/AVX2)
+  - Branchless operations
+  - Zero allocations
+end note
+
+note right of oxigraph_store
+  **Oxigraph Store:**
+  - Stores O (ontology)
+  - Stores Σ (schema)
+  - Stores Q (invariants)
+  - Stores receipts (as RDF metadata)
+  - SPARQL query support
+  - Transaction support
+end note
+
+@enduml
+

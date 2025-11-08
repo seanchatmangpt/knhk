@@ -27,6 +27,16 @@ struct PipelineExecutionResult {
 
 /// Execute full ETL pipeline (Ingest → Emit)
 pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), String> {
+    #[cfg(feature = "otel")]
+    let _span = tracing::span!(
+        tracing::Level::INFO,
+        "knhk.pipeline.run",
+        knhk.operation.name = "pipeline.run",
+        knhk.operation.type = "etl"
+    );
+    #[cfg(feature = "otel")]
+    let _enter = _span.enter();
+
     println!("Executing ETL pipeline...");
 
     // Load connector configuration
@@ -74,6 +84,18 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
         // Execute pipeline
         match pipeline.execute() {
             Ok(result) => {
+                #[cfg(feature = "otel")]
+                {
+                    use knhk_otel::{MetricsHelper, Tracer};
+                    let mut tracer = Tracer::new();
+                    MetricsHelper::record_operation(&mut tracer, "pipeline.run", true);
+                    MetricsHelper::record_connector_throughput(
+                        &mut tracer,
+                        "pipeline",
+                        result.receipts_written,
+                    );
+                }
+
                 println!("✓ Pipeline execution completed");
                 println!("  Receipts written: {}", result.receipts_written);
                 println!("  Actions sent: {}", result.actions_sent);
@@ -93,7 +115,15 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
 
                 Ok(())
             }
-            Err(e) => Err(format!("Pipeline execution failed: {:?}", e)),
+            Err(e) => {
+                #[cfg(feature = "otel")]
+                {
+                    use knhk_otel::{MetricsHelper, Tracer};
+                    let mut tracer = Tracer::new();
+                    MetricsHelper::record_operation(&mut tracer, "pipeline.run", false);
+                }
+                Err(format!("Pipeline execution failed: {:?}", e))
+            }
         }
     }
 

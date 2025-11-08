@@ -280,7 +280,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     let metrics = Arc::new(MetricsCollector::new(1000));
 
     // Create health checker
-    let health = Arc::new(HealthChecker::new());
+    let health = Arc::new(HealthChecker::new(5000));
 
     // Create beat scheduler for 8-beat epoch system
     use knhk_etl::beat_scheduler::BeatScheduler;
@@ -362,8 +362,8 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         },
         tls_config: TlsConfig {
             enabled: config.tls_enabled,
-            cert_file: config.tls_cert_path.clone().unwrap_or_default(),
-            key_file: config.tls_key_path.clone().unwrap_or_default(),
+            cert_file: config.tls_cert_path.clone(),
+            key_file: config.tls_key_path.clone(),
             ca_file: config.tls_ca_path.clone(),
             mtls_enabled: false, // mTLS not enabled by default
         },
@@ -468,7 +468,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     let metrics = Arc::new(MetricsCollector::new(1000));
 
     // Create health checker
-    let health = Arc::new(HealthChecker::new());
+    let health = Arc::new(HealthChecker::new(5000));
 
     // Create client
     let mut client_config = crate::client::ClientConfig::default();
@@ -494,8 +494,8 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         },
         tls_config: TlsConfig {
             enabled: config.tls_enabled,
-            cert_file: config.tls_cert_path.clone().unwrap_or_default(),
-            key_file: config.tls_key_path.clone().unwrap_or_default(),
+            cert_file: config.tls_cert_path.clone(),
+            key_file: config.tls_key_path.clone(),
             ca_file: config.tls_ca_path.clone(),
             mtls_enabled: false, // mTLS not enabled by default
         },

@@ -8,7 +8,7 @@ use crate::config::SidecarConfig;
 use crate::error::{ErrorContext, SidecarError, SidecarResult};
 use crate::health::HealthChecker;
 use crate::retry::RetryConfig;
-use std::sync::{Arc, Mutex as StdMutex};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
@@ -33,8 +33,7 @@ pub struct KgcSidecarService {
     #[cfg(feature = "otel")]
     weaver_endpoint: Option<String>,
     /// Beat admission manager for 8-beat epoch system
-    /// Wrapped in Arc<StdMutex> to ensure Send/Sync compatibility
-    beat_admission: Option<Arc<StdMutex<crate::beat_admission::BeatAdmission>>>,
+    beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
 }
 
 #[derive(Default)]
@@ -60,7 +59,7 @@ impl KgcSidecarService {
     pub fn new_with_weaver(
         config: SidecarConfig,
         weaver_endpoint: Option<String>,
-        beat_admission: Option<Arc<StdMutex<crate::beat_admission::BeatAdmission>>>,
+        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
     ) -> Self {
         let circuit_breaker = Arc::new(CircuitBreaker::new(
             config.circuit_breaker_failure_threshold,
@@ -73,6 +72,7 @@ impl KgcSidecarService {
             max_retries: config.retry_max_attempts,
             initial_delay_ms: config.retry_initial_delay_ms,
             max_delay_ms: config.retry_max_delay_ms,
+            multiplier: 2.0,
         };
 
         Self {
@@ -90,7 +90,7 @@ impl KgcSidecarService {
     pub fn new_with_weaver(
         config: SidecarConfig,
         _weaver_endpoint: Option<String>,
-        beat_admission: Option<Arc<StdMutex<crate::beat_admission::BeatAdmission>>>,
+        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
     ) -> Self {
         let circuit_breaker = Arc::new(CircuitBreaker::new(
             config.circuit_breaker_failure_threshold,
@@ -103,6 +103,7 @@ impl KgcSidecarService {
             max_retries: config.retry_max_attempts,
             initial_delay_ms: config.retry_initial_delay_ms,
             max_delay_ms: config.retry_max_delay_ms,
+            multiplier: 2.0,
         };
 
         Self {
@@ -226,7 +227,10 @@ impl KgcSidecar for KgcSidecarService {
 
         info!(
             "ApplyTransaction request received with delta containing {} triples",
-            req.delta.as_ref().map(|d| d.triples.len()).unwrap_or(0)
+            req.delta
+                .as_ref()
+                .map(|d| d.additions.len() + d.removals.len())
+                .unwrap_or(0)
         );
 
         // Extract RDF data from delta
@@ -234,9 +238,10 @@ impl KgcSidecar for KgcSidecarService {
             tonic::Status::invalid_argument("Delta is required in ApplyTransactionRequest")
         })?;
 
-        // Convert delta triples to turtle string
-        let turtle_data = delta
-            .triples
+        // Convert delta triples to turtle string (combine additions and removals)
+        let mut all_triples: Vec<_> = delta.additions.iter().collect();
+        all_triples.extend(delta.removals.iter());
+        let turtle_data = all_triples
             .iter()
             .map(|t| format!("{} {} {} .", t.subject, t.predicate, t.object))
             .collect::<Vec<_>>()
@@ -262,7 +267,7 @@ impl KgcSidecar for KgcSidecarService {
                 tracer.add_attribute(
                     ctx.clone(),
                     "knhk.sidecar.rdf_bytes".to_string(),
-                    delta.triples.len().to_string(),
+                    (delta.additions.len() + delta.removals.len()).to_string(),
                 );
                 Some((tracer, ctx))
             } else {
@@ -275,7 +280,7 @@ impl KgcSidecar for KgcSidecarService {
             let ingest = knhk_etl::IngestStage::new(vec!["grpc".to_string()], "turtle".to_string());
             let ingest_result = ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
                 SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_INGEST_FAILED", format!("Ingest failed: {}", e))
+                    ErrorContext::new("SIDECAR_INGEST_FAILED", e.message().to_string())
                         .with_attribute("stage", "ingest")
                         .with_attribute("rdf_bytes", turtle_data.len().to_string()),
                 )
@@ -295,7 +300,7 @@ impl KgcSidecar for KgcSidecarService {
                 SidecarError::transaction_failed(
                     ErrorContext::new(
                         "SIDECAR_TRANSFORM_FAILED",
-                        format!("Transform failed: {}", e),
+                        format!("Transform failed: {:?}", e),
                     )
                     .with_attribute("stage", "transform"),
                 )
@@ -305,7 +310,7 @@ impl KgcSidecar for KgcSidecarService {
             let load = knhk_etl::LoadStage::new();
             let load_result = load.load(transform_result).map_err(|e| {
                 SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_LOAD_FAILED", format!("Load failed: {}", e))
+                    ErrorContext::new("SIDECAR_LOAD_FAILED", e.message().to_string())
                         .with_attribute("stage", "load"),
                 )
             })?;
@@ -314,7 +319,7 @@ impl KgcSidecar for KgcSidecarService {
             let reflex = knhk_etl::ReflexStage::new();
             let reflex_result = reflex.reflex(load_result).map_err(|e| {
                 SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_REFLEX_FAILED", format!("Reflex failed: {}", e))
+                    ErrorContext::new("SIDECAR_REFLEX_FAILED", e.message().to_string())
                         .with_attribute("stage", "reflex"),
                 )
             })?;
@@ -323,22 +328,18 @@ impl KgcSidecar for KgcSidecarService {
             let emit = knhk_etl::EmitStage::new(true, vec![]);
             let emit_result = emit.emit(reflex_result).map_err(|e| {
                 SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_EMIT_FAILED", format!("Emit failed: {}", e))
+                    ErrorContext::new("SIDECAR_EMIT_FAILED", e.message().to_string())
                         .with_attribute("stage", "emit"),
                 )
             })?;
 
             // Return first receipt as transaction receipt
-            emit_result
-                .actions
-                .first()
-                .map(|a| a.receipt.clone())
-                .ok_or_else(|| {
-                    SidecarError::transaction_failed(
-                        ErrorContext::new("SIDECAR_NO_RECEIPT", "No receipt generated")
-                            .with_attribute("stage", "emit"),
-                    )
-                })
+            reflex_result.receipts.first().cloned().ok_or_else(|| {
+                SidecarError::transaction_failed(
+                    ErrorContext::new("SIDECAR_NO_RECEIPT", "No receipt generated")
+                        .with_attribute("stage", "emit"),
+                )
+            })
         })();
 
         let success = result.is_ok();
@@ -404,6 +405,8 @@ impl KgcSidecar for KgcSidecarService {
                         lanes: receipt.lanes,
                         span_id: receipt.span_id,
                         a_hash: receipt.a_hash.to_le_bytes().to_vec(),
+                        transaction_id: transaction_id.clone(),
+                        committed: true,
                     }),
                     errors: vec![],
                 };
@@ -469,7 +472,7 @@ impl KgcSidecar for KgcSidecarService {
                     );
                     let triples = ingest
                         .parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::query_failed(format!("Parse failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;
 
                     let ingest_result = knhk_etl::IngestResult {
                         triples,
@@ -486,46 +489,46 @@ impl KgcSidecar for KgcSidecarService {
                     let load = knhk_etl::LoadStage::new();
                     let load_result = load
                         .load(transform_result)
-                        .map_err(|e| SidecarError::query_failed(format!("Load failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;
 
                     let reflex = knhk_etl::ReflexStage::new();
                     let reflex_result = reflex
                         .reflex(load_result)
-                        .map_err(|e| SidecarError::query_failed(format!("Reflex failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;
 
                     // Return boolean result based on receipts
-                    let has_results = !reflex_result.actions.is_empty();
+                    let has_results = !reflex_result.receipts.is_empty();
                     Ok(vec![has_results.to_string()])
                 }
                 // SELECT query: Return triples (warm path)
                 1 => {
                     // Parse query data if provided
-                    if req.rdf_data.is_empty() {
+                    if req.data.is_empty() {
                         return Ok(vec![]);
                     }
 
-                    let turtle_data = String::from_utf8(req.rdf_data.clone())
-                        .map_err(|e| SidecarError::QueryFailed(format!("Invalid UTF-8: {}", e)))?;
+                    let turtle_data = String::from_utf8(req.data.clone())
+                        .map_err(|e| SidecarError::query_failed(format!("Invalid UTF-8: {}", e)))?;
 
                     let triples = ingest
                         .parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::query_failed(format!("Parse failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;
 
                     // Return triple subjects as results
                     Ok(triples.iter().map(|t| t.subject.clone()).collect())
                 }
                 // CONSTRUCT query: Build new graph
                 2 => {
-                    if req.rdf_data.is_empty() {
+                    if req.data.is_empty() {
                         return Ok(vec![]);
                     }
 
-                    let turtle_data = String::from_utf8(req.rdf_data.clone())
-                        .map_err(|e| SidecarError::QueryFailed(format!("Invalid UTF-8: {}", e)))?;
+                    let turtle_data = String::from_utf8(req.data.clone())
+                        .map_err(|e| SidecarError::query_failed(format!("Invalid UTF-8: {}", e)))?;
 
                     let triples = ingest
                         .parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::query_failed(format!("Parse failed: {}", e)))?;
+                        .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;
 
                     // Return constructed triples as N-Triples format
                     Ok(triples
@@ -610,7 +613,7 @@ impl KgcSidecar for KgcSidecarService {
                 knhk_etl::IngestStage::new(vec!["validation".to_string()], "turtle".to_string());
             let triples = ingest
                 .parse_rdf_turtle(&turtle_data)
-                .map_err(|e| SidecarError::validation_failed(format!("Parse failed: {}", e)))?;
+                .map_err(|e| SidecarError::validation_failed(e.message().to_string()))?;
 
             let ingest_result = knhk_etl::IngestResult {
                 triples,
@@ -684,7 +687,10 @@ impl KgcSidecar for KgcSidecarService {
         info!(
             "EvaluateHook request received: hook_id={}, rdf_bytes={}",
             req.hook_id,
-            req.rdf_data.len()
+            req.delta
+                .as_ref()
+                .map(|d| d.additions.len() + d.removals.len())
+                .unwrap_or(0)
         );
 
         // Convert RDF data to string
@@ -695,9 +701,9 @@ impl KgcSidecar for KgcSidecarService {
         let result: Result<knhk_etl::Receipt, SidecarError> = (|| {
             // 1. Ingest RDF data
             let ingest = knhk_etl::IngestStage::new(vec!["hook".to_string()], "turtle".to_string());
-            let triples = ingest
-                .parse_rdf_turtle(&turtle_data)
-                .map_err(|e| SidecarError::HookEvaluationFailed(format!("Ingest failed: {}", e)))?;
+            let triples = ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
+                SidecarError::hook_evaluation_failed(format!("Ingest failed: {}", e))
+            })?;
 
             let ingest_result = knhk_etl::IngestResult {
                 triples,
@@ -775,6 +781,8 @@ impl KgcSidecar for KgcSidecarService {
                         lanes: receipt.lanes,
                         span_id: receipt.span_id,
                         a_hash: receipt.a_hash.to_le_bytes().to_vec(),
+                        transaction_id: String::new(),
+                        committed: true,
                     }),
                     errors: vec![],
                 };
@@ -810,8 +818,12 @@ impl KgcSidecar for KgcSidecarService {
         };
 
         let response = HealthCheckResponse {
-            status: healthy as i32,
+            status: if healthy { 1 } else { 0 },
             message,
+            timestamp_ms: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
         };
 
         Ok(tonic::Response::new(response))

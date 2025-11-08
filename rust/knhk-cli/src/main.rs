@@ -8,6 +8,7 @@
 
 mod commands;
 mod error;
+mod state;
 mod tracing;
 
 // Import all noun modules so their verbs are auto-discovered
@@ -64,10 +65,18 @@ fn get_config() -> &'static Config {
 }
 
 fn main() -> CnvResult<()> {
-    // Initialize tracing first (before any other operations)
-    if let Err(e) = tracing::init_tracing() {
-        eprintln!("Warning: Failed to initialize tracing: {}", e);
-    }
+    // Initialize OpenTelemetry tracing first (before any other operations)
+    // The guard is kept alive for the duration of the program
+    let _otel_guard = match tracing::init_tracing() {
+        Ok(guard) => {
+            // Guard is dropped at end of main, which flushes telemetry
+            guard
+        }
+        Err(e) => {
+            eprintln!("Warning: Failed to initialize tracing: {}", e);
+            None
+        }
+    };
 
     // Load configuration at startup
     let _ = get_config();

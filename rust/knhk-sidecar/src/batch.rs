@@ -10,9 +10,9 @@ use tokio::sync::oneshot;
 use tokio::time::{sleep, Duration, Instant};
 
 /// Batched request with response channel
-pub struct BatchedRequest<T> {
+pub struct BatchedRequest<T, R> {
     pub request: T,
-    pub response_tx: oneshot::Sender<SidecarResult<T>>,
+    pub response_tx: oneshot::Sender<SidecarResult<R>>,
 }
 
 /// Batch configuration
@@ -35,12 +35,12 @@ impl Default for BatchConfig {
 }
 
 /// Batch collector for grouping requests
-pub struct BatchCollector<T> {
+pub struct BatchCollector<T, R> {
     config: BatchConfig,
-    pending: Arc<Mutex<Vec<BatchedRequest<T>>>>,
+    pending: Arc<Mutex<Vec<BatchedRequest<T, R>>>>,
 }
 
-impl<T> BatchCollector<T> {
+impl<T, R> BatchCollector<T, R> {
     /// Create new batch collector
     pub fn new(config: BatchConfig) -> Self {
         Self {
@@ -50,7 +50,7 @@ impl<T> BatchCollector<T> {
     }
 
     /// Add request to batch
-    pub fn add_request(&self, request: T) -> oneshot::Receiver<SidecarResult<T>> {
+    pub fn add_request(&self, request: T) -> oneshot::Receiver<SidecarResult<R>> {
         let (tx, rx) = oneshot::channel();
 
         // ACCEPTABLE: Mutex poisoning is an unrecoverable error. Panicking is appropriate.
@@ -68,7 +68,7 @@ impl<T> BatchCollector<T> {
     }
 
     /// Collect batch (non-blocking, returns immediately if batch is ready)
-    pub fn collect_batch(&self) -> Option<Vec<BatchedRequest<T>>> {
+    pub fn collect_batch(&self) -> Option<Vec<BatchedRequest<T, R>>> {
         let mut pending = self
             .pending
             .lock()
@@ -88,7 +88,7 @@ impl<T> BatchCollector<T> {
     }
 
     /// Collect batch with timeout (waits for batch window or max size)
-    pub async fn collect_batch_with_timeout(&self) -> Vec<BatchedRequest<T>> {
+    pub async fn collect_batch_with_timeout(&self) -> Vec<BatchedRequest<T, R>> {
         let start = Instant::now();
         let timeout = Duration::from_millis(self.config.batch_window_ms);
 
@@ -177,7 +177,7 @@ where
 
 /// Batch manager for coordinating collection and processing
 pub struct BatchManager<T, R> {
-    collector: Arc<BatchCollector<T>>,
+    collector: Arc<BatchCollector<T, R>>,
     processor: Arc<BatchProcessor<T, R>>,
 }
 

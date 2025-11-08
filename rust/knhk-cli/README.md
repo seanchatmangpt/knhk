@@ -81,7 +81,7 @@ knhk pipeline status
 - ✅ **Sub-8-tick hot path latency** (Chatman Constant)
 - ✅ **SIMD-optimized predicate matching** (4x speedup)
 - ✅ **Zero-allocation buffer pooling** (>95% hit rate)
-- ✅ **OpenTelemetry observability** with Weaver validation
+- ✅ **OpenTelemetry observability** with Weaver validation (full SDK integration)
 - ✅ **Chicago TDD quality assurance** (36/36 tests passing)
 - ✅ **Distributed locking** with receipt verification
 - ✅ **Multi-connector support** (Kafka, Salesforce, custom)
