@@ -8,6 +8,7 @@ pub mod ffi;
 pub mod fiber_ffi;
 pub mod kernels;
 pub mod receipt_convert;
+pub mod receipt_kernels;
 pub mod ring_ffi;
 pub mod w1_pipeline;
 
@@ -21,5 +22,9 @@ pub use ffi::*;
 pub use fiber_ffi::{FiberExecutor, FiberResult};
 pub use kernels::{KernelExecutor, KernelType};
 pub use receipt_convert::{c_receipt_to_etl, etl_receipt_to_c, hot_receipt_to_etl};
+pub use receipt_kernels::{
+    DeltaComposer, Pruner, ReceiptDelta, ReceiptFold, ReceiptHasher, ReceiptKernelType,
+    ReceiptPipeline, Verifier,
+};
 pub use ring_ffi::{AssertionRing, DeltaRing};
 pub use w1_pipeline::{stage1_structural_index, StructuralIndex};

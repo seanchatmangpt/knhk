@@ -469,6 +469,21 @@ impl WorkflowEngine {
         &self.worklet_executor
     }
 
+    /// Get state store (for REST API access)
+    pub fn state_store(&self) -> &Arc<RwLock<StateStore>> {
+        &self.state_store
+    }
+
+    /// Get specs (for REST API access)
+    pub fn specs(&self) -> &Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>> {
+        &self.specs
+    }
+
+    /// Get cases (for REST API access)
+    pub fn cases(&self) -> &Arc<RwLock<HashMap<CaseId, Case>>> {
+        &self.cases
+    }
+
     /// Get Fortune 5 integration (if enabled)
     pub fn fortune5_integration(&self) -> Option<&Fortune5Integration> {
         self.fortune5_integration.as_deref()

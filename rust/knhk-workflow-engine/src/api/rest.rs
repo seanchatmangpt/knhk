@@ -307,12 +307,12 @@ impl RestApiServer {
             .map_err(|_| StatusCode::NOT_FOUND)?;
 
         // Remove from in-memory specs
-        let mut specs = engine.specs.write().await;
+        let mut specs = engine.specs().write().await;
         specs.remove(&spec_id);
         drop(specs);
 
         // Remove from state store
-        let store = engine.state_store.write().await;
+        let store = engine.state_store().write().await;
         store
             .delete_spec(&spec_id)
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -400,7 +400,7 @@ impl RestApiServer {
             Ok(Json(serde_json::json!({ "cases": cases })))
         } else {
             // List all cases (from in-memory cache)
-            let cases_map = engine.cases.read().await;
+            let cases_map = engine.cases().read().await;
             let cases: Vec<serde_json::Value> = cases_map
                 .iter()
                 .map(|(id, case)| {

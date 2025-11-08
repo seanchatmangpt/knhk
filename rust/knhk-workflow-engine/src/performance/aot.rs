@@ -11,6 +11,7 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 
 use crate::error::{WorkflowError, WorkflowResult};
+use crate::integration::fortune5::{RuntimeClass, SloManager};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -226,17 +227,14 @@ impl MphfCache {
 /// Admission controller for R1/W1/C1 routing
 pub struct AdmissionController {
     /// SLO manager (for compliance checking)
-    slo_manager: Option<Arc<crate::integration::fortune5::slo::SloManager>>,
+    slo_manager: Option<Arc<SloManager>>,
     /// Cache hit rate threshold for R1
     r1_cache_hit_threshold: f64,
 }
 
 impl AdmissionController {
     /// Create new admission controller
-    pub fn new(
-        slo_manager: Option<Arc<crate::integration::fortune5::slo::SloManager>>,
-        r1_cache_hit_threshold: f64,
-    ) -> Self {
+    pub fn new(slo_manager: Option<Arc<SloManager>>, r1_cache_hit_threshold: f64) -> Self {
         Self {
             slo_manager,
             r1_cache_hit_threshold,
@@ -249,10 +247,10 @@ impl AdmissionController {
         &self,
         cache_hit: bool,
         estimated_latency_ns: u64,
-    ) -> (bool, crate::integration::fortune5::slo::RuntimeClass) {
+    ) -> (bool, RuntimeClass) {
         // If cache miss and estimated latency exceeds R1 budget, park to W1
         if !cache_hit && estimated_latency_ns > 2_000_000 {
-            return (false, crate::integration::fortune5::slo::RuntimeClass::W1);
+            return (false, RuntimeClass::W1);
         }
 
         // Check SLO compliance
@@ -260,16 +258,16 @@ impl AdmissionController {
             let compliant = slo_manager.check_compliance().await;
             if !compliant {
                 // SLO violation: park to W1
-                return (false, crate::integration::fortune5::slo::RuntimeClass::W1);
+                return (false, RuntimeClass::W1);
             }
         }
 
         // Admit to R1 if cache hit and within budget
         if cache_hit && estimated_latency_ns <= 2_000_000 {
-            (true, crate::integration::fortune5::slo::RuntimeClass::R1)
+            (true, RuntimeClass::R1)
         } else {
             // Park to W1
-            (false, crate::integration::fortune5::slo::RuntimeClass::W1)
+            (false, RuntimeClass::W1)
         }
     }
 }
@@ -308,30 +306,16 @@ impl BrownoutManager {
     }
 
     /// Check if runtime class is allowed in current mode
-    pub async fn is_allowed(
-        &self,
-        runtime_class: crate::integration::fortune5::slo::RuntimeClass,
-    ) -> bool {
+    pub async fn is_allowed(&self, runtime_class: RuntimeClass) -> bool {
         let mode = *self.mode.read().await;
         match mode {
             BrownoutMode::Normal => true,
-            BrownoutMode::R1Only => matches!(
-                runtime_class,
-                crate::integration::fortune5::slo::RuntimeClass::R1
-            ),
+            BrownoutMode::R1Only => matches!(runtime_class, RuntimeClass::R1),
             BrownoutMode::W1Degraded => {
-                matches!(
-                    runtime_class,
-                    crate::integration::fortune5::slo::RuntimeClass::R1
-                        | crate::integration::fortune5::slo::RuntimeClass::W1
-                )
+                matches!(runtime_class, RuntimeClass::R1 | RuntimeClass::W1)
             }
             BrownoutMode::C1Paused => {
-                matches!(
-                    runtime_class,
-                    crate::integration::fortune5::slo::RuntimeClass::R1
-                        | crate::integration::fortune5::slo::RuntimeClass::W1
-                )
+                matches!(runtime_class, RuntimeClass::R1 | RuntimeClass::W1)
             }
         }
     }
@@ -394,43 +378,21 @@ mod tests {
         let controller = AdmissionController::new(None, 0.95);
         let (admitted, class) = controller.check_admission(true, 1_000_000).await;
         assert!(admitted);
-        assert!(matches!(
-            class,
-            crate::integration::fortune5::slo::RuntimeClass::R1
-        ));
+        assert!(matches!(class, RuntimeClass::R1));
 
         let (admitted, class) = controller.check_admission(false, 3_000_000).await;
         assert!(!admitted);
-        assert!(matches!(
-            class,
-            crate::integration::fortune5::slo::RuntimeClass::W1
-        ));
+        assert!(matches!(class, RuntimeClass::W1));
     }
 
     #[tokio::test]
     async fn test_brownout_manager() {
         let manager = BrownoutManager::new();
-        assert!(
-            manager
-                .is_allowed(crate::integration::fortune5::slo::RuntimeClass::R1)
-                .await
-        );
-        assert!(
-            manager
-                .is_allowed(crate::integration::fortune5::slo::RuntimeClass::W1)
-                .await
-        );
+        assert!(manager.is_allowed(RuntimeClass::R1).await);
+        assert!(manager.is_allowed(RuntimeClass::W1).await);
 
         manager.set_mode(BrownoutMode::R1Only).await;
-        assert!(
-            manager
-                .is_allowed(crate::integration::fortune5::slo::RuntimeClass::R1)
-                .await
-        );
-        assert!(
-            !manager
-                .is_allowed(crate::integration::fortune5::slo::RuntimeClass::W1)
-                .await
-        );
+        assert!(manager.is_allowed(RuntimeClass::R1).await);
+        assert!(!manager.is_allowed(RuntimeClass::W1).await);
     }
 }
