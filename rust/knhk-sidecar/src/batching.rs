@@ -68,6 +68,8 @@ where
             b.items.push(item);
 
             if b.items.len() >= self.batch_size {
+                // EXCEPTION: Mutex poisoning .expect() is acceptable (see lib.rs comment)
+                #[allow(clippy::expect_used)]
                 let batch_to_send = batch.take().expect("Batch should exist when items.len() >= batch_size");
                 self.sender.send(batch_to_send)
                     .map_err(|e| crate::error::SidecarError::Internal(
