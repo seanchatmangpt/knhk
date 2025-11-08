@@ -29,7 +29,7 @@ pub struct WorkflowEngine {
     /// Pattern registry
     pattern_registry: Arc<PatternRegistry>,
     /// State store
-    state_store: Arc<RwLock<StateStore>>,
+    state_store: Arc<RwLock<Arc<StateStore>>>,
     /// Registered workflow specifications
     specs: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>,
     /// Active cases
@@ -92,7 +92,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store)),
+            state_store: Arc::new(RwLock::new(state_store_arc)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -236,7 +236,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store)),
+            state_store: Arc::new(RwLock::new(state_store_arc.clone())),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -627,7 +627,7 @@ impl WorkflowEngine {
     }
 
     /// Get state store (for REST API access)
-    pub fn state_store(&self) -> &Arc<RwLock<StateStore>> {
+    pub fn state_store(&self) -> &Arc<RwLock<Arc<StateStore>>> {
         &self.state_store
     }
 
