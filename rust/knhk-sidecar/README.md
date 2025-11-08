@@ -5,12 +5,14 @@ KGC Sidecar gRPC service for local proxy, batching, retries, and circuit-breakin
 ## Features
 
 - **gRPC Service**: Exposes KNHK operations via gRPC
+- **JSON-First External Interface**: Fast JSON parsing with simdjson (GB/s speeds)
 - **Request Batching**: Groups multiple RDF operations for efficiency
 - **Retry Logic**: Exponential backoff with idempotence support (μ∘μ = μ)
 - **Circuit Breaker**: Prevents cascading failures
 - **Health Checks**: Service health monitoring
 - **OTEL Integration**: Observability and metrics
 - **Weaver Live-Check**: Telemetry validation (when `otel` feature enabled)
+- **Backward Compatible**: Supports both JSON (preferred) and protobuf formats
 
 ## Usage
 

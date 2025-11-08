@@ -124,7 +124,7 @@ impl IngestStage {
     /// performance improvements (10-50x faster than Turtle → oxigraph path).
     #[cfg(feature = "std")]
     pub fn parse_json_delta(&self, json_bytes: &[u8]) -> Result<Vec<RawTriple>, PipelineError> {
-        use simd_json::prelude::{ValueAsArray, ValueAsObject};
+        use simd_json::prelude::{TypedScalarValue, ValueAsArray, ValueAsObject, ValueAsScalar};
 
         if json_bytes.is_empty() {
             return Ok(Vec::new());
@@ -141,7 +141,7 @@ impl IngestStage {
         // Try simple format first: {"additions": [...], "removals": [...]}
         if let Some(obj) = value.as_object() {
             if let Some(additions_val) = obj.get("additions") {
-                let mut triples = Self::parse_json_triple_array(additions_val)?;
+                let triples = Self::parse_json_triple_array(additions_val)?;
                 // Note: Removals handled separately in pipeline
                 return Ok(triples);
             }
@@ -155,7 +155,6 @@ impl IngestStage {
         }
 
         // Try array format: [{"s": "...", "p": "...", "o": "..."}]
-        use simd_json::prelude::ValueAsArray;
         if let Some(arr) = value.as_array() {
             let arr_vec: Vec<simd_json::OwnedValue> = arr.iter().cloned().collect();
             return Self::parse_json_triple_array(&simd_json::OwnedValue::Array(arr_vec.into()));
@@ -188,7 +187,7 @@ impl IngestStage {
     /// Parse JSON-LD array format
     #[cfg(feature = "std")]
     fn parse_jsonld_array(value: &simd_json::OwnedValue) -> Result<Vec<RawTriple>, PipelineError> {
-        use simd_json::prelude::{ValueAsArray, ValueAsObject};
+        use simd_json::prelude::{TypedScalarValue, ValueAsArray, ValueAsObject, ValueAsScalar};
         let arr = value.as_array().ok_or_else(|| {
             PipelineError::IngestError("Expected array in JSON-LD @graph".to_string())
         })?;

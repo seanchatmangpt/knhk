@@ -58,3 +58,7 @@ harness = false
 [[bench]]
 name = "buffer_pooling"
 harness = false
+
+[[bench]]
+name = "json_parsing_bench"
+harness = false

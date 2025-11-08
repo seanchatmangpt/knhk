@@ -75,56 +75,6 @@ impl HookStore {
                     .ok_or_else(|| "Missing id in query result".to_string())?
                     .to_string();
 
-                let name = bindings
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| "Missing name in query result".to_string())?
-                    .to_string();
-
-                let op = bindings
-                    .get("op")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| "Missing op in query result".to_string())?
-                    .to_string();
-
-                let pred = bindings
-                    .get("pred")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok())
-                    .ok_or_else(|| "Missing or invalid pred in query result".to_string())?;
-
-                let off = bindings
-                    .get("off")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok())
-                    .ok_or_else(|| "Missing or invalid off in query result".to_string())?;
-
-                let len = bindings
-                    .get("len")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok())
-                    .ok_or_else(|| "Missing or invalid len in query result".to_string())?;
-
-                let s = bindings
-                    .get("s")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok());
-
-                let p = bindings
-                    .get("p")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok());
-
-                let o = bindings
-                    .get("o")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok());
-
-                let k = bindings
-                    .get("k")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<u64>().ok());
-
                 hooks.push(HookEntry {
                     id,
                     name,
