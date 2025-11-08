@@ -19,18 +19,16 @@ use knhk_workflow_engine::{
 /// Global workflow engine instance
 static ENGINE: std::sync::OnceLock<WorkflowEngine> = std::sync::OnceLock::new();
 
-fn get_engine() -> WorkflowResult<&'static WorkflowEngine> {
+fn get_engine() -> CnvResult<&'static WorkflowEngine> {
     ENGINE.get_or_init(|| WorkflowEngine::new(StateStore::new("workflow_state").unwrap()));
-    ENGINE.get().ok_or_else(|| {
-        knhk_workflow_engine::error::WorkflowError::Internal(
-            "Failed to initialize workflow engine".to_string(),
-        )
-    })
+    ENGINE
+        .get()
+        .ok_or_else(|| "Failed to initialize workflow engine".to_string())
 }
 
 /// Create a new workflow case
 #[verb]
-pub fn create(spec_id: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn create(spec_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
     let _spec_id_uuid = WorkflowSpecId::parse_str(&spec_id)?;
     let case_id = CaseId::new();
@@ -41,7 +39,7 @@ pub fn create(spec_id: String) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Start a workflow case
 #[verb]
-pub fn start(case_id: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn start(case_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
     let _case_id_uuid = CaseId::parse_str(&case_id)?;
     // FUTURE: Add async runtime when needed
@@ -51,7 +49,7 @@ pub fn start(case_id: String) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Execute a workflow case
 #[verb]
-pub fn execute(case_id: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn execute(case_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
     let _case_id_uuid = CaseId::parse_str(&case_id)?;
     // FUTURE: Add async runtime when needed
@@ -61,7 +59,7 @@ pub fn execute(case_id: String) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Cancel a workflow case
 #[verb]
-pub fn cancel(case_id: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn cancel(case_id: String) -> CnvResult<()> {
     let _engine = get_engine()?;
     let _case_id_uuid = CaseId::parse_str(&case_id)?;
     // FUTURE: Add async runtime when needed
@@ -71,8 +69,8 @@ pub fn cancel(case_id: String) -> Result<(), Box<dyn std::error::Error>> {
 
 /// List all workflow cases
 #[verb]
-pub fn list() -> Result<(), Box<dyn std::error::Error>> {
-    let _engine = get_engine()?;
+pub fn list() -> CnvResult<()> {
+    let _engine = get_engine().map_err(|e| e.to_string())?;
     // FUTURE: Add async runtime when needed
     println!("No cases found (placeholder)");
     Ok(())
@@ -80,8 +78,8 @@ pub fn list() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Execute a workflow pattern
 #[verb]
-pub fn pattern(pattern_id: u32, context: String) -> Result<(), Box<dyn std::error::Error>> {
-    let _engine = get_engine()?;
+pub fn pattern(pattern_id: u32, context: String) -> CnvResult<()> {
+    let _engine = get_engine().map_err(|e| e.to_string())?;
     let _pattern_id = PatternId(pattern_id);
     // FUTURE: Add PatternExecutionContext deserialization when available
     // let _context: PatternExecutionContext =
@@ -95,7 +93,7 @@ pub fn pattern(pattern_id: u32, context: String) -> Result<(), Box<dyn std::erro
 
 /// List all 43 workflow patterns
 #[verb]
-pub fn patterns() -> Result<(), Box<dyn std::error::Error>> {
+pub fn patterns() -> CnvResult<()> {
     // Return list of all 43 patterns
     for i in 1..=43 {
         println!("Pattern {}", i);

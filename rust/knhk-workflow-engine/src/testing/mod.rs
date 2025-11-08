@@ -7,6 +7,13 @@ pub mod chicago_tdd;
 pub mod coverage;
 pub mod generator;
 
-pub use chicago_tdd::WorkflowTestFixture;
+pub use chicago_tdd::{
+    assert_pattern_failure, assert_pattern_has_next_state, assert_pattern_has_variable,
+    assert_pattern_success, assert_pattern_variable_equals, create_test_capability,
+    create_test_context, create_test_context_for_workflow, create_test_context_with_vars,
+    create_test_registry, create_test_resource, create_test_role, create_test_worklet,
+    IntegrationTestHelper, PerformanceTestHelper, TaskBuilder, TestDataBuilder,
+    WorkflowPropertyTester, WorkflowSpecBuilder, WorkflowTestFixture,
+};
 pub use coverage::{CoverageAnalyzer, CoverageReport};
 pub use generator::WorkflowTestGenerator;

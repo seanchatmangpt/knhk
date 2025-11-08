@@ -73,6 +73,7 @@ pub mod performance;
 pub mod resilience;
 pub mod resource;
 pub mod security;
+pub mod self_validation;
 pub mod state;
 pub mod templates;
 pub mod testing;
@@ -98,5 +99,13 @@ pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
 pub use security::*;
 pub use state::StateStore;
 pub use templates::TemplateLibrary;
-pub use testing::{CoverageAnalyzer, CoverageReport, WorkflowTestFixture, WorkflowTestGenerator};
+pub use testing::{
+    assert_pattern_failure, assert_pattern_has_next_state, assert_pattern_has_variable,
+    assert_pattern_success, assert_pattern_variable_equals, create_test_capability,
+    create_test_context, create_test_context_for_workflow, create_test_context_with_vars,
+    create_test_registry, create_test_resource, create_test_role, create_test_worklet,
+    CoverageAnalyzer, CoverageReport, IntegrationTestHelper, PerformanceTestHelper, TaskBuilder,
+    TestDataBuilder, WorkflowPropertyTester, WorkflowSpecBuilder, WorkflowTestFixture,
+    WorkflowTestGenerator,
+};
 pub use visualization::WorkflowVisualizer;

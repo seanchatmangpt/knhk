@@ -21,6 +21,7 @@ This crate provides a complete workflow engine that:
 - **Workflow Visualization**: Generate visual diagrams from workflow specs (DOT, SVG, HTML)
 - **Template Library**: Pre-built workflow templates for common patterns
 - **Performance Analyzer**: Profile workflows and identify optimization opportunities
+- **Chicago TDD Framework**: Comprehensive testing framework with builders, helpers, and macros
 - **Enterprise APIs**: REST and gRPC interfaces
 - **State Persistence**: Sled-based state store
 - **Observability**: OTEL integration for tracing
@@ -146,7 +147,8 @@ See `api/grpc.rs` for gRPC service definitions.
 
 For comprehensive documentation, see:
 - **[Workflow Engine Documentation](docs/WORKFLOW_ENGINE.md)** - Complete guide with API reference, examples, and integration guides
-- **[Innovations Guide](docs/INNOVATIONS.md)** - New innovative features: visualization, templates, performance analysis
+- **[Chicago TDD Framework](docs/CHICAGO_TDD_FRAMEWORK_EXPANDED.md)** - Comprehensive testing framework with builders, helpers, and macros
+- **[Chicago TDD Innovation](docs/CHICAGO_TDD_INNOVATION.md)** - Innovative testing features and patterns
 - **[YAWL Integration Complete](docs/YAWL_INTEGRATION_COMPLETE.md)** - Complete integration guide with execution flows and API examples
 - **[YAWL Implementation Summary](docs/YAWL_IMPLEMENTATION_SUMMARY.md)** - YAWL feature implementation status and integration details
 - **[YAWL Feature Comparison](docs/YAWL_FEATURE_COMPARISON.md)** - Comparison with YAWL Java implementation

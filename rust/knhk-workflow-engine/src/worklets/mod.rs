@@ -6,7 +6,7 @@
 //! workflow tasks dynamically based on context, exceptions, or rules.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{WorkflowSpec, WorkflowSpecId};
+use crate::parser::WorkflowSpec;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

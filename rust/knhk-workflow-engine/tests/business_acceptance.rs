@@ -906,6 +906,7 @@ async fn test_external_trigger_workflow() {
     // Pattern 40: External Trigger
     let result = engine
         .execute_pattern(PatternId(40), ctx.clone())
+        .await
         .expect("External trigger should execute");
 
     // Assert: External trigger handled
@@ -948,6 +949,7 @@ async fn test_conditional_workflow_execution() {
     // Pattern 4: Exclusive Choice
     let result = engine
         .execute_pattern(PatternId(4), ctx.clone())
+        .await
         .expect("Conditional workflow should execute");
 
     // Assert: Conditional path executed
@@ -979,6 +981,7 @@ async fn test_workflow_audit_trail() {
     // Act: Execute workflow
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("Audit trail should execute");
 
     // Assert: Audit information preserved
@@ -1012,6 +1015,7 @@ async fn test_workflow_sla_compliance() {
     let start = std::time::Instant::now();
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("SLA compliance should execute");
     let duration = start.elapsed();
 
@@ -1047,6 +1051,7 @@ async fn test_multi_region_workflow_execution() {
     // Act: Execute workflow
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("Multi-region workflow should execute");
 
     // Assert: Workflow executed correctly
@@ -1082,6 +1087,7 @@ async fn test_workflow_data_validation() {
     // Act: Execute workflow with validation
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("Data validation should execute");
 
     // Assert: Data validated

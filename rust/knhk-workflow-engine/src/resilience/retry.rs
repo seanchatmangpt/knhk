@@ -3,7 +3,6 @@
 //! Retry logic with exponential backoff
 
 use crate::error::{WorkflowError, WorkflowResult};
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 

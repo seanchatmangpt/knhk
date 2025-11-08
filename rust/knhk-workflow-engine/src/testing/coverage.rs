@@ -95,7 +95,7 @@ impl CoverageAnalyzer {
     }
 
     /// Check if a task is covered by tests
-    fn is_task_covered(&self, task_id: &str, test_files: &[String]) -> bool {
+    fn is_task_covered(&self, _task_id: &str, _test_files: &[String]) -> bool {
         // In production, would parse test files and check for task references
         // For now, return false (no coverage)
         false

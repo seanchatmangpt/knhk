@@ -82,7 +82,7 @@ impl WorkflowVisualizer {
         dot.push_str("    node [shape=box, style=rounded];\n\n");
 
         // Add start node
-        if let Some(ref start_id) = spec.start_condition {
+        if let Some(ref _start_id) = spec.start_condition {
             dot.push_str(&format!(
                 "    start [shape=ellipse, fillcolor=\"#90EE90\", label=\"Start\"];\n"
             ));
@@ -106,7 +106,7 @@ impl WorkflowVisualizer {
         }
 
         // Add end node
-        if let Some(ref end_id) = spec.end_condition {
+        if let Some(ref _end_id) = spec.end_condition {
             dot.push_str(&format!(
                 "    end [shape=ellipse, fillcolor=\"#FFB6C1\", label=\"End\"];\n"
             ));
@@ -154,7 +154,7 @@ impl WorkflowVisualizer {
     }
 
     /// Generate SVG from DOT (requires external GraphViz)
-    pub fn render_svg(&self, dot_content: &str) -> WorkflowResult<String> {
+    pub fn render_svg(&self, _dot_content: &str) -> WorkflowResult<String> {
         // In production, would call GraphViz `dot` command
         // For now, return error indicating GraphViz is required
         Err(WorkflowError::Internal(
