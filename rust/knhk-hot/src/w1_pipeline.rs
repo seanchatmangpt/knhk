@@ -97,6 +97,11 @@ impl StructuralIndex {
 /// Stage 1: Find structural characters with SIMD
 ///
 /// Target: ≤1.2 cycles/byte AVX2, ≤0.9 AVX-512
+///
+/// # Safety
+/// This function uses unsafe SIMD operations. The caller must ensure:
+/// - `json` is a valid UTF-8 byte slice
+/// - `index` is a valid mutable reference
 #[cfg(target_arch = "aarch64")]
 pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) {
     index.structural_chars.clear();
