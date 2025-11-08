@@ -173,16 +173,15 @@ impl Default for ExecutionPipeline {
 }
 
 /// Pipeline stage trait
+#[async_trait]
 pub trait PipelineStage: Send + Sync {
     /// Process execution context through this stage
-    fn process(
+    async fn process(
         &self,
         registry: &PatternRegistry,
         pattern_id: PatternId,
         context: PatternExecutionContext,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>,
-    >;
+    ) -> WorkflowResult<PatternExecutionContext>;
 }
 
 /// Validation stage - validates execution context
