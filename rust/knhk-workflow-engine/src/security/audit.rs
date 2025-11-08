@@ -98,7 +98,7 @@ impl AuditLogger {
         if self.lockchain_enabled {
             if let Some(ref lockchain) = self.lockchain {
                 // Convert audit event to JSON for lockchain
-                let event_data = serde_json::json!({
+                let _event_data = serde_json::json!({
                     "event_type": "audit.log",
                     "event_id": event.id.to_string(),
                     "timestamp": event.timestamp.to_rfc3339(),

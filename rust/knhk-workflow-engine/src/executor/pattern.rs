@@ -106,18 +106,22 @@ impl WorkflowEngine {
         // Execute the current pattern
         let result = self.execute_pattern(pattern_id, context.clone()).await?;
 
-        // If the result contains next patterns, execute them recursively
-        if !result.next_patterns.is_empty() {
+        // If the result contains next activities, execute them recursively
+        if !result.next_activities.is_empty() {
             // Create a new context for nested execution with updated scope
             let mut nested_context = context.clone();
-            nested_context.scope_id = Some(format!(
+            nested_context.scope_id = format!(
                 "{}_{}",
-                context.scope_id.as_deref().unwrap_or("root"),
+                if context.scope_id.is_empty() {
+                    "root"
+                } else {
+                    &context.scope_id
+                },
                 pattern_id.0
-            ));
+            );
 
-            // Execute each next pattern recursively
-            for next_pattern_id in &result.next_patterns {
+            // Execute each next activity recursively
+            for next_pattern_id in &result.next_activities {
                 let next_result = self
                     .execute_pattern_recursive(PatternId(*next_pattern_id), nested_context.clone())
                     .await?;
