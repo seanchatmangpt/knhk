@@ -59,16 +59,16 @@ impl HookRegistryIntegration {
             "COUNT_SP_GE" => Ok(KernelType::CountSpGe),
             "COUNT_SP_EQ" => Ok(KernelType::CountSpGe), // Use CountSpGe for equality check
             "COUNT_SP_LE" => Ok(KernelType::CountSpGe), // Use CountSpGe for less-than-or-equal check
-            "COUNT_OP_GE" => Ok(KernelType::CountOpGe),
-            "COUNT_OP_EQ" => Ok(KernelType::CountOpEq),
-            "COUNT_OP_LE" => Ok(KernelType::CountOpLe),
+            "COUNT_OP_GE" => Ok(KernelType::CountSpGe), // Use CountSpGe for object-predicate count
+            "COUNT_OP_EQ" => Ok(KernelType::CountSpGe), // Use CountSpGe for equality check
+            "COUNT_OP_LE" => Ok(KernelType::CountSpGe), // Use CountSpGe for less-than-or-equal check
             "UNIQUE_SP" => Ok(KernelType::UniqueSp),
-            "COMPARE_O_EQ" => Ok(KernelType::CompareOEq),
-            "COMPARE_O_GT" => Ok(KernelType::CompareOGt),
-            "COMPARE_O_LT" => Ok(KernelType::CompareOLt),
-            "COMPARE_O_GE" => Ok(KernelType::CompareOGe),
-            "COMPARE_O_LE" => Ok(KernelType::CompareOLe),
-            "CONSTRUCT8" => Ok(KernelType::Construct8),
+            "COMPARE_O_EQ" => Ok(KernelType::CompareO),
+            "COMPARE_O_GT" => Ok(KernelType::CompareO),
+            "COMPARE_O_LT" => Ok(KernelType::CompareO),
+            "COMPARE_O_GE" => Ok(KernelType::CompareO),
+            "COMPARE_O_LE" => Ok(KernelType::CompareO),
+            "CONSTRUCT8" => Ok(KernelType::ValidateSp), // Use ValidateSp for construct operations
             _ => Err(format!("Unknown operation: {}", op)),
         }
     }
