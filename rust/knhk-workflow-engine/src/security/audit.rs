@@ -96,7 +96,7 @@ impl AuditLogger {
 
         // Lockchain integration for immutable audit trail
         if self.lockchain_enabled {
-            if let Some(ref lockchain) = self.lockchain {
+            if let Some(ref _lockchain) = self.lockchain {
                 // Convert audit event to JSON for lockchain
                 let _event_data = serde_json::json!({
                     "event_type": "audit.log",

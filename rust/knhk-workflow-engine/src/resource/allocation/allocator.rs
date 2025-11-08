@@ -112,11 +112,11 @@ impl ResourceAllocator {
                 policy: task
                     .allocation_policy
                     .unwrap_or(AllocationPolicy::RoundRobin),
-                priority: task.priority.map(|p| p as u8).unwrap_or(100),
+                priority: task.priority.unwrap_or(100) as u8,
             };
 
             // Find matching resources based on roles and capabilities
-            let mut matching_resources: Vec<&Resource> = resources
+            let matching_resources: Vec<&Resource> = resources
                 .values()
                 .filter(|resource| {
                     resource.available
