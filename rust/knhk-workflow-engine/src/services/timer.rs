@@ -83,7 +83,7 @@ pub struct TimerService<T: Timebase> {
     next_timer_id: Arc<tokio::sync::Mutex<u64>>,
 }
 
-impl<T: Timebase> TimerService<T> {
+impl<T: Timebase + 'static> TimerService<T> {
     /// Create a new timer service with Timebase
     pub fn new(
         timebase: Arc<T>,
@@ -230,10 +230,8 @@ impl<T: Timebase> TimerService<T> {
             let now = timebase
                 .now_wall()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| {
-                    Utc::from_timestamp_opt(d.as_secs() as i64, d.subsec_nanos())
-                        .unwrap_or_else(Utc::now)
-                })
+                .ok()
+                .and_then(|d| DateTime::from_timestamp(d.as_secs() as i64, d.subsec_nanos()))
                 .unwrap_or_else(Utc::now);
             let mut to_fire = Vec::new();
             let mut to_update = Vec::new();

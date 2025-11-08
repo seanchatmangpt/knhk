@@ -92,7 +92,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(*state_store_arc)),
+            state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -209,11 +209,10 @@ impl WorkflowEngine {
         let (event_tx, event_rx) = mpsc::channel::<serde_json::Value>(1024);
 
         // Create services
-        let timebase = Arc::new(SysClock);
         let timer_service = Arc::new(TimerService::new(
-            timebase,
+            Arc::new(SysClock),
             timer_tx.clone(),
-            None, // State store not available in with_fortune5
+            None,
         ));
         let work_item_service = Arc::new(WorkItemService::new());
         let admission_gate = Arc::new(AdmissionGate::new());
@@ -237,7 +236,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(state_store_arc.as_ref().clone())),
+            state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -285,7 +284,7 @@ impl WorkflowEngine {
         specs.insert(spec.id, spec);
 
         // Persist to state store
-        let store = self.state_store.write().await;
+        let store = self.state_store.read().await;
         store.save_spec(&spec_clone)?;
 
         Ok(())
@@ -329,7 +328,7 @@ impl WorkflowEngine {
         cases.insert(case_id, case);
 
         // Persist to state store
-        let store = self.state_store.write().await;
+        let store = self.state_store.read().await;
         store.save_case(case_id, &case_clone)?;
 
         Ok(case_id)
@@ -653,7 +652,7 @@ impl WorkflowEngine {
     }
 
     /// Get timer service
-    pub fn timer_service(&self) -> &Arc<TimerService<SysClock>> {
+    pub fn timer_service(&self) -> &Arc<TimerService> {
         &self.timer_service
     }
 
