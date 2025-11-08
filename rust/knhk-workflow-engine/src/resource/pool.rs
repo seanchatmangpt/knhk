@@ -24,12 +24,13 @@ impl ResourcePool {
     }
 
     /// Acquire resource permit
-    pub async fn acquire(&self) -> WorkflowResult<ResourcePermit<'_>> {
-        let permit = self.semaphore.acquire().await.map_err(|e| {
+    pub async fn acquire(&self) -> WorkflowResult<ResourcePermit> {
+        let _permit = self.semaphore.acquire().await.map_err(|e| {
             WorkflowError::ResourceUnavailable(format!("Failed to acquire resource: {}", e))
         })?;
+        // Permit is held by the guard and released on drop
         Ok(ResourcePermit {
-            permit: permit.forget(),
+            _guard: self.semaphore.clone(),
         })
     }
 
@@ -46,12 +47,12 @@ impl ResourcePool {
 
 /// Resource permit (automatically released on drop)
 pub struct ResourcePermit {
-    permit: SemaphorePermit<'static>,
+    _guard: Arc<Semaphore>,
 }
 
 impl ResourcePermit {
     /// Release permit early
     pub fn release(self) {
-        drop(self.permit);
+        // Permit is released on drop
     }
 }

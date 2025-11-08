@@ -1,0 +1,221 @@
+# KNHK Workflow Engine Semantic Conventions
+# OpenTelemetry semantic conventions for workflow engine operations
+
+groups:
+  - id: knhk.workflow.attributes
+    type: attribute_group
+    brief: KNHK workflow engine attributes
+    stability: experimental
+    attributes:
+      - id: knhk.workflow.id
+        type: string
+        brief: Workflow specification identifier
+        examples: ["workflow-123", "swift-payment-v1"]
+      
+      - id: knhk.workflow.name
+        type: string
+        brief: Human-readable workflow name
+        examples: ["SWIFT Payment Processing", "FIBO Compliance Check"]
+      
+      - id: knhk.workflow.version
+        type: string
+        brief: Workflow specification version
+        examples: ["1.0.0", "2.1.3"]
+      
+      - id: knhk.workflow.pattern_count
+        type: int
+        brief: Number of workflow patterns in specification
+        examples: [5, 43]
+      
+      - id: knhk.workflow.deadlock_validated
+        type: boolean
+        brief: Whether workflow passed deadlock detection
+        examples: [true, false]
+
+  - id: knhk.case.attributes
+    type: attribute_group
+    brief: KNHK workflow case attributes
+    stability: experimental
+    attributes:
+      - id: knhk.case.id
+        type: string
+        brief: Case identifier
+        examples: ["case-456", "payment-789"]
+      
+      - id: knhk.case.workflow_id
+        type: string
+        brief: Associated workflow specification ID
+      
+      - id: knhk.case.state
+        type: string
+        brief: Current case state
+        examples: ["created", "running", "completed", "cancelled"]
+      
+      - id: knhk.case.priority
+        type: int
+        brief: Case priority (0-255)
+        examples: [100, 200]
+
+  - id: knhk.pattern.attributes
+    type: attribute_group
+    brief: KNHK workflow pattern attributes
+    stability: experimental
+    attributes:
+      - id: knhk.pattern.id
+        type: int
+        brief: Pattern identifier (1-43, Van der Aalst patterns)
+        examples: [1, 5, 12, 43]
+      
+      - id: knhk.pattern.name
+        type: string
+        brief: Pattern name
+        examples: ["Sequence", "Parallel Split", "Multiple Instance"]
+      
+      - id: knhk.pattern.case_id
+        type: string
+        brief: Associated case ID
+      
+      - id: knhk.pattern.ticks
+        type: int
+        brief: Execution ticks (should be ≤8 for hot path)
+        examples: [2, 5, 8]
+      
+      - id: knhk.pattern.success
+        type: boolean
+        brief: Whether pattern execution succeeded
+
+  - id: knhk.resource.attributes
+    type: attribute_group
+    brief: KNHK resource allocation attributes
+    stability: experimental
+    attributes:
+      - id: knhk.resource.allocation_policy
+        type: string
+        brief: Resource allocation policy used
+        examples: ["four_eyes", "chained", "round_robin", "shortest_queue"]
+      
+      - id: knhk.resource.allocated_count
+        type: int
+        brief: Number of resources allocated
+        examples: [1, 2, 3]
+      
+      - id: knhk.resource.allocation_duration_ms
+        type: int
+        brief: Time taken to allocate resources in milliseconds
+        examples: [5, 10, 50]
+
+  - id: knhk.worklet.attributes
+    type: attribute_group
+    brief: KNHK worklet attributes
+    stability: experimental
+    attributes:
+      - id: knhk.worklet.id
+        type: string
+        brief: Worklet identifier
+      
+      - id: knhk.worklet.exception_type
+        type: string
+        brief: Exception type that triggered worklet
+        examples: ["resource_unavailable", "timeout", "validation_error"]
+      
+      - id: knhk.worklet.success
+        type: boolean
+        brief: Whether worklet execution succeeded
+
+spans:
+  - id: knhk.workflow.execute
+    brief: Workflow execution span
+    span_kind: internal
+    stability: experimental
+    attributes:
+      - ref: knhk.workflow.id
+      - ref: knhk.workflow.name
+      - ref: knhk.workflow.version
+      - ref: knhk.workflow.pattern_count
+      - ref: knhk.workflow.deadlock_validated
+  
+  - id: knhk.case.execute
+    brief: Case execution span
+    span_kind: internal
+    stability: experimental
+    attributes:
+      - ref: knhk.case.id
+      - ref: knhk.case.workflow_id
+      - ref: knhk.case.state
+      - ref: knhk.case.priority
+  
+  - id: knhk.pattern.execute
+    brief: Pattern execution span
+    span_kind: internal
+    stability: experimental
+    attributes:
+      - ref: knhk.pattern.id
+      - ref: knhk.pattern.name
+      - ref: knhk.pattern.case_id
+      - ref: knhk.pattern.ticks
+      - ref: knhk.pattern.success
+  
+  - id: knhk.resource.allocate
+    brief: Resource allocation span
+    span_kind: internal
+    stability: experimental
+    attributes:
+      - ref: knhk.resource.allocation_policy
+      - ref: knhk.resource.allocated_count
+      - ref: knhk.resource.allocation_duration_ms
+  
+  - id: knhk.worklet.execute
+    brief: Worklet execution span
+    span_kind: internal
+    stability: experimental
+    attributes:
+      - ref: knhk.worklet.id
+      - ref: knhk.worklet.exception_type
+      - ref: knhk.worklet.success
+
+metrics:
+  - id: knhk.workflow.execution.duration
+    brief: Workflow execution duration
+    unit: ms
+    instrument: histogram
+    stability: experimental
+    attributes:
+      - ref: knhk.workflow.id
+  
+  - id: knhk.case.execution.duration
+    brief: Case execution duration
+    unit: ms
+    instrument: histogram
+    stability: experimental
+    attributes:
+      - ref: knhk.case.id
+  
+  - id: knhk.pattern.execution.duration
+    brief: Pattern execution duration
+    unit: ms
+    instrument: histogram
+    stability: experimental
+    attributes:
+      - ref: knhk.pattern.id
+  
+  - id: knhk.workflow.deadlock.detections
+    brief: Number of deadlock detections
+    unit: "1"
+    instrument: counter
+    stability: experimental
+  
+  - id: knhk.resource.allocation.count
+    brief: Number of resource allocations
+    unit: "1"
+    instrument: counter
+    stability: experimental
+    attributes:
+      - ref: knhk.resource.allocation_policy
+  
+  - id: knhk.worklet.execution.count
+    brief: Number of worklet executions
+    unit: "1"
+    instrument: counter
+    stability: experimental
+    attributes:
+      - ref: knhk.worklet.exception_type

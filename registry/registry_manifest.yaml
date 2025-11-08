@@ -38,6 +38,13 @@ groups:
       Telemetry for the 5-stage ETL pipeline: Ingest, Normalize, Reflex,
       FailureActions, and Emit.
 
+  - id: knhk.workflow
+    type: span
+    brief: "KNHK workflow engine telemetry"
+    note: |
+      Telemetry for the workflow engine including workflow execution, case management,
+      pattern execution (all 43 Van der Aalst patterns), resource allocation, and worklets.
+
   - id: knhk.metrics
     type: metric
     brief: "KNHK operational metrics"
