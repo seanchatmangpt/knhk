@@ -56,7 +56,7 @@ pub struct WorkflowIr {
 
 /// Node IR (cache-aligned)
 #[repr(C, align(64))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeIR {
     /// Pattern ID
     pub pattern: u8,
@@ -72,7 +72,7 @@ pub struct NodeIR {
 
 /// Timer IR (cache-aligned)
 #[repr(C, align(64))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TimerIR {
     /// Timer kind (0=none, 1=oneshot, 2=recurring)
     pub kind: u8,
@@ -222,13 +222,29 @@ fn run_shacl_gates(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<(
 
 /// Convert RDF store to Turtle string
 fn store_to_turtle(store: &Store) -> WorkflowResult<String> {
-    use oxigraph::io::RdfFormat;
-    use std::io::Cursor;
+    use std::io::Write;
 
     let mut writer = Vec::new();
-    store
-        .dump_graph(&mut Cursor::new(&mut writer), RdfFormat::Turtle, None)
-        .map_err(|e| WorkflowError::Internal(format!("Failed to serialize store: {:?}", e)))?;
+
+    // Iterate over all quads and serialize to Turtle
+    #[allow(deprecated)]
+    for quad in store.iter() {
+        let quad =
+            quad.map_err(|e| WorkflowError::Internal(format!("Failed to iterate quads: {:?}", e)))?;
+
+        // Write quad in Turtle format (simplified)
+        writeln!(
+            &mut writer,
+            "{} {} {} {} .",
+            quad.subject,
+            quad.predicate,
+            quad.object,
+            quad.graph_name
+                .map(|g| format!("GRAPH {}", g))
+                .unwrap_or_default()
+        )
+        .map_err(|e| WorkflowError::Internal(format!("Failed to write quad: {:?}", e)))?;
+    }
 
     String::from_utf8(writer)
         .map_err(|e| WorkflowError::Internal(format!("Failed to convert to string: {:?}", e)))

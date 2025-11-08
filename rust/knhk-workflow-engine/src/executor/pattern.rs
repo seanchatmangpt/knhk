@@ -37,13 +37,13 @@ impl WorkflowEngine {
         // LAW: A = μ(O) - Generate receipt proving hash(A) = hash(μ(O))
         // Extract observations (O) from case state
         if let Ok(case) = self.get_case(context.case_id).await {
-            let observations = provenance::WorkflowEngine::extract_observations(&case);
+            let observations = crate::executor::WorkflowEngine::extract_observations(&case);
 
             // Extract actions (A) from pattern result
-            let actions = provenance::WorkflowEngine::extract_actions(&result);
+            let actions = crate::executor::WorkflowEngine::extract_actions(&result);
 
             // Generate receipt with provenance verification
-            if let Ok(receipt) = provenance::WorkflowEngine::generate_receipt(
+            if let Ok(receipt) = crate::executor::WorkflowEngine::generate_receipt(
                 self,
                 context.case_id,
                 context.workflow_id,
