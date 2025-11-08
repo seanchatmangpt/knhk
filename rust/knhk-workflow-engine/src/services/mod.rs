@@ -13,5 +13,8 @@ pub mod work_items;
 
 pub use admission::AdmissionGate;
 pub use event_sidecar::EventSidecar;
-pub use timer::{TimerFired, TimerService};
+pub use timer::TimerFired;
 pub use work_items::WorkItemService;
+
+// TimerService is generic over Timebase, so we export a type alias for common use
+pub use timer::TimerService;

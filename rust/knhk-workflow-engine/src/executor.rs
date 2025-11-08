@@ -652,7 +652,7 @@ impl WorkflowEngine {
     }
 
     /// Get timer service
-    pub fn timer_service(&self) -> &Arc<TimerService> {
+    pub fn timer_service(&self) -> &Arc<TimerService<SysClock>> {
         &self.timer_service
     }
 
