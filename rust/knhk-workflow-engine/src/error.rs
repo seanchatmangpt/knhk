@@ -28,6 +28,10 @@ pub enum WorkflowError {
     #[error("Case {0} already exists")]
     CaseExists(String),
 
+    /// Configuration error
+    #[error("Configuration error: {0}")]
+    Configuration(String),
+
     /// Invalid case state transition
     #[error("Invalid state transition from {from:?} to {to:?}")]
     InvalidStateTransition { from: String, to: String },

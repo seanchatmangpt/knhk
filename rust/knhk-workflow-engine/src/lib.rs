@@ -12,14 +12,25 @@
 
 pub mod api;
 pub mod case;
+pub mod cluster;
+pub mod compliance;
+pub mod enterprise;
 pub mod error;
 pub mod executor;
 pub mod integration;
+pub mod observability;
 pub mod parser;
 pub mod patterns;
+pub mod performance;
+pub mod resilience;
+pub mod security;
 pub mod state;
 
 pub use case::{Case, CaseId, CaseState};
+pub use enterprise::{
+    EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
+    SecurityConfig,
+};
 pub use error::{WorkflowError, WorkflowResult};
 pub use executor::WorkflowEngine;
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};

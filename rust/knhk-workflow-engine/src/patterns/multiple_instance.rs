@@ -22,7 +22,7 @@ impl PatternExecutor for MultipleInstanceWithoutSyncPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(12)),
+            next_state: Some(format!("pattern:{}:completed", 12)),
             variables,
         }
     }
@@ -46,7 +46,7 @@ impl PatternExecutor for MultipleInstanceDesignTimePattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(13)),
+            next_state: Some(format!("pattern:{}:completed", 13)),
             variables,
         }
     }
@@ -70,7 +70,7 @@ impl PatternExecutor for MultipleInstanceRuntimePattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(14)),
+            next_state: Some(format!("pattern:{}:completed", 14)),
             variables,
         }
     }
@@ -88,7 +88,7 @@ impl PatternExecutor for MultipleInstanceDynamicPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(15)),
+            next_state: Some(format!("pattern:{}:completed", 15)),
             variables,
         }
     }

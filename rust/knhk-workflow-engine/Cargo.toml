@@ -54,6 +54,17 @@ chrono = { version = "0.4", features = ["serde"] }
 hashbrown = { version = "0.15", default-features = false }
 rayon = "1.8"
 fastrand = "2.0"
+sha2 = "0.10"
+
+# Rate limiting
+governor = "0.6"
+
+# Caching
+lru = "0.12"
+
+# Metrics
+metrics = "0.23"
+metrics-prometheus = "0.6"
 
 # Tracing & observability
 tracing = "0.1"
@@ -71,5 +82,4 @@ unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
 tokio-test = "0.4"
 tempfile = "3.8"
 criterion = { version = "0.5", features = ["html_reports"] }
-
-
+futures = "0.3"

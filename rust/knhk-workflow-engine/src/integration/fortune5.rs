@@ -111,7 +111,7 @@ pub struct PromotionConfig {
 }
 
 /// Environment type
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Environment {
     /// Canary deployment with traffic percentage
     Canary { traffic_percent: f64 },
@@ -150,8 +150,8 @@ struct PromotionState {
     feature_flags: Vec<String>,
     /// SLO compliance status
     slo_compliant: bool,
-    /// Last rollback time
-    last_rollback_time: Option<std::time::Instant>,
+    /// Last rollback time (timestamp in seconds since epoch)
+    last_rollback_time: Option<u64>,
 }
 
 impl Fortune5Integration {
@@ -292,7 +292,11 @@ impl Fortune5Integration {
         if !slo_compliant && promotion_config.auto_rollback_enabled {
             // Check if rollback window has passed
             if let Some(last_rollback) = state.last_rollback_time {
-                let elapsed = last_rollback.elapsed().as_secs();
+                let now_secs = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_else(|e| panic!("Fortune5 integration should never fail: {}", e))
+                    .as_secs();
+                let elapsed = now_secs.saturating_sub(last_rollback);
                 if elapsed < promotion_config.rollback_window_seconds {
                     return Ok(false); // Still in rollback window
                 }
@@ -401,7 +405,7 @@ mod tests {
         assert!(integration
             .check_slo_compliance()
             .await
-            .expect("Fortune5 integration should never fail"));
+            .unwrap_or_else(|e| panic!("Fortune5 integration should never fail: {}", e)));
     }
 
     #[tokio::test]

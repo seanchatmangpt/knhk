@@ -14,13 +14,28 @@ pub fn create_deferred_choice_pattern() -> (PatternId, Box<dyn PatternExecutor>)
         Arc<dyn Fn(Value) -> Result<Value, knhk_patterns::PatternError> + Send + Sync>,
     > = vec![Arc::new(|v: Value| Ok(v.clone()))];
 
-    let pattern = DeferredChoicePattern::new(branches)
+    let choices: Vec<(
+        Arc<dyn Fn(&Value) -> bool + Send + Sync>,
+        Arc<dyn Fn(Value) -> Result<Value, knhk_patterns::PatternError> + Send + Sync>,
+    )> = branches
+        .iter()
+        .map(|b| {
+            let branch = b.clone();
+            let condition: Arc<dyn Fn(&Value) -> bool + Send + Sync> = Arc::new(|_| true);
+            (condition, branch)
+        })
+        .collect();
+    let timeout_ms = 5000u64;
+    let pattern = DeferredChoicePattern::new(choices, timeout_ms)
         .map(|p| Arc::new(p) as Arc<dyn knhk_patterns::Pattern<Value>>)
         .unwrap_or_else(|_| {
+            #[allow(clippy::expect_used)] // Fallback pattern creation should never fail
             Arc::new(
-                #[allow(clippy::expect_used)] // Fallback pattern creation should never fail
-                DeferredChoicePattern::new(vec![])
-                    .expect("Empty DeferredChoicePattern should never fail"),
+                DeferredChoicePattern::new(
+                    vec![(Arc::new(|_| true), Arc::new(|v: Value| Ok(v.clone())))],
+                    5000,
+                )
+                .expect("Empty DeferredChoicePattern should never fail"),
             )
         });
 
@@ -40,7 +55,7 @@ impl PatternExecutor for InterleavedParallelRoutingPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(17)),
+            next_state: Some(format!("pattern:{}:completed", 17)),
             variables,
         }
     }

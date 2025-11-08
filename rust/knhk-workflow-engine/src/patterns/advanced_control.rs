@@ -16,7 +16,7 @@ impl PatternExecutor for BlockingDiscriminatorPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(26)),
+            next_state: Some(format!("pattern:{}:completed", 26)),
             variables,
         }
     }
@@ -34,7 +34,7 @@ impl PatternExecutor for CancellingDiscriminatorPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(27)),
+            next_state: Some(format!("pattern:{}:completed", 27)),
             variables,
         }
     }
@@ -58,7 +58,7 @@ impl PatternExecutor for StructuredLoopPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(28)),
+            next_state: Some(format!("pattern:{}:completed", 28)),
             variables,
         }
     }
@@ -82,7 +82,7 @@ impl PatternExecutor for RecursionPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(29)),
+            next_state: Some(format!("pattern:{}:completed", 29)),
             variables,
         }
     }
@@ -100,7 +100,7 @@ impl PatternExecutor for TransientTriggerPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(30)),
+            next_state: Some(format!("pattern:{}:completed", 30)),
             variables,
         }
     }
@@ -118,7 +118,7 @@ impl PatternExecutor for PersistentTriggerPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(31)),
+            next_state: Some(format!("pattern:{}:completed", 31)),
             variables,
         }
     }
@@ -187,7 +187,7 @@ impl PatternExecutor for StopProcessInstancePattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(34)),
+            next_state: Some(format!("pattern:{}:completed", 34)),
             variables,
         }
     }
@@ -204,7 +204,7 @@ impl PatternExecutor for AbortProcessInstancePattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(35)),
+            next_state: Some(format!("pattern:{}:completed", 35)),
             variables,
         }
     }
@@ -277,7 +277,7 @@ impl PatternExecutor for ActivityInstanceMultipleThreadsPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(38)),
+            next_state: Some(format!("pattern:{}:completed", 38)),
             variables,
         }
     }
@@ -295,7 +295,7 @@ impl PatternExecutor for ThreadMergePattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(39)),
+            next_state: Some(format!("pattern:{}:completed", 39)),
             variables,
         }
     }

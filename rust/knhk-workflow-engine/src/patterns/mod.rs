@@ -8,6 +8,7 @@ pub mod cancellation;
 pub mod multiple_instance;
 pub mod state_based;
 pub mod trigger;
+pub mod validation;
 
 use std::collections::HashMap;
 
@@ -29,27 +30,9 @@ impl PatternId {
 }
 
 impl std::fmt::Display for PatternId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_'>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "pattern:{}", self.0)
     }
-}
-/// Pattern identifier (String format: "pattern:1:sequence", etc.)
-
-/// Pattern metadata
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PatternMetadata {
-    /// Pattern ID (1-43)
-    pub id: PatternId,
-    /// Pattern name
-    pub name: String,
-    /// Pattern category
-    pub category: String,
-    /// Average execution ticks
-    pub avg_ticks: u32,
-    /// Supports SIMD optimization
-    pub supports_simd: bool,
-    /// Implementation hint
-    pub hint: String,
 }
 
 /// Pattern execution context
@@ -57,10 +40,10 @@ pub struct PatternMetadata {
 pub struct PatternExecutionContext {
     /// Case ID
     pub case_id: crate::case::CaseId,
+    /// Workflow ID
+    pub workflow_id: crate::parser::WorkflowSpecId,
     /// Variables for pattern execution
     pub variables: HashMap<String, String>,
-    /// Input data
-    pub input: serde_json::Value,
 }
 
 /// Pattern execution result
@@ -84,6 +67,15 @@ pub trait PatternExecutor: Send + Sync {
 pub struct PatternRegistry {
     /// Registered patterns
     patterns: HashMap<PatternId, Box<dyn PatternExecutor>>,
+}
+
+impl std::fmt::Debug for PatternRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PatternRegistry")
+            .field("pattern_count", &self.patterns.len())
+            .field("pattern_ids", &self.patterns.keys().collect::<Vec<_>>())
+            .finish()
+    }
 }
 
 impl PatternRegistry {
@@ -233,7 +225,10 @@ pub fn register_all_patterns(registry: &mut PatternRegistry) {
     registry.register(id, executor);
 }
 
-/// RDF support for patterns
+// RDF support for patterns (optional, if rdf module exists)
+#[cfg(feature = "rdf")]
+mod rdf;
+#[cfg(feature = "rdf")]
 pub use rdf::{
     get_all_pattern_metadata, serialize_context_to_rdf, serialize_result_to_rdf, PatternMetadata,
     WORKFLOW_PATTERN_NS, YAWL_NS,

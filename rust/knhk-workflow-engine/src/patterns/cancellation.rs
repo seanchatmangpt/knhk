@@ -41,12 +41,12 @@ pub fn create_timeout_pattern() -> (PatternId, Box<dyn PatternExecutor>) {
     let branch: Arc<dyn Fn(Value) -> Result<Value, knhk_patterns::PatternError> + Send + Sync> =
         Arc::new(|v: Value| Ok(v));
 
-    let pattern = TimeoutPattern::new(timeout_ms, branch)
+    let pattern = TimeoutPattern::new(branch, timeout_ms)
         .map(|p| Arc::new(p) as Arc<dyn knhk_patterns::Pattern<Value>>)
         .unwrap_or_else(|_| {
             Arc::new(
                 #[allow(clippy::expect_used)] // Fallback pattern creation should never fail
-                TimeoutPattern::new(5000, Arc::new(|v: Value| Ok(v)))
+                TimeoutPattern::new(Arc::new(|v: Value| Ok(v)), 5000)
                     .expect("TimeoutPattern with valid duration should never fail"),
             )
         });
@@ -57,9 +57,17 @@ pub fn create_timeout_pattern() -> (PatternId, Box<dyn PatternExecutor>) {
 
 /// Pattern 21: Cancel Case
 pub fn create_cancellation_pattern() -> (PatternId, Box<dyn PatternExecutor>) {
-    let pattern = CancellationPattern::new()
+    let branch = Arc::new(|v: Value| Ok(v.clone()));
+    let should_cancel = Arc::new(|| false);
+    let pattern = CancellationPattern::new(branch, should_cancel)
         .map(|p| Arc::new(p) as Arc<dyn knhk_patterns::Pattern<Value>>)
-        .unwrap_or_else(|_| Arc::new(CancellationPattern::default()));
+        .unwrap_or_else(|_| {
+            #[allow(clippy::expect_used)] // Fallback pattern creation should never fail
+            Arc::new(
+                CancellationPattern::new(Arc::new(|v: Value| Ok(v.clone())), Arc::new(|| false))
+                    .expect("CancellationPattern with valid parameters should never fail"),
+            )
+        });
 
     let adapter = PatternAdapter::new(pattern, PatternId(21));
     (PatternId(21), Box::new(adapter))
@@ -83,7 +91,7 @@ impl PatternExecutor for CancelCasePattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(22)),
+            next_state: Some(format!("pattern:{}:completed", 22)),
             variables,
         }
     }

@@ -77,7 +77,7 @@ impl PatternExecutor for MultipleTriggerPattern {
 
         PatternExecutionResult {
             success: true,
-            next_state: Some(PatternId(42)),
+            next_state: Some(format!("pattern:{}:completed", 42)),
             variables,
         }
     }

@@ -1,11 +1,10 @@
 //! RDF support for workflow patterns
-//! 
+//!
 //! Provides RDF/Turtle serialization and deserialization for all 43 Van der Aalst workflow patterns.
 //! Supports YAWL workflow definitions and pattern metadata in RDF format.
 
-use crate::patterns::{PatternId, PatternExecutionContext, PatternExecutionResult};
+use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use oxigraph::store::Store;
-use oxigraph::io::GraphFormat;
 use std::collections::HashMap;
 
 /// RDF namespace for workflow patterns
@@ -36,19 +35,51 @@ pub struct PatternMetadata {
 impl PatternMetadata {
     /// Convert pattern metadata to RDF triples
     pub fn to_rdf(&self) -> Vec<(String, String, String)> {
-        let pattern_iri = format!("{}pattern:{}", WORKFLOW_PATTERN_NS, self.id.id());
+        let pattern_iri = format!("{}pattern:{}", WORKFLOW_PATTERN_NS, self.id.0);
         let mut triples = vec![
-            (pattern_iri.clone(), format!("{}type", RDF_NS), format!("{}WorkflowPattern", WORKFLOW_PATTERN_NS)),
-            (pattern_iri.clone(), format!("{}patternId", WORKFLOW_PATTERN_NS), self.id.id().to_string()),
-            (pattern_iri.clone(), format!("{}patternName", WORKFLOW_PATTERN_NS), self.name.clone()),
-            (pattern_iri.clone(), format!("{}category", WORKFLOW_PATTERN_NS), self.category.clone()),
-            (pattern_iri.clone(), format!("{}description", RDFS_NS), self.description.clone()),
-            (pattern_iri.clone(), format!("{}tickBudget", WORKFLOW_PATTERN_NS), self.tick_budget.to_string()),
-            (pattern_iri.clone(), format!("{}simdSupport", WORKFLOW_PATTERN_NS), self.simd_support.to_string()),
+            (
+                pattern_iri.clone(),
+                format!("{}type", RDF_NS),
+                format!("{}WorkflowPattern", WORKFLOW_PATTERN_NS),
+            ),
+            (
+                pattern_iri.clone(),
+                format!("{}patternId", WORKFLOW_PATTERN_NS),
+                self.id.0.to_string(),
+            ),
+            (
+                pattern_iri.clone(),
+                format!("{}patternName", WORKFLOW_PATTERN_NS),
+                self.name.clone(),
+            ),
+            (
+                pattern_iri.clone(),
+                format!("{}category", WORKFLOW_PATTERN_NS),
+                self.category.clone(),
+            ),
+            (
+                pattern_iri.clone(),
+                format!("{}description", RDFS_NS),
+                self.description.clone(),
+            ),
+            (
+                pattern_iri.clone(),
+                format!("{}tickBudget", WORKFLOW_PATTERN_NS),
+                self.tick_budget.to_string(),
+            ),
+            (
+                pattern_iri.clone(),
+                format!("{}simdSupport", WORKFLOW_PATTERN_NS),
+                self.simd_support.to_string(),
+            ),
         ];
 
         if let Some(ref yawl) = self.yawl_equivalent {
-            triples.push((pattern_iri, format!("{}yawlEquivalent", WORKFLOW_PATTERN_NS), yawl.clone()));
+            triples.push((
+                pattern_iri,
+                format!("{}yawlEquivalent", WORKFLOW_PATTERN_NS),
+                yawl.clone(),
+            ));
         }
 
         triples
@@ -56,8 +87,8 @@ impl PatternMetadata {
 
     /// Parse pattern metadata from RDF store
     pub fn from_rdf(store: &Store, pattern_id: PatternId) -> Result<Self, String> {
-        let pattern_iri = format!("{}pattern:{}", WORKFLOW_PATTERN_NS, pattern_id.id());
-        
+        let pattern_iri = format!("{}pattern:{}", WORKFLOW_PATTERN_NS, pattern_id.0);
+
         // Query for pattern metadata
         let query = format!(
             r#"
@@ -80,16 +111,17 @@ impl PatternMetadata {
         );
 
         // Execute SPARQL query
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| format!("Failed to query RDF store: {}", e))?;
 
         // Parse results (simplified - actual implementation would parse SPARQL results)
         // For now, return default metadata
         Ok(PatternMetadata {
             id: pattern_id,
-            name: format!("Pattern {}", pattern_id.id()),
+            name: format!("Pattern {}", pattern_id.0),
             category: "Unknown".to_string(),
-            description: format!("Van der Aalst workflow pattern {}", pattern_id.id()),
+            description: format!("Van der Aalst workflow pattern {}", pattern_id.0),
             yawl_equivalent: None,
             tick_budget: 8,
             simd_support: false,
@@ -186,35 +218,78 @@ fn get_category_for_pattern(id: u32) -> String {
 pub fn serialize_context_to_rdf(ctx: &PatternExecutionContext) -> Vec<(String, String, String)> {
     let context_iri = format!("{}context:{}", WORKFLOW_PATTERN_NS, ctx.case_id);
     let mut triples = vec![
-        (context_iri.clone(), format!("{}type", RDF_NS), format!("{}PatternExecutionContext", WORKFLOW_PATTERN_NS)),
-        (context_iri.clone(), format!("{}caseId", WORKFLOW_PATTERN_NS), ctx.case_id.to_string()),
-        (context_iri.clone(), format!("{}workflowId", WORKFLOW_PATTERN_NS), ctx.workflow_id.to_string()),
+        (
+            context_iri.clone(),
+            format!("{}type", RDF_NS),
+            format!("{}PatternExecutionContext", WORKFLOW_PATTERN_NS),
+        ),
+        (
+            context_iri.clone(),
+            format!("{}caseId", WORKFLOW_PATTERN_NS),
+            ctx.case_id.to_string(),
+        ),
+        (
+            context_iri.clone(),
+            format!("{}workflowId", WORKFLOW_PATTERN_NS),
+            ctx.workflow_id.to_string(),
+        ),
     ];
 
     for (key, value) in &ctx.variables {
-        triples.push((context_iri.clone(), format!("{}variable:{}", WORKFLOW_PATTERN_NS, key), value.clone()));
+        triples.push((
+            context_iri.clone(),
+            format!("{}variable:{}", WORKFLOW_PATTERN_NS, key),
+            value.clone(),
+        ));
     }
 
     triples
 }
 
 /// Serialize pattern execution result to RDF
-pub fn serialize_result_to_rdf(result: &PatternExecutionResult, pattern_id: PatternId) -> Vec<(String, String, String)> {
-    let result_iri = format!("{}result:{}:{}", WORKFLOW_PATTERN_NS, pattern_id.id(), chrono::Utc::now().timestamp());
+pub fn serialize_result_to_rdf(
+    result: &PatternExecutionResult,
+    pattern_id: PatternId,
+) -> Vec<(String, String, String)> {
+    let result_iri = format!(
+        "{}result:{}:{}",
+        WORKFLOW_PATTERN_NS,
+        pattern_id.0,
+        chrono::Utc::now().timestamp()
+    );
     let mut triples = vec![
-        (result_iri.clone(), format!("{}type", RDF_NS), format!("{}PatternExecutionResult", WORKFLOW_PATTERN_NS)),
-        (result_iri.clone(), format!("{}patternId", WORKFLOW_PATTERN_NS), pattern_id.id().to_string()),
-        (result_iri.clone(), format!("{}success", WORKFLOW_PATTERN_NS), result.success.to_string()),
+        (
+            result_iri.clone(),
+            format!("{}type", RDF_NS),
+            format!("{}PatternExecutionResult", WORKFLOW_PATTERN_NS),
+        ),
+        (
+            result_iri.clone(),
+            format!("{}patternId", WORKFLOW_PATTERN_NS),
+            pattern_id.0.to_string(),
+        ),
+        (
+            result_iri.clone(),
+            format!("{}success", WORKFLOW_PATTERN_NS),
+            result.success.to_string(),
+        ),
     ];
 
     if let Some(ref next_state) = result.next_state {
-        triples.push((result_iri.clone(), format!("{}nextState", WORKFLOW_PATTERN_NS), next_state.clone()));
+        triples.push((
+            result_iri.clone(),
+            format!("{}nextState", WORKFLOW_PATTERN_NS),
+            next_state.clone(),
+        ));
     }
 
     for (key, value) in &result.variables {
-        triples.push((result_iri.clone(), format!("{}variable:{}", WORKFLOW_PATTERN_NS, key), value.clone()));
+        triples.push((
+            result_iri.clone(),
+            format!("{}variable:{}", WORKFLOW_PATTERN_NS, key),
+            value.clone(),
+        ));
     }
 
     triples
 }
-
