@@ -26,6 +26,12 @@ pub struct ShapeCard {
     pub shape_hash: u64,
 }
 
+impl Default for ShapeCard {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShapeCard {
     pub fn new() -> Self {
         Self {
@@ -255,6 +261,12 @@ pub struct TapeBuilder {
     pub shape: ShapeCard,
 }
 
+impl Default for TapeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TapeBuilder {
     pub fn new() -> Self {
         Self {
@@ -304,6 +316,12 @@ impl SoARun {
 /// SoA Packer: Convert tape to predicate-grouped runs
 pub struct SoAPacker {
     pub runs: Vec<SoARun>,
+}
+
+impl Default for SoAPacker {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SoAPacker {
@@ -358,6 +376,11 @@ impl ATMShapeKernel {
     /// Fast path for shape-locked ATM JSON
     ///
     /// Uses hardcoded key checks with memcmp64 or AVX2 pcmpeqb
+    ///
+    /// # Safety
+    /// This function uses unsafe SIMD operations. The caller must ensure:
+    /// - `json` is a valid UTF-8 byte slice
+    /// - `runs` is a valid mutable vector
     pub unsafe fn parse_shape_locked(&self, _json: &[u8], _runs: &mut Vec<SoARun>) -> bool {
         // TODO: Implement shape-locked fast path
         // - Hardcode key literals
