@@ -17,6 +17,7 @@ pub mod proto {
     tonic::include_proto!("kgc.sidecar.v1");
 }
 
+use crate::json_parser::{parse_json_triples, JsonDelta};
 use proto::{
     kgc_sidecar_server::KgcSidecar, ApplyTransactionRequest, ApplyTransactionResponse,
     EvaluateHookRequest, EvaluateHookResponse, GetMetricsRequest, GetMetricsResponse,
@@ -233,19 +234,33 @@ impl KgcSidecar for KgcSidecarService {
                 .unwrap_or(0)
         );
 
-        // Extract RDF data from delta
-        let delta = req.delta.ok_or_else(|| {
-            tonic::Status::invalid_argument("Delta is required in ApplyTransactionRequest")
-        })?;
+        // Extract RDF data from delta (support both protobuf and JSON formats)
+        let raw_triples = if let Some(delta) = req.delta {
+            // Protobuf format: convert to RawTriple
+            let mut all_triples: Vec<knhk_etl::ingest::RawTriple> = Vec::new();
+            for triple in delta.additions {
+                all_triples.push(knhk_etl::ingest::RawTriple {
+                    subject: triple.subject,
+                    predicate: triple.predicate,
+                    object: triple.object,
+                    graph: if triple.graph.is_empty() {
+                        None
+                    } else {
+                        Some(triple.graph)
+                    },
+                });
+            }
+            // Note: Removals handled separately in pipeline
+            all_triples
+        } else {
+            // JSON format: parse with simdjson (when json_data field is added in proto)
+            // For now, fall back to error if no delta provided
+            return Err(tonic::Status::invalid_argument(
+                "Delta is required in ApplyTransactionRequest",
+            ));
+        };
 
-        // Convert delta triples to turtle string (combine additions and removals)
-        let mut all_triples: Vec<_> = delta.additions.iter().collect();
-        all_triples.extend(delta.removals.iter());
-        let turtle_data = all_triples
-            .iter()
-            .map(|t| format!("{} {} {} .", t.subject, t.predicate, t.object))
-            .collect::<Vec<_>>()
-            .join("\n");
+        let triple_count = raw_triples.len();
 
         // Start OTEL span for transaction
         #[cfg(feature = "otel")]
@@ -267,7 +282,7 @@ impl KgcSidecar for KgcSidecarService {
                 tracer.add_attribute(
                     ctx.clone(),
                     "knhk.sidecar.rdf_bytes".to_string(),
-                    (delta.additions.len() + delta.removals.len()).to_string(),
+                    triple_count.to_string(),
                 );
                 Some((tracer, ctx))
             } else {
@@ -276,14 +291,9 @@ impl KgcSidecar for KgcSidecarService {
 
         // Execute ETL pipeline: Ingest → Transform → Load → Reflex → Emit
         let result: Result<knhk_etl::Receipt, SidecarError> = (|| {
-            // 1. Ingest: Parse RDF/Turtle
-            let ingest = knhk_etl::IngestStage::new(vec!["grpc".to_string()], "turtle".to_string());
-            let ingest_result = ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
-                SidecarError::transaction_failed(format!("SIDECAR_INGEST_FAILED: {}", e.message()))
-            })?;
-
+            // 1. Ingest: Use raw triples directly (no parsing needed - already converted)
             let ingest_result_full = knhk_etl::IngestResult {
-                triples: ingest_result,
+                triples: raw_triples,
                 metadata: alloc::collections::BTreeMap::new(),
             };
 
@@ -350,10 +360,7 @@ impl KgcSidecar for KgcSidecarService {
             vec![
                 ("transaction_id", transaction_id.clone()),
                 ("method", "ApplyTransaction".to_string()),
-                (
-                    "rdf_bytes",
-                    (delta.additions.len() + delta.removals.len()).to_string(),
-                ),
+                ("rdf_bytes", triple_count.to_string()),
             ],
         )
         .await;

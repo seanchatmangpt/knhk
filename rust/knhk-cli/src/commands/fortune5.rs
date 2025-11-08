@@ -88,6 +88,12 @@ pub fn run_all_tests() -> Result<TestSummary, String> {
     total_failed += promotion_result.failed;
     categories.push(promotion_result);
 
+    // Test Integration
+    let integration_result = test_integration();
+    total_passed += integration_result.passed;
+    total_failed += integration_result.failed;
+    categories.push(integration_result);
+
     println!();
     println!("=== Test Summary ===");
     println!("Total: {}", total_passed + total_failed);
@@ -126,6 +132,7 @@ pub fn run_category_tests(category: &str) -> Result<TestSummary, String> {
         "slo" | "admission" => test_slo_admission(),
         "capacity" => test_capacity(),
         "promotion" | "gates" => test_promotion(),
+        "integration" => test_integration(),
         _ => return Err(format!("Unknown category: {}", category)),
     };
 
@@ -407,21 +414,37 @@ fn test_slo_admission() -> TestResult {
         failed += 1;
     }
 
-    // Test 2: SLO admission controller creation
-    if SloAdmissionController::new(config.clone()).is_ok() {
-        passed += 1;
-    } else {
-        failed += 1;
-    }
-
-    // Test 3: Admission check
+    // Test 2: SLO admission controller creation (actual behavior)
+    let config = SloConfig::default();
     if let Ok(mut controller) = SloAdmissionController::new(config) {
+        passed += 1;
+
+        // Test 3: Admission check - accept within SLO (actual behavior)
         let result = controller.check_admission(
             knhk_sidecar::slo_admission::RuntimeClass::R1,
-            Some(Duration::from_nanos(1)),
+            Some(Duration::from_nanos(1)), // Within 2ns SLO
         );
         if result.is_ok() {
-            passed += 1;
+            if let Ok(Some(_)) = result {
+                passed += 1; // Should admit
+            } else {
+                failed += 1; // Should not reject
+            }
+        } else {
+            failed += 1;
+        }
+
+        // Test 4: Admission check - reject exceeding SLO (actual behavior)
+        let result = controller.check_admission(
+            knhk_sidecar::slo_admission::RuntimeClass::R1,
+            Some(Duration::from_nanos(3)), // Exceeds 2ns SLO
+        );
+        if result.is_ok() {
+            if let Ok(None) = result {
+                passed += 1; // Should reject
+            } else {
+                failed += 1; // Should not admit
+            }
         } else {
             failed += 1;
         }
@@ -441,19 +464,27 @@ fn test_capacity() -> TestResult {
     let mut passed = 0;
     let mut failed = 0;
 
-    // Test 1: Capacity manager creation
+    // Test 1: Capacity manager creation (actual behavior)
     let mut manager = CapacityManager::new(0.95);
     passed += 1;
 
-    // Test 2: Record access
-    manager.record_access("predicate1", true, false);
-    if manager.get_heat("predicate1").is_some() {
-        passed += 1;
+    // Test 2: Record access and verify metrics (actual behavior)
+    manager.record_access("predicate1", true, true); // Hit, L1
+    manager.record_access("predicate1", true, false); // Hit, not L1
+    manager.record_access("predicate1", false, false); // Miss
+
+    if let Some(heat) = manager.get_heat("predicate1") {
+        if heat.cache_hits == 2 && heat.cache_misses == 1 && heat.l1_hits == 1 {
+            passed += 1;
+        } else {
+            failed += 1;
+        }
     } else {
         failed += 1;
     }
 
-    // Test 3: Hit rate calculation
+    // Test 3: Hit rate calculation (actual behavior)
+    let mut manager = CapacityManager::new(0.95);
     for _ in 0..95 {
         manager.record_access("predicate1", true, false);
     }
@@ -461,6 +492,21 @@ fn test_capacity() -> TestResult {
         manager.record_access("predicate1", false, false);
     }
     if manager.meets_capacity("predicate1") {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    // Test 4: L1 locality prediction (actual behavior)
+    let mut manager = CapacityManager::new(0.95);
+    for _ in 0..80 {
+        manager.record_access("predicate1", true, true); // L1 hit
+    }
+    for _ in 0..20 {
+        manager.record_access("predicate1", true, false); // Hit but not L1
+    }
+    let l1_locality = manager.predict_l1_locality("predicate1");
+    if (l1_locality - 0.8).abs() < 0.01 {
         passed += 1;
     } else {
         failed += 1;
@@ -486,7 +532,7 @@ fn test_promotion() -> TestResult {
         failed += 1;
     }
 
-    // Test 2: Promotion gate manager creation
+    // Test 2: Promotion gate manager creation (actual behavior)
     let slo_config = SloConfig::default();
     if let Ok(slo_controller) = SloAdmissionController::new(slo_config) {
         if PromotionGateManager::new(promotion_config.clone(), slo_controller).is_ok() {
@@ -498,7 +544,7 @@ fn test_promotion() -> TestResult {
         failed += 1;
     }
 
-    // Test 3: Feature flags
+    // Test 3: Feature flags - enable/disable (actual behavior)
     let promotion_config = PromotionConfig {
         environment: Environment::Production,
         feature_flags: vec!["feature1".to_string()],
@@ -509,8 +555,39 @@ fn test_promotion() -> TestResult {
     let slo_config = SloConfig::default();
     if let Ok(slo_controller) = SloAdmissionController::new(slo_config) {
         if let Ok(mut manager) = PromotionGateManager::new(promotion_config, slo_controller) {
+            // Check feature is enabled
             if manager.is_feature_enabled("feature1") {
                 passed += 1;
+            } else {
+                failed += 1;
+            }
+
+            // Disable feature and verify (actual behavior)
+            manager.disable_feature("feature1".to_string());
+            if !manager.is_feature_enabled("feature1") {
+                passed += 1;
+            } else {
+                failed += 1;
+            }
+        } else {
+            failed += 1;
+        }
+    } else {
+        failed += 1;
+    }
+
+    // Test 4: SLO compliance check (actual behavior)
+    let promotion_config = PromotionConfig::default();
+    let slo_config = SloConfig::default();
+    if let Ok(slo_controller) = SloAdmissionController::new(slo_config) {
+        if let Ok(mut manager) = PromotionGateManager::new(promotion_config, slo_controller) {
+            // With no requests, should be compliant
+            if let Ok(compliant) = manager.check_slo_compliance() {
+                if compliant {
+                    passed += 1;
+                } else {
+                    failed += 1;
+                }
             } else {
                 failed += 1;
             }

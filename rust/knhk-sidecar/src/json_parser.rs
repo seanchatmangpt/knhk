@@ -94,7 +94,7 @@ impl JsonDelta {
         // Try array format: [{"s": "...", "p": "...", "o": "..."}]
         if let Some(arr) = value.as_array() {
             let additions = Self::parse_triple_array(&simd_json::OwnedValue::Array(
-                arr.iter().cloned().collect(),
+                arr.iter().cloned().collect::<Vec<_>>().into(),
             ))?;
             return Ok(JsonDelta {
                 additions,
@@ -148,15 +148,21 @@ impl JsonDelta {
                 for (key, val) in obj.iter() {
                     if key != "@id" && key != "@type" && key != "@context" {
                         let p = key.clone();
-                        let o = match val {
-                            simd_json::OwnedValue::String(s) => s.clone(),
-                            simd_json::OwnedValue::Number(n) => n.to_string(),
-                            simd_json::OwnedValue::Bool(b) => b.to_string(),
-                            simd_json::OwnedValue::Null => "null".to_string(),
-                            _ => {
-                                // Skip complex nested objects for now
-                                continue;
-                            }
+                        let o = if let Some(s) = val.as_str() {
+                            s.to_string()
+                        } else if let Some(n) = val.as_u64() {
+                            n.to_string()
+                        } else if let Some(n) = val.as_i64() {
+                            n.to_string()
+                        } else if let Some(n) = val.as_f64() {
+                            n.to_string()
+                        } else if let Some(b) = val.as_bool() {
+                            b.to_string()
+                        } else if val.is_null() {
+                            "null".to_string()
+                        } else {
+                            // Skip complex nested objects for now
+                            continue;
                         };
 
                         triples.push(JsonTriple {
@@ -200,7 +206,11 @@ impl JsonDelta {
                 // Support both string and number/boolean for object
                 if let Some(s) = v.as_str() {
                     Some(s.to_string())
-                } else if let Some(n) = v.as_number() {
+                } else if let Some(n) = v.as_u64() {
+                    Some(n.to_string())
+                } else if let Some(n) = v.as_i64() {
+                    Some(n.to_string())
+                } else if let Some(n) = v.as_f64() {
                     Some(n.to_string())
                 } else if let Some(b) = v.as_bool() {
                     Some(b.to_string())
