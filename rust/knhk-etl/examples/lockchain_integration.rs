@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 7: Generate and verify Merkle proof for audit
     println!("\n7. Generating Merkle proof for receipt audit...");
-    if let Some(proof) = merkle_tree.generate_proof(0) {
+    if let Ok(proof) = merkle_tree.generate_proof(0) {
         println!("   Proof for receipt 0:");
         println!(
             "   - Leaf hash: {:x?}...{:x?}",

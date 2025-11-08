@@ -5,7 +5,6 @@
 extern crate alloc;
 
 use alloc::string::ToString;
-use alloc::vec::Vec;
 use knhk_etl::hook_registry::{guards, HookRegistry, HookRegistryError};
 use knhk_hot::KernelType;
 
