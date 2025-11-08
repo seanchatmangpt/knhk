@@ -112,8 +112,9 @@ for file in $STAGED_FILES; do
   fi
   
   # Check if file has allow attribute for expect (check actual file, not just diff)
-  if grep -q "#\[allow(clippy::expect_used)\]" "$file" 2>/dev/null || \
-     git diff --cached "$file" | grep -q "#\[allow(clippy::expect_used)\]"; then
+  # Check for both #[allow] and #![allow] patterns
+  if grep -qE "#!?\[allow\(clippy::expect_used\)\]" "$file" 2>/dev/null || \
+     git diff --cached "$file" | grep -qE "#!?\[allow\(clippy::expect_used\)\]"; then
     continue
   fi
   
@@ -299,8 +300,8 @@ EXPECT_COUNT=$(find rust/knhk-*/src -name "*.rs" -type f 2>/dev/null | \
     if [[ "$file" =~ knhk-cli/ ]]; then
       continue
     fi
-    # Skip files with allow attributes
-    if grep -q "#\[allow(clippy::expect_used)\]" "$file" 2>/dev/null; then
+    # Skip files with allow attributes (check for both #[allow] and #![allow])
+    if grep -qE "#!?\[allow\(clippy::expect_used\)\]" "$file" 2>/dev/null; then
       continue
     fi
     # Skip files with test modules (pragmatic exception - test modules should have allow attributes)
