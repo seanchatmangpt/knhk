@@ -227,6 +227,7 @@ async fn test_approval_workflow_with_exclusive_choice() {
     // Pattern 4: Exclusive Choice - Route to manager or director
     let result = engine
         .execute_pattern(PatternId(4), ctx.clone())
+        .await
         .expect("Approval routing should execute");
 
     // Assert: Request routed to appropriate approver with realistic checks
@@ -306,6 +307,7 @@ async fn test_approval_workflow_requires_all_approvers() {
     // Pattern 3: Synchronization - Wait for all approvals
     let result = engine
         .execute_pattern(PatternId(3), ctx.clone())
+        .await
         .expect("Multi-approval should execute");
 
     // Assert: All approvals required with realistic checks
@@ -381,6 +383,7 @@ async fn test_document_processing_with_multiple_instances() {
     // Pattern 12: Multiple Instance Without Synchronization
     let result = engine
         .execute_pattern(PatternId(12), ctx.clone())
+        .await
         .expect("Document processing should execute");
 
     // Assert: All documents processed with realistic checks
@@ -432,6 +435,7 @@ async fn test_document_processing_wait_for_all_completion() {
     // Pattern 13: Multiple Instance Design Time - Known count, wait for all
     let result = engine
         .execute_pattern(PatternId(13), ctx.clone())
+        .await
         .expect("Batch processing should execute");
 
     // Assert: All documents completed
@@ -469,6 +473,7 @@ async fn test_event_driven_workflow_waits_for_external_event() {
     // Pattern 16: Deferred Choice - Wait for external event
     let result = engine
         .execute_pattern(PatternId(16), ctx.clone())
+        .await
         .expect("Event-driven workflow should execute");
 
     // Assert: Workflow waiting for event
@@ -496,6 +501,7 @@ async fn test_event_based_trigger_workflow() {
     // Pattern 41: Event-Based Trigger
     let result = engine
         .execute_pattern(PatternId(41), ctx.clone())
+        .await
         .expect("Event-based trigger should execute");
 
     // Assert: Event triggered workflow
@@ -559,6 +565,7 @@ async fn test_workflow_cancellation_on_user_request() {
     // Pattern 22: Cancel Case
     let result = engine
         .execute_pattern(PatternId(22), ctx.clone())
+        .await
         .expect("Cancellation should execute");
 
     // Assert: Case cancelled with realistic checks
@@ -604,6 +611,7 @@ async fn test_workflow_timeout_handling() {
     // Pattern 20: Timeout
     let result = engine
         .execute_pattern(PatternId(20), ctx.clone())
+        .await
         .expect("Timeout handling should execute");
 
     // Assert: Timeout handled
@@ -639,6 +647,7 @@ async fn test_multi_choice_approval_workflow() {
     // Pattern 6: Multi-Choice - Select one or more branches
     let result = engine
         .execute_pattern(PatternId(6), ctx.clone())
+        .await
         .expect("Multi-choice approval should execute");
 
     // Assert: Multiple approvals selected
@@ -671,6 +680,7 @@ async fn test_retry_workflow_with_structured_loop() {
     // Pattern 28: Structured Loop
     let result = engine
         .execute_pattern(PatternId(28), ctx.clone())
+        .await
         .expect("Retry loop should execute");
 
     // Assert: Retry loop completed
@@ -703,6 +713,7 @@ async fn test_milestone_based_workflow_enables_activity() {
     // Pattern 18: Milestone
     let result = engine
         .execute_pattern(PatternId(18), ctx.clone())
+        .await
         .expect("Milestone workflow should execute");
 
     // Assert: Activity enabled after milestone
@@ -733,6 +744,7 @@ async fn test_milestone_based_workflow_blocks_activity() {
     // Pattern 18: Milestone
     let result = engine
         .execute_pattern(PatternId(18), ctx.clone())
+        .await
         .expect("Milestone workflow should execute");
 
     // Assert: Activity blocked when milestone not reached
@@ -775,6 +787,7 @@ async fn test_complex_order_fulfillment_workflow() {
     // Pattern 1: Sequence
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("Complex workflow should execute");
 
     // Assert: Complex workflow completed
@@ -806,6 +819,7 @@ async fn test_high_volume_workflow_processing() {
 
         let result = engine
             .execute_pattern(PatternId(12), ctx)
+            .await
             .expect("High volume processing should execute");
         results.push(result);
     }

@@ -10,10 +10,10 @@
 //! - workflow pattern: Execute a workflow pattern
 //! - workflow patterns: List all 43 patterns
 
+use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use knhk_workflow_engine::{
-    case::CaseId, error::WorkflowResult, parser::WorkflowSpecId, patterns::PatternId,
-    state::StateStore, WorkflowEngine,
+    case::CaseId, parser::WorkflowSpecId, patterns::PatternId, state::StateStore, WorkflowEngine,
 };
 
 /// Global workflow engine instance

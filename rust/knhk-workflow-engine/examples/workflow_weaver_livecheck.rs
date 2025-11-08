@@ -4,17 +4,16 @@
 //! that can be validated by Weaver live-check.
 //!
 //! Usage:
-//!   cargo run --example workflow_weaver_livecheck --features otel
+//!   cargo run --example workflow_weaver_livecheck
 //!
 //! With OTLP endpoint:
 //!   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 cargo run --example workflow_weaver_livecheck
 
-use knhk_otel::{SpanStatus, Tracer};
+use knhk_otel::SpanStatus;
 use knhk_workflow_engine::integration::OtelIntegration;
 use knhk_workflow_engine::{
     CaseId, PatternId, StateStore, WorkflowEngine, WorkflowParser, WorkflowSpecId,
 };
-use std::collections::HashMap;
 use tempfile::TempDir;
 
 #[tokio::main]
@@ -218,20 +217,6 @@ ex:task-process yawl:flowsTo ex:end .
     println!("\n9️⃣ Exporting telemetry to OTLP endpoint...");
     otel.export().await?;
     println!("   ✅ Telemetry exported to {}", otlp_endpoint);
-
-    println!("\n✅ Workflow execution complete!");
-    println!("\n📊 Telemetry Summary:");
-    println!("   - Workflow spans: 1");
-    println!("   - Case spans: 1");
-    println!("   - Pattern spans: 2");
-    println!("   - Total spans: 4");
-    println!("\n🔍 Next steps:");
-    println!(
-        "   1. Ensure OTLP collector is running on {}",
-        otlp_endpoint
-    );
-    println!("   2. Run: weaver registry live-check --registry registry/");
-    println!("   3. Verify spans match schema definitions");
 
     Ok(())
 }
