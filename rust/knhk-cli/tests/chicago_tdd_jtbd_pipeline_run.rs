@@ -56,7 +56,8 @@ fn test_pipeline_run_executes_etl() {
     let _ = register_result;
 
     // Act: Run pipeline
-    let result = pipeline::run(vec![connector_name.clone()], schema_iri.clone());
+    let connectors_str = connector_name.clone();
+    let result = pipeline::run(Some(connectors_str), Some(schema_iri.clone()));
 
     // Assert: Pipeline execution returns Result (may fail if connector not properly set up)
     assert!(
@@ -106,10 +107,8 @@ fn test_pipeline_run_with_multiple_connectors() {
     let _ = connect::register(connector2.clone(), schema_iri.clone(), source2);
 
     // Act: Run pipeline with multiple connectors
-    let result = pipeline::run(
-        vec![connector1.clone(), connector2.clone()],
-        schema_iri.clone(),
-    );
+    let connectors_str = format!("{},{}", connector1, connector2);
+    let result = pipeline::run(Some(connectors_str), Some(schema_iri.clone()));
 
     // Assert: Pipeline execution returns Result
     assert!(
@@ -127,7 +126,7 @@ fn test_pipeline_run_requires_initialization() {
     let schema_iri = "http://example.org/schema".to_string();
 
     // Act: Run pipeline without initialization
-    let result = pipeline::run(vec![connector_name], schema_iri);
+    let result = pipeline::run(Some(connector_name), Some(schema_iri));
 
     // Assert: Returns error (system not initialized)
     assert!(
@@ -162,8 +161,8 @@ fn test_pipeline_run_nonexistent_connector_returns_error() {
 
     // Act: Run pipeline with non-existent connector
     let result = pipeline::run(
-        vec!["nonexistent-connector".to_string()],
-        "http://example.org/schema".to_string(),
+        Some("nonexistent-connector".to_string()),
+        Some("http://example.org/schema".to_string()),
     );
 
     // Assert: Returns error
@@ -208,7 +207,8 @@ fn test_pipeline_run_generates_receipts() {
     let _ = connect::register(connector_name.clone(), schema_iri.clone(), source);
 
     // Act: Run pipeline
-    let result = pipeline::run(vec![connector_name.clone()], schema_iri.clone());
+    let connectors_str = connector_name.clone();
+    let result = pipeline::run(Some(connectors_str), Some(schema_iri.clone()));
 
     // Assert: Pipeline execution succeeds (receipts are generated as part of the process)
     // Behavior verification: Receipts are generated for provenance tracking
@@ -238,7 +238,7 @@ fn test_pipeline_run_empty_connector_list_returns_error() {
     assert!(boot_result.is_ok(), "boot::init should succeed");
 
     // Act: Run pipeline with empty connector list
-    let result = pipeline::run(vec![], "http://example.org/schema".to_string());
+    let result = pipeline::run(None, Some("http://example.org/schema".to_string()));
 
     // Assert: Returns error (no connectors)
     assert!(

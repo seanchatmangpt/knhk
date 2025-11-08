@@ -378,31 +378,163 @@ impl KafkaConnector {
 
         match self.format {
             DataFormat::JsonLd => {
-                // Parse JSON-LD message
-                // Extract S/P/O from JSON based on mapping
-                // For v1.0, assume simple JSON format: {"s": <hash>, "p": <hash>, "o": <hash>}
-                #[cfg(feature = "kafka")]
+                // Parse JSON-LD message using simdjson for fast parsing
+                #[cfg(all(feature = "kafka", feature = "simd-json"))]
                 {
-                    use alloc::string::String;
+                    use simd_json::prelude::*;
 
-                    // Parse JSON (simplified - in production use serde_json)
+                    if payload.is_empty() {
+                        return Ok(Vec::new());
+                    }
+
+                    // Clone bytes for simdjson (it needs mutable access)
+                    let mut json_data = payload.to_vec();
+
+                    // Parse with simdjson
+                    let value: simd_json::OwnedValue = simd_json::from_slice(&mut json_data)
+                        .map_err(|e| format!("Failed to parse JSON with simdjson: {}", e))?;
+
+                    let mut triples = Vec::new();
+
+                    // Try simple format: {"s": <hash>, "p": <hash>, "o": <hash>}
+                    if let Some(obj) = value.as_object() {
+                        if let (Some(s_val), Some(p_val), Some(o_val)) = (
+                            obj.get("s").or_else(|| obj.get("subject")),
+                            obj.get("p").or_else(|| obj.get("predicate")),
+                            obj.get("o").or_else(|| obj.get("object")),
+                        ) {
+                            // Extract numeric values (hashes)
+                            let s = s_val
+                                .as_u64()
+                                .or_else(|| s_val.as_str().and_then(|s| s.parse::<u64>().ok()))
+                                .ok_or_else(|| "Invalid subject value".to_string())?;
+
+                            let p = p_val
+                                .as_u64()
+                                .or_else(|| p_val.as_str().and_then(|s| s.parse::<u64>().ok()))
+                                .ok_or_else(|| "Invalid predicate value".to_string())?;
+
+                            let o = o_val
+                                .as_u64()
+                                .or_else(|| o_val.as_str().and_then(|s| s.parse::<u64>().ok()))
+                                .ok_or_else(|| "Invalid object value".to_string())?;
+
+                            let g = obj.get("g").or_else(|| obj.get("graph")).and_then(|v| {
+                                v.as_u64()
+                                    .or_else(|| v.as_str().and_then(|s| s.parse::<u64>().ok()))
+                            });
+
+                            triples.push(Triple {
+                                subject: s & 0xFFFFFFFFFFFF,
+                                predicate: p & 0xFFFFFFFFFFFF,
+                                object: o & 0xFFFFFFFFFFFF,
+                                graph: g.map(|g| g & 0xFFFFFFFFFFFF),
+                            });
+                        } else if let Some(additions) = obj.get("additions") {
+                            // Array format: {"additions": [{"s": ..., "p": ..., "o": ...}]}
+                            if let Some(arr) = additions.as_array() {
+                                for item in arr {
+                                    if let Some(item_obj) = item.as_object() {
+                                        if let (Some(s_val), Some(p_val), Some(o_val)) = (
+                                            item_obj.get("s").or_else(|| item_obj.get("subject")),
+                                            item_obj.get("p").or_else(|| item_obj.get("predicate")),
+                                            item_obj.get("o").or_else(|| item_obj.get("object")),
+                                        ) {
+                                            let s = s_val
+                                                .as_u64()
+                                                .or_else(|| {
+                                                    s_val
+                                                        .as_str()
+                                                        .and_then(|s| s.parse::<u64>().ok())
+                                                })
+                                                .unwrap_or(0);
+
+                                            let p = p_val
+                                                .as_u64()
+                                                .or_else(|| {
+                                                    p_val
+                                                        .as_str()
+                                                        .and_then(|s| s.parse::<u64>().ok())
+                                                })
+                                                .unwrap_or(0);
+
+                                            let o = o_val
+                                                .as_u64()
+                                                .or_else(|| {
+                                                    o_val
+                                                        .as_str()
+                                                        .and_then(|s| s.parse::<u64>().ok())
+                                                })
+                                                .unwrap_or(0);
+
+                                            triples.push(Triple {
+                                                subject: s & 0xFFFFFFFFFFFF,
+                                                predicate: p & 0xFFFFFFFFFFFF,
+                                                object: o & 0xFFFFFFFFFFFF,
+                                                graph: None,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if let Some(arr) = value.as_array() {
+                        // Array format: [{"s": ..., "p": ..., "o": ...}]
+                        for item in arr {
+                            if let Some(item_obj) = item.as_object() {
+                                if let (Some(s_val), Some(p_val), Some(o_val)) = (
+                                    item_obj.get("s").or_else(|| item_obj.get("subject")),
+                                    item_obj.get("p").or_else(|| item_obj.get("predicate")),
+                                    item_obj.get("o").or_else(|| item_obj.get("object")),
+                                ) {
+                                    let s = s_val
+                                        .as_u64()
+                                        .or_else(|| {
+                                            s_val.as_str().and_then(|s| s.parse::<u64>().ok())
+                                        })
+                                        .unwrap_or(0);
+
+                                    let p = p_val
+                                        .as_u64()
+                                        .or_else(|| {
+                                            p_val.as_str().and_then(|s| s.parse::<u64>().ok())
+                                        })
+                                        .unwrap_or(0);
+
+                                    let o = o_val
+                                        .as_u64()
+                                        .or_else(|| {
+                                            o_val.as_str().and_then(|s| s.parse::<u64>().ok())
+                                        })
+                                        .unwrap_or(0);
+
+                                    triples.push(Triple {
+                                        subject: s & 0xFFFFFFFFFFFF,
+                                        predicate: p & 0xFFFFFFFFFFFF,
+                                        object: o & 0xFFFFFFFFFFFF,
+                                        graph: None,
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    Ok(triples)
+                }
+                #[cfg(not(all(feature = "kafka", feature = "simd-json")))]
+                {
+                    // Fallback to basic string matching if simd-json not available
+                    use alloc::string::String;
                     let json_str = core::str::from_utf8(payload)
                         .map_err(|e| format!("Invalid UTF-8: {}", e))?;
 
-                    // Basic JSON parsing for triple extraction
-                    // Look for "s", "p", "o" fields
                     let mut triples = Vec::new();
 
-                    // Simple JSON extraction: find numeric values for s/p/o
-                    // Current implementation uses basic string matching (acceptable for 80/20)
-                    // Full JSON parser with schema mapping planned for v1.0
                     if json_str.contains("\"s\"")
                         && json_str.contains("\"p\"")
                         && json_str.contains("\"o\"")
                     {
                         // Extract hash values (simplified)
-                        // For now, generate deterministic hash from payload
-                        // Use simple hash function (FNV-1a) for no_std compatibility
                         let mut hash = 14695981039346656037u64; // FNV offset basis
                         const FNV_PRIME: u64 = 1099511628211;
                         for byte in json_str.as_bytes() {
@@ -410,9 +542,6 @@ impl KafkaConnector {
                             hash = hash.wrapping_mul(FNV_PRIME);
                         }
 
-                        // Create triple with extracted values
-                        // Current implementation uses simplified parsing (acceptable for 80/20)
-                        // Full JSON parsing with schema mapping planned for v1.0
                         triples.push(Triple {
                             subject: hash & 0xFFFFFFFFFFFF,
                             predicate: (hash >> 16) & 0xFFFFFFFFFFFF,
@@ -422,10 +551,6 @@ impl KafkaConnector {
                     }
 
                     Ok(triples)
-                }
-                #[cfg(not(feature = "kafka"))]
-                {
-                    Ok(Vec::new())
                 }
             }
             DataFormat::RdfTurtle => {

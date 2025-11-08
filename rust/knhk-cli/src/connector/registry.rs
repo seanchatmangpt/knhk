@@ -5,6 +5,9 @@ use knhk_connectors::Connector;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+// Re-export for use in save_to_storage
+use connect::{save_connectors, ConnectorStorage, ConnectorStorageEntry};
+
 /// Connector registry - Manages connector instances
 pub struct ConnectorRegistry {
     connectors: HashMap<String, Arc<dyn Connector>>,
@@ -25,10 +28,46 @@ impl ConnectorRegistry {
 
     /// Load connectors from storage
     fn load_connectors(&mut self) -> Result<(), String> {
-        // Load connectors from persistent storage
-        // For now, connectors are loaded on-demand when registered
-        // Future: Load from Oxigraph or file-based storage
+        let storage = connect::load_connectors()?;
+
+        for entry in storage.connectors {
+            match crate::connector::factory::ConnectorFactory::create(&entry.source) {
+                Ok(connector) => {
+                    self.connectors.insert(entry.name, Arc::from(connector));
+                }
+                Err(e) => {
+                    // Log error but continue loading other connectors
+                    eprintln!("Warning: Failed to load connector '{}': {}", entry.name, e);
+                }
+            }
+        }
+
         Ok(())
+    }
+
+    /// Save connectors to storage
+    fn save_to_storage(&self) -> Result<(), String> {
+        // Load existing storage to preserve source/schema info
+        let existing_storage = connect::load_connectors().unwrap_or_else(|_| ConnectorStorage {
+            connectors: Vec::new(),
+        });
+
+        // Create map of existing entries
+        let mut entry_map: std::collections::HashMap<String, ConnectorStorageEntry> =
+            existing_storage
+                .connectors
+                .into_iter()
+                .map(|e| (e.name.clone(), e))
+                .collect();
+
+        // Keep only entries for connectors that exist in registry
+        entry_map.retain(|name, _| self.connectors.contains_key(name));
+
+        let storage = ConnectorStorage {
+            connectors: entry_map.into_values().collect(),
+        };
+
+        save_connectors(&storage)
     }
 
     /// Get connector by name
@@ -51,7 +90,10 @@ impl ConnectorRegistry {
         }
 
         let connector = crate::connector::factory::ConnectorFactory::create(&source)?;
-        self.connectors.insert(name, Arc::from(connector));
+        self.connectors.insert(name.clone(), Arc::from(connector));
+
+        // Save to persistent storage
+        self.save_to_storage()?;
 
         Ok(())
     }

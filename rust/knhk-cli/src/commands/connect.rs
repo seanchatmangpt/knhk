@@ -37,6 +37,17 @@ pub fn register(name: String, schema: String, source: String) -> Result<(), Stri
     // Register connector (registry handles ConnectorSpec creation internally)
     registry.register(name.clone(), source.clone())?;
 
+    // Save connector metadata to storage
+    let mut storage = load_connectors()?;
+    if !storage.connectors.iter().any(|c| c.name == name) {
+        storage.connectors.push(ConnectorStorageEntry {
+            name: name.clone(),
+            schema: schema.clone(),
+            source: source.clone(),
+        });
+        save_connectors(&storage)?;
+    }
+
     println!("  ✓ Schema: {}", schema);
     println!("  ✓ Source: {}", source);
     println!("✓ Connector registered");
@@ -108,13 +119,29 @@ fn get_config_dir() -> Result<PathBuf, String> {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ConnectorStorage {
-    connectors: Vec<ConnectorStorageEntry>,
+pub(crate) struct ConnectorStorage {
+    pub connectors: Vec<ConnectorStorageEntry>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ConnectorStorageEntry {
-    name: String,
-    schema: String,
-    source: String,
+pub(crate) struct ConnectorStorageEntry {
+    pub name: String,
+    pub schema: String,
+    pub source: String,
+}
+
+/// Save connectors to storage
+pub(crate) fn save_connectors(storage: &ConnectorStorage) -> Result<(), String> {
+    let config_dir = get_config_dir()?;
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("Failed to create config directory: {}", e))?;
+
+    let storage_path = config_dir.join("connectors.json");
+    let content = serde_json::to_string_pretty(storage)
+        .map_err(|e| format!("Failed to serialize connector storage: {}", e))?;
+
+    std::fs::write(&storage_path, content)
+        .map_err(|e| format!("Failed to write connector storage: {}", e))?;
+
+    Ok(())
 }

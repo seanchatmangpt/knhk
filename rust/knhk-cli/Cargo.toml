@@ -35,6 +35,7 @@ knhk-otel = { path = "../knhk-otel", version = "1.0.0", optional = true, feature
 ] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+simd-json = { version = "0.14", features = ["known-key"] }
 thiserror = "2.0"
 linkme = "0.3"
 

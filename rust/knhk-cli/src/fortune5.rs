@@ -9,21 +9,8 @@ use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
 
-#[derive(Serialize, Debug)]
-struct TestResult {
-    category: String,
-    passed: usize,
-    failed: usize,
-    total: usize,
-}
-
-#[derive(Serialize, Debug)]
-struct TestSummary {
-    total_tests: usize,
-    passed: usize,
-    failed: usize,
-    categories: Vec<TestResult>,
-}
+// Re-export types from implementation
+pub use fortune5_impl::{TestResult, TestSummary};
 
 /// Run all Fortune 5 tests
 #[verb] // Noun "fortune5" auto-inferred from filename "fortune5.rs"

@@ -235,8 +235,13 @@ impl KgcSidecar for KgcSidecarService {
         );
 
         // Extract RDF data from delta (support both protobuf and JSON formats)
-        let raw_triples = if let Some(delta) = req.delta {
-            // Protobuf format: convert to RawTriple
+        let raw_triples = if !req.json_data.is_empty() {
+            // JSON format: parse with simdjson (preferred, faster)
+            parse_json_triples(&req.json_data).map_err(|e| {
+                tonic::Status::invalid_argument(format!("Failed to parse JSON data: {}", e))
+            })?
+        } else if let Some(delta) = req.delta {
+            // Protobuf format: convert to RawTriple (backward compatible)
             let mut all_triples: Vec<knhk_etl::ingest::RawTriple> = Vec::new();
             for triple in delta.additions {
                 all_triples.push(knhk_etl::ingest::RawTriple {
@@ -253,10 +258,9 @@ impl KgcSidecar for KgcSidecarService {
             // Note: Removals handled separately in pipeline
             all_triples
         } else {
-            // JSON format: parse with simdjson (when json_data field is added in proto)
-            // For now, fall back to error if no delta provided
+            // No data provided
             return Err(tonic::Status::invalid_argument(
-                "Delta is required in ApplyTransactionRequest",
+                "Either json_data or delta is required in ApplyTransactionRequest",
             ));
         };
 
@@ -543,7 +547,7 @@ impl KgcSidecar for KgcSidecarService {
                 // SELECT query: Return triples (warm path)
                 1 => {
                     // Parse query data if provided (support JSON and Turtle)
-                    let triples = parse_query_data(&req.data, &req.data_format)?;
+                    let triples = parse_query_data(&req.data, &req.json_data, &req.data_format)?;
 
                     // Return triple subjects as results
                     Ok(triples.iter().map(|t| t.subject.clone()).collect())
@@ -551,7 +555,7 @@ impl KgcSidecar for KgcSidecarService {
                 // CONSTRUCT query: Build new graph
                 2 => {
                     // Parse query data if provided (support JSON and Turtle)
-                    let triples = parse_query_data(&req.data, &req.data_format)?;
+                    let triples = parse_query_data(&req.data, &req.json_data, &req.data_format)?;
 
                     // Return constructed triples as N-Triples format
                     Ok(triples
@@ -631,37 +635,43 @@ impl KgcSidecar for KgcSidecarService {
             let ingest =
                 knhk_etl::IngestStage::new(vec!["validation".to_string()], "turtle".to_string());
 
-            let triples = match req.data_format.as_str() {
-                "json" | "json-ld" | "application/json" => {
-                    // Use simdjson for fast JSON parsing
-                    parse_json_triples(&req.rdf_data)?
-                }
-                "turtle" | "text/turtle" | "" => {
-                    // Use oxigraph for Turtle parsing
-                    let turtle_data = String::from_utf8(req.rdf_data.clone()).map_err(|e| {
-                        SidecarError::validation_failed(format!("Invalid UTF-8: {}", e))
-                    })?;
-                    ingest
-                        .parse_rdf_turtle(&turtle_data)
-                        .map_err(|e| SidecarError::validation_failed(e.message().to_string()))?
-                }
-                _ => {
-                    // Auto-detect: if starts with { or [, assume JSON
-                    if req
-                        .rdf_data
-                        .first()
-                        .map(|&b| b == b'{' || b == b'[')
-                        .unwrap_or(false)
-                    {
+            // Prefer json_data if provided (faster parsing)
+            let triples = if !req.json_data.is_empty() {
+                parse_json_triples(&req.json_data)?
+            } else {
+                match req.data_format.as_str() {
+                    "json" | "json-ld" | "application/json" => {
+                        // Use simdjson for fast JSON parsing
                         parse_json_triples(&req.rdf_data)?
-                    } else {
-                        // Default to Turtle
+                    }
+                    "turtle" | "text/turtle" | "" => {
+                        // Use oxigraph for Turtle parsing
                         let turtle_data = String::from_utf8(req.rdf_data.clone()).map_err(|e| {
                             SidecarError::validation_failed(format!("Invalid UTF-8: {}", e))
                         })?;
                         ingest
                             .parse_rdf_turtle(&turtle_data)
                             .map_err(|e| SidecarError::validation_failed(e.message().to_string()))?
+                    }
+                    _ => {
+                        // Auto-detect: if starts with { or [, assume JSON
+                        if req
+                            .rdf_data
+                            .first()
+                            .map(|&b| b == b'{' || b == b'[')
+                            .unwrap_or(false)
+                        {
+                            parse_json_triples(&req.rdf_data)?
+                        } else {
+                            // Default to Turtle
+                            let turtle_data =
+                                String::from_utf8(req.rdf_data.clone()).map_err(|e| {
+                                    SidecarError::validation_failed(format!("Invalid UTF-8: {}", e))
+                                })?;
+                            ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
+                                SidecarError::validation_failed(e.message().to_string())
+                            })?
+                        }
                     }
                 }
             };
@@ -746,37 +756,49 @@ impl KgcSidecar for KgcSidecarService {
             // Parse RDF data based on format (support JSON and Turtle)
             let ingest = knhk_etl::IngestStage::new(vec!["hook".to_string()], "turtle".to_string());
 
-            let triples = match req.data_format.as_str() {
-                "json" | "json-ld" | "application/json" => {
-                    // Use simdjson for fast JSON parsing
-                    parse_json_triples(&req.rdf_data)?
-                }
-                "turtle" | "text/turtle" | "" => {
-                    // Use oxigraph for Turtle parsing
-                    let turtle_data = String::from_utf8(req.rdf_data.clone()).map_err(|e| {
-                        SidecarError::hook_evaluation_failed(format!("Invalid UTF-8: {}", e))
-                    })?;
-                    ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
-                        SidecarError::hook_evaluation_failed(format!("Ingest failed: {:?}", e))
-                    })?
-                }
-                _ => {
-                    // Auto-detect: if starts with { or [, assume JSON
-                    if req
-                        .rdf_data
-                        .first()
-                        .map(|&b| b == b'{' || b == b'[')
-                        .unwrap_or(false)
-                    {
+            // Prefer json_data if provided (faster parsing)
+            let triples = if !req.json_data.is_empty() {
+                parse_json_triples(&req.json_data)?
+            } else {
+                match req.data_format.as_str() {
+                    "json" | "json-ld" | "application/json" => {
+                        // Use simdjson for fast JSON parsing
                         parse_json_triples(&req.rdf_data)?
-                    } else {
-                        // Default to Turtle
+                    }
+                    "turtle" | "text/turtle" | "" => {
+                        // Use oxigraph for Turtle parsing
                         let turtle_data = String::from_utf8(req.rdf_data.clone()).map_err(|e| {
                             SidecarError::hook_evaluation_failed(format!("Invalid UTF-8: {}", e))
                         })?;
                         ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
                             SidecarError::hook_evaluation_failed(format!("Ingest failed: {:?}", e))
                         })?
+                    }
+                    _ => {
+                        // Auto-detect: if starts with { or [, assume JSON
+                        if req
+                            .rdf_data
+                            .first()
+                            .map(|&b| b == b'{' || b == b'[')
+                            .unwrap_or(false)
+                        {
+                            parse_json_triples(&req.rdf_data)?
+                        } else {
+                            // Default to Turtle
+                            let turtle_data =
+                                String::from_utf8(req.rdf_data.clone()).map_err(|e| {
+                                    SidecarError::hook_evaluation_failed(format!(
+                                        "Invalid UTF-8: {}",
+                                        e
+                                    ))
+                                })?;
+                            ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
+                                SidecarError::hook_evaluation_failed(format!(
+                                    "Ingest failed: {:?}",
+                                    e
+                                ))
+                            })?
+                        }
                     }
                 }
             };

@@ -5,7 +5,6 @@
 use crate::error::{SidecarError, SidecarResult};
 use knhk_etl::ingest::RawTriple;
 use simd_json::prelude::*;
-use std::collections::HashMap;
 
 /// JSON Delta structure for transaction requests
 /// Supports both simple JSON format and JSON-LD format
