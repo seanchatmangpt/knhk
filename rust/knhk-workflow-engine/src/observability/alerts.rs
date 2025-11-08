@@ -31,7 +31,7 @@ pub struct AlertRule {
     /// Cooldown period (prevent alert spam)
     pub cooldown: Duration,
     /// Condition check function (not serialized)
-    #[serde(skip)]
+    #[serde(skip_serializing, skip_deserializing)]
     pub condition: Box<dyn Fn() -> bool + Send + Sync>,
 }
 

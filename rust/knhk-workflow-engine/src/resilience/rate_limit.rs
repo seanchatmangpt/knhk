@@ -4,6 +4,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use governor::{
+    clock::DefaultClock,
     state::keyed::DefaultKeyedStateStore,
     state::{InMemoryState, NotKeyed},
     Quota, RateLimiter as GovernorRateLimiter,
@@ -90,7 +91,10 @@ impl RateLimiter {
 }
 
 /// Keyed rate limiter for per-workflow/per-pattern rate limiting
-pub struct KeyedRateLimiter<K> {
+pub struct KeyedRateLimiter<K>
+where
+    K: std::hash::Hash + Eq + Clone + Send + Sync + 'static + std::fmt::Debug,
+{
     limiter: Arc<GovernorRateLimiter<K, DefaultKeyedStateStore<K>, DefaultClock>>,
     name: String,
 }

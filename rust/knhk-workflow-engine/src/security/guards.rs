@@ -37,7 +37,7 @@ pub struct GuardContext {
     /// Workflow specification
     pub workflow_spec: Option<Arc<WorkflowSpec>>,
     /// RDF store for SHACL validation
-    #[serde(skip)]
+    #[serde(skip_serializing, skip_deserializing)]
     pub rdf_store: Option<Arc<Store>>,
     /// Additional context data
     pub metadata: Value,
