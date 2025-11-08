@@ -234,21 +234,18 @@ impl PipelineStage for OptimizationStage {
 /// Execution stage - prepares for execution
 struct ExecutionStage;
 
+#[async_trait]
 impl PipelineStage for ExecutionStage {
-    fn process(
+    async fn process(
         &self,
         _registry: &PatternRegistry,
         _pattern_id: PatternId,
         context: PatternExecutionContext,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>,
-    > {
-        Box::pin(async move {
-            // FUTURE: Add execution preparation like:
-            // - Resource pre-allocation
-            // - Dependency resolution
-            // - Execution plan creation
-            Ok(context)
-        })
+    ) -> WorkflowResult<PatternExecutionContext> {
+        // FUTURE: Add execution preparation like:
+        // - Resource pre-allocation
+        // - Dependency resolution
+        // - Execution plan creation
+        Ok(context)
     }
 }

@@ -5,6 +5,8 @@ pub mod advanced;
 pub mod advanced_control;
 pub mod basic;
 pub mod cancellation;
+pub mod joins;
+pub mod mi;
 pub mod multiple_instance;
 pub mod state_based;
 pub mod trigger;
@@ -44,6 +46,22 @@ pub struct PatternExecutionContext {
     pub workflow_id: crate::parser::WorkflowSpecId,
     /// Variables for pattern execution
     pub variables: HashMap<String, String>,
+    /// Upstream completions present for a join node (edge ids)
+    pub arrived_from: std::collections::HashSet<String>,
+    /// Region/scope id (for cancel & MI)
+    pub scope_id: String,
+}
+
+impl Default for PatternExecutionContext {
+    fn default() -> Self {
+        Self {
+            case_id: crate::case::CaseId::new(),
+            workflow_id: crate::parser::WorkflowSpecId::new(),
+            variables: HashMap::new(),
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
+        }
+    }
 }
 
 /// Pattern execution result
@@ -124,6 +142,18 @@ impl PatternRegistry {
 impl Default for PatternRegistry {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Trait extension for registering all patterns
+pub trait RegisterAllExt {
+    /// Register all 43 Van der Aalst workflow patterns
+    fn register_all_patterns(&mut self);
+}
+
+impl RegisterAllExt for PatternRegistry {
+    fn register_all_patterns(&mut self) {
+        register_all_patterns(self);
     }
 }
 

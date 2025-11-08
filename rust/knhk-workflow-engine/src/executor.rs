@@ -9,17 +9,18 @@ use crate::integration::SidecarIntegration;
 use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::patterns::{
-    PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
+    PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry, RegisterAllExt,
 };
 use crate::resource::{AllocationRequest, ResourceAllocator};
 use crate::security::AuthManager;
+use crate::services::{AdmissionGate, EventSidecar, TimerFired, TimerService, WorkItemService};
 use crate::state::StateStore;
 use crate::validation::DeadlockDetector;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc, RwLock};
 
 /// Workflow execution engine
 pub struct WorkflowEngine {
@@ -37,6 +38,14 @@ pub struct WorkflowEngine {
     worklet_repository: Arc<WorkletRepository>,
     /// Worklet executor
     worklet_executor: Arc<WorkletExecutor>,
+    /// Timer service
+    timer_service: Arc<TimerService>,
+    /// Work item service
+    work_item_service: Arc<WorkItemService>,
+    /// Admission gate
+    admission_gate: Arc<AdmissionGate>,
+    /// Event sidecar
+    event_sidecar: Arc<EventSidecar>,
     /// Enterprise configuration
     enterprise_config: Option<Arc<EnterpriseConfig>>,
     /// Fortune 5 integration (if enabled)
@@ -57,13 +66,23 @@ impl WorkflowEngine {
     /// Create a new workflow engine with all 43 patterns registered
     pub fn new(state_store: StateStore) -> Self {
         let mut registry = PatternRegistry::new();
-        crate::patterns::register_all_patterns(&mut registry);
+        registry.register_all_patterns();
 
         let resource_allocator = Arc::new(ResourceAllocator::new());
         let worklet_repository = Arc::new(WorkletRepository::new());
         let worklet_executor = Arc::new(WorkletExecutor::new(worklet_repository.clone()));
 
-        Self {
+        // Create event channels
+        let (timer_tx, timer_rx) = mpsc::channel::<TimerFired>(1024);
+        let (event_tx, event_rx) = mpsc::channel::<serde_json::Value>(1024);
+
+        // Create services
+        let timer_service = Arc::new(TimerService::new(timer_tx.clone()));
+        let work_item_service = Arc::new(WorkItemService::new());
+        let admission_gate = Arc::new(AdmissionGate::new());
+        let event_sidecar = Arc::new(EventSidecar::new(event_tx.clone()));
+
+        let engine = Self {
             pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store)),
             specs: Arc::new(RwLock::new(HashMap::new())),
@@ -71,6 +90,10 @@ impl WorkflowEngine {
             resource_allocator,
             worklet_repository,
             worklet_executor,
+            timer_service: timer_service.clone(),
+            work_item_service,
+            admission_gate,
+            event_sidecar: event_sidecar.clone(),
             enterprise_config: None,
             otel_integration: None,
             lockchain_integration: None,
@@ -78,7 +101,99 @@ impl WorkflowEngine {
             provenance_tracker: None,
             fortune5_integration: None,
             sidecar_integration: None,
+        };
+
+        // Start event loops
+        let engine_clone = Arc::new(engine.clone_for_events());
+        Self::start_timer_loop(engine_clone.clone(), timer_rx);
+        Self::start_event_loop(engine_clone, event_rx);
+
+        engine
+    }
+
+    /// Clone engine for event loops (minimal clone)
+    fn clone_for_events(&self) -> Self {
+        Self {
+            pattern_registry: Arc::clone(&self.pattern_registry),
+            state_store: Arc::clone(&self.state_store),
+            specs: Arc::clone(&self.specs),
+            cases: Arc::clone(&self.cases),
+            resource_allocator: Arc::clone(&self.resource_allocator),
+            worklet_repository: Arc::clone(&self.worklet_repository),
+            worklet_executor: Arc::clone(&self.worklet_executor),
+            timer_service: Arc::clone(&self.timer_service),
+            work_item_service: Arc::clone(&self.work_item_service),
+            admission_gate: Arc::clone(&self.admission_gate),
+            event_sidecar: Arc::clone(&self.event_sidecar),
+            enterprise_config: self.enterprise_config.as_ref().map(Arc::clone),
+            otel_integration: self.otel_integration.as_ref().map(Arc::clone),
+            lockchain_integration: self.lockchain_integration.as_ref().map(Arc::clone),
+            auth_manager: self.auth_manager.as_ref().map(Arc::clone),
+            provenance_tracker: self.provenance_tracker.as_ref().map(Arc::clone),
+            fortune5_integration: self.fortune5_integration.as_ref().map(Arc::clone),
+            sidecar_integration: self.sidecar_integration.as_ref().map(Arc::clone),
         }
+    }
+
+    /// Start timer event loop
+    fn start_timer_loop(engine: Arc<Self>, mut timer_rx: mpsc::Receiver<TimerFired>) {
+        tokio::spawn(async move {
+            while let Some(tf) = timer_rx.recv().await {
+                let ctx = PatternExecutionContext {
+                    case_id: tf.case_id.clone(),
+                    workflow_id: tf.workflow_id.clone(),
+                    variables: {
+                        let mut vars = HashMap::new();
+                        vars.insert("key".to_string(), tf.key.clone());
+                        vars.insert("fired_at".to_string(), tf.fired_at.to_rfc3339());
+                        vars
+                    },
+                };
+                let _ = engine
+                    .execute_pattern(PatternId(tf.pattern_id as u32), ctx)
+                    .await;
+            }
+        });
+    }
+
+    /// Start external event loop (Pattern 16: Deferred Choice)
+    fn start_event_loop(engine: Arc<Self>, mut event_rx: mpsc::Receiver<serde_json::Value>) {
+        tokio::spawn(async move {
+            while let Some(evt) = event_rx.recv().await {
+                let case_id = evt
+                    .get("case_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+                let workflow_id = evt
+                    .get("workflow_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let ctx = PatternExecutionContext {
+                    case_id,
+                    workflow_id,
+                    variables: {
+                        let mut vars = HashMap::new();
+                        if let Some(event_type) = evt.get("event_type").and_then(|v| v.as_str()) {
+                            vars.insert("event_type".to_string(), event_type.to_string());
+                        }
+                        if let Some(data) = evt.get("data") {
+                            if let Some(obj) = data.as_object() {
+                                for (k, v) in obj {
+                                    if let Some(s) = v.as_str() {
+                                        vars.insert(k.clone(), s.to_string());
+                                    }
+                                }
+                            }
+                        }
+                        vars
+                    },
+                };
+                let _ = engine.execute_pattern(PatternId(16), ctx).await; // Pattern 16: Deferred Choice
+            }
+        });
     }
 
     /// Create a new workflow engine with Fortune 5 configuration
