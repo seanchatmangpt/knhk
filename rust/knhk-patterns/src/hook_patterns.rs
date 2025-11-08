@@ -6,7 +6,6 @@ use knhk_etl::{
     hook_orchestration::{HookExecutionContext, HookExecutionPattern, HookExecutionResult},
     hook_registry::HookRegistry,
     load::{LoadResult, PredRun, SoAArrays},
-    PipelineError,
 };
 use std::sync::Arc;
 
@@ -43,7 +42,7 @@ impl HookSequencePattern {
         let orchestrator = HookOrchestrator::new();
         orchestrator
             .execute_with_pattern(context, HookExecutionPattern::Sequence(self.predicates.clone()))
-            .map_err(|e| PatternError::ExecutionFailed(e.to_string()))
+            .map_err(|e| PatternError::ExecutionFailed(e.message().to_string()))
     }
 }
 
@@ -86,7 +85,7 @@ impl HookParallelPattern {
                 context,
                 HookExecutionPattern::Parallel(self.predicates.clone()),
             )
-            .map_err(|e| PatternError::ExecutionFailed(e.to_string()))
+            .map_err(|e| PatternError::ExecutionFailed(e.message().to_string()))
     }
 }
 
@@ -132,7 +131,7 @@ impl HookChoicePattern {
         let orchestrator = HookOrchestrator::new();
         orchestrator
             .execute_with_pattern(context, HookExecutionPattern::Choice(boxed_choices))
-            .map_err(|e| PatternError::ExecutionFailed(e.to_string()))
+            .map_err(|e| PatternError::ExecutionFailed(e.message().to_string()))
     }
 }
 
@@ -185,7 +184,7 @@ impl HookRetryPattern {
                     max_attempts: self.max_attempts,
                 },
             )
-            .map_err(|e| PatternError::ExecutionFailed(e.to_string()))
+            .map_err(|e| PatternError::ExecutionFailed(e.message().to_string()))
     }
 }
 

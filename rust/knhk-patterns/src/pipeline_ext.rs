@@ -4,9 +4,8 @@
 use crate::patterns::{BranchFn, ConditionFn, Pattern, PatternResult};
 use crate::hook_patterns::{HookCondition, HookRetryCondition};
 use knhk_etl::{
-    hook_orchestration::{HookExecutionContext, HookExecutionResult},
+    hook_orchestration::HookExecutionResult,
     hook_registry::HookRegistry,
-    load::LoadResult,
     EmitResult, Pipeline,
 };
 
@@ -165,7 +164,7 @@ impl PipelinePatternExt for Pipeline {
 
         // Create hook execution context
         let context = create_hook_context(
-            hook_registry.clone(),
+            (*hook_registry).clone(),
             load_result,
             8, // tick budget
         );
@@ -190,7 +189,7 @@ impl PipelinePatternExt for Pipeline {
 
         // Create hook execution context
         let context = create_hook_context(
-            hook_registry.clone(),
+            (*hook_registry).clone(),
             load_result,
             8, // tick budget
         );
@@ -217,7 +216,7 @@ impl PipelinePatternExt for Pipeline {
 
         // Create hook execution context
         let context = create_hook_context(
-            hook_registry.clone(),
+            (*hook_registry).clone(),
             load_result,
             8, // tick budget
         );

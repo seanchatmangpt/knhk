@@ -444,7 +444,7 @@ impl HookOrchestrator {
                 last_receipt = Some(receipt);
                 attempt += 1;
 
-                // Exponential backoff (simplified: just yield)
+                // Exponential backoff (simplified: just yield if std available)
                 #[cfg(feature = "std")]
                 {
                     std::thread::yield_now();

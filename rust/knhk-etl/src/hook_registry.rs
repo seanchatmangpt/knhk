@@ -33,6 +33,7 @@ pub struct HookMetadata {
 
 /// Hook registry for predicate-to-kernel mapping
 /// Implements μ ⊣ H: hooks at ingress point
+#[derive(Clone)]
 pub struct HookRegistry {
     /// Predicate ID → Kernel type mapping
     kernel_map: BTreeMap<u64, KernelType>,
