@@ -128,8 +128,13 @@ pub fn eval(hook_name: String) -> Result<String, String> {
     {
         use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun};
 
-        // Create dummy SoA arrays for evaluation
-        // In production, these would come from loaded ontology O
+        // Load real O from StateManager
+        use crate::state::StateManager;
+        let state_manager = StateManager::new()?;
+        let ontology = state_manager.ontology_loader().load()?;
+
+        // Convert ontology to SoA arrays for evaluation
+        // For now, use dummy arrays - full conversion needs to be implemented
         let mut s_array = [0u64; 8];
         let mut p_array = [0u64; 8];
         let mut o_array = [0u64; 8];

@@ -41,9 +41,10 @@ impl HookStore {
     }
 
     /// Save hook
-    pub fn save(&self, _hook: &HookEntry) -> Result<(), String> {
+    pub fn save(&self, hook: &HookEntry) -> Result<(), String> {
         // Save hook to Oxigraph
         // TODO: Implement actual saving to Oxigraph
         Ok(())
     }
 }
+

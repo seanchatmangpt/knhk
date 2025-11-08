@@ -190,10 +190,13 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             loop {
                 sleep(Duration::from_secs(5)).await;
 
-                let mut process_guard = weaver_monitor_process.lock().map_err(|e| {
-                    error!("Mutex poisoned in weaver monitor: {}", e);
-                    return; // Exit the loop
-                })?;
+                let mut process_guard = match weaver_monitor_process.lock() {
+                    Ok(guard) => guard,
+                    Err(e) => {
+                        error!("Mutex poisoned in weaver monitor: {}", e);
+                        continue; // Skip this iteration
+                    }
+                };
                 let process_needs_restart = match process_guard.as_mut() {
                     Some(process) => {
                         // Check if process is still running
@@ -428,10 +431,13 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             let _ = weaver.stop();
 
             // Also kill the process if still running
-            let mut process_guard = weaver_process.lock().map_err(|e| {
-                error!("Mutex poisoned: {}", e);
-                return; // Continue with cleanup
-            })?;
+            let mut process_guard = match weaver_process.lock() {
+                Ok(guard) => guard,
+                Err(e) => {
+                    error!("Mutex poisoned: {}", e);
+                    return; // Continue with cleanup
+                }
+            };
             if let Some(mut process) = process_guard.take() {
                 let _ = process.kill();
             }
@@ -447,7 +453,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
         let _ = weaver.stop();
 
         // Also kill the process if still running
-        let mut process_guard = weaver_process.lock().await;
+        let mut process_guard = weaver_process.lock();
         if let Some(mut process) = process_guard.take() {
             let _ = process.kill();
             let _ = process.wait();

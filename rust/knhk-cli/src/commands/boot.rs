@@ -1,6 +1,8 @@
 // rust/knhk-cli/src/commands/boot.rs
 // Boot commands - Initialize Σ and Q
 
+use crate::state::StateManager;
+use oxigraph::io::RdfFormat;
 use std::fs;
 use std::path::PathBuf;
 
@@ -96,6 +98,23 @@ pub fn init(sigma: String, q: String) -> Result<PathBuf, String> {
         error!(error = %e, "failed_to_write_invariants");
         format!("Failed to write invariants config: {}", e)
     })?;
+
+    // Save Σ and Q to Oxigraph using StateManager
+    let state_manager = StateManager::new()?;
+
+    // Load schema file and save to Oxigraph
+    let mut schema_store = oxigraph::store::Store::new()
+        .map_err(|e| format!("Failed to create Oxigraph store for schema: {}", e))?;
+    schema_store
+        .load_from_reader(RdfFormat::Turtle, sigma_content.as_bytes())
+        .map_err(|e| format!("Failed to load schema into Oxigraph: {}", e))?;
+
+    // Load invariants file and save to Oxigraph
+    let mut invariant_store = oxigraph::store::Store::new()
+        .map_err(|e| format!("Failed to create Oxigraph store for invariants: {}", e))?;
+    invariant_store
+        .load_from_reader(RdfFormat::Turtle, q_content.as_bytes())
+        .map_err(|e| format!("Failed to load invariants into Oxigraph: {}", e))?;
 
     // Write initialization marker
     let init_marker = config_dir.join(".initialized");

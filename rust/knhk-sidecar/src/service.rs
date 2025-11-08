@@ -348,7 +348,10 @@ impl KgcSidecar for KgcSidecarService {
             vec![
                 ("transaction_id", transaction_id.clone()),
                 ("method", "ApplyTransaction".to_string()),
-                ("rdf_bytes", req.rdf_data.len().to_string()),
+                (
+                    "rdf_bytes",
+                    (delta.additions.len() + delta.removals.len()).to_string(),
+                ),
             ],
         )
         .await;
@@ -634,7 +637,10 @@ impl KgcSidecar for KgcSidecarService {
             vec![
                 ("method", "ValidateGraph".to_string()),
                 ("schema_iri", req.schema_iri.clone()),
-                ("rdf_bytes", req.rdf_data.len().to_string()),
+                (
+                    "rdf_bytes",
+                    (delta.additions.len() + delta.removals.len()).to_string(),
+                ),
             ],
         )
         .await;
@@ -670,10 +676,7 @@ impl KgcSidecar for KgcSidecarService {
         info!(
             "EvaluateHook request received: hook_id={}, rdf_bytes={}",
             req.hook_id,
-            req.delta
-                .as_ref()
-                .map(|d| d.additions.len() + d.removals.len())
-                .unwrap_or(0)
+            req.rdf_data.len()
         );
 
         // Convert RDF data to string
@@ -685,7 +688,7 @@ impl KgcSidecar for KgcSidecarService {
             // 1. Ingest RDF data
             let ingest = knhk_etl::IngestStage::new(vec!["hook".to_string()], "turtle".to_string());
             let triples = ingest.parse_rdf_turtle(&turtle_data).map_err(|e| {
-                SidecarError::hook_evaluation_failed(format!("Ingest failed: {}", e))
+                SidecarError::hook_evaluation_failed(format!("Ingest failed: {:?}", e))
             })?;
 
             let ingest_result = knhk_etl::IngestResult {
@@ -697,20 +700,20 @@ impl KgcSidecar for KgcSidecarService {
             let transform =
                 knhk_etl::TransformStage::new("urn:knhk:schema:hook".to_string(), false);
             let transform_result = transform.transform(ingest_result).map_err(|e| {
-                SidecarError::hook_evaluation_failed(format!("Transform failed: {:?}", e))
+                SidecarError::hook_evaluation_failed(format!("Transform failed: {}", e.message()))
             })?;
 
             // 3. Load into SoA arrays
             let load = knhk_etl::LoadStage::new();
             let load_result = load.load(transform_result).map_err(|e| {
-                SidecarError::hook_evaluation_failed(format!("Load failed: {:?}", e))
+                SidecarError::hook_evaluation_failed(format!("Load failed: {}", e.message()))
             })?;
 
             // 4. Execute hook via Reflex stage (≤8 ticks)
             // This is where the actual hook evaluation happens
             let reflex = knhk_etl::ReflexStage::new();
             let reflex_result = reflex.reflex(load_result).map_err(|e| {
-                SidecarError::hook_evaluation_failed(format!("Reflex failed: {:?}", e))
+                SidecarError::hook_evaluation_failed(format!("Reflex failed: {}", e.message()))
             })?;
 
             // Return first receipt from hook execution

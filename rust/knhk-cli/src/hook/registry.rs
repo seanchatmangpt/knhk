@@ -1,8 +1,8 @@
 //! Hook registry integration - Integrates with knhk-etl HookRegistry
 
-pub mod store;
-
 pub use store::HookStore;
+
+pub mod store;
 
 use knhk_etl::HookRegistry;
 use std::sync::Arc;
@@ -29,7 +29,7 @@ impl HookRegistryIntegration {
     fn load_hooks(&mut self) -> Result<(), String> {
         let hooks = self.store.load_all()?;
 
-        for _hook in hooks {
+        for hook in hooks {
             // Register hook with registry
             // Implementation depends on HookRegistry API
         }
@@ -48,3 +48,4 @@ impl Default for HookRegistryIntegration {
         Self::new().expect("Failed to create hook registry integration")
     }
 }
+

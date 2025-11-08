@@ -27,6 +27,9 @@ impl ConnectorFactory {
             SourceType::File { .. } => {
                 Err("File connector creation requires ConnectorRegistry integration".to_string())
             }
+            SourceType::Sap { .. } => {
+                Err("SAP connector creation requires ConnectorRegistry integration".to_string())
+            }
         }
     }
 

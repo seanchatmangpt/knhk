@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use knhk_etl::integration::IntegratedPipeline;
 
 use crate::commands::connect;
+use crate::connector::ConnectorRegistry;
 
 /// Pipeline execution status
 #[derive(Debug, Serialize, Deserialize)]
