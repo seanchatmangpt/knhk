@@ -39,8 +39,8 @@ fn create_test_context(workflow_id: WorkflowSpecId) -> PatternExecutionContext {
 // Business Scenario 1: Order Processing Workflow
 // ============================================================================
 
-#[test]
-fn test_order_processing_workflow_completes_successfully() {
+#[tokio::test]
+async fn test_order_processing_workflow_completes_successfully() {
     // Business Requirement: Order processing must validate, process payment,
     // and ship items in sequence. Each step must validate prerequisites.
     // Arrange: Create engine and context
@@ -78,6 +78,7 @@ fn test_order_processing_workflow_completes_successfully() {
     // Pattern 1: Sequence - Validate → Process Payment → Ship
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("Order processing workflow should execute");
 
     // Assert: Order processing completed successfully with realistic checks
@@ -106,8 +107,8 @@ fn test_order_processing_workflow_completes_successfully() {
     );
 }
 
-#[test]
-fn test_order_processing_with_parallel_validation() {
+#[tokio::test]
+async fn test_order_processing_with_parallel_validation() {
     // Business Requirement: Order validation should check inventory and
     // customer credit in parallel for performance. Both must pass for order to proceed.
     // Arrange: Create engine and context

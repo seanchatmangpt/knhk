@@ -100,6 +100,9 @@ where
                         WorkflowError::ResourceUnavailable(s.clone())
                     }
                     WorkflowError::Internal(s) => WorkflowError::Internal(s.clone()),
+                    WorkflowError::InvalidSpecification(s) => {
+                        WorkflowError::InvalidSpecification(s.clone())
+                    }
                 });
 
                 // Check if we should retry

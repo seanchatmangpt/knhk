@@ -168,6 +168,10 @@ impl RdfWorkflowParser {
                             output_conditions,
                             outgoing_flows,
                             incoming_flows,
+                            allocation_policy: None,
+                            required_roles: Vec::new(),
+                            required_capabilities: Vec::new(),
+                            exception_worklet: None,
                         },
                     );
                 }

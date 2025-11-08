@@ -97,10 +97,12 @@ impl PatternExecutor for MilestonePattern {
     }
 }
 
+/// Pattern 17: Interleaved Parallel Routing
 pub fn create_pattern_17() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(17), Box::new(InterleavedParallelRoutingPattern))
 }
 
+/// Pattern 18: Milestone
 pub fn create_pattern_18() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(18), Box::new(MilestonePattern))
 }

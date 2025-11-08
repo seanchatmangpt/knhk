@@ -110,18 +110,22 @@ impl PatternExecutor for CancelTriggerPattern {
     }
 }
 
+/// Pattern 40: External Trigger
 pub fn create_pattern_40() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(40), Box::new(ExternalTriggerPattern))
 }
 
+/// Pattern 41: Event-Based Trigger
 pub fn create_pattern_41() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(41), Box::new(EventBasedTriggerPattern))
 }
 
+/// Pattern 42: Time-Based Trigger
 pub fn create_pattern_42() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(42), Box::new(MultipleTriggerPattern))
 }
 
+/// Pattern 43: Message-Based Trigger
 pub fn create_pattern_43() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(43), Box::new(CancelTriggerPattern))
 }

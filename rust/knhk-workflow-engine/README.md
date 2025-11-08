@@ -15,6 +15,9 @@ This crate provides a complete workflow engine that:
 
 - **Full Pattern Support**: All 43 Van der Aalst workflow patterns
 - **YAWL Compatibility**: Parses and executes YAWL workflow definitions
+- **Resource Allocation**: Advanced allocation policies (Four-eyes, Chained, Round-robin, Shortest queue, Role-based, Capability-based)
+- **Worklets**: Dynamic workflow adaptation with worklet repository and exception handling
+- **Deadlock Detection**: Design-time deadlock detection with Petri net analysis
 - **Enterprise APIs**: REST and gRPC interfaces
 - **State Persistence**: Sled-based state store
 - **Observability**: OTEL integration for tracing
@@ -24,21 +27,39 @@ This crate provides a complete workflow engine that:
 
 ```rust
 use knhk_workflow_engine::{WorkflowEngine, WorkflowParser, StateStore};
+use knhk_workflow_engine::resource::{Resource, ResourceAllocator, AllocationPolicy};
+use knhk_workflow_engine::worklets::{Worklet, WorkletRepository};
 
 // Create state store
 let state_store = StateStore::new("./workflow_db")?;
 
-// Create engine
+// Create engine (includes resource allocator and worklet repository)
 let engine = WorkflowEngine::new(state_store);
 
-// Parse workflow from Turtle
+// Register resources
+let resource_allocator = engine.resource_allocator();
+resource_allocator.register_resource(Resource {
+    id: ResourceId::new(),
+    name: "User1".to_string(),
+    roles: vec![],
+    capabilities: vec![],
+    workload: 0,
+    queue_length: 0,
+    available: true,
+}).await?;
+
+// Register worklets
+let worklet_repo = engine.worklet_repository();
+worklet_repo.register(worklet).await?;
+
+// Parse workflow from Turtle (includes deadlock validation)
 let mut parser = WorkflowParser::new()?;
 let spec = parser.parse_file("workflow.ttl")?;
 
-// Register workflow
+// Register workflow (includes deadlock validation)
 engine.register_workflow(spec).await?;
 
-// Create and execute case
+// Create and execute case (includes resource allocation and worklet support)
 let case_id = engine.create_case(spec_id, serde_json::json!({})).await?;
 engine.start_case(case_id).await?;
 engine.execute_case(case_id).await?;
@@ -80,6 +101,14 @@ See `api/grpc.rs` for gRPC service definitions.
 - `sled` - State persistence
 - `axum` - REST API server
 - `tonic` - gRPC framework
+
+## Documentation
+
+For comprehensive documentation, see:
+- **[Workflow Engine Documentation](docs/WORKFLOW_ENGINE.md)** - Complete guide with API reference, examples, and integration guides
+- **[YAWL Implementation Summary](docs/YAWL_IMPLEMENTATION_SUMMARY.md)** - YAWL feature implementation status
+- **[YAWL Feature Comparison](docs/YAWL_FEATURE_COMPARISON.md)** - Comparison with YAWL Java implementation
+- **[Implementation Plan](FORTUNE5_IMPLEMENTATION_PLAN.md)** - Implementation roadmap and checklist
 
 ## License
 

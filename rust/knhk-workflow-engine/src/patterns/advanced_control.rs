@@ -326,34 +326,42 @@ pub fn create_pattern_30() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(30), Box::new(TransientTriggerPattern))
 }
 
+/// Pattern 31: Persistent Trigger
 pub fn create_pattern_31() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(31), Box::new(PersistentTriggerPattern))
 }
 
+/// Pattern 32: Cancel Activity Instance
 pub fn create_pattern_32() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(32), Box::new(CancelActivityInstancePattern))
 }
 
+/// Pattern 33: Complete Activity Instance
 pub fn create_pattern_33() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(33), Box::new(CancelProcessInstancePattern))
 }
 
+/// Pattern 34: Blocking Discriminator
 pub fn create_pattern_34() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(34), Box::new(StopProcessInstancePattern))
 }
 
+/// Pattern 35: Cancelling Discriminator
 pub fn create_pattern_35() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(35), Box::new(AbortProcessInstancePattern))
 }
 
+/// Pattern 36: Structured Discriminator
 pub fn create_pattern_36() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(36), Box::new(DisableActivityPattern))
 }
 
+/// Pattern 37: Blocking Partial Join
 pub fn create_pattern_37() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(37), Box::new(SkipActivityPattern))
 }
 
+/// Pattern 38: Cancelling Partial Join
 pub fn create_pattern_38() -> (PatternId, Box<dyn PatternExecutor>) {
     (
         PatternId(38),
@@ -361,6 +369,7 @@ pub fn create_pattern_38() -> (PatternId, Box<dyn PatternExecutor>) {
     )
 }
 
+/// Pattern 39: Generalized AND-Join
 pub fn create_pattern_39() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(39), Box::new(ThreadMergePattern))
 }

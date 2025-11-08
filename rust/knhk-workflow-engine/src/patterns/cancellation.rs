@@ -187,18 +187,22 @@ impl PatternExecutor for CompleteMultipleInstanceActivityPattern {
     }
 }
 
+/// Pattern 19: Cancel Activity
 pub fn create_pattern_19() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(19), Box::new(CancelActivityPattern))
 }
 
+/// Pattern 22: Cancel Case
 pub fn create_pattern_22() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(22), Box::new(CancelCasePattern))
 }
 
+/// Pattern 23: Cancel Region
 pub fn create_pattern_23() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(23), Box::new(CancelRegionPattern))
 }
 
+/// Pattern 24: Cancel Multiple Instance Activity
 pub fn create_pattern_24() -> (PatternId, Box<dyn PatternExecutor>) {
     (
         PatternId(24),
@@ -206,6 +210,7 @@ pub fn create_pattern_24() -> (PatternId, Box<dyn PatternExecutor>) {
     )
 }
 
+/// Pattern 25: Complete Multiple Instance Activity
 pub fn create_pattern_25() -> (PatternId, Box<dyn PatternExecutor>) {
     (
         PatternId(25),

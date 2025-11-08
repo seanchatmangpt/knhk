@@ -94,18 +94,22 @@ impl PatternExecutor for MultipleInstanceDynamicPattern {
     }
 }
 
+/// Pattern 12: Multiple Instance Without Synchronization
 pub fn create_pattern_12() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(12), Box::new(MultipleInstanceWithoutSyncPattern))
 }
 
+/// Pattern 13: Multiple Instance With Design-Time Knowledge
 pub fn create_pattern_13() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(13), Box::new(MultipleInstanceDesignTimePattern))
 }
 
+/// Pattern 14: Multiple Instance With Runtime Knowledge
 pub fn create_pattern_14() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(14), Box::new(MultipleInstanceRuntimePattern))
 }
 
+/// Pattern 15: Multiple Instance Without Runtime Knowledge
 pub fn create_pattern_15() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(15), Box::new(MultipleInstanceDynamicPattern))
 }
