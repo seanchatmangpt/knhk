@@ -1157,7 +1157,7 @@ async fn test_enterprise_concurrent_pattern_execution() {
 
     // Arrange
     let (engine, _fortune5) = create_enterprise_engine();
-    let registry = engine.pattern_registry();
+    let registry = engine.pattern_registry().clone();
     let spec_id = WorkflowSpecId::new();
 
     // Execute patterns concurrently

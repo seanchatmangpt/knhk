@@ -202,13 +202,11 @@ impl IntegrationRegistry {
     /// Register integration synchronously (for initialization)
     fn register_sync(&mut self, metadata: IntegrationMetadata) {
         // This is called during initialization, so we can use blocking
-        let integrations = Arc::try_unwrap(self.integrations.clone()).unwrap_or_else(|_arc| {
-            // If we can't unwrap, create a new one
-            RwLock::new(HashMap::new())
-        });
-        let mut integrations = integrations.into_inner();
+        // Use blocking async runtime to write to the shared HashMap
+        let integrations_arc = self.integrations.clone();
+        let mut integrations = futures::executor::block_on(integrations_arc.write());
         integrations.insert(metadata.name.clone(), metadata);
-        self.integrations = Arc::new(RwLock::new(integrations));
+        // Note: The Arc is shared, so the write guard will update the shared HashMap
     }
 }
 

@@ -131,8 +131,8 @@ fn test_engine_runs_validation_workflow() {
     );
 }
 
-#[test]
-fn test_engine_manages_own_lifecycle() {
+#[tokio::test]
+async fn test_engine_manages_own_lifecycle() {
     // Arrange: Use Chicago TDD fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -161,8 +161,8 @@ fn test_engine_manages_own_lifecycle() {
     );
 }
 
-#[test]
-fn test_engine_validates_all_patterns() {
+#[tokio::test]
+async fn test_engine_validates_all_patterns() {
     // Arrange: Use Chicago TDD helper
     let registry = create_test_registry();
     let temp_dir = TempDir::new().expect("Failed to create temp directory");

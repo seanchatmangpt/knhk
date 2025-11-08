@@ -6,6 +6,7 @@ mod fortune5;
 mod lockchain;
 mod otel;
 mod registry;
+mod unified;
 
 // Re-export integration types
 pub use check::{HealthCheckResult, HealthStatus, IntegrationHealthChecker};
