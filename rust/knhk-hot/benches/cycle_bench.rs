@@ -331,6 +331,75 @@ impl BenchmarkHarness {
     }
 }
 
+// ============================================================================
+// Benchmark Suite Main Function
+// ============================================================================
+
+fn main() {
+    println!("\n🔬 KNHK Hot Path Cycle-Accurate Benchmarks");
+    println!("Target: ≤8 ticks for hot path operations\n");
+
+    let harness = BenchmarkHarness::new(1000, 100000);
+
+    // Benchmark 1: Ring buffer tick offset calculation (branchless)
+    let result1 = harness.measure("ring_buffer_tick_offset_branchless", || {
+        let ring_size = black_box(64u64);
+        let tick = black_box(3u64);
+        let segment_size = ring_size >> 3; // Branchless divide by 8
+        let tick_offset = tick * segment_size;
+        black_box(tick_offset)
+    });
+    result1.print_report();
+
+    // Benchmark 2: ASSUME pattern validation (should compile to zero cycles)
+    let result2 = harness.measure("assume_pattern_tick_validation", || {
+        let tick = black_box(3u64);
+        // In release mode with KNHK_ASSUME, this should optimize to near-zero
+        debug_assert!(tick < 8);
+        black_box(tick)
+    });
+    result2.print_report();
+
+    // Benchmark 3: Pattern discriminator dispatch (function pointer call)
+    let result3 = harness.measure("pattern_discriminator_dispatch", || {
+        let pattern_type = black_box(9usize);
+        let dispatch_fn = if pattern_type == 9 { dummy_pattern_fn } else { dummy_pattern_fn };
+        black_box(dispatch_fn(pattern_type as u64))
+    });
+    result3.print_report();
+
+    // Benchmark 4: Cache-aligned array access (64-byte alignment)
+    #[repr(align(64))]
+    struct Aligned([u64; 8]);
+    let aligned = Aligned([1, 2, 3, 4, 5, 6, 7, 8]);
+
+    let result4 = harness.measure("cache_aligned_64byte_access", || {
+        let sum: u64 = black_box(&aligned.0).iter().sum();
+        black_box(sum)
+    });
+    result4.print_report();
+
+    // Benchmark 5: Branchless conditional (simdjson pattern)
+    let result5 = harness.measure("branchless_conditional", || {
+        let value = black_box(42u64);
+        let threshold = black_box(50u64);
+        // Branchless: (value < threshold) as u64 * value
+        let result = ((value < threshold) as u64) * value;
+        black_box(result)
+    });
+    result5.print_report();
+
+    println!("\n📊 Summary:");
+    println!("  All hot path operations should be ≤8 ticks");
+    println!("  Branchless operations minimize mispredictions");
+    println!("  Cache-aligned data reduces memory latency\n");
+}
+
+// Dummy function for dispatch benchmark
+fn dummy_pattern_fn(x: u64) -> u64 {
+    x.wrapping_add(1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

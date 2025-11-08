@@ -322,6 +322,12 @@ impl CpuDispatcher {
     }
 
     /// Execute parallel split pattern with automatic dispatch
+    ///
+    /// # Safety
+    /// Caller must ensure:
+    /// - `ctx` is valid and non-null
+    /// - `branches` array has `num_branches` elements
+    /// - Branch functions don't panic
     #[inline(always)]
     pub unsafe fn parallel_split(
         &self,
@@ -333,6 +339,12 @@ impl CpuDispatcher {
     }
 
     /// Execute synchronization pattern with automatic dispatch
+    ///
+    /// # Safety
+    /// Caller must ensure:
+    /// - `ctx` is valid and non-null
+    /// - `branch_results` array has `num_branches` elements
+    /// - All branch results are valid
     #[inline(always)]
     pub unsafe fn synchronization(
         &self,
@@ -344,6 +356,12 @@ impl CpuDispatcher {
     }
 
     /// Execute multi-choice pattern with automatic dispatch
+    ///
+    /// # Safety
+    /// Caller must ensure:
+    /// - `ctx` is valid and non-null
+    /// - `conditions` and `branches` arrays have `num_branches` elements
+    /// - Condition and branch functions don't panic
     #[inline(always)]
     pub unsafe fn multi_choice(
         &self,

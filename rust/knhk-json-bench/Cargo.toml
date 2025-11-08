@@ -1,0 +1,25 @@
+[package]
+name = "knhk-json-bench"
+version = "0.1.0"
+edition = "2021"
+authors = ["KNHK Team"]
+license = "MIT"
+description = "JSON parsing benchmark using knhk-hot and knhk-patterns"
+
+[dependencies]
+knhk-hot = { path = "../knhk-hot" }
+# knhk-patterns will be re-enabled after fixing compilation errors
+# knhk-patterns = { path = "../knhk-patterns" }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+serde_json = "1.0"
+simd-json = "0.13"
+
+[[bench]]
+name = "json_parse_bench"
+harness = false
+
+[lib]
+name = "knhk_json_bench"
+path = "src/lib.rs"

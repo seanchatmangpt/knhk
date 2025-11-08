@@ -43,6 +43,7 @@ pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
 
 // Module declarations
 pub mod beat_scheduler; // 8-beat epoch scheduler
+pub mod buffer_pool; // Memory reuse pool (simdjson pattern)
 pub mod emit;
 pub mod error;
 pub mod failure_actions;
@@ -69,6 +70,7 @@ pub mod triple_view; // Zero-copy triple access patterns
 pub mod types; // Reconciliation: A = μ(O)
 
 // Re-exports for convenience
+pub use buffer_pool::{BufferPool, CapacityUsage, PoolError};
 pub use error::PipelineError;
 pub use hot_path_engine::HotPathEngine;
 pub use ingest::{IngestResult, IngestStage, RawTriple};

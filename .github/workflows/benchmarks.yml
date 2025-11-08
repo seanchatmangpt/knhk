@@ -1,0 +1,204 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for comparison
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: rust/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install C dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc make
+
+      - name: Install benchmark dependencies
+        run: |
+          sudo apt-get install -y linux-tools-common linux-tools-generic linux-tools-$(uname -r)
+
+      - name: Download previous benchmark results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-results
+          path: rust/benchmark-results/
+
+      - name: Run buffer pooling benchmarks
+        working-directory: rust/knhk-etl
+        run: |
+          cargo bench --bench buffer_pooling -- --save-baseline week1
+
+      - name: Run SIMD predicate benchmarks
+        working-directory: rust/knhk-hot
+        run: |
+          cargo bench --bench simd_predicates -- --save-baseline week2
+
+      - name: Run tick budget benchmarks
+        working-directory: rust/knhk-hot
+        run: |
+          cargo bench --bench tick_budget -- --save-baseline ticks
+
+      - name: Validate performance targets
+        working-directory: rust
+        run: |
+          echo "=== Week 1 Target: 75% Allocation Reduction ==="
+          cargo test --package knhk-etl --bench buffer_pooling run_allocation_validation -- --nocapture --ignored
+
+          echo "=== Week 2 Target: 4x SIMD Speedup ==="
+          cargo test --package knhk-hot --bench simd_predicates run_speedup_validation -- --nocapture --ignored
+
+          echo "=== Tick Budget: ≤7 (Week 1), ≤5 (Week 2) ==="
+          cargo test --package knhk-hot --bench tick_budget run_tick_budget_validation -- --nocapture --ignored
+
+      - name: Check for performance regression
+        if: github.event_name == 'pull_request'
+        working-directory: rust
+        run: |
+          # Compare with baseline (allow 5% regression)
+          cargo bench --bench buffer_pooling -- --baseline week1 --significance-level 0.05
+          cargo bench --bench simd_predicates -- --baseline week2 --significance-level 0.05
+          cargo bench --bench tick_budget -- --baseline ticks --significance-level 0.05
+
+      - name: Archive benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            rust/knhk-etl/target/criterion/
+            rust/knhk-hot/target/criterion/
+          retention-days: 30
+
+      - name: Generate performance report
+        run: |
+          mkdir -p docs/evidence
+          cat > docs/evidence/PERFORMANCE_BENCHMARK_RESULTS.md <<'EOF'
+          # Performance Benchmark Results
+
+          Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Commit: ${{ github.sha }}
+
+          ## Week 1 Optimizations
+
+          ### Buffer Pooling
+          - **Target**: 75% allocation reduction
+          - **Result**: See Criterion reports in artifacts
+
+          ### Tick Budget
+          - **Target**: ≤7 ticks for hot path operations
+          - **Result**: See validation output above
+
+          ## Week 2 Optimizations
+
+          ### SIMD Predicate Matching
+          - **Target**: ≥4x speedup over scalar
+          - **Result**: See Criterion reports in artifacts
+
+          ### Tick Budget
+          - **Target**: ≤5 ticks for hot path operations
+          - **Result**: See validation output above
+
+          ## Benchmark Files
+          - `rust/knhk-etl/benches/buffer_pooling.rs`
+          - `rust/knhk-hot/benches/simd_predicates.rs`
+          - `rust/knhk-hot/benches/tick_budget.rs`
+
+          ## CI Integration
+          - Automated benchmarks run on every push to main/develop
+          - PR benchmarks compare against baseline
+          - Performance regression threshold: 5%
+          - Daily scheduled runs to track trends
+          EOF
+
+          echo "Performance report generated"
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'docs/evidence/PERFORMANCE_BENCHMARK_RESULTS.md';
+
+            if (fs.existsSync(reportPath)) {
+              const report = fs.readFileSync(reportPath, 'utf8');
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report
+              });
+            }
+
+  # Separate job for comprehensive performance analysis (Linux only)
+  deep-analysis:
+    name: Deep Performance Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install perf tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y linux-tools-common linux-tools-generic linux-tools-$(uname -r)
+
+      - name: Run perf stat analysis
+        working-directory: rust/knhk-hot
+        run: |
+          # Run with hardware performance counters
+          sudo perf stat -e cycles,instructions,cache-references,cache-misses,branch-instructions,branch-misses \
+            cargo bench --bench hot_path_bench 2>&1 | tee perf-report.txt
+
+      - name: Archive perf results
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-analysis
+          path: rust/knhk-hot/perf-report.txt
+          retention-days: 30

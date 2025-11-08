@@ -28,6 +28,14 @@ harness = false
 name = "cycle_bench"
 harness = false
 
+[[bench]]
+name = "simd_predicates"
+harness = false
+
+[[bench]]
+name = "tick_budget"
+harness = false
+
 [profile.bench]
 opt-level = 3
 lto = "fat"

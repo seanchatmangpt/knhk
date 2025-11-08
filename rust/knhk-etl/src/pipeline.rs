@@ -6,6 +6,7 @@ extern crate alloc;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
+use crate::buffer_pool::BufferPool;
 use crate::emit::{EmitResult, EmitStage};
 use crate::error::PipelineError;
 use crate::ingest::IngestStage;
@@ -32,6 +33,8 @@ use crate::transform::TransformStage;
 /// let result = pipeline.execute();
 /// ```
 pub struct Pipeline {
+    /// Buffer pool for memory reuse (zero allocations in hot path)
+    pub buffer_pool: BufferPool,
     /// Ingest stage (public for tests)
     pub ingest: IngestStage,
     /// Transform stage (public for tests)
@@ -106,6 +109,7 @@ impl Pipeline {
         downstream_endpoints: Vec<String>,
     ) -> Self {
         Self {
+            buffer_pool: BufferPool::new(),
             ingest: IngestStage::new(connectors, "rdf/turtle".to_string()),
             transform: TransformStage::new(schema_iri, true),
             load: LoadStage::new(),

@@ -15,7 +15,7 @@ pub use content_addr::{content_hash, content_hash_128, ContentId};
 pub use cpu_dispatch::{
     init_cpu_dispatch, get_discriminator_fn, get_parallel_split_fn,
     get_synchronization_fn, get_multi_choice_fn, CpuDispatcher, CpuFeatures,
-    PatternContext, PatternResult, BranchFn, ConditionFn, CancelFn,
+    PatternContext, PatternResult, BranchFn,
 };
 pub use ffi::*;
 pub use fiber_ffi::{FiberExecutor, FiberResult};

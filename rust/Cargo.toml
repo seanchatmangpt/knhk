@@ -15,6 +15,7 @@ members = [
     # "knhk-sidecar",  # Temporarily excluded - 53 async trait errors, Wave 5 technical debt
     "knhk-cli",
     "knhk-integration-tests",
+    "knhk-json-bench",  # JSON parsing benchmark using knhk-hot
 ]
 
 [workspace.package]

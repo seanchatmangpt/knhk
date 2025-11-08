@@ -1,8 +1,9 @@
 fn main() {
-    // Compile workflow_patterns.c and ring_buffer.c
+    // Compile workflow_patterns.c, ring_buffer.c, and simd_predicates.c (Week 2)
     cc::Build::new()
         .file("src/workflow_patterns.c")
         .file("src/ring_buffer.c")
+        .file("src/simd_predicates.c")  // Week 2: SIMD predicate matching
         .opt_level(3)
         .flag("-march=native")
         .flag("-fno-strict-aliasing")
@@ -27,5 +28,7 @@ fn main() {
     println!("cargo:rerun-if-changed=src/workflow_patterns.c");
     println!("cargo:rerun-if-changed=src/workflow_patterns.h");
     println!("cargo:rerun-if-changed=src/ring_buffer.c");
+    println!("cargo:rerun-if-changed=src/simd_predicates.c");  // Week 2
+    println!("cargo:rerun-if-changed=src/simd_predicates.h");  // Week 2
     println!("cargo:rerun-if-changed={}", lib_path);
 }

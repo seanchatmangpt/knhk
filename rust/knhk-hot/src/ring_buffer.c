@@ -68,6 +68,9 @@ typedef struct {
 // Number of ticks
 #define KNHK_NUM_TICKS 8
 
+// SIMD padding: 8 × u64 = 64 bytes for safe SIMD operations (Week 1 optimization)
+#define KNHK_SIMD_PADDING 8
+
 // ============================================================================
 // Helper: Get tick segment offset and size
 // ============================================================================
@@ -211,12 +214,12 @@ int knhk_ring_init_delta(knhk_delta_ring_t* ring, uint64_t size) {
         return -1;
     }
 
-    // Allocate 64-byte aligned arrays
-    ring->S = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->P = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->O = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->cycle_ids = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->flags = aligned_alloc(64, size * sizeof(uint64_t));
+    // Week 1: Allocate with free padding (64 bytes) for SIMD safety
+    ring->S = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->P = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->O = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->cycle_ids = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->flags = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
 
     if (!ring->S || !ring->P || !ring->O || !ring->cycle_ids || !ring->flags) {
         free(ring->S);
@@ -235,6 +238,12 @@ int knhk_ring_init_delta(knhk_delta_ring_t* ring, uint64_t size) {
         ring->write_idx[i] = 0;
         ring->read_idx[i] = 0;
     }
+
+    // Week 1: Zero-initialize padding regions for SIMD safety
+    memset(ring->S + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
+    memset(ring->P + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
+    memset(ring->O + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
+    memset(ring->cycle_ids + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
 
     // Clear all flags
     memset(ring->flags, 0, size * sizeof(uint64_t));
@@ -428,11 +437,11 @@ int knhk_ring_init_assertion(knhk_assertion_ring_t* ring, uint64_t size) {
         return -1;
     }
 
-    // Allocate 64-byte aligned arrays
-    ring->S = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->P = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->O = aligned_alloc(64, size * sizeof(uint64_t));
-    ring->receipts = aligned_alloc(64, size * sizeof(Receipt));
+    // Week 1: Allocate with free padding (64 bytes) for SIMD safety
+    ring->S = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->P = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->O = aligned_alloc(64, (size + KNHK_SIMD_PADDING) * sizeof(uint64_t));
+    ring->receipts = aligned_alloc(64, size * sizeof(Receipt));  // No padding for receipts (not SIMD)
 
     if (!ring->S || !ring->P || !ring->O || !ring->receipts) {
         free(ring->S);
@@ -450,6 +459,11 @@ int knhk_ring_init_assertion(knhk_assertion_ring_t* ring, uint64_t size) {
         ring->write_idx[i] = 0;
         ring->read_idx[i] = 0;
     }
+
+    // Week 1: Zero-initialize padding regions for SIMD safety
+    memset(ring->S + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
+    memset(ring->P + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
+    memset(ring->O + size, 0, KNHK_SIMD_PADDING * sizeof(uint64_t));
 
     return 0;
 }
