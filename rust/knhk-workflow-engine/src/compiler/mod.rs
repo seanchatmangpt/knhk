@@ -14,8 +14,9 @@
 //! Invariants: μ∘μ = μ (idempotent), hash(A) = hash(μ(O))
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::extractor::extract_workflow_spec;
-use crate::parser::types::{JoinType, SplitType, Task, WorkflowSpec, WorkflowSpecId};
+use crate::parser::{
+    extract_workflow_spec, JoinType, SplitType, Task, WorkflowSpec, WorkflowSpecId,
+};
 use oxigraph::store::Store;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
