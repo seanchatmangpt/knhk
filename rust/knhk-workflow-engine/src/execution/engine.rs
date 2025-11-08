@@ -245,11 +245,6 @@ impl PipelineStage for ExecutionStage {
         })
     }
 }
-
-
-        context: PatternExecutionContext,
-    ) -> WorkflowResult<PatternExecutionContext> {
-        // FUTURE: Add execution preparation like:
         // - Resource pre-allocation
         // - Dependency resolution
         // - Execution plan creation
