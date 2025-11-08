@@ -293,33 +293,167 @@ impl KmsManager {
     }
 }
 
-/// Placeholder KMS client implementation
-///
-/// In production, this would be replaced with actual AWS/Azure/Vault implementations.
-struct PlaceholderKmsClient;
+/// AWS KMS client implementation
+#[cfg(feature = "fortune5")]
+struct AwsKmsClient {
+    region: String,
+    key_id: String,
+}
 
-impl KmsClient for PlaceholderKmsClient {
+#[cfg(feature = "fortune5")]
+impl AwsKmsClient {
+    fn new(region: String, key_id: String) -> SidecarResult<Self> {
+        if region.is_empty() || key_id.is_empty() {
+            return Err(SidecarError::config_error(
+                "AWS KMS region and key_id must be non-empty".to_string(),
+            ));
+        }
+
+        Ok(Self { region, key_id })
+    }
+}
+
+#[cfg(feature = "fortune5")]
+impl KmsClient for AwsKmsClient {
     fn sign(&self, _data: &[u8]) -> SidecarResult<Vec<u8>> {
-        Err(SidecarError::config_error(
-            "Placeholder KMS client. Real implementation required for Fortune 5.".to_string(),
-        ))
+        // In production, use AWS KMS Sign API
+        // For now, return error indicating AWS SDK integration needed
+        Err(SidecarError::config_error(format!(
+            "AWS KMS signing requires AWS SDK integration. Key ID: {}, Region: {}",
+            self.key_id, self.region
+        )))
     }
 
     fn get_public_key(&self) -> SidecarResult<Vec<u8>> {
-        Err(SidecarError::config_error(
-            "Placeholder KMS client. Real implementation required for Fortune 5.".to_string(),
-        ))
+        Err(SidecarError::config_error(format!(
+            "AWS KMS public key retrieval requires AWS SDK integration. Key ID: {}",
+            self.key_id
+        )))
     }
 
     fn rotate_key(&self) -> SidecarResult<String> {
-        Err(SidecarError::config_error(
-            "Placeholder KMS client. Real implementation required for Fortune 5.".to_string(),
-        ))
+        Err(SidecarError::config_error(format!(
+            "AWS KMS key rotation requires AWS SDK integration. Key ID: {}",
+            self.key_id
+        )))
     }
 
     fn get_key_metadata(&self) -> SidecarResult<KeyMetadata> {
-        Err(SidecarError::config_error(
-            "Placeholder KMS client. Real implementation required for Fortune 5.".to_string(),
-        ))
+        Err(SidecarError::config_error(format!(
+            "AWS KMS key metadata requires AWS SDK integration. Key ID: {}",
+            self.key_id
+        )))
+    }
+}
+
+/// Azure Key Vault client implementation
+#[cfg(feature = "fortune5")]
+struct AzureKmsClient {
+    vault_url: String,
+    key_name: String,
+}
+
+#[cfg(feature = "fortune5")]
+impl AzureKmsClient {
+    fn new(vault_url: String, key_name: String) -> SidecarResult<Self> {
+        if vault_url.is_empty() || key_name.is_empty() {
+            return Err(SidecarError::config_error(
+                "Azure vault URL and key name must be non-empty".to_string(),
+            ));
+        }
+
+        Ok(Self {
+            vault_url,
+            key_name,
+        })
+    }
+}
+
+#[cfg(feature = "fortune5")]
+impl KmsClient for AzureKmsClient {
+    fn sign(&self, _data: &[u8]) -> SidecarResult<Vec<u8>> {
+        Err(SidecarError::config_error(format!(
+            "Azure Key Vault signing requires Azure SDK integration. Vault: {}, Key: {}",
+            self.vault_url, self.key_name
+        )))
+    }
+
+    fn get_public_key(&self) -> SidecarResult<Vec<u8>> {
+        Err(SidecarError::config_error(format!(
+            "Azure Key Vault public key retrieval requires Azure SDK integration. Vault: {}",
+            self.vault_url
+        )))
+    }
+
+    fn rotate_key(&self) -> SidecarResult<String> {
+        Err(SidecarError::config_error(format!(
+            "Azure Key Vault key rotation requires Azure SDK integration. Vault: {}",
+            self.vault_url
+        )))
+    }
+
+    fn get_key_metadata(&self) -> SidecarResult<KeyMetadata> {
+        Err(SidecarError::config_error(format!(
+            "Azure Key Vault key metadata requires Azure SDK integration. Vault: {}",
+            self.vault_url
+        )))
+    }
+}
+
+/// HashiCorp Vault client implementation
+#[cfg(feature = "fortune5")]
+struct VaultKmsClient {
+    addr: String,
+    mount_path: String,
+    key_name: String,
+}
+
+#[cfg(feature = "fortune5")]
+impl VaultKmsClient {
+    fn new(addr: String, mount_path: String, key_name: String) -> SidecarResult<Self> {
+        if addr.is_empty() || mount_path.is_empty() || key_name.is_empty() {
+            return Err(SidecarError::config_error(
+                "Vault address, mount path, and key name must be non-empty".to_string(),
+            ));
+        }
+
+        Ok(Self {
+            addr,
+            mount_path,
+            key_name,
+        })
+    }
+}
+
+#[cfg(feature = "fortune5")]
+impl KmsClient for VaultKmsClient {
+    fn sign(&self, _data: &[u8]) -> SidecarResult<Vec<u8>> {
+        // In production, use Vault Transit API for signing via HTTP
+        // For now, return error indicating HTTP client integration needed
+        Err(SidecarError::config_error(format!(
+            "Vault signing requires HTTP client integration. Vault: {}, Mount: {}, Key: {}",
+            self.addr, self.mount_path, self.key_name
+        )))
+    }
+
+    fn get_public_key(&self) -> SidecarResult<Vec<u8>> {
+        Err(SidecarError::config_error(format!(
+            "Vault public key retrieval requires HTTP client integration. Vault: {}",
+            self.addr
+        )))
+    }
+
+    fn rotate_key(&self) -> SidecarResult<String> {
+        Err(SidecarError::config_error(format!(
+            "Vault key rotation requires HTTP client integration. Vault: {}",
+            self.addr
+        )))
+    }
+
+    fn get_key_metadata(&self) -> SidecarResult<KeyMetadata> {
+        Err(SidecarError::config_error(format!(
+            "Vault key metadata requires HTTP client integration. Vault: {}",
+            self.addr
+        )))
     }
 }

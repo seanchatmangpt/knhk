@@ -96,7 +96,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
     let chunks = len / 16;
 
     // NEON 128-bit processing (16 bytes per iteration)
-    let structural_chars_v = vdupq_n_u8(b'{');
+    let _structural_chars_v = vdupq_n_u8(b'{');
     let open_brace = vdupq_n_u8(b'{');
     let close_brace = vdupq_n_u8(b'}');
     let open_bracket = vdupq_n_u8(b'[');
@@ -122,7 +122,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
         let is_comma = vceqq_u8(chunk, comma);
         let is_colon = vceqq_u8(chunk, colon);
         let is_quote = vceqq_u8(chunk, quote);
-        let is_escape = vceqq_u8(chunk, backslash);
+        let _is_escape = vceqq_u8(chunk, backslash);
 
         // Combine all structural characters
         let structural = vorrq_u8(
@@ -135,8 +135,8 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
 
         // Extract positions using ARM bit reversal + leading zeros
         // (simdjson ARM-specific optimization)
-        let mut structural_mask = vget_lane_u64(vreinterpret_u64_u8(vget_low_u8(structural)), 0);
-        structural_mask |= vget_lane_u64(vreinterpret_u64_u8(vget_high_u8(structural)), 0) << 8;
+        let _structural_mask = vget_lane_u64(vreinterpret_u64_u8(vget_low_u8(structural)), 0);
+        let _ = vget_lane_u64(vreinterpret_u64_u8(vget_high_u8(structural)), 0) << 8;
 
         // TODO: Use bit reversal + leading zeros for ARM (instead of trailing zeros)
         // This is the simdjson ARM-specific optimization
@@ -267,7 +267,7 @@ impl TapeBuilder {
     /// Stage 2: Build tape from structural index
     ///
     /// Target: ≤0.6 cycles/byte AVX2, ≤0.4 AVX-512
-    pub fn build_tape(&mut self, json: &[u8], index: &StructuralIndex) {
+    pub fn build_tape(&mut self, _json: &[u8], _index: &StructuralIndex) {
         self.tape.clear();
         self.arena.clear();
         self.shape.present_mask = 0;
@@ -316,7 +316,7 @@ impl SoAPacker {
     /// Pack tape tokens into SoA runs grouped by predicate
     ///
     /// Target: ≤40 ns/object
-    pub fn pack_from_tape(&mut self, tape: &[TapeToken], shape: &ShapeCard) {
+    pub fn pack_from_tape(&mut self, _tape: &[TapeToken], _shape: &ShapeCard) {
         self.runs.clear();
 
         // TODO: Implement SoA packing
@@ -358,7 +358,7 @@ impl ATMShapeKernel {
     /// Fast path for shape-locked ATM JSON
     ///
     /// Uses hardcoded key checks with memcmp64 or AVX2 pcmpeqb
-    pub unsafe fn parse_shape_locked(&self, json: &[u8], runs: &mut Vec<SoARun>) -> bool {
+    pub unsafe fn parse_shape_locked(&self, _json: &[u8], _runs: &mut Vec<SoARun>) -> bool {
         // TODO: Implement shape-locked fast path
         // - Hardcode key literals
         // - Compare with two memcmp64 or AVX2 pcmpeqb + pmovmskb

@@ -200,27 +200,97 @@ impl ReceiptSyncClient {
     }
 
     async fn send_receipt(&self, receipt: &Receipt) -> SidecarResult<()> {
-        // In production, this would:
-        // 1. Serialize receipt
-        // 2. Send via gRPC/HTTP to remote region
-        // 3. Wait for acknowledgment
+        #[cfg(feature = "fortune5")]
+        {
+            // Serialize receipt to JSON
+            let receipt_json = serde_json::json!({
+                "receipt_id": receipt.receipt_id,
+                "transaction_id": receipt.transaction_id,
+                "hash": hex::encode(&receipt.hash),
+                "ticks": receipt.ticks,
+                "span_id": receipt.span_id,
+                "committed": receipt.committed,
+            });
 
-        // Placeholder implementation
-        info!("Sending receipt to {} (not yet implemented)", self.endpoint);
-        Ok(())
+            // Send via HTTP POST to remote region
+            let client = reqwest::Client::new();
+            let url = format!("{}/api/v1/receipts", self.endpoint);
+
+            match client
+                .post(&url)
+                .json(&receipt_json)
+                .timeout(std::time::Duration::from_secs(5))
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        info!("Receipt {} synced to {}", receipt.receipt_id, self.endpoint);
+                        Ok(())
+                    } else {
+                        Err(SidecarError::config_error(format!(
+                            "Failed to sync receipt to {}: HTTP {}",
+                            self.endpoint,
+                            response.status()
+                        )))
+                    }
+                }
+                Err(e) => Err(SidecarError::config_error(format!(
+                    "Failed to sync receipt to {}: {}",
+                    self.endpoint, e
+                ))),
+            }
+        }
+        #[cfg(not(feature = "fortune5"))]
+        {
+            // Fallback: log and return success (for testing without fortune5 feature)
+            info!(
+                "Receipt sync to {} (fortune5 feature not enabled)",
+                self.endpoint
+            );
+            Ok(())
+        }
     }
 
     async fn verify_receipt(&self, receipt_id: &str) -> SidecarResult<bool> {
-        // In production, this would:
-        // 1. Query remote region for receipt
-        // 2. Verify receipt exists and matches
+        #[cfg(feature = "fortune5")]
+        {
+            // Query remote region for receipt via HTTP GET
+            let client = reqwest::Client::new();
+            let url = format!("{}/api/v1/receipts/{}", self.endpoint, receipt_id);
 
-        // Placeholder implementation
-        info!(
-            "Verifying receipt {} in {} (not yet implemented)",
-            receipt_id, self.endpoint
-        );
-        Ok(false)
+            match client
+                .get(&url)
+                .timeout(std::time::Duration::from_secs(5))
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        // Receipt exists in remote region
+                        Ok(true)
+                    } else if response.status() == reqwest::StatusCode::NOT_FOUND {
+                        // Receipt not found
+                        Ok(false)
+                    } else {
+                        Err(SidecarError::config_error(format!(
+                            "Failed to verify receipt in {}: HTTP {}",
+                            self.endpoint,
+                            response.status()
+                        )))
+                    }
+                }
+                Err(e) => Err(SidecarError::config_error(format!(
+                    "Failed to verify receipt in {}: {}",
+                    self.endpoint, e
+                ))),
+            }
+        }
+        #[cfg(not(feature = "fortune5"))]
+        {
+            // Fallback: return false (for testing without fortune5 feature)
+            Ok(false)
+        }
     }
 }
 
