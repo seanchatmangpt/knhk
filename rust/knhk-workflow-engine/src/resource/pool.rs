@@ -24,7 +24,7 @@ impl ResourcePool {
     }
 
     /// Acquire resource permit
-    pub async fn acquire(&self) -> WorkflowResult<ResourcePermit> {
+    pub async fn acquire(&self) -> WorkflowResult<ResourcePermit<'_>> {
         let permit = self.semaphore.acquire().await.map_err(|e| {
             WorkflowError::ResourceUnavailable(format!("Failed to acquire resource: {}", e))
         })?;
