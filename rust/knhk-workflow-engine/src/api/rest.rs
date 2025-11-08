@@ -155,11 +155,7 @@ impl RestApiServer {
         } else {
             // Check SLO compliance if Fortune 5 is enabled
             let slo_compliant = if let Some(ref fortune5) = engine.fortune5_integration() {
-                fortune5
-                    .check_slo_compliance()
-                    .await
-                    .map(|r| r.unwrap_or(false))
-                    .unwrap_or(false)
+                fortune5.check_slo_compliance().await.unwrap_or(false)
             } else {
                 true
             };

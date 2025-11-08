@@ -6,8 +6,9 @@ use crate::integration::fortune5::RuntimeClass;
 use crate::parser::WorkflowSpecId;
 use std::time::Instant;
 
-use super::task;
 use super::WorkflowEngine;
+use super::task;
+use super::workflow::WorkflowEngine as _;
 
 impl WorkflowEngine {
     /// Create a new case

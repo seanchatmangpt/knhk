@@ -5,8 +5,7 @@ use crate::integration::fortune5::RuntimeClass;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use std::time::Instant;
 
-use super::workflow::WorkflowEngine as _;
-use super::WorkflowEngine;
+use super::engine::WorkflowEngine;
 
 impl WorkflowEngine {
     /// Execute a pattern

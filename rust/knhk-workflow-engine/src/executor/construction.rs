@@ -15,14 +15,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 
-use super::engine::WorkflowEngine;
+use super::WorkflowEngine;
 use super::events::{start_event_loop, start_timer_loop};
 
 impl WorkflowEngine {
     /// Create a new workflow engine with all 43 patterns registered
     pub fn new(state_store: StateStore) -> Self {
         let mut registry = PatternRegistry::new();
-        crate::patterns::register_all_patterns(&mut registry);
+        registry.register_all_patterns();
 
         let resource_allocator = Arc::new(ResourceAllocator::new());
         let worklet_repository = Arc::new(WorkletRepository::new());
@@ -86,7 +86,7 @@ impl WorkflowEngine {
         fortune5_config: Fortune5Config,
     ) -> WorkflowResult<Self> {
         let mut registry = PatternRegistry::new();
-        crate::patterns::register_all_patterns(&mut registry);
+        registry.register_all_patterns();
 
         let resource_allocator = Arc::new(ResourceAllocator::new());
         let worklet_repository = Arc::new(WorkletRepository::new());
