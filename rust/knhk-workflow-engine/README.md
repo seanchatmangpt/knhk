@@ -18,6 +18,9 @@ This crate provides a complete workflow engine that:
 - **Resource Allocation**: Advanced allocation policies (Four-eyes, Chained, Round-robin, Shortest queue, Role-based, Capability-based)
 - **Worklets**: Dynamic workflow adaptation with worklet repository and exception handling
 - **Deadlock Detection**: Design-time deadlock detection with Petri net analysis
+- **Workflow Visualization**: Generate visual diagrams from workflow specs (DOT, SVG, HTML)
+- **Template Library**: Pre-built workflow templates for common patterns
+- **Performance Analyzer**: Profile workflows and identify optimization opportunities
 - **Enterprise APIs**: REST and gRPC interfaces
 - **State Persistence**: Sled-based state store
 - **Observability**: OTEL integration for tracing
@@ -142,12 +145,15 @@ See `api/grpc.rs` for gRPC service definitions.
 ## Documentation
 
 For comprehensive documentation, see:
+- **[Workflow Engine Documentation](docs/WORKFLOW_ENGINE.md)** - Complete guide with API reference, examples, and integration guides
+- **[Innovations Guide](docs/INNOVATIONS.md)** - New innovative features: visualization, templates, performance analysis
 - **[YAWL Integration Complete](docs/YAWL_INTEGRATION_COMPLETE.md)** - Complete integration guide with execution flows and API examples
 - **[YAWL Implementation Summary](docs/YAWL_IMPLEMENTATION_SUMMARY.md)** - YAWL feature implementation status and integration details
 - **[YAWL Feature Comparison](docs/YAWL_FEATURE_COMPARISON.md)** - Comparison with YAWL Java implementation
 - **[Gap Analysis](docs/GAP_ANALYSIS_FILLED.md)** - Gap analysis and filling summary
 - **[SWIFT FIBO Case Study](docs/SWIFT_FIBO_CASE_STUDY.md)** - Enterprise case study with all 43 patterns
 - **[Implementation Plan](FORTUNE5_IMPLEMENTATION_PLAN.md)** - Implementation roadmap and checklist
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Quick reference guide for common operations
 
 ## License
 

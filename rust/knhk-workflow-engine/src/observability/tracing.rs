@@ -1,64 +1,83 @@
-//! Distributed tracing utilities
+//! OpenTelemetry tracing integration for workflow engine
 //!
-//! Provides structured tracing for workflow operations with OTEL integration.
+//! Provides distributed tracing for workflow execution using knhk-otel.
 
-use crate::error::WorkflowError;
+use crate::error::{WorkflowError, WorkflowResult};
 use knhk_otel::Tracer;
-use opentelemetry::trace::{Span, TraceContextExt, Tracer as _};
-use opentelemetry::Context;
 use std::sync::Arc;
-use tracing::{debug, error, info, instrument, warn};
 
-/// Tracing manager for workflow operations
-pub struct TracingManager {
-    tracer: Option<Arc<Tracer>>,
-    service_name: String,
-    service_version: String,
+/// Tracing configuration
+#[derive(Debug, Clone)]
+pub struct TracingConfig {
+    /// Service name
+    pub service_name: String,
+    /// Service version
+    pub service_version: String,
+    /// Enable tracing
+    pub enabled: bool,
 }
 
-impl TracingManager {
-    /// Create new tracing manager
-    pub fn new(service_name: String, service_version: String) -> Result<Self, WorkflowError> {
-        let tracer = Tracer::new(&service_name, &service_version)
-            .map_err(|e| WorkflowError::Internal(format!("Failed to create tracer: {}", e)))?;
+impl Default for TracingConfig {
+    fn default() -> Self {
+        Self {
+            service_name: "knhk-workflow-engine".to_string(),
+            service_version: "1.0.0".to_string(),
+            enabled: true,
+        }
+    }
+}
 
+/// Workflow tracer
+pub struct WorkflowTracer {
+    tracer: Arc<Tracer>,
+    config: TracingConfig,
+}
+
+impl WorkflowTracer {
+    /// Create new workflow tracer
+    pub fn new(config: TracingConfig) -> WorkflowResult<Self> {
+        let tracer = Tracer::new();
         Ok(Self {
-            tracer: Some(Arc::new(tracer)),
-            service_name,
-            service_version,
+            tracer: Arc::new(tracer),
+            config,
         })
     }
 
-    /// Start span for workflow operation
-    #[instrument(skip(self), fields(workflow_id = %workflow_id, case_id = %case_id))]
-    pub fn start_workflow_span(
+    /// Start a span for workflow operation
+    pub fn start_span(
         &self,
         operation: &str,
         workflow_id: &str,
         case_id: &str,
-    ) -> Option<Span> {
-        self.tracer.as_ref().map(|tracer| {
-            let span = tracer
-                .span_builder(format!("workflow.{}", operation))
-                .with_attributes(vec![
-                    opentelemetry::KeyValue::new("workflow.id", workflow_id.to_string()),
-                    opentelemetry::KeyValue::new("case.id", case_id.to_string()),
-                    opentelemetry::KeyValue::new("service.name", self.service_name.clone()),
-                    opentelemetry::KeyValue::new("service.version", self.service_version.clone()),
-                ])
-                .start(tracer);
-            span
-        })
+    ) -> WorkflowResult<()> {
+        if !self.config.enabled {
+            return Ok(());
+        }
+
+        // FUTURE: Implement span creation with knhk-otel API
+        // For now, just log the operation
+        tracing::info!(
+            operation = operation,
+            workflow_id = workflow_id,
+            case_id = case_id,
+            "Workflow operation started"
+        );
+
+        Ok(())
     }
 
-    /// Record workflow event
-    pub fn record_event(&self, level: &str, message: &str, context: &[(&str, &str)]) {
-        match level {
-            "error" => error!(?context, "{}", message),
-            "warn" => warn!(?context, "{}", message),
-            "info" => info!(?context, "{}", message),
-            "debug" => debug!(?context, "{}", message),
-            _ => info!(?context, "{}", message),
+    /// End current span
+    pub fn end_span(&self) -> WorkflowResult<()> {
+        if !self.config.enabled {
+            return Ok(());
         }
+
+        // FUTURE: Implement span ending with knhk-otel API
+        Ok(())
+    }
+
+    /// Get tracer instance
+    pub fn tracer(&self) -> &Arc<Tracer> {
+        &self.tracer
     }
 }

@@ -4,7 +4,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use governor::{
-    clock::{Clock, DefaultClock},
+    clock::DefaultClock,
     state::keyed::DefaultKeyedStateStore,
     state::{InMemoryState, NotKeyed},
     Quota, RateLimiter as GovernorRateLimiter,

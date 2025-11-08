@@ -59,6 +59,7 @@ pub mod api;
 pub mod case;
 pub mod cluster;
 pub mod compliance;
+pub mod config;
 pub mod constants;
 pub mod enterprise;
 pub mod error;
@@ -72,7 +73,10 @@ pub mod resilience;
 pub mod resource;
 pub mod security;
 pub mod state;
+pub mod templates;
+pub mod utils;
 pub mod validation;
+pub mod visualization;
 pub mod worklets;
 
 pub use case::{Case, CaseId, CaseState};
@@ -80,7 +84,7 @@ pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
     SecurityConfig,
 };
-pub use error::{ErrorContext, WorkflowError, WorkflowResult};
+pub use error::{WorkflowError, WorkflowResult};
 pub use executor::WorkflowEngine;
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
 pub use patterns::{PatternId, PatternRegistry};
