@@ -114,19 +114,19 @@ impl HookChoicePattern {
         use knhk_etl::hook_orchestration::HookOrchestrator;
 
         // Convert Arc conditions to boxed closures
-        let boxed_choices: Vec<(Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>, u64)> =
-            self
-                .choices
-                .iter()
-                .map(|(cond, pred)| {
-                    let cond_clone = cond.clone();
-                    (
-                        Box::new(move |ctx: &HookExecutionContext| (cond_clone)(ctx))
-                            as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
-                        *pred,
-                    )
-                })
-                .collect();
+        // Use type alias to reduce complexity for clippy compliance
+        type BoxedHookCondition = Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>;
+        let boxed_choices: Vec<(BoxedHookCondition, u64)> = self
+            .choices
+            .iter()
+            .map(|(cond, pred)| {
+                let cond_clone = cond.clone();
+                (
+                    Box::new(move |ctx: &HookExecutionContext| (cond_clone)(ctx)) as BoxedHookCondition,
+                    *pred,
+                )
+            })
+            .collect();
 
         let orchestrator = HookOrchestrator::new();
         orchestrator
@@ -210,7 +210,6 @@ pub fn create_hook_context_from_components(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use knhk_etl::load::SoAArrays;
 
     #[test]
     fn test_hook_sequence_pattern_creation() {

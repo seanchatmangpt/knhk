@@ -217,7 +217,12 @@ impl<T: Clone + Send + Sync + 'static> PatternBuilder<T> {
     /// Build the composite pattern
     pub fn build(self) -> CompositePattern<T> {
         if self.patterns.len() == 1 {
-            CompositePattern::Atomic(self.patterns.into_iter().next().unwrap())
+            CompositePattern::Atomic(
+                self.patterns
+                    .into_iter()
+                    .next()
+                    .expect("Patterns vector should have exactly one element when len() == 1"),
+            )
         } else {
             CompositePattern::Sequence(self.patterns)
         }
