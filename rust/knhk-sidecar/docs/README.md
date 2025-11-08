@@ -322,7 +322,7 @@ if is_retryable_error(&error) {
 
 ### Latency
 
-- **P50**: < 10ms (batched requests)
+- **P50**: < 10ms (batched requests, JSON parsing <10ms)
 - **P95**: < 50ms
 - **P99**: < 100ms
 
@@ -331,6 +331,7 @@ if is_retryable_error(&error) {
 - **Max batch size**: 100 requests
 - **Batch window**: 10ms
 - **Max requests/second**: ~10,000 (with batching)
+- **JSON parsing**: 2-3 GB/s with simdjson
 
 ## Testing
 

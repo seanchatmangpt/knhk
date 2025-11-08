@@ -247,7 +247,7 @@ impl IngestStage {
     /// Parse single triple from JSON value
     #[cfg(feature = "std")]
     fn parse_json_triple(value: &simd_json::OwnedValue) -> Result<RawTriple, PipelineError> {
-        use simd_json::prelude::ValueAsObject;
+        use simd_json::prelude::{ValueAsObject, ValueAsScalar};
         let obj = value.as_object().ok_or_else(|| {
             PipelineError::IngestError("Expected object in JSON triple".to_string())
         })?;
