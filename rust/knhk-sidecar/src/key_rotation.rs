@@ -100,18 +100,42 @@ impl KeyRotationManager {
     /// Start background rotation task
     ///
     /// Spawns a background task that periodically checks and rotates keys.
-    /// Note: In production, this would need access to KMS and SPIFFE managers.
-    /// For now, this is a placeholder that logs rotation checks.
-    pub fn start_background_task(self) -> tokio::task::JoinHandle<()> {
+    /// Takes Arc<Mutex<>> references to KMS and SPIFFE managers for shared access.
+    pub fn start_background_task(
+        self,
+        kms_manager: Option<std::sync::Arc<tokio::sync::Mutex<Option<KmsManager>>>>,
+        spiffe_manager: Option<std::sync::Arc<tokio::sync::Mutex<Option<SpiffeCertManager>>>>,
+    ) -> tokio::task::JoinHandle<()> {
         let check_interval = Duration::from_secs(3600); // Check every hour
         let rotation_interval = self.rotation_interval;
 
         tokio::spawn(async move {
+            let mut rotation_manager = self;
             loop {
                 sleep(check_interval).await;
-                info!("Key rotation check (interval: {}s) - KMS/SPIFFE managers need to be passed for actual rotation", 
-                    rotation_interval.as_secs());
-                // In production, this would call check_and_rotate with actual managers
+
+                // Perform rotation check with managers
+                let mut kms_guard = if let Some(ref kms) = kms_manager {
+                    Some(kms.lock().await)
+                } else {
+                    None
+                };
+
+                let mut spiffe_guard = if let Some(ref spiffe) = spiffe_manager {
+                    Some(spiffe.lock().await)
+                } else {
+                    None
+                };
+
+                if let Err(e) = rotation_manager
+                    .check_and_rotate(
+                        kms_guard.as_mut().and_then(|m| m.as_mut()),
+                        spiffe_guard.as_mut().and_then(|m| m.as_mut()),
+                    )
+                    .await
+                {
+                    error!("Key rotation check failed: {}", e);
+                }
             }
         })
     }

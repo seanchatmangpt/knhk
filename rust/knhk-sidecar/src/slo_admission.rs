@@ -2,6 +2,7 @@
 // Enforces R1/W1/C1 runtime class SLOs
 
 use crate::error::{SidecarError, SidecarResult};
+use std::collections::VecDeque;
 use std::time::Duration;
 use tracing::{error, info, warn};
 
@@ -103,6 +104,9 @@ impl RuntimeClass {
 pub struct SloAdmissionController {
     config: SloConfig,
     metrics: AdmissionMetrics,
+    /// Historical latency tracking for accurate estimation
+    latency_history: std::collections::VecDeque<(RuntimeClass, Duration)>,
+    max_history_size: usize,
 }
 
 impl SloAdmissionController {
@@ -113,10 +117,48 @@ impl SloAdmissionController {
         Ok(Self {
             config,
             metrics: AdmissionMetrics::default(),
+            latency_history: VecDeque::with_capacity(1000),
+            max_history_size: 1000,
         })
     }
 
+    /// Record actual latency for a runtime class
+    ///
+    /// This is called after request processing to track actual performance.
+    pub fn record_latency(&mut self, class: RuntimeClass, latency: Duration) {
+        self.latency_history.push_back((class, latency));
+        if self.latency_history.len() > self.max_history_size {
+            self.latency_history.pop_front();
+        }
+    }
+
+    /// Estimate latency for a runtime class based on historical data
+    ///
+    /// Returns p99 latency estimate based on historical measurements.
+    pub fn estimate_latency(&self, class: RuntimeClass) -> Duration {
+        // Filter history for this class
+        let mut latencies: Vec<Duration> = self
+            .latency_history
+            .iter()
+            .filter_map(|(c, d)| if *c == class { Some(*d) } else { None })
+            .collect();
+
+        if latencies.is_empty() {
+            // No history, return SLO as conservative estimate
+            return class.get_slo(&self.config);
+        }
+
+        // Calculate p99 latency
+        latencies.sort();
+        let p99_index = (latencies.len() as f64 * 0.99).ceil() as usize - 1;
+        let p99_index = p99_index.min(latencies.len() - 1);
+
+        latencies[p99_index]
+    }
+
     /// Check if request can be admitted to runtime class
+    ///
+    /// If estimated_latency is None, uses historical data to estimate.
     ///
     /// Returns:
     /// - Ok(Some(class)): Admitted to specified or degraded class
@@ -125,12 +167,14 @@ impl SloAdmissionController {
     pub fn check_admission(
         &mut self,
         requested_class: RuntimeClass,
-        estimated_latency: Duration,
+        estimated_latency: Option<Duration>,
     ) -> SidecarResult<Option<RuntimeClass>> {
+        // Use provided estimate or calculate from history
+        let estimated = estimated_latency.unwrap_or_else(|| self.estimate_latency(requested_class));
         let slo = requested_class.get_slo(&self.config);
 
         // Check if requested class can meet SLO
-        if estimated_latency <= slo {
+        if estimated <= slo {
             self.metrics.admitted(requested_class);
             return Ok(Some(requested_class));
         }

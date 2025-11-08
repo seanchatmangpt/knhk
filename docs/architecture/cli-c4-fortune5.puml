@@ -1,0 +1,287 @@
+@startuml CLI C4 - Fortune 500 Enterprise Architecture
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title KNHK CLI - Fortune 500 Enterprise Architecture
+
+' ============================================================================
+' System Context
+' ============================================================================
+
+Person(user, "Data Engineer", "Uses CLI to manage RDF pipelines")
+Person(admin, "System Admin", "Manages system configuration and monitoring")
+
+System(knhk_cli, "KNHK CLI", "Enterprise-grade CLI for RDF/SPARQL processing")
+System_Ext(kafka, "Kafka", "Event streaming platform")
+System_Ext(salesforce, "Salesforce", "CRM data source")
+System_Ext(erlang_node, "Erlang RC Layer", "Cold path SPARQL execution")
+System_Ext(otel_collector, "OTEL Collector", "Observability data collection")
+
+Rel(user, knhk_cli, "Uses", "CLI commands")
+Rel(admin, knhk_cli, "Manages", "Configuration")
+Rel(knhk_cli, kafka, "Ingests data from", "Kafka connectors")
+Rel(knhk_cli, salesforce, "Ingests data from", "Salesforce connectors")
+Rel(knhk_cli, erlang_node, "Delegates to", "Complex queries")
+Rel(knhk_cli, otel_collector, "Sends metrics/traces", "OTEL protocol")
+
+' ============================================================================
+' Container Diagram
+' ============================================================================
+
+Container_Boundary(cli_boundary, "KNHK CLI System") {
+    
+    Container(cli_app, "CLI Application", "Rust", "Command-line interface with noun-verb commands")
+    
+    ContainerDb(state_store, "State Store", "File System + SQLite", "Persistent state: O, Σ, Q, connectors, hooks, receipts")
+    
+    Container(state_manager, "State Manager", "Rust", "Manages persistent state: loads/saves O, Σ, Q")
+    
+    Container(connector_registry, "Connector Registry", "Rust", "Manages connector instances and lifecycle")
+    
+    Container(hook_registry, "Hook Registry", "Rust", "Manages knowledge hooks and execution")
+    
+    Container(receipt_store, "Receipt Store", "Rust + SQLite", "Stores and links receipts for provenance")
+    
+    Container(lockchain_service, "Lockchain Service", "Rust", "Generates and verifies Merkle-linked receipts")
+    
+    Container(schema_validator, "Schema Validator", "Rust", "Validates O ⊨ Σ using loaded schemas")
+    
+    Container(invariant_enforcer, "Invariant Enforcer", "Rust", "Enforces Q invariants on operations")
+    
+    Container(etl_pipeline, "ETL Pipeline", "Rust (knhk-etl)", "Ingest → Transform → Load → Reflex → Emit")
+    
+    Container(hot_path_engine, "Hot Path Engine", "C (knhk-hot)", "SIMD-optimized operations ≤8 ticks")
+    
+    Container(warm_path_engine, "Warm Path Engine", "Rust (knhk-warm)", "Query optimization and caching")
+    
+    Container(observability, "Observability", "Rust (knhk-otel)", "Metrics, traces, spans")
+}
+
+' Relationships
+Rel(user, cli_app, "Executes commands")
+Rel(cli_app, state_manager, "Loads/saves state")
+Rel(cli_app, connector_registry, "Manages connectors")
+Rel(cli_app, hook_registry, "Manages hooks")
+Rel(cli_app, etl_pipeline, "Executes pipelines")
+Rel(cli_app, hot_path_engine, "Executes hot path ops")
+Rel(cli_app, warm_path_engine, "Executes warm path queries")
+
+Rel(state_manager, state_store, "Reads/writes", "SQLite + Files")
+Rel(connector_registry, state_store, "Loads connector configs")
+Rel(hook_registry, state_store, "Loads hook configs")
+Rel(receipt_store, state_store, "Stores receipts", "SQLite")
+Rel(lockchain_service, receipt_store, "Links receipts", "Merkle tree")
+
+Rel(etl_pipeline, connector_registry, "Uses connectors", "Kafka, Salesforce, HTTP, File")
+Rel(etl_pipeline, schema_validator, "Validates against Σ")
+Rel(etl_pipeline, invariant_enforcer, "Enforces Q")
+Rel(etl_pipeline, hook_registry, "Executes hooks", "Reflex stage")
+Rel(etl_pipeline, lockchain_service, "Generates receipts")
+Rel(etl_pipeline, receipt_store, "Stores receipts")
+Rel(etl_pipeline, hot_path_engine, "Delegates hot path ops")
+Rel(etl_pipeline, warm_path_engine, "Delegates warm path queries")
+
+Rel(schema_validator, state_store, "Loads Σ schemas")
+Rel(invariant_enforcer, state_store, "Loads Q invariants")
+
+Rel(hot_path_engine, observability, "Emits metrics")
+Rel(warm_path_engine, observability, "Emits metrics")
+Rel(etl_pipeline, observability, "Emits traces")
+Rel(observability, otel_collector, "Sends data", "OTEL protocol")
+
+Rel(warm_path_engine, erlang_node, "Delegates complex queries", "SPARQL 1.1")
+
+' ============================================================================
+' Component Diagram - CLI Application
+' ============================================================================
+
+Container_Boundary(cli_app_boundary, "CLI Application") {
+    
+    Component(command_router, "Command Router", "Rust", "Routes noun-verb commands to handlers")
+    
+    Component(boot_handler, "Boot Handler", "Rust", "boot init: Initializes Σ and Q")
+    Component(connect_handler, "Connect Handler", "Rust", "connect register/list: Manages connectors")
+    Component(admit_handler, "Admit Handler", "Rust", "admit delta: Admits Δ into O")
+    Component(pipeline_handler, "Pipeline Handler", "Rust", "pipeline run/status: Executes ETL")
+    Component(hook_handler, "Hook Handler", "Rust", "hook create/eval: Manages hooks")
+    Component(epoch_handler, "Epoch Handler", "Rust", "epoch create/run: Manages epochs")
+    Component(receipt_handler, "Receipt Handler", "Rust", "receipt get/merge: Manages receipts")
+    Component(config_handler, "Config Handler", "Rust", "config show: Shows configuration")
+    
+    Component(dependency_checker, "Dependency Checker", "Rust", "Verifies prerequisites (boot init before admit)")
+    Component(error_handler, "Error Handler", "Rust", "Handles errors, rollback, recovery")
+    Component(validation_service, "Validation Service", "Rust", "Validates commands and state")
+}
+
+Rel(user, command_router, "Executes commands")
+Rel(command_router, boot_handler, "Routes to")
+Rel(command_router, connect_handler, "Routes to")
+Rel(command_router, admit_handler, "Routes to")
+Rel(command_router, pipeline_handler, "Routes to")
+Rel(command_router, hook_handler, "Routes to")
+Rel(command_router, epoch_handler, "Routes to")
+Rel(command_router, receipt_handler, "Routes to")
+Rel(command_router, config_handler, "Routes to")
+
+Rel(dependency_checker, boot_handler, "Checks prerequisites")
+Rel(dependency_checker, admit_handler, "Checks prerequisites")
+Rel(dependency_checker, pipeline_handler, "Checks prerequisites")
+Rel(dependency_checker, hook_handler, "Checks prerequisites")
+
+Rel(error_handler, boot_handler, "Handles errors")
+Rel(error_handler, admit_handler, "Handles errors")
+Rel(error_handler, pipeline_handler, "Handles errors")
+
+Rel(validation_service, admit_handler, "Validates input")
+Rel(validation_service, pipeline_handler, "Validates input")
+Rel(validation_service, hook_handler, "Validates input")
+
+Rel(boot_handler, state_manager, "Saves Σ and Q")
+Rel(connect_handler, connector_registry, "Registers connectors")
+Rel(admit_handler, state_manager, "Loads O, saves Δ")
+Rel(admit_handler, schema_validator, "Validates O ⊨ Σ")
+Rel(admit_handler, invariant_enforcer, "Enforces Q")
+Rel(admit_handler, etl_pipeline, "Executes pipeline")
+Rel(pipeline_handler, connector_registry, "Uses connectors")
+Rel(pipeline_handler, etl_pipeline, "Executes pipeline")
+Rel(hook_handler, hook_registry, "Registers hooks")
+Rel(hook_handler, hot_path_engine, "Executes hooks")
+Rel(epoch_handler, erlang_node, "Executes epochs")
+Rel(receipt_handler, receipt_store, "Retrieves receipts")
+
+' ============================================================================
+' Component Diagram - State Manager
+' ============================================================================
+
+Container_Boundary(state_manager_boundary, "State Manager") {
+    
+    Component(ontology_loader, "Ontology Loader", "Rust", "Loads O from state store")
+    Component(ontology_saver, "Ontology Saver", "Rust", "Saves O to state store")
+    Component(ontology_merger, "Ontology Merger", "Rust", "Merges Δ into O")
+    
+    Component(schema_loader, "Schema Loader", "Rust", "Loads Σ from state store")
+    Component(invariant_loader, "Invariant Loader", "Rust", "Loads Q from state store")
+    
+    Component(state_validator, "State Validator", "Rust", "Validates state consistency")
+    Component(state_cache, "State Cache", "Rust", "In-memory cache for O, Σ, Q")
+}
+
+Rel(ontology_loader, state_store, "Reads O")
+Rel(ontology_saver, state_store, "Writes O")
+Rel(ontology_merger, ontology_loader, "Loads O")
+Rel(ontology_merger, ontology_saver, "Saves merged O")
+Rel(schema_loader, state_store, "Reads Σ")
+Rel(invariant_loader, state_store, "Reads Q")
+Rel(state_validator, state_store, "Validates state")
+Rel(state_cache, ontology_loader, "Caches O")
+Rel(state_cache, schema_loader, "Caches Σ")
+Rel(state_cache, invariant_loader, "Caches Q")
+
+' ============================================================================
+' Component Diagram - Connector Registry
+' ============================================================================
+
+Container_Boundary(connector_registry_boundary, "Connector Registry") {
+    
+    Component(connector_factory, "Connector Factory", "Rust", "Creates connector instances")
+    Component(connector_pool, "Connector Pool", "Rust", "Manages connector lifecycle")
+    Component(connector_validator, "Connector Validator", "Rust", "Validates connector configs")
+    
+    Component(kafka_connector, "Kafka Connector", "Rust", "Connects to Kafka brokers")
+    Component(salesforce_connector, "Salesforce Connector", "Rust", "Connects to Salesforce API")
+    Component(http_connector, "HTTP Connector", "Rust", "Connects to HTTP endpoints")
+    Component(file_connector, "File Connector", "Rust", "Reads from file system")
+}
+
+Rel(connector_factory, kafka_connector, "Creates")
+Rel(connector_factory, salesforce_connector, "Creates")
+Rel(connector_factory, http_connector, "Creates")
+Rel(connector_factory, file_connector, "Creates")
+Rel(connector_pool, connector_factory, "Uses")
+Rel(connector_validator, connector_factory, "Validates")
+Rel(kafka_connector, kafka, "Connects to")
+Rel(salesforce_connector, salesforce, "Connects to")
+
+' ============================================================================
+' Component Diagram - ETL Pipeline
+' ============================================================================
+
+Container_Boundary(etl_pipeline_boundary, "ETL Pipeline") {
+    
+    Component(ingest_stage, "Ingest Stage", "Rust", "Parses RDF from connectors")
+    Component(transform_stage, "Transform Stage", "Rust", "Converts to typed triples")
+    Component(load_stage, "Load Stage", "Rust", "Builds SoA arrays")
+    Component(reflex_stage, "Reflex Stage", "Rust", "Executes hooks, validates")
+    Component(emit_stage, "Emit Stage", "Rust", "Emits to downstream")
+    
+    Component(pipeline_orchestrator, "Pipeline Orchestrator", "Rust", "Orchestrates stages")
+    Component(pipeline_validator, "Pipeline Validator", "Rust", "Validates pipeline state")
+}
+
+Rel(pipeline_orchestrator, ingest_stage, "Executes")
+Rel(pipeline_orchestrator, transform_stage, "Executes")
+Rel(pipeline_orchestrator, load_stage, "Executes")
+Rel(pipeline_orchestrator, reflex_stage, "Executes")
+Rel(pipeline_orchestrator, emit_stage, "Executes")
+Rel(ingest_stage, connector_registry, "Uses connectors")
+Rel(transform_stage, schema_validator, "Validates against Σ")
+Rel(load_stage, hot_path_engine, "Uses for SoA")
+Rel(reflex_stage, hook_registry, "Executes hooks")
+Rel(reflex_stage, invariant_enforcer, "Enforces Q")
+Rel(emit_stage, lockchain_service, "Generates receipts")
+Rel(emit_stage, receipt_store, "Stores receipts")
+Rel(pipeline_validator, pipeline_orchestrator, "Validates")
+
+' ============================================================================
+' Component Diagram - Hook Registry
+' ============================================================================
+
+Container_Boundary(hook_registry_boundary, "Hook Registry") {
+    
+    Component(hook_storage, "Hook Storage", "Rust", "Stores hook definitions")
+    Component(hook_executor, "Hook Executor", "Rust", "Executes hooks")
+    Component(hook_validator, "Hook Validator", "Rust", "Validates hook configs")
+}
+
+Rel(hook_storage, state_store, "Loads/saves hooks")
+Rel(hook_executor, hot_path_engine, "Executes on hot path")
+Rel(hook_executor, warm_path_engine, "Executes on warm path")
+Rel(hook_validator, hook_storage, "Validates")
+
+' ============================================================================
+' Component Diagram - Receipt Store
+' ============================================================================
+
+Container_Boundary(receipt_store_boundary, "Receipt Store") {
+    
+    Component(receipt_db, "Receipt Database", "SQLite", "Stores receipts")
+    Component(receipt_indexer, "Receipt Indexer", "Rust", "Indexes receipts by operation")
+    Component(receipt_linker, "Receipt Linker", "Rust", "Links receipts in Merkle tree")
+    Component(receipt_retriever, "Receipt Retriever", "Rust", "Retrieves receipts by ID")
+}
+
+Rel(receipt_db, state_store, "SQLite database")
+Rel(receipt_indexer, receipt_db, "Indexes")
+Rel(receipt_linker, lockchain_service, "Links via Merkle")
+Rel(receipt_retriever, receipt_db, "Queries")
+Rel(receipt_retriever, receipt_indexer, "Uses index")
+
+' ============================================================================
+' Component Diagram - Lockchain Service
+' ============================================================================
+
+Container_Boundary(lockchain_service_boundary, "Lockchain Service") {
+    
+    Component(merkle_builder, "Merkle Builder", "Rust", "Builds Merkle tree from receipts")
+    Component(hash_generator, "Hash Generator", "Rust", "Generates SHA-256 hashes")
+    Component(provenance_tracker, "Provenance Tracker", "Rust", "Tracks operation provenance")
+}
+
+Rel(merkle_builder, hash_generator, "Uses")
+Rel(provenance_tracker, merkle_builder, "Tracks")
+Rel(provenance_tracker, receipt_store, "Links receipts")
+
+@enduml
+

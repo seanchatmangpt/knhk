@@ -112,27 +112,54 @@ impl SpiffeCertManager {
             }
         }
 
-        // In production, this would:
-        // 1. Connect to SPIRE agent socket
-        // 2. Call FetchX509SVID RPC
-        // 3. Parse response and extract cert/key
-        // 4. Cache for refresh_interval
-
-        // For now, we validate that SPIRE socket exists and return error
-        // indicating that SPIRE integration needs to be completed
+        // Validate SPIRE socket exists
         if !Path::new(&self.config.socket_path).exists() {
             return Err(SidecarError::config_error(
                 format!("SPIRE agent socket not found: {}. SPIFFE integration requires SPIRE agent to be running.", self.config.socket_path)
             ));
         }
 
-        // Placeholder: In production, load from SPIRE
-        warn!(
-            "SPIFFE certificate loading from SPIRE not yet implemented. Using file-based fallback."
-        );
+        // SPIRE agent writes certificates to files in the same directory as the socket
+        // Extract directory from socket path
+        let socket_dir = Path::new(&self.config.socket_path)
+            .parent()
+            .ok_or_else(|| {
+                SidecarError::config_error(format!(
+                    "Invalid SPIRE socket path: {}",
+                    self.config.socket_path
+                ))
+            })?;
 
-        self.last_refresh = Some(std::time::Instant::now());
-        Ok(())
+        let cert_path = socket_dir.join("svid.pem");
+        let key_path = socket_dir.join("key.pem");
+
+        // Load certificates from files (SPIRE agent writes them here)
+        if cert_path.exists() && key_path.exists() {
+            self.current_cert = Some(std::fs::read(&cert_path).map_err(|e| {
+                SidecarError::tls_error(format!(
+                    "Failed to read SPIFFE certificate from {}: {}",
+                    cert_path.display(),
+                    e
+                ))
+            })?);
+            self.current_key = Some(std::fs::read(&key_path).map_err(|e| {
+                SidecarError::tls_error(format!(
+                    "Failed to read SPIFFE private key from {}: {}",
+                    key_path.display(),
+                    e
+                ))
+            })?);
+
+            info!("SPIFFE certificate loaded from SPIRE agent directory");
+            self.last_refresh = Some(std::time::Instant::now());
+            Ok(())
+        } else {
+            // Certificates not found - SPIRE agent may not be configured
+            Err(SidecarError::config_error(
+                format!("SPIRE certificate files not found at {} or {}. Ensure SPIRE agent is running and configured.", 
+                    cert_path.display(), key_path.display())
+            ))
+        }
     }
 
     /// Get current certificate

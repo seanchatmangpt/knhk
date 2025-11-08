@@ -187,26 +187,55 @@ impl KmsManager {
     pub fn new(config: KmsConfig) -> SidecarResult<Self> {
         config.validate()?;
 
-        // In production, create actual KMS client based on provider
-        // For now, we create a placeholder client
+        // Create actual KMS client based on provider
         let client: Box<dyn KmsClient> = match &config.provider {
-            KmsProvider::Aws { .. } => {
-                // Box::new(AwsKmsClient::new(&config)?)
-                return Err(SidecarError::config_error(
-                    "AWS KMS client not yet implemented. Use file-based keys for now.".to_string(),
-                ));
+            KmsProvider::Aws { region, key_id } => {
+                #[cfg(feature = "fortune5")]
+                {
+                    Box::new(AwsKmsClient::new(region.clone(), key_id.clone())?)
+                }
+                #[cfg(not(feature = "fortune5"))]
+                {
+                    return Err(SidecarError::config_error(
+                        "AWS KMS requires 'fortune5' feature. Enable with --features fortune5"
+                            .to_string(),
+                    ));
+                }
             }
-            KmsProvider::Azure { .. } => {
-                return Err(SidecarError::config_error(
-                    "Azure Key Vault client not yet implemented. Use file-based keys for now."
-                        .to_string(),
-                ));
+            KmsProvider::Azure {
+                vault_url,
+                key_name,
+            } => {
+                #[cfg(feature = "fortune5")]
+                {
+                    Box::new(AzureKmsClient::new(vault_url.clone(), key_name.clone())?)
+                }
+                #[cfg(not(feature = "fortune5"))]
+                {
+                    return Err(SidecarError::config_error(
+                        "Azure Key Vault requires 'fortune5' feature. Enable with --features fortune5".to_string()
+                    ));
+                }
             }
-            KmsProvider::Vault { .. } => {
-                return Err(SidecarError::config_error(
-                    "HashiCorp Vault client not yet implemented. Use file-based keys for now."
-                        .to_string(),
-                ));
+            KmsProvider::Vault {
+                addr,
+                mount_path,
+                key_name,
+            } => {
+                #[cfg(feature = "fortune5")]
+                {
+                    Box::new(VaultKmsClient::new(
+                        addr.clone(),
+                        mount_path.clone(),
+                        key_name.clone(),
+                    )?)
+                }
+                #[cfg(not(feature = "fortune5"))]
+                {
+                    return Err(SidecarError::config_error(
+                        "HashiCorp Vault requires 'fortune5' feature. Enable with --features fortune5".to_string()
+                    ));
+                }
             }
             KmsProvider::None => {
                 return Err(SidecarError::config_error(

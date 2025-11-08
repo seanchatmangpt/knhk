@@ -8,7 +8,7 @@ use crate::config::SidecarConfig;
 use crate::error::{ErrorContext, SidecarError, SidecarResult};
 use crate::health::HealthChecker;
 use crate::retry::RetryConfig;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex as StdMutex};
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
@@ -33,7 +33,8 @@ pub struct KgcSidecarService {
     #[cfg(feature = "otel")]
     weaver_endpoint: Option<String>,
     /// Beat admission manager for 8-beat epoch system
-    beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
+    /// Wrapped in Arc<StdMutex> to ensure Send/Sync compatibility
+    beat_admission: Option<Arc<StdMutex<crate::beat_admission::BeatAdmission>>>,
 }
 
 #[derive(Default)]
@@ -59,7 +60,7 @@ impl KgcSidecarService {
     pub fn new_with_weaver(
         config: SidecarConfig,
         weaver_endpoint: Option<String>,
-        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
+        beat_admission: Option<Arc<StdMutex<crate::beat_admission::BeatAdmission>>>,
     ) -> Self {
         let circuit_breaker = Arc::new(CircuitBreaker::new(
             config.circuit_breaker_failure_threshold,
@@ -68,11 +69,11 @@ impl KgcSidecarService {
 
         let health_checker = Arc::new(HealthChecker::new(5000));
 
-        let retry_config = RetryConfig::new(
-            config.retry_max_attempts,
-            config.retry_initial_delay_ms,
-            config.retry_max_delay_ms,
-        );
+        let retry_config = RetryConfig {
+            max_retries: config.retry_max_attempts,
+            initial_delay_ms: config.retry_initial_delay_ms,
+            max_delay_ms: config.retry_max_delay_ms,
+        };
 
         Self {
             config,
@@ -89,7 +90,7 @@ impl KgcSidecarService {
     pub fn new_with_weaver(
         config: SidecarConfig,
         _weaver_endpoint: Option<String>,
-        beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
+        beat_admission: Option<Arc<StdMutex<crate::beat_admission::BeatAdmission>>>,
     ) -> Self {
         let circuit_breaker = Arc::new(CircuitBreaker::new(
             config.circuit_breaker_failure_threshold,
@@ -98,11 +99,11 @@ impl KgcSidecarService {
 
         let health_checker = Arc::new(HealthChecker::new(5000));
 
-        let retry_config = RetryConfig::new(
-            config.retry_max_attempts,
-            config.retry_initial_delay_ms,
-            config.retry_max_delay_ms,
-        );
+        let retry_config = RetryConfig {
+            max_retries: config.retry_max_attempts,
+            initial_delay_ms: config.retry_initial_delay_ms,
+            max_delay_ms: config.retry_max_delay_ms,
+        };
 
         Self {
             config,
@@ -224,14 +225,22 @@ impl KgcSidecar for KgcSidecarService {
         let req = request.into_inner();
 
         info!(
-            "ApplyTransaction request received with {} RDF bytes",
-            req.rdf_data.len()
+            "ApplyTransaction request received with delta containing {} triples",
+            req.delta.as_ref().map(|d| d.triples.len()).unwrap_or(0)
         );
 
-        // Convert RDF data to string
-        let turtle_data = String::from_utf8(req.rdf_data.clone()).map_err(|e| {
-            tonic::Status::invalid_argument(format!("Invalid UTF-8 in RDF data: {}", e))
+        // Extract RDF data from delta
+        let delta = req.delta.ok_or_else(|| {
+            tonic::Status::invalid_argument("Delta is required in ApplyTransactionRequest")
         })?;
+
+        // Convert delta triples to turtle string
+        let turtle_data = delta
+            .triples
+            .iter()
+            .map(|t| format!("{} {} {} .", t.subject, t.predicate, t.object))
+            .collect::<Vec<_>>()
+            .join("\n");
 
         // Start OTEL span for transaction
         #[cfg(feature = "otel")]
@@ -253,7 +262,7 @@ impl KgcSidecar for KgcSidecarService {
                 tracer.add_attribute(
                     ctx.clone(),
                     "knhk.sidecar.rdf_bytes".to_string(),
-                    req.rdf_data.len().to_string(),
+                    delta.triples.len().to_string(),
                 );
                 Some((tracer, ctx))
             } else {
@@ -320,12 +329,16 @@ impl KgcSidecar for KgcSidecarService {
             })?;
 
             // Return first receipt as transaction receipt
-            emit_result.receipts.first().cloned().ok_or_else(|| {
-                SidecarError::transaction_failed(
-                    ErrorContext::new("SIDECAR_NO_RECEIPT", "No receipt generated")
-                        .with_attribute("stage", "emit"),
-                )
-            })
+            emit_result
+                .actions
+                .first()
+                .map(|a| a.receipt.clone())
+                .ok_or_else(|| {
+                    SidecarError::transaction_failed(
+                        ErrorContext::new("SIDECAR_NO_RECEIPT", "No receipt generated")
+                            .with_attribute("stage", "emit"),
+                    )
+                })
         })();
 
         let success = result.is_ok();
@@ -481,7 +494,7 @@ impl KgcSidecar for KgcSidecarService {
                         .map_err(|e| SidecarError::query_failed(format!("Reflex failed: {}", e)))?;
 
                     // Return boolean result based on receipts
-                    let has_results = !reflex_result.receipts.is_empty();
+                    let has_results = !reflex_result.actions.is_empty();
                     Ok(vec![has_results.to_string()])
                 }
                 // SELECT query: Return triples (warm path)
@@ -796,7 +809,10 @@ impl KgcSidecar for KgcSidecarService {
             }
         };
 
-        let response = HealthCheckResponse { healthy, message };
+        let response = HealthCheckResponse {
+            status: healthy as i32,
+            message,
+        };
 
         Ok(tonic::Response::new(response))
     }
