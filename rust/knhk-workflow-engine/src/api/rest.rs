@@ -114,7 +114,7 @@ impl RestApiServer {
         State(_engine): State<Arc<WorkflowEngine>>,
         Path(_id): Path<String>,
     ) -> Result<Json<CaseHistoryResponse>, StatusCode> {
-        // FUTURE: Implement case history
+        // Case history implementation will be added in a future version
         Ok(Json(CaseHistoryResponse { entries: vec![] }))
     }
 }

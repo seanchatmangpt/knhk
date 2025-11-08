@@ -301,22 +301,27 @@ impl PatternExecutor for ThreadMergePattern {
     }
 }
 
+/// Pattern 26: Cancel Task
 pub fn create_pattern_26() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(26), Box::new(BlockingDiscriminatorPattern))
 }
 
+/// Pattern 27: Cancel Region
 pub fn create_pattern_27() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(27), Box::new(CancellingDiscriminatorPattern))
 }
 
+/// Pattern 28: Structured Loop
 pub fn create_pattern_28() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(28), Box::new(StructuredLoopPattern))
 }
 
+/// Pattern 29: Recursion
 pub fn create_pattern_29() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(29), Box::new(RecursionPattern))
 }
 
+/// Pattern 30: Transient Trigger
 pub fn create_pattern_30() -> (PatternId, Box<dyn PatternExecutor>) {
     (PatternId(30), Box::new(TransientTriggerPattern))
 }

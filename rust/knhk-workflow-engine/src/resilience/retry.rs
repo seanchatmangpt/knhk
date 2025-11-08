@@ -3,6 +3,7 @@
 //! Retry logic with exponential backoff
 
 use crate::error::{WorkflowError, WorkflowResult};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -76,7 +77,7 @@ where
                     }
                     WorkflowError::CaseNotFound(s) => WorkflowError::CaseNotFound(s.clone()),
                     WorkflowError::CaseExists(s) => WorkflowError::CaseExists(s.clone()),
-                    WorkflowError::Configuration(s) => WorkflowError::Configuration(s.clone()),
+                    WorkflowError::Validation(s) => WorkflowError::Validation(s.clone()),
                     WorkflowError::InvalidStateTransition { from, to } => {
                         WorkflowError::InvalidStateTransition {
                             from: from.clone(),
@@ -131,21 +132,26 @@ mod tests {
     async fn test_retry_success() {
         let config = RetryConfig::default();
         let policy = DefaultRetryPolicy;
-        let mut attempts = 0;
+        let attempts = Arc::new(std::sync::Mutex::new(0));
 
-        let result = retry_with_backoff(&config, &policy, || async {
-            attempts += 1;
-            if attempts < 2 {
-                Err(WorkflowError::Timeout)
-            } else {
-                Ok(42)
+        let attempts_clone = attempts.clone();
+        let result = retry_with_backoff(&config, &policy, move || {
+            let attempts = attempts_clone.clone();
+            async move {
+                let mut count = attempts.lock().unwrap();
+                *count += 1;
+                if *count < 2 {
+                    Err(WorkflowError::Timeout)
+                } else {
+                    Ok(42)
+                }
             }
         })
         .await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 42);
-        assert_eq!(attempts, 2);
+        assert_eq!(*attempts.lock().unwrap(), 2);
     }
 
     #[tokio::test]

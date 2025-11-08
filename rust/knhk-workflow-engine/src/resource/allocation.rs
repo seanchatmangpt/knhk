@@ -179,7 +179,7 @@ impl ResourceAllocator {
         request: &AllocationRequest,
     ) -> WorkflowResult<AllocationResult> {
         let resources = self.resources.read().await;
-        let mut candidates: Vec<ResourceId> = resources
+        let candidates: Vec<ResourceId> = resources
             .values()
             .filter(|r| {
                 r.available
@@ -392,8 +392,7 @@ impl ResourceAllocator {
                     .iter()
                     .filter(|c| request.required_capabilities.contains(&c.id))
                     .map(|c| c.level)
-                    .sum::<u8>()
-                    .min(255);
+                    .sum();
                 (r.id, score)
             })
             .collect();

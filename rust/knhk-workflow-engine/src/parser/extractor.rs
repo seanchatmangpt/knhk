@@ -246,6 +246,10 @@ pub fn extract_tasks(
                 output_conditions: Vec::new(),
                 outgoing_flows: Vec::new(),
                 incoming_flows: Vec::new(),
+                allocation_policy: None,
+                required_roles: Vec::new(),
+                required_capabilities: Vec::new(),
+                exception_worklet: None,
             };
 
             tasks.insert(task_id, task);

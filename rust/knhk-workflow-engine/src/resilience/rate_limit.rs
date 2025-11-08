@@ -75,11 +75,10 @@ impl RateLimiter {
         loop {
             match self.limiter.check() {
                 Ok(_) => return Ok(()),
-                Err(negative) => {
-                    // Use wait_time_from with current time
-                    let clock = DefaultClock::default();
-                    let wait_time = negative.wait_time_from(clock.now());
-                    tokio::time::sleep(wait_time).await;
+                Err(_negative) => {
+                    // FUTURE: Use wait_time_from with QuantaInstant when available
+                    // For now, use a fixed delay based on rate limit window
+                    tokio::time::sleep(Duration::from_millis(100)).await;
                 }
             }
         }

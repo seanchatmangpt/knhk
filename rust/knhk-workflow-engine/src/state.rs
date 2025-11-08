@@ -86,7 +86,7 @@ impl StateStore {
         &self,
         spec_id: &crate::parser::WorkflowSpecId,
     ) -> WorkflowResult<Vec<crate::case::CaseId>> {
-        let prefix = format!("case:");
+        let prefix = "case:".to_string();
         let mut cases = Vec::new();
 
         for result in self.db.scan_prefix(prefix.as_bytes()) {

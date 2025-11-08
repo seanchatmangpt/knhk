@@ -139,6 +139,11 @@ impl DeadLetterQueue {
         Ok(entries.len())
     }
 
+    /// Check if DLQ is empty
+    pub fn is_empty(&self) -> WorkflowResult<bool> {
+        Ok(self.len()? == 0)
+    }
+
     /// Update retry count and next retry time
     pub fn update_retry(&self, id: Uuid, next_retry_at: DateTime<Utc>) -> WorkflowResult<()> {
         let mut entries = self

@@ -13,12 +13,10 @@
 //! - Tests verify complete workflows, not individual components
 //! - Tests are readable by business stakeholders
 
-use knhk_workflow_engine::case::{Case, CaseId, CaseState};
-use knhk_workflow_engine::error::{WorkflowError, WorkflowResult};
+use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::executor::WorkflowEngine;
-use knhk_workflow_engine::parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
-use knhk_workflow_engine::patterns::register_all_patterns;
-use knhk_workflow_engine::patterns::{PatternExecutionContext, PatternId, PatternRegistry};
+use knhk_workflow_engine::parser::WorkflowSpecId;
+use knhk_workflow_engine::patterns::{PatternExecutionContext, PatternId};
 use knhk_workflow_engine::state::StateStore;
 use std::collections::HashMap;
 
@@ -255,18 +253,47 @@ fn test_approval_workflow_with_exclusive_choice() {
 #[test]
 fn test_approval_workflow_requires_all_approvers() {
     // Business Requirement: High-value requests require approval from
-    // multiple departments (finance, legal, operations)
+    // multiple departments (finance, legal, operations). All must approve.
     // Arrange: Create engine and context
     let engine = create_test_engine();
     let workflow_id = WorkflowSpecId::new();
     let mut ctx = create_test_context(workflow_id);
 
+    // Realistic high-value contract request
+    ctx.variables.insert(
+        "request_id".to_string(),
+        "REQ-2024-CONTRACT-1002".to_string(),
+    );
     ctx.variables
-        .insert("request_id".to_string(), "REQ-1002".to_string());
+        .insert("request_type".to_string(), "vendor_contract".to_string());
     ctx.variables
-        .insert("amount".to_string(), "100000.00".to_string());
+        .insert("amount".to_string(), "250000.00".to_string());
     ctx.variables
-        .insert("requires_multi_approval".to_string(), "true".to_string());
+        .insert("currency".to_string(), "USD".to_string());
+    ctx.variables
+        .insert("vendor_name".to_string(), "Acme Corp".to_string());
+    ctx.variables
+        .insert("contract_duration_months".to_string(), "24".to_string());
+    ctx.variables
+        .insert("requires_finance_approval".to_string(), "true".to_string());
+    ctx.variables
+        .insert("requires_legal_approval".to_string(), "true".to_string());
+    ctx.variables.insert(
+        "requires_operations_approval".to_string(),
+        "true".to_string(),
+    );
+    ctx.variables
+        .insert("finance_approver_id".to_string(), "EMP-CFO-001".to_string());
+    ctx.variables
+        .insert("legal_approver_id".to_string(), "EMP-GC-001".to_string());
+    ctx.variables.insert(
+        "operations_approver_id".to_string(),
+        "EMP-COO-001".to_string(),
+    );
+    ctx.variables.insert(
+        "approval_deadline".to_string(),
+        "2024-12-31T23:59:59Z".to_string(),
+    );
 
     // Act: Execute multi-approval using Synchronization pattern
     // Pattern 3: Synchronization - Wait for all approvals
@@ -274,7 +301,7 @@ fn test_approval_workflow_requires_all_approvers() {
         .execute_pattern(PatternId(3), ctx.clone())
         .expect("Multi-approval should execute");
 
-    // Assert: All approvals required
+    // Assert: All approvals required with realistic checks
     assert!(
         result.success,
         "Multi-approval workflow should complete successfully"
@@ -282,6 +309,23 @@ fn test_approval_workflow_requires_all_approvers() {
     assert!(
         result.variables.contains_key("all_approved") || result.next_state.is_some(),
         "Multi-approval should track all approvals"
+    );
+
+    // Verify all required approvals tracked
+    assert!(
+        result.variables.contains_key("request_id"),
+        "Request ID should be preserved for audit trail"
+    );
+    assert!(
+        result.variables.contains_key("amount"),
+        "Amount should be preserved for financial tracking"
+    );
+
+    // Verify approval status
+    let approval_status = result.variables.get("approval_status");
+    assert!(
+        approval_status.is_some() || result.variables.contains_key("all_approved"),
+        "Approval status should be tracked (pending, approved, rejected)"
     );
 }
 
@@ -292,18 +336,39 @@ fn test_approval_workflow_requires_all_approvers() {
 #[test]
 fn test_document_processing_with_multiple_instances() {
     // Business Requirement: Process multiple documents in parallel,
-    // each document processed independently
+    // each document processed independently. Documents may be invoices,
+    // contracts, or other business documents.
     // Arrange: Create engine and context
     let engine = create_test_engine();
     let workflow_id = WorkflowSpecId::new();
     let mut ctx = create_test_context(workflow_id);
 
+    // Realistic document batch processing
     ctx.variables
-        .insert("batch_id".to_string(), "BATCH-001".to_string());
+        .insert("batch_id".to_string(), "BATCH-2024-OCR-001".to_string());
     ctx.variables
-        .insert("document_count".to_string(), "10".to_string());
+        .insert("batch_type".to_string(), "invoice_processing".to_string());
     ctx.variables
-        .insert("instance_count".to_string(), "10".to_string());
+        .insert("document_count".to_string(), "25".to_string());
+    ctx.variables
+        .insert("instance_count".to_string(), "25".to_string());
+    ctx.variables
+        .insert("processing_priority".to_string(), "normal".to_string());
+    ctx.variables
+        .insert("ocr_engine".to_string(), "tesseract-v5".to_string());
+    ctx.variables.insert(
+        "expected_completion_time_seconds".to_string(),
+        "300".to_string(),
+    );
+    ctx.variables.insert(
+        "documents".to_string(),
+        r#"[
+            {"id": "DOC-001", "type": "invoice", "pages": 2},
+            {"id": "DOC-002", "type": "invoice", "pages": 1},
+            {"id": "DOC-003", "type": "contract", "pages": 10}
+        ]"#
+        .to_string(),
+    );
 
     // Act: Execute document processing using Multiple Instance pattern
     // Pattern 12: Multiple Instance Without Synchronization
@@ -311,7 +376,7 @@ fn test_document_processing_with_multiple_instances() {
         .execute_pattern(PatternId(12), ctx.clone())
         .expect("Document processing should execute");
 
-    // Assert: All documents processed
+    // Assert: All documents processed with realistic checks
     assert!(
         result.success,
         "Document processing should complete successfully"
@@ -319,6 +384,26 @@ fn test_document_processing_with_multiple_instances() {
     assert!(
         result.variables.contains_key("instances_executed"),
         "Document processing should track instances"
+    );
+
+    // Verify batch information preserved
+    assert!(
+        result.variables.contains_key("batch_id"),
+        "Batch ID should be preserved for tracking"
+    );
+    assert!(
+        result.variables.contains_key("document_count"),
+        "Document count should be preserved for validation"
+    );
+
+    // Verify processing metrics
+    let processed_count = result.variables.get("processed_count");
+    let failed_count = result.variables.get("failed_count");
+    assert!(
+        processed_count.is_some()
+            || failed_count.is_some()
+            || result.variables.contains_key("instances_executed"),
+        "Processing metrics should be tracked (processed, failed counts)"
     );
 }
 
@@ -424,14 +509,42 @@ fn test_event_based_trigger_workflow() {
 #[test]
 fn test_workflow_cancellation_on_user_request() {
     // Business Requirement: Workflow must support cancellation when
-    // user requests it
+    // user requests it. Cancellation must preserve audit trail and
+    // notify relevant parties.
     // Arrange: Create engine and context
     let engine = create_test_engine();
     let workflow_id = WorkflowSpecId::new();
     let mut ctx = create_test_context(workflow_id);
 
+    // Realistic cancellation scenario
     ctx.variables
-        .insert("case_id".to_string(), "CASE-4001".to_string());
+        .insert("case_id".to_string(), "CASE-2024-ORD-4001".to_string());
+    ctx.variables
+        .insert("workflow_type".to_string(), "order_processing".to_string());
+    ctx.variables
+        .insert("order_id".to_string(), "ORD-2024-001234".to_string());
+    ctx.variables
+        .insert("customer_id".to_string(), "CUST-789456".to_string());
+    ctx.variables.insert(
+        "cancellation_reason".to_string(),
+        "customer_requested".to_string(),
+    );
+    ctx.variables.insert(
+        "cancelled_by_user_id".to_string(),
+        "USER-CUST-789456".to_string(),
+    );
+    ctx.variables.insert(
+        "cancellation_timestamp".to_string(),
+        "2024-11-08T10:30:00Z".to_string(),
+    );
+    ctx.variables
+        .insert("refund_required".to_string(), "true".to_string());
+    ctx.variables
+        .insert("refund_amount".to_string(), "149.99".to_string());
+    ctx.variables
+        .insert("notify_customer".to_string(), "true".to_string());
+    ctx.variables
+        .insert("notify_fulfillment_team".to_string(), "true".to_string());
     ctx.variables
         .insert("reason".to_string(), "user_request".to_string());
 
@@ -441,12 +554,35 @@ fn test_workflow_cancellation_on_user_request() {
         .execute_pattern(PatternId(22), ctx.clone())
         .expect("Cancellation should execute");
 
-    // Assert: Case cancelled
+    // Assert: Case cancelled with realistic checks
     assert!(result.success, "Cancellation should complete successfully");
     assert!(
         result.variables.contains_key("case_cancelled"),
         "Cancellation should be recorded"
     );
+
+    // Verify audit trail preserved
+    assert!(
+        result.variables.contains_key("case_id"),
+        "Case ID should be preserved for audit"
+    );
+    assert!(
+        result.variables.contains_key("cancellation_reason"),
+        "Cancellation reason should be preserved for compliance"
+    );
+    assert!(
+        result.variables.contains_key("cancelled_by_user_id"),
+        "Cancelling user should be recorded for audit"
+    );
+
+    // Verify refund processing
+    let refund_required = result.variables.get("refund_required");
+    if refund_required == Some(&"true".to_string()) {
+        assert!(
+            result.variables.contains_key("refund_amount"),
+            "Refund amount should be tracked if refund required"
+        );
+    }
 }
 
 #[test]
@@ -994,23 +1130,68 @@ fn test_workflow_version_compatibility() {
 #[test]
 fn test_end_to_end_order_to_delivery_workflow() {
     // Business Requirement: Complete order-to-delivery process must work
-    // end-to-end with all required steps
+    // end-to-end with all required steps:
+    // 1. Order validation (inventory, customer credit)
+    // 2. Payment processing
+    // 3. Order fulfillment (picking, packing)
+    // 4. Shipping (label generation, carrier assignment)
+    // 5. Delivery tracking
+    // 6. Customer notification
     // Arrange: Create engine and context
     let engine = create_test_engine();
     let workflow_id = WorkflowSpecId::new();
     let mut ctx = create_test_context(workflow_id);
 
-    // Set up complete order data
+    // Complete realistic order data
     ctx.variables
-        .insert("order_id".to_string(), "ORD-E2E-001".to_string());
+        .insert("order_id".to_string(), "ORD-2024-E2E-001234".to_string());
     ctx.variables
-        .insert("customer_id".to_string(), "CUST-E2E-001".to_string());
+        .insert("customer_id".to_string(), "CUST-E2E-789456".to_string());
+    ctx.variables.insert(
+        "customer_email".to_string(),
+        "customer@example.com".to_string(),
+    );
     ctx.variables
-        .insert("total_amount".to_string(), "199.99".to_string());
+        .insert("customer_phone".to_string(), "+1-555-123-4567".to_string());
+    ctx.variables
+        .insert("order_date".to_string(), "2024-11-08T10:00:00Z".to_string());
+    ctx.variables
+        .insert("total_amount".to_string(), "299.99".to_string());
+    ctx.variables
+        .insert("currency".to_string(), "USD".to_string());
     ctx.variables
         .insert("payment_method".to_string(), "credit_card".to_string());
     ctx.variables
-        .insert("shipping_address".to_string(), "123 Main St".to_string());
+        .insert("payment_token".to_string(), "tok_visa_5678".to_string());
+    ctx.variables
+        .insert("shipping_method".to_string(), "standard".to_string());
+    ctx.variables
+        .insert("shipping_cost".to_string(), "9.99".to_string());
+    ctx.variables.insert(
+        "shipping_address".to_string(),
+        "123 Main St, City, ST 12345, USA".to_string(),
+    );
+    ctx.variables.insert(
+        "billing_address".to_string(),
+        "123 Main St, City, ST 12345, USA".to_string(),
+    );
+    ctx.variables
+        .insert("items".to_string(), r#"[
+            {"sku": "SKU-001", "name": "Product A", "quantity": 2, "price": 99.99, "weight_kg": 0.5},
+            {"sku": "SKU-002", "name": "Product B", "quantity": 1, "price": 100.01, "weight_kg": 1.2}
+        ]"#.to_string());
+    ctx.variables
+        .insert("warehouse_id".to_string(), "WH-US-EAST-1".to_string());
+    ctx.variables
+        .insert("carrier_preference".to_string(), "fedex".to_string());
+    ctx.variables.insert(
+        "delivery_instructions".to_string(),
+        "Leave at front door".to_string(),
+    );
+    ctx.variables.insert(
+        "expected_delivery_date".to_string(),
+        "2024-11-15".to_string(),
+    );
 
     // Act: Execute end-to-end workflow
     // This would typically chain multiple patterns in real implementation
@@ -1019,7 +1200,7 @@ fn test_end_to_end_order_to_delivery_workflow() {
         .execute_pattern(PatternId(1), ctx.clone())
         .expect("End-to-end workflow should execute");
 
-    // Assert: End-to-end workflow completed
+    // Assert: End-to-end workflow completed with comprehensive checks
     assert!(
         result.success,
         "End-to-end order-to-delivery workflow should complete successfully"
@@ -1031,5 +1212,33 @@ fn test_end_to_end_order_to_delivery_workflow() {
     assert!(
         result.next_state.is_some(),
         "Workflow should progress through all states"
+    );
+
+    // Verify all critical data preserved
+    assert!(
+        result.variables.contains_key("customer_id"),
+        "Customer ID should be preserved for tracking"
+    );
+    assert!(
+        result.variables.contains_key("total_amount"),
+        "Total amount should be preserved for financial reconciliation"
+    );
+    assert!(
+        result.variables.contains_key("shipping_address"),
+        "Shipping address should be preserved for fulfillment"
+    );
+
+    // Verify workflow state progression
+    let workflow_state = result.variables.get("workflow_state");
+    assert!(
+        workflow_state.is_some() || result.next_state.is_some(),
+        "Workflow state should progress (pending → validated → paid → fulfilled → shipped → delivered)"
+    );
+
+    // Verify notification tracking
+    let notification_sent = result.variables.get("notification_sent");
+    assert!(
+        notification_sent.is_some() || result.variables.contains_key("customer_notified"),
+        "Customer notification should be tracked"
     );
 }

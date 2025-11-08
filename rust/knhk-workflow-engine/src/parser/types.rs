@@ -97,6 +97,14 @@ pub struct Task {
     pub outgoing_flows: Vec<String>,
     /// Incoming flows (task IDs)
     pub incoming_flows: Vec<String>,
+    /// Resource allocation policy
+    pub allocation_policy: Option<crate::resource::AllocationPolicy>,
+    /// Required roles for task execution
+    pub required_roles: Vec<String>,
+    /// Required capabilities for task execution
+    pub required_capabilities: Vec<String>,
+    /// Worklet ID for exception handling (optional)
+    pub exception_worklet: Option<crate::worklets::WorkletId>,
 }
 
 /// Workflow condition

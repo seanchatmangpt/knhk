@@ -191,9 +191,7 @@ impl WorkletRepository {
     ) -> WorkflowResult<bool> {
         // Simple condition evaluation (in production, would use proper expression evaluator)
         // For now, check if condition is a context variable name and if it exists
-        if context.variables.contains_key(&rule.condition) {
-            Ok(true)
-        } else if rule.condition == "true" {
+        if context.variables.contains_key(&rule.condition) || rule.condition == "true" {
             Ok(true)
         } else if rule.condition == "false" {
             Ok(false)

@@ -9,6 +9,7 @@ pub use extractor::*;
 pub use types::*;
 
 use crate::error::{WorkflowError, WorkflowResult};
+use crate::validation::DeadlockDetector;
 use oxigraph::io::RdfFormat;
 use oxigraph::store::Store;
 use std::io::Read;
@@ -16,6 +17,8 @@ use std::io::Read;
 /// Turtle/YAWL parser
 pub struct WorkflowParser {
     store: Store,
+    /// Deadlock detector for validation
+    deadlock_detector: DeadlockDetector,
 }
 
 impl WorkflowParser {
@@ -23,10 +26,13 @@ impl WorkflowParser {
     pub fn new() -> WorkflowResult<Self> {
         let store = Store::new()
             .map_err(|e| WorkflowError::Parse(format!("Failed to create RDF store: {:?}", e)))?;
-        Ok(Self { store })
+        Ok(Self {
+            store,
+            deadlock_detector: DeadlockDetector,
+        })
     }
 
-    /// Parse workflow from Turtle string
+    /// Parse workflow from Turtle string with deadlock validation
     pub fn parse_turtle(&mut self, turtle: &str) -> WorkflowResult<WorkflowSpec> {
         // Parse Turtle into RDF store using oxigraph's built-in parser
         self.store
@@ -34,7 +40,12 @@ impl WorkflowParser {
             .map_err(|e| WorkflowError::Parse(format!("Failed to load Turtle: {:?}", e)))?;
 
         // Extract workflow specification
-        extractor::extract_workflow_spec(&self.store)
+        let spec = extractor::extract_workflow_spec(&self.store)?;
+
+        // Validate for deadlocks
+        self.deadlock_detector.validate(&spec)?;
+
+        Ok(spec)
     }
 
     /// Parse workflow from file

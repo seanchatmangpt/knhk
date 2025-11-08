@@ -19,7 +19,7 @@ impl MetricsCollector {
 
     /// Record workflow registration
     pub fn record_workflow_registration(&self, _success: bool) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration will be implemented when metrics crate is configured
     }
 
     /// Record case creation

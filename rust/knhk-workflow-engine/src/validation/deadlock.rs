@@ -83,14 +83,14 @@ impl DeadlockDetector {
                 let task_node = PetriNetNode::Task(task_id.to_string());
                 graph
                     .entry(condition_node.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(task_node.clone());
             }
         }
 
         // Add edges from tasks to conditions
         for (task_id, task) in &spec.tasks {
-            let task_node = PetriNetNode::Task(task_id.clone());
+            let task_node = PetriNetNode::Task(task_id.to_string());
             for condition_id in &task.outgoing_flows {
                 let condition_node = PetriNetNode::Condition(condition_id.clone());
                 graph
@@ -283,6 +283,10 @@ mod tests {
             output_conditions: vec!["condition1".to_string()],
             outgoing_flows: vec!["condition1".to_string()],
             incoming_flows: vec!["condition1".to_string()],
+            allocation_policy: None,
+            required_roles: Vec::new(),
+            required_capabilities: Vec::new(),
+            exception_worklet: None,
         };
 
         let condition1 = crate::parser::Condition {

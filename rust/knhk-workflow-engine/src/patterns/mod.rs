@@ -21,7 +21,7 @@ pub struct PatternId(pub u32);
 impl PatternId {
     /// Create pattern ID (must be 1-43)
     pub fn new(id: u32) -> WorkflowResult<Self> {
-        if id >= 1 && id <= 43 {
+        if (1..=43).contains(&id) {
             Ok(Self(id))
         } else {
             Err(WorkflowError::PatternNotFound(id))
