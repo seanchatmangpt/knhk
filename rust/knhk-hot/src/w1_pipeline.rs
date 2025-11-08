@@ -190,6 +190,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
     }
 
     // Handle remaining bytes (scalar)
+    #[allow(clippy::needless_range_loop)]
     for i in (chunks * 16)..len {
         let byte = json[i];
         if byte == b'"' && !prev_was_escape {
