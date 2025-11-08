@@ -181,7 +181,7 @@ impl DeterministicExecutor {
                 let mut hasher = sha2::Sha256::new();
                 hasher.update(&receipt_bytes);
                 let hash: [u8; 32] = hasher.finalize().into();
-                let hash_str = format!("{:x}", hash);
+                let hash_str = hex::encode(hash);
 
                 // Record to lockchain
                 let _ = lockchain.record_case_executed(&case.id, true).await;
