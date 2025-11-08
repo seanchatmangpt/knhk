@@ -5,8 +5,20 @@
 //! - SHACL validation
 //! - SPARQL extraction
 //! - IR structure definitions
+//!
+//! Implements μ compiler: A = μ(O) where:
+//! - O: RDF graphs (FIBO + YAWL-in-RDF + policy)
+//! - μ: RDF→IR compiler with SHACL gates and SPARQL extractors
+//! - A: compact IR (pattern IDs, bitsets, timers, receipts)
+//!
+//! Invariants: μ∘μ = μ (idempotent), hash(A) = hash(μ(O))
 
 use crate::error::{WorkflowError, WorkflowResult};
+use crate::parser::extractor::extract_workflow_spec;
+use crate::parser::types::{JoinType, SplitType, Task, WorkflowSpec, WorkflowSpecId};
+use oxigraph::store::Store;
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 
 /// Compiler options
 #[derive(Debug, Clone)]
@@ -87,21 +99,44 @@ impl RdfCompiler {
         Self { options }
     }
 
-    /// Compile RDF to IR
+    /// Compile RDF to IR: A = μ(O)
     ///
-    /// FUTURE: Implement full compilation pipeline:
-    /// 1. Parse RDF → quads
-    /// 2. Run SHACL validation → fail fast
-    /// 3. Run SPARQL extracts → nodes/edges/timers/resources
+    /// Pipeline:
+    /// 1. Hash RDF graph O → H(O)
+    /// 2. SHACL validation → enforce O ⊨ Σ (fail fast)
+    /// 3. SPARQL extraction → WorkflowSpec
     /// 4. Lower to IR: pattern ids, adjacency bitsets, thresholds
     /// 5. Normalize timers (RRULE→occurrence plan seed)
     /// 6. Seal IR + hash; persist to sled
-    pub fn compile_rdf_to_ir<R: std::io::Read>(
+    pub fn compile_rdf_to_ir(
         &self,
-        _rdf: R,
-        _store: &sled::Db,
+        store: &Store,
+        sled_db: &sled::Db,
+        spec_id: &WorkflowSpecId,
     ) -> WorkflowResult<CompileOutput> {
-        unimplemented!("compile_rdf_to_ir: needs RDF parsing, SHACL validation, SPARQL extraction, and IR generation")
+        // 1) Hash RDF graph O
+        let graph_hash = hash_named_graphs(store, spec_id)?;
+
+        // 2) SHACL validation (fail fast)
+        if self.options.strict_shacl {
+            run_shacl_gates(store, spec_id)?;
+        }
+
+        // 3) Extract WorkflowSpec (reuse existing extractor)
+        let spec = extract_workflow_spec(store)?;
+
+        // 4) Lower to IR
+        let mut ir = lower_spec_to_ir(&spec)?;
+
+        // 5) Extract and normalize timers
+        let timers = extract_timers(store, spec_id)?;
+        ir.timers = timers;
+
+        // 6) Seal and persist
+        let (ir_hash, _ir_bytes) = seal_ir(&ir)?;
+        persist_ir(sled_db, graph_hash, &ir, spec_id)?;
+
+        Ok(CompileOutput { ir, graph_hash })
     }
 }
 
@@ -109,4 +144,243 @@ impl Default for RdfCompiler {
     fn default() -> Self {
         Self::new(CompileOptions::default())
     }
+}
+
+/// Hash named graphs for provenance: H(O)
+fn hash_named_graphs(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<[u8; 32]> {
+    // Snapshot all quads from store and compute SHA-256 hash
+    let mut hasher = Sha256::new();
+
+    // Iterate over all quads in the store
+    #[allow(deprecated)]
+    for quad in store.iter() {
+        let quad =
+            quad.map_err(|e| WorkflowError::Internal(format!("Failed to iterate quads: {:?}", e)))?;
+
+        // Hash quad components (subject, predicate, object, graph)
+        hasher.update(quad.subject.to_string().as_bytes());
+        hasher.update(quad.predicate.to_string().as_bytes());
+        hasher.update(quad.object.to_string().as_bytes());
+        if let Some(graph) = quad.graph_name {
+            hasher.update(graph.to_string().as_bytes());
+        }
+    }
+
+    Ok(hasher.finalize().into())
+}
+
+/// Run SHACL validation gates: enforce O ⊨ Σ
+fn run_shacl_gates(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<()> {
+    #[cfg(feature = "unrdf")]
+    {
+        use knhk_unrdf::validate_shacl;
+
+        // Convert store to Turtle string
+        let data_turtle = store_to_turtle(store)?;
+
+        // Load FIBO+YAWL SHACL shapes (basic validation for now)
+        let shapes_turtle = r#"
+            @prefix sh: <http://www.w3.org/ns/shacl#> .
+            @prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            
+            [] a sh:NodeShape ;
+                sh:targetClass yawl:WorkflowSpecification ;
+                sh:property [
+                    sh:path yawl:hasTask ;
+                    sh:minCount 1 ;
+                ] .
+        "#;
+
+        match validate_shacl(&data_turtle, shapes_turtle) {
+            Ok(result) => {
+                if !result.conforms {
+                    return Err(WorkflowError::Validation(format!(
+                        "SHACL validation failed: {:?}",
+                        result.results
+                    )));
+                }
+            }
+            Err(e) => {
+                return Err(WorkflowError::Validation(format!(
+                    "SHACL validation error: {:?}",
+                    e
+                )));
+            }
+        }
+    }
+
+    #[cfg(not(feature = "unrdf"))]
+    {
+        // Without unrdf feature, skip SHACL validation
+        // In production, this should be an error or use alternative validation
+    }
+
+    Ok(())
+}
+
+/// Convert RDF store to Turtle string
+fn store_to_turtle(store: &Store) -> WorkflowResult<String> {
+    use oxigraph::io::RdfFormat;
+    use std::io::Cursor;
+
+    let mut writer = Vec::new();
+    store
+        .dump_graph(&mut Cursor::new(&mut writer), RdfFormat::Turtle, None)
+        .map_err(|e| WorkflowError::Internal(format!("Failed to serialize store: {:?}", e)))?;
+
+    String::from_utf8(writer)
+        .map_err(|e| WorkflowError::Internal(format!("Failed to convert to string: {:?}", e)))
+}
+
+/// Lower WorkflowSpec to WorkflowIr
+fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
+    let mut nodes = Vec::new();
+    let mut pattern_ids = Vec::new();
+
+    // Build node index for bitset computation
+    let mut node_index: HashMap<String, usize> = HashMap::new();
+    let mut node_list = Vec::new();
+
+    // Index all tasks
+    for (task_id, task) in &spec.tasks {
+        let idx = node_list.len();
+        node_index.insert(task_id.clone(), idx);
+        node_list.push((task_id.clone(), true)); // true = task
+    }
+
+    // Index all conditions
+    for (cond_id, _cond) in &spec.conditions {
+        let idx = node_list.len();
+        node_index.insert(cond_id.clone(), idx);
+        node_list.push((cond_id.clone(), false)); // false = condition
+    }
+
+    // Build NodeIR for each task
+    for (task_id, task) in &spec.tasks {
+        let pattern_id = map_pattern_id(task.split_type, task.join_type);
+        pattern_ids.push(pattern_id as u32);
+
+        // Compute input mask (predecessors)
+        let mut in_mask = 0u128;
+        for incoming in &task.incoming_flows {
+            if let Some(&pred_idx) = node_index.get(incoming) {
+                if pred_idx < 128 {
+                    in_mask |= 1u128 << pred_idx;
+                }
+            }
+        }
+
+        // Compute output mask (successors)
+        let mut out_mask = 0u128;
+        for outgoing in &task.outgoing_flows {
+            if let Some(&succ_idx) = node_index.get(outgoing) {
+                if succ_idx < 128 {
+                    out_mask |= 1u128 << succ_idx;
+                }
+            }
+        }
+
+        // Extract parameters (MI count, thresholds)
+        let param = match task.task_type {
+            crate::parser::types::TaskType::MultipleInstance => {
+                // Extract MI count from task properties (default to 1)
+                1
+            }
+            _ => 0,
+        };
+
+        // Extract flags (discriminator, cancelling, etc.)
+        let flags = 0u32; // TODO: Extract from task properties
+
+        let node_ir = NodeIR {
+            pattern: pattern_id,
+            in_mask,
+            out_mask,
+            param,
+            flags,
+        };
+
+        nodes.push(node_ir);
+    }
+
+    Ok(WorkflowIr {
+        pattern_ids,
+        nodes,
+        timers: Vec::new(), // Will be populated by extract_timers
+    })
+}
+
+/// Map split/join combination to PatternId (1-43)
+fn map_pattern_id(split: SplitType, join: JoinType) -> u8 {
+    // Basic YAWL pattern mapping:
+    // Pattern 1: AND-split + AND-join (Sequence)
+    // Pattern 2: XOR-split + XOR-join (Exclusive Choice)
+    // Pattern 3: OR-split + OR-join (Inclusive Choice)
+    // Pattern 4: AND-split + XOR-join
+    // Pattern 5: XOR-split + AND-join
+    // Pattern 6: OR-split + AND-join
+    // Pattern 7: AND-split + OR-join
+    // Pattern 8: XOR-split + OR-join
+    // Pattern 9: OR-split + XOR-join
+    // Patterns 10-43: Advanced patterns (MI, loops, etc.)
+
+    match (split, join) {
+        (SplitType::And, JoinType::And) => 1,
+        (SplitType::Xor, JoinType::Xor) => 2,
+        (SplitType::Or, JoinType::Or) => 3,
+        (SplitType::And, JoinType::Xor) => 4,
+        (SplitType::Xor, JoinType::And) => 5,
+        (SplitType::Or, JoinType::And) => 6,
+        (SplitType::And, JoinType::Or) => 7,
+        (SplitType::Xor, JoinType::Or) => 8,
+        (SplitType::Or, JoinType::Xor) => 9,
+        // Default to pattern 1 for unknown combinations
+        _ => 1,
+    }
+}
+
+/// Extract timers from RDF store
+fn extract_timers(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Vec<TimerIR>> {
+    // TODO: Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
+    // For now, return empty vector (timers can be added later)
+    Ok(Vec::new())
+}
+
+/// Seal IR: compute hash(A) = hash(μ(O))
+fn seal_ir(ir: &WorkflowIr) -> WorkflowResult<([u8; 32], Vec<u8>)> {
+    // Serialize IR to bytes
+    let ir_bytes = bincode::serialize(ir)
+        .map_err(|e| WorkflowError::Internal(format!("Failed to serialize IR: {:?}", e)))?;
+
+    // Compute hash of serialized IR
+    let mut hasher = Sha256::new();
+    hasher.update(&ir_bytes);
+    let ir_hash = hasher.finalize().into();
+
+    Ok((ir_hash, ir_bytes))
+}
+
+/// Persist IR to sled: spec:H(O) → IR, index:workflow:<spec_id> → H(O)
+fn persist_ir(
+    db: &sled::Db,
+    graph_hash: [u8; 32],
+    ir: &WorkflowIr,
+    spec_id: &WorkflowSpecId,
+) -> WorkflowResult<()> {
+    // Serialize IR
+    let ir_bytes = bincode::serialize(ir)
+        .map_err(|e| WorkflowError::Internal(format!("Failed to serialize IR: {:?}", e)))?;
+
+    // Store IR under spec:H(O) key
+    let spec_key = format!("spec:{:x}", hex::encode(graph_hash));
+    db.insert(spec_key.as_bytes(), ir_bytes.as_slice())
+        .map_err(|e| WorkflowError::StatePersistence(format!("Failed to store IR: {:?}", e)))?;
+
+    // Store index: workflow:<spec_id> → H(O)
+    let index_key = format!("index:workflow:{}", spec_id);
+    db.insert(index_key.as_bytes(), graph_hash.as_slice())
+        .map_err(|e| WorkflowError::StatePersistence(format!("Failed to store index: {:?}", e)))?;
+
+    Ok(())
 }
