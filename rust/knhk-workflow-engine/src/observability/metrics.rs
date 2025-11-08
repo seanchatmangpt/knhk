@@ -2,7 +2,6 @@
 
 use crate::case::CaseId;
 use knhk_otel::{Metric, MetricValue};
-use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -121,7 +120,8 @@ impl MetricsCollector {
             // Record metric asynchronously (non-blocking)
             let tracer_clone = tracer_arc.clone();
             tokio::spawn(async move {
-                if let Ok(mut guard) = tracer_clone.write().await {
+                let mut guard = tracer_clone.write().await;
+                if let Some(ref mut tracer) = *guard {
                     if let Some(ref mut tracer) = *guard {
                         tracer.record_metric(metric);
                     }
@@ -143,7 +143,8 @@ impl MetricsCollector {
             // Record metric asynchronously (non-blocking)
             let tracer_clone = tracer_arc.clone();
             tokio::spawn(async move {
-                if let Ok(mut guard) = tracer_clone.write().await {
+                let mut guard = tracer_clone.write().await;
+                if let Some(ref mut tracer) = *guard {
                     if let Some(ref mut tracer) = *guard {
                         tracer.record_metric(metric);
                     }
@@ -170,7 +171,8 @@ impl MetricsCollector {
             // Record metric asynchronously (non-blocking)
             let tracer_clone = tracer_arc.clone();
             tokio::spawn(async move {
-                if let Ok(mut guard) = tracer_clone.write().await {
+                let mut guard = tracer_clone.write().await;
+                if let Some(ref mut tracer) = *guard {
                     if let Some(ref mut tracer) = *guard {
                         tracer.record_metric(metric);
                     }
