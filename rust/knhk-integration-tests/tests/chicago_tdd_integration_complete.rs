@@ -13,8 +13,6 @@ use knhk_sidecar::config::SidecarConfig;
 #[cfg(feature = "sidecar")]
 use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
 #[cfg(feature = "sidecar")]
-use knhk_sidecar::service::proto::{health_status, query_request};
-#[cfg(feature = "sidecar")]
 use knhk_sidecar::service::proto::{
     ApplyTransactionRequest, Delta, EvaluateHookRequest, GetMetricsRequest, HealthCheckRequest,
     QueryRequest, Triple, ValidateGraphRequest,
@@ -99,7 +97,7 @@ async fn test_integration_sidecar_query_to_hot_path() {
     let sidecar = KgcSidecarService::new(config);
 
     let query_request = Request::new(QueryRequest {
-        query_type: query_request::QueryType::Ask as i32,
+        query_type: QueryRequest::QueryType::Ask as i32,
         query_sparql: "ASK { ?s <http://example.org/name> \"Alice\" }".to_string(),
     });
 
@@ -112,7 +110,7 @@ async fn test_integration_sidecar_query_to_hot_path() {
     let query_response = response.unwrap().into_inner();
     assert_eq!(
         query_response.query_type,
-        query_request::QueryType::Ask as i32,
+        QueryRequest::QueryType::Ask as i32,
         "Query type should be preserved"
     );
 
@@ -216,7 +214,7 @@ async fn test_integration_concurrent_sidecar_and_etl_operations() {
         let svc = sidecar.clone();
         let handle = tokio::spawn(async move {
             let request = Request::new(QueryRequest {
-                query_type: query_request::QueryType::Ask as i32,
+                query_type: QueryRequest::QueryType::Ask as i32,
                 query_sparql: format!("ASK {{ ?s ?p <http://o{i}> }}"),
             });
             svc.query(request).await
@@ -258,7 +256,7 @@ async fn test_integration_health_check_reflects_system_state() {
     // Perform some operations
     let _ = sidecar
         .query(Request::new(QueryRequest {
-            query_type: query_request::QueryType::Ask as i32,
+            query_type: QueryRequest::QueryType::Ask as i32,
             query_sparql: "ASK {}".to_string(),
         }))
         .await;
@@ -274,7 +272,7 @@ async fn test_integration_health_check_reflects_system_state() {
     // Assert: Health reflects system state
     assert_eq!(
         health_response.status,
-        health_status::HealthStatus::HealthStatusHealthy as i32,
+        HealthCheckResponse::HealthStatus::HealthStatusHealthy as i32,
         "System should be healthy after successful operations"
     );
 
@@ -494,7 +492,7 @@ async fn test_integration_metrics_consistent_across_error_scenarios() {
     // Execute mix of success and failure operations
     let _ = sidecar
         .query(Request::new(QueryRequest {
-            query_type: query_request::QueryType::Ask as i32,
+            query_type: QueryRequest::QueryType::Ask as i32,
             query_sparql: "ASK {}".to_string(),
         }))
         .await;

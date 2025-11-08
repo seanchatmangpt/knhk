@@ -247,11 +247,13 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
                     );
 
                     // Start process
-                    match weaver_builder_config.start() {
+                    let new_process_result = weaver_builder_config.start();
+                    drop(process_guard); // Drop guard before await
+
+                    match new_process_result {
                         Ok(new_process) => {
                             // Wait for initialization
                             sleep(Duration::from_secs(2)).await;
-                            drop(process_guard); // Drop guard before await
 
                             // Check health
                             let mut health_ok = false;
@@ -269,6 +271,13 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
 
                             if health_ok {
                                 info!("Weaver restarted successfully");
+                                let mut process_guard = match weaver_monitor_process.lock() {
+                                    Ok(guard) => guard,
+                                    Err(e) => {
+                                        error!("Mutex poisoned while updating process: {}", e);
+                                        continue;
+                                    }
+                                };
                                 *process_guard = Some(new_process);
                             } else {
                                 error!("Weaver restart failed health check");
@@ -306,9 +315,6 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     // Note: Beat scheduler uses raw pointers and is not Send/Sync
     // We run it on the current thread to avoid thread safety issues
     // In production, this would be handled by a dedicated beat thread
-    let beat_scheduler_clone = Arc::clone(&beat_scheduler);
-    let beat_interval = Duration::from_millis(config.beat_advance_interval_ms);
-    // Use spawn_local for non-Send futures (requires LocalSet)
     // For now, we'll skip the beat advancement task to avoid thread safety issues
     // TODO: Implement proper beat scheduler thread safety or use LocalSet
     info!(
