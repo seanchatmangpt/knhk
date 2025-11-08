@@ -7,10 +7,24 @@
 //! - Manages workflow cases with state persistence
 //! - Integrates with KNHK infrastructure (OTEL, lockchain, connectors)
 //!
+//! # Architecture
+//!
+//! The engine uses a **multi-layered abstraction architecture**:
+//!
+//! - **Facade Layer**: Domain-specific entry points (Legacy, Reflex, Enterprise, API, CLI)
+//! - **Service Layer**: Business logic abstraction (Workflow, Case, Pattern, Provenance, Resource)
+//! - **Builder Layer**: Fluent configuration APIs (Engine, Service, Facade builders)
+//! - **Trait-Based Interfaces**: Extensibility points for custom implementations
+//! - **Plugin Architecture**: Runtime class executors (R1, W1, C1)
+//! - **Unified Gateway**: Request routing and runtime class routing
+//!
+//! See [ABSTRACTION_ARCHITECTURE_PLAN.md](../ABSTRACTION_ARCHITECTURE_PLAN.md) for detailed architecture documentation.
+//!
 //! # Features
 //!
 //! - **Full Pattern Support**: All 43 Van der Aalst workflow patterns
 //! - **YAWL Compatibility**: Parses and executes YAWL workflow definitions
+//! - **Multi-Layered Abstraction**: Facade, Service, Builder, Trait, Plugin, and Gateway layers
 //! - **Enterprise APIs**: REST and gRPC interfaces
 //! - **State Persistence**: Sled-based state store
 //! - **Observability**: OTEL integration for tracing

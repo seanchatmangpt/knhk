@@ -47,6 +47,7 @@
 ## Reference
 
 - [Architecture](reference/architecture.md)
+- [Abstraction Architecture](ABSTRACTION_ARCHITECTURE_PLAN.md) - Multi-layered abstraction architecture
 - [Configuration](reference/configuration.md)
 - [Error Handling](reference/errors.md)
 - [Best Practices](reference/best-practices.md)

@@ -303,7 +303,7 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
         };
 
         // Extract flags (discriminator, cancelling, etc.)
-        let flags = 0u32; // TODO: Extract from task properties
+        let flags = 0u32; // FUTURE: Extract from task properties
 
         let node_ir = NodeIR {
             pattern: pattern_id,
@@ -354,7 +354,7 @@ fn map_pattern_id(split: SplitType, join: JoinType) -> u8 {
 
 /// Extract timers from RDF store
 fn extract_timers(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Vec<TimerIR>> {
-    // TODO: Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
+    // FUTURE: Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
     // For now, return empty vector (timers can be added later)
     Ok(Vec::new())
 }
