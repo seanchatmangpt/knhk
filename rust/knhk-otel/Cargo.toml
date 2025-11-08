@@ -17,10 +17,14 @@ path = "src/lib.rs"
 
 [dependencies]
 # OpenTelemetry dependencies - all optional with std feature
-opentelemetry = { version = "0.31", optional = true, default-features = false }
-opentelemetry_sdk = { version = "0.31", optional = true, default-features = false }
-opentelemetry-otlp = { version = "0.31", optional = true, default-features = false }
+opentelemetry = { version = "0.31", optional = true, default-features = false, features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.31", optional = true, default-features = false, features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.31", optional = true, default-features = false, features = ["trace", "metrics", "http-proto"] }
 opentelemetry-http = { version = "0.31", optional = true, default-features = false }
+opentelemetry-stdout = { version = "0.31", optional = true, default-features = false, features = ["trace"] }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", optional = true, features = ["registry", "fmt"] }
+tracing-opentelemetry = { version = "0.32", optional = true }
 # Standard library dependencies - all optional
 rand = { version = "0.8", optional = true, default-features = false }
 hashbrown = { version = "0.15", default-features = false }
@@ -31,5 +35,5 @@ serde_json = { version = "1.0", optional = true }
 default = ["std"]
 # std feature enables all std-dependent functionality
 # Note: hashbrown doesn't have a "std" feature, it's always available
-std = ["rand/std", "rand/std_rng", "opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "opentelemetry-http", "reqwest", "serde_json"]
+std = ["rand/std", "rand/std_rng", "opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "opentelemetry-http", "opentelemetry-stdout", "tracing", "tracing-subscriber", "tracing-opentelemetry", "reqwest", "serde_json"]
 

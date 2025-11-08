@@ -16,7 +16,6 @@ This directory contains the Rust implementation of KNHK (Knowledge Graph Hot Pat
 - **knhk-hot** (v1.0.0) - Hot path FFI layer (links to C library)
 - **knhk-etl** (v0.1.0) - Extract, Transform, Load pipeline with beat scheduling
 - **knhk-warm** (v0.1.0) - Warm path query optimization with caching
-- **knhk-aot** (v0.1.0) - Ahead-of-time validation and policy enforcement
 
 ### Infrastructure Crates
 
@@ -144,7 +143,6 @@ knhk-sidecar → knhk-hot, knhk-etl, knhk-connectors, knhk-otel, knhk-config
 knhk-validation → knhk-hot, knhk-connectors, knhk-lockchain, knhk-otel
 knhk-etl → knhk-hot, knhk-connectors, knhk-lockchain, knhk-otel
 knhk-warm → knhk-hot, knhk-etl, knhk-otel (optional), knhk-unrdf (optional)
-knhk-aot → knhk-validation (optional)
 knhk-hot → ../c/libknhk.a (C library)
 ```
 

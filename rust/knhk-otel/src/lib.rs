@@ -923,6 +923,7 @@ pub fn init_tracer(
     use opentelemetry::propagation::TextMapCompositePropagator;
     use opentelemetry::trace::TracerProvider;
     use opentelemetry::KeyValue;
+    #[cfg(feature = "std")]
     use opentelemetry_sdk::{
         propagation::{BaggagePropagator, TraceContextPropagator},
         trace::{RandomIdGenerator, Sampler, SdkTracerProvider},
@@ -936,36 +937,71 @@ pub fn init_tracer(
     ]));
 
     // Create resource with service information
+    let service_name_str = service_name.to_string();
+    let service_version_str = service_version.to_string();
+    let instance_id = format!("knhk-{}", std::process::id());
     let resource = Resource::builder_empty()
-        .with_service_name(service_name)
+        .with_service_name(service_name_str)
         .with_attributes([
-            KeyValue::new("service.version", service_version),
+            KeyValue::new("service.version", service_version_str),
             KeyValue::new("telemetry.sdk.language", "rust"),
             KeyValue::new("telemetry.sdk.name", "opentelemetry"),
             KeyValue::new("telemetry.sdk.version", "0.31.0"),
-            KeyValue::new(
-                "service.instance.id",
-                format!("knhk-{}", std::process::id()),
-            ),
+            KeyValue::new("service.instance.id", instance_id),
         ])
         .build();
 
     // Create exporter based on endpoint
-    let span_exporter: Box<dyn opentelemetry_sdk::trace::SpanExporter> =
-        if let Some(endpoint) = endpoint {
-            // OTLP HTTP exporter
-            std::env::set_var("OTEL_EXPORTER_OTLP_ENDPOINT", endpoint);
+    // Use enum approach since SpanExporter is not dyn compatible
+    #[allow(refining_impl_trait)]
+    #[derive(Debug)]
+    enum SpanExporterType {
+        Otlp(opentelemetry_otlp::SpanExporter),
+    }
 
-            let exporter = opentelemetry_otlp::SpanExporter::builder()
-                .with_http()
-                .build()
-                .map_err(|e| format!("Failed to create OTLP HTTP exporter: {}", e))?;
+    #[allow(refining_impl_trait)]
+    impl opentelemetry_sdk::trace::SpanExporter for SpanExporterType {
+        fn export(
+            &self,
+            batch: Vec<opentelemetry_sdk::trace::SpanData>,
+        ) -> std::pin::Pin<
+            Box<
+                dyn std::future::Future<Output = opentelemetry_sdk::error::OTelSdkResult>
+                    + Send
+                    + '_,
+            >,
+        > {
+            match self {
+                SpanExporterType::Otlp(exporter) => Box::pin(exporter.export(batch)),
+            }
+        }
 
-            Box::new(exporter)
-        } else {
-            // Stdout exporter for development
-            Box::new(opentelemetry_stdout::SpanExporter::default())
-        };
+        fn shutdown(&mut self) -> opentelemetry_sdk::error::OTelSdkResult {
+            match self {
+                SpanExporterType::Otlp(exporter) => exporter.shutdown(),
+            }
+        }
+    }
+
+    let span_exporter = if let Some(endpoint) = endpoint {
+        // OTLP HTTP exporter
+        std::env::set_var("OTEL_EXPORTER_OTLP_ENDPOINT", endpoint);
+
+        let exporter = opentelemetry_otlp::SpanExporter::builder()
+            .with_http()
+            .build()
+            .map_err(|e| format!("Failed to create OTLP HTTP exporter: {}", e))?;
+
+        SpanExporterType::Otlp(exporter)
+    } else {
+        // Use OTLP with default endpoint if no endpoint specified
+        std::env::set_var("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
+        let exporter = opentelemetry_otlp::SpanExporter::builder()
+            .with_http()
+            .build()
+            .map_err(|e| format!("Failed to create OTLP HTTP exporter: {}", e))?;
+        SpanExporterType::Otlp(exporter)
+    };
 
     // Create tracer provider with batch exporter
     let tracer_provider = SdkTracerProvider::builder()
@@ -983,13 +1019,14 @@ pub fn init_tracer(
     use tracing_opentelemetry::OpenTelemetryLayer;
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Registry};
 
+    let otel_layer = OpenTelemetryLayer::new(tracer);
     Registry::default()
-        .with(OpenTelemetryLayer::new(tracer))
+        .with(otel_layer)
         .with(tracing_subscriber::fmt::layer().compact())
         .init();
 
     // Create metrics provider
-    let meter_provider = if let Some(endpoint) = endpoint {
+    let meter_provider = if let Some(_endpoint) = endpoint {
         use opentelemetry_otlp::MetricExporter;
         use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 

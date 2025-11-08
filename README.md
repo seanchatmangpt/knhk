@@ -15,7 +15,6 @@ KNHK is a production-ready knowledge graph engine designed for real-time graph o
 **Key Features**:
 - **8-Beat Epoch System**: Fixed-cadence reconciliation with branchless cycle/tick/pulse generation (τ=8)
 - **Hot Path**: ≤2ns latency (7 ticks with buffer pooling) for critical operations
-- **AOT Validation**: Ahead-of-time IR validation enforcing Chatman Constant (≤8 ticks) before execution
 - **Buffer Pooling**: Zero-allocation hot path with pre-allocated SoA buffers and receipt pools (1-tick improvement: 8→7 ticks)
 - **SIMD Predicates**: Branchless predicate matching with ARM64 NEON (≤0.5 ticks) and x86_64 AVX2 (≤0.25 ticks)
 - **Fiber Execution**: Per-shard execution units with tick-based rotation and park/escalate
@@ -254,42 +253,6 @@ gRPC proxy service with 8-beat admission control:
 - **Circuit Breaker**: Prevents cascading failures
 - **Retry Logic**: Exponential backoff with idempotence support
 
-### 11. AOT Compilation Guard (`rust/knhk-aot/`)
-
-Ahead-of-time IR validation and optimization framework (standalone library):
-- **IR Validation**: Enforces Chatman Constant (≤8 ticks) before execution
-- **Template Analysis**: Separates constants from variables for optimization
-- **Prebinding**: Precomputes constants for branchless execution
-- **MPHF Generation**: O(1) predicate lookup with perfect hashing
-- **Specialization**: Operation-specific optimizations for hot path operations
-- **Hot Path Set Validation**: Ensures operations are in H_hot set
-- **Operation-Specific Constraints**: Validates UNIQUE (run_len ≤ 1), COUNT (k ≤ run_len), etc.
-
-**Note**: `knhk-aot` is a standalone library for optional AOT validation. The ETL pipeline (`knhk-etl`) uses its own `guard_validation` module for branchless validation, and the C hot path layer (`c/src/fiber.c`) performs inline validation. `knhk-aot` can be used independently for pre-execution IR validation and optimization.
-
-**Validation Rules**:
-- Run length must be ≤ 8 (Chatman Constant)
-- Operation must be in hot path set (ASK, COUNT, COMPARE, UNIQUE, CONSTRUCT8)
-- Operation-specific constraints enforced before execution
-
-**Usage**:
-```rust
-use knhk_aot::{AotGuard, ValidationResult};
-
-match AotGuard::validate_ir(op, run_len, k) {
-    Ok(()) => {
-        // IR validated, safe to execute
-    }
-    Err(result) => {
-        eprintln!("Validation failed: {}", AotGuard::error_message(&result));
-    }
-}
-```
-
-**C Layer Integration**: The C hot path (`c/src/aot/aot_guard.c`) provides `knhk_aot_validate_ir()` for C-level validation, though the fiber execution currently uses inline validation.
-
-See [AOT Documentation](rust/knhk-aot/docs/README.md) for complete details.
-
 ## Getting Started
 
 ### Prerequisites
@@ -314,7 +277,6 @@ cd rust && cargo build -p knhk-etl --release
 cd rust && cargo build -p knhk-unrdf --release --features native
 cd rust && cargo build -p knhk-sidecar --release
 cd rust && cargo build -p knhk-json-bench --release
-cd rust && cargo build -p knhk-aot --release
 
 # Alternative: Build from individual crate directories
 cd rust/knhk-etl && cargo build --release
@@ -637,17 +599,6 @@ knhk/
 │   │   │   └── lib.rs               # JSON parsing implementation
 │   │   └── benches/
 │   │       └── json_parse_bench.rs  # JSON parsing benchmarks
-│   ├── knhk-aot/            # AOT compilation guard and optimization
-│   │   ├── src/
-│   │   │   ├── lib.rs               # AOT guard and validation
-│   │   │   ├── mphf.rs              # Perfect hashing for predicates
-│   │   │   ├── template.rs          # Template analysis
-│   │   │   ├── template_analyzer.rs # Template analyzer
-│   │   │   ├── prebinding.rs        # Constant prebinding
-│   │   │   ├── specialization.rs    # Operation specialization
-│   │   │   └── pattern.rs           # Pattern matching
-│   │   └── docs/
-│   │       └── README.md             # AOT documentation
 │   ├── knhk-connectors/     # Enterprise data connectors
 │   │   ├── src/
 │   │   │   ├── kafka.rs             # Kafka connector
@@ -789,7 +740,6 @@ The project uses Design for LEAN Six Sigma methodology with 12-agent hive mind c
 - ✅ Weaver live-check integration
 - ✅ LEAN documentation policy implementation
 - ✅ Evidence-based validation structure
-- ✅ AOT compilation guard (IR validation, template analysis, MPHF generation)
 - ✅ Buffer pooling (zero-allocation hot path, 1-tick improvement: 8→7 ticks)
 - ✅ SIMD predicates (ARM64 NEON ≤0.5 ticks, x86_64 AVX2 ≤0.25 ticks)
 - ✅ Benchmark suite (tick budget, buffer pooling, SIMD predicates, JSON parsing)

@@ -390,7 +390,7 @@ impl KgcSidecar for KgcSidecarService {
                         ticks: receipt.ticks,
                         lanes: receipt.lanes,
                         span_id: receipt.span_id,
-                        a_hash: receipt.a_hash,
+                        a_hash: receipt.a_hash.to_le_bytes().to_vec(),
                     }),
                     errors: vec![],
                 };
@@ -761,7 +761,7 @@ impl KgcSidecar for KgcSidecarService {
                         ticks: receipt.ticks,
                         lanes: receipt.lanes,
                         span_id: receipt.span_id,
-                        a_hash: receipt.a_hash,
+                        a_hash: receipt.a_hash.to_le_bytes().to_vec(),
                     }),
                     errors: vec![],
                 };
