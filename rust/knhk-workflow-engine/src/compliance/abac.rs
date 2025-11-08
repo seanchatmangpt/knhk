@@ -278,14 +278,12 @@ impl AbacPolicyEngine {
             .unwrap_or_else(|_| "unknown".to_string());
         attrs.insert("region".to_string(), region);
 
-        // Add hostname if available
+        // Add hostname if available (use environment variable or fallback)
         if let Ok(hostname) = std::env::var("HOSTNAME") {
             attrs.insert("hostname".to_string(), hostname);
-        } else if let Ok(hostname) = hostname::get() {
-            attrs.insert(
-                "hostname".to_string(),
-                hostname.to_string_lossy().to_string(),
-            );
+        } else if let Ok(hostname) = std::env::var("COMPUTERNAME") {
+            // Windows fallback
+            attrs.insert("hostname".to_string(), hostname);
         }
 
         attrs

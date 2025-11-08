@@ -122,15 +122,18 @@ pub(super) async fn execute_task_with_allocation(
                             crate::services::work_items::WorkItemState::Completed => {
                                 // Work item completed - update case with result
                                 // Merge work_item.data into case variables
-                                if let Some(ref data) = work_item.data {
-                                    let mut case = engine.get_case(case_id).await?;
-                                    // Merge work item data into case variables
-                                    for (key, value) in data {
-                                        case.data.insert(key.clone(), value.clone());
+                                let mut case = engine.get_case(case_id).await?;
+                                // Merge work item data into case variables
+                                if let (Some(case_obj), Some(work_item_obj)) =
+                                    (case.data.as_object_mut(), work_item.data.as_object())
+                                {
+                                    for (key, value) in work_item_obj {
+                                        case_obj.insert(key.clone(), value.clone());
                                     }
-                                    // Update case in engine
-                                    engine.update_case(case_id, case.data).await?;
                                 }
+                                // Update case in engine (save to state store)
+                                let store_arc = engine.state_store.read().await;
+                                (*store_arc).save_case(case_id, &case)?;
                                 break;
                             }
                             crate::services::work_items::WorkItemState::Cancelled => {

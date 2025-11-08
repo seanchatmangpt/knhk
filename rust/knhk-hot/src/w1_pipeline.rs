@@ -153,26 +153,39 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
         // Extract positions using ARM bit reversal + leading zeros
         // (simdjson ARM-specific optimization)
         // Use bit reversal + leading zeros for ARM (instead of trailing zeros)
-        use std::arch::aarch64::*;
-        
         let low = vget_low_u8(structural);
         let high = vget_high_u8(structural);
-        
+
         // Convert to u64 for bit manipulation
         let low_u64 = vget_lane_u64(vreinterpret_u64_u8(low), 0);
         let high_u64 = vget_lane_u64(vreinterpret_u64_u8(high), 0);
-        
+
         // Bit reversal using ARM intrinsic (rbit instruction)
-        let low_reversed = unsafe { std::arch::aarch64::_rbit_u64(low_u64) };
-        let high_reversed = unsafe { std::arch::aarch64::_rbit_u64(high_u64) };
-        
-        // Count leading zeros (clz instruction) to find bit positions
-        let low_clz = low_reversed.leading_zeros();
-        let high_clz = high_reversed.leading_zeros();
-        
-        // Extract positions from reversed bits
-        // For now, use scalar fallback for position extraction
-        // Full SIMD implementation would use vclzq_u8 for vectorized leading zero count
+        // Note: _rbit_u64 is not available in stable Rust, so we use manual bit reversal
+        let low_reversed = low_u64.reverse_bits();
+        let high_reversed = high_u64.reverse_bits();
+
+        // Extract bit positions using leading zeros
+        // For each set bit in reversed mask, calculate position
+        let mut pos = offset;
+        let mut mask = low_reversed;
+        while mask != 0 {
+            let bit_pos = mask.trailing_zeros() as u32;
+            if bit_pos < 8 {
+                index.structural_chars.push(pos + bit_pos);
+            }
+            mask &= mask - 1; // Clear lowest set bit
+        }
+
+        pos += 8;
+        mask = high_reversed;
+        while mask != 0 {
+            let bit_pos = mask.trailing_zeros() as u32;
+            if bit_pos < 8 {
+                index.structural_chars.push(pos + bit_pos);
+            }
+            mask &= mask - 1; // Clear lowest set bit
+        }
 
         // For now, scalar fallback for quote tracking
         for i in 0..16 {
