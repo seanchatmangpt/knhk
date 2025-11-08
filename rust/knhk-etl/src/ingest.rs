@@ -255,7 +255,10 @@ impl IngestStage {
         let s = obj
             .get("s")
             .or_else(|| obj.get("subject"))
-            .and_then(|v| v.as_str())
+            .and_then(|v| match v {
+                simd_json::OwnedValue::String(s) => Some(s.as_str()),
+                _ => None,
+            })
             .ok_or_else(|| {
                 PipelineError::IngestError("Missing 's' or 'subject' field".to_string())
             })?
@@ -264,7 +267,10 @@ impl IngestStage {
         let p = obj
             .get("p")
             .or_else(|| obj.get("predicate"))
-            .and_then(|v| v.as_str())
+            .and_then(|v| match v {
+                simd_json::OwnedValue::String(s) => Some(s.as_str()),
+                _ => None,
+            })
             .ok_or_else(|| {
                 PipelineError::IngestError("Missing 'p' or 'predicate' field".to_string())
             })?
@@ -273,21 +279,14 @@ impl IngestStage {
         let o = obj
             .get("o")
             .or_else(|| obj.get("object"))
-            .and_then(|v| {
-                // Support both string and number/boolean for object
-                if let Some(s) = v.as_str() {
-                    Some(s.to_string())
-                } else if let Some(n) = v.as_u64() {
-                    Some(n.to_string())
-                } else if let Some(n) = v.as_i64() {
-                    Some(n.to_string())
-                } else if let Some(n) = v.as_f64() {
-                    Some(n.to_string())
-                } else if let Some(b) = v.as_bool() {
-                    Some(b.to_string())
-                } else {
-                    None
-                }
+            .map(|v| match v {
+                simd_json::OwnedValue::String(s) => s.to_string(),
+                simd_json::OwnedValue::Static(simd_json::StaticNode::I64(n)) => n.to_string(),
+                simd_json::OwnedValue::Static(simd_json::StaticNode::U64(n)) => n.to_string(),
+                simd_json::OwnedValue::Static(simd_json::StaticNode::F64(n)) => n.to_string(),
+                simd_json::OwnedValue::Static(simd_json::StaticNode::Bool(b)) => b.to_string(),
+                simd_json::OwnedValue::Static(simd_json::StaticNode::Null) => "null".to_string(),
+                _ => "null".to_string(),
             })
             .ok_or_else(|| {
                 PipelineError::IngestError("Missing 'o' or 'object' field".to_string())
@@ -296,7 +295,10 @@ impl IngestStage {
         let g = obj
             .get("g")
             .or_else(|| obj.get("graph"))
-            .and_then(|v| v.as_str())
+            .and_then(|v| match v {
+                simd_json::OwnedValue::String(s) => Some(s.as_str()),
+                _ => None,
+            })
             .map(|s| s.to_string());
 
         Ok(RawTriple {
