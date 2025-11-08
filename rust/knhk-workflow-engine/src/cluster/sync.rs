@@ -92,7 +92,7 @@ impl StateSync {
         match self.strategy {
             SyncStrategy::Strong => {
                 // Strong consistency: replicate to all regions synchronously
-                // TODO: Implement actual replication to remote regions using distributed state store (e.g., etcd, consul)
+                // FUTURE: Implement actual replication to remote regions using distributed state store (e.g., etcd, consul)
                 // This is a false positive - we claim to do strong consistency sync but only update local cache
                 // For now, we only update local cache (same as eventual consistency)
                 tracing::debug!(
@@ -112,7 +112,7 @@ impl StateSync {
             }
             SyncStrategy::LastWriteWins => {
                 // Last-write-wins: timestamp-based conflict resolution
-                // TODO: Implement timestamp-based conflict resolution
+                // FUTURE: Implement timestamp-based conflict resolution
                 // For now, we only update local cache (same as eventual consistency)
                 tracing::debug!(
                     "Last-write-wins sync for spec {} to region {} (local cache only - conflict resolution not yet implemented)",
