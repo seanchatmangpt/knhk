@@ -145,20 +145,13 @@ impl WorkflowEngine {
 
         // Start dual-clock projection task (warm persistence replay)
         // Projects nanosecond commits to millisecond legacy time
-        let engine_arc = Arc::new(engine);
-        let engine_clone = Arc::clone(&engine_arc);
-        tokio::spawn(async move {
-            Self::dual_clock_projection_loop(engine_clone).await;
-        });
+        // Note: WorkflowEngine contains LockchainIntegration which is not Send,
+        // so we can't spawn a task with the entire engine. Instead, we'll skip
+        // the background task for now. In production, this would be handled
+        // by a separate service that owns the state store.
+        // FUTURE: Extract state_store into a separate Send-safe type
 
-        // Return the engine (move it out of Arc)
-        // Note: We can't clone WorkflowEngine, so we use try_unwrap
-        // If there are multiple references (shouldn't happen), we'll get an error
-        Ok(Arc::try_unwrap(engine_arc).map_err(|_| {
-            WorkflowError::Internal(
-                "Failed to unwrap engine Arc - multiple references exist".to_string(),
-            )
-        })?)
+        Ok(engine)
     }
 
     /// Dual-clock projection loop (warm persistence replay)
@@ -166,7 +159,12 @@ impl WorkflowEngine {
     /// Projects nanosecond commits to millisecond legacy time.
     /// Replays completed cases to external observers every N ms,
     /// bridging nanosecond and human domains.
-    async fn dual_clock_projection_loop(engine: Arc<WorkflowEngine>) {
+    ///
+    /// NOTE: This method is not currently used because WorkflowEngine contains
+    /// non-Send types (LockchainIntegration). In production, this would be handled
+    /// by a separate service that owns the state store.
+    #[allow(dead_code)]
+    async fn dual_clock_projection_loop(_engine: Arc<WorkflowEngine>) {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(1000));
         loop {
             interval.tick().await;
@@ -174,11 +172,11 @@ impl WorkflowEngine {
             // Get all completed cases from state store
             // FUTURE: Query completed cases and replay to external observers
             // For now, just log that projection is running
-            let _store_arc = engine.state_store.read().await;
             // In production, would:
             // 1. Query completed cases from state store
             // 2. Replay to external observers (REST/gRPC)
             // 3. Project nanosecond commits to millisecond legacy time
+            tracing::debug!("Dual-clock projection loop running (not implemented)");
         }
     }
 }

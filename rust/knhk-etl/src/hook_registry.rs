@@ -12,10 +12,10 @@ use knhk_hot::KernelType;
 
 /// Guard function type: validates triple against invariants
 /// Returns true if triple passes guard, false otherwise
-pub type GuardFn = fn(&RawTriple) -> bool;
+pub type GuardFn = Box<dyn Fn(&RawTriple) -> bool + Send + Sync>;
 
 /// Hook metadata: compiled hook information
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct HookMetadata {
     /// Unique hook ID
     pub id: u64,
@@ -375,7 +375,7 @@ pub mod guards {
     }
 
     /// Compose two guards with AND logic
-    pub fn and_guard(guard1: GuardFn, guard2: GuardFn) -> impl Fn(&RawTriple) -> bool {
+    pub fn and_guard(guard1: GuardFn, guard2: GuardFn) -> GuardFn {
         move |triple: &RawTriple| guard1(triple) && guard2(triple)
     }
 

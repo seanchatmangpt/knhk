@@ -46,9 +46,9 @@ impl ReceiptIndexer {
         let operation_literal = oxigraph::model::Literal::new_simple_literal(operation_type);
 
         let operation_quad = Quad::new(
-            &receipt_subject,
-            &has_operation,
-            &operation_literal,
+            receipt_subject.clone(),
+            has_operation.clone(),
+            operation_literal.clone(),
             GraphName::DefaultGraph,
         );
 

@@ -82,62 +82,64 @@ impl HookRegistryIntegration {
         let o_constraint = hook.o;
         let k_constraint = hook.k;
 
-        Ok(move |triple: &knhk_etl::ingest::RawTriple| -> bool {
-            // Check predicate constraint (required)
-            if let Some(p) = p_constraint {
-                // Convert predicate IRI to hash for comparison
-                use std::collections::hash_map::DefaultHasher;
-                use std::hash::{Hash, Hasher};
-                let mut hasher = DefaultHasher::new();
-                triple.predicate.hash(&mut hasher);
-                let pred_hash = hasher.finish();
-                if pred_hash != p {
-                    return false;
-                }
-            }
-
-            // Check subject constraint (optional)
-            if let Some(s) = s_constraint {
-                use std::collections::hash_map::DefaultHasher;
-                use std::hash::{Hash, Hasher};
-                let mut hasher = DefaultHasher::new();
-                triple.subject.hash(&mut hasher);
-                let subj_hash = hasher.finish();
-                if subj_hash != s {
-                    return false;
-                }
-            }
-
-            // Check object constraint (optional)
-            if let Some(o) = o_constraint {
-                use std::collections::hash_map::DefaultHasher;
-                use std::hash::{Hash, Hasher};
-                let mut hasher = DefaultHasher::new();
-                triple.object.hash(&mut hasher);
-                let obj_hash = hasher.finish();
-                if obj_hash != o {
-                    return false;
-                }
-            }
-
-            // Check graph constraint (optional)
-            if let Some(k) = k_constraint {
-                if let Some(ref graph) = triple.graph {
+        Ok(Box::new(
+            move |triple: &knhk_etl::ingest::RawTriple| -> bool {
+                // Check predicate constraint (required)
+                if let Some(p) = p_constraint {
+                    // Convert predicate IRI to hash for comparison
                     use std::collections::hash_map::DefaultHasher;
                     use std::hash::{Hash, Hasher};
                     let mut hasher = DefaultHasher::new();
-                    graph.hash(&mut hasher);
-                    let graph_hash = hasher.finish();
-                    if graph_hash != k {
+                    triple.predicate.hash(&mut hasher);
+                    let pred_hash = hasher.finish();
+                    if pred_hash != p {
                         return false;
                     }
-                } else {
-                    return false; // Hook requires graph but triple has none
                 }
-            }
 
-            true
-        })
+                // Check subject constraint (optional)
+                if let Some(s) = s_constraint {
+                    use std::collections::hash_map::DefaultHasher;
+                    use std::hash::{Hash, Hasher};
+                    let mut hasher = DefaultHasher::new();
+                    triple.subject.hash(&mut hasher);
+                    let subj_hash = hasher.finish();
+                    if subj_hash != s {
+                        return false;
+                    }
+                }
+
+                // Check object constraint (optional)
+                if let Some(o) = o_constraint {
+                    use std::collections::hash_map::DefaultHasher;
+                    use std::hash::{Hash, Hasher};
+                    let mut hasher = DefaultHasher::new();
+                    triple.object.hash(&mut hasher);
+                    let obj_hash = hasher.finish();
+                    if obj_hash != o {
+                        return false;
+                    }
+                }
+
+                // Check graph constraint (optional)
+                if let Some(k) = k_constraint {
+                    if let Some(ref graph) = triple.graph {
+                        use std::collections::hash_map::DefaultHasher;
+                        use std::hash::{Hash, Hasher};
+                        let mut hasher = DefaultHasher::new();
+                        graph.hash(&mut hasher);
+                        let graph_hash = hasher.finish();
+                        if graph_hash != k {
+                            return false;
+                        }
+                    } else {
+                        return false; // Hook requires graph but triple has none
+                    }
+                }
+
+                true
+            },
+        ))
     }
 
     /// Get hook registry
