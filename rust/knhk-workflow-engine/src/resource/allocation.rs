@@ -153,12 +153,9 @@ impl ResourceAllocator {
     /// Get resource
     pub async fn get_resource(&self, resource_id: ResourceId) -> WorkflowResult<Resource> {
         let resources = self.resources.read().await;
-        resources
-            .get(&resource_id)
-            .cloned()
-            .ok_or_else(|| {
-                WorkflowError::ResourceUnavailable(format!("Resource {} not found", resource_id.0))
-            })
+        resources.get(&resource_id).cloned().ok_or_else(|| {
+            WorkflowError::ResourceUnavailable(format!("Resource {} not found", resource_id.0))
+        })
     }
 
     /// Allocate resources for a task
@@ -224,7 +221,9 @@ impl ResourceAllocator {
     ) -> WorkflowResult<AllocationResult> {
         let mut chained_state = self.chained_state.write().await;
         let chain_key = format!("{}:{}", request.spec_id, request.task_id);
-        let chain = chained_state.entry(chain_key.clone()).or_insert_with(VecDeque::new);
+        let chain = chained_state
+            .entry(chain_key.clone())
+            .or_insert_with(VecDeque::new);
 
         let resources = self.resources.read().await;
         let candidates: Vec<ResourceId> = resources
@@ -272,7 +271,9 @@ impl ResourceAllocator {
     ) -> WorkflowResult<AllocationResult> {
         let mut round_robin_state = self.round_robin_state.write().await;
         let key = format!("{}:{}", request.spec_id, request.task_id);
-        let queue = round_robin_state.entry(key.clone()).or_insert_with(VecDeque::new);
+        let queue = round_robin_state
+            .entry(key.clone())
+            .or_insert_with(VecDeque::new);
 
         let resources = self.resources.read().await;
         let candidates: Vec<ResourceId> = resources
@@ -299,11 +300,9 @@ impl ResourceAllocator {
         }
 
         // Get next resource from queue
-        let resource_id = queue
-            .pop_front()
-            .ok_or_else(|| {
-                WorkflowError::ResourceUnavailable("Round-robin queue empty".to_string())
-            })?;
+        let resource_id = queue.pop_front().ok_or_else(|| {
+            WorkflowError::ResourceUnavailable("Round-robin queue empty".to_string())
+        })?;
 
         // Add back to end of queue
         queue.push_back(resource_id);
@@ -357,9 +356,7 @@ impl ResourceAllocator {
         let resources = self.resources.read().await;
         let candidates: Vec<ResourceId> = resources
             .values()
-            .filter(|r| {
-                r.available && self.matches_roles(r, &request.required_roles)
-            })
+            .filter(|r| r.available && self.matches_roles(r, &request.required_roles))
             .map(|r| r.id)
             .collect();
 
@@ -387,9 +384,7 @@ impl ResourceAllocator {
         let resources = self.resources.read().await;
         let mut candidates: Vec<(ResourceId, u8)> = resources
             .values()
-            .filter(|r| {
-                r.available && self.matches_capabilities(r, &request.required_capabilities)
-            })
+            .filter(|r| r.available && self.matches_capabilities(r, &request.required_capabilities))
             .map(|r| {
                 // Calculate capability score (sum of matching capability levels)
                 let score: u8 = r
@@ -426,31 +421,23 @@ impl ResourceAllocator {
         if required_roles.is_empty() {
             return true;
         }
-        required_roles.iter().any(|role_id| {
-            resource.roles.iter().any(|r| r.id == *role_id)
-        })
+        required_roles
+            .iter()
+            .any(|role_id| resource.roles.iter().any(|r| r.id == *role_id))
     }
 
     /// Check if resource matches required capabilities
-    fn matches_capabilities(
-        &self,
-        resource: &Resource,
-        required_capabilities: &[String],
-    ) -> bool {
+    fn matches_capabilities(&self, resource: &Resource, required_capabilities: &[String]) -> bool {
         if required_capabilities.is_empty() {
             return true;
         }
-        required_capabilities.iter().all(|cap_id| {
-            resource.capabilities.iter().any(|c| c.id == *cap_id)
-        })
+        required_capabilities
+            .iter()
+            .all(|cap_id| resource.capabilities.iter().any(|c| c.id == *cap_id))
     }
 
     /// Update resource workload
-    pub async fn update_workload(
-        &self,
-        resource_id: ResourceId,
-        delta: i32,
-    ) -> WorkflowResult<()> {
+    pub async fn update_workload(&self, resource_id: ResourceId, delta: i32) -> WorkflowResult<()> {
         let mut resources = self.resources.write().await;
         if let Some(resource) = resources.get_mut(&resource_id) {
             if delta > 0 {
@@ -621,4 +608,3 @@ mod tests {
         assert_eq!(result.policy, AllocationPolicy::ShortestQueue);
     }
 }
-

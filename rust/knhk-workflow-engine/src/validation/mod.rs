@@ -1,19 +1,8 @@
-//! Workflow validation utilities
+//! Workflow validation module
 //!
-//! Provides validation for workflow specifications, patterns, and execution state.
-//!
-//! # Validation Types
-//!
-//! - **Schema Validation**: Validate workflow structure
-//! - **Pattern Validation**: Validate pattern usage
-//! - **State Validation**: Validate state transitions
-//! - **Guard Validation**: Validate guard constraints
+//! Provides validation capabilities including deadlock detection,
+//! workflow structure validation, and pattern validation.
 
-mod guards;
-mod schema;
-mod state;
+pub mod deadlock;
 
-pub use guards::*;
-pub use schema::*;
-pub use state::*;
-
+pub use deadlock::{DeadlockDetectionResult, DeadlockDetector};

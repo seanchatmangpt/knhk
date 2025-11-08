@@ -129,12 +129,9 @@ impl WorkletRepository {
     /// Get worklet by ID
     pub async fn get(&self, worklet_id: WorkletId) -> WorkflowResult<Worklet> {
         let worklets = self.worklets.read().await;
-        worklets
-            .get(&worklet_id)
-            .cloned()
-            .ok_or_else(|| {
-                WorkflowError::ResourceUnavailable(format!("Worklet {} not found", worklet_id.0))
-            })
+        worklets.get(&worklet_id).cloned().ok_or_else(|| {
+            WorkflowError::ResourceUnavailable(format!("Worklet {} not found", worklet_id.0))
+        })
     }
 
     /// Find worklets by exception type
@@ -252,7 +249,7 @@ impl WorkletExecutor {
         worklet_id: WorkletId,
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
-        let worklet = self.repository.get(worklet_id).await?;
+        let _worklet = self.repository.get(worklet_id).await?;
 
         // Execute worklet workflow specification
         // This is a simplified implementation - in production would execute
@@ -271,7 +268,11 @@ impl WorkletExecutor {
         context: PatternExecutionContext,
     ) -> WorkflowResult<Option<PatternExecutionResult>> {
         // Select appropriate worklet for exception
-        if let Some(worklet_id) = self.repository.select_worklet(&context, Some(exception_type)).await? {
+        if let Some(worklet_id) = self
+            .repository
+            .select_worklet(&context, Some(exception_type))
+            .await?
+        {
             let result = self.execute_worklet(worklet_id, context).await?;
             Ok(Some(result))
         } else {
@@ -369,4 +370,3 @@ mod tests {
         assert!(selected.is_some());
     }
 }
-

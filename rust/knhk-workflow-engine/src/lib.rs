@@ -59,6 +59,7 @@ pub mod api;
 pub mod case;
 pub mod cluster;
 pub mod compliance;
+pub mod constants;
 pub mod enterprise;
 pub mod error;
 pub mod executor;
@@ -68,8 +69,11 @@ pub mod parser;
 pub mod patterns;
 pub mod performance;
 pub mod resilience;
+pub mod resource;
 pub mod security;
 pub mod state;
+pub mod validation;
+pub mod worklets;
 
 pub use case::{Case, CaseId, CaseState};
 pub use enterprise::{

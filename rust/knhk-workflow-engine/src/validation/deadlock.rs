@@ -4,7 +4,7 @@
 //! Uses Petri net analysis to detect potential deadlocks at design-time.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{WorkflowSpec, Task};
+use crate::parser::WorkflowSpec;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Deadlock detection result
@@ -55,10 +55,7 @@ impl DeadlockDetector {
         // Check for unreachable tasks
         let unreachable = self.find_unreachable_tasks(spec, &graph);
         if !unreachable.is_empty() {
-            warnings.push(format!(
-                "Unreachable tasks detected: {:?}",
-                unreachable
-            ));
+            warnings.push(format!("Unreachable tasks detected: {:?}", unreachable));
         }
 
         // Check for tasks without outgoing flows (potential dead ends)
@@ -83,7 +80,7 @@ impl DeadlockDetector {
         for (condition_id, condition) in &spec.conditions {
             let condition_node = PetriNetNode::Condition(condition_id.clone());
             for task_id in &condition.outgoing_flows {
-                let task_node = PetriNetNode::Task(task_id.clone());
+                let task_node = PetriNetNode::Task(task_id.to_string());
                 graph
                     .entry(condition_node.clone())
                     .or_insert_with(Vec::new)
@@ -149,14 +146,7 @@ impl DeadlockDetector {
         if let Some(neighbors) = graph.get(node) {
             for neighbor in neighbors {
                 if !visited.contains(neighbor) {
-                    self.dfs_cycle_detection(
-                        neighbor,
-                        graph,
-                        visited,
-                        rec_stack,
-                        path,
-                        cycles,
-                    );
+                    self.dfs_cycle_detection(neighbor, graph, visited, rec_stack, path, cycles);
                 } else if rec_stack.contains(neighbor) {
                     // Cycle detected - extract cycle from path
                     if let Some(start_idx) = path.iter().position(|n| n == neighbor) {
@@ -203,7 +193,7 @@ impl DeadlockDetector {
         spec.tasks
             .keys()
             .filter(|task_id| {
-                let task_node = PetriNetNode::Task(task_id.clone());
+                let task_node = PetriNetNode::Task(task_id.to_string());
                 !reachable.contains(&task_node)
             })
             .cloned()
@@ -310,4 +300,3 @@ mod tests {
         assert!(result.has_deadlock || !result.cycles.is_empty());
     }
 }
-
