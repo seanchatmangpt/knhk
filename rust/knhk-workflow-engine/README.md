@@ -27,7 +27,9 @@ This crate provides a complete workflow engine that:
 - **Observability**: OTEL integration for tracing
 - **Provenance**: Lockchain integration for audit trails
 
-## CLI Usage
+## Quick Start
+
+### CLI Usage
 
 The workflow engine is integrated into the main `knhk` CLI:
 
@@ -43,6 +45,10 @@ knhk workflow create <spec-id> --data '{"input":"test"}'
 knhk workflow start <case-id>
 knhk workflow execute <case-id>
 
+# List workflows and cases
+knhk workflow list              # List all workflows
+knhk workflow list <spec-id>    # List cases for workflow
+
 # List all patterns
 knhk workflow patterns
 
@@ -52,135 +58,110 @@ knhk workflow serve --port 8080
 
 See **[CLI Commands](../knhk-cli/docs/WORKFLOW_COMMANDS.md)** for complete CLI documentation.
 
-## Usage
+### Rust Usage
 
 ```rust
-use knhk_workflow_engine::{WorkflowEngine, WorkflowParser, StateStore, WorkflowSpec, WorkflowSpecId, PatternId};
-use knhk_workflow_engine::resource::{Resource, ResourceId, Role, Capability};
-use knhk_workflow_engine::worklets::{Worklet, WorkletMetadata, WorkletRule, WorkletId};
-use std::collections::HashMap;
+use knhk_workflow_engine::{WorkflowEngine, WorkflowParser, StateStore};
 
 // Create state store
 let state_store = StateStore::new("./workflow_db")?;
 
-// Create engine (includes resource allocator and worklet repository)
+// Create engine
 let engine = WorkflowEngine::new(state_store);
 
-// Register resources
-let resource_allocator = engine.resource_allocator();
-resource_allocator.register_resource(Resource {
-    id: ResourceId::new(),
-    name: "User1".to_string(),
-    roles: vec![Role {
-        id: "approver".to_string(),
-        name: "Approver".to_string(),
-        capabilities: vec!["approval".to_string()],
-    }],
-    capabilities: vec![Capability {
-        id: "approval".to_string(),
-        name: "Approval".to_string(),
-        level: 100,
-    }],
-    workload: 0,
-    queue_length: 0,
-    available: true,
-}).await?;
-
-// Register worklets
-let worklet_repo = engine.worklet_repository();
-let worklet = Worklet {
-    metadata: WorkletMetadata {
-        id: WorkletId::new(),
-        name: "Exception Handler".to_string(),
-        description: "Handles resource allocation failures".to_string(),
-        version: "1.0.0".to_string(),
-        exception_types: vec!["resource_unavailable".to_string()],
-        required_context: vec![],
-        pattern_ids: vec![PatternId(1)],
-        tags: vec!["exception".to_string()],
-    },
-    workflow_spec: WorkflowSpec {
-        id: WorkflowSpecId::new(),
-        name: "Exception Handler Workflow".to_string(),
-        tasks: HashMap::new(),
-        conditions: HashMap::new(),
-        start_condition: None,
-        end_condition: None,
-    },
-    rules: vec![WorkletRule {
-        id: "rule1".to_string(),
-        name: "Resource Unavailable Rule".to_string(),
-        condition: "true".to_string(),
-        worklet_id: WorkletId::new(),
-        priority: 100,
-    }],
-};
-worklet_repo.register(worklet).await?;
-
-// Parse workflow from Turtle (includes deadlock validation)
+// Parse workflow from Turtle
 let mut parser = WorkflowParser::new()?;
 let spec = parser.parse_file("workflow.ttl")?;
-let spec_id = spec.id;
 
-// Register workflow (includes deadlock validation)
-engine.register_workflow(spec).await?;
+// Register workflow
+engine.register_workflow(spec.clone()).await?;
 
-// Create and execute case (includes resource allocation and worklet support)
-let case_id = engine.create_case(spec_id, serde_json::json!({})).await?;
+// Create and execute case
+let case_id = engine.create_case(spec.id, serde_json::json!({})).await?;
 engine.start_case(case_id).await?;
 engine.execute_case(case_id).await?;
 ```
 
-## Pattern Categories
+## Quick Reference
 
-- **Basic Control Flow** (1-5): Sequence, Parallel Split, Synchronization, Exclusive Choice, Simple Merge
-- **Advanced Branching** (6-11): Multi-Choice, Structured Synchronizing Merge, Multi-Merge, Discriminator, Arbitrary Cycles, Implicit Termination
-- **Multiple Instance** (12-15): Various multiple instance patterns
-- **State-Based** (16-18): Deferred Choice, Interleaved Parallel Routing, Milestone
-- **Cancellation** (19-25): Various cancellation patterns
-- **Advanced** (26-39): Additional control flow patterns
-- **Trigger** (40-43): Event-driven trigger patterns
+### Common Operations
 
-## API
+```rust
+// Initialize engine
+let state_store = StateStore::new("./workflow_db")?;
+let engine = Arc::new(WorkflowEngine::new(state_store));
 
-### REST API
+// Parse and register workflow
+let mut parser = WorkflowParser::new()?;
+let spec = parser.parse_file("workflow.ttl")?;
+engine.register_workflow(spec.clone()).await?;
 
-- `POST /workflows` - Register workflow specification
-- `GET /workflows/{id}` - Get workflow specification
-- `POST /cases` - Start workflow case
-- `GET /cases/{id}` - Get case status
-- `POST /cases/{id}/cancel` - Cancel case
-- `GET /cases/{id}/history` - Get execution history
+// Create and execute case
+let case_id = engine.create_case(spec.id, data).await?;
+engine.start_case(case_id).await?;
+engine.execute_case(case_id).await?;
 
-### gRPC API
+// Get case status
+let case = engine.get_case(case_id).await?;
+println!("State: {:?}", case.state);
+```
 
-See `api/grpc.rs` for gRPC service definitions.
+### REST API Endpoints
 
-## Dependencies
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/workflows` | Register workflow |
+| GET | `/workflows/{id}` | Get workflow |
+| POST | `/cases` | Create case |
+| GET | `/cases/{id}` | Get case status |
+| POST | `/cases/{id}/cancel` | Cancel case |
 
-- `knhk-otel` - Observability
-- `knhk-lockchain` - Provenance tracking
-- `knhk-unrdf` - SPARQL/SHACL validation
-- `knhk-connectors` - External system integration
-- `oxigraph` - RDF store
-- `rio-turtle` - Turtle parser
-- `sled` - State persistence
-- `axum` - REST API server
-- `tonic` - gRPC framework
+### Pattern Categories
+
+- **Basic Control Flow (1-5)**: Sequence, Parallel Split, Synchronization, Exclusive Choice, Simple Merge
+- **Advanced Branching (6-11)**: Multi-Choice, Structured Synchronizing Merge, Multi-Merge, Discriminator, Arbitrary Cycles, Implicit Termination
+- **Multiple Instance (12-15)**: MI Without Sync, MI With Design-Time Knowledge, MI With Runtime Knowledge
+- **State-Based (16-18)**: Deferred Choice, Interleaved Parallel Routing, Milestone
+- **Cancellation (19-25)**: Cancel Activity, Cancel Case, Cancel Region, Cancel MI Activity
+- **Advanced Patterns (26-39)**: Blocking Discriminator, Cancelling Discriminator, Structured Loop, Recursion
+- **Trigger Patterns (40-43)**: Explicit Termination, Implicit Termination, Termination with Multiple End Events
+
+### Resource Allocation Policies
+
+- `AllocationPolicy::FourEyes` - Dual approval required
+- `AllocationPolicy::Chained` - Sequential assignment
+- `AllocationPolicy::RoundRobin` - Even distribution
+- `AllocationPolicy::ShortestQueue` - Least busy resource
+- `AllocationPolicy::RoleBased` - Role matching
+- `AllocationPolicy::CapabilityBased` - Capability matching
+
+### Case States
+
+- `CaseState::Created` - Case created, not started
+- `CaseState::Running` - Case executing
+- `CaseState::Completed` - Case completed successfully
+- `CaseState::Cancelled` - Case cancelled
+- `CaseState::Failed` - Case failed
 
 ## Documentation
 
-For comprehensive documentation, see:
-- **[Workflow Engine Documentation](docs/WORKFLOW_ENGINE.md)** - Complete guide with API reference, examples, and integration guides
-- **[Chicago TDD Framework](docs/CHICAGO_TDD_FRAMEWORK_EXPANDED.md)** - Comprehensive testing framework with builders, helpers, and macros
-- **[Chicago TDD Innovation](docs/CHICAGO_TDD_INNOVATION.md)** - Innovative testing features and patterns
-- **[YAWL Integration Complete](docs/YAWL_INTEGRATION_COMPLETE.md)** - Complete integration guide with execution flows and API examples
-- **[YAWL Implementation Summary](docs/YAWL_IMPLEMENTATION_SUMMARY.md)** - YAWL feature implementation status and integration details
-- **[YAWL Feature Comparison](docs/YAWL_FEATURE_COMPARISON.md)** - Comparison with YAWL Java implementation
-- **[Gap Analysis](docs/GAP_ANALYSIS_FILLED.md)** - Gap analysis and filling summary
-- **[SWIFT FIBO Case Study](docs/SWIFT_FIBO_CASE_STUDY.md)** - Enterprise case study with all 43 patterns
-- **[Implementation Plan](FORTUNE5_IMPLEMENTATION_PLAN.md)** - Implementation roadmap and checklist
-- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Quick reference guide for common operations
+- **[Complete Documentation](docs/WORKFLOW_ENGINE.md)** - Comprehensive guide with API reference, examples, and integration guides
+- **[CLI Commands](../knhk-cli/docs/WORKFLOW_COMMANDS.md)** - Complete CLI command reference
+
+## Performance
+
+- Hot path operations: ≤8 ticks (Chatman Constant)
+- Pattern execution: ≤8 ticks
+- Resource allocation lookup: ≤8 ticks
+- Supports 1000+ concurrent cases
+
+## Integration
+
+- **OTEL**: Automatic span creation for workflow execution
+- **Lockchain**: Automatic receipt recording for provenance
+- **Connectors**: External system integration via connector registry
+- **REST API**: Axum-based REST server
+- **gRPC API**: Tonic-based gRPC service (planned)
 
 ## License
 

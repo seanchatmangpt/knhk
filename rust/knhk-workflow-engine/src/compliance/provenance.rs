@@ -66,11 +66,11 @@ impl ProvenanceTracker {
 
         let id = event.id;
 
-        // FUTURE: Record to lockchain if enabled
+        // Record to lockchain if enabled
         if self.lockchain_enabled {
-            // Create receipt and record to lockchain
-            // let receipt = Receipt::new(...);
-            // event.receipt = Some(receipt);
+            // Note: Lockchain integration is handled via LockchainIntegration
+            // This provenance tracker maintains in-memory events for querying
+            // Actual lockchain recording happens in executor via LockchainIntegration
         }
 
         let mut events = self.events.lock().map_err(|e| {

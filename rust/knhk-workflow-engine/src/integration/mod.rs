@@ -3,7 +3,7 @@
 mod best_practices;
 mod check;
 mod connectors;
-mod fortune5;
+pub mod fortune5;
 mod lockchain;
 mod otel;
 mod registry;

@@ -1,0 +1,52 @@
+[package]
+name = "chicago-tdd-tools"
+version = "1.0.0"
+edition = "2021"
+authors = ["KNHK Team"]
+license = "MIT"
+description = "Chicago TDD testing framework and tools for Rust projects"
+repository = "https://github.com/seanchatmangpt/knhk"
+keywords = ["testing", "tdd", "chicago-tdd", "test-framework"]
+categories = ["development-tools::testing"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["rt", "rt-multi-thread", "macros"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Utilities
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
+
+# Error handling
+thiserror = "2.0"
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.8"
+
+[features]
+default = []
+workflow-engine = []  # Enable workflow-specific features
+property-testing = []  # Enable property-based testing
+mutation-testing = []  # Enable mutation testing
+
+[lib]
+name = "chicago_tdd_tools"
+path = "src/lib.rs"
+
+[[example]]
+name = "basic_test"
+path = "examples/basic_test.rs"
+
+[[example]]
+name = "property_testing"
+path = "examples/property_testing.rs"
+
+[[example]]
+name = "mutation_testing"
+path = "examples/mutation_testing.rs"

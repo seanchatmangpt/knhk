@@ -4,14 +4,9 @@
 //!
 //! **UPGRADED**: Now uses Chicago TDD framework and mutation testing
 
-use knhk_workflow_engine::capabilities::{validate_capabilities, CapabilityRegistry};
-use knhk_workflow_engine::case::{Case, CaseId, CaseState};
-use knhk_workflow_engine::error::WorkflowResult;
-use knhk_workflow_engine::executor::WorkflowEngine;
+use knhk_workflow_engine::case::CaseState;
 use knhk_workflow_engine::parser::{TaskType, WorkflowParser};
-use knhk_workflow_engine::patterns::PatternRegistry;
 use knhk_workflow_engine::self_validation::SelfValidationManager;
-use knhk_workflow_engine::state::StateStore;
 use knhk_workflow_engine::testing::chicago_tdd::*;
 use knhk_workflow_engine::testing::mutation::*;
 use tempfile::TempDir;

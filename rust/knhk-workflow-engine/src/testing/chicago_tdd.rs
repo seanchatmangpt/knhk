@@ -3,6 +3,8 @@
 //!
 //! Provides a comprehensive framework for writing Chicago TDD tests for workflows following
 //! the AAA pattern (Arrange, Act, Assert) with real collaborators.
+//!
+//! **Architecture**: Uses `chicago-tdd-tools` as generic base, extends with workflow-specific functionality.
 
 use crate::case::{Case, CaseId, CaseState};
 use crate::error::WorkflowResult;
@@ -206,12 +208,13 @@ pub fn assert_pattern_has_variable(result: &PatternExecutionResult, key: &str) {
 /// Assert pattern result variable equals expected value
 pub fn assert_pattern_variable_equals(result: &PatternExecutionResult, key: &str, expected: &str) {
     assert_pattern_has_variable(result, key);
+    let actual = result.variables.get(key).unwrap();
+    // Handle JSON string values (with quotes) vs plain strings
+    let actual_trimmed = actual.trim_matches('"');
     assert_eq!(
-        result.variables.get(key),
-        Some(&expected.to_string()),
-        "Variable '{}' should equal '{}'",
-        key,
-        expected
+        actual_trimmed, expected,
+        "Variable '{}' should equal '{}' (got '{}')",
+        key, expected, actual
     );
 }
 
@@ -326,85 +329,6 @@ impl TaskBuilder {
     /// Build the task
     pub fn build(self) -> Task {
         self.task
-    }
-}
-
-// ============================================================================
-// Test Data Builders
-// ============================================================================
-
-/// Builder for creating test data (case variables)
-pub struct TestDataBuilder {
-    data: HashMap<String, String>,
-}
-
-impl TestDataBuilder {
-    /// Create a new test data builder
-    pub fn new() -> Self {
-        Self {
-            data: HashMap::new(),
-        }
-    }
-
-    /// Add a variable
-    pub fn with_var(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.data.insert(key.into(), value.into());
-        self
-    }
-
-    /// Add order data (common business scenario)
-    pub fn with_order_data(
-        mut self,
-        order_id: impl Into<String>,
-        amount: impl Into<String>,
-    ) -> Self {
-        self.data.insert("order_id".to_string(), order_id.into());
-        self.data.insert("total_amount".to_string(), amount.into());
-        self.data.insert("currency".to_string(), "USD".to_string());
-        self.data
-            .insert("order_status".to_string(), "pending".to_string());
-        self
-    }
-
-    /// Add customer data
-    pub fn with_customer_data(mut self, customer_id: impl Into<String>) -> Self {
-        self.data
-            .insert("customer_id".to_string(), customer_id.into());
-        self.data.insert(
-            "customer_email".to_string(),
-            "customer@example.com".to_string(),
-        );
-        self
-    }
-
-    /// Add approval data
-    pub fn with_approval_data(
-        mut self,
-        request_id: impl Into<String>,
-        amount: impl Into<String>,
-    ) -> Self {
-        self.data
-            .insert("request_id".to_string(), request_id.into());
-        self.data.insert("amount".to_string(), amount.into());
-        self.data
-            .insert("condition".to_string(), "true".to_string());
-        self
-    }
-
-    /// Build test data as JSON
-    pub fn build_json(self) -> serde_json::Value {
-        serde_json::to_value(self.data).unwrap_or(serde_json::json!({}))
-    }
-
-    /// Build test data as HashMap
-    pub fn build(self) -> HashMap<String, String> {
-        self.data
-    }
-}
-
-impl Default for TestDataBuilder {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -665,6 +589,7 @@ macro_rules! chicago_tdd_pattern_test {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chicago_tdd_tools::builders::TestDataBuilder;
 
     #[tokio::test]
     async fn test_fixture_creation() {

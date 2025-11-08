@@ -1,17 +1,23 @@
 //! Workflow execution engine
 
 use crate::case::{Case, CaseId, CaseState};
+use crate::compliance::ProvenanceTracker;
+use crate::enterprise::EnterpriseConfig;
 use crate::error::{WorkflowError, WorkflowResult};
+use crate::integration::fortune5::{Fortune5Config, RuntimeClass};
+use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::patterns::{
     PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
 };
 use crate::resource::{AllocationRequest, ResourceAllocator};
+use crate::security::AuthManager;
 use crate::state::StateStore;
 use crate::validation::DeadlockDetector;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::RwLock;
 
 /// Workflow execution engine
@@ -30,6 +36,18 @@ pub struct WorkflowEngine {
     worklet_repository: Arc<WorkletRepository>,
     /// Worklet executor
     worklet_executor: Arc<WorkletExecutor>,
+    /// Enterprise configuration
+    enterprise_config: Option<Arc<EnterpriseConfig>>,
+    /// Fortune 5 integration (if enabled)
+    fortune5_integration: Option<Arc<Fortune5Integration>>,
+    /// OTEL integration (if enabled)
+    otel_integration: Option<Arc<OtelIntegration>>,
+    /// Lockchain integration (if enabled)
+    lockchain_integration: Option<Arc<LockchainIntegration>>,
+    /// Auth manager (if enabled)
+    auth_manager: Option<Arc<RwLock<AuthManager>>>,
+    /// Provenance tracker (if enabled)
+    provenance_tracker: Option<Arc<ProvenanceTracker>>,
 }
 
 impl WorkflowEngine {
@@ -50,11 +68,69 @@ impl WorkflowEngine {
             resource_allocator,
             worklet_repository,
             worklet_executor,
+            enterprise_config: None,
+            otel_integration: None,
+            lockchain_integration: None,
+            auth_manager: None,
+            provenance_tracker: None,
+            fortune5_integration: None,
         }
     }
 
-    /// Register a workflow specification with deadlock validation
+    /// Create a new workflow engine with Fortune 5 configuration
+    pub fn with_fortune5(
+        state_store: StateStore,
+        fortune5_config: Fortune5Config,
+    ) -> WorkflowResult<Self> {
+        let mut registry = PatternRegistry::new();
+        crate::patterns::register_all_patterns(&mut registry);
+
+        let resource_allocator = Arc::new(ResourceAllocator::new());
+        let worklet_repository = Arc::new(WorkletRepository::new());
+        let worklet_executor = Arc::new(WorkletExecutor::new(worklet_repository.clone()));
+
+        // Initialize Fortune 5 integration
+        let fortune5_integration = Arc::new(Fortune5Integration::new(fortune5_config));
+
+        // Initialize OTEL integration if enabled in Fortune 5 config
+        let otel_integration = if fortune5_integration.config.slo.is_some() {
+            Some(Arc::new(OtelIntegration::new(None)))
+        } else {
+            None
+        };
+
+        // Initialize lockchain integration for provenance
+        let lockchain_integration = Some(Arc::new(LockchainIntegration::new("./lockchain")?));
+
+        Ok(Self {
+            pattern_registry: Arc::new(registry),
+            state_store: Arc::new(RwLock::new(state_store)),
+            specs: Arc::new(RwLock::new(HashMap::new())),
+            cases: Arc::new(RwLock::new(HashMap::new())),
+            resource_allocator,
+            worklet_repository,
+            worklet_executor,
+            enterprise_config: None,
+            fortune5_integration: Some(fortune5_integration),
+            otel_integration,
+            lockchain_integration,
+            auth_manager: None,
+            provenance_tracker: Some(Arc::new(ProvenanceTracker::new(true))),
+        })
+    }
+
+    /// Register a workflow specification with deadlock validation and Fortune 5 checks
     pub async fn register_workflow(&self, spec: WorkflowSpec) -> WorkflowResult<()> {
+        // Check promotion gate if Fortune 5 is enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            let gate_allowed = fortune5.check_promotion_gate().await?;
+            if !gate_allowed {
+                return Err(WorkflowError::Validation(
+                    "Promotion gate blocked workflow registration".to_string(),
+                ));
+            }
+        }
+
         // Validate for deadlocks before registration
         let detector = DeadlockDetector;
         detector.validate(&spec)?;
@@ -127,8 +203,20 @@ impl WorkflowEngine {
         Ok(())
     }
 
-    /// Execute a case (run workflow) with resource allocation and worklet support
+    /// Execute a case (run workflow) with resource allocation, worklet support, and Fortune 5 SLO tracking
     pub async fn execute_case(&self, case_id: CaseId) -> WorkflowResult<()> {
+        // Check promotion gate if Fortune 5 is enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            let gate_allowed = fortune5.check_promotion_gate().await?;
+            if !gate_allowed {
+                return Err(WorkflowError::Validation(
+                    "Promotion gate blocked case execution".to_string(),
+                ));
+            }
+        }
+
+        let start_time = Instant::now();
+
         // Get case
         let mut cases = self.cases.write().await;
         let case = cases
@@ -151,6 +239,20 @@ impl WorkflowEngine {
 
         // Execute workflow with resource allocation and worklet support
         self.execute_workflow_tasks(case_id, &spec_clone).await?;
+
+        // Record SLO metrics if Fortune 5 is enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            let elapsed_ns = start_time.elapsed().as_nanos() as u64;
+            // Determine runtime class based on execution time
+            let runtime_class = if elapsed_ns <= 2_000 {
+                RuntimeClass::R1 // Hot path (≤2ns)
+            } else if elapsed_ns <= 1_000_000 {
+                RuntimeClass::W1 // Warm path (≤1ms)
+            } else {
+                RuntimeClass::C1 // Cold path (≤500ms)
+            };
+            fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
+        }
 
         Ok(())
     }
@@ -276,11 +378,40 @@ impl WorkflowEngine {
         pattern_id: PatternId,
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
-        self.pattern_registry
+        let start_time = Instant::now();
+
+        // Check Fortune 5 promotion gate if enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            if !fortune5.check_promotion_gate().await? {
+                return Err(WorkflowError::Validation(
+                    "Promotion gate blocked execution".to_string(),
+                ));
+            }
+        }
+
+        // Execute pattern
+        let result = self
+            .pattern_registry
             .execute(&pattern_id, &context)
             .ok_or_else(|| {
                 WorkflowError::InvalidSpecification(format!("Pattern {} not found", pattern_id))
-            })
+            })?;
+
+        // Record SLO metrics if Fortune 5 is enabled
+        if let Some(ref fortune5) = self.fortune5_integration {
+            let duration_ns = start_time.elapsed().as_nanos() as u64;
+            // Determine runtime class based on pattern ID and duration
+            let runtime_class = if duration_ns <= 2_000 {
+                crate::integration::fortune5::RuntimeClass::R1 // Hot path
+            } else if duration_ns <= 1_000_000 {
+                crate::integration::fortune5::RuntimeClass::W1 // Warm path
+            } else {
+                crate::integration::fortune5::RuntimeClass::C1 // Cold path
+            };
+            fortune5.record_slo_metric(runtime_class, duration_ns).await;
+        }
+
+        Ok(result)
     }
 
     /// Get pattern registry
@@ -301,5 +432,37 @@ impl WorkflowEngine {
     /// Get worklet executor
     pub fn worklet_executor(&self) -> &WorkletExecutor {
         &self.worklet_executor
+    }
+
+    /// Get Fortune 5 integration (if enabled)
+    pub fn fortune5_integration(&self) -> Option<&Fortune5Integration> {
+        self.fortune5_integration.as_deref()
+    }
+
+    /// Check SLO compliance (Fortune 5)
+    pub async fn check_slo_compliance(&self) -> WorkflowResult<bool> {
+        if let Some(ref fortune5) = self.fortune5_integration {
+            fortune5.check_slo_compliance().await
+        } else {
+            Ok(true) // No SLO configured, always compliant
+        }
+    }
+
+    /// Get SLO metrics (Fortune 5)
+    pub async fn get_slo_metrics(&self) -> Option<(u64, u64, u64)> {
+        if let Some(ref fortune5) = self.fortune5_integration {
+            fortune5.get_slo_metrics().await
+        } else {
+            None
+        }
+    }
+
+    /// Check if feature flag is enabled (Fortune 5)
+    pub async fn is_feature_enabled(&self, feature: &str) -> bool {
+        if let Some(ref fortune5) = self.fortune5_integration {
+            fortune5.is_feature_enabled(feature).await
+        } else {
+            true // No Fortune 5, allow all features
+        }
     }
 }

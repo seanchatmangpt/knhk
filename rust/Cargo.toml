@@ -16,6 +16,7 @@ members = [
     "knhk-cli",
     "knhk-integration-tests",
     "knhk-json-bench",  # JSON parsing benchmark using knhk-hot
+    "chicago-tdd-tools",  # Chicago TDD testing framework
 ]
 
 [workspace.package]

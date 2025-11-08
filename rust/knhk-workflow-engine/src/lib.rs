@@ -113,7 +113,9 @@ pub use testing::{
     property_all_workflows_registrable, property_all_workflows_valid_structure,
     property_workflow_execution_terminates, CoverageAnalyzer, CoverageReport,
     IntegrationTestHelper, MutationOperator, MutationScore, MutationTester, PerformanceTestHelper,
-    PropertyTestGenerator, TaskBuilder, TestDataBuilder, WorkflowPropertyTester,
-    WorkflowSpecBuilder, WorkflowTestFixture, WorkflowTestGenerator,
+    PropertyTestGenerator, TaskBuilder, WorkflowPropertyTester, WorkflowSpecBuilder,
+    WorkflowTestFixture, WorkflowTestGenerator,
 };
+// TestDataBuilder is now in chicago-tdd-tools - import directly:
+// use chicago_tdd_tools::builders::TestDataBuilder;
 pub use visualization::WorkflowVisualizer;

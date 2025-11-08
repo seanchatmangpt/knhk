@@ -3,6 +3,7 @@
 //! These tests validate the framework itself using Chicago TDD principles.
 //! This demonstrates "eating our own dog food" - using the framework to test itself.
 
+use chicago_tdd_tools::builders::TestDataBuilder;
 use knhk_workflow_engine::case::CaseState;
 use knhk_workflow_engine::parser::{JoinType, SplitType, TaskType};
 use knhk_workflow_engine::patterns::{PatternExecutionResult, PatternId};

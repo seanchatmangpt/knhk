@@ -55,11 +55,7 @@ impl ObservabilityManager {
     /// Create new observability manager
     pub fn new(config: ObservabilityConfig) -> WorkflowResult<Self> {
         let tracer = if config.enable_tracing {
-            Some(Arc::new(
-                // FUTURE: Integrate with knhk-otel Tracer when API is available
-                // Tracer::new() doesn't take arguments in current API
-                Tracer::new(),
-            ))
+            Some(Arc::new(Tracer::new()))
         } else {
             None
         };
@@ -79,14 +75,42 @@ impl ObservabilityManager {
             return None;
         }
 
-        // FUTURE: Create actual OTEL span when opentelemetry integration is available
-        info!(
-            operation = operation,
-            workflow_id = workflow_id,
-            case_id = case_id,
-            "Starting workflow span"
-        );
-        Some(())
+        if let Some(ref tracer) = self.tracer {
+            // Create OTEL span using knhk-otel Tracer
+            // FUTURE: Tracer methods require &mut self, need to use interior mutability
+            // For now, we'll skip tracing if tracer is in Arc
+            // This will be fixed when Tracer uses interior mutability (Mutex/RwLock)
+            let _span_ctx = None::<knhk_otel::SpanContext>;
+            // let span_ctx = tracer.start_span(
+            //     format!("knhk.workflow.{}.{}", operation, workflow_id),
+            //     None,
+            // );
+            // tracer.add_attribute(
+            //     span_ctx.clone(),
+            //     "knhk.workflow.id".to_string(),
+            //     workflow_id.to_string(),
+            // );
+            // tracer.add_attribute(
+            //     span_ctx.clone(),
+            //     "knhk.case.id".to_string(),
+            //     case_id.to_string(),
+            // );
+            info!(
+                operation = operation,
+                workflow_id = workflow_id,
+                case_id = case_id,
+                "Starting workflow span"
+            );
+            Some(())
+        } else {
+            info!(
+                operation = operation,
+                workflow_id = workflow_id,
+                case_id = case_id,
+                "Starting workflow span"
+            );
+            Some(())
+        }
     }
 
     /// Record workflow metric

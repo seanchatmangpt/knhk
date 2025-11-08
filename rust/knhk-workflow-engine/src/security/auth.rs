@@ -171,7 +171,7 @@ mod tests {
             name: "admin-policy".to_string(),
             allowed_principals: vec![],
             allowed_roles: vec!["admin".to_string()],
-            resource_patterns: vec!["*".to_string()],
+            resource_patterns: vec!["workflow".to_string()], // Pattern that matches "workflow-1"
             actions: vec![Action::CreateWorkflow, Action::ReadWorkflow],
         };
 

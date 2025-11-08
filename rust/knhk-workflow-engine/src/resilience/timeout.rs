@@ -93,11 +93,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_timeout_hot_path() {
-        let manager = TimeoutManager::default();
+        let mut manager = TimeoutManager::default();
+        // Set hot path timeout to 1ms to ensure timeout triggers
+        // (tokio::time::sleep has minimum resolution, so we use ms instead of ns)
+        manager.config.hot_path_ns = 1_000_000; // 1ms
 
         let result = manager
             .execute_with_timeout(PathType::Hot, async {
-                sleep(Duration::from_nanos(10)).await;
+                sleep(Duration::from_millis(10)).await; // Sleep for 10ms, which exceeds 1ms timeout
                 Ok(42)
             })
             .await;

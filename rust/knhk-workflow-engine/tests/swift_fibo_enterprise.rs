@@ -13,12 +13,9 @@
 //! - Exception handling and error recovery
 
 use knhk_workflow_engine::case::{Case, CaseId, CaseState};
-use knhk_workflow_engine::error::WorkflowResult;
 use knhk_workflow_engine::integration::{Fortune5Config, Fortune5Integration};
-use knhk_workflow_engine::parser::{WorkflowSpec, WorkflowSpecId};
-use knhk_workflow_engine::patterns::{
-    PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
-};
+use knhk_workflow_engine::parser::WorkflowSpecId;
+use knhk_workflow_engine::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use knhk_workflow_engine::state::StateStore;
 use knhk_workflow_engine::WorkflowEngine;
 use std::collections::HashMap;

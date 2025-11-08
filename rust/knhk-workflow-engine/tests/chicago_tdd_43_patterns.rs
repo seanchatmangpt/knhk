@@ -10,9 +10,7 @@
 use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::register_all_patterns;
-use knhk_workflow_engine::patterns::{
-    PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
-};
+use knhk_workflow_engine::patterns::{PatternExecutionContext, PatternId, PatternRegistry};
 use std::collections::HashMap;
 
 /// Create a test pattern registry with all 43 patterns registered
