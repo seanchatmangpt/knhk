@@ -4,7 +4,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use std::borrow::Cow;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 /// Zero-copy string slice
 #[derive(Debug, Clone)]

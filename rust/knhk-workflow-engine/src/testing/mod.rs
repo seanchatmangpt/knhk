@@ -1,11 +1,13 @@
 //! Chicago TDD testing module
 //!
-//! Provides Chicago TDD testing framework, generators, and coverage analysis
-//! for workflows.
+//! Provides Chicago TDD testing framework, generators, coverage analysis,
+//! property-based testing, and mutation testing for workflows.
 
 pub mod chicago_tdd;
 pub mod coverage;
 pub mod generator;
+pub mod mutation;
+pub mod property;
 
 pub use chicago_tdd::{
     assert_pattern_failure, assert_pattern_has_next_state, assert_pattern_has_variable,
@@ -17,3 +19,8 @@ pub use chicago_tdd::{
 };
 pub use coverage::{CoverageAnalyzer, CoverageReport};
 pub use generator::WorkflowTestGenerator;
+pub use mutation::{MutationOperator, MutationScore, MutationTester};
+pub use property::{
+    property_all_workflows_registrable, property_all_workflows_valid_structure,
+    property_workflow_execution_terminates, PropertyTestGenerator,
+};

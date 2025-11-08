@@ -5,7 +5,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 /// Formal verification result
 #[derive(Debug, Clone)]

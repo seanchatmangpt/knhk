@@ -3,7 +3,6 @@
 //! Provides hardware-accelerated operations using SIMD, GPU, and specialized hardware.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::performance::simd;
 
 /// Hardware acceleration capabilities
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,7 +30,7 @@ pub struct HardwareAccelerator {
 impl HardwareAccelerator {
     /// Create new hardware accelerator
     pub fn new() -> Self {
-        let simd_available = is_simd_available();
+        let simd_available = crate::performance::simd::is_simd_available();
         let gpu_available = Self::detect_gpu();
 
         let acceleration = match (simd_available, gpu_available) {
@@ -73,7 +72,9 @@ impl HardwareAccelerator {
     /// Accelerated hash computation
     pub fn accelerated_hash(&self, data: &[u8]) -> u64 {
         match self.acceleration {
-            HardwareAcceleration::Simd | HardwareAcceleration::Both => simd_hash(data),
+            HardwareAcceleration::Simd | HardwareAcceleration::Both => {
+                crate::performance::simd::simd_hash(data)
+            }
             _ => {
                 // Fallback to standard hash
                 use std::collections::hash_map::DefaultHasher;
@@ -89,7 +90,7 @@ impl HardwareAccelerator {
     pub fn accelerated_pattern_match(&self, pattern: &[u8], data: &[u8]) -> Option<usize> {
         match self.acceleration {
             HardwareAcceleration::Simd | HardwareAcceleration::Both => {
-                simd_pattern_match(pattern, data)
+                crate::performance::simd::simd_pattern_match(pattern, data)
             }
             _ => {
                 // Fallback to standard pattern matching
@@ -102,9 +103,10 @@ impl HardwareAccelerator {
     /// Accelerated batch processing
     pub fn accelerated_batch_process(&self, items: &[&[u8]]) -> Vec<u64> {
         match self.acceleration {
-            HardwareAcceleration::Simd | HardwareAcceleration::Both => {
-                items.iter().map(|item| simd_hash(item)).collect()
-            }
+            HardwareAcceleration::Simd | HardwareAcceleration::Both => items
+                .iter()
+                .map(|item| crate::performance::simd::simd_hash(item))
+                .collect(),
             _ => {
                 // Fallback to standard processing
                 use std::collections::hash_map::DefaultHasher;

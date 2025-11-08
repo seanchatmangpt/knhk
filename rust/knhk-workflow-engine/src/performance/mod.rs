@@ -6,7 +6,7 @@
 mod analyzer;
 mod hot_path;
 mod metrics;
-mod simd;
+pub mod simd;
 
 pub use analyzer::{
     CaseMetrics, HotPathAnalysis, TickViolation, ViolationSeverity, WorkflowProfiler,
