@@ -8,7 +8,6 @@ use std::path::PathBuf;
 #[cfg(feature = "std")]
 use knhk_etl::integration::IntegratedPipeline;
 
-use crate::commands::connect;
 use crate::connector::ConnectorRegistry;
 
 /// Pipeline execution status

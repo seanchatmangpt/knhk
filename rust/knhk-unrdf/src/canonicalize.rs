@@ -8,7 +8,6 @@ use blake3;
 #[cfg(feature = "native")]
 use oxigraph::io::RdfFormat;
 #[cfg(feature = "native")]
-use oxigraph::model::Triple;
 #[cfg(feature = "native")]
 use oxigraph::sparql::QueryResults;
 #[cfg(feature = "native")]
@@ -47,9 +46,9 @@ pub fn canonicalize_rdf(turtle_data: &str) -> UnrdfResult<String> {
                 .map_err(|e| UnrdfError::InvalidInput(format!("Failed to get triple: {}", e)))?;
             let quad_str = format!(
                 "{} {} {} .\n",
-                triple.subject.to_string(),
-                triple.predicate.to_string(),
-                triple.object.to_string()
+                format!("{}", triple.subject),
+                format!("{}", triple.predicate),
+                format!("{}", triple.object)
             );
             quads.push(quad_str);
         }

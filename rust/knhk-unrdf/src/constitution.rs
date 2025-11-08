@@ -27,12 +27,9 @@ pub struct Invariants {
     pub constraints: Vec<String>,
 }
 
-impl Default for Invariants {
-    fn default() -> Self {
-        Self {
-            constraints: Vec::new(),
-        }
-    }
+#[derive(Default)]
+pub struct Invariants {
+    pub constraints: Vec<String>,
 }
 
 /// Validate hook against constitution constraints
@@ -89,7 +86,7 @@ pub fn check_guard(hook: &HookDefinition) -> UnrdfResult<()> {
 
 /// Check Typing constraint: O ⊨ Σ
 /// Validates that hook queries reference valid schema predicates/classes
-pub fn check_typing(hook: &HookDefinition, schema: &Schema) -> UnrdfResult<()> {
+pub fn check_typing(hook: &HookDefinition, _schema: &Schema) -> UnrdfResult<()> {
     let query = extract_query_from_hook(hook)?;
 
     // Extract predicates from query (basic validation for now)
@@ -136,7 +133,7 @@ pub fn check_order(hooks: &[HookDefinition]) -> UnrdfResult<()> {
 
 /// Check Invariant constraint: preserve(Q)
 /// Validates that hook preserves invariants
-pub fn check_invariant(hook: &HookDefinition, invariants: &Invariants) -> UnrdfResult<()> {
+pub fn check_invariant(hook: &HookDefinition, _invariants: &Invariants) -> UnrdfResult<()> {
     // Planned for v1.0:
     // - Validate hook query doesn't violate any invariants
     // - Validate hook execution preserves invariant predicates

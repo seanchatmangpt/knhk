@@ -8,7 +8,7 @@ use crate::types::{QueryResult, SparqlQueryType};
 #[cfg(feature = "native")]
 use oxigraph::io::RdfFormat;
 #[cfg(feature = "native")]
-use oxigraph::model::{NamedNode, Quad, Term, Triple};
+use oxigraph::model::Term;
 #[cfg(feature = "native")]
 use oxigraph::sparql::QueryResults;
 #[cfg(feature = "native")]
@@ -180,6 +180,7 @@ impl NativeStore {
 
 #[cfg(feature = "native")]
 /// Convert oxigraph Term to string representation
+#[allow(dead_code)]
 fn term_to_string(term: &Term) -> String {
     match term {
         Term::NamedNode(named) => named.as_str().to_string(),
