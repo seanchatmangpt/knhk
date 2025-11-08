@@ -34,7 +34,7 @@ impl ConnectorFactory {
     }
 
     /// Parse source string to SourceType
-    fn parse_source(source: &str) -> Result<SourceType, String> {
+    pub fn parse_source(source: &str) -> Result<SourceType, String> {
         if let Some(kafka_url) = source.strip_prefix("kafka://") {
             let parts: Vec<&str> = kafka_url.split('/').collect();
             let brokers = if parts.is_empty() {

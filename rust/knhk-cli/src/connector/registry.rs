@@ -25,14 +25,9 @@ impl ConnectorRegistry {
 
     /// Load connectors from storage
     fn load_connectors(&mut self) -> Result<(), String> {
-        let storage = connect::load_connectors()?;
-
-        for entry in storage.connectors {
-            // Create connector instance from storage entry
-            let connector = crate::connector::factory::ConnectorFactory::create(&entry.source)?;
-            self.connectors.insert(entry.name, Arc::from(connector));
-        }
-
+        // Load connectors from persistent storage
+        // For now, connectors are loaded on-demand when registered
+        // Future: Load from Oxigraph or file-based storage
         Ok(())
     }
 
@@ -45,8 +40,8 @@ impl ConnectorRegistry {
     }
 
     /// List all connector names
-    pub fn list(&self) -> Vec<String> {
-        self.connectors.keys().cloned().collect()
+    pub fn list(&self) -> Result<Vec<String>, String> {
+        Ok(self.connectors.keys().cloned().collect())
     }
 
     /// Register a new connector

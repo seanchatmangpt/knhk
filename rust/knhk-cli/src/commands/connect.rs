@@ -2,6 +2,8 @@
 // Connect commands - Connector management with ConnectorRegistry
 
 use knhk_connectors::{DataFormat, SourceType};
+use std::fs;
+use std::path::PathBuf;
 
 /// Register a connector
 /// connect(#{name, schema, source, map, guard})
@@ -71,4 +73,48 @@ fn parse_source(source: &str) -> Result<SourceType, String> {
     // Validate source format - delegate to ConnectorFactory
     use crate::connector::factory::ConnectorFactory;
     ConnectorFactory::parse_source(source)
+}
+
+/// Load connectors from storage (for ConnectorRegistry)
+pub(crate) fn load_connectors() -> Result<ConnectorStorage, String> {
+    let config_dir = get_config_dir()?;
+    let storage_path = config_dir.join("connectors.json");
+
+    if !storage_path.exists() {
+        return Ok(ConnectorStorage { connectors: vec![] });
+    }
+
+    let content = fs::read_to_string(&storage_path)
+        .map_err(|e| format!("Failed to read connector storage: {}", e))?;
+
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse connector storage: {}", e))
+}
+
+fn get_config_dir() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let mut path = PathBuf::from(std::env::var("APPDATA").map_err(|_| "APPDATA not set")?);
+        path.push("knhk");
+        Ok(path)
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let home = std::env::var("HOME").map_err(|_| "HOME not set")?;
+        let mut path = PathBuf::from(home);
+        path.push(".knhk");
+        Ok(path)
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct ConnectorStorage {
+    connectors: Vec<ConnectorStorageEntry>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct ConnectorStorageEntry {
+    name: String,
+    schema: String,
+    source: String,
 }

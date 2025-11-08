@@ -40,19 +40,16 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
 
     println!("Executing ETL pipeline...");
 
-    // Load connector configuration
-    let connector_storage = connect::load_connectors()?;
+    // Use ConnectorRegistry to get connectors
+    use crate::connector::ConnectorRegistry;
+    let connector_registry = ConnectorRegistry::new()?;
 
     // Determine connectors to use
     let connector_ids: Vec<String> = if let Some(ref conns) = connectors {
         conns.split(',').map(|s| s.trim().to_string()).collect()
     } else {
         // Use all registered connectors
-        connector_storage
-            .connectors
-            .iter()
-            .map(|c| c.name.clone())
-            .collect()
+        connector_registry.list()
     };
 
     if connector_ids.is_empty() {
@@ -60,14 +57,7 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
     }
 
     // Get schema (default or from config)
-    let schema_iri = schema.unwrap_or_else(|| {
-        // Try to get schema from first connector
-        connector_storage
-            .connectors
-            .first()
-            .map(|c| c.schema.clone())
-            .unwrap_or_else(|| "urn:knhk:schema:default".to_string())
-    });
+    let schema_iri = schema.unwrap_or_else(|| "urn:knhk:schema:default".to_string());
 
     println!("  Connectors: {}", connector_ids.join(", "));
     println!("  Schema: {}", schema_iri);

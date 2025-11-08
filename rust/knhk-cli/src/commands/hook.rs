@@ -117,14 +117,13 @@ pub fn eval(hook_name: String) -> Result<String, String> {
     println!("Evaluating hook: {}", hook_name);
 
     // Load hooks
-    let storage = load_hooks()?;
+    use crate::hook_registry::HookRegistryIntegration;
+    let registry = HookRegistryIntegration::new()?;
 
     // Find hook
-    let hook = storage
-        .hooks
-        .iter()
-        .find(|h| h.name == hook_name)
-        .ok_or_else(|| format!("Hook '{}' not found", hook_name))?;
+    let hook = registry
+        .get(&hook_name)
+        .map_err(|e| format!("Hook '{}' not found: {}", hook_name, e))?;
 
     #[cfg(feature = "std")]
     {
@@ -244,50 +243,4 @@ pub fn show(hook_name: String) -> Result<crate::hook_registry::store::HookEntry,
     registry.get(&hook_name)
 }
 
-fn get_config_dir() -> Result<PathBuf, String> {
-    #[cfg(target_os = "windows")]
-    {
-        let mut path = PathBuf::from(std::env::var("APPDATA").map_err(|_| "APPDATA not set")?);
-        path.push("knhk");
-        Ok(path)
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        let home = std::env::var("HOME").map_err(|_| "HOME not set")?;
-        let mut path = PathBuf::from(home);
-        path.push(".knhk");
-        Ok(path)
-    }
-}
-
-fn load_hooks() -> Result<HookStorage, String> {
-    let config_dir = get_config_dir()?;
-    let hooks_file = config_dir.join("hooks.json");
-
-    if !hooks_file.exists() {
-        return Ok(HookStorage { hooks: Vec::new() });
-    }
-
-    let content =
-        fs::read_to_string(&hooks_file).map_err(|e| format!("Failed to read hooks file: {}", e))?;
-
-    let storage: HookStorage =
-        serde_json::from_str(&content).map_err(|e| format!("Failed to parse hooks file: {}", e))?;
-
-    Ok(storage)
-}
-
-fn save_hooks(storage: &HookStorage) -> Result<(), String> {
-    let config_dir = get_config_dir()?;
-    fs::create_dir_all(&config_dir)
-        .map_err(|e| format!("Failed to create config directory: {}", e))?;
-
-    let hooks_file = config_dir.join("hooks.json");
-    let content = serde_json::to_string_pretty(storage)
-        .map_err(|e| format!("Failed to serialize hooks: {}", e))?;
-
-    fs::write(&hooks_file, content).map_err(|e| format!("Failed to write hooks file: {}", e))?;
-
-    Ok(())
-}
+// Old file-based storage removed - now using HookRegistry
