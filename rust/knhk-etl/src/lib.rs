@@ -47,7 +47,9 @@ pub mod emit;
 pub mod error;
 pub mod failure_actions;
 pub mod fiber; // Cooperative fibers for deterministic execution
+pub mod guard_validation; // Branchless guard validation helpers
 pub mod hash; // Provenance hashing for LAW: hash(A) = hash(μ(O))
+pub mod hot_path_engine; // Reusable hot path engine with memory reuse
 pub mod hook_orchestration; // Pattern-based hook orchestration
 pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
 pub mod ingest;
@@ -63,12 +65,15 @@ pub mod ring_conversion; // Lock-free ring buffers for 8-beat epoch
 pub mod runtime_class;
 pub mod slo_monitor;
 pub mod transform;
+pub mod triple_view; // Zero-copy triple access patterns
 pub mod types; // Reconciliation: A = μ(O)
 
 // Re-exports for convenience
 pub use error::PipelineError;
+pub use hot_path_engine::HotPathEngine;
 pub use ingest::{IngestResult, IngestStage, RawTriple};
 pub use load::{LoadResult, LoadStage, PredRun, SoAArrays};
+pub use triple_view::{SoAArraysExt, TripleIterator, TripleView};
 pub use reflex::{Action, Receipt, ReflexResult, ReflexStage};
 pub use transform::{TransformResult, TransformStage, TypedTriple};
 pub use types::{PipelineMetrics, PipelineStage};

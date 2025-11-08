@@ -1,0 +1,1 @@
+../../../docs/AUTOMATION_INFRASTRUCTURE.md

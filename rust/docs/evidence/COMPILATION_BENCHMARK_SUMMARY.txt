@@ -1,0 +1,116 @@
+════════════════════════════════════════════════════════════════════════════════
+  KNHK COMPILATION PERFORMANCE BENCHMARK
+  13 Packages • 32,771 LOC • 143 Files
+════════════════════════════════════════════════════════════════════════════════
+
+CLEAN BUILD TIMES (Sorted by duration)
+────────────────────────────────────────────────────────────────────────────────
+  1. knhk-unrdf              2m 32.3s ████████████████████████████████ (700 deps)
+  2. knhk-aot                1m 33.1s ██████████████████ (4 deps) ⚠️ ANOMALY
+  3. knhk-lockchain          1m  8.4s ██████████████
+  4. knhk-cli                  58.95s ████████████ (715 deps)
+  5. knhk-etl                  48.01s ██████████
+  6. knhk-otel                 22.12s ████
+  7. knhk-integration-tests    21.40s ████ (913 deps!)
+  8. knhk-warm                 21.36s ████
+  9. knhk-patterns             20.63s ████
+ 10. knhk-validation           15.08s ███
+ 11. knhk-hot                  11.29s ██
+ 12. knhk-connectors            897ms █
+ 13. knhk-config                269ms █
+
+INCREMENTAL BUILD PERFORMANCE (Sorted by % of clean)
+────────────────────────────────────────────────────────────────────────────────
+  1. knhk-config             809.6% ████████ 🚨 BROKEN (2.18s vs 269ms clean)
+  2. knhk-cli                171.0% █ (1m 40.8s vs 58.95s clean)
+  3. knhk-connectors         145.8% █ (1.31s vs 897ms clean)
+  4. knhk-warm               132.9% █ (28.39s vs 21.36s clean)
+  5. knhk-integration-tests  126.3% █ (27.03s vs 21.40s clean)
+  6. knhk-unrdf               97.0% █ (2m 27.7s vs 2m 32.3s clean)
+  7. knhk-etl                 37.0% (17.75s vs 48.01s clean)
+  8. knhk-hot                 22.5% ✅ (2.54s vs 11.29s clean)
+  9. knhk-aot                  2.7% ✅ (2.48s vs 1m 33.1s clean)
+ 10. knhk-patterns             4.8% ✅ (990ms vs 20.63s clean)
+ 11. knhk-otel                 9.2% ✅ (2.04s vs 22.12s clean)
+ 12. knhk-lockchain            2.0% ✅ (1.37s vs 1m 8.4s clean)
+ 13. knhk-validation           2.2% ✅ (336ms vs 15.08s clean)
+
+DEPENDENCY EXPLOSION (Transitive dependencies)
+────────────────────────────────────────────────────────────────────────────────
+  1. knhk-integration-tests   913 ████████████████████████████████████
+  2. knhk-cli                 715 ████████████████████████████
+  3. knhk-unrdf               700 ███████████████████████████
+  4. knhk-patterns            643 █████████████████████████
+  5. knhk-warm                631 ████████████████████████
+  6. knhk-etl                 623 ████████████████████████
+  7. knhk-validation          362 ██████████████
+  8. knhk-otel                264 ██████████
+  9. knhk-lockchain           140 █████
+ 10. knhk-config               31 █
+ 11. knhk-hot                   6 █
+ 12. knhk-aot                   4 █
+ 13. knhk-connectors            1 █
+
+  Average: 448 transitive dependencies per package 🚨
+
+BUILD EFFICIENCY (Lines of Code per Second)
+────────────────────────────────────────────────────────────────────────────────
+  Best:  knhk-connectors    2,652 LOC/s  ████████████████████████████████
+  Good:  knhk-config        2,022 LOC/s  ██████████████████████████████
+  Fair:  knhk-hot             165 LOC/s  ██
+  Poor:  knhk-otel            71 LOC/s   █
+  Bad:   knhk-cli             59 LOC/s   █
+  Worst: knhk-aot              10 LOC/s  █ 🚨 CRITICAL ANOMALY
+
+KEY INSIGHTS
+────────────────────────────────────────────────────────────────────────────────
+  
+  ✅ GOOD
+    • 6 packages have excellent incremental builds (<10% of clean)
+    • knhk-connectors, knhk-config, knhk-hot are fast and lean
+    • Clean code architecture in smaller packages
+  
+  ⚠️  CONCERNING
+    • 9 packages have >600 transitive dependencies
+    • Test compilation = 68% of clean build time (should be <30%)
+    • 7 packages have poor incremental build performance (>30%)
+  
+  🚨 CRITICAL ISSUES
+    1. knhk-aot: 101ms/LOC (200x worse than best) - INVESTIGATE
+    2. knhk-config: Incremental 8x slower than clean - MODULE ISOLATION
+    3. knhk-integration-tests: 913 deps for 138 LOC - DEPENDENCY HELL
+    4. Workspace dependency explosion: All packages inherit all deps
+
+OPTIMIZATION PRIORITY MATRIX
+────────────────────────────────────────────────────────────────────────────────
+  
+  P0 - CRITICAL (Do first):
+    • Investigate knhk-aot build time anomaly (101ms/LOC!)
+    • Fix workspace dependency structure (opt-in vs inherited)
+    • Reduce knhk-unrdf dependencies (700 → <200)
+  
+  P1 - HIGH (Within 2 weeks):
+    • Fix incremental build regression in knhk-config, knhk-cli
+    • Split large packages (knhk-etl: 7,877 LOC)
+    • Enable parallel builds (CARGO_BUILD_JOBS=4)
+  
+  P2 - MEDIUM (Within 1 month):
+    • Reduce test compilation overhead
+    • Optimize tokio/tonic feature flags (use minimal features)
+    • Add build time CI monitoring
+
+EXPECTED RESULTS (After optimizations)
+────────────────────────────────────────────────────────────────────────────────
+  
+  Metric                    Current      Target       Improvement
+  ────────────────────────  ───────────  ───────────  ───────────
+  Clean build time          8m 53.8s     <4m          2.2x faster ⚡
+  Avg transitive deps       448          <100         4.5x reduction 📦
+  Incremental build ratio   62%          <15%         4x faster 🚀
+  knhk-aot build time       1m 33s       <20s         4.7x faster 🎯
+  Dependency bloat          913 max      <200 max     4.5x reduction 🔧
+
+════════════════════════════════════════════════════════════════════════════════
+  Generated: 2025-11-07 18:14
+  Total benchmark time: 32 minutes
+════════════════════════════════════════════════════════════════════════════════

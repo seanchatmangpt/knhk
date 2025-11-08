@@ -1,7 +1,8 @@
 fn main() {
-    // Compile workflow_patterns.c
+    // Compile workflow_patterns.c and ring_buffer.c
     cc::Build::new()
         .file("src/workflow_patterns.c")
+        .file("src/ring_buffer.c")
         .opt_level(3)
         .flag("-march=native")
         .flag("-fno-strict-aliasing")
@@ -25,5 +26,6 @@ fn main() {
     // Rerun if files change
     println!("cargo:rerun-if-changed=src/workflow_patterns.c");
     println!("cargo:rerun-if-changed=src/workflow_patterns.h");
+    println!("cargo:rerun-if-changed=src/ring_buffer.c");
     println!("cargo:rerun-if-changed={}", lib_path);
 }

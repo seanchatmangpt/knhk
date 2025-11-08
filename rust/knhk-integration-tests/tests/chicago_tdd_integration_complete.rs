@@ -8,22 +8,27 @@
 // 4. Verify Weaver telemetry emission
 
 use knhk_etl::*;
+#[cfg(feature = "sidecar")]
 use knhk_sidecar::config::SidecarConfig;
+#[cfg(feature = "sidecar")]
 use knhk_sidecar::service::proto::kgc_sidecar_server::KgcSidecar;
+#[cfg(feature = "sidecar")]
 use knhk_sidecar::service::{proto::*, KgcSidecarService};
+#[cfg(feature = "sidecar")]
 use tonic::Request;
 
 // ============================================================================
 // Test Suite: Full System Integration (Sidecar → ETL → Emit)
 // ============================================================================
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_full_system_sidecar_to_etl_to_emit() {
     // Arrange: Full system with real components
     let config = SidecarConfig::default();
     let sidecar = KgcSidecarService::new(config);
 
-    let pipeline = Pipeline::new(
+    let mut pipeline = Pipeline::new(
         vec!["integration_test".to_string()],
         "urn:knhk:schema:integration".to_string(),
         true,
@@ -47,7 +52,7 @@ async fn test_full_system_sidecar_to_etl_to_emit() {
     // Execute ETL pipeline
     let ingest_result = IngestResult {
         triples: pipeline.ingest.parse_rdf_turtle(turtle_data).unwrap(),
-        metadata: alloc::collections::BTreeMap::new(),
+        metadata: std::collections::BTreeMap::new(),
     };
 
     let transform_result = pipeline.transform.transform(ingest_result).unwrap();
@@ -79,6 +84,7 @@ async fn test_full_system_sidecar_to_etl_to_emit() {
     );
 }
 
+#[cfg(feature = "sidecar")]
 #[tokio::test]
 async fn test_integration_sidecar_query_to_hot_path() {
     // Arrange: Sidecar with query routing
@@ -286,7 +292,7 @@ async fn test_integration_health_check_reflects_system_state() {
 #[test]
 fn test_integration_etl_handles_multiple_data_sources() {
     // Arrange: Pipeline with multiple connectors
-    let pipeline = Pipeline::new(
+    let mut pipeline = Pipeline::new(
         vec![
             "kafka".to_string(),
             "postgres".to_string(),
@@ -309,7 +315,7 @@ fn test_integration_etl_handles_multiple_data_sources() {
     // Act: Process data from multiple sources
     let ingest_result = IngestResult {
         triples: pipeline.ingest.parse_rdf_turtle(turtle_data).unwrap(),
-        metadata: alloc::collections::BTreeMap::new(),
+        metadata: std::collections::BTreeMap::new(),
     };
 
     let transform_result = pipeline.transform.transform(ingest_result).unwrap();
@@ -331,7 +337,7 @@ fn test_integration_etl_handles_multiple_data_sources() {
 #[test]
 fn test_integration_etl_respects_tick_budget_across_stages() {
     // Arrange: Pipeline with budget enforcement
-    let pipeline = Pipeline::new(
+    let mut pipeline = Pipeline::new(
         vec!["test".to_string()],
         "urn:test:schema".to_string(),
         false,
@@ -347,7 +353,7 @@ fn test_integration_etl_respects_tick_budget_across_stages() {
     // Act: Full pipeline execution
     let ingest_result = IngestResult {
         triples: pipeline.ingest.parse_rdf_turtle(turtle).unwrap(),
-        metadata: alloc::collections::BTreeMap::new(),
+        metadata: std::collections::BTreeMap::new(),
     };
 
     let transform_result = pipeline.transform.transform(ingest_result).unwrap();
@@ -366,8 +372,8 @@ fn test_integration_etl_respects_tick_budget_across_stages() {
 // Test Suite: Telemetry Integration (Weaver)
 // ============================================================================
 
+#[cfg(all(feature = "sidecar", feature = "otel"))]
 #[tokio::test]
-#[cfg(feature = "otel")]
 async fn test_integration_sidecar_emits_weaver_telemetry() {
     // Arrange: Sidecar with Weaver endpoint
     let config = SidecarConfig::default();
@@ -411,7 +417,7 @@ async fn test_integration_etl_telemetry_with_sidecar() {
     let sidecar =
         KgcSidecarService::new_with_weaver(config, Some("http://localhost:4317".to_string()));
 
-    let pipeline = Pipeline::new(
+    let mut pipeline = Pipeline::new(
         vec!["telemetry_test".to_string()],
         "urn:test:schema".to_string(),
         true,
@@ -430,7 +436,7 @@ async fn test_integration_etl_telemetry_with_sidecar() {
 
     let ingest_result = IngestResult {
         triples: pipeline.ingest.parse_rdf_turtle(turtle).unwrap(),
-        metadata: alloc::collections::BTreeMap::new(),
+        metadata: std::collections::BTreeMap::new(),
     };
 
     let _ = pipeline.transform.transform(ingest_result);
@@ -545,7 +551,7 @@ async fn test_integration_end_to_end_latency_acceptable() {
 #[test]
 fn test_integration_etl_pipeline_throughput() {
     // Arrange: Pipeline for throughput test
-    let pipeline = Pipeline::new(
+    let mut pipeline = Pipeline::new(
         vec!["throughput_test".to_string()],
         "urn:test:schema".to_string(),
         false,
@@ -560,7 +566,7 @@ fn test_integration_etl_pipeline_throughput() {
     for _ in 0..100 {
         let ingest_result = IngestResult {
             triples: pipeline.ingest.parse_rdf_turtle(turtle).unwrap(),
-            metadata: alloc::collections::BTreeMap::new(),
+            metadata: std::collections::BTreeMap::new(),
         };
 
         let transform_result = pipeline.transform.transform(ingest_result).unwrap();

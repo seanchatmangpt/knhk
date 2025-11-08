@@ -1,0 +1,144 @@
+[
+  {
+    "package": "knhk-hot",
+    "lines_of_code": 1867,
+    "file_count": 8,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 6,
+    "clean_build_time_sec": 11.293801000,
+    "incremental_build_time_sec": 2.538537000,
+    "test_build_time_sec": 1.045156000
+  }
+,
+  {
+    "package": "knhk-otel",
+    "lines_of_code": 1577,
+    "file_count": 2,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 264,
+    "clean_build_time_sec": 22.122298000,
+    "incremental_build_time_sec": 2.036291000,
+    "test_build_time_sec": 100.697575000
+  }
+,
+  {
+    "package": "knhk-connectors",
+    "lines_of_code": 2378,
+    "file_count": 3,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 1,
+    "clean_build_time_sec": .896591000,
+    "incremental_build_time_sec": 1.307341000,
+    "test_build_time_sec": 89.637355000
+  }
+,
+  {
+    "package": "knhk-lockchain",
+    "lines_of_code": 1097,
+    "file_count": 4,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 140,
+    "clean_build_time_sec": 68.373499000,
+    "incremental_build_time_sec": 1.372883000,
+    "test_build_time_sec": 34.366573000
+  }
+,
+  {
+    "package": "knhk-unrdf",
+    "lines_of_code": 5310,
+    "file_count": 25,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 700,
+    "clean_build_time_sec": 152.319560000,
+    "incremental_build_time_sec": 147.734508000,
+    "test_build_time_sec": 4.513986000
+  }
+,
+  {
+    "package": "knhk-etl",
+    "lines_of_code": 7877,
+    "file_count": 27,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 623,
+    "clean_build_time_sec": 48.009057000,
+    "incremental_build_time_sec": 17.746328000,
+    "test_build_time_sec": 5.200130000
+  }
+,
+  {
+    "package": "knhk-warm",
+    "lines_of_code": 2054,
+    "file_count": 11,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 631,
+    "clean_build_time_sec": 21.361735000,
+    "incremental_build_time_sec": 28.387956000,
+    "test_build_time_sec": 69.920781000
+  }
+,
+  {
+    "package": "knhk-aot",
+    "lines_of_code": 921,
+    "file_count": 7,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 4,
+    "clean_build_time_sec": 93.111779000,
+    "incremental_build_time_sec": 2.482269000,
+    "test_build_time_sec": 1.117154000
+  }
+,
+  {
+    "package": "knhk-validation",
+    "lines_of_code": 2594,
+    "file_count": 10,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 362,
+    "clean_build_time_sec": 15.082369000,
+    "incremental_build_time_sec": .336326000,
+    "test_build_time_sec": 1.747765000
+  }
+,
+  {
+    "package": "knhk-config",
+    "lines_of_code": 544,
+    "file_count": 4,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 31,
+    "clean_build_time_sec": .268989000,
+    "incremental_build_time_sec": 2.177756000,
+    "test_build_time_sec": .832415000
+  }
+,
+  {
+    "package": "knhk-patterns",
+    "lines_of_code": 2918,
+    "file_count": 9,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 643,
+    "clean_build_time_sec": 20.630757000,
+    "incremental_build_time_sec": .990178000,
+    "test_build_time_sec": 6.606531000
+  }
+,
+  {
+    "package": "knhk-cli",
+    "lines_of_code": 3496,
+    "file_count": 32,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 715,
+    "clean_build_time_sec": 58.950491000,
+    "incremental_build_time_sec": 100.829138000,
+    "test_build_time_sec": 34.964824000
+  }
+,
+  {
+    "package": "knhk-integration-tests",
+    "lines_of_code": 138,
+    "file_count": 1,
+    "direct_dependencies": 0,
+    "transitive_dependencies": 913,
+    "clean_build_time_sec": 21.404968000,
+    "incremental_build_time_sec": 27.025134000,
+    "test_build_time_sec": 12.213745000
+  }
+]

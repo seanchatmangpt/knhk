@@ -1,0 +1,1 @@
+../../../docs/ERROR_HIERARCHY_ARCHITECTURE.md

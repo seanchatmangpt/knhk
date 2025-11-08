@@ -11,6 +11,7 @@ use alloc::vec::Vec;
 
 use crate::error::PipelineError;
 use crate::failure_actions::{handle_c1_failure, handle_r1_failure, handle_w1_failure};
+use crate::guard_validation::validate_all_guards_branchless;
 use crate::load::{LoadResult, PredRun, SoAArrays};
 use crate::runtime_class::RuntimeClass;
 use crate::slo_monitor::SloMonitor;
@@ -71,20 +72,25 @@ impl ReflexStage {
 
         // Execute hooks for each predicate run
         for run in &input.runs {
-            // Validate run length ≤ 8 (Chatman Constant guard - defense in depth)
-            // Note: Validation feature disabled to avoid circular dependency with knhk-validation
-            if run.len > 8 {
-                return Err(PipelineError::GuardViolation(format!(
-                    "Run length {} exceeds max_run_len 8",
-                    run.len
-                )));
-            }
-
-            // Validate run length ≤ tick_budget (guard check)
-            if run.len > self.tick_budget as u64 {
+            // Branchless guard validation (pattern from simdjson: eliminate branches)
+            // Returns 1 if all validations pass, 0 otherwise
+            if validate_all_guards_branchless(run, self.tick_budget, 8) == 0 {
+                // Guard violation: determine which guard failed
+                if run.len > 8 {
+                    return Err(PipelineError::GuardViolation(format!(
+                        "Run length {} exceeds max_run_len 8",
+                        run.len
+                    )));
+                }
+                if run.len > self.tick_budget as u64 {
+                    return Err(PipelineError::ReflexError(format!(
+                        "Run length {} exceeds tick budget {}",
+                        run.len, self.tick_budget
+                    )));
+                }
                 return Err(PipelineError::ReflexError(format!(
-                    "Run length {} exceeds tick budget {}",
-                    run.len, self.tick_budget
+                    "Run capacity violation: off={}, len={}, capacity=8",
+                    run.off, run.len
                 )));
             }
 

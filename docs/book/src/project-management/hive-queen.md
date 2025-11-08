@@ -1,0 +1,1 @@
+../../../docs/HIVE-QUEEN-IMPLEMENTATION-PLAN.md

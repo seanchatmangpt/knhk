@@ -32,13 +32,16 @@ use crate::transform::TransformStage;
 /// let result = pipeline.execute();
 /// ```
 pub struct Pipeline {
-    ingest: IngestStage,
-    transform: TransformStage,
+    /// Ingest stage (public for tests)
+    pub ingest: IngestStage,
+    /// Transform stage (public for tests)
+    pub transform: TransformStage,
     /// Load stage (public for tests)
     pub load: LoadStage,
     /// Reflex stage (public for tests)
     pub reflex: ReflexStage,
-    emit: EmitStage,
+    /// Emit stage (public for tests)
+    pub emit: EmitStage,
 }
 
 impl Pipeline {

@@ -38,3 +38,9 @@ parallel = ["rayon"]
 # Test dependencies
 knhk-unrdf = { path = "../knhk-unrdf" }
 sha2 = "0.10"
+# Benchmark dependencies
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "hot_path_performance"
+harness = false

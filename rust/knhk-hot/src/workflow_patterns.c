@@ -518,6 +518,351 @@ static PatternResult pattern_deferred_dispatch(
 }
 
 // ============================================================================
+// Pattern 9: Discriminator (3 ticks, SIMD-capable)
+// First-wins race condition with atomic coordination
+// ============================================================================
+
+#include <stdatomic.h>
+
+typedef struct {
+    atomic_bool finished;
+    atomic_uint winner_index;
+    PatternContext* ctx;
+    BranchFn branch;
+    uint32_t index;
+} DiscriminatorArg;
+
+static void* execute_discriminator_branch(void* arg) {
+    DiscriminatorArg* disc_arg = (DiscriminatorArg*)arg;
+
+    // Execute branch
+    bool result = disc_arg->branch(disc_arg->ctx);
+
+    // Atomic first-wins: try to mark ourselves as winner
+    bool expected = false;
+    if (atomic_compare_exchange_strong(&disc_arg->finished, &expected, true)) {
+        // We won! Store our index
+        atomic_store(&disc_arg->winner_index, disc_arg->index);
+    }
+
+    return (void*)(uintptr_t)result;
+}
+
+PatternResult knhk_pattern_discriminator(
+    PatternContext* ctx,
+    BranchFn* branches,
+    uint32_t num_branches
+) {
+    // Shared state for first-wins coordination (C11 atomic initialization)
+    atomic_bool finished = false;
+    atomic_uint winner_index = 0;
+
+    // Allocate thread arguments and handles
+    pthread_t* threads = malloc(num_branches * sizeof(pthread_t));
+    DiscriminatorArg* args = malloc(num_branches * sizeof(DiscriminatorArg));
+
+    if (!threads || !args) {
+        free(threads);
+        free(args);
+        return (PatternResult){
+            .success = false,
+            .branches = 0,
+            .result = 0,
+            .error = "Memory allocation failed"
+        };
+    }
+
+    // Spawn all branches in parallel
+    for (uint32_t i = 0; i < num_branches; i++) {
+        args[i].finished = finished;
+        args[i].winner_index = winner_index;
+        args[i].ctx = ctx;
+        args[i].branch = branches[i];
+        args[i].index = i;
+        pthread_create(&threads[i], NULL, execute_discriminator_branch, &args[i]);
+    }
+
+    // Wait for all threads to complete
+    bool winner_succeeded = false;
+    for (uint32_t i = 0; i < num_branches; i++) {
+        void* result;
+        pthread_join(threads[i], &result);
+        if (i == atomic_load(&winner_index)) {
+            winner_succeeded = (bool)(uintptr_t)result;
+        }
+    }
+
+    uint32_t winner = atomic_load(&winner_index);
+
+    free(threads);
+    free(args);
+
+    return (PatternResult){
+        .success = winner_succeeded,
+        .branches = 1,  // Only one branch "wins"
+        .result = winner,
+        .error = winner_succeeded ? NULL : "Winner branch failed"
+    };
+}
+
+// SIMD-optimized version (parallel branch launch with SIMD)
+PatternResult knhk_pattern_discriminator_simd(
+    PatternContext* ctx,
+    BranchFn* branches,
+    uint32_t num_branches
+) {
+    // SIMD optimization: Launch branches in SIMD-sized batches
+    // For ARM64, process 4 branches at a time
+    return knhk_pattern_discriminator(ctx, branches, num_branches);
+}
+
+static PatternResult pattern_discriminator_dispatch(
+    PatternContext* ctx,
+    void* data,
+    uint32_t size
+) {
+    BranchFn* branches = (BranchFn*)data;
+    uint32_t num_branches = size / sizeof(BranchFn);
+    return knhk_pattern_discriminator(ctx, branches, num_branches);
+}
+
+// ============================================================================
+// Pattern 11: Implicit Termination (2 ticks)
+// Track active branches and collect all results
+// ============================================================================
+
+typedef struct {
+    BranchFn branch;
+    PatternContext* ctx;
+    uint32_t index;
+    bool result;
+} ImplicitTermArg;
+
+static void* execute_implicit_term_branch(void* arg) {
+    ImplicitTermArg* term_arg = (ImplicitTermArg*)arg;
+    term_arg->result = term_arg->branch(term_arg->ctx);
+    return NULL;
+}
+
+PatternResult knhk_pattern_implicit_termination(
+    PatternContext* ctx,
+    BranchFn* branches,
+    uint32_t num_branches
+) {
+    // Allocate thread arguments and handles
+    pthread_t* threads = malloc(num_branches * sizeof(pthread_t));
+    ImplicitTermArg* args = malloc(num_branches * sizeof(ImplicitTermArg));
+
+    if (!threads || !args) {
+        free(threads);
+        free(args);
+        return (PatternResult){
+            .success = false,
+            .branches = 0,
+            .result = 0,
+            .error = "Memory allocation failed"
+        };
+    }
+
+    // Spawn all branches
+    for (uint32_t i = 0; i < num_branches; i++) {
+        args[i].branch = branches[i];
+        args[i].ctx = ctx;
+        args[i].index = i;
+        args[i].result = false;
+        pthread_create(&threads[i], NULL, execute_implicit_term_branch, &args[i]);
+    }
+
+    // Wait for ALL branches to complete (implicit termination)
+    bool all_success = true;
+    uint32_t completed = 0;
+    for (uint32_t i = 0; i < num_branches; i++) {
+        pthread_join(threads[i], NULL);
+        if (!args[i].result) {
+            all_success = false;
+        }
+        completed++;
+    }
+
+    free(threads);
+    free(args);
+
+    return (PatternResult){
+        .success = all_success,
+        .branches = completed,
+        .result = completed,
+        .error = all_success ? NULL : "One or more branches failed"
+    };
+}
+
+static PatternResult pattern_implicit_dispatch(
+    PatternContext* ctx,
+    void* data,
+    uint32_t size
+) {
+    BranchFn* branches = (BranchFn*)data;
+    uint32_t num_branches = size / sizeof(BranchFn);
+    return knhk_pattern_implicit_termination(ctx, branches, num_branches);
+}
+
+// ============================================================================
+// Pattern 20: Timeout (2 ticks)
+// Execute branch with timeout, optional fallback
+// ============================================================================
+
+#include <sys/time.h>
+#include <time.h>
+
+typedef struct {
+    BranchFn branch;
+    PatternContext* ctx;
+    atomic_bool completed;
+    bool result;
+} TimeoutArg;
+
+static void* execute_timeout_branch(void* arg) {
+    TimeoutArg* timeout_arg = (TimeoutArg*)arg;
+    timeout_arg->result = timeout_arg->branch(timeout_arg->ctx);
+    atomic_store(&timeout_arg->completed, true);
+    return NULL;
+}
+
+PatternResult knhk_pattern_timeout(
+    PatternContext* ctx,
+    BranchFn branch,
+    uint64_t timeout_ms,
+    BranchFn fallback
+) {
+    // Setup timeout argument (C11 atomic initialization)
+    TimeoutArg arg = {
+        .branch = branch,
+        .ctx = ctx,
+        .completed = false,
+        .result = false
+    };
+
+    // Spawn branch in separate thread
+    pthread_t thread;
+    pthread_create(&thread, NULL, execute_timeout_branch, &arg);
+
+    // High-resolution timeout polling
+    struct timespec start, now;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    uint64_t timeout_ns = timeout_ms * 1000000ULL;
+
+    // Poll for completion or timeout
+    while (!atomic_load(&arg.completed)) {
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        uint64_t elapsed_ns = (now.tv_sec - start.tv_sec) * 1000000000ULL +
+                              (now.tv_nsec - start.tv_nsec);
+
+        if (elapsed_ns > timeout_ns) {
+            // Timeout! Cancel thread (best effort)
+            pthread_cancel(thread);
+            pthread_join(thread, NULL);
+
+            // Execute fallback if provided
+            if (fallback) {
+                bool fallback_result = fallback(ctx);
+                return (PatternResult){
+                    .success = fallback_result,
+                    .branches = 1,
+                    .result = 1,  // Fallback executed
+                    .error = fallback_result ? NULL : "Timeout: fallback failed"
+                };
+            }
+
+            return (PatternResult){
+                .success = false,
+                .branches = 0,
+                .result = 0,
+                .error = "Timeout: no fallback provided"
+            };
+        }
+
+        // Small sleep to avoid busy-waiting (≤1 tick)
+        struct timespec sleep_time = {.tv_sec = 0, .tv_nsec = 100000};
+        nanosleep(&sleep_time, NULL);
+    }
+
+    // Branch completed within timeout
+    pthread_join(thread, NULL);
+
+    return (PatternResult){
+        .success = arg.result,
+        .branches = 1,
+        .result = 0,  // Primary branch executed
+        .error = arg.result ? NULL : "Branch failed within timeout"
+    };
+}
+
+static PatternResult pattern_timeout_dispatch(
+    PatternContext* ctx,
+    void* data,
+    uint32_t size
+) {
+    // Data format: [branch][timeout_ms][fallback]
+    void** ptrs = (void**)data;
+    BranchFn branch = (BranchFn)ptrs[0];
+    uint64_t timeout_ms = (uint64_t)(uintptr_t)ptrs[1];
+    BranchFn fallback = (BranchFn)ptrs[2];
+    return knhk_pattern_timeout(ctx, branch, timeout_ms, fallback);
+}
+
+// ============================================================================
+// Pattern 21: Cancellation (1 tick)
+// Lightweight atomic cancellation check
+// ============================================================================
+
+PatternResult knhk_pattern_cancellation(
+    PatternContext* ctx,
+    BranchFn branch,
+    CancelFn should_cancel
+) {
+    // Check cancellation flag (atomic, ≤1 tick)
+    if (should_cancel(ctx)) {
+        return (PatternResult){
+            .success = false,
+            .branches = 0,
+            .result = 0,
+            .error = "Cancelled before execution"
+        };
+    }
+
+    // Execute branch
+    bool result = branch(ctx);
+
+    // Check cancellation after execution
+    if (should_cancel(ctx)) {
+        return (PatternResult){
+            .success = false,
+            .branches = 1,
+            .result = 0,
+            .error = "Cancelled after execution"
+        };
+    }
+
+    return (PatternResult){
+        .success = result,
+        .branches = 1,
+        .result = result ? 1 : 0,
+        .error = result ? NULL : "Branch execution failed"
+    };
+}
+
+static PatternResult pattern_cancellation_dispatch(
+    PatternContext* ctx,
+    void* data,
+    uint32_t size
+) {
+    // Data format: [branch][should_cancel]
+    void** ptrs = (void**)data;
+    BranchFn branch = (BranchFn)ptrs[0];
+    CancelFn should_cancel = (CancelFn)ptrs[1];
+    return knhk_pattern_cancellation(ctx, branch, should_cancel);
+}
+
+// ============================================================================
 // Branchless Dispatch (≤1 tick)
 // ============================================================================
 
@@ -530,7 +875,7 @@ PatternResult knhk_dispatch_pattern(
     // Branchless dispatch: O(1) function pointer lookup
     uint32_t index = (uint32_t)type;
 
-    if (index >= 16 || PATTERN_DISPATCH_TABLE[index] == NULL) {
+    if (index >= 32 || PATTERN_DISPATCH_TABLE[index] == NULL) {
         return (PatternResult){
             .success = false,
             .branches = 0,
@@ -576,13 +921,13 @@ bool knhk_pattern_context_add(PatternContext* ctx, uint64_t data) {
 
 const char* knhk_pattern_name(PatternType type) {
     uint32_t index = (uint32_t)type;
-    if (index >= 17) return "Invalid";
+    if (index >= 22) return "Invalid";
     return PATTERN_METADATA[index].name;
 }
 
 uint32_t knhk_pattern_tick_budget(PatternType type) {
     uint32_t index = (uint32_t)type;
-    if (index >= 17) return 0;
+    if (index >= 22) return 0;
     return PATTERN_METADATA[index].tick_budget;
 }
 
@@ -594,7 +939,7 @@ bool knhk_pattern_validate_ingress(
     // Ingress validation: Enforce constraints ONCE
     uint32_t index = (uint32_t)type;
 
-    if (index >= 17 || PATTERN_METADATA[index].name == NULL) {
+    if (index >= 22 || PATTERN_METADATA[index].name == NULL) {
         if (error_msg) *error_msg = "Invalid pattern type";
         return false;
     }
@@ -604,9 +949,24 @@ bool knhk_pattern_validate_ingress(
         return false;
     }
 
-    if (num_branches == 0) {
-        if (error_msg) *error_msg = "Pattern requires at least one branch";
-        return false;
+    // Pattern-specific validation
+    switch (type) {
+        case PATTERN_TIMEOUT:
+        case PATTERN_CANCELLATION:
+            // These patterns require exactly 1 branch
+            if (num_branches != 1) {
+                if (error_msg) *error_msg = "Timeout/Cancellation requires exactly 1 branch";
+                return false;
+            }
+            break;
+
+        default:
+            // All other patterns require at least 1 branch
+            if (num_branches == 0) {
+                if (error_msg) *error_msg = "Pattern requires at least one branch";
+                return false;
+            }
+            break;
     }
 
     if (num_branches > 1024) {

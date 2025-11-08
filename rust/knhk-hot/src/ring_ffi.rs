@@ -350,7 +350,8 @@ mod tests {
 
     #[test]
     fn test_delta_ring_enqueue_dequeue() {
-        let ring = match DeltaRing::new(8) {
+        // Use ring size 64 so each tick gets 8 entries (64/8 ticks)
+        let ring = match DeltaRing::new(64) {
             Ok(r) => r,
             Err(e) => panic!("Failed to create delta ring: {}", e),
         };
@@ -376,7 +377,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "P0 BLOCKER: Ring buffer per-tick isolation requires C implementation fix - all ticks share same storage arrays causing collisions. Fix: partition ring into 8 tick segments (tick_offset = tick * (size/8)). Tracked in Sprint 1 remediation."]
     fn test_delta_ring_per_tick_isolation() {
         let ring = match DeltaRing::new(8) {
             Ok(r) => r,
@@ -414,34 +414,35 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "P0 BLOCKER: Ring buffer wrap-around requires C implementation fix - related to per-tick isolation issue. After fix, wrap-around should work correctly with read_idx advancement. Tracked in Sprint 1 remediation."]
     fn test_delta_ring_wrap_around() {
-        let ring = match DeltaRing::new(8) {
+        // Use ring size 64 so each tick gets 8 entries (64/8 ticks)
+        let ring = match DeltaRing::new(64) {
             Ok(r) => r,
             Err(e) => panic!("Failed to create delta ring: {}", e),
         };
 
-        // Fill ring at tick 0 multiple times to test wrap-around
-        for i in 0..3 {
+        // Fill tick 0's segment (8 entries)
+        for i in 0..8 {
             let s = vec![0x1000 + i];
             let p = vec![0x2000 + i];
             let o = vec![0x3000 + i];
             assert!(ring.enqueue(0, &s, &p, &o, i).is_ok());
         }
 
-        // Dequeue all from tick 0
-        for i in 0..3 {
-            let result = ring.dequeue(0, 8);
+        // Dequeue all from tick 0 one-by-one (capacity=1 to test wrap-around)
+        for i in 0..8 {
+            let result = ring.dequeue(0, 1);
             assert!(result.is_some());
             let (s_out, _, _, _) = match result {
                 Some(v) => v,
-                None => panic!("Expected dequeue result"),
+                None => panic!("Expected dequeue result for item {}", i),
             };
+            assert_eq!(s_out.len(), 1);
             assert_eq!(s_out[0], 0x1000 + i);
         }
 
         // Verify ring is empty after wrap-around
-        let result = ring.dequeue(0, 8);
+        let result = ring.dequeue(0, 1);
         assert!(result.is_none());
     }
 
@@ -453,7 +454,8 @@ mod tests {
 
     #[test]
     fn test_assertion_ring_enqueue_dequeue() {
-        let ring = match AssertionRing::new(8) {
+        // Use ring size 64 so each tick gets 8 entries (64/8 ticks)
+        let ring = match AssertionRing::new(64) {
             Ok(r) => r,
             Err(e) => panic!("Failed to create assertion ring: {}", e),
         };

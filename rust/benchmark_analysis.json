@@ -1,0 +1,147 @@
+{
+  "summary": {
+    "total_crates": 14,
+    "total_loc": 36954,
+    "total_build_debug_sec": 233.11,
+    "total_build_release_sec": 769.19,
+    "total_test_sec": 256.25,
+    "total_clippy_sec": 192.18,
+    "avg_build_debug_sec": 16.65,
+    "avg_build_release_sec": 54.94,
+    "avg_test_sec": 18.3,
+    "avg_clippy_sec": 13.73,
+    "avg_loc": 2639.57
+  },
+  "slowest_builds_debug": [
+    {
+      "crate": "knhk-integration-tests",
+      "time_sec": 87.69
+    },
+    {
+      "crate": "knhk-cli",
+      "time_sec": 81.05
+    },
+    {
+      "crate": "knhk-aot",
+      "time_sec": 26.56
+    },
+    {
+      "crate": "knhk-patterns",
+      "time_sec": 8.63
+    },
+    {
+      "crate": "knhk-warm",
+      "time_sec": 7.59
+    }
+  ],
+  "slowest_builds_release": [
+    {
+      "crate": "knhk-cli",
+      "time_sec": 207.05
+    },
+    {
+      "crate": "knhk-config",
+      "time_sec": 155.27
+    },
+    {
+      "crate": "knhk-integration-tests",
+      "time_sec": 97.58
+    },
+    {
+      "crate": "knhk-unrdf",
+      "time_sec": 70.67
+    },
+    {
+      "crate": "knhk-etl",
+      "time_sec": 57.75
+    }
+  ],
+  "slowest_tests": [
+    {
+      "crate": "knhk-config",
+      "time_sec": 101.61
+    },
+    {
+      "crate": "knhk-cli",
+      "time_sec": 51.58
+    },
+    {
+      "crate": "knhk-aot",
+      "time_sec": 47.16
+    },
+    {
+      "crate": "knhk-unrdf",
+      "time_sec": 10.26
+    },
+    {
+      "crate": "knhk-patterns",
+      "time_sec": 9.61
+    }
+  ],
+  "largest_crates": [
+    {
+      "crate": "knhk-etl",
+      "loc": 7877
+    },
+    {
+      "crate": "knhk-unrdf",
+      "loc": 5310
+    },
+    {
+      "crate": "knhk-sidecar",
+      "loc": 4183
+    },
+    {
+      "crate": "knhk-cli",
+      "loc": 3496
+    },
+    {
+      "crate": "knhk-patterns",
+      "loc": 2918
+    }
+  ],
+  "most_efficient": [
+    {
+      "crate": "knhk-sidecar",
+      "loc_per_sec": 13822.98
+    },
+    {
+      "crate": "knhk-connectors",
+      "loc_per_sec": 4164.35
+    },
+    {
+      "crate": "knhk-otel",
+      "loc_per_sec": 1965.19
+    },
+    {
+      "crate": "knhk-hot",
+      "loc_per_sec": 1872.95
+    },
+    {
+      "crate": "knhk-etl",
+      "loc_per_sec": 1296.73
+    }
+  ],
+  "least_efficient": [
+    {
+      "crate": "knhk-integration-tests",
+      "loc_per_sec": 1.57
+    },
+    {
+      "crate": "knhk-aot",
+      "loc_per_sec": 34.68
+    },
+    {
+      "crate": "knhk-cli",
+      "loc_per_sec": 43.13
+    },
+    {
+      "crate": "knhk-warm",
+      "loc_per_sec": 270.63
+    },
+    {
+      "crate": "knhk-patterns",
+      "loc_per_sec": 338.18
+    }
+  ]
+}
