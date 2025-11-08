@@ -44,13 +44,16 @@ fn get_engine(state_store_path: Option<&str>) -> CnvResult<Arc<WorkflowEngine>> 
         .get_or_try_init(|| {
             let path = state_store_path.unwrap_or("./workflow_db");
             let state_store = StateStore::new(path).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Failed to create state store: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to create state store: {}",
+                    e
+                ))
             })?;
             Ok(Arc::new(WorkflowEngine::new(state_store)))
         })
         .map(|engine| Arc::clone(engine))
         .map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!(
+            clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to initialize workflow engine: {}",
                 e
             ))
@@ -63,20 +66,32 @@ pub fn parse(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
     let runtime = get_runtime();
     runtime.block_on(async {
         let mut parser = WorkflowParser::new().map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to create parser: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to create parser: {}",
+                e
+            ))
         })?;
 
         let spec = parser.parse_file(&file).map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to parse workflow: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to parse workflow: {}",
+                e
+            ))
         })?;
 
         let json = serde_json::to_string_pretty(&spec).map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to serialize workflow: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to serialize workflow: {}",
+                e
+            ))
         })?;
 
         if let Some(output_path) = output {
             std::fs::write(&output_path, json).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Failed to write output file: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to write output file: {}",
+                    e
+                ))
             })?;
             println!("Workflow parsed and saved to {}", output_path.display());
         } else {
@@ -95,25 +110,40 @@ pub fn register(file: PathBuf, state_store: Option<String>) -> CnvResult<()> {
 
     runtime.block_on(async {
         let mut parser = WorkflowParser::new().map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to create parser: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to create parser: {}",
+                e
+            ))
         })?;
 
         let spec = if file.extension().and_then(|s| s.to_str()) == Some("ttl") {
             parser.parse_file(&file).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Failed to parse Turtle file: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to parse Turtle file: {}",
+                    e
+                ))
             })?
         } else {
             // Try JSON
             let contents = std::fs::read_to_string(&file).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Failed to read file: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to read file: {}",
+                    e
+                ))
             })?;
             serde_json::from_str(&contents).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Failed to parse JSON: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to parse JSON: {}",
+                    e
+                ))
             })?
         };
 
         engine.register_workflow(spec.clone()).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to register workflow: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to register workflow: {}",
+                e
+            ))
         })?;
 
         println!("Workflow registered: {} ({})", spec.name, spec.id);
@@ -128,12 +158,13 @@ pub fn create(spec_id: String, data: Option<String>, state_store: Option<String>
     let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
-        let spec_id_uuid = WorkflowSpecId::parse_str(&spec_id)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(format!("Invalid spec ID: {}", e)))?;
+        let spec_id_uuid = WorkflowSpecId::parse_str(&spec_id).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
+        })?;
 
         let case_data = if let Some(data_str) = data {
             serde_json::from_str(&data_str).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Invalid JSON data: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!("Invalid JSON data: {}", e))
             })?
         } else {
             serde_json::json!({})
@@ -143,7 +174,10 @@ pub fn create(spec_id: String, data: Option<String>, state_store: Option<String>
             .create_case(spec_id_uuid, case_data)
             .await
             .map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Failed to create case: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to create case: {}",
+                    e
+                ))
             })?;
 
         println!("Case created: {}", case_id);
@@ -158,11 +192,12 @@ pub fn start(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
-        let case_id_uuid = CaseId::parse_str(&case_id)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(format!("Invalid case ID: {}", e)))?;
+        let case_id_uuid = CaseId::parse_str(&case_id).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
+        })?;
 
         engine.start_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to start case: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to start case: {}", e))
         })?;
 
         println!("Case started: {}", case_id);
@@ -177,11 +212,12 @@ pub fn execute(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
-        let case_id_uuid = CaseId::parse_str(&case_id)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(format!("Invalid case ID: {}", e)))?;
+        let case_id_uuid = CaseId::parse_str(&case_id).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
+        })?;
 
         engine.execute_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to execute case: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to execute case: {}", e))
         })?;
 
         println!("Case executed: {}", case_id);
@@ -196,11 +232,12 @@ pub fn cancel(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
-        let case_id_uuid = CaseId::parse_str(&case_id)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(format!("Invalid case ID: {}", e)))?;
+        let case_id_uuid = CaseId::parse_str(&case_id).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
+        })?;
 
         engine.cancel_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to cancel case: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to cancel case: {}", e))
         })?;
 
         println!("Case cancelled: {}", case_id);
@@ -215,15 +252,19 @@ pub fn get(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
-        let case_id_uuid = CaseId::parse_str(&case_id)
-            .map_err(|e| clap_noun_verb::NounVerbError::new(format!("Invalid case ID: {}", e)))?;
+        let case_id_uuid = CaseId::parse_str(&case_id).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
+        })?;
 
         let case = engine.get_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to get case: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to get case: {}", e))
         })?;
 
         let json = serde_json::to_string_pretty(&case).map_err(|e| {
-            clap_noun_verb::NounVerbError::new(format!("Failed to serialize case: {}", e))
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to serialize case: {}",
+                e
+            ))
         })?;
 
         println!("{}", json);
@@ -240,7 +281,7 @@ pub fn list(spec_id: Option<String>, state_store: Option<String>) -> CnvResult<(
     runtime.block_on(async {
         if let Some(spec_id_str) = spec_id {
             let _spec_id_uuid = WorkflowSpecId::parse_str(&spec_id_str).map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!("Invalid spec ID: {}", e))
+                clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
             })?;
             println!("Listing cases for workflow {}...", spec_id_str);
             // FUTURE: Implement list_cases method in WorkflowEngine
@@ -291,14 +332,14 @@ pub fn serve(
         let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
             .await
             .map_err(|e| {
-                clap_noun_verb::NounVerbError::new(format!(
+                clap_noun_verb::NounVerbError::execution_error(format!(
                     "Failed to bind to {}:{}: {}",
                     host, port, e
                 ))
             })?;
         println!("Server listening on http://{}:{}", host, port);
-        axum::serve(listener, app)
-            .await
-            .map_err(|e| clap_noun_verb::NounVerbError::new(format!("Server error: {}", e)))
+        axum::serve(listener, app).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Server error: {}", e))
+        })
     })
 }

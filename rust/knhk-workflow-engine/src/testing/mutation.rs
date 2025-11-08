@@ -6,7 +6,7 @@
 use crate::error::WorkflowResult;
 use crate::parser::{Task, WorkflowSpec};
 use crate::testing::chicago_tdd::WorkflowTestFixture;
-use std::collections::HashMap;
+// HashMap not used
 
 /// Mutation operator for workflow specifications
 #[derive(Debug, Clone)]

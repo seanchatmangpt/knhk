@@ -110,8 +110,10 @@ pub use testing::{
     assert_pattern_success, assert_pattern_variable_equals, create_test_capability,
     create_test_context, create_test_context_for_workflow, create_test_context_with_vars,
     create_test_registry, create_test_resource, create_test_role, create_test_worklet,
-    CoverageAnalyzer, CoverageReport, IntegrationTestHelper, PerformanceTestHelper, TaskBuilder,
-    TestDataBuilder, WorkflowPropertyTester, WorkflowSpecBuilder, WorkflowTestFixture,
-    WorkflowTestGenerator,
+    property_all_workflows_registrable, property_all_workflows_valid_structure,
+    property_workflow_execution_terminates, CoverageAnalyzer, CoverageReport,
+    IntegrationTestHelper, MutationOperator, MutationScore, MutationTester, PerformanceTestHelper,
+    PropertyTestGenerator, TaskBuilder, TestDataBuilder, WorkflowPropertyTester,
+    WorkflowSpecBuilder, WorkflowTestFixture, WorkflowTestGenerator,
 };
 pub use visualization::WorkflowVisualizer;
