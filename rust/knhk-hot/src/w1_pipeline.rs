@@ -77,6 +77,12 @@ pub struct StructuralIndex {
     pub escape_positions: Vec<u32>,
 }
 
+impl Default for StructuralIndex {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StructuralIndex {
     pub fn new() -> Self {
         Self {
@@ -302,6 +308,12 @@ pub struct SoARun {
     pub len: u8,
 }
 
+impl Default for SoARun {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SoARun {
     pub fn new() -> Self {
         Self {
@@ -356,6 +368,12 @@ pub struct ATMShapeKernel {
     pub expected_keys: [&'static [u8]; 6],
     /// Expected field order
     pub field_order: [u8; 6],
+}
+
+impl Default for ATMShapeKernel {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ATMShapeKernel {
