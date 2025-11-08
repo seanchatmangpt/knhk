@@ -50,7 +50,7 @@ impl CoverageAnalyzer {
     ) -> WorkflowResult<CoverageReport> {
         let mut tasks_covered = HashSet::new();
         let mut tasks_uncovered = HashSet::new();
-        let mut patterns_covered = HashSet::new();
+        let patterns_covered = HashSet::new();
         let mut patterns_uncovered = HashSet::new();
 
         // Analyze task coverage

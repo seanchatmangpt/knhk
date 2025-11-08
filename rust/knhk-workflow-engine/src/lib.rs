@@ -81,6 +81,10 @@ pub mod validation;
 pub mod visualization;
 pub mod worklets;
 
+pub use capabilities::{
+    validate_capabilities, CapabilityMetadata, CapabilityRegistry, CapabilityStatus,
+    CapabilityValidationReport, CapabilityValidator,
+};
 pub use case::{Case, CaseId, CaseState};
 pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,

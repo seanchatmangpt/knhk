@@ -85,7 +85,7 @@ impl TemplateLibrary {
     }
 
     /// Generate two-stage approval workflow
-    fn generate_two_stage_approval(params: &Value) -> WorkflowResult<WorkflowSpec> {
+    fn generate_two_stage_approval(_params: &Value) -> WorkflowResult<WorkflowSpec> {
         // In production, would generate full workflow spec
         // For now, return error indicating implementation needed
         Err(WorkflowError::TaskExecutionFailed(
