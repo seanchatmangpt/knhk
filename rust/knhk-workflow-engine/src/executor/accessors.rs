@@ -39,7 +39,7 @@ impl WorkflowEngine {
     }
 
     /// Get state store (for REST API access)
-    pub fn state_store(&self) -> &Arc<RwLock<StateStore>> {
+    pub fn state_store(&self) -> &Arc<RwLock<Arc<StateStore>>> {
         &self.state_store
     }
 

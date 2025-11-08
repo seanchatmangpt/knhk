@@ -23,7 +23,7 @@ pub struct WorkflowEngine {
     /// Pattern registry
     pub(crate) pattern_registry: Arc<PatternRegistry>,
     /// State store
-    pub(crate) state_store: Arc<RwLock<StateStore>>,
+    pub(crate) state_store: Arc<RwLock<Arc<StateStore>>>,
     /// Registered workflow specifications
     pub(crate) specs: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>,
     /// Active cases

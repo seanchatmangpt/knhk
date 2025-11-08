@@ -244,9 +244,12 @@ impl DeterministicExecutor {
     }
 
     /// Hash delta for deterministic replay
+    #[allow(clippy::expect_used)] // JSON serialization should never fail for Value types
     fn hash_delta(&self, delta_data: &serde_json::Value, prev_hash: u64, new_hash: u64) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        serde_json::to_string(delta_data).unwrap().hash(&mut hasher);
+        serde_json::to_string(delta_data)
+            .expect("Failed to serialize delta data for hashing")
+            .hash(&mut hasher);
         prev_hash.hash(&mut hasher);
         new_hash.hash(&mut hasher);
         hasher.finish()

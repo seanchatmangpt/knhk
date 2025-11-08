@@ -233,6 +233,7 @@ impl Default for WorkflowVisualizer {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use crate::parser::{JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};

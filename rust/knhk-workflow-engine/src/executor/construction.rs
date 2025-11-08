@@ -46,14 +46,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(
-                Arc::try_unwrap(state_store_arc.clone()).unwrap_or_else(|_| {
-                    // If we can't unwrap, we need to create a new StateStore
-                    // This shouldn't happen in normal usage, but handle it gracefully
-                    StateStore::new(std::env::temp_dir().join("knhk-test-state"))
-                        .unwrap_or_else(|_| panic!("Failed to create state store"))
-                }),
-            )),
+            state_store: Arc::new(RwLock::new(state_store_arc)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,
@@ -126,14 +119,7 @@ impl WorkflowEngine {
 
         let engine = Self {
             pattern_registry: Arc::new(registry),
-            state_store: Arc::new(RwLock::new(
-                Arc::try_unwrap(state_store_arc.clone()).unwrap_or_else(|_| {
-                    // If we can't unwrap, we need to create a new StateStore
-                    // This shouldn't happen in normal usage, but handle it gracefully
-                    StateStore::new(std::env::temp_dir().join("knhk-test-state"))
-                        .unwrap_or_else(|_| panic!("Failed to create state store"))
-                }),
-            )),
+            state_store: Arc::new(RwLock::new(state_store_arc)),
             specs: Arc::new(RwLock::new(HashMap::new())),
             cases: Arc::new(RwLock::new(HashMap::new())),
             resource_allocator,

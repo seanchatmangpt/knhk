@@ -295,6 +295,7 @@ impl Default for AdmissionGate {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
