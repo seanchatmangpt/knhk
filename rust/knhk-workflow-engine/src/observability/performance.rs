@@ -88,7 +88,7 @@ impl PerformanceMonitor {
         let total = metrics.cache_hit_rate + metrics.cache_miss_rate;
         if total > 0.0 {
             metrics.cache_hit_rate = (metrics.cache_hit_rate * 0.9) + (1.0 * 0.1);
-            metrics.cache_miss_rate = metrics.cache_miss_rate * 0.9;
+            metrics.cache_miss_rate *= 0.9;
         } else {
             metrics.cache_hit_rate = 1.0;
         }
@@ -99,7 +99,7 @@ impl PerformanceMonitor {
         let mut metrics = self.metrics.lock().unwrap();
         let total = metrics.cache_hit_rate + metrics.cache_miss_rate;
         if total > 0.0 {
-            metrics.cache_hit_rate = metrics.cache_hit_rate * 0.9;
+            metrics.cache_hit_rate *= 0.9;
             metrics.cache_miss_rate = (metrics.cache_miss_rate * 0.9) + (1.0 * 0.1);
         } else {
             metrics.cache_miss_rate = 1.0;

@@ -193,7 +193,7 @@ impl WorkflowEngine {
                 }
                 Err(e) => {
                     // Resource allocation failed - try worklet exception handling
-                    if let Some(worklet_id) = task.exception_worklet {
+                    if let Some(_worklet_id) = task.exception_worklet {
                         let context = PatternExecutionContext {
                             case_id,
                             workflow_id: spec_id,

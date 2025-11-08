@@ -47,19 +47,17 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
             if let Some(spec_term) = solution.get("spec") {
                 spec_iri = Some(spec_term.to_string());
             }
-            if let Some(name_term) = solution.get("name") {
-                if let oxigraph::model::Term::Literal(lit) = name_term {
-                    spec_name = lit.value().to_string();
-                }
+            if let Some(oxigraph::model::Term::Literal(lit)) = solution.get("name") {
+                spec_name = lit.value().to_string();
             }
         }
     }
 
     // Extract tasks
-    let mut tasks = extract_tasks(store, &yawl_ns, spec_iri.as_deref())?;
+    let mut tasks = extract_tasks(store, yawl_ns, spec_iri.as_deref())?;
 
     // Extract conditions
-    let mut conditions = extract_conditions(store, &yawl_ns, spec_iri.as_deref())?;
+    let mut conditions = extract_conditions(store, yawl_ns, spec_iri.as_deref())?;
 
     // Extract flows
     extract_flows(

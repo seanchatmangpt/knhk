@@ -22,7 +22,12 @@ use std::collections::HashMap;
 
 /// Create a test workflow engine
 fn create_test_engine() -> WorkflowEngine {
-    let state_store = StateStore::new();
+    // Use temporary directory for test state store
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let temp_dir = std::env::temp_dir().join(format!("knhk-test-{}", counter));
+    let state_store = StateStore::new(&temp_dir).expect("Failed to create test state store");
     WorkflowEngine::new(state_store)
 }
 
@@ -1109,9 +1114,11 @@ async fn test_workflow_version_compatibility() {
 
     let result_v1 = engine
         .execute_pattern(PatternId(1), ctx_v1)
+        .await
         .expect("Version 1 workflow should execute");
     let result_v2 = engine
         .execute_pattern(PatternId(1), ctx_v2)
+        .await
         .expect("Version 2 workflow should execute");
 
     // Assert: Both versions execute correctly
@@ -1200,6 +1207,7 @@ async fn test_end_to_end_order_to_delivery_workflow() {
     // Pattern 1: Sequence (simulates: validate → payment → ship → notify)
     let result = engine
         .execute_pattern(PatternId(1), ctx.clone())
+        .await
         .expect("End-to-end workflow should execute");
 
     // Assert: End-to-end workflow completed with comprehensive checks

@@ -1,12 +1,12 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-//! Performance optimization for Fortune 500-level workflow engine
+//! Performance optimization module
+//!
+//! Provides performance optimizations including hot path operations,
+//! SIMD support, caching, and performance monitoring.
 
-pub mod batching;
-pub mod cache;
-pub mod pooling;
-pub mod routing;
+mod hot_path;
+mod metrics;
+mod simd;
 
-pub use batching::{BatchConfig, BatchProcessor};
-pub use cache::{CacheConfig, WorkflowCache};
-pub use pooling::{ConnectionPool, PoolConfig};
-pub use routing::{PathRouter, RoutingDecision};
+pub use hot_path::*;
+pub use metrics::*;
+pub use simd::*;

@@ -80,8 +80,10 @@ pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
     SecurityConfig,
 };
-pub use error::{WorkflowError, WorkflowResult};
+pub use error::{ErrorContext, WorkflowError, WorkflowResult};
 pub use executor::WorkflowEngine;
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
 pub use patterns::{PatternId, PatternRegistry};
+pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
+pub use security::*;
 pub use state::StateStore;

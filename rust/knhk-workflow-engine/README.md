@@ -26,9 +26,10 @@ This crate provides a complete workflow engine that:
 ## Usage
 
 ```rust
-use knhk_workflow_engine::{WorkflowEngine, WorkflowParser, StateStore};
-use knhk_workflow_engine::resource::{Resource, ResourceAllocator, AllocationPolicy};
-use knhk_workflow_engine::worklets::{Worklet, WorkletRepository};
+use knhk_workflow_engine::{WorkflowEngine, WorkflowParser, StateStore, WorkflowSpec, WorkflowSpecId, PatternId};
+use knhk_workflow_engine::resource::{Resource, ResourceId, Role, Capability};
+use knhk_workflow_engine::worklets::{Worklet, WorkletMetadata, WorkletRule, WorkletId};
+use std::collections::HashMap;
 
 // Create state store
 let state_store = StateStore::new("./workflow_db")?;
@@ -41,8 +42,16 @@ let resource_allocator = engine.resource_allocator();
 resource_allocator.register_resource(Resource {
     id: ResourceId::new(),
     name: "User1".to_string(),
-    roles: vec![],
-    capabilities: vec![],
+    roles: vec![Role {
+        id: "approver".to_string(),
+        name: "Approver".to_string(),
+        capabilities: vec!["approval".to_string()],
+    }],
+    capabilities: vec![Capability {
+        id: "approval".to_string(),
+        name: "Approval".to_string(),
+        level: 100,
+    }],
     workload: 0,
     queue_length: 0,
     available: true,
@@ -50,11 +59,39 @@ resource_allocator.register_resource(Resource {
 
 // Register worklets
 let worklet_repo = engine.worklet_repository();
+let worklet = Worklet {
+    metadata: WorkletMetadata {
+        id: WorkletId::new(),
+        name: "Exception Handler".to_string(),
+        description: "Handles resource allocation failures".to_string(),
+        version: "1.0.0".to_string(),
+        exception_types: vec!["resource_unavailable".to_string()],
+        required_context: vec![],
+        pattern_ids: vec![PatternId(1)],
+        tags: vec!["exception".to_string()],
+    },
+    workflow_spec: WorkflowSpec {
+        id: WorkflowSpecId::new(),
+        name: "Exception Handler Workflow".to_string(),
+        tasks: HashMap::new(),
+        conditions: HashMap::new(),
+        start_condition: None,
+        end_condition: None,
+    },
+    rules: vec![WorkletRule {
+        id: "rule1".to_string(),
+        name: "Resource Unavailable Rule".to_string(),
+        condition: "true".to_string(),
+        worklet_id: WorkletId::new(),
+        priority: 100,
+    }],
+};
 worklet_repo.register(worklet).await?;
 
 // Parse workflow from Turtle (includes deadlock validation)
 let mut parser = WorkflowParser::new()?;
 let spec = parser.parse_file("workflow.ttl")?;
+let spec_id = spec.id;
 
 // Register workflow (includes deadlock validation)
 engine.register_workflow(spec).await?;

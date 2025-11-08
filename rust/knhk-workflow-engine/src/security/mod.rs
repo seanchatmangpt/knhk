@@ -1,12 +1,16 @@
-#![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
-//! Security and zero-trust features for Fortune 500-level workflow engine
+//! Security module
+//!
+//! Provides security features including authentication, authorization,
+//! input validation, and audit logging.
 
-pub mod audit;
-pub mod auth;
-pub mod guards;
-pub mod secrets;
+mod audit;
+mod auth;
+mod guards;
+mod secrets;
+mod validation;
 
-pub use audit::{AuditEvent, AuditLevel, AuditLogger};
-pub use auth::{AuthManager, AuthPolicy, Principal};
-pub use guards::{GuardFunction, GuardResult, GuardValidator};
-pub use secrets::{SecretManager, SecretProvider};
+pub use audit::*;
+pub use auth::*;
+pub use guards::*;
+pub use secrets::*;
+pub use validation::*;

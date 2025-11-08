@@ -20,7 +20,7 @@ pub use scalability::ScalabilityConfig;
 pub use security::SecurityConfig;
 
 /// Fortune 5 enterprise configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EnterpriseConfig {
     /// Observability configuration
     pub observability: ObservabilityConfig,
