@@ -328,6 +328,58 @@ impl ReflexStage {
         merged
     }
 
+    /// Execute reflex with pattern-based hook orchestration
+    ///
+    /// This method allows using workflow patterns to orchestrate hook execution
+    /// within the Reflex stage, enabling parallel execution, conditional routing,
+    /// and retry logic.
+    ///
+    /// # Arguments
+    /// * `input` - LoadResult containing SoA arrays and predicate runs
+    /// * `pattern` - Hook execution pattern (Sequence, Parallel, Choice, Retry)
+    ///
+    /// # Returns
+    /// * `Ok(ReflexResult)` - Results with aggregated receipts
+    /// * `Err(PipelineError)` - Execution error
+    ///
+    /// # Example
+    /// ```rust
+    /// use knhk_etl::{ReflexStage, hook_orchestration::{HookExecutionContext, HookExecutionPattern}};
+    ///
+    /// let reflex = ReflexStage::new();
+    /// let context = HookExecutionContext::from_load_result(registry, load_result, 8);
+    /// let pattern = HookExecutionPattern::Parallel(vec![pred1, pred2]);
+    ///
+    /// let orchestrator = HookOrchestrator::new();
+    /// let results = orchestrator.execute_with_pattern(&context, pattern)?;
+    /// ```
+    pub fn reflex_with_patterns(
+        &self,
+        input: LoadResult,
+        pattern: crate::hook_orchestration::HookExecutionPattern,
+    ) -> Result<ReflexResult, PipelineError> {
+        use crate::hook_orchestration::{HookExecutionContext, HookOrchestrator};
+
+        // Create execution context
+        let context = HookExecutionContext::from_load_result(
+            crate::hook_registry::HookRegistry::new(), // Default registry
+            input,
+            self.tick_budget,
+        );
+
+        // Execute with pattern
+        let orchestrator = HookOrchestrator::new();
+        let hook_result = orchestrator.execute_with_pattern(&context, pattern)?;
+
+        // Convert HookExecutionResult to ReflexResult
+        Ok(ReflexResult {
+            actions: hook_result.actions,
+            receipts: hook_result.receipts,
+            max_ticks: hook_result.max_ticks,
+            c1_failure_actions: Vec::new(), // Pattern execution doesn't generate C1 failures
+        })
+    }
+
     /// Generate OTEL-compatible span ID (deterministic in no_std mode)
     fn generate_span_id() -> u64 {
         #[cfg(feature = "knhk-otel")]

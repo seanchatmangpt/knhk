@@ -814,6 +814,80 @@ impl MetricsHelper {
     }
 }
 
+// Helper functions for generating IDs and timestamps
+
+/// Generate 128-bit trace ID
+fn generate_trace_id() -> u128 {
+    #[cfg(feature = "std")]
+    {
+        use rand::RngCore;
+        let mut rng = rand::thread_rng();
+        // Generate 128-bit ID from two 64-bit values
+        let high = rng.next_u64();
+        let low = rng.next_u64();
+        (high as u128) << 64 | (low as u128)
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        // For no_std, use simple hash-based generation
+        // In production, use hardware RNG or external source
+        use core::hash::{Hash, Hasher};
+        // Use FNV-1a hash for no_std compatibility
+        let mut hash = 14695981039346656037u64; // FNV offset basis
+        const FNV_PRIME: u64 = 1099511628211;
+        for byte in "trace".as_bytes() {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+        hash as u128 | ((hash.wrapping_mul(FNV_PRIME) as u128) << 64)
+    }
+}
+
+/// Generate 64-bit span ID (public API)
+pub fn generate_span_id() -> u64 {
+    #[cfg(feature = "std")]
+    {
+        use rand::RngCore;
+        let mut rng = rand::thread_rng();
+        rng.next_u64()
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        // For no_std, use hash-based generation with timestamp
+        // Use FNV-1a hash for no_std compatibility
+        let mut hash = 14695981039346656037u64; // FNV offset basis
+        const FNV_PRIME: u64 = 1099511628211;
+        for byte in "span".as_bytes() {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+        let timestamp = get_timestamp_ms();
+        for byte in timestamp.to_le_bytes().iter() {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+        hash
+    }
+}
+
+/// Get current timestamp in milliseconds
+pub fn get_timestamp_ms() -> u64 {
+    #[cfg(feature = "std")]
+    {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        // no_std mode: Timestamp not available without std library
+        // For no_std builds, timestamps are provided externally or disabled
+        // This is a known limitation for no_std builds
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used)]
@@ -1211,79 +1285,5 @@ mod tests {
             assert_eq!(weaver.otlp_grpc_port, 1111);
             assert_eq!(weaver.admin_port, 2222);
         }
-    }
-}
-
-// Helper functions for generating IDs and timestamps
-
-/// Generate 128-bit trace ID
-fn generate_trace_id() -> u128 {
-    #[cfg(feature = "std")]
-    {
-        use rand::RngCore;
-        let mut rng = rand::thread_rng();
-        // Generate 128-bit ID from two 64-bit values
-        let high = rng.next_u64();
-        let low = rng.next_u64();
-        (high as u128) << 64 | (low as u128)
-    }
-    #[cfg(not(feature = "std"))]
-    {
-        // For no_std, use simple hash-based generation
-        // In production, use hardware RNG or external source
-        use core::hash::{Hash, Hasher};
-        // Use FNV-1a hash for no_std compatibility
-        let mut hash = 14695981039346656037u64; // FNV offset basis
-        const FNV_PRIME: u64 = 1099511628211;
-        for byte in "trace".as_bytes() {
-            hash ^= *byte as u64;
-            hash = hash.wrapping_mul(FNV_PRIME);
-        }
-        hash as u128 | ((hash.wrapping_mul(FNV_PRIME) as u128) << 64)
-    }
-}
-
-/// Generate 64-bit span ID (public API)
-pub fn generate_span_id() -> u64 {
-    #[cfg(feature = "std")]
-    {
-        use rand::RngCore;
-        let mut rng = rand::thread_rng();
-        rng.next_u64()
-    }
-    #[cfg(not(feature = "std"))]
-    {
-        // For no_std, use hash-based generation with timestamp
-        // Use FNV-1a hash for no_std compatibility
-        let mut hash = 14695981039346656037u64; // FNV offset basis
-        const FNV_PRIME: u64 = 1099511628211;
-        for byte in "span".as_bytes() {
-            hash ^= *byte as u64;
-            hash = hash.wrapping_mul(FNV_PRIME);
-        }
-        let timestamp = get_timestamp_ms();
-        for byte in timestamp.to_le_bytes().iter() {
-            hash ^= *byte as u64;
-            hash = hash.wrapping_mul(FNV_PRIME);
-        }
-        hash
-    }
-}
-
-/// Get current timestamp in milliseconds
-pub fn get_timestamp_ms() -> u64 {
-    #[cfg(feature = "std")]
-    {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0)
-    }
-    #[cfg(not(feature = "std"))]
-    {
-        // no_std mode: Timestamp not available without std library
-        // For no_std builds, timestamps are provided externally or disabled
-        // This is a known limitation for no_std builds
-        0
     }
 }

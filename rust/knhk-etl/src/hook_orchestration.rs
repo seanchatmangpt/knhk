@@ -11,6 +11,10 @@ use crate::hook_registry::HookRegistry;
 use crate::load::{LoadResult, PredRun, SoAArrays};
 use crate::reflex::{Action, Receipt, ReflexStage};
 
+/// Hook choice type: condition function and predicate ID
+/// Factored out to reduce type complexity for clippy compliance
+pub type HookChoice = (Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>, u64);
+
 /// Hook execution context: Contains all data needed for hook execution
 pub struct HookExecutionContext {
     /// Hook registry mapping predicates to kernels
@@ -62,7 +66,7 @@ pub enum HookExecutionPattern {
     Parallel(Vec<u64>),
     /// Conditional routing: (condition, predicate_id)
     /// Condition evaluates on execution context
-    Choice(Vec<(Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>, u64)>),
+    Choice(Vec<HookChoice>),
     /// Retry logic: predicate, condition, max_attempts
     /// Condition evaluates on receipt to determine if retry needed
     Retry {
@@ -340,7 +344,7 @@ impl HookOrchestrator {
     fn execute_choice(
         &self,
         context: &HookExecutionContext,
-        choices: &[(Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>, u64)],
+        choices: &[HookChoice],
     ) -> Result<HookExecutionResult, PipelineError> {
         if choices.is_empty() {
             return Err(PipelineError::ReflexError(
