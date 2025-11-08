@@ -104,11 +104,6 @@ impl PatternRegistry {
         self.patterns.get(pattern_id).map(|e| e.as_ref())
     }
 
-    /// Get pattern executor
-    pub fn get(&self, pattern_id: &PatternId) -> Option<&dyn PatternExecutor> {
-        self.patterns.get(pattern_id).map(|e| e.as_ref())
-    }
-
     /// Execute a pattern
     pub fn execute(
         &self,
@@ -237,3 +232,9 @@ pub fn register_all_patterns(registry: &mut PatternRegistry) {
     let (id, executor) = trigger::create_pattern_43();
     registry.register(id, executor);
 }
+
+/// RDF support for patterns
+pub use rdf::{
+    get_all_pattern_metadata, serialize_context_to_rdf, serialize_result_to_rdf, PatternMetadata,
+    WORKFLOW_PATTERN_NS, YAWL_NS,
+};
