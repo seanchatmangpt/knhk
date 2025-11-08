@@ -1,9 +1,12 @@
 //! Fortune 5 Integration Implementation
 //!
 //! Main integration logic for Fortune 5 enterprise features.
+//!
+//! Provides unified interface for SPIFFE/SPIRE, KMS, multi-region, SLO,
+//! and promotion gate functionality.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::integration::fortune5::config::*;
+use crate::integration::fortune5::config::{Environment, Fortune5Config, PromotionConfig};
 use crate::integration::fortune5::slo::{RuntimeClass, SloManager};
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -38,10 +41,23 @@ impl Fortune5Integration {
             }
         }
 
-        let slo_manager = config
-            .slo
-            .as_ref()
-            .map(|slo| Arc::new(SloManager::new(slo.clone())));
+        // Validate KMS config if present
+        if let Some(ref kms_config) = config.kms {
+            if let Err(e) = kms_config.validate() {
+                tracing::warn!("Invalid KMS config: {}, using defaults", e);
+            }
+        }
+
+        // Validate promotion config if present
+        if let Some(ref promotion_config) = config.promotion {
+            if let Err(e) = promotion_config.validate() {
+                tracing::warn!("Invalid promotion config: {}, using defaults", e);
+            }
+        }
+
+        let slo_manager = config.slo.as_ref().map(|slo| {
+            Arc::new(SloManager::new(slo.clone()))
+        });
 
         let promotion_state = Arc::new(RwLock::new(PromotionState {
             environment: config
@@ -95,7 +111,9 @@ impl Fortune5Integration {
             if let Some(last_rollback) = state.last_rollback_time {
                 let now_secs = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_else(|_| std::time::Duration::from_secs(0))
+                    .map_err(|e| {
+                        WorkflowError::Internal(format!("Failed to get current time: {}", e))
+                    })?
                     .as_secs();
                 let elapsed = now_secs.saturating_sub(last_rollback);
                 if elapsed < promotion_config.rollback_window_seconds {
@@ -106,7 +124,7 @@ impl Fortune5Integration {
 
         // Check environment-specific rules
         match promotion_config.environment {
-            Environment::Staging => Ok(true),     // Staging: always allow
+            Environment::Staging => Ok(true), // Staging: always allow
             Environment::Development => Ok(true), // Development: always allow
             Environment::Production => Ok(slo_compliant), // Production: require SLO compliance
         }
@@ -123,4 +141,14 @@ impl Fortune5Integration {
         let state = self.promotion_state.read().await;
         state.feature_flags.contains(feature)
     }
+
+    /// Get SLO metrics
+    pub async fn get_slo_metrics(&self) -> Option<(u64, u64, u64)> {
+        if let Some(ref slo_manager) = self.slo_manager {
+            Some(slo_manager.get_p99_metrics().await)
+        } else {
+            None
+        }
+    }
 }
+

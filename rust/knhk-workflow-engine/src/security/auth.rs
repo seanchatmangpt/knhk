@@ -117,7 +117,7 @@ impl AuthManager {
                         || policy
                             .resource_patterns
                             .iter()
-                            .any(|pattern| resource.contains(pattern))
+                            .any(|pattern| resource.contains(pattern.as_str()))
                     {
                         return Ok(());
                     }

@@ -6,7 +6,7 @@
 use crate::error::WorkflowResult;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Batch configuration
 #[derive(Debug, Clone)]

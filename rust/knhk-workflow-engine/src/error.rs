@@ -1,4 +1,15 @@
 //! Error types for workflow engine
+//!
+//! Comprehensive error handling with proper error types and context.
+//!
+//! # Error Categories
+//!
+//! - **Parse Errors**: Workflow definition parsing failures
+//! - **Validation Errors**: Input validation failures
+//! - **State Errors**: Invalid state transitions
+//! - **Execution Errors**: Task execution failures
+//! - **Configuration Errors**: Invalid configuration
+//! - **External Errors**: External system failures
 
 use thiserror::Error;
 
@@ -27,10 +38,6 @@ pub enum WorkflowError {
     /// Case already exists
     #[error("Case {0} already exists")]
     CaseExists(String),
-
-    /// Configuration error
-    #[error("Configuration error: {0}")]
-    Configuration(String),
 
     /// Invalid case state transition
     #[error("Invalid state transition from {from:?} to {to:?}")]
@@ -72,5 +79,11 @@ pub enum WorkflowError {
 impl From<std::io::Error> for WorkflowError {
     fn from(err: std::io::Error) -> Self {
         WorkflowError::StatePersistence(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for WorkflowError {
+    fn from(err: serde_json::Error) -> Self {
+        WorkflowError::Parse(format!("JSON parse error: {}", err))
     }
 }

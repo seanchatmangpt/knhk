@@ -4,7 +4,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use governor::{
-    clock::DefaultClock,
+    clock::{Clock, DefaultClock},
     state::keyed::DefaultKeyedStateStore,
     state::{InMemoryState, NotKeyed},
     Quota, RateLimiter as GovernorRateLimiter,
@@ -77,7 +77,8 @@ impl RateLimiter {
                 Ok(_) => return Ok(()),
                 Err(negative) => {
                     // Use wait_time_from with current time
-                    let wait_time = negative.wait_time_from(std::time::Instant::now());
+                    let clock = DefaultClock::default();
+                    let wait_time = negative.wait_time_from(clock.now());
                     tokio::time::sleep(wait_time).await;
                 }
             }
@@ -140,7 +141,7 @@ impl<K: std::hash::Hash + Eq + Clone + Send + Sync + std::fmt::Debug + 'static>
             match self.limiter.check_key(key) {
                 Ok(_) => return Ok(()),
                 Err(_negative) => {
-                    // FUTURE: Use negative.wait_time() when governor API is available
+                    // FUTURE: Use negative.wait_time_from() when governor API is available
                     // For now, use a fixed delay
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }

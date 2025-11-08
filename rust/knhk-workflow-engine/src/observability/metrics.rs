@@ -2,6 +2,7 @@
 //! Metrics collection for workflow engine
 
 // Unused imports removed - will be used when implementing metrics
+use crate::case::CaseId;
 use std::sync::Arc;
 
 /// Workflow metrics collector

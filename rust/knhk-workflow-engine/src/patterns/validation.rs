@@ -3,9 +3,7 @@
 //! Pattern validation and composition for all 43 patterns
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::patterns::{
-    PatternExecutionContext, PatternExecutionResult, PatternExecutor, PatternId,
-};
+use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use std::collections::HashMap;
 
 /// Pattern validation result

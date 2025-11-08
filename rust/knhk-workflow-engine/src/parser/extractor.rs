@@ -14,7 +14,7 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
     // YAWL namespace prefixes
     let yawl_ns = "http://bitflow.ai/ontology/yawl/v2#";
     let rdfs = "http://www.w3.org/2000/01/rdf-schema#";
-    let rdf_type_iri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+    let _rdf_type_iri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     // Find workflow specifications
     let query = format!(
