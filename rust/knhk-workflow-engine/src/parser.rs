@@ -1,5 +1,6 @@
 //! Turtle/YAWL workflow parser
 
+use oxigraph::io::RdfFormat;
 use oxigraph::store::Store;
 use std::io::Read;
 use uuid::Uuid;
@@ -8,7 +9,8 @@ use crate::error::{WorkflowError, WorkflowResult};
 
 /// Unique identifier for a workflow specification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct WorkflowSpecId(#[serde(with = "uuid")] pub Uuid);
+#[serde(transparent)]
+pub struct WorkflowSpecId(#[serde(with = "uuid::serde::compact")] pub Uuid);
 
 impl WorkflowSpecId {
     /// Generate a new spec ID
@@ -143,22 +145,10 @@ impl WorkflowParser {
 
     /// Parse workflow from Turtle string
     pub fn parse_turtle(&mut self, turtle: &str) -> WorkflowResult<WorkflowSpec> {
-        // Parse Turtle into RDF store
-        let parser = TurtleParser::new(turtle.as_bytes(), None);
-        let mut quads = Vec::new();
-
-        // TurtleParser implements Iterator trait
-        for quad_result in parser {
-            let quad = quad_result.map_err(|e| WorkflowError::from(e))?;
-            quads.push(quad);
-        }
-
-        // Load into store
-        for quad in quads {
-            self.store
-                .insert(&quad)
-                .map_err(|e| WorkflowError::from(e))?;
-        }
+        // Parse Turtle into RDF store using oxigraph's built-in parser
+        self.store
+            .load_from_reader(RdfFormat::Turtle, turtle.as_bytes())
+            .map_err(|e| WorkflowError::Parse(format!("Failed to load Turtle: {:?}", e)))?;
 
         // Extract workflow specification
         self.extract_workflow_spec()
@@ -216,18 +206,14 @@ impl WorkflowParser {
     pub fn load_yawl_ontology(&mut self, ontology_path: &std::path::Path) -> WorkflowResult<()> {
         let mut file = std::fs::File::open(ontology_path)
             .map_err(|e| WorkflowError::Parse(format!("Failed to open ontology: {}", e)))?;
-        let mut contents = Vec::new();
-        file.read_to_end(&mut contents)
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
             .map_err(|e| WorkflowError::Parse(format!("Failed to read ontology: {}", e)))?;
 
+        // Parse Turtle and load into store
         self.store
-            .load_graph(
-                contents.as_slice(),
-                oxigraph::io::GraphFormat::Turtle,
-                oxigraph::model::GraphName::DefaultGraph,
-                None,
-            )
-            .map_err(|e| WorkflowError::Parse(format!("Failed to load ontology: {:?}", e)))?;
+            .load_from_reader(RdfFormat::Turtle, contents.as_bytes())
+            .map_err(|e| WorkflowError::Parse(format!("Failed to load Turtle: {:?}", e)))?;
 
         Ok(())
     }

@@ -70,15 +70,3 @@ impl From<std::io::Error> for WorkflowError {
         WorkflowError::StatePersistence(err.to_string())
     }
 }
-
-impl From<oxigraph::storage::StorageError> for WorkflowError {
-    fn from(err: oxigraph::storage::StorageError) -> Self {
-        WorkflowError::Parse(format!("RDF store error: {:?}", err))
-    }
-}
-
-impl From<rio_turtle::TurtleError> for WorkflowError {
-    fn from(err: rio_turtle::TurtleError) -> Self {
-        WorkflowError::Parse(format!("Turtle parsing error: {}", err))
-    }
-}

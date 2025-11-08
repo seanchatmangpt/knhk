@@ -42,8 +42,9 @@ impl RestApiServer {
         Json(request): Json<RegisterWorkflowRequest>,
     ) -> Result<Json<RegisterWorkflowResponse>, StatusCode> {
         let spec_id = request.spec.id;
+        let spec = request.spec;
         engine
-            .register_workflow(request.spec)
+            .register_workflow(spec)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
