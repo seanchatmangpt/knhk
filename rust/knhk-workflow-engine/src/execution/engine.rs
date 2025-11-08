@@ -10,6 +10,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::{
     PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
 };
+use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -188,24 +189,28 @@ pub trait PipelineStage: Send + Sync {
 struct ValidationStage;
 
 impl PipelineStage for ValidationStage {
-    async fn process(
+    fn process(
         &self,
         _registry: &PatternRegistry,
         pattern_id: PatternId,
         context: PatternExecutionContext,
-    ) -> WorkflowResult<PatternExecutionContext> {
-        // Validate pattern ID
-        if !(1..=43).contains(&pattern_id.0) {
-            return Err(WorkflowError::PatternNotFound(pattern_id.0));
-        }
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>,
+    > {
+        Box::pin(async move {
+            // Validate pattern ID
+            if !(1..=43).contains(&pattern_id.0) {
+                return Err(WorkflowError::PatternNotFound(pattern_id.0));
+            }
 
-        // Validate context
-        if context.variables.is_empty() && pattern_id.0 > 1 {
-            // Some patterns require variables
-            // FUTURE: Add pattern-specific validation
-        }
+            // Validate context
+            if context.variables.is_empty() && pattern_id.0 > 1 {
+                // Some patterns require variables
+                // FUTURE: Add pattern-specific validation
+            }
 
-        Ok(context)
+            Ok(context)
+        })
     }
 }
 
