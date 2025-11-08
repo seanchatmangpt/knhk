@@ -15,7 +15,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::{
-    extract_workflow_spec, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
+    extract_workflow_spec, JoinType, SplitType, TaskType, WorkflowSpec, WorkflowSpecId,
 };
 use oxigraph::store::Store;
 use sha2::{Digest, Sha256};
@@ -134,7 +134,7 @@ impl RdfCompiler {
         ir.timers = timers;
 
         // 6) Seal and persist
-        let (ir_hash, _ir_bytes) = seal_ir(&ir)?;
+        let (_ir_hash, _ir_bytes) = seal_ir(&ir)?;
         persist_ir(sled_db, graph_hash, &ir, spec_id)?;
 
         Ok(CompileOutput { ir, graph_hash })
@@ -359,7 +359,7 @@ fn map_pattern_id(split: SplitType, join: JoinType) -> u8 {
 }
 
 /// Extract timers from RDF store
-fn extract_timers(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Vec<TimerIR>> {
+fn extract_timers(_store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<Vec<TimerIR>> {
     // Extract timer properties from RDF (OWL-Time, iCalendar RRULE)
     // Timer extraction is not yet implemented - return empty vector
     // This is acceptable as timers are optional and can be added later

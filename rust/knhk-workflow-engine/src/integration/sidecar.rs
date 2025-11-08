@@ -4,7 +4,7 @@
 //! The sidecar now depends on the workflow engine, not the other way around.
 //! This stub allows the workflow engine to compile without the sidecar dependency.
 
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 
 /// Sidecar integration for workflow engine
 /// NOTE: Disabled to avoid circular dependency - sidecar now depends on workflow engine

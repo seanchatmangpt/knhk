@@ -6,7 +6,7 @@
 //! and promotion gate functionality.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::integration::fortune5::config::{Environment, Fortune5Config, PromotionConfig};
+use crate::integration::fortune5::config::{Environment, Fortune5Config};
 use crate::integration::fortune5::slo::{RuntimeClass, SloManager};
 use crate::performance::aot::{AdmissionController, BrownoutManager, BrownoutMode};
 use std::collections::HashSet;

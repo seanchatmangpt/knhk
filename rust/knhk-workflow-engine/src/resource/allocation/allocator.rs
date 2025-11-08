@@ -6,7 +6,7 @@ use super::policies::{
 };
 use super::types::{AllocationPolicy, AllocationRequest, AllocationResult, Resource, ResourceId};
 use crate::error::{WorkflowError, WorkflowResult};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 

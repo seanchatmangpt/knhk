@@ -39,8 +39,81 @@ impl ReceiptStore {
 
     /// Save receipt
     pub fn save(&self, receipt: &ReceiptEntry) -> Result<(), String> {
-        // Save receipt to Oxigraph
-        // FUTURE: Implement actual saving to Oxigraph
+        // Save receipt to Oxigraph using StateStore
+        // Convert ReceiptEntry to RDF triples and store in Oxigraph
+        use oxigraph::model::{GraphName, Quad};
+        
+        let store = self.store.store();
+        
+        // Create subject IRI for receipt
+        let receipt_subject = NamedNode::new(format!("urn:knhk:receipt:{}", receipt.id))
+            .map_err(|e| format!("Failed to create receipt subject IRI: {:?}", e))?;
+        
+        // Create predicate IRIs
+        let rdf_type = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+            .map_err(|e| format!("Failed to create rdf:type IRI: {:?}", e))?;
+        let receipt_class = NamedNode::new("urn:knhk:Receipt")
+            .map_err(|e| format!("Failed to create Receipt class IRI: {:?}", e))?;
+        
+        // Insert type triple
+        let type_quad = Quad::new(
+            &receipt_subject,
+            &rdf_type,
+            &receipt_class,
+            GraphName::DefaultGraph,
+        );
+        store.insert(&type_quad)
+            .map_err(|e| format!("Failed to insert receipt type triple: {:?}", e))?;
+        
+        // Add receipt properties
+        let has_ticks = NamedNode::new("urn:knhk:hasTicks")
+            .map_err(|e| format!("Failed to create hasTicks IRI: {:?}", e))?;
+        let ticks_literal = oxigraph::model::Literal::new_typed_literal(
+            receipt.ticks.to_string(),
+            NamedNode::new("http://www.w3.org/2001/XMLSchema#unsignedInt")
+                .map_err(|e| format!("Failed to create unsignedInt IRI: {:?}", e))?,
+        );
+        let ticks_quad = Quad::new(
+            &receipt_subject,
+            &has_ticks,
+            &ticks_literal,
+            GraphName::DefaultGraph,
+        );
+        store.insert(&ticks_quad)
+            .map_err(|e| format!("Failed to insert receipt ticks triple: {:?}", e))?;
+        
+        let has_span_id = NamedNode::new("urn:knhk:hasSpanId")
+            .map_err(|e| format!("Failed to create hasSpanId IRI: {:?}", e))?;
+        let span_id_literal = oxigraph::model::Literal::new_typed_literal(
+            receipt.span_id.to_string(),
+            NamedNode::new("http://www.w3.org/2001/XMLSchema#unsignedLong")
+                .map_err(|e| format!("Failed to create unsignedLong IRI: {:?}", e))?,
+        );
+        let span_id_quad = Quad::new(
+            &receipt_subject,
+            &has_span_id,
+            &span_id_literal,
+            GraphName::DefaultGraph,
+        );
+        store.insert(&span_id_quad)
+            .map_err(|e| format!("Failed to insert receipt span_id triple: {:?}", e))?;
+        
+        let has_a_hash = NamedNode::new("urn:knhk:hasAHash")
+            .map_err(|e| format!("Failed to create hasAHash IRI: {:?}", e))?;
+        let hash_literal = oxigraph::model::Literal::new_typed_literal(
+            receipt.a_hash.to_string(),
+            NamedNode::new("http://www.w3.org/2001/XMLSchema#unsignedLong")
+                .map_err(|e| format!("Failed to create unsignedLong IRI: {:?}", e))?,
+        );
+        let hash_quad = Quad::new(
+            &receipt_subject,
+            &has_a_hash,
+            &hash_literal,
+            GraphName::DefaultGraph,
+        );
+        store.insert(&hash_quad)
+            .map_err(|e| format!("Failed to insert receipt a_hash triple: {:?}", e))?;
+        
         Ok(())
     }
 

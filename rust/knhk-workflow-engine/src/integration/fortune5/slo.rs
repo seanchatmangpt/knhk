@@ -8,7 +8,6 @@
 //! - **W1**: Warm path operations (≤1ms P99)
 //! - **C1**: Cold path operations (≤500ms P99)
 
-use crate::error::WorkflowResult;
 use crate::integration::fortune5::config::SloConfig;
 use std::sync::Arc;
 use tokio::sync::RwLock;

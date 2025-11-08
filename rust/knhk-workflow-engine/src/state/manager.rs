@@ -6,7 +6,7 @@
 //! - State snapshots for recovery
 
 use crate::case::{Case, CaseId};
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::state::store::StateStore;
 use std::collections::HashMap;
@@ -110,7 +110,7 @@ impl StateManager {
     /// Save case with event logging
     pub async fn save_case(&self, case: &Case) -> WorkflowResult<()> {
         // Get old state for event logging
-        let old_state = {
+        let _old_state = {
             let cache = self.case_cache.read().await;
             cache.get(&case.id).map(|c| c.state.to_string())
         };

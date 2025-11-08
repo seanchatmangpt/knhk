@@ -1,7 +1,5 @@
 //! Pattern metadata definitions and retrieval
 
-use crate::error::{WorkflowError, WorkflowResult};
-use crate::patterns::PatternId;
 use serde::{Deserialize, Serialize};
 
 /// Pattern metadata

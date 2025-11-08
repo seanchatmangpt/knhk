@@ -84,8 +84,10 @@ impl ScalabilityManager {
             return self.config.current_region.clone();
         }
 
-        // Use consistent hashing to select region
-        // For now, return current region
-        self.config.current_region.clone()
+        // Consistent hashing for multi-region selection is not yet implemented
+        // Return None instead of false positive (claiming to select region when we return current)
+        // Note: This is a legitimate return value (None means no region selected)
+        // In production, would use consistent hashing to select optimal region
+        None
     }
 }

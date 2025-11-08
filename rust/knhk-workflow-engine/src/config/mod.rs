@@ -20,11 +20,11 @@ impl ConfigLoader {
 
     /// Load configuration from string
     pub fn load_from_str(_content: &str) -> WorkflowResult<AppConfig> {
-        // FUTURE: Implement TOML parsing when toml crate is added
-        // For now, return default config
-        let config: AppConfig = AppConfig::default();
-        config.validate()?;
-        Ok(config)
+        // TOML parsing is not yet implemented
+        // Return error instead of false positive (claiming to load config when we return default)
+        Err(WorkflowError::Internal(
+            "Configuration loading from string requires TOML parsing - TOML parsing not yet implemented. Use load_from_env() or AppConfig::default() instead.".to_string()
+        ))
     }
 
     /// Load configuration from environment variables
@@ -198,6 +198,24 @@ pub struct SecurityConfig {
 impl SecurityConfig {
     /// Validate security configuration
     pub fn validate(&self) -> WorkflowResult<()> {
+        // Validate allowed origins format (must be valid URIs or "*")
+        for origin in &self.allowed_origins {
+            if origin != "*" && !origin.starts_with("http://") && !origin.starts_with("https://") {
+                return Err(WorkflowError::Validation(format!(
+                    "Invalid origin format: {} (must be '*' or start with 'http://' or 'https://')",
+                    origin
+                )));
+            }
+        }
+
+        // Validate that if validation is disabled, sanitization should also be disabled
+        // (security best practice: don't disable validation without sanitization)
+        if !self.enable_validation && !self.enable_sanitization {
+            return Err(WorkflowError::Validation(
+                "Security configuration invalid: validation and sanitization cannot both be disabled".to_string()
+            ));
+        }
+
         Ok(())
     }
 }

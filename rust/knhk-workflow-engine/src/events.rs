@@ -3,7 +3,6 @@
 //! Provides event bus integration for external events and timer-fired events.
 
 use serde_json::Value;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 
 /// Event sidecar for publishing workflow events

@@ -75,13 +75,14 @@ impl SecurityManager {
             return Ok(true); // Skip verification if disabled
         }
 
-        // Note: SPIFFE verification will be implemented when SPIFFE/SPIRE integration is added
-        // For now, return true if trust domain matches
-        if let Some(ref trust_domain) = self.config.trust_domain {
-            Ok(spiffe_id.starts_with(&format!("spiffe://{}", trust_domain)))
-        } else {
-            Ok(true)
-        }
+        // SPIFFE/SPIRE verification requires actual SPIFFE/SPIRE integration
+        // Simple string matching is not secure - return error instead of false positive
+        Err(crate::error::WorkflowError::Internal(
+            format!(
+                "SPIFFE/SPIRE verification requires actual SPIFFE/SPIRE integration - cannot verify identity '{}' without SPIFFE Workload API client",
+                spiffe_id
+            )
+        ))
     }
 
     /// Check RBAC permission

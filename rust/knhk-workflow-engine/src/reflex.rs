@@ -100,7 +100,7 @@ impl ReflexBridge {
     }
 
     /// Check if task is safe for hot path promotion
-    fn is_task_safe_for_hot_path(&self, task_id: &str, task: &crate::parser::Task) -> bool {
+    fn is_task_safe_for_hot_path(&self, _task_id: &str, task: &crate::parser::Task) -> bool {
         // Check tick budget
         if let Some(max_ticks) = task.max_ticks {
             if max_ticks > self.max_tick_budget {

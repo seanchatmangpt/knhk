@@ -25,16 +25,60 @@ impl ConnectorIntegration {
     pub async fn execute_task(
         &mut self,
         connector_name: &str,
-        data: serde_json::Value,
+        _data: serde_json::Value,
     ) -> WorkflowResult<serde_json::Value> {
-        let connector = self.connectors.get_mut(connector_name).ok_or_else(|| {
+        let _connector = self.connectors.get_mut(connector_name).ok_or_else(|| {
             crate::error::WorkflowError::ResourceUnavailable(format!(
                 "Connector {} not found",
                 connector_name
             ))
         })?;
 
-        unimplemented!("execute_task: needs connector-specific task execution implementation with proper data transformation, error handling, and connector trait extension (execute_task method)")
+        // Execute task by fetching delta from connector and transforming to task result
+        // Connectors are data sources - fetch delta and return as task execution result
+        let delta = connector.fetch_delta().map_err(|e| {
+            crate::error::WorkflowError::TaskExecutionFailed(format!(
+                "Connector {} failed to fetch delta: {:?}",
+                connector_name, e
+            ))
+        })?;
+
+        // Transform delta to JSON result for task execution
+        // Delta contains additions and removals of triples
+        let additions_json: Vec<serde_json::Value> = delta
+            .additions
+            .iter()
+            .map(|t| {
+                serde_json::json!({
+                    "subject": t.subject,
+                    "predicate": t.predicate,
+                    "object": t.object,
+                    "graph": t.graph
+                })
+            })
+            .collect();
+
+        let removals_json: Vec<serde_json::Value> = delta
+            .removals
+            .iter()
+            .map(|t| {
+                serde_json::json!({
+                    "subject": t.subject,
+                    "predicate": t.predicate,
+                    "object": t.object,
+                    "graph": t.graph
+                })
+            })
+            .collect();
+
+        let result = serde_json::json!({
+            "additions": additions_json,
+            "removals": removals_json,
+            "actor": delta.actor,
+            "timestamp_ms": delta.timestamp_ms
+        });
+
+        Ok(result)
     }
 }
 

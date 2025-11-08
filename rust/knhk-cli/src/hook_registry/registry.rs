@@ -27,31 +27,12 @@ impl HookRegistryIntegration {
     fn load_hooks(&mut self) -> Result<(), String> {
         let hooks = self.store.load_all()?;
 
-        for hook in hooks {
-            // Map HookEntry to register_hook parameters
-            let _kernel_type = Self::map_op_to_kernel_type(&hook.op)?;
-            let _guard = Self::create_guard_fn(&hook)?;
-
-            // Register hook with knhk-etl HookRegistry
-            // Note: HookRegistry doesn't support mutable operations through Arc
-            // This is a limitation that needs to be addressed in v1.1
-            // For now, we'll skip registration and log a warning
-            eprintln!("Warning: Hook registration through Arc not supported. Hook '{}' will not be registered.", hook.name);
-            // FUTURE: Implement proper Arc mutability handling in v1.1
-            /*
-            match Arc::get_mut(&mut self.registry)
-                .ok_or_else(|| "Cannot get mutable reference to registry".to_string())?
-                .register_hook(hook.pred, kernel_type, guard, vec![])
-            {
-                Ok(_hook_id) => {
-                    // Hook registered successfully
-                }
-                Err(e) => {
-                    // Log error but continue loading other hooks
-                    eprintln!("Warning: Failed to register hook '{}': {:?}", hook.name, e);
-                }
-            }
-            */
+        // FUTURE: Implement proper Arc mutability handling in v1.1
+        // HookRegistry doesn't support mutable operations through Arc
+        // This is a limitation that needs to be addressed in v1.1
+        // For now, we acknowledge this is incomplete
+        if !hooks.is_empty() {
+            unimplemented!("load_hooks: needs proper Arc mutability handling to register {} hooks with knhk-etl HookRegistry - HookRegistry doesn't support mutable operations through Arc, requires refactoring in v1.1", hooks.len())
         }
 
         Ok(())

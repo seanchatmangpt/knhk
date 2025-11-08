@@ -19,42 +19,50 @@ impl MetricsCollector {
 
     /// Record workflow registration
     pub fn record_workflow_registration(&self, _success: bool) {
-        // Metrics integration will be implemented when metrics crate is configured
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record case creation
     pub fn record_case_creation(&self, _success: bool) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record case execution
     pub fn record_case_execution(&self, _case_id: &CaseId, _duration_ms: u64, _success: bool) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record pattern execution
     pub fn record_pattern_execution(&self, _pattern_id: u32, _duration_ns: u64, _success: bool) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record active cases
     pub fn record_active_cases(&self, _count: usize) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record circuit breaker state
     pub fn record_circuit_breaker_state(&self, _name: &str, _state: &str) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record rate limit hits
     pub fn record_rate_limit_hit(&self, _limiter_name: &str) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 
     /// Record timeout
     pub fn record_timeout(&self, _operation: &str) {
-        // FUTURE: Integrate with metrics crate
+        // Metrics integration not yet implemented
+        // TODO: Integrate with metrics crate when available
     }
 }
 

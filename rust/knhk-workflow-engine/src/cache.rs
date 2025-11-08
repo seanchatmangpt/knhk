@@ -4,7 +4,6 @@
 //! with async persistence to sled for durability.
 
 use crate::case::{Case, CaseId};
-use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use dashmap::DashMap;
 use std::sync::Arc;

@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tokio::time::{sleep, Duration};
+use tokio::time::Duration;
 
 /// Timer fired event
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -207,7 +207,7 @@ impl<T: Timebase + 'static> TimerService<T> {
     /// Cancel all timers for a case
     pub async fn cancel_case_timers(&self, case_id: &str) -> WorkflowResult<()> {
         let mut timers = self.timers.write().await;
-        timers.retain(|id, entry| {
+        timers.retain(|_id, entry| {
             if entry.case_id == case_id {
                 false
             } else {

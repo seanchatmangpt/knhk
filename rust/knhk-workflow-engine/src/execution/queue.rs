@@ -6,7 +6,7 @@
 //! - Load balancing
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
+use crate::patterns::{PatternExecutionContext, PatternId};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 

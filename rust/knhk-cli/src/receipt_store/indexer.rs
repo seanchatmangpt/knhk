@@ -7,10 +7,14 @@ pub struct ReceiptIndexer;
 
 impl ReceiptIndexer {
     /// Index receipt
-    pub fn index(&self, _receipt: &ReceiptEntry) -> Result<(), String> {
-        // Index receipt in Oxigraph
-        // FUTURE: Implement actual indexing
-        Ok(())
+    pub fn index(&self, receipt: &ReceiptEntry) -> Result<(), String> {
+        // Index receipt in Oxigraph by creating index triples
+        // Index by operation type (derived from receipt properties)
+        // FUTURE: Extract operation type from receipt metadata and create proper index
+
+        // This is a placeholder - actual indexing would require operation metadata
+        // For now, we acknowledge this is incomplete
+        unimplemented!("index: needs operation metadata extraction from receipt to create proper index triples in Oxigraph - receipt_id={}", receipt.id)
     }
 
     /// Find receipts by operation

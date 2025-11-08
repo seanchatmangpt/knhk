@@ -50,7 +50,74 @@ impl ConnectionPool {
 
     /// Get a connection from the pool
     pub async fn get_connection(&self) -> WorkflowResult<PoolConnection> {
-        unimplemented!("get_connection: needs real connection pooling implementation with connection lifecycle management, timeout handling, and connection validation")
+        // Check if we can allocate a new connection
+        let mut active = self.active.lock().map_err(|e| {
+            WorkflowError::Internal(format!("Failed to acquire active lock: {}", e))
+        })?;
+        let mut idle = self.idle.lock().map_err(|e| {
+            WorkflowError::Internal(format!("Failed to acquire idle lock: {}", e))
+        })?;
+
+        // Try to get from idle pool first
+        if *idle > 0 {
+            *idle -= 1;
+            *active += 1;
+            return Ok(PoolConnection {
+                pool: Arc::new(self.clone()),
+            });
+        }
+
+        // Check if we can create a new connection
+        if *active < self.config.max_size {
+            *active += 1;
+            return Ok(PoolConnection {
+                pool: Arc::new(self.clone()),
+            });
+        }
+
+        // Pool is full - wait for timeout
+        drop(active);
+        drop(idle);
+
+        // Wait for connection to become available (simplified - in production would use async notification)
+        let timeout = tokio::time::Duration::from_secs(self.config.timeout_secs);
+        let start = std::time::Instant::now();
+
+        while start.elapsed() < timeout {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+            let mut active = self.active.lock().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to acquire active lock: {}", e))
+            })?;
+            let mut idle = self.idle.lock().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to acquire idle lock: {}", e))
+            })?;
+
+            if *idle > 0 {
+                *idle -= 1;
+                *active += 1;
+                return Ok(PoolConnection {
+                    pool: Arc::new(self.clone()),
+                });
+            }
+
+            if *active < self.config.max_size {
+                *active += 1;
+                return Ok(PoolConnection {
+                    pool: Arc::new(self.clone()),
+                });
+            }
+
+            drop(active);
+            drop(idle);
+        }
+
+        Err(WorkflowError::ResourceUnavailable(
+            format!(
+                "Connection pool timeout: no connections available within {} seconds",
+                self.config.timeout_secs
+            ),
+        ))
     }
 
     /// Return a connection to the pool

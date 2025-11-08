@@ -84,7 +84,7 @@ impl GgenGenerator {
         }
 
         // Add graph store to context if available
-        if let Some(ref store) = self.graph_store {
+        if let Some(ref _store) = self.graph_store {
             tera_context.insert("has_graph", &true);
         } else {
             tera_context.insert("has_graph", &false);
@@ -215,8 +215,20 @@ impl GgenGenerator {
     }
 
     /// SPARQL filter for Tera templates
-    fn sparql_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
-        unimplemented!("sparql_filter: needs SPARQL query execution implementation with RDF store integration, query parsing, and result transformation")
+    fn sparql_filter(_value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value> {
+        // Extract SPARQL query from args
+        let query = args
+            .get("query")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| tera::Error::msg("sparql_filter requires 'query' argument"))?;
+
+        // Get generator instance from value (stored as context)
+        // Note: This is a limitation of Tera filters - they're static functions
+        // In production, would need to store generator in thread-local or pass via context
+        // For now, return error indicating generator context is needed
+        Err(tera::Error::msg(
+            "sparql_filter requires GgenGenerator instance - use execute_sparql() method directly instead of filter",
+        ))
     }
 }
 

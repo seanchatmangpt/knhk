@@ -12,7 +12,6 @@
 //!
 //! Every assertion is cryptographically linked to its operation via receipt hashes.
 
-use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};

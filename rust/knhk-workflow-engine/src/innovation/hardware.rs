@@ -2,8 +2,6 @@
 //!
 //! Provides hardware-accelerated operations using SIMD, GPU, and specialized hardware.
 
-use crate::error::{WorkflowError, WorkflowResult};
-
 /// Hardware acceleration capabilities
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HardwareAcceleration {

@@ -83,8 +83,19 @@ impl AuthManager {
     }
 
     /// Authenticate a principal
-    pub fn authenticate(&self, token: &str) -> WorkflowResult<Principal> {
-        unimplemented!("authenticate: needs SPIFFE/SPIRE integration for mTLS authentication, certificate validation, and SPIFFE ID extraction")
+    pub fn authenticate(&self, _token: &str) -> WorkflowResult<Principal> {
+        // SPIFFE/SPIRE authentication requires actual SPIFFE Workload API client
+        // For now, return error indicating SPIFFE integration is needed
+        // In production, would:
+        // 1. Extract SPIFFE ID from mTLS certificate
+        // 2. Validate certificate chain against SPIFFE trust domain
+        // 3. Extract principal attributes from SPIFFE ID
+        Err(WorkflowError::Internal(
+            format!(
+                "SPIFFE/SPIRE authentication requires SPIFFE Workload API client - cannot authenticate token '{}' without SPIFFE/SPIRE integration",
+                token
+            )
+        ))
     }
 
     /// Authorize an action

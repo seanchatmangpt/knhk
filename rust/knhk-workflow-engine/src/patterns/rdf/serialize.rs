@@ -3,7 +3,7 @@
 use super::metadata::PatternMetadata;
 use super::utils::escape_string;
 use super::{WORKFLOW_PATTERN_NS, YAWL_NS};
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 
 /// Serialize pattern execution context to RDF/Turtle

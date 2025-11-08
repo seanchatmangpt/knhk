@@ -6,10 +6,8 @@
 //! - Workflow registration
 //! - Pattern execution
 
-use crate::case::{Case, CaseId, CaseState};
-use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::WorkflowSpec;
-use crate::patterns::PatternExecutionContext;
+use crate::case::CaseId;
+use crate::error::WorkflowResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;

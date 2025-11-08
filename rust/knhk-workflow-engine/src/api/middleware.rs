@@ -74,8 +74,10 @@ pub async fn auth_middleware(
 
 /// Rate limiting middleware
 pub async fn rate_limit_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
-    // FUTURE: Implement rate limiting per client
-    // For now, just continue
+    // Rate limiting not yet implemented
+    // TODO: Implement rate limiting per client with governor or similar
+    // For now, just continue without rate limiting
+    // This is a false positive - we claim to do rate limiting but don't
     Ok(next.run(request).await)
 }
 
@@ -84,8 +86,10 @@ pub async fn circuit_breaker_middleware(
     request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    // FUTURE: Implement circuit breaker
-    // For now, just continue
+    // Circuit breaker not yet implemented
+    // TODO: Implement circuit breaker with failure detection and recovery
+    // For now, just continue without circuit breaking
+    // This is a false positive - we claim to do circuit breaking but don't
     Ok(next.run(request).await)
 }
 

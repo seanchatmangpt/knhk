@@ -3,7 +3,7 @@
 //! Integrates A = μ(O) and hash(A) = hash(μ(O)) into workflow execution,
 //! generating receipts that prove every assertion is cryptographically linked to its operation.
 
-use crate::case::{Case, CaseId, CaseState};
+use crate::case::{Case, CaseId};
 use crate::compliance::provenance_law::{
     hash_actions, hash_mu_o, WorkflowAction, WorkflowObservations, WorkflowReceipt,
 };
