@@ -14,9 +14,7 @@
 //! Invariants: μ∘μ = μ (idempotent), hash(A) = hash(μ(O))
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{
-    extract_workflow_spec, JoinType, SplitType, Task, WorkflowSpec, WorkflowSpecId,
-};
+use crate::parser::{extract_workflow_spec, JoinType, SplitType, WorkflowSpec, WorkflowSpecId};
 use oxigraph::store::Store;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -294,12 +292,11 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
         }
 
         // Extract parameters (MI count, thresholds)
-        let param = match task.task_type {
-            crate::parser::TaskType::MultipleInstance => {
-                // Extract MI count from task properties (default to 1)
-                1
-            }
-            _ => 0,
+        let param = if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
+            // Extract MI count from task properties (default to 1)
+            1
+        } else {
+            0
         };
 
         // Extract flags (discriminator, cancelling, etc.)

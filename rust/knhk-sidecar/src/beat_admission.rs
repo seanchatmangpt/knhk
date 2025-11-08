@@ -472,7 +472,7 @@ mod tests {
     #[test]
     fn test_construct8_routes_to_w1() {
         let beat_scheduler = Arc::new(Mutex::new(
-            BeatScheduler::new(1).expect("Failed to create beat scheduler"),
+            BeatScheduler::new(1, 1, 16).expect("Failed to create beat scheduler"),
         ));
         let admission = BeatAdmission::new(beat_scheduler, 0);
 
@@ -500,7 +500,7 @@ mod tests {
     #[test]
     fn test_hot_path_admission() {
         let beat_scheduler = Arc::new(Mutex::new(
-            BeatScheduler::new(1).expect("Failed to create beat scheduler"),
+            BeatScheduler::new(1, 1, 16).expect("Failed to create beat scheduler"),
         ));
         let admission = BeatAdmission::new(beat_scheduler, 0);
 
@@ -530,7 +530,7 @@ mod tests {
     #[test]
     fn test_budget_exceeded_routes_to_w1() {
         let beat_scheduler = Arc::new(Mutex::new(
-            BeatScheduler::new(1).expect("Failed to create beat scheduler"),
+            BeatScheduler::new(1, 1, 16).expect("Failed to create beat scheduler"),
         ));
         let admission = BeatAdmission::new(beat_scheduler, 0);
 

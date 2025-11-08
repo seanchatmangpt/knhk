@@ -36,7 +36,7 @@ async fn test_rdf_metadata_serialization() {
 
     // Assert: RDF contains expected elements
     assert!(
-        rdf.contains("pattern:pattern:1"),
+        rdf.contains(&format!("{}pattern:1", WORKFLOW_PATTERN_NS)),
         "RDF should contain pattern IRI"
     );
     assert!(rdf.contains("Sequence"), "RDF should contain pattern name");
@@ -67,7 +67,7 @@ async fn test_rdf_context_serialization() {
 
     // Assert: RDF contains expected elements
     assert!(
-        rdf.contains("pattern:pattern:26"),
+        rdf.contains(&format!("{}pattern:26", WORKFLOW_PATTERN_NS)),
         "RDF should contain pattern IRI"
     );
     assert!(
