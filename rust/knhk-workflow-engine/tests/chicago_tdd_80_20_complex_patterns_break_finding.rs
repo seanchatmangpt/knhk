@@ -74,24 +74,42 @@ async fn test_pattern_27_cancelling_discriminator_break_finding() {
     // Break-finding: Test cancelling discriminator for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_27();
+
+    // Test 1: With first branch arrived - should cancel others
+    let mut variables = HashMap::new();
+    variables.insert(
+        "all_branches".to_string(),
+        "branch_0,branch_1,branch_2".to_string(),
+    );
+    let mut arrived_from = HashSet::new();
+    arrived_from.insert("branch_0".to_string()); // First branch arrived
+
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
-        arrived_from: HashSet::new(),
+        variables,
+        arrived_from,
         scope_id: String::new(),
     };
 
-    // Test 1: Verify cancellation list is set
     let result = executor.execute(&context);
     assert!(result.success, "Should execute successfully");
     assert!(
         !result.cancel_activities.is_empty(),
         "BREAK: Cancelling discriminator should cancel activities"
     );
-    assert_eq!(
-        result.cancel_activities[0], "blocked_branch",
-        "BREAK: Should cancel blocked branches"
+    // Should cancel branch_1 and branch_2 (not branch_0 which arrived first)
+    assert!(
+        result.cancel_activities.contains(&"branch_1".to_string()),
+        "BREAK: Should cancel branch_1"
+    );
+    assert!(
+        result.cancel_activities.contains(&"branch_2".to_string()),
+        "BREAK: Should cancel branch_2"
+    );
+    assert!(
+        !result.cancel_activities.contains(&"branch_0".to_string()),
+        "BREAK: Should NOT cancel branch_0 (first arrived)"
     );
 
     // Test 2: Multiple executions should be consistent
@@ -106,6 +124,22 @@ async fn test_pattern_27_cancelling_discriminator_break_finding() {
     assert!(
         !result.terminates,
         "BREAK: Cancelling discriminator should not terminate workflow"
+    );
+
+    // Test 4: With no branches arrived - should cancel all except first
+    let mut variables2 = HashMap::new();
+    variables2.insert("all_branches".to_string(), "branch_0,branch_1".to_string());
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables2,
+        arrived_from: HashSet::new(), // No branches arrived yet
+        scope_id: String::new(),
+    };
+    let result2 = executor.execute(&context2);
+    assert!(
+        !result2.cancel_activities.is_empty(),
+        "BREAK: Should cancel branches even when none arrived"
     );
 }
 
@@ -206,15 +240,21 @@ async fn test_pattern_29_recursion_break_finding() {
     // Break-finding: Test recursion for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_29();
+
+    // Test 1: Recursion should continue when sub-case not done
+    let mut variables = HashMap::new();
+    variables.insert("depth".to_string(), "0".to_string());
+    variables.insert("max_depth".to_string(), "10".to_string());
+    variables.insert("sub_case_done".to_string(), "false".to_string());
+
     let context = PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
-        variables: HashMap::new(),
+        variables,
         arrived_from: HashSet::new(),
         scope_id: String::new(),
     };
 
-    // Test 1: Verify recursion state
     let result = executor.execute(&context);
     assert!(result.success, "Should execute successfully");
     assert!(
@@ -223,20 +263,48 @@ async fn test_pattern_29_recursion_break_finding() {
     );
     assert!(
         result.next_state.as_ref().unwrap().contains("recursing"),
-        "BREAK: State should indicate recursion"
+        "BREAK: State should indicate recursion when sub-case not done"
+    );
+    assert!(
+        result.next_activities.contains(&"recurse".to_string()),
+        "BREAK: Should schedule recurse activity"
     );
 
-    // Test 2: Verify recursion doesn't terminate
+    // Test 2: Recursion should stop when sub-case done
+    let mut variables2 = HashMap::new();
+    variables2.insert("depth".to_string(), "5".to_string());
+    variables2.insert("max_depth".to_string(), "10".to_string());
+    variables2.insert("sub_case_done".to_string(), "true".to_string());
+
+    let context2 = PatternExecutionContext {
+        case_id: CaseId::new(),
+        workflow_id: WorkflowSpecId::new(),
+        variables: variables2,
+        arrived_from: HashSet::new(),
+        scope_id: String::new(),
+    };
+
+    let result2 = executor.execute(&context2);
+    assert!(
+        result2.next_state.as_ref().unwrap().contains("completed"),
+        "BREAK: State should indicate completion when sub-case done"
+    );
+    assert!(
+        result2.next_activities.contains(&"return".to_string()),
+        "BREAK: Should schedule return activity when done"
+    );
+
+    // Test 3: Verify recursion doesn't terminate
     assert!(
         !result.terminates,
         "BREAK: Recursion should not terminate (allows continuation)"
     );
 
-    // Test 3: Verify no activities scheduled (recursion is self-contained)
+    // Test 4: Verify depth tracking
     assert_eq!(
-        result.next_activities.len(),
-        0,
-        "BREAK: Recursion should not schedule external activities"
+        result.variables.get("depth"),
+        Some(&"1".to_string()),
+        "BREAK: Should increment depth"
     );
 }
 

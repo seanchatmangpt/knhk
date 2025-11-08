@@ -187,7 +187,7 @@ async fn test_slo_admission_concurrent_requests() {
 #[tokio::test]
 async fn test_capacity_tracking_under_load() {
     // Arrange: Create capacity manager
-    let manager = CapacityManager::new(1000); // 1000 capacity threshold
+    let manager = CapacityManager::new(1000.0); // 1000 capacity threshold
 
     // Act: Track capacity under load
     for i in 0..10000 {
@@ -210,7 +210,7 @@ async fn test_capacity_tracking_under_load() {
 #[tokio::test]
 async fn test_capacity_breaking_point() {
     // Arrange: Create capacity manager with low threshold
-    let manager = CapacityManager::new(100); // Low threshold
+    let manager = CapacityManager::new(100.0); // Low threshold
 
     // Act: Push to breaking point
     for i in 0..100000 {

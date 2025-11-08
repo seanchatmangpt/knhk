@@ -62,7 +62,7 @@ impl PatternExecutor for StructuredLoopPattern {
 
 pub struct RecursionPattern;
 impl PatternExecutor for RecursionPattern {
-    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionContext {
+    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult {
         // Pattern 29: Recursion
         // Execute recursive pattern with depth tracking
         // Uses "depth" and "max_depth" variables to control recursion

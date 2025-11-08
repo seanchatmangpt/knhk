@@ -115,11 +115,11 @@ impl PatternExecutor for ActivityInstanceMultipleThreadsPattern {
                 "pattern:38:activity-instance-multiple-threads:executing:{}",
                 thread_count
             )),
-            next_activities: thread_activities,
+            next_activities: thread_activities.clone(),
             variables,
             updates: Some(serde_json::json!({
                 "thread_count": thread_count,
-                "threads": thread_activities
+                "threads": thread_activities.clone()
             })),
             cancel_activities: Vec::new(),
             terminates: false,
@@ -129,7 +129,7 @@ impl PatternExecutor for ActivityInstanceMultipleThreadsPattern {
 
 pub struct ThreadMergePattern;
 impl PatternExecutor for ThreadMergePattern {
-    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionContext {
+    fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult {
         // Pattern 39: Thread Merge
         // Merge multiple threads (AND-join semantics)
         // Uses arrived_from to check if all threads have completed
