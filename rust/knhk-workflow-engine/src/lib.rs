@@ -60,6 +60,7 @@ pub mod cache;
 pub mod capabilities;
 pub mod case;
 pub mod cluster;
+pub mod compiler;
 pub mod compliance;
 pub mod config;
 pub mod constants;

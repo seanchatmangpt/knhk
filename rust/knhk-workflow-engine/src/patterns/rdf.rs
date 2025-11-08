@@ -949,7 +949,11 @@ pub fn deserialize_result_from_rdf(turtle: &str) -> WorkflowResult<PatternExecut
             Ok(PatternExecutionResult {
                 success,
                 next_state,
+                next_activities: Vec::new(),
                 variables,
+                updates: None,
+                cancel_activities: Vec::new(),
+                terminates: false,
             })
         } else {
             Err(WorkflowError::Parse(

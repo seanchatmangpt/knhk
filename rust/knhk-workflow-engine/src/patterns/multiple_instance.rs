@@ -23,7 +23,11 @@ impl PatternExecutor for MultipleInstanceWithoutSyncPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 12)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -47,7 +51,11 @@ impl PatternExecutor for MultipleInstanceDesignTimePattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 13)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -71,7 +79,11 @@ impl PatternExecutor for MultipleInstanceRuntimePattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 14)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -89,7 +101,11 @@ impl PatternExecutor for MultipleInstanceDynamicPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 15)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }

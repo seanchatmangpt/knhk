@@ -74,13 +74,13 @@ pub struct SimClock {
     mono: Arc<parking_lot::Mutex<Instant>>,
     /// Wall epoch
     wall: Arc<parking_lot::Mutex<SystemTime>>,
-    /// Heap of (due_mono, id, waker)
+    /// Heap of (due_mono, id, sender)
     q: Arc<
         parking_lot::Mutex<
             std::collections::BinaryHeap<(
                 std::cmp::Reverse<Instant>,
                 u64,
-                futures::future::BoxFuture<'static, ()>,
+                tokio::sync::oneshot::Sender<()>,
             )>,
         >,
     >,
@@ -163,13 +163,13 @@ impl SimClock {
     fn run_due(&self) {
         let mut q = self.q.lock();
         let mono = *self.mono.lock();
-        let mut to_poll = Vec::new();
+        let mut to_wake = Vec::new();
 
         // Pop all due tasks
-        while let Some((Reverse(due), _id, fut)) = q.peek() {
+        while let Some((Reverse(due), _id, sender)) = q.peek() {
             if *due <= mono {
-                if let Some((_, _, fut)) = q.pop() {
-                    to_poll.push(fut);
+                if let Some((_, _, sender)) = q.pop() {
+                    to_wake.push(sender);
                 }
             } else {
                 break;
@@ -179,12 +179,9 @@ impl SimClock {
         drop(q);
         drop(mono);
 
-        // Poll futures (they will wake via oneshot channels)
-        for fut in to_poll {
-            // Futures are already boxed and ready to poll
-            // In a real implementation, we'd use a waker here
-            // For now, we rely on the oneshot channel mechanism
-            drop(fut);
+        // Wake all due tasks
+        for sender in to_wake {
+            let _ = sender.send(());
         }
     }
 }
@@ -219,9 +216,6 @@ impl Timebase for SimClock {
 
     async fn sleep_until_mono(&self, t: Instant) {
         let (tx, rx) = oneshot::channel::<()>();
-        let fut: futures::future::BoxFuture<'static, ()> = Box::pin(async move {
-            let _ = tx.send(());
-        });
 
         let id = {
             let mut n = self.next_id.lock();
@@ -229,7 +223,7 @@ impl Timebase for SimClock {
             *n
         };
 
-        self.q.lock().push((std::cmp::Reverse(t), id, fut));
+        self.q.lock().push((std::cmp::Reverse(t), id, tx));
 
         // Block until SimClock.warp_mono() runs_due and sends the signal
         let _ = rx.await;

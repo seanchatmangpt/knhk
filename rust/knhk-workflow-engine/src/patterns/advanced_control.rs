@@ -17,7 +17,11 @@ impl PatternExecutor for BlockingDiscriminatorPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 26)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -35,7 +39,11 @@ impl PatternExecutor for CancellingDiscriminatorPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 27)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -59,7 +67,11 @@ impl PatternExecutor for StructuredLoopPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 28)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -119,7 +131,11 @@ impl PatternExecutor for PersistentTriggerPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 31)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -145,7 +161,11 @@ impl PatternExecutor for CancelActivityInstancePattern {
                 "pattern:32:cancel-activity-instance:{}:cancelled",
                 instance_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: vec![instance_id],
+            terminates: false,
         }
     }
 }
@@ -171,7 +191,11 @@ impl PatternExecutor for CancelProcessInstancePattern {
                 "pattern:33:cancel-process-instance:{}:cancelled",
                 process_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: vec![process_id],
+            terminates: true,
         }
     }
 }
@@ -188,7 +212,11 @@ impl PatternExecutor for StopProcessInstancePattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 34)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -205,7 +233,11 @@ impl PatternExecutor for AbortProcessInstancePattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 35)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -231,7 +263,11 @@ impl PatternExecutor for DisableActivityPattern {
                 "pattern:36:disable-activity:{}:disabled",
                 activity_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -254,7 +290,11 @@ impl PatternExecutor for SkipActivityPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:37:skip-activity:{}:skipped", activity_id)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -278,7 +318,11 @@ impl PatternExecutor for ActivityInstanceMultipleThreadsPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 38)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -296,7 +340,11 @@ impl PatternExecutor for ThreadMergePattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 39)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }

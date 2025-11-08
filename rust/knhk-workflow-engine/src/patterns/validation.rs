@@ -116,7 +116,11 @@ impl PatternComposition {
         let mut last_result = PatternExecutionResult {
             success: true,
             next_state: None,
+            next_activities: Vec::new(),
             variables: context.variables.clone(),
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         };
 
         for pattern_id in pattern_ids {
@@ -152,6 +156,8 @@ mod tests {
             case_id: crate::case::CaseId::new(),
             workflow_id: crate::parser::WorkflowSpecId::new(),
             variables: HashMap::new(),
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
         };
 
         let result = validator.validate_execution(&pattern_id, &context);

@@ -69,6 +69,7 @@ hashbrown = { version = "0.15", default-features = false }
 rayon = "1.8"
 fastrand = "2.0"
 sha2 = "0.10"
+hex = "0.4"
 
 # Rate limiting
 governor = "0.6"

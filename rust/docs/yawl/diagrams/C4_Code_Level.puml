@@ -82,19 +82,88 @@ package "Pattern Executors (All 43 Patterns)" {
 
 class WorkflowEngine {
   -pattern_registry: Arc<PatternRegistry>
-  -state_store: Arc<RwLock<StateStore>>
-  -specs: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>
-  -cases: Arc<RwLock<HashMap<CaseId, Case>>>
+  -execution_engine: Arc<ExecutionEngine>
+  -state_manager: Arc<StateManager>
+  -work_queue: Arc<WorkQueue>
+  -resource_pool: Arc<ResourcePoolManager>
+  -circuit_breaker: Arc<CircuitBreaker>
   +new(state_store: StateStore): Self
   +register_workflow(spec: WorkflowSpec): WorkflowResult<()>
   +create_case(spec_id: WorkflowSpecId, data: Value): WorkflowResult<CaseId>
   +execute_pattern(pattern_id: &PatternId, ctx: &PatternExecutionContext): WorkflowResult<PatternExecutionResult>
 }
 
+class ExecutionEngine {
+  -pattern_registry: Arc<PatternRegistry>
+  -pipeline: Arc<ExecutionPipeline>
+  -active_executions: Arc<RwLock<HashMap<String, ExecutionHandle>>>
+  +new(pattern_registry: Arc<PatternRegistry>): Self
+  +execute_pattern(pattern_id: PatternId, context: PatternExecutionContext): WorkflowResult<PatternExecutionResult>
+  +cancel_execution(execution_id: &str): WorkflowResult<()>
+}
+
+class StateManager {
+  -store: Arc<StateStore>
+  -spec_cache: Arc<RwLock<HashMap<WorkflowSpecId, WorkflowSpec>>>
+  -case_cache: Arc<RwLock<HashMap<CaseId, Case>>>
+  -event_log: Arc<RwLock<Vec<StateEvent>>>
+  +new(store: Arc<StateStore>): Self
+  +save_spec(spec: &WorkflowSpec): WorkflowResult<()>
+  +load_spec(spec_id: &WorkflowSpecId): WorkflowResult<Option<WorkflowSpec>>
+  +save_case(case: &Case): WorkflowResult<()>
+  +load_case(case_id: &CaseId): WorkflowResult<Option<Case>>
+  +get_events(limit: Option<usize>): Vec<StateEvent>
+}
+
+class ExecutionPipeline {
+  -stages: Vec<Box<dyn PipelineStage>>
+  +new(): Self
+  +add_stage(stage: Box<dyn PipelineStage>)
+  +execute(registry: &PatternRegistry, pattern_id: PatternId, context: PatternExecutionContext): WorkflowResult<PatternExecutionResult>
+}
+
+class PipelineStage {
+  +process(registry: &PatternRegistry, pattern_id: PatternId, context: PatternExecutionContext): WorkflowResult<PatternExecutionContext>
+}
+
+class WorkQueue {
+  -sender: mpsc::UnboundedSender<WorkItem>
+  -workers: Vec<Arc<Worker>>
+  +new(worker_count: usize): Self
+  +enqueue(item: WorkItem): WorkflowResult<()>
+}
+
+class ResourcePoolManager {
+  -pools: Arc<RwLock<HashMap<String, ResourcePool>>>
+  -resources: Arc<RwLock<HashMap<ResourceId, Resource>>>
+  +new(): Self
+  +create_pool(name: String, size: usize): WorkflowResult<()>
+  +allocate_from_pool(pool_name: &str, request: &AllocationRequest): WorkflowResult<AllocationResult>
+  +release_to_pool(pool_name: &str, resource_id: ResourceId): WorkflowResult<()>
+}
+
+class CircuitBreaker {
+  -state: Arc<RwLock<CircuitState>>
+  -failure_count: Arc<RwLock<u32>>
+  -failure_threshold: u32
+  -timeout: Duration
+  +new(failure_threshold: u32, timeout: Duration): Self
+  +execute<F, Fut, T>(operation: F): WorkflowResult<T>
+  +get_state(): CircuitState
+}
+
 PatternRegistry -> PatternExecutor : dispatch()
 PatternAdapter ..|> PatternExecutor : implements
-WorkflowEngine --> PatternRegistry : uses
-WorkflowEngine --> PatternExecutor : executes
+WorkflowEngine --> ExecutionEngine : uses
+WorkflowEngine --> StateManager : uses
+WorkflowEngine --> WorkQueue : uses
+WorkflowEngine --> ResourcePoolManager : uses
+WorkflowEngine --> CircuitBreaker : uses
+ExecutionEngine --> ExecutionPipeline : uses
+ExecutionEngine --> PatternRegistry : uses
+ExecutionPipeline --> PipelineStage : processes
+StateManager --> StateStore : persists
+@enduml
 
 note bottom
 Pattern Executor Interface:

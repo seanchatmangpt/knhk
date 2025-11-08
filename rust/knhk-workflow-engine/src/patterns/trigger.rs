@@ -27,7 +27,11 @@ impl PatternExecutor for ExternalTriggerPattern {
                 "pattern:40:external-trigger:{}:received",
                 trigger_source
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -54,7 +58,11 @@ impl PatternExecutor for EventBasedTriggerPattern {
                 "pattern:41:event-based-trigger:{}:triggered",
                 event_type
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -78,7 +86,11 @@ impl PatternExecutor for MultipleTriggerPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 42)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -105,7 +117,11 @@ impl PatternExecutor for CancelTriggerPattern {
                 "pattern:43:cancel-trigger:{}:cancelled",
                 trigger_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }

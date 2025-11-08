@@ -110,4 +110,3 @@ impl Default for RdfCompiler {
         Self::new(CompileOptions::default())
     }
 }
-

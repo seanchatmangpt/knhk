@@ -1,0 +1,95 @@
+@startuml C2_Container_Improved
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_TOP_DOWN()
+
+title Improved Architecture - Container View
+
+System_Boundary(knhk, "KNHK Workflow Engine - Improved Architecture") {
+  Container_Boundary(api_layer, "API Layer") {
+    Container(api, "REST API Server", "Axum", "REST endpoints with middleware")
+    Container(grpc, "gRPC Server", "Tonic", "gRPC services")
+    Container(middleware, "API Middleware", "Tower", "Auth, Rate Limiting, Tracing")
+  }
+  
+  Container_Boundary(execution_layer, "Execution Layer") {
+    Container(exec_engine, "Execution Engine", "Rust", "Async pattern execution")
+    Container(pipeline, "Execution Pipeline", "Rust", "Pattern composition")
+    Container(queue, "Work Queue", "Rust", "Distributed execution")
+  }
+  
+  Container_Boundary(state_layer, "State Layer") {
+    Container(state_mgr, "State Manager", "Rust", "Event sourcing + caching")
+    ContainerDb(db, "State Store", "Sled", "Persistent storage")
+  }
+  
+  Container_Boundary(pattern_layer, "Pattern Layer") {
+    Container(reg, "Pattern Registry", "Rust", "Pattern dispatch (43 patterns)")
+    Container(parser, "Workflow Parser", "Rust + Oxigraph", "Parse YAWL/Turtle")
+  }
+  
+  Container_Boundary(resource_layer, "Resource Layer") {
+    Container(alloc, "Resource Allocator", "Rust", "Allocation policies")
+    Container(pool_mgr, "Resource Pool Manager", "Rust", "Pool management")
+  }
+  
+  Container_Boundary(resilience_layer, "Resilience Layer") {
+    Container(circuit, "Circuit Breaker", "Rust", "Fault tolerance")
+    Container(retry, "Retry Policy", "Rust", "Retry strategies")
+    Container(rate_limit, "Rate Limiter", "Rust", "Rate limiting")
+  }
+  
+  Container_Boundary(integration_layer, "Integration Layer") {
+    Container(obs, "Observability", "OTEL", "Tracing and metrics")
+    Container(prov, "Provenance Tracker", "Lockchain", "Audit trails")
+    Container(worklets, "Worklet Repository", "Rust", "Exception handling")
+  }
+}
+
+Rel(api, middleware, "Request processing")
+Rel(grpc, middleware, "Request processing")
+Rel(middleware, exec_engine, "Workflow operations")
+Rel(middleware, rate_limit, "Rate limiting")
+
+Rel(exec_engine, pipeline, "Execute through pipeline")
+Rel(pipeline, reg, "Execute patterns")
+Rel(exec_engine, queue, "Enqueue work")
+Rel(queue, exec_engine, "Process work")
+
+Rel(exec_engine, state_mgr, "State operations")
+Rel(state_mgr, db, "Persist state")
+Rel(api, state_mgr, "Query state")
+
+Rel(exec_engine, parser, "Parse workflows")
+Rel(exec_engine, pool_mgr, "Allocate resources")
+Rel(pool_mgr, alloc, "Get resources")
+
+Rel(exec_engine, circuit, "Protect calls")
+Rel(exec_engine, retry, "Retry operations")
+
+Rel(exec_engine, worklets, "Handle exceptions")
+Rel(exec_engine, obs, "Emit traces")
+Rel(exec_engine, prov, "Generate receipts")
+
+note right of execution_layer
+**Improvements:**
+- Async execution engine
+- Execution pipeline for composition
+- Work queue for distribution
+- Better separation of concerns
+end note
+
+note right of state_layer
+**Improvements:**
+- Event sourcing for auditability
+- In-memory caching for performance
+- Event log for recovery
+end note
+
+note right of resilience_layer
+**Improvements:**
+- Circuit breaker for fault tolerance
+- Retry strategies
+- Rate limiting
+end note
+@enduml
+

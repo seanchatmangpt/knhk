@@ -115,15 +115,23 @@ impl WorkflowEngine {
     fn start_timer_loop(registry: Arc<PatternRegistry>, mut timer_rx: mpsc::Receiver<TimerFired>) {
         tokio::spawn(async move {
             while let Some(tf) = timer_rx.recv().await {
+                // Parse IDs from strings
+                let case_id = crate::case::CaseId::parse_str(&tf.case_id)
+                    .unwrap_or_else(|_| crate::case::CaseId::new());
+                let workflow_id = crate::parser::WorkflowSpecId::parse_str(&tf.workflow_id)
+                    .unwrap_or_else(|_| crate::parser::WorkflowSpecId::new());
+
                 let ctx = PatternExecutionContext {
-                    case_id: tf.case_id.clone(),
-                    workflow_id: tf.workflow_id.clone(),
+                    case_id,
+                    workflow_id,
                     variables: {
                         let mut vars = HashMap::new();
                         vars.insert("key".to_string(), tf.key.clone());
-                        vars.insert("fired_at".to_string(), tf.fired_at.to_rfc3339());
+                        vars.insert("fired_at".to_string(), tf.fired_at.to_string());
                         vars
                     },
+                    arrived_from: std::collections::HashSet::new(),
+                    scope_id: String::new(),
                 };
                 // Execute pattern 30 or 31 based on timer type
                 let _ = registry.execute(&PatternId(tf.pattern_id as u32), &ctx);
@@ -141,13 +149,13 @@ impl WorkflowEngine {
                 let case_id = evt
                     .get("case_id")
                     .and_then(|v| v.as_str())
-                    .unwrap_or_default()
-                    .to_string();
+                    .map(|s| CaseId::parse_str(s).unwrap_or_else(|_| CaseId::new()))
+                    .unwrap_or_else(|| CaseId::new());
                 let workflow_id = evt
                     .get("workflow_id")
                     .and_then(|v| v.as_str())
-                    .unwrap_or_default()
-                    .to_string();
+                    .map(|s| WorkflowSpecId::parse_str(s).unwrap_or_else(|_| WorkflowSpecId::new()))
+                    .unwrap_or_else(|| WorkflowSpecId::new());
 
                 let ctx = PatternExecutionContext {
                     case_id,
@@ -168,6 +176,8 @@ impl WorkflowEngine {
                         }
                         vars
                     },
+                    arrived_from: std::collections::HashSet::new(),
+                    scope_id: String::new(),
                 };
                 let _ = registry.execute(&PatternId(16), &ctx); // Pattern 16: Deferred Choice
             }
@@ -440,6 +450,8 @@ impl WorkflowEngine {
                             case_id,
                             workflow_id: spec_id,
                             variables: HashMap::new(),
+                            arrived_from: std::collections::HashSet::new(),
+                            scope_id: String::new(),
                         };
                         if let Some(result) = self
                             .worklet_executor

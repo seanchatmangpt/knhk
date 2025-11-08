@@ -255,7 +255,11 @@ impl WorkletExecutor {
         Ok(PatternExecutionResult {
             success: true,
             next_state: Some(format!("worklet:{}:completed", worklet_id.0)),
+            next_activities: Vec::new(),
             variables: context.variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         })
     }
 
@@ -360,6 +364,8 @@ mod tests {
             case_id: crate::case::CaseId::new(),
             workflow_id: WorkflowSpecId::new(),
             variables: HashMap::new(),
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
         };
 
         let selected = repository

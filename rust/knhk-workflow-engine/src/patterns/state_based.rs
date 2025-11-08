@@ -56,7 +56,11 @@ impl PatternExecutor for InterleavedParallelRoutingPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 17)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }
@@ -92,7 +96,11 @@ impl PatternExecutor for MilestonePattern {
                     "pending"
                 }
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }

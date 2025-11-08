@@ -9,14 +9,13 @@ use crate::parser::WorkflowSpec;
 use sled::Db;
 use std::path::Path;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 /// State store for workflow engine with hot cache layer
 pub struct StateStore {
     /// Sled database for cold storage
     db: Db,
-    /// Hot cache for reflex core (sub-microsecond access)
-    cache: Arc<RwLock<ReflexCache>>,
+    /// Hot cache for reflex core (sub-microsecond access, lock-free DashMap)
+    cache: Arc<ReflexCache>,
 }
 
 impl StateStore {
@@ -27,16 +26,15 @@ impl StateStore {
         })?;
         Ok(Self {
             db,
-            cache: Arc::new(RwLock::new(ReflexCache::new())),
+            cache: Arc::new(ReflexCache::new()),
         })
     }
 
     /// Save a workflow specification (with cache)
     pub fn save_spec(&self, spec: &WorkflowSpec) -> WorkflowResult<()> {
-        // Update cache first (hot path)
-        let cache = self.cache.blocking_read();
-        cache.insert_spec(spec.id.clone(), Arc::new(spec.clone()));
-        drop(cache);
+        // Update cache first (hot path, lock-free DashMap operation)
+        self.cache
+            .insert_spec(spec.id.clone(), Arc::new(spec.clone()));
 
         // Persist to sled (async, can be batched)
         let key = format!("spec:{}", spec.id);
@@ -53,12 +51,10 @@ impl StateStore {
         &self,
         spec_id: &crate::parser::WorkflowSpecId,
     ) -> WorkflowResult<Option<WorkflowSpec>> {
-        // Try cache first (hot path)
-        let cache = self.cache.blocking_read();
-        if let Some(spec) = cache.get_spec(spec_id) {
+        // Try cache first (hot path, lock-free DashMap operation)
+        if let Some(spec) = self.cache.get_spec(spec_id) {
             return Ok(Some((*spec).clone()));
         }
-        drop(cache);
 
         // Fallback to sled
         let key = format!("spec:{}", spec_id);
@@ -72,10 +68,9 @@ impl StateStore {
                     WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
                 })?;
 
-                // Update cache
-                let cache = self.cache.blocking_write();
-                cache.insert_spec(spec.id.clone(), Arc::new(spec.clone()));
-                drop(cache);
+                // Update cache (lock-free DashMap operation)
+                self.cache
+                    .insert_spec(spec.id.clone(), Arc::new(spec.clone()));
 
                 Ok(Some(spec))
             }

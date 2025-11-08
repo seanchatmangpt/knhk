@@ -49,13 +49,21 @@ impl PatternExecutor for PatternAdapter {
                 PatternExecutionResult {
                     success: true,
                     next_state: Some(format!("pattern:{}:completed", self.pattern_id.0)),
+                    next_activities: Vec::new(),
                     variables,
+                    updates: None,
+                    cancel_activities: Vec::new(),
+                    terminates: false,
                 }
             }
             Err(_e) => PatternExecutionResult {
                 success: false,
                 next_state: Some(format!("pattern:{}:failed", self.pattern_id.0)),
+                next_activities: Vec::new(),
                 variables: HashMap::new(),
+                updates: None,
+                cancel_activities: Vec::new(),
+                terminates: false,
             },
         }
     }

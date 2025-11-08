@@ -30,7 +30,11 @@ impl PatternExecutor for CancelActivityPattern {
                 "pattern:19:cancel-activity:{}:cancelled",
                 activity_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: vec![activity_id],
+            terminates: false,
         }
     }
 }
@@ -92,7 +96,11 @@ impl PatternExecutor for CancelCasePattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:{}:completed", 22)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: true,
         }
     }
 }
@@ -116,7 +124,11 @@ impl PatternExecutor for CancelRegionPattern {
         PatternExecutionResult {
             success: true,
             next_state: Some(format!("pattern:23:cancel-region:{}:cancelled", region_id)),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: vec![region_id],
+            terminates: false,
         }
     }
 }
@@ -152,7 +164,11 @@ impl PatternExecutor for CancelMultipleInstanceActivityPattern {
                 "pattern:24:cancel-multiple-instance-activity:{}:cancelled",
                 activity_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: vec![activity_id],
+            terminates: false,
         }
     }
 }
@@ -182,7 +198,11 @@ impl PatternExecutor for CompleteMultipleInstanceActivityPattern {
                 "pattern:25:complete-multiple-instance-activity:{}:completed",
                 activity_id
             )),
+            next_activities: Vec::new(),
             variables,
+            updates: None,
+            cancel_activities: Vec::new(),
+            terminates: false,
         }
     }
 }

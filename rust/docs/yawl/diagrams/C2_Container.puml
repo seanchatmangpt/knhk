@@ -3,27 +3,60 @@
 LAYOUT_TOP_DOWN()
 
 System_Boundary(knhk, "KNHK Workflow Engine") {
-  Container(api, "REST API Server", "Axum", "REST endpoints for workflow operations")
+  Container(api, "REST API Server", "Axum", "REST endpoints with middleware")
   Container(grpc, "gRPC Server", "Tonic", "gRPC services for workflow operations")
-  Container(engine, "Workflow Engine", "Rust", "Core workflow execution engine")
-  Container(reg, "Pattern Registry", "Rust", "Pattern dispatch and metadata (43 patterns)")
-  Container(parser, "Workflow Parser", "Rust + Oxigraph", "Parse YAWL/Turtle workflow specs")
-  Container(alloc, "Resource Allocator", "Rust", "Resource allocation policies")
+  
+  Container_Boundary(execution, "Execution Layer") {
+    Container(exec_engine, "Execution Engine", "Rust", "Async pattern execution")
+    Container(pipeline, "Execution Pipeline", "Rust", "Pattern composition and optimization")
+    Container(queue, "Work Queue", "Rust", "Distributed execution support")
+  }
+  
+  Container_Boundary(state, "State Layer") {
+    Container(state_mgr, "State Manager", "Rust", "Event sourcing and caching")
+    ContainerDb(db, "State Store", "Sled", "Persistent storage")
+  }
+  
+  Container(reg, "Pattern Registry", "Rust", "Pattern dispatch (43 patterns)")
+  Container(parser, "Workflow Parser", "Rust + Oxigraph", "Parse YAWL/Turtle specs")
+  
+  Container_Boundary(resource, "Resource Layer") {
+    Container(alloc, "Resource Allocator", "Rust", "Resource allocation policies")
+    Container(pool_mgr, "Resource Pool Manager", "Rust", "Resource pool management")
+  }
+  
+  Container_Boundary(resilience, "Resilience Layer") {
+    Container(circuit, "Circuit Breaker", "Rust", "Fault tolerance")
+    Container(retry, "Retry Policy", "Rust", "Retry strategies")
+    Container(rate_limit, "Rate Limiter", "Rust", "Rate limiting")
+  }
+  
   Container(worklets, "Worklet Repository", "Rust", "Exception handling worklets")
   Container(obs, "Observability", "OTEL", "Distributed tracing and metrics")
   Container(prov, "Provenance Tracker", "Lockchain", "Audit trails and receipts")
-  ContainerDb(db, "State Store", "Sled", "Persistent storage for specs, cases, state")
 }
 
-Rel(api, engine, "Register workflows, create cases, execute")
-Rel(grpc, engine, "gRPC workflow operations")
-Rel(engine, parser, "Parse workflow specifications")
-Rel(engine, reg, "Execute patterns (1-43)")
-Rel(reg, alloc, "Request resources for pattern execution")
-Rel(engine, worklets, "Handle exceptions via worklets")
-Rel(engine, db, "Persist workflow specs and case state")
-Rel(api, db, "Query workflow state")
-Rel(engine, obs, "Emit traces and metrics")
-Rel(engine, prov, "Generate provenance receipts")
+Rel(api, exec_engine, "Register workflows, create cases, execute")
+Rel(grpc, exec_engine, "gRPC workflow operations")
+Rel(exec_engine, pipeline, "Execute through pipeline")
+Rel(pipeline, reg, "Execute patterns (1-43)")
+Rel(exec_engine, queue, "Enqueue work items")
+Rel(queue, exec_engine, "Process work items")
+
+Rel(exec_engine, state_mgr, "Save/load state")
+Rel(state_mgr, db, "Persist to store")
+Rel(api, state_mgr, "Query state")
+
+Rel(exec_engine, parser, "Parse workflow specifications")
+Rel(exec_engine, pool_mgr, "Allocate resources")
+Rel(pool_mgr, alloc, "Get resources from pools")
+
+Rel(exec_engine, circuit, "Protect external calls")
+Rel(exec_engine, retry, "Retry failed operations")
+Rel(api, rate_limit, "Rate limit requests")
+
+Rel(exec_engine, worklets, "Handle exceptions")
+Rel(exec_engine, obs, "Emit traces and metrics")
+Rel(exec_engine, prov, "Generate provenance receipts")
 @enduml
 
