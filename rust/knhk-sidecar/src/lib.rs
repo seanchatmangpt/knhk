@@ -2,7 +2,7 @@
 // gRPC proxy for enterprise apps with batching, retries, circuit-breaking, and TLS
 
 // CRITICAL: Enforce proper error handling - no unwrap/expect in production code
-// EXCEPTION: Mutex poisoning .expect() is acceptable (see metrics.rs, health.rs, batch.rs)
+// EXCEPTION: Mutex poisoning expect() calls are acceptable (see metrics.rs, health.rs, batch.rs)
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 

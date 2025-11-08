@@ -3,7 +3,7 @@
 // SPARQL query execution with oxigraph integration
 
 // CRITICAL: Enforce proper error handling - no unwrap/expect in production code
-// EXCEPTION: Default trait impl fallback .expect() is acceptable (see graph.rs)
+// EXCEPTION: Default trait impl fallback expect() calls are acceptable (see graph.rs)
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
