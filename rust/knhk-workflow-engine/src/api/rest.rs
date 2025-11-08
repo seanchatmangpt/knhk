@@ -147,9 +147,25 @@ impl RestApiServer {
     }
 
     /// Health check endpoint
-    async fn health(State(_engine): State<Arc<WorkflowEngine>>) -> impl IntoResponse {
+    async fn health(State(engine): State<Arc<WorkflowEngine>>) -> impl IntoResponse {
         // Check engine health
-        let health_status = HealthStatus::Healthy; // FUTURE: Implement actual health check
+        let health_status = if engine.pattern_registry().list().is_empty() {
+            HealthStatus::Degraded
+        } else {
+            // Check SLO compliance if Fortune 5 is enabled
+            let slo_compliant = if let Some(ref fortune5) = engine.fortune5_integration() {
+                fortune5.check_slo_compliance().await.unwrap_or(false)
+            } else {
+                true
+            };
+
+            if slo_compliant {
+                HealthStatus::Healthy
+            } else {
+                HealthStatus::Degraded
+            }
+        };
+
         let status_code = match health_status {
             HealthStatus::Healthy => StatusCode::OK,
             HealthStatus::Degraded => StatusCode::OK,
@@ -166,9 +182,20 @@ impl RestApiServer {
     }
 
     /// Readiness probe endpoint
-    async fn ready(State(_engine): State<Arc<WorkflowEngine>>) -> impl IntoResponse {
-        // FUTURE: Check if engine is ready to accept requests
-        (StatusCode::OK, Json(serde_json::json!({ "ready": true })))
+    async fn ready(State(engine): State<Arc<WorkflowEngine>>) -> impl IntoResponse {
+        // Check if engine is ready to accept requests
+        let ready = !engine.pattern_registry().list().is_empty();
+
+        if ready {
+            (StatusCode::OK, Json(serde_json::json!({ "ready": true })))
+        } else {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(
+                    serde_json::json!({ "ready": false, "reason": "Pattern registry not initialized" }),
+                ),
+            )
+        }
     }
 
     /// Liveness probe endpoint
@@ -273,21 +300,46 @@ impl RestApiServer {
         let spec_id =
             crate::parser::WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-        // FUTURE: Implement workflow deletion
+        // Verify workflow exists
         engine
             .get_workflow(spec_id)
             .await
             .map_err(|_| StatusCode::NOT_FOUND)?;
+
+        // Remove from in-memory specs
+        let mut specs = engine.specs.write().await;
+        specs.remove(&spec_id);
+        drop(specs);
+
+        // Remove from state store
+        let store = engine.state_store.write().await;
+        store
+            .delete_spec(&spec_id)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
         Ok(StatusCode::NO_CONTENT)
     }
 
     /// List workflows
     async fn list_workflows(
-        State(_engine): State<Arc<WorkflowEngine>>,
+        State(engine): State<Arc<WorkflowEngine>>,
     ) -> Result<Json<serde_json::Value>, StatusCode> {
-        // FUTURE: Implement workflow listing
-        Ok(Json(serde_json::json!({ "workflows": [] })))
+        let workflow_ids = engine
+            .list_workflows()
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        let workflows: Vec<serde_json::Value> = workflow_ids
+            .iter()
+            .map(|id| {
+                serde_json::json!({
+                    "id": id.to_string(),
+                    "name": format!("{}", id)
+                })
+            })
+            .collect();
+
+        Ok(Json(serde_json::json!({ "workflows": workflows })))
     }
 
     /// Start case
@@ -322,10 +374,46 @@ impl RestApiServer {
 
     /// List cases
     async fn list_cases(
-        State(_engine): State<Arc<WorkflowEngine>>,
+        State(engine): State<Arc<WorkflowEngine>>,
+        Query(params): Query<HashMap<String, String>>,
     ) -> Result<Json<serde_json::Value>, StatusCode> {
-        // FUTURE: Implement case listing
-        Ok(Json(serde_json::json!({ "cases": [] })))
+        // If workflow_id is provided, list cases for that workflow
+        if let Some(workflow_id_str) = params.get("workflow_id") {
+            let spec_id = crate::parser::WorkflowSpecId::parse_str(workflow_id_str)
+                .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+            let case_ids = engine
+                .list_cases(spec_id)
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+            let cases: Vec<serde_json::Value> = case_ids
+                .iter()
+                .map(|id| {
+                    serde_json::json!({
+                        "id": id.to_string(),
+                        "workflow_id": spec_id.to_string()
+                    })
+                })
+                .collect();
+
+            Ok(Json(serde_json::json!({ "cases": cases })))
+        } else {
+            // List all cases (from in-memory cache)
+            let cases_map = engine.cases.read().await;
+            let cases: Vec<serde_json::Value> = cases_map
+                .iter()
+                .map(|(id, case)| {
+                    serde_json::json!({
+                        "id": id.to_string(),
+                        "workflow_id": case.spec_id.to_string(),
+                        "state": format!("{:?}", case.state)
+                    })
+                })
+                .collect();
+
+            Ok(Json(serde_json::json!({ "cases": cases })))
+        }
     }
 
     /// List patterns

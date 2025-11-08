@@ -8,6 +8,7 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::config::{Environment, Fortune5Config, PromotionConfig};
 use crate::integration::fortune5::slo::{RuntimeClass, SloManager};
+use crate::performance::aot::{AdmissionController, BrownoutManager, BrownoutMode};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -28,6 +29,8 @@ pub struct Fortune5Integration {
     config: Fortune5Config,
     slo_manager: Option<Arc<SloManager>>,
     promotion_state: Arc<RwLock<PromotionState>>,
+    admission_controller: Option<Arc<AdmissionController>>,
+    brownout_manager: Arc<BrownoutManager>,
 }
 
 impl Fortune5Integration {
@@ -60,6 +63,13 @@ impl Fortune5Integration {
             .as_ref()
             .map(|slo| Arc::new(SloManager::new(slo.clone())));
 
+        let admission_controller = slo_manager.as_ref().map(|slo| {
+            Arc::new(AdmissionController::new(
+                Some(slo.clone()),
+                0.95, // 95% cache hit threshold for R1
+            ))
+        });
+
         let promotion_state = Arc::new(RwLock::new(PromotionState {
             environment: config
                 .promotion
@@ -78,6 +88,8 @@ impl Fortune5Integration {
             config,
             slo_manager,
             promotion_state,
+            admission_controller,
+            brownout_manager: Arc::new(BrownoutManager::new()),
         }
     }
 
@@ -150,5 +162,31 @@ impl Fortune5Integration {
         } else {
             None
         }
+    }
+
+    /// Check admission for operation (R1/W1/C1 routing)
+    pub async fn check_admission(
+        &self,
+        cache_hit: bool,
+        estimated_latency_ns: u64,
+    ) -> (bool, RuntimeClass) {
+        if let Some(ref controller) = self.admission_controller {
+            controller
+                .check_admission(cache_hit, estimated_latency_ns)
+                .await
+        } else {
+            // No admission controller: default to R1
+            (true, RuntimeClass::R1)
+        }
+    }
+
+    /// Set brownout mode
+    pub async fn set_brownout_mode(&self, mode: BrownoutMode) {
+        self.brownout_manager.set_mode(mode).await;
+    }
+
+    /// Check if runtime class is allowed in current brownout mode
+    pub async fn is_runtime_class_allowed(&self, runtime_class: RuntimeClass) -> bool {
+        self.brownout_manager.is_allowed(runtime_class).await
     }
 }

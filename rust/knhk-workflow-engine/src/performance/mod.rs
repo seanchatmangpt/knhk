@@ -4,6 +4,7 @@
 //! SIMD support, caching, and performance monitoring.
 
 mod analyzer;
+pub mod aot;
 mod hot_path;
 mod metrics;
 pub mod simd;
