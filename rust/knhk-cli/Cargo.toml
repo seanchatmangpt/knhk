@@ -74,3 +74,6 @@ otel = [
 [[bin]]
 name = "knhk"
 path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3.10"

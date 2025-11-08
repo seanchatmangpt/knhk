@@ -25,6 +25,7 @@ blake3 = { version = "1.5", default-features = false }
 oxigraph = { version = "0.5" }
 reqwest = { version = "0.11", features = ["json", "blocking"] }
 serde_json = { version = "1.0" }
+simd-json = { version = "0.14", features = ["known-key"] }
 rdkafka = { version = "0.36" }
 opentelemetry = "0.31"
 opentelemetry_sdk = "0.31"

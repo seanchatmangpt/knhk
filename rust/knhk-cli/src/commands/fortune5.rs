@@ -424,14 +424,10 @@ fn test_slo_admission() -> TestResult {
             knhk_sidecar::slo_admission::RuntimeClass::R1,
             Some(Duration::from_nanos(1)), // Within 2ns SLO
         );
-        if result.is_ok() {
-            if let Ok(Some(_)) = result {
-                passed += 1; // Should admit
-            } else {
-                failed += 1; // Should not reject
-            }
-        } else {
-            failed += 1;
+        match result {
+            Ok(Some(_)) => passed += 1, // Should admit
+            Ok(None) => failed += 1,    // Should not reject
+            Err(_) => failed += 1,
         }
 
         // Test 4: Admission check - reject exceeding SLO (actual behavior)
@@ -439,14 +435,10 @@ fn test_slo_admission() -> TestResult {
             knhk_sidecar::slo_admission::RuntimeClass::R1,
             Some(Duration::from_nanos(3)), // Exceeds 2ns SLO
         );
-        if result.is_ok() {
-            if let Ok(None) = result {
-                passed += 1; // Should reject
-            } else {
-                failed += 1; // Should not admit
-            }
-        } else {
-            failed += 1;
+        match result {
+            Ok(None) => passed += 1,    // Should reject
+            Ok(Some(_)) => failed += 1, // Should not admit
+            Err(_) => failed += 1,
         }
     } else {
         failed += 1;
@@ -600,6 +592,133 @@ fn test_promotion() -> TestResult {
 
     TestResult {
         category: "Promotion Gates".to_string(),
+        passed,
+        failed,
+        total: passed + failed,
+    }
+}
+
+// Integration tests - verify components work together
+fn test_integration() -> TestResult {
+    let mut passed = 0;
+    let mut failed = 0;
+
+    // Test 1: SLO + Capacity integration (actual behavior)
+    let slo_config = SloConfig::default();
+    if let Ok(mut slo_controller) = SloAdmissionController::new(slo_config) {
+        let mut capacity_manager = CapacityManager::new(0.95);
+
+        // Record capacity
+        capacity_manager.record_access("predicate1", true, false);
+        let meets_capacity = capacity_manager.meets_capacity("predicate1");
+
+        // Record latency for SLO
+        slo_controller.record_latency(
+            knhk_sidecar::slo_admission::RuntimeClass::R1,
+            Duration::from_nanos(1),
+        );
+        let admission =
+            slo_controller.check_admission(knhk_sidecar::slo_admission::RuntimeClass::R1, None);
+
+        // Both should work together
+        if meets_capacity {
+            match admission {
+                Ok(Some(_)) => passed += 1,
+                Ok(None) => failed += 1,
+                Err(_) => failed += 1,
+            }
+        } else {
+            failed += 1;
+        }
+    } else {
+        failed += 1;
+    }
+
+    // Test 2: Multi-Region + Legal Hold integration (actual behavior)
+    let region_config = RegionConfig {
+        region: "us-east-1".to_string(),
+        primary_region: Some("us-east-1".to_string()),
+        cross_region_sync_enabled: false,
+        receipt_sync_endpoints: Vec::new(),
+        quorum_threshold: 1,
+    };
+
+    let mut legal_hold_manager =
+        knhk_sidecar::multi_region::LegalHoldManager::new(region_config.clone());
+    let policy = knhk_sidecar::multi_region::HoldPolicy {
+        name: "GDPR Compliance".to_string(),
+        retention_days: 2555,
+        match_criteria: knhk_sidecar::multi_region::HoldCriteria::ByTransactionId(
+            "txn-123".to_string(),
+        ),
+    };
+    legal_hold_manager.add_hold_policy(policy);
+
+    let receipt = knhk_sidecar::multi_region::Receipt {
+        receipt_id: "rcpt-456".to_string(),
+        transaction_id: "txn-123".to_string(),
+        hash: vec![1, 2, 3],
+        ticks: 5,
+        span_id: 789,
+        committed: true,
+    };
+
+    let should_hold = legal_hold_manager.should_hold(&receipt);
+    if should_hold {
+        if let Ok(_) = legal_hold_manager.apply_hold(&receipt) {
+            passed += 1;
+        } else {
+            failed += 1;
+        }
+    } else {
+        failed += 1;
+    }
+
+    // Test 3: Promotion + SLO integration (actual behavior)
+    let promotion_config = PromotionConfig {
+        environment: Environment::Production,
+        feature_flags: Vec::new(),
+        auto_rollback_enabled: true,
+        slo_threshold: 0.95,
+        rollback_window_seconds: 300,
+    };
+    let slo_config = SloConfig::default();
+    if let Ok(mut slo_controller) = SloAdmissionController::new(slo_config) {
+        // Create requests with low compliance (50% admitted)
+        for _ in 0..5 {
+            let _ = slo_controller.check_admission(
+                knhk_sidecar::slo_admission::RuntimeClass::R1,
+                Some(Duration::from_nanos(1)),
+            );
+        }
+        for _ in 0..5 {
+            let _ = slo_controller.check_admission(
+                knhk_sidecar::slo_admission::RuntimeClass::R1,
+                Some(Duration::from_nanos(3)),
+            );
+        }
+
+        if let Ok(mut manager) = PromotionGateManager::new(promotion_config, slo_controller) {
+            let result = manager.check_slo_compliance();
+            if let Ok(compliant) = result {
+                // With 50% admission rate, should not be compliant
+                if !compliant {
+                    passed += 1;
+                } else {
+                    failed += 1;
+                }
+            } else {
+                failed += 1;
+            }
+        } else {
+            failed += 1;
+        }
+    } else {
+        failed += 1;
+    }
+
+    TestResult {
+        category: "Integration".to_string(),
         passed,
         failed,
         total: passed + failed,
