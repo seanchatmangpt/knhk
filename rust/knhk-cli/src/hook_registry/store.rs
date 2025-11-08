@@ -66,7 +66,8 @@ impl HookStore {
         let mut hooks = Vec::new();
 
         if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
-            for solution in solutions {
+            for solution_result in solutions {
+                let solution = solution_result?;
                 let mut id: Option<String> = None;
                 let mut name: Option<String> = None;
                 let mut op: Option<String> = None;
