@@ -185,6 +185,7 @@ impl FailureActionError {
 }
 
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::load::{PredRun, SoAArrays};
     use alloc::string::ToString;

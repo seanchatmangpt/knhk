@@ -1,9 +1,19 @@
 // rust/knhk-integration-tests/tests/pattern_hook_integration.rs
 // Integration tests for pattern-hook integration
 
-use knhk_etl::{hook_orchestration::HookExecutionPattern, hook_registry::HookRegistry, Pipeline};
-use knhk_patterns::hook_patterns::*;
-use knhk_patterns::PipelinePatternExt;
+use knhk_etl::{
+    hook_orchestration::{HookExecutionContext, HookExecutionPattern},
+    hook_registry::HookRegistry,
+    load::{PredRun, SoAArrays},
+    Pipeline,
+};
+use knhk_patterns::{
+    hook_patterns::{
+        create_hook_context_from_components, HookChoicePattern, HookParallelPattern,
+        HookRetryPattern, HookSequencePattern,
+    },
+    PipelinePatternExt,
+};
 use std::sync::Arc;
 
 // ============================================================================

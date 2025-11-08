@@ -134,7 +134,7 @@ fn test_concurrent_data_modification() {
     // Spawn threads that modify data and query concurrently
     let handles: Vec<_> = (0..10)
         .map(|i| {
-            let graph_clone = Arc::clone(&graph);
+            let graph_clone: Arc<WarmPathGraph> = Arc::clone(&graph);
             let query_clone = query.to_string();
             thread::spawn(move || {
                 // Insert triple
