@@ -49,11 +49,20 @@ ex:Alice a ex:Person .
     // Note: receipt::list doesn't exist, using receipt::get for testing
     let result = receipt::get("test-receipt-id".to_string());
 
-    // Assert: Returns Result (may fail if no receipts, but should not panic)
-    assert!(
-        result.is_ok() || result.is_err(),
-        "receipt::list should return Result"
-    );
+    // Assert: Verify actual behavior - either succeeds with receipt or fails with error
+    match result {
+        Ok(receipt_entry) => {
+            // Success case - receipt found, verify it has valid data
+            assert!(
+                !receipt_entry.id.is_empty(),
+                "Receipt ID should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - receipt not found or other error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 
     // If successful, should return ReceiptEntry
     if let Ok(receipt_entry) = result {
@@ -97,18 +106,19 @@ ex:Alice a ex:Person .
     let receipt_id = "test-receipt-id".to_string();
     let result = receipt::get(receipt_id.clone());
 
-    // Assert: Returns Result (may fail if receipt not found, but should not panic)
-    assert!(
-        result.is_ok() || result.is_err(),
-        "receipt::get should return Result"
-    );
-
-    // If successful, receipt should have valid data
-    if let Ok(receipt_entry) = result {
-        assert!(
-            !receipt_entry.id.is_empty(),
-            "Receipt ID should not be empty"
-        );
+    // Assert: Verify actual behavior - either succeeds with receipt or fails with error
+    match result {
+        Ok(receipt_entry) => {
+            // Success case - receipt found, verify it has valid data
+            assert!(
+                !receipt_entry.id.is_empty(),
+                "Receipt ID should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - receipt not found or other error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
     }
 }
 
@@ -173,11 +183,20 @@ ex:Alice a ex:Person .
     let receipt_id = "test-receipt-id".to_string();
     let result = receipt::get(receipt_id.clone());
 
-    // Assert: Returns Result (may succeed or fail depending on receipt existence)
-    assert!(
-        result.is_ok() || result.is_err(),
-        "receipt::get should return Result"
-    );
+    // Assert: Verify actual behavior - either succeeds with receipt or fails with error
+    match result {
+        Ok(receipt_entry) => {
+            // Success case - receipt found, verify it has valid data
+            assert!(
+                !receipt_entry.id.is_empty(),
+                "Receipt ID should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - receipt not found or other error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: receipt operations require system initialization
@@ -189,12 +208,20 @@ fn test_receipt_operations_require_initialization() {
     // Act: Get receipt without initialization
     let result = receipt::get("test-receipt-id".to_string());
 
-    // Assert: May fail if system not initialized, or succeed if receipt exists
-    // Behavior: Operations should handle uninitialized state gracefully
-    assert!(
-        result.is_ok() || result.is_err(),
-        "receipt::get should return Result"
-    );
+    // Assert: Verify actual behavior - either succeeds with receipt or fails with error
+    match result {
+        Ok(receipt_entry) => {
+            // Success case - receipt found (may exist from previous test)
+            assert!(
+                !receipt_entry.id.is_empty(),
+                "Receipt ID should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - system not initialized or receipt not found
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: receipt::list after admit delta includes new receipts
@@ -230,15 +257,33 @@ ex:Alice a ex:Person .
     // by checking that admit succeeded (which generates receipts)
     let result = receipt::get("test-receipt-id".to_string());
 
-    // Assert: Receipts are generated (behavior: receipts are generated and stored)
-    // admit::delta should succeed, which means receipts are generated
-    assert!(
-        admit_result.is_ok() || admit_result.is_err(),
-        "admit::delta should return Result"
-    );
-    // Receipt retrieval may succeed or fail depending on receipt ID format
-    assert!(
-        result.is_ok() || result.is_err(),
-        "receipt::get should return Result"
-    );
+    // Assert: Verify actual behavior of both operations
+    match (admit_result, result) {
+        (Ok(_), Ok(receipt_entry)) => {
+            // Both succeeded - admit generated receipt, receipt retrieved
+            assert!(
+                !receipt_entry.id.is_empty(),
+                "Receipt ID should not be empty"
+            );
+        }
+        (Ok(_), Err(e)) => {
+            // Admit succeeded but receipt retrieval failed (ID format issue)
+            assert!(
+                !e.is_empty(),
+                "Receipt retrieval error message should not be empty"
+            );
+        }
+        (Err(e), Ok(_)) => {
+            // Admit failed but receipt found (may exist from previous test)
+            assert!(!e.is_empty(), "Admit error message should not be empty");
+        }
+        (Err(e1), Err(e2)) => {
+            // Both failed - verify error messages
+            assert!(!e1.is_empty(), "Admit error message should not be empty");
+            assert!(
+                !e2.is_empty(),
+                "Receipt retrieval error message should not be empty"
+            );
+        }
+    }
 }

@@ -17,10 +17,23 @@ fn test_init_tracing_returns_result() {
     // Act: Initialize tracing
     let result = tracing::init_tracing();
 
-    // Assert: Returns Result (may fail if global subscriber already set, but should not panic)
-    // The error "a global default trace dispatcher has already been set" is expected in tests
-    // We just verify it returns a Result without panicking
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with expected error
+    match result {
+        Ok(_) => {
+            // Success case - tracing initialized
+        }
+        Err(e) => {
+            // Error case - should be subscriber already set error or other meaningful error
+            assert!(!e.is_empty(), "Error message should not be empty");
+            // Error should mention subscriber or tracing
+            assert!(
+                e.to_lowercase().contains("subscriber")
+                    || e.to_lowercase().contains("tracing")
+                    || e.to_lowercase().contains("global"),
+                "Error should mention subscriber, tracing, or global state"
+            );
+        }
+    }
 }
 
 /// Test: init_tracing with OTEL disabled
@@ -59,8 +72,16 @@ fn test_init_tracing_with_custom_service_name() {
     // Act: Initialize tracing
     let result = tracing::init_tracing();
 
-    // Assert: Returns Result (may fail if global subscriber already set)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with expected error
+    match result {
+        Ok(_) => {
+            // Success case - tracing initialized
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: init_tracing with custom service version
@@ -74,8 +95,16 @@ fn test_init_tracing_with_custom_service_version() {
     // Act: Initialize tracing
     let result = tracing::init_tracing();
 
-    // Assert: Returns Result (may fail if global subscriber already set)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with expected error
+    match result {
+        Ok(_) => {
+            // Success case - tracing initialized
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: init_tracing with OTLP endpoint
@@ -121,8 +150,16 @@ fn test_init_tracing_with_trace_level() {
     // Act: Initialize tracing
     let result = tracing::init_tracing();
 
-    // Assert: Returns Result (may fail if global subscriber already set)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with expected error
+    match result {
+        Ok(_) => {
+            // Success case - tracing initialized
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: init_tracing multiple times

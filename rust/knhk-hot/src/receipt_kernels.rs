@@ -243,8 +243,8 @@ impl Verifier {
         let merged = ReceiptFold {
             root_hash: {
                 let mut hash = fold1.root_hash;
-                for i in 0..4 {
-                    hash[i] ^= fold2.root_hash[i];
+                for (i, hash_item) in hash.iter_mut().enumerate().take(4) {
+                    *hash_item ^= fold2.root_hash[i];
                 }
                 hash
             },
@@ -390,6 +390,7 @@ pub extern "C" fn knhk_receipt_pipeline_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)] // FFI function - null checks performed before dereference
 pub extern "C" fn knhk_receipt_pipeline_process_delta(
     pipeline: *mut ReceiptPipeline,
     delta_hash: *const u64,
@@ -416,6 +417,7 @@ pub extern "C" fn knhk_receipt_pipeline_process_delta(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)] // FFI function - null check performed before dereference
 pub extern "C" fn knhk_receipt_pipeline_fold_table_size(pipeline: *const ReceiptPipeline) -> usize {
     if pipeline.is_null() {
         return 0;
@@ -425,6 +427,7 @@ pub extern "C" fn knhk_receipt_pipeline_fold_table_size(pipeline: *const Receipt
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)] // FFI function - null check performed before dereference
 pub extern "C" fn knhk_receipt_pipeline_free(pipeline: *mut ReceiptPipeline) {
     if !pipeline.is_null() {
         unsafe {

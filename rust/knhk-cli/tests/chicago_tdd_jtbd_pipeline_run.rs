@@ -59,11 +59,16 @@ fn test_pipeline_run_executes_etl() {
     let connectors_str = connector_name.clone();
     let result = pipeline::run(Some(connectors_str), Some(schema_iri.clone()));
 
-    // Assert: Pipeline execution returns Result (may fail if connector not properly set up)
-    assert!(
-        result.is_ok() || result.is_err(),
-        "pipeline::run should return Result"
-    );
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - pipeline executed
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
     // Behavior verification: ETL pipeline executes with connectors
 }
 
@@ -110,11 +115,16 @@ fn test_pipeline_run_with_multiple_connectors() {
     let connectors_str = format!("{},{}", connector1, connector2);
     let result = pipeline::run(Some(connectors_str), Some(schema_iri.clone()));
 
-    // Assert: Pipeline execution returns Result
-    assert!(
-        result.is_ok() || result.is_err(),
-        "pipeline::run should return Result with multiple connectors"
-    );
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - pipeline executed with multiple connectors
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: pipeline::run requires system initialization

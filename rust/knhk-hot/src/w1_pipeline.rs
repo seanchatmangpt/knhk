@@ -307,9 +307,9 @@ impl TapeBuilder {
 
         let mut pos = 0usize;
         let mut struct_idx = 0usize;
-        let mut field_idx = 0u8;
+        let _field_idx = 0u8;
         let mut in_object = false;
-        let mut expecting_key = true;
+        let _expecting_key = true;
 
         // Skip leading whitespace
         while pos < json.len() && json[pos].is_ascii_whitespace() {
@@ -340,7 +340,6 @@ impl TapeBuilder {
                             payload: 0,
                         });
                         in_object = true;
-                        expecting_key = true;
                         pos += 1;
                     }
                     b'}' => {
@@ -350,7 +349,6 @@ impl TapeBuilder {
                             payload: 0,
                         });
                         in_object = false;
-                        expecting_key = false;
                         pos += 1;
                     }
                     b'[' => {
@@ -371,11 +369,9 @@ impl TapeBuilder {
                     }
                     b',' => {
                         pos += 1;
-                        expecting_key = in_object;
                     }
                     b':' => {
                         pos += 1;
-                        expecting_key = false;
                     }
                     _ => {
                         pos += 1;
@@ -520,13 +516,11 @@ impl TapeBuilder {
         }
 
         let start = *pos;
-        let mut is_negative = false;
         let mut has_decimal = false;
         let mut has_exponent = false;
 
         // Check for negative sign
         if json[*pos] == b'-' {
-            is_negative = true;
             *pos += 1;
         }
 
@@ -624,11 +618,11 @@ impl TapeBuilder {
     }
 
     /// Build field dictionary from tape tokens
-    fn build_field_dictionary(&mut self, json: &[u8]) {
+    fn build_field_dictionary(&mut self, _json: &[u8]) {
         // Simple field dictionary builder: scan tape for string tokens that look like keys
         // In production, this would use perfect hashing or field name interning
         let mut field_idx = 0u8;
-        let mut in_key = false;
+        let in_key = false;
 
         for (i, token) in self.tape.iter().enumerate() {
             if token.kind == 2 && i > 0 {

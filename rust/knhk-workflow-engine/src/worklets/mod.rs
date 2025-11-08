@@ -249,7 +249,16 @@ impl WorkletExecutor {
     ) -> WorkflowResult<PatternExecutionResult> {
         let worklet = self.repository.get(worklet_id).await?;
 
-        unimplemented!("execute_worklet: needs full workflow engine integration to execute worklet workflow specification (worklet_id={}, workflow_spec={:?}) through the workflow engine with proper pattern execution, state management, and result propagation", worklet_id.0, worklet.workflow_spec.id)
+        // NOTE: This implementation requires access to WorkflowEngine, which creates a circular dependency
+        // In production, WorkletExecutor would need to be refactored to accept WorkflowEngine as parameter
+        // or use a different architecture pattern (e.g., dependency injection)
+        // For now, return error indicating worklet execution requires WorkflowEngine integration
+        Err(crate::error::WorkflowError::Internal(
+            format!(
+                "Worklet execution requires WorkflowEngine integration. Worklet {} workflow spec {} needs to be executed through WorkflowEngine.execute_case()",
+                worklet_id.0, worklet.workflow_spec.id
+            )
+        ))
     }
 
     /// Handle exception with worklet

@@ -23,8 +23,16 @@ fn test_boot_init_returns_result() {
         q_file.to_string_lossy().to_string(),
     );
 
-    // Assert: Returns Result (may fail if config dir creation fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - initialization completed
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 
     // Cleanup
     let _ = std::fs::remove_file(&sigma_file);

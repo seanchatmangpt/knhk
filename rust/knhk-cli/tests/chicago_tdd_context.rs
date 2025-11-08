@@ -11,12 +11,19 @@ fn test_context_list_returns_result() {
     // Act: List contexts
     let result = context::list();
 
-    // Assert: Returns Result (may fail if storage read fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
-
-    // If successful, should return Vec<String>
-    if let Ok(contexts) = result {
-        assert!(contexts.iter().all(|c| !c.is_empty()));
+    // Assert: Verify actual behavior - either succeeds with valid list or fails with error
+    match result {
+        Ok(contexts) => {
+            // Success case - should return valid list (may be empty)
+            assert!(
+                contexts.iter().all(|c| !c.is_empty()),
+                "Context IDs should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
     }
 }
 
@@ -27,12 +34,16 @@ fn test_context_current_returns_result() {
     // Act: Get current context
     let result = context::current();
 
-    // Assert: Returns Result (may fail if no current context, but should not panic)
-    assert!(result.is_ok() || result.is_err());
-
-    // If successful, should return String
-    if let Ok(context_id) = result {
-        assert!(!context_id.is_empty());
+    // Assert: Verify actual behavior - either succeeds with context ID or fails with error
+    match result {
+        Ok(context_id) => {
+            // Success case - should return non-empty context ID
+            assert!(!context_id.is_empty(), "Context ID should not be empty");
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
     }
 }
 
@@ -48,8 +59,16 @@ fn test_context_create_returns_result() {
     // Act: Create context
     let result = context::create(id.clone(), name.clone(), schema_iri.clone());
 
-    // Assert: Returns Result (may fail if storage fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - context created
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: context::use_context returns Result
@@ -79,7 +98,23 @@ fn test_context_create_then_use() {
     let create_result = context::create(id.clone(), name.clone(), schema_iri.clone());
     let use_result = context::use_context(id.clone());
 
-    // Assert: Both should return Results
-    assert!(create_result.is_ok() || create_result.is_err());
-    assert!(use_result.is_ok() || use_result.is_err());
+    // Assert: Verify actual behavior of both operations
+    match (create_result, use_result) {
+        (Ok(_), Ok(_)) => {
+            // Both succeeded
+        }
+        (Ok(_), Err(e)) => {
+            // Creation succeeded but use failed
+            assert!(!e.is_empty(), "Use error message should not be empty");
+        }
+        (Err(e), Ok(_)) => {
+            // Creation failed but use succeeded (context may exist from previous test)
+            assert!(!e.is_empty(), "Create error message should not be empty");
+        }
+        (Err(e1), Err(e2)) => {
+            // Both failed - verify error messages
+            assert!(!e1.is_empty(), "Create error message should not be empty");
+            assert!(!e2.is_empty(), "Use error message should not be empty");
+        }
+    }
 }

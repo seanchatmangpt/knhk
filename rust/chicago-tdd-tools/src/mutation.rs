@@ -89,11 +89,13 @@ impl MutationTester {
 /// Mutation score (percentage of mutations caught)
 pub struct MutationScore {
     /// Total mutations tested
-    total: usize,
+    #[allow(dead_code)] // Used in tests and future analysis
+    pub total: usize,
     /// Mutations caught by tests
-    caught: usize,
+    #[allow(dead_code)] // Used in tests and future analysis
+    pub caught: usize,
     /// Score percentage
-    score: f64,
+    pub score: f64,
 }
 
 impl MutationScore {

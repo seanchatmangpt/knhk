@@ -15,8 +15,16 @@ fn test_cover_define_returns_result() {
     // Act: Define cover
     let result = cover::define(select.clone(), shard.clone());
 
-    // Assert: Returns Result (may fail if storage fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - cover defined
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: cover::list returns Result
@@ -26,12 +34,19 @@ fn test_cover_list_returns_result() {
     // Act: List covers
     let result = cover::list();
 
-    // Assert: Returns Result (may fail if storage read fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
-
-    // If successful, should return Vec<String>
-    if let Ok(covers) = result {
-        assert!(covers.iter().all(|c| !c.is_empty()));
+    // Assert: Verify actual behavior - either succeeds with valid list or fails with error
+    match result {
+        Ok(covers) => {
+            // Success case - should return valid list (may be empty)
+            assert!(
+                covers.iter().all(|c| !c.is_empty()),
+                "Cover IDs should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
     }
 }
 
@@ -47,7 +62,27 @@ fn test_cover_define_then_list() {
     let define_result = cover::define(select.clone(), shard.clone());
     let list_result = cover::list();
 
-    // Assert: Both should return Results
-    assert!(define_result.is_ok() || define_result.is_err());
-    assert!(list_result.is_ok() || list_result.is_err());
+    // Assert: Verify actual behavior of both operations
+    match (define_result, list_result) {
+        (Ok(_), Ok(covers)) => {
+            // Both succeeded - verify list is valid
+            assert!(
+                covers.iter().all(|c| !c.is_empty()),
+                "Cover IDs should not be empty"
+            );
+        }
+        (Ok(_), Err(e)) => {
+            // Definition succeeded but listing failed
+            assert!(!e.is_empty(), "List error message should not be empty");
+        }
+        (Err(e), Ok(_)) => {
+            // Definition failed but listing succeeded
+            assert!(!e.is_empty(), "Define error message should not be empty");
+        }
+        (Err(e1), Err(e2)) => {
+            // Both failed - verify error messages
+            assert!(!e1.is_empty(), "Define error message should not be empty");
+            assert!(!e2.is_empty(), "List error message should not be empty");
+        }
+    }
 }

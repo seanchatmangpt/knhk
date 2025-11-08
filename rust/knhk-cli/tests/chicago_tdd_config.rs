@@ -11,11 +11,15 @@ fn test_config_show_returns_result() {
     // Act: Show config
     let result = config::show();
 
-    // Assert: Returns Result (may fail if config load fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
-
-    // If successful, should return String
-    if let Ok(config_str) = result {
-        assert!(!config_str.is_empty());
+    // Assert: Verify actual behavior - either succeeds with config string or fails with error
+    match result {
+        Ok(config_str) => {
+            // Success case - should return non-empty config string
+            assert!(!config_str.is_empty(), "Config string should not be empty");
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
     }
 }

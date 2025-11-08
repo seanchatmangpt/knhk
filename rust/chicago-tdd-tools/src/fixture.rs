@@ -9,8 +9,10 @@ use thiserror::Error;
 /// Test fixture error
 #[derive(Error, Debug)]
 pub enum FixtureError {
+    /// Failed to create fixture
     #[error("Failed to create fixture: {0}")]
     CreationFailed(String),
+    /// Fixture operation failed
     #[error("Fixture operation failed: {0}")]
     OperationFailed(String),
 }

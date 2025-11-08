@@ -11,11 +11,18 @@ fn test_coverage_get_returns_result() {
     // Act: Get coverage
     let result = coverage::get();
 
-    // Assert: Returns Result (may fail if coverage calculation fails, but should not panic)
-    assert!(result.is_ok() || result.is_err());
-
-    // If successful, should return String
-    if let Ok(coverage_str) = result {
-        assert!(!coverage_str.is_empty());
+    // Assert: Verify actual behavior - either succeeds with coverage string or fails with error
+    match result {
+        Ok(coverage_str) => {
+            // Success case - should return non-empty coverage string
+            assert!(
+                !coverage_str.is_empty(),
+                "Coverage string should not be empty"
+            );
+        }
+        Err(e) => {
+            // Error case - should have meaningful error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
     }
 }
