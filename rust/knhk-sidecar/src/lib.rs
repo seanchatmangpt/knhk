@@ -307,21 +307,15 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     let beat_interval = Duration::from_millis(config.beat_advance_interval_ms);
     tokio::spawn(async move {
         loop {
-            let (tick, pulse) = tokio::task::spawn_blocking({
-                let scheduler = Arc::clone(&beat_scheduler_clone);
-                move || match scheduler.lock() {
-                    Ok(mut scheduler) => scheduler.advance_beat(),
-                    Err(e) => {
-                        error!(error = %e, "Failed to lock beat scheduler");
-                        (0, false)
-                    }
+            // Advance beat synchronously (BeatScheduler is not Send/Sync due to raw pointers)
+            // This is safe because we're in a single-threaded context within the async task
+            let (tick, pulse) = match beat_scheduler_clone.lock() {
+                Ok(mut scheduler) => scheduler.advance_beat(),
+                Err(e) => {
+                    error!(error = %e, "Failed to lock beat scheduler");
+                    (0, false)
                 }
-            })
-            .await
-            .unwrap_or_else(|e| {
-                error!(error = %e, "Beat advancement task panicked");
-                (0, false)
-            });
+            };
 
             if pulse {
                 info!(cycle = tick / 8, "Beat pulse - cycle commit boundary");

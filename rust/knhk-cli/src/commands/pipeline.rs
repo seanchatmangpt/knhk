@@ -74,7 +74,15 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
 
     #[cfg(feature = "std")]
     {
-        // Create integrated pipeline
+        // Use connector registry to get actual connector instances
+        let connector_registry = ConnectorRegistry::new()?;
+
+        // Verify connectors exist
+        for conn_id in &connector_ids {
+            connector_registry.get(conn_id)?;
+        }
+
+        // Create integrated pipeline with actual connectors
         let mut pipeline = IntegratedPipeline::new(
             connector_ids,
             schema_iri,

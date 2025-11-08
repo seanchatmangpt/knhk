@@ -639,10 +639,7 @@ impl KgcSidecar for KgcSidecarService {
             vec![
                 ("method", "ValidateGraph".to_string()),
                 ("schema_iri", req.schema_iri.clone()),
-                (
-                    "rdf_bytes",
-                    (delta.additions.len() + delta.removals.len()).to_string(),
-                ),
+                ("rdf_bytes", req.rdf_data.len().to_string()),
             ],
         )
         .await;

@@ -109,12 +109,44 @@ pub fn init(sigma: String, q: String) -> Result<PathBuf, String> {
         .load_from_reader(RdfFormat::Turtle, sigma_content.as_bytes())
         .map_err(|e| format!("Failed to load schema into Oxigraph: {}", e))?;
 
+    // Save schema to StateManager's store
+    let mut schema_graph = oxigraph::model::Graph::new();
+    for quad_result in schema_store.quads_for_pattern(None, None, None, None) {
+        let quad = quad_result.map_err(|e| format!("Failed to query schema store: {}", e))?;
+        let triple_ref = oxigraph::model::TripleRef::new(
+            quad.subject.as_ref(),
+            quad.predicate.as_ref(),
+            quad.object.as_ref(),
+        );
+        schema_graph.insert(triple_ref);
+    }
+
+    state_manager
+        .ontology_saver()
+        .save(&schema_graph, Some(&sigma))?;
+
     // Load invariants file and save to Oxigraph
     let mut invariant_store = oxigraph::store::Store::new()
         .map_err(|e| format!("Failed to create Oxigraph store for invariants: {}", e))?;
     invariant_store
         .load_from_reader(RdfFormat::Turtle, q_content.as_bytes())
         .map_err(|e| format!("Failed to load invariants into Oxigraph: {}", e))?;
+
+    // Save invariants to StateManager's store
+    let mut invariant_graph = oxigraph::model::Graph::new();
+    for quad_result in invariant_store.quads_for_pattern(None, None, None, None) {
+        let quad = quad_result.map_err(|e| format!("Failed to query invariant store: {}", e))?;
+        let triple_ref = oxigraph::model::TripleRef::new(
+            quad.subject.as_ref(),
+            quad.predicate.as_ref(),
+            quad.object.as_ref(),
+        );
+        invariant_graph.insert(triple_ref);
+    }
+
+    state_manager
+        .ontology_saver()
+        .save(&invariant_graph, Some(&q))?;
 
     // Write initialization marker
     let init_marker = config_dir.join(".initialized");
