@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
-use tokio::sync::RwLock;
 
 /// Integration health status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -346,7 +345,7 @@ impl IntegrationHealthChecker {
             }
         } else {
             // No endpoint configured - create default instance
-            let otel_integration = crate::integration::OtelIntegration::new(None);
+            let _otel_integration = crate::integration::OtelIntegration::new(None);
             // Without endpoint, health check just verifies integration is available
             Ok(())
         }

@@ -83,7 +83,7 @@ impl BestPracticesIntegration {
     /// - External system integration (Connectors)
     pub async fn execute_with_best_features(
         &self,
-        workflow_name: &str,
+        _workflow_name: &str,
         data: serde_json::Value,
     ) -> WorkflowResult<serde_json::Value> {
         // Start OTEL span for workflow execution
