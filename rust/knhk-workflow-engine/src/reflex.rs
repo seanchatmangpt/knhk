@@ -1,10 +1,9 @@
 // reflex.rs: Reflex bridge for hot path promotion
 // Identifies promotable regions in workflow specs and binds hot-pattern executors
 
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use crate::integration::fortune5::RuntimeClass;
 use crate::parser::WorkflowSpec;
-use serde_json::Value;
 use std::collections::HashMap;
 
 /// Promotable segment in workflow spec

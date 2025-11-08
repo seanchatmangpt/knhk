@@ -215,7 +215,7 @@ impl GgenGenerator {
     }
 
     /// SPARQL filter for Tera templates
-    fn sparql_filter(_value: &Value, _args: &HashMap<String, Value>) -> tera::Result<Value> {
+    fn sparql_filter(_value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
         // Extract SPARQL query from args
         let query = args
             .get("query")

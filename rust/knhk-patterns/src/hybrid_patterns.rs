@@ -137,10 +137,10 @@ impl HybridSequencePattern {
 
     #[cfg(feature = "unrdf")]
     /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
-    fn soa_to_turtle(&self, _soa: &SoAArrays) -> Result<String, PatternError> {
+    fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
         // FUTURE: Implement proper SoA to Turtle conversion
-        // For now, return empty turtle data
-        Ok(String::new())
+        // For now, return unimplemented to indicate incomplete implementation
+        unimplemented!("soa_to_turtle: needs proper SoAArrays to Turtle conversion implementation - soa has {} triples (s.len={})", soa.s.len(), soa.s.len())
     }
 }
 
@@ -285,10 +285,10 @@ impl HybridParallelPattern {
 
     #[cfg(feature = "unrdf")]
     /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
-    fn soa_to_turtle(&self, _soa: &SoAArrays) -> Result<String, PatternError> {
+    fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
         // FUTURE: Implement proper SoA to Turtle conversion
-        // For now, return empty turtle data
-        Ok(String::new())
+        // For now, return unimplemented to indicate incomplete implementation
+        unimplemented!("soa_to_turtle: needs proper SoAArrays to Turtle conversion implementation - soa has {} triples (s.len={})", soa.s.len(), soa.s.len())
     }
 }
 
@@ -430,10 +430,10 @@ impl HybridChoicePattern {
 
     #[cfg(feature = "unrdf")]
     /// Convert SoAArrays to turtle data (simplified - in production would use proper serialization)
-    fn soa_to_turtle(&self, _soa: &SoAArrays) -> Result<String, PatternError> {
+    fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
         // FUTURE: Implement proper SoA to Turtle conversion
-        // For now, return empty turtle data
-        Ok(String::new())
+        // For now, return unimplemented to indicate incomplete implementation
+        unimplemented!("soa_to_turtle: needs proper SoAArrays to Turtle conversion implementation - soa has {} triples (s.len={})", soa.s.len(), soa.s.len())
     }
 }
 

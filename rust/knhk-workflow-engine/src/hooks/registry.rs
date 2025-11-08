@@ -7,7 +7,7 @@
 //! - Pattern execution
 
 use crate::case::CaseId;
-use crate::error::WorkflowResult;
+use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;

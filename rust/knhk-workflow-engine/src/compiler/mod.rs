@@ -259,7 +259,7 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
     let mut node_list = Vec::new();
 
     // Index all tasks
-    for (task_id, task) in &spec.tasks {
+    for (task_id, _task) in &spec.tasks {
         let idx = node_list.len();
         node_index.insert(task_id.clone(), idx);
         node_list.push((task_id.clone(), true)); // true = task
@@ -273,7 +273,7 @@ fn lower_spec_to_ir(spec: &WorkflowSpec) -> WorkflowResult<WorkflowIr> {
     }
 
     // Build NodeIR for each task
-    for (task_id, task) in &spec.tasks {
+    for (_task_id, task) in &spec.tasks {
         let pattern_id = map_pattern_id(task.split_type, task.join_type);
         pattern_ids.push(pattern_id as u32);
 

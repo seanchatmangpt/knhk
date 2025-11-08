@@ -83,7 +83,7 @@ impl AuthManager {
     }
 
     /// Authenticate a principal
-    pub fn authenticate(&self, _token: &str) -> WorkflowResult<Principal> {
+    pub fn authenticate(&self, token: &str) -> WorkflowResult<Principal> {
         // SPIFFE/SPIRE authentication requires actual SPIFFE Workload API client
         // For now, return error indicating SPIFFE integration is needed
         // In production, would:

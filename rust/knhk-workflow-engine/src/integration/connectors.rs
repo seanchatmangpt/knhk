@@ -27,7 +27,7 @@ impl ConnectorIntegration {
         connector_name: &str,
         _data: serde_json::Value,
     ) -> WorkflowResult<serde_json::Value> {
-        let _connector = self.connectors.get_mut(connector_name).ok_or_else(|| {
+        let connector = self.connectors.get_mut(connector_name).ok_or_else(|| {
             crate::error::WorkflowError::ResourceUnavailable(format!(
                 "Connector {} not found",
                 connector_name

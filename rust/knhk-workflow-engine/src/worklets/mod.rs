@@ -250,7 +250,7 @@ impl WorkletExecutor {
     pub async fn execute_worklet(
         &self,
         worklet_id: WorkletId,
-        context: PatternExecutionContext,
+        _context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
         let worklet = self.repository.get(worklet_id).await?;
 
