@@ -61,11 +61,6 @@ pub struct SidecarConfig {
     pub promotion_traffic_percent: Option<f64>,
     pub auto_rollback_enabled: bool,
     pub slo_threshold: f64,
-    // Workflow engine configuration
-    #[cfg(feature = "workflow")]
-    pub workflow_enabled: bool,
-    #[cfg(feature = "workflow")]
-    pub workflow_db_path: Option<String>,
 }
 
 impl Default for SidecarConfig {
@@ -125,10 +120,6 @@ impl Default for SidecarConfig {
             promotion_traffic_percent: None,
             auto_rollback_enabled: false,
             slo_threshold: 0.95,
-            #[cfg(feature = "workflow")]
-            workflow_enabled: false,
-            #[cfg(feature = "workflow")]
-            workflow_db_path: None,
         }
     }
 }
@@ -302,17 +293,6 @@ impl SidecarConfig {
         }
 
         // Workflow engine configuration
-        #[cfg(feature = "workflow")]
-        {
-            if let Ok(enabled) = std::env::var("KGC_SIDECAR_WORKFLOW_ENABLED") {
-                config.workflow_enabled = enabled == "true" || enabled == "1";
-            }
-
-            if let Ok(path) = std::env::var("KGC_SIDECAR_WORKFLOW_DB_PATH") {
-                config.workflow_db_path = Some(path);
-            }
-        }
-
         if let Ok(strategy) = std::env::var("KGC_SIDECAR_SLO_ADMISSION_STRATEGY") {
             config.slo_admission_strategy = strategy;
         }

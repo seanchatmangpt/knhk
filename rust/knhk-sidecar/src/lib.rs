@@ -32,7 +32,6 @@ pub use client::SidecarClient;
 pub use config::SidecarConfig;
 pub use error::{SidecarError, SidecarResult};
 pub use server::SidecarServer;
-#[cfg(feature = "workflow")]
 pub use service::KgcSidecarService;
 
 use std::process::Child;

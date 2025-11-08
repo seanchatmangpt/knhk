@@ -194,10 +194,6 @@ impl SidecarServer {
             promotion_traffic_percent: None,
             auto_rollback_enabled: false,
             slo_threshold: 0.99,
-            #[cfg(feature = "workflow")]
-            workflow_enabled: false,
-            #[cfg(feature = "workflow")]
-            workflow_db_path: None,
         };
         let service = KgcSidecarService::new_with_weaver(
             sidecar_config,
