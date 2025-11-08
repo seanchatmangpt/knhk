@@ -16,6 +16,7 @@ pub struct PatternContext {
 }
 
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct PatternResult {
     pub success: bool,
     pub branches: u32,
@@ -108,12 +109,32 @@ extern "C" {
         num_branches: c_uint,
     ) -> PatternResult;
 
+    // Pattern 9: Discriminator (First-Wins)
+    pub fn knhk_pattern_discriminator(
+        ctx: *mut PatternContext,
+        branches: *const BranchFn,
+        num_branches: c_uint,
+    ) -> PatternResult;
+
+    pub fn knhk_pattern_discriminator_simd(
+        ctx: *mut PatternContext,
+        branches: *const BranchFn,
+        num_branches: c_uint,
+    ) -> PatternResult;
+
     // Pattern 10: Arbitrary Cycles
     pub fn knhk_pattern_arbitrary_cycles(
         ctx: *mut PatternContext,
         branch: BranchFn,
         should_continue: ConditionFn,
         max_iterations: c_uint,
+    ) -> PatternResult;
+
+    // Pattern 11: Implicit Termination
+    pub fn knhk_pattern_implicit_termination(
+        ctx: *mut PatternContext,
+        branches: *const BranchFn,
+        num_branches: c_uint,
     ) -> PatternResult;
 
     // Pattern 16: Deferred Choice
@@ -123,6 +144,21 @@ extern "C" {
         branches: *const BranchFn,
         num_branches: c_uint,
         timeout_ticks: u64,
+    ) -> PatternResult;
+
+    // Pattern 20: Timeout
+    pub fn knhk_pattern_timeout(
+        ctx: *mut PatternContext,
+        branch: BranchFn,
+        timeout_ms: u64,
+        fallback: Option<BranchFn>, // Option maps to nullable function pointer in C
+    ) -> PatternResult;
+
+    // Pattern 21: Cancellation
+    pub fn knhk_pattern_cancellation(
+        ctx: *mut PatternContext,
+        branch: BranchFn,
+        should_cancel: ConditionFn,
     ) -> PatternResult;
 
     // Branchless dispatch

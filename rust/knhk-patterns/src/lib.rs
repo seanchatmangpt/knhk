@@ -7,6 +7,7 @@
 pub mod composition;
 pub mod ffi;
 pub mod hook_patterns;
+pub mod hot_path;
 pub mod patterns;
 pub mod pipeline_ext;
 
@@ -39,4 +40,10 @@ pub use unrdf_patterns::{
 pub use hybrid_patterns::{
     HybridChoicePattern, HybridExecutionResult, HybridHookCondition, HybridParallelPattern,
     HybridSequencePattern,
+};
+
+// Hot path C kernel API (for maximum performance)
+pub use hot_path::{
+    cancellation_hot, discriminator_hot, discriminator_simd_hot, implicit_termination_hot,
+    timeout_hot, HotPathError, HotPathResult, PatternContextBuilder,
 };

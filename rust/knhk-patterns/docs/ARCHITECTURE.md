@@ -63,8 +63,12 @@ Each pattern is a struct implementing `Pattern<T>`:
 - **ExclusiveChoicePattern**: XOR-split with conditions
 - **SimpleMergePattern**: XOR-join
 - **MultiChoicePattern**: OR-split with conditions
+- **DiscriminatorPattern**: First-wins pattern (race condition)
 - **ArbitraryCyclesPattern**: Loop/retry logic
+- **ImplicitTerminationPattern**: Workflow completion detection
 - **DeferredChoicePattern**: Event-driven choice
+- **TimeoutPattern**: Timeout with optional fallback
+- **CancellationPattern**: Cancellable execution
 
 **Key Implementation Details:**
 
@@ -126,9 +130,12 @@ Extension trait for KNHK pipelines:
 
 ```rust
 pub trait PipelinePatternExt {
-    fn execute_parallel<F>(&mut self, processors: Vec<F>) -> PatternResult<Vec<LoadResult>>;
-    fn execute_conditional<F, C>(&mut self, choices: Vec<(C, F)>) -> PatternResult<Vec<LoadResult>>;
-    fn execute_with_retry<F, C>(&mut self, processor: F, should_retry: C, max_attempts: u32) -> PatternResult<LoadResult>;
+    fn execute_parallel<F>(&mut self, processors: Vec<F>) -> PatternResult<Vec<EmitResult>>;
+    fn execute_conditional<F, C>(&mut self, choices: Vec<(C, F)>) -> PatternResult<Vec<EmitResult>>;
+    fn execute_with_retry<F, C>(&mut self, processor: F, should_retry: C, max_attempts: u32) -> PatternResult<EmitResult>;
+    fn execute_hooks_parallel(&mut self, hook_registry: &HookRegistry, predicates: Vec<u64>) -> PatternResult<HookExecutionResult>;
+    fn execute_hooks_conditional(&mut self, hook_registry: &HookRegistry, choices: Vec<(HookCondition, u64)>) -> PatternResult<HookExecutionResult>;
+    fn execute_hooks_with_retry(&mut self, hook_registry: &HookRegistry, predicate: u64, should_retry: HookRetryCondition, max_attempts: u32) -> PatternResult<HookExecutionResult>;
 }
 ```
 
@@ -172,8 +179,12 @@ Each pattern has a tick budget (≤8 ticks):
 | Exclusive Choice | 2 | Condition evaluation |
 | Simple Merge | 1 | Direct merge |
 | Multi-Choice | 3 | Multiple condition checks |
+| Discriminator | 3 | First-wins with atomic coordination |
 | Arbitrary Cycles | 2 | Loop overhead |
+| Implicit Termination | 2 | Track active branches |
 | Deferred Choice | 3 | Event polling |
+| Timeout | 2 | Check timeout + execute |
+| Cancellation | 1 | Atomic cancel check |
 
 ## Error Handling Architecture
 
@@ -337,14 +348,45 @@ let results = orchestrator.execute_with_pattern(
 
 See [HOOK_INTEGRATION.md](HOOK_INTEGRATION.md) for detailed hook integration guide.
 
+### 6. Hybrid Patterns (`hybrid_patterns.rs`)
+
+Hybrid patterns orchestrate both hot path (HookRegistry) and cold path (unrdf) hooks together:
+
+**Hybrid Pattern Types:**
+- `HybridSequencePattern` - Execute hot path hooks, then cold path hooks sequentially
+- `HybridParallelPattern` - Execute hot and cold path hooks concurrently
+- `HybridChoicePattern` - Route between hot and cold paths based on condition
+
+**Key Features:**
+- Feature-gated cold path support (`#[cfg(feature = "unrdf")]`)
+- Conditional routing based on execution context
+- Receipt aggregation from both paths
+- Tick budget enforcement (≤8 ticks for hot path)
+
+### 7. Unrdf Patterns (`unrdf_patterns.rs`)
+
+Cold path hook patterns for SPARQL-based hook execution (feature-gated):
+
+**Unrdf Pattern Types:**
+- `UnrdfSequencePattern` - Sequential cold path hook execution
+- `UnrdfParallelPattern` - Parallel cold path hook execution
+- `UnrdfChoicePattern` - Conditional cold path hook routing
+- `UnrdfRetryPattern` - Retry logic for cold path hooks
+
+**Key Features:**
+- SPARQL ASK query evaluation
+- Epoch-based ordering (≺-total order)
+- Batch evaluation support
+- Native Rust implementation (oxigraph)
+
 ## Future Extensions
 
 ### Planned Patterns
 
 - Pattern 7: Structured Synchronizing Merge
 - Pattern 8: Multi-Merge
-- Pattern 9: Structured Discriminator
-- Pattern 11: Implicit Termination
+- Pattern 12: Multiple Instances Without Synchronization
+- Pattern 13: Multiple Instances With a Priori Design-Time Knowledge
 
 ### Performance Optimizations
 

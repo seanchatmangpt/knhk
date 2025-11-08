@@ -112,7 +112,7 @@ Complete documentation and PlantUML diagrams for `knhk-patterns` - Van der Aalst
 **Purpose**: Complete pattern overview
 
 **Shows**:
-- All 8 implemented patterns
+- All 12 implemented patterns
 - Execution flows
 - Data flow
 - Pattern characteristics
@@ -122,16 +122,21 @@ Complete documentation and PlantUML diagrams for `knhk-patterns` - Van der Aalst
 - Pattern 2: Parallel Split
 - Pattern 3: Synchronization
 - Pattern 4: Exclusive Choice
+- Pattern 5: Simple Merge
 - Pattern 6: Multi-Choice
+- Pattern 9: Discriminator
 - Pattern 10: Arbitrary Cycles
+- Pattern 11: Implicit Termination
 - Pattern 16: Deferred Choice
+- Pattern 20: Timeout
+- Pattern 21: Cancellation
 
 ## Key Design Principles
 
 ### 1. 80/20 Focus
-- Implement critical patterns (1, 2, 3, 4, 5, 6, 10, 16)
+- Implement critical patterns (1, 2, 3, 4, 5, 6, 9, 10, 11, 16, 20, 21)
 - Cover 85% of real-world workflows
-- Defer complex patterns (7, 8, 9, 11+)
+- Defer complex patterns (7, 8, 12, 13+)
 
 ### 2. Performance First
 - All patterns respect Chatman Constant (≤8 ticks)
@@ -161,10 +166,14 @@ Complete documentation and PlantUML diagrams for `knhk-patterns` - Van der Aalst
 | Exclusive Choice | 4 | ✅ | 2 | No |
 | Simple Merge | 5 | ✅ | 1 | No |
 | Multi-Choice | 6 | ✅ | 3 | Yes |
+| Discriminator | 9 | ✅ | 3 | Yes |
 | Arbitrary Cycles | 10 | ✅ | 2 | No |
+| Implicit Termination | 11 | ✅ | 2 | No |
 | Deferred Choice | 16 | ✅ | 3 | No |
+| Timeout | 20 | ✅ | 2 | No |
+| Cancellation | 21 | ✅ | 1 | No |
 
-**Coverage**: 8/43 patterns (19%) → 85% workflow coverage (80/20 principle)
+**Coverage**: 12/43 patterns (28%) → 85% workflow coverage (80/20 principle)
 
 ## Usage Examples
 
@@ -228,6 +237,7 @@ let result = pipeline.execute_with_retry(processor, condition, max)?;
 - Parallel Split: Yes
 - Synchronization: Yes
 - Multi-Choice: Yes
+- Discriminator: Yes
 - Others: No (not parallelizable)
 
 ### Complexity
@@ -237,8 +247,12 @@ let result = pipeline.execute_with_retry(processor, condition, max)?;
 - Exclusive Choice: O(n)
 - Simple Merge: O(1)
 - Multi-Choice: O(n)
+- Discriminator: O(n)
 - Arbitrary Cycles: O(k*n)
+- Implicit Termination: O(n)
 - Deferred Choice: O(n)
+- Timeout: O(1)
+- Cancellation: O(1)
 
 ## Error Handling
 
@@ -290,8 +304,8 @@ Tests follow Chicago TDD methodology:
 ### Planned Enhancements
 - Pattern 7: Structured Synchronizing Merge
 - Pattern 8: Multi-Merge
-- Pattern 9: Structured Discriminator
-- Pattern 11: Implicit Termination
+- Pattern 12: Multiple Instances Without Synchronization
+- Pattern 13: Multiple Instances With a Priori Design-Time Knowledge
 
 ### Performance Optimizations
 - More SIMD vectorization

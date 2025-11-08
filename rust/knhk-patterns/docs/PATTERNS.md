@@ -303,6 +303,56 @@ assert_eq!(results.len(), 2); // Both conditions match
 - Conditional parallelism
 - Complex business rules
 
+## Pattern 9: Discriminator (First-Wins)
+
+**Van der Aalst ID**: WCP-9  
+**Tick Budget**: 3  
+**SIMD Support**: Yes  
+**Complexity**: O(n)
+
+### Description
+
+First-wins pattern (race condition). Executes all branches in parallel, but only the first branch to complete wins. All other branches are cancelled or ignored.
+
+### YAWL Equivalent
+
+```xml
+<join type="OR">
+    <task name="A"/>
+    <task name="B"/>
+    <task name="C"/>
+</join>
+```
+
+### Usage
+
+```rust
+let branches = vec![
+    Arc::new(|mut data: i32| { std::thread::sleep(Duration::from_millis(100)); data *= 2; Ok(data) }),
+    Arc::new(|mut data: i32| { std::thread::sleep(Duration::from_millis(50)); data *= 3; Ok(data) }),
+    Arc::new(|mut data: i32| { std::thread::sleep(Duration::from_millis(200)); data *= 5; Ok(data) }),
+];
+
+let pattern = DiscriminatorPattern::new(branches)?;
+let results = pattern.execute(10)?;
+// Only the fastest branch (50ms) wins: [30]
+```
+
+### Behavior
+
+- Executes all branches in parallel
+- First branch to complete wins
+- Other branches are ignored
+- SIMD-optimized for parallel execution
+- Returns single output
+
+### Use Cases
+
+- Race conditions
+- First-available resource selection
+- Timeout-based selection
+- Fastest path selection
+
 ## Pattern 10: Arbitrary Cycles
 
 **Van der Aalst ID**: WCP-10  
@@ -350,6 +400,55 @@ assert_eq!(results[0], 10); // Stopped when value == 10
 - Approval loops
 - Iterative processing
 - Polling
+
+## Pattern 11: Implicit Termination
+
+**Van der Aalst ID**: WCP-11  
+**Tick Budget**: 2  
+**SIMD Support**: No  
+**Complexity**: O(n)
+
+### Description
+
+Workflow completion detection. Executes all branches in parallel and waits for all to complete. The workflow terminates when all branches finish.
+
+### YAWL Equivalent
+
+```xml
+<task name="A"/>
+<task name="B"/>
+<task name="C"/>
+<!-- Workflow completes when all tasks finish -->
+```
+
+### Usage
+
+```rust
+let branches = vec![
+    Arc::new(|mut data: i32| { data *= 2; Ok(data) }),
+    Arc::new(|mut data: i32| { data *= 3; Ok(data) }),
+    Arc::new(|mut data: i32| { data *= 5; Ok(data) }),
+];
+
+let pattern = ImplicitTerminationPattern::new(branches)?;
+let results = pattern.execute(10)?;
+// All branches complete: [20, 30, 50]
+```
+
+### Behavior
+
+- Executes all branches in parallel
+- Waits for all branches to complete
+- Tracks active branches with atomic counter
+- Returns all outputs
+- Workflow terminates when all branches finish
+
+### Use Cases
+
+- Parallel processing with completion detection
+- Multi-branch workflows
+- Resource cleanup after all branches
+- Workflow termination detection
 
 ## Pattern 16: Deferred Choice
 
@@ -405,6 +504,103 @@ let results = pattern.execute(event_data)?;
 - Timeout-based routing
 - Reactive systems
 
+## Pattern 20: Timeout
+
+**Van der Aalst ID**: WCP-20  
+**Tick Budget**: 2  
+**SIMD Support**: No  
+**Complexity**: O(1)
+
+### Description
+
+Executes a branch with a timeout. If the branch doesn't complete within the timeout, either executes a fallback or returns an error.
+
+### Usage
+
+```rust
+let branch = Arc::new(|mut data: i32| {
+    std::thread::sleep(Duration::from_millis(200));
+    data *= 2;
+    Ok(data)
+});
+
+// Timeout without fallback
+let pattern = TimeoutPattern::new(branch.clone(), 100)?; // 100ms timeout
+let result = pattern.execute(10);
+// Returns error: timeout after 100ms
+
+// Timeout with fallback
+let fallback = Arc::new(|mut data: i32| { data = -1; Ok(data) });
+let pattern = TimeoutPattern::with_fallback(branch, 100, Some(fallback))?;
+let results = pattern.execute(10)?;
+// Returns fallback result: [-1]
+```
+
+### Behavior
+
+- Executes branch in separate thread
+- Waits for result or timeout
+- Executes fallback if timeout occurs
+- Returns single output
+- Supports optional fallback
+
+### Use Cases
+
+- Network request timeouts
+- Resource acquisition timeouts
+- Long-running operation limits
+- Graceful degradation
+
+## Pattern 21: Cancellation
+
+**Van der Aalst ID**: WCP-21  
+**Tick Budget**: 1  
+**SIMD Support**: No  
+**Complexity**: O(1)
+
+### Description
+
+Cancellable execution with pre/post-execution checks. Checks for cancellation before and after execution.
+
+### Usage
+
+```rust
+let branch = Arc::new(|mut data: i32| {
+    data *= 2;
+    Ok(data)
+});
+
+let should_cancel = Arc::new(|| {
+    // Check cancellation condition
+    false // Not cancelled
+});
+
+let pattern = CancellationPattern::new(branch, should_cancel)?;
+let results = pattern.execute(10)?;
+// Returns: [20]
+
+// With cancellation
+let should_cancel = Arc::new(|| true); // Cancelled
+let pattern = CancellationPattern::new(branch, should_cancel)?;
+let result = pattern.execute(10);
+// Returns error: operation cancelled
+```
+
+### Behavior
+
+- Checks cancellation before execution
+- Executes branch if not cancelled
+- Checks cancellation after execution
+- Returns error if cancelled
+- Atomic cancellation check
+
+### Use Cases
+
+- User-initiated cancellation
+- Resource cleanup
+- Graceful shutdown
+- Interrupt handling
+
 ## Pattern Composition
 
 ### Sequential Composition
@@ -455,8 +651,12 @@ let composite = CompositePattern::Retry {
 | Exclusive Choice | 2 | No | No | Conditional |
 | Simple Merge | 1 | No | No | Fast merge |
 | Multi-Choice | 3 | Yes | Yes | Multi-branch |
+| Discriminator | 3 | Yes | Yes | First-wins |
 | Arbitrary Cycles | 2 | No | No | Loops |
+| Implicit Termination | 2 | No | Yes | Completion |
 | Deferred Choice | 3 | No | No | Events |
+| Timeout | 2 | No | No | Timeouts |
+| Cancellation | 1 | No | No | Cancellation |
 
 ## Best Practices
 
