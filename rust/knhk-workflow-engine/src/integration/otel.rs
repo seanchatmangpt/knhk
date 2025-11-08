@@ -83,7 +83,7 @@ impl OtelIntegration {
             tracer.add_attribute(
                 span_ctx.clone(),
                 "knhk.pattern.id".to_string(),
-                pattern_id.clone(),
+                pattern_id.to_string(),
             );
             Ok(Some(span_ctx))
         } else {

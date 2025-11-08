@@ -5,7 +5,7 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use uuid::Uuid;
+// Unused import removed - will be used when implementing leader election
 
 /// Leader state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

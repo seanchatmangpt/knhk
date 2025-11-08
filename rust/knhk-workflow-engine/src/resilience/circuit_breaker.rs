@@ -5,7 +5,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use knhk_connectors::CircuitBreaker as ConnectorCircuitBreaker;
 use knhk_connectors::CircuitBreakerState;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Circuit breaker for workflow operations
 pub struct CircuitBreaker {
@@ -62,11 +62,12 @@ impl CircuitBreaker {
                         WorkflowError::ExternalSystem(_)
                         | WorkflowError::Timeout
                         | WorkflowError::ResourceUnavailable(_) => {
-                            knhk_connectors::ConnectorError::NetworkError(msg)
+                            Err(knhk_connectors::ConnectorError::NetworkError(msg))
                         }
-                        _ => {
-                            knhk_connectors::ConnectorError::NetworkError(format!("Error: {}", msg))
-                        }
+                        _ => Err(knhk_connectors::ConnectorError::NetworkError(format!(
+                            "Error: {}",
+                            msg
+                        ))),
                     }
                 }
             }
@@ -75,7 +76,7 @@ impl CircuitBreaker {
         // Convert ConnectorError back to WorkflowError
         match result {
             Ok(val) => Ok(val),
-            Err(e) => Err(WorkflowError::ExternalSystem(e.to_string())),
+            Err(e) => Err(WorkflowError::ExternalSystem(format!("{:?}", e))),
         }
     }
 
@@ -83,8 +84,9 @@ impl CircuitBreaker {
     pub fn state(&self) -> CircuitBreakerState {
         self.inner
             .lock()
-            .map(|cb| cb.state())
-            .unwrap_or(CircuitBreakerState::Open)
+            .ok()
+            .and_then(|cb| Some(cb.state().clone()))
+            .unwrap_or_else(|| knhk_connectors::CircuitBreakerState::Open)
     }
 
     /// Get circuit breaker name

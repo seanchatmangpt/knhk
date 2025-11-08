@@ -6,8 +6,7 @@
 //! - State management across instances
 //! - Load balancing
 
-use crate::error::{WorkflowError, WorkflowResult};
-use std::collections::HashMap;
+use crate::error::WorkflowResult;
 
 /// Scalability configuration
 #[derive(Debug, Clone)]
@@ -80,7 +79,7 @@ impl ScalabilityManager {
     }
 
     /// Select target region for workflow
-    pub fn select_region(&self, workflow_id: &str) -> Option<String> {
+    pub fn select_region(&self, _workflow_id: &str) -> Option<String> {
         if !self.config.enable_multi_region {
             return self.config.current_region.clone();
         }

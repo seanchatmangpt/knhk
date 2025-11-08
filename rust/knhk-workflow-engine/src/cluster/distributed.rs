@@ -2,7 +2,7 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Distributed state store for multi-region deployment
 
-use crate::error::{WorkflowError, WorkflowResult};
+// Unused imports removed - will be used when implementing distributed state
 use crate::state::StateStore;
 use std::sync::Arc;
 use tokio::sync::RwLock;

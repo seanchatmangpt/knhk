@@ -2,12 +2,11 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Batch processing for workflow operations
 
-use crate::case::CaseId;
+// Unused imports removed - will be used when implementing batching
 use crate::error::WorkflowResult;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use tokio::time::sleep;
+use std::time::Duration;
 
 /// Batch configuration
 #[derive(Debug, Clone)]

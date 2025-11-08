@@ -3,7 +3,9 @@
 //! Provides methods for extracting workflow components from RDF stores.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::types::{Condition, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};
+use crate::parser::types::{
+    Condition, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
+};
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
@@ -60,7 +62,13 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
     let mut conditions = extract_conditions(store, &yawl_ns, spec_iri.as_deref())?;
 
     // Extract flows
-    extract_flows(store, &yawl_ns, spec_iri.as_deref(), &mut tasks, &mut conditions)?;
+    extract_flows(
+        store,
+        &yawl_ns,
+        spec_iri.as_deref(),
+        &mut tasks,
+        &mut conditions,
+    )?;
 
     // Find start and end conditions
     let start_condition = find_start_condition(store, &yawl_ns, spec_iri.as_deref())?;
@@ -198,25 +206,21 @@ pub fn extract_tasks(
                 })
                 .unwrap_or(JoinType::And);
 
-            let max_ticks = solution
-                .get("maxTicks")
-                .and_then(|t| {
-                    if let oxigraph::model::Term::Literal(lit) = t {
-                        lit.value().parse::<u32>().ok()
-                    } else {
-                        None
-                    }
-                });
+            let max_ticks = solution.get("maxTicks").and_then(|t| {
+                if let oxigraph::model::Term::Literal(lit) = t {
+                    lit.value().parse::<u32>().ok()
+                } else {
+                    None
+                }
+            });
 
-            let priority = solution
-                .get("priority")
-                .and_then(|p| {
-                    if let oxigraph::model::Term::Literal(lit) = p {
-                        lit.value().parse::<u32>().ok()
-                    } else {
-                        None
-                    }
-                });
+            let priority = solution.get("priority").and_then(|p| {
+                if let oxigraph::model::Term::Literal(lit) = p {
+                    lit.value().parse::<u32>().ok()
+                } else {
+                    None
+                }
+            });
 
             let use_simd = solution
                 .get("simd")
@@ -460,10 +464,7 @@ pub fn find_end_condition(
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
         for solution in solutions {
             let solution = solution.map_err(|e| {
-                WorkflowError::Parse(format!(
-                    "Failed to process end condition solution: {:?}",
-                    e
-                ))
+                WorkflowError::Parse(format!("Failed to process end condition solution: {:?}", e))
             })?;
 
             if let Some(condition_term) = solution.get("condition") {
@@ -474,4 +475,3 @@ pub fn find_end_condition(
 
     Ok(None)
 }
-

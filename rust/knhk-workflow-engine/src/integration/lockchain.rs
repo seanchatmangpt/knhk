@@ -104,7 +104,7 @@ impl LockchainIntegration {
     /// Internal method to record events
     async fn record_event_internal(
         &self,
-        event_type: &str,
+        _event_type: &str,
         data: &serde_json::Value,
     ) -> WorkflowResult<()> {
         let mut lockchain = self.lockchain.write().await;

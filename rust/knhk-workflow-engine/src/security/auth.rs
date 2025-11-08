@@ -1,20 +1,19 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Authentication and authorization for workflow engine
 
-use crate::case::CaseId;
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::WorkflowSpecId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Principal (user/service) identity
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Principal {
     /// Principal ID (SPIFFE ID, user ID, etc.)
     pub id: String,
     /// Principal type
     pub principal_type: PrincipalType,
     /// Principal attributes (roles, groups, etc.)
+    #[serde(skip)]
     pub attributes: HashMap<String, String>,
 }
 
@@ -118,7 +117,7 @@ impl AuthManager {
                         || policy
                             .resource_patterns
                             .iter()
-                            .any(|pattern| resource.matches(pattern))
+                            .any(|pattern| resource.contains(pattern))
                     {
                         return Ok(());
                     }

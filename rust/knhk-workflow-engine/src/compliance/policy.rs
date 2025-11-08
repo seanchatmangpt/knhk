@@ -60,9 +60,9 @@ impl PolicyEngine {
     /// Evaluate policy for a resource
     pub fn evaluate(
         &self,
-        resource: &str,
-        action: &str,
-        context: &serde_json::Value,
+        _resource: &str,
+        _action: &str,
+        _context: &serde_json::Value,
     ) -> WorkflowResult<PolicyDecision> {
         // FUTURE: Implement RDF-based policy evaluation using SPARQL
         // For now, return Allow for all enabled rules

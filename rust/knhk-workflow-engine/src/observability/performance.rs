@@ -5,7 +5,7 @@
 use crate::resilience::PathType;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Performance metrics
 #[derive(Debug, Clone)]
@@ -53,7 +53,7 @@ impl PerformanceMonitor {
     pub fn record_latency(&self, path_type: PathType, latency: Duration) {
         let mut metrics = self.metrics.lock().unwrap();
 
-        let sample = match path_type {
+        let _sample = match path_type {
             PathType::Hot => {
                 let ns = latency.as_nanos() as u64;
                 metrics.hot_path_samples.push_back(ns);

@@ -6,7 +6,7 @@
 //! - RBAC for access control
 //! - Audit logging
 
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use std::collections::HashMap;
 
 /// Security configuration

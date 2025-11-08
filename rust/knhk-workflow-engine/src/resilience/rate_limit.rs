@@ -4,7 +4,6 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use governor::{
-    clock::{Clock, DefaultClock, QuantaClock},
     state::keyed::DefaultKeyedStateStore,
     state::{InMemoryState, NotKeyed},
     Quota, RateLimiter as GovernorRateLimiter,
@@ -76,8 +75,8 @@ impl RateLimiter {
             match self.limiter.check() {
                 Ok(_) => return Ok(()),
                 Err(negative) => {
-                    // Use wait_time from governor's NotUntil type
-                    let wait_time = negative.wait_time();
+                    // Use wait_time_from with current time
+                    let wait_time = negative.wait_time_from(std::time::Instant::now());
                     tokio::time::sleep(wait_time).await;
                 }
             }
@@ -96,7 +95,9 @@ pub struct KeyedRateLimiter<K> {
     name: String,
 }
 
-impl<K: std::hash::Hash + Eq + Clone + Send + Sync + 'static> KeyedRateLimiter<K> {
+impl<K: std::hash::Hash + Eq + Clone + Send + Sync + std::fmt::Debug + 'static>
+    KeyedRateLimiter<K>
+{
     /// Create a new keyed rate limiter
     pub fn new(name: String, config: RateLimitConfig) -> WorkflowResult<Self> {
         let max_requests = NonZeroU32::new(config.max_requests)

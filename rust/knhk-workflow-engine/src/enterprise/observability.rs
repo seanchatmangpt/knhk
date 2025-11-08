@@ -6,7 +6,7 @@
 //! - Distributed tracing across services
 //! - Structured logging with context
 
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use knhk_otel::Tracer;
 use std::collections::HashMap;
 use std::sync::Arc;

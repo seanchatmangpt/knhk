@@ -3,7 +3,7 @@
 //! Caching layer for workflow engine
 
 use crate::case::{Case, CaseId};
-use crate::error::WorkflowResult;
+// Unused import removed - will be used when implementing cache
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use lru::LruCache;
 use std::num::NonZeroUsize;

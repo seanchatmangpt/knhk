@@ -32,11 +32,12 @@ pub trait GuardFunction: Send + Sync {
 }
 
 /// Guard execution context
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct GuardContext {
     /// Workflow specification
     pub workflow_spec: Option<Arc<WorkflowSpec>>,
     /// RDF store for SHACL validation
+    #[serde(skip)]
     pub rdf_store: Option<Arc<Store>>,
     /// Additional context data
     pub metadata: Value,

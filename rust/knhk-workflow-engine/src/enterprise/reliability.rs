@@ -6,7 +6,7 @@
 //! - Retry policies
 //! - Promotion gates
 
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};

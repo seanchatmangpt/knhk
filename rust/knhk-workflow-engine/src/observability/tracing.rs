@@ -4,7 +4,7 @@
 use crate::case::CaseId;
 use crate::parser::WorkflowSpecId;
 use tracing::{instrument, span, Level, Span};
-use uuid::Uuid;
+// Unused import removed - will be used when implementing tracing
 
 /// Tracing configuration
 #[derive(Debug, Clone)]

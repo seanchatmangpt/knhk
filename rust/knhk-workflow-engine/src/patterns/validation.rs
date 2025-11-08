@@ -51,7 +51,7 @@ impl PatternValidator {
 
     /// Validate pattern composition
     pub fn validate_composition(&self, pattern_ids: &[PatternId]) -> PatternValidationResult {
-        let mut errors = Vec::new();
+        let errors = Vec::new();
         let mut warnings = Vec::new();
 
         // Check for circular dependencies
@@ -104,11 +104,11 @@ impl PatternComposition {
     }
 
     /// Execute a composition
-    pub async fn execute_composition(
+    pub fn execute_composition(
         &self,
         name: &str,
         context: PatternExecutionContext,
-        executor: &dyn PatternExecutor,
+        registry: &crate::patterns::PatternRegistry,
     ) -> WorkflowResult<PatternExecutionResult> {
         let pattern_ids = self.compositions.get(name).ok_or_else(|| {
             WorkflowError::Validation(format!("Composition '{}' not found", name))
@@ -121,12 +121,15 @@ impl PatternComposition {
             variables: context.variables.clone(),
         };
 
-        for _pattern_id in pattern_ids {
-            // FUTURE: Get executor for pattern_id and execute
-            // For now, use provided executor
-            let mut ctx = context.clone();
-            ctx.variables = last_result.variables.clone();
-            last_result = executor.execute(&ctx);
+        for pattern_id in pattern_ids {
+            // Get executor for pattern_id and execute
+            if let Some(executor) = registry.get(pattern_id) {
+                let mut ctx = context.clone();
+                ctx.variables = last_result.variables.clone();
+                last_result = executor.execute(&ctx);
+            } else {
+                return Err(WorkflowError::PatternNotFound(pattern_id.0));
+            }
         }
 
         Ok(last_result)

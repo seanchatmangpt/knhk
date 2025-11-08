@@ -1,10 +1,8 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Metrics collection for workflow engine
 
-use crate::case::CaseId;
-use crate::parser::WorkflowSpecId;
+// Unused imports removed - will be used when implementing metrics
 use std::sync::Arc;
-use std::time::Instant;
 
 /// Workflow metrics collector
 pub struct MetricsCollector {

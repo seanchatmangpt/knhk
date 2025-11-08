@@ -2,11 +2,9 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Provenance tracking with lockchain integration
 
-use crate::case::CaseId;
+// Unused imports removed - will be used when implementing provenance tracking
 use crate::error::WorkflowResult;
-use crate::parser::WorkflowSpecId;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 

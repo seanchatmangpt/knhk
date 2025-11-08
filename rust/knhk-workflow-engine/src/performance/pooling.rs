@@ -4,7 +4,7 @@
 
 use crate::error::WorkflowResult;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+// Unused import removed - will be used when implementing pooling
 
 /// Pool configuration
 #[derive(Debug, Clone)]

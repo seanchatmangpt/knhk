@@ -225,11 +225,9 @@ pub fn register_all_patterns(registry: &mut PatternRegistry) {
     registry.register(id, executor);
 }
 
-// RDF support for patterns (optional, if rdf module exists)
-#[cfg(feature = "rdf")]
-mod rdf;
-#[cfg(feature = "rdf")]
-pub use rdf::{
-    get_all_pattern_metadata, serialize_context_to_rdf, serialize_result_to_rdf, PatternMetadata,
-    WORKFLOW_PATTERN_NS, YAWL_NS,
-};
+// RDF support for patterns (FUTURE: will be added)
+// mod rdf;
+// pub use rdf::{
+//     get_all_pattern_metadata, serialize_context_to_rdf, serialize_result_to_rdf, PatternMetadata,
+//     WORKFLOW_PATTERN_NS, YAWL_NS,
+// };

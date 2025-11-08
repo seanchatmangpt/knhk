@@ -4,7 +4,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use std::time::Duration;
-use tokio::time::{timeout, Timeout};
+use tokio::time::timeout;
 
 /// Timeout configuration for different path types
 #[derive(Debug, Clone)]

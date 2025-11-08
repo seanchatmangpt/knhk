@@ -5,7 +5,7 @@
 use crate::case::Case;
 use crate::error::WorkflowResult;
 use crate::parser::WorkflowSpec;
-use serde::{Deserialize, Serialize};
+// Unused imports removed - will be used when implementing sync
 use std::sync::Arc;
 use tokio::sync::RwLock;
 

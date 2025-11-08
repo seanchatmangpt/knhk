@@ -21,7 +21,6 @@ pub enum AlertLevel {
 }
 
 /// Alert rule
-#[derive(Debug)]
 pub struct AlertRule {
     /// Rule name
     pub name: String,
@@ -32,6 +31,7 @@ pub struct AlertRule {
     /// Cooldown period (prevent alert spam)
     pub cooldown: Duration,
     /// Condition check function (not serialized)
+    #[serde(skip)]
     pub condition: Box<dyn Fn() -> bool + Send + Sync>,
 }
 
@@ -147,6 +147,7 @@ mod tests {
         let rule = AlertRule {
             name: "test_rule".to_string(),
             level: AlertLevel::Warning,
+            condition_name: "always_true".to_string(),
             condition: Box::new(|| true),
             cooldown: Duration::from_secs(60),
         };

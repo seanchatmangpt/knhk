@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 //! Hot/warm/cold path routing for performance optimization
 
-use crate::error::WorkflowResult;
+// Unused import removed - will be used when implementing routing
 use crate::patterns::PatternId;
 use crate::resilience::PathType;
 

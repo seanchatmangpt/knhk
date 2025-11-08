@@ -77,6 +77,7 @@ sled = "0.34"
 [features]
 default = ["unrdf"]
 unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
+rdf = []
 
 [dev-dependencies]
 tokio-test = "0.4"

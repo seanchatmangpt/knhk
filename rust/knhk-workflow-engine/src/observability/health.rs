@@ -6,7 +6,7 @@ use crate::error::WorkflowResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Health status
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -20,14 +20,14 @@ pub enum HealthStatus {
 }
 
 /// Component health
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ComponentHealth {
     /// Component name
     pub name: String,
     /// Health status
     pub status: HealthStatus,
-    /// Last check time
-    pub last_check: Option<Instant>,
+    /// Last check time (timestamp in seconds since epoch)
+    pub last_check_secs: Option<u64>,
     /// Error message (if unhealthy)
     pub error: Option<String>,
     /// Additional metadata
@@ -57,7 +57,12 @@ impl HealthChecker {
             ComponentHealth {
                 name,
                 status: initial_status,
-                last_check: Some(Instant::now()),
+                last_check_secs: Some(
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                ),
                 error: None,
                 metadata: HashMap::new(),
             },
@@ -77,7 +82,12 @@ impl HealthChecker {
 
         if let Some(component) = components.get_mut(name) {
             component.status = status;
-            component.last_check = Some(Instant::now());
+            component.last_check_secs = Some(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            );
             component.error = error;
         } else {
             components.insert(
@@ -85,7 +95,12 @@ impl HealthChecker {
                 ComponentHealth {
                     name: name.to_string(),
                     status,
-                    last_check: Some(Instant::now()),
+                    last_check_secs: Some(
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    ),
                     error,
                     metadata: HashMap::new(),
                 },
@@ -135,9 +150,13 @@ impl HealthChecker {
     pub fn needs_check(&self, name: &str) -> bool {
         let components = self.components.lock().unwrap();
         if let Some(component) = components.get(name) {
+            let now_secs = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
             component
-                .last_check
-                .map(|check| check.elapsed() >= self.check_interval)
+                .last_check_secs
+                .map(|check| now_secs.saturating_sub(check) >= self.check_interval.as_secs())
                 .unwrap_or(true)
         } else {
             true
