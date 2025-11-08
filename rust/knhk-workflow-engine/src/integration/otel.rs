@@ -12,8 +12,9 @@ pub struct OtelIntegration {
 impl OtelIntegration {
     /// Create new OTEL integration
     pub fn new() -> WorkflowResult<Self> {
-        let tracer = Tracer::new()
-            .map_err(|e| crate::error::WorkflowError::Internal(format!("Failed to create tracer: {}", e)))?;
+        let tracer = Tracer::new().map_err(|e| {
+            crate::error::WorkflowError::Internal(format!("Failed to create tracer: {}", e))
+        })?;
         Ok(Self { tracer })
     }
 
@@ -40,9 +41,6 @@ impl Default for OtelIntegration {
     fn default() -> Self {
         // Default implementation should not fail
         // If new() fails, we'll panic as this is a programming error
-        Self::new().unwrap_or_else(|e| {
-            panic!("Failed to create OTEL integration: {:?}", e)
-        })
+        Self::new().unwrap_or_else(|e| panic!("Failed to create OTEL integration: {:?}", e))
     }
 }
-

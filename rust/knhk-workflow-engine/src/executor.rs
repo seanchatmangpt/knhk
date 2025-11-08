@@ -3,7 +3,9 @@
 use crate::case::{Case, CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
-use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry};
+use crate::patterns::{
+    PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
+};
 use crate::state::StateStore;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -42,10 +44,9 @@ impl WorkflowEngine {
     /// Get workflow specification
     pub async fn get_workflow(&self, spec_id: WorkflowSpecId) -> WorkflowResult<WorkflowSpec> {
         let specs = self.specs.read().await;
-        specs
-            .get(&spec_id)
-            .cloned()
-            .ok_or_else(|| WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id)))
+        specs.get(&spec_id).cloned().ok_or_else(|| {
+            WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
+        })
     }
 
     /// Create a new case
@@ -104,9 +105,9 @@ impl WorkflowEngine {
 
         // Get workflow specification
         let specs = self.specs.read().await;
-        let spec = specs
-            .get(&case.spec_id)
-            .ok_or_else(|| WorkflowError::InvalidSpecification(format!("Workflow {} not found", case.spec_id)))?;
+        let spec = specs.get(&case.spec_id).ok_or_else(|| {
+            WorkflowError::InvalidSpecification(format!("Workflow {} not found", case.spec_id))
+        })?;
 
         drop(specs);
         drop(cases);
@@ -157,4 +158,3 @@ impl WorkflowEngine {
         &self.pattern_registry
     }
 }
-

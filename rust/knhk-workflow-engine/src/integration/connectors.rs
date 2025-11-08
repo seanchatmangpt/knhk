@@ -22,11 +22,18 @@ impl ConnectorIntegration {
     }
 
     /// Execute a task via connector
-    pub async fn execute_task(&self, connector_name: &str, data: serde_json::Value) -> WorkflowResult<serde_json::Value> {
-        let connector = self.connectors
-            .get(connector_name)
-            .ok_or_else(|| crate::error::WorkflowError::ResourceUnavailable(format!("Connector {} not found", connector_name)))?;
-        
+    pub async fn execute_task(
+        &self,
+        connector_name: &str,
+        data: serde_json::Value,
+    ) -> WorkflowResult<serde_json::Value> {
+        let connector = self.connectors.get(connector_name).ok_or_else(|| {
+            crate::error::WorkflowError::ResourceUnavailable(format!(
+                "Connector {} not found",
+                connector_name
+            ))
+        })?;
+
         // FUTURE: Implement actual connector execution
         // This is a placeholder - actual implementation depends on connector API
         Ok(serde_json::json!({}))
@@ -38,4 +45,3 @@ impl Default for ConnectorIntegration {
         Self::new()
     }
 }
-

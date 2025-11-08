@@ -10,8 +10,8 @@ use axum::{
 use std::sync::Arc;
 
 use crate::api::models::*;
-use crate::executor::WorkflowEngine;
 use crate::error::WorkflowResult;
+use crate::executor::WorkflowEngine;
 
 /// REST API server
 pub struct RestApiServer {
@@ -45,7 +45,7 @@ impl RestApiServer {
             .register_workflow(request.spec)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        
+
         Ok(Json(RegisterWorkflowResponse {
             spec_id: request.spec.id,
         }))
@@ -56,14 +56,14 @@ impl RestApiServer {
         State(engine): State<Arc<WorkflowEngine>>,
         Path(id): Path<String>,
     ) -> Result<Json<crate::parser::WorkflowSpec>, StatusCode> {
-        let spec_id = crate::parser::WorkflowSpecId::parse_str(&id)
-            .map_err(|_| StatusCode::BAD_REQUEST)?;
-        
+        let spec_id =
+            crate::parser::WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+
         let spec = engine
             .get_workflow(spec_id)
             .await
             .map_err(|_| StatusCode::NOT_FOUND)?;
-        
+
         Ok(Json(spec))
     }
 
@@ -76,7 +76,7 @@ impl RestApiServer {
             .create_case(request.spec_id, request.data)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        
+
         Ok(Json(CreateCaseResponse { case_id }))
     }
 
@@ -85,14 +85,13 @@ impl RestApiServer {
         State(engine): State<Arc<WorkflowEngine>>,
         Path(id): Path<String>,
     ) -> Result<Json<CaseStatusResponse>, StatusCode> {
-        let case_id = crate::case::CaseId::parse_str(&id)
-            .map_err(|_| StatusCode::BAD_REQUEST)?;
-        
+        let case_id = crate::case::CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+
         let case = engine
             .get_case(case_id)
             .await
             .map_err(|_| StatusCode::NOT_FOUND)?;
-        
+
         Ok(Json(CaseStatusResponse { case }))
     }
 
@@ -101,14 +100,13 @@ impl RestApiServer {
         State(engine): State<Arc<WorkflowEngine>>,
         Path(id): Path<String>,
     ) -> Result<StatusCode, StatusCode> {
-        let case_id = crate::case::CaseId::parse_str(&id)
-            .map_err(|_| StatusCode::BAD_REQUEST)?;
-        
+        let case_id = crate::case::CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+
         engine
             .cancel_case(case_id)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        
+
         Ok(StatusCode::OK)
     }
 
@@ -121,4 +119,3 @@ impl RestApiServer {
         Ok(Json(CaseHistoryResponse { entries: vec![] }))
     }
 }
-

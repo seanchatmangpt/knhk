@@ -14,8 +14,9 @@ pub struct StateStore {
 impl StateStore {
     /// Create a new state store
     pub fn new<P: AsRef<Path>>(path: P) -> WorkflowResult<Self> {
-        let db = sled::open(path)
-            .map_err(|e| WorkflowError::StatePersistence(format!("Failed to open database: {}", e)))?;
+        let db = sled::open(path).map_err(|e| {
+            WorkflowError::StatePersistence(format!("Failed to open database: {}", e))
+        })?;
         Ok(Self { db })
     }
 
@@ -31,14 +32,20 @@ impl StateStore {
     }
 
     /// Load a workflow specification
-    pub fn load_spec(&self, spec_id: &crate::parser::WorkflowSpecId) -> WorkflowResult<Option<WorkflowSpec>> {
+    pub fn load_spec(
+        &self,
+        spec_id: &crate::parser::WorkflowSpecId,
+    ) -> WorkflowResult<Option<WorkflowSpec>> {
         let key = format!("spec:{}", spec_id);
-        match self.db.get(key.as_bytes())
+        match self
+            .db
+            .get(key.as_bytes())
             .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?
         {
             Some(value) => {
-                let spec: WorkflowSpec = serde_json::from_slice(&value)
-                    .map_err(|e| WorkflowError::StatePersistence(format!("Deserialization error: {}", e)))?;
+                let spec: WorkflowSpec = serde_json::from_slice(&value).map_err(|e| {
+                    WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
+                })?;
                 Ok(Some(spec))
             }
             None => Ok(None),
@@ -59,12 +66,15 @@ impl StateStore {
     /// Load a case
     pub fn load_case(&self, case_id: &crate::case::CaseId) -> WorkflowResult<Option<Case>> {
         let key = format!("case:{}", case_id);
-        match self.db.get(key.as_bytes())
+        match self
+            .db
+            .get(key.as_bytes())
             .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?
         {
             Some(value) => {
-                let case: Case = serde_json::from_slice(&value)
-                    .map_err(|e| WorkflowError::StatePersistence(format!("Deserialization error: {}", e)))?;
+                let case: Case = serde_json::from_slice(&value).map_err(|e| {
+                    WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
+                })?;
                 Ok(Some(case))
             }
             None => Ok(None),
@@ -72,25 +82,30 @@ impl StateStore {
     }
 
     /// List all cases for a workflow specification
-    pub fn list_cases(&self, spec_id: &crate::parser::WorkflowSpecId) -> WorkflowResult<Vec<crate::case::CaseId>> {
+    pub fn list_cases(
+        &self,
+        spec_id: &crate::parser::WorkflowSpecId,
+    ) -> WorkflowResult<Vec<crate::case::CaseId>> {
         let prefix = format!("case:");
         let mut cases = Vec::new();
-        
-        for result in self.db.scan_prefix(prefix.as_bytes())
+
+        for result in self
+            .db
+            .scan_prefix(prefix.as_bytes())
             .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?
         {
             let (key, value) = result
                 .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {}", e)))?;
-            
-            let case: Case = serde_json::from_slice(&value)
-                .map_err(|e| WorkflowError::StatePersistence(format!("Deserialization error: {}", e)))?;
-            
+
+            let case: Case = serde_json::from_slice(&value).map_err(|e| {
+                WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
+            })?;
+
             if case.spec_id == *spec_id {
                 cases.push(case.id);
             }
         }
-        
+
         Ok(cases)
     }
 }
-

@@ -15,8 +15,8 @@
 
 use knhk_hot::{stage1_structural_index, CpuDispatcher, StructuralIndex};
 use knhk_patterns::{
-    ArbitraryCyclesPattern, BranchFn, ConditionFn, MultiChoicePattern, ParallelSplitPattern,
-    Pattern, PatternBuilder, PatternError,
+    ArbitraryCyclesPattern, BranchFn, ConditionFn, MultiChoicePattern, Pattern, PatternBuilder,
+    PatternError,
 };
 use std::sync::Arc;
 

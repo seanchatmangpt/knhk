@@ -34,6 +34,7 @@ pub fn canonicalize_rdf(turtle_data: &str) -> UnrdfResult<String> {
     // Note: oxigraph Store doesn't have a direct iterator, we'll use a query approach
     // CONSTRUCT queries return triples, which we convert to N-Quads format
     let query = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }";
+    #[allow(deprecated)]
     let results: QueryResults = store
         .query(query)
         .map_err(|e| UnrdfError::InvalidInput(format!("Failed to query store: {}", e)))?;
@@ -45,9 +46,7 @@ pub fn canonicalize_rdf(turtle_data: &str) -> UnrdfResult<String> {
                 .map_err(|e| UnrdfError::InvalidInput(format!("Failed to get triple: {}", e)))?;
             let quad_str = format!(
                 "{} {} {} .\n",
-                format!("{}", triple.subject),
-                format!("{}", triple.predicate),
-                format!("{}", triple.object)
+                triple.subject, triple.predicate, triple.object
             );
             quads.push(quad_str);
         }

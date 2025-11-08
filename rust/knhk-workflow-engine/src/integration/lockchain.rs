@@ -15,22 +15,31 @@ impl LockchainIntegration {
         let mut lockchain = Lockchain::new();
         lockchain
             .with_git_repo(path.as_ref().to_string_lossy().to_string())
-            .map_err(|e| crate::error::WorkflowError::Internal(format!("Failed to initialize lockchain: {}", e)))?;
+            .map_err(|e| {
+                crate::error::WorkflowError::Internal(format!(
+                    "Failed to initialize lockchain: {}",
+                    e
+                ))
+            })?;
         Ok(Self { lockchain })
     }
 
     /// Record workflow execution event
-    pub fn record_event(&mut self, case_id: CaseId, event_type: &str, data: serde_json::Value) -> WorkflowResult<()> {
+    pub fn record_event(
+        &mut self,
+        case_id: CaseId,
+        event_type: &str,
+        data: serde_json::Value,
+    ) -> WorkflowResult<()> {
         let entry = LockchainEntry {
             // FUTURE: Fill in proper lockchain entry structure
             // This is a placeholder - actual structure depends on knhk-lockchain API
         };
-        
-        self.lockchain
-            .append(&entry)
-            .map_err(|e| crate::error::WorkflowError::Internal(format!("Failed to append to lockchain: {}", e)))?;
-        
+
+        self.lockchain.append(&entry).map_err(|e| {
+            crate::error::WorkflowError::Internal(format!("Failed to append to lockchain: {}", e))
+        })?;
+
         Ok(())
     }
 }
-

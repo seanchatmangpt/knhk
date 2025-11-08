@@ -59,4 +59,3 @@ pub struct CaseHistoryResponse {
     /// History entries
     pub entries: Vec<CaseHistoryEntry>,
 }
-

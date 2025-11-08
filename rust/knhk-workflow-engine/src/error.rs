@@ -30,10 +30,7 @@ pub enum WorkflowError {
 
     /// Invalid case state transition
     #[error("Invalid state transition from {from:?} to {to:?}")]
-    InvalidStateTransition {
-        from: String,
-        to: String,
-    },
+    InvalidStateTransition { from: String, to: String },
 
     /// Task execution failed
     #[error("Task execution failed: {0}")]
@@ -85,4 +82,3 @@ impl From<rio_turtle::TurtleError> for WorkflowError {
         WorkflowError::Parse(format!("Turtle parsing error: {}", err))
     }
 }
-

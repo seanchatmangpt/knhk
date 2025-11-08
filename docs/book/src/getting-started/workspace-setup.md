@@ -14,7 +14,6 @@ KNHK uses a Rust workspace with multiple crates:
 - **knhk-otel**: OpenTelemetry integration
 - **knhk-lockchain**: Receipt storage
 - **knhk-warm**: Warm path operations
-- **knhk-aot**: Ahead-of-time compilation
 - **knhk-cli**: Command-line interface
 - **knhk-config**: Configuration management
 - **knhk-patterns**: Code patterns
@@ -33,7 +32,6 @@ rust/
 ├── knhk-otel/          # OTEL integration
 ├── knhk-lockchain/     # Receipt storage
 ├── knhk-warm/          # Warm path
-├── knhk-aot/           # AOT compilation
 ├── knhk-cli/           # CLI
 ├── knhk-config/        # Configuration
 └── knhk-patterns/     # Patterns

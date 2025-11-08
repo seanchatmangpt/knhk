@@ -1,2 +1,1 @@
 // Patterns module - implementation pending
-

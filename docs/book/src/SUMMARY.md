@@ -63,7 +63,6 @@
   - [knhk-otel API](api/rust-api/knhk-otel.md)
   - [knhk-lockchain API](api/rust-api/knhk-lockchain.md)
   - [knhk-warm API](api/rust-api/knhk-warm.md)
-  - [knhk-aot API](api/rust-api/knhk-aot.md)
   - [knhk-cli API](api/rust-api/knhk-cli.md)
   - [knhk-config API](api/rust-api/knhk-config.md)
   - [knhk-patterns API](api/rust-api/knhk-patterns.md)

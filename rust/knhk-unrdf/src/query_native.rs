@@ -54,6 +54,7 @@ impl NativeStore {
             .lock()
             .map_err(|e| UnrdfError::QueryFailed(format!("Failed to acquire store lock: {}", e)))?;
 
+        #[allow(deprecated)]
         let results: QueryResults = store
             .query(query)
             .map_err(|e| UnrdfError::QueryFailed(format!("SPARQL query failed: {}", e)))?;

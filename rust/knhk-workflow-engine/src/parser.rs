@@ -149,7 +149,7 @@ impl WorkflowParser {
         // Parse Turtle into RDF store
         let parser = TurtleParser::new(turtle.as_bytes(), None);
         let mut quads = Vec::new();
-        
+
         for quad in parser {
             let quad = quad.map_err(|e| WorkflowError::from(e))?;
             quads.push(quad);
@@ -157,7 +157,9 @@ impl WorkflowParser {
 
         // Load into store
         for quad in quads {
-            self.store.insert(&quad).map_err(|e| WorkflowError::from(e))?;
+            self.store
+                .insert(&quad)
+                .map_err(|e| WorkflowError::from(e))?;
         }
 
         // Extract workflow specification
@@ -178,10 +180,12 @@ impl WorkflowParser {
     fn extract_workflow_spec(&self) -> WorkflowResult<WorkflowSpec> {
         // YAWL namespace prefixes
         let yawl_ns = "http://bitflow.ai/ontology/yawl/v2#";
-        let rdf_type = oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-            .map_err(|e| WorkflowError::Parse(format!("Invalid IRI: {}", e)))?;
-        let workflow_spec_type = oxigraph::model::NamedNode::new(&format!("{}WorkflowSpecification", yawl_ns))
-            .map_err(|e| WorkflowError::Parse(format!("Invalid IRI: {}", e)))?;
+        let rdf_type =
+            oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+                .map_err(|e| WorkflowError::Parse(format!("Invalid IRI: {}", e)))?;
+        let workflow_spec_type =
+            oxigraph::model::NamedNode::new(&format!("{}WorkflowSpecification", yawl_ns))
+                .map_err(|e| WorkflowError::Parse(format!("Invalid IRI: {}", e)))?;
 
         // Find workflow specifications
         let query = format!(
@@ -190,7 +194,9 @@ impl WorkflowParser {
             workflow_spec_type.as_str()
         );
 
-        let query_results = self.store.query(&query)
+        let query_results = self
+            .store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("SPARQL query failed: {}", e)))?;
 
         // For now, create a basic workflow spec
@@ -215,11 +221,13 @@ impl WorkflowParser {
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .map_err(|e| WorkflowError::Parse(format!("Failed to read ontology: {}", e)))?;
-        
+
         let parser = TurtleParser::new(contents.as_bytes(), None);
         for quad in parser {
             let quad = quad.map_err(|e| WorkflowError::from(e))?;
-            self.store.insert(&quad).map_err(|e| WorkflowError::from(e))?;
+            self.store
+                .insert(&quad)
+                .map_err(|e| WorkflowError::from(e))?;
         }
 
         Ok(())
@@ -231,9 +239,6 @@ impl Default for WorkflowParser {
         // Default implementation should not fail
         // If new() fails, we'll panic as this is a programming error
         // FUTURE: Consider making Default return Result or use a static parser
-        Self::new().unwrap_or_else(|e| {
-            panic!("Failed to create workflow parser: {:?}", e)
-        })
+        Self::new().unwrap_or_else(|e| panic!("Failed to create workflow parser: {:?}", e))
     }
 }
-

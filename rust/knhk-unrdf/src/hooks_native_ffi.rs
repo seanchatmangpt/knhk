@@ -30,7 +30,7 @@ fn get_native_hook_registry() -> &'static Mutex<NativeHookRegistry> {
 /// Execute a hook by name (native Rust implementation)
 /// Use case 1: Single hook execution
 #[no_mangle]
-pub extern "C" fn knhk_unrdf_execute_hook_native(
+pub unsafe extern "C" fn knhk_unrdf_execute_hook_native(
     hook_name: *const c_char,
     hook_query: *const c_char,
     turtle_data: *const c_char,
@@ -345,7 +345,7 @@ pub extern "C" fn knhk_unrdf_execute_hooks_batch_native(
 #[cfg(feature = "native")]
 /// Register a hook in the native registry
 #[no_mangle]
-pub extern "C" fn knhk_unrdf_register_hook_native(hook_json: *const c_char) -> c_int {
+pub unsafe extern "C" fn knhk_unrdf_register_hook_native(hook_json: *const c_char) -> c_int {
     if hook_json.is_null() {
         return -1;
     }
