@@ -17,6 +17,7 @@ knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", optional = true }
+simd-json = { version = "0.14", features = ["known-key"] }
 tokio-stream = "0.1"
 thiserror = "2.0"
 tracing = "0.1"

@@ -13,6 +13,7 @@ pub mod client;
 pub mod config;
 pub mod error;
 pub mod health;
+pub mod json_parser; // JSON parsing with simdjson
 pub mod metrics;
 pub mod retry;
 pub mod server;

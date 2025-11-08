@@ -223,7 +223,30 @@ fn test_spiffe() -> TestResult {
     let mut passed = 0;
     let mut failed = 0;
 
-    // Test 1: Config validation
+    // Test 1: SPIFFE ID validation (actual behavior)
+    if knhk_sidecar::spiffe::validate_spiffe_id("spiffe://example.com/sidecar") {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    // Test 2: Trust domain extraction (actual behavior)
+    if knhk_sidecar::spiffe::extract_trust_domain("spiffe://example.com/sidecar")
+        == Some("example.com".to_string())
+    {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    // Test 3: SPIFFE ID validation - invalid format (actual behavior)
+    if !knhk_sidecar::spiffe::validate_spiffe_id("invalid") {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    // Test 4: Config validation - missing socket (actual behavior)
     let config = SpiffeConfig {
         socket_path: "/nonexistent/socket".to_string(),
         trust_domain: "example.com".to_string(),
@@ -231,22 +254,6 @@ fn test_spiffe() -> TestResult {
         refresh_interval: Duration::from_secs(3600),
     };
     if config.validate().is_err() {
-        passed += 1;
-    } else {
-        failed += 1;
-    }
-
-    // Test 2: SPIFFE ID validation
-    if knhk_sidecar::spiffe::validate_spiffe_id("spiffe://example.com/sidecar") {
-        passed += 1;
-    } else {
-        failed += 1;
-    }
-
-    // Test 3: Trust domain extraction
-    if knhk_sidecar::spiffe::extract_trust_domain("spiffe://example.com/sidecar")
-        == Some("example.com".to_string())
-    {
         passed += 1;
     } else {
         failed += 1;
