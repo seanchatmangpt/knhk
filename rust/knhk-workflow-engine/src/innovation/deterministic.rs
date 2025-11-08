@@ -175,19 +175,16 @@ impl DeterministicExecutor {
                     "delta_hash": delta_entry.delta_hash.clone(),
                     "tick": tick,
                 });
-                let receipt_bytes = serde_json::to_vec(&receipt_data)
-                    .map_err(|e| {
-                        WorkflowError::Internal(format!("Failed to serialize receipt: {}", e))
-                    })?;
+                let receipt_bytes = serde_json::to_vec(&receipt_data).map_err(|e| {
+                    WorkflowError::Internal(format!("Failed to serialize receipt: {}", e))
+                })?;
                 let mut hasher = sha2::Sha256::new();
                 hasher.update(&receipt_bytes);
                 let hash: [u8; 32] = hasher.finalize().into();
                 let hash_str = format!("{:x}", hash);
 
                 // Record to lockchain
-                let _ = lockchain
-                    .record_case_executed(&case.id, true)
-                    .await;
+                let _ = lockchain.record_case_executed(&case.id, true).await;
                 Some(hash_str)
             } else {
                 None
@@ -211,10 +208,7 @@ impl DeterministicExecutor {
 
         // Store trace and delta log
         self.traces.write().await.insert(case.id, context.clone());
-        self.delta_logs
-            .write()
-            .await
-            .insert(case.id, delta_log);
+        self.delta_logs.write().await.insert(case.id, delta_log);
 
         // Persist to state store if available
         // Note: StateStore persistence would be handled via StateStore methods
@@ -312,13 +306,14 @@ impl DeterministicExecutor {
     }
 
     /// Get receipt hash for a step
-    pub async fn get_receipt_hash(
-        &self,
-        case_id: &CaseId,
-        step: u64,
-    ) -> Option<String> {
+    pub async fn get_receipt_hash(&self, case_id: &CaseId, step: u64) -> Option<String> {
         let traces = self.traces.read().await;
         let trace = traces.get(case_id)?;
-        trace.trace.iter().find(|s| s.step == step)?.receipt_hash.clone()
+        trace
+            .trace
+            .iter()
+            .find(|s| s.step == step)?
+            .receipt_hash
+            .clone()
     }
 }

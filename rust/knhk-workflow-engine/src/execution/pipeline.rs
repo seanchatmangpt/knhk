@@ -44,7 +44,7 @@ impl ExecutionPipeline {
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionContext> {
         let mut ctx = context;
-        
+
         // Run through pipeline stages
         for stage in &self.stages {
             ctx = stage.process(registry, pattern_id, ctx)?;
@@ -59,4 +59,3 @@ impl Default for ExecutionPipeline {
         Self::new()
     }
 }
-

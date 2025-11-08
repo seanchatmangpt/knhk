@@ -66,9 +66,7 @@ impl LeaderElection {
             })?;
             let now_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map_err(|e| {
-                    WorkflowError::Internal(format!("Failed to get system time: {}", e))
-                })?
+                .map_err(|e| WorkflowError::Internal(format!("Failed to get system time: {}", e)))?
                 .as_millis() as u64;
             last_heartbeat
                 .map(|hb| now_ms.saturating_sub(hb) >= self.lease_duration.as_millis() as u64)
@@ -111,9 +109,7 @@ impl LeaderElection {
         *heartbeat = Some(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map_err(|e| {
-                    WorkflowError::Internal(format!("Failed to get system time: {}", e))
-                })?
+                .map_err(|e| WorkflowError::Internal(format!("Failed to get system time: {}", e)))?
                 .as_millis() as u64,
         );
         Ok(())

@@ -97,9 +97,10 @@ pub use enterprise::{
     SecurityConfig,
 };
 pub use error::{WorkflowError, WorkflowResult};
-pub use execution::{ExecutionEngine, ExecutionHandle, ExecutionPipeline, ExecutionStatus, WorkQueue};
+pub use execution::{
+    ExecutionEngine, ExecutionHandle, ExecutionPipeline, ExecutionStatus, WorkQueue,
+};
 pub use executor::WorkflowEngine;
-pub use state::{StateEvent, StateManager, StateStore};
 pub use ggen::{
     generate_documentation_from_spec, generate_tests_from_spec, generate_workflow_from_rdf,
     GgenGenerator,
@@ -114,6 +115,7 @@ pub use patterns::{PatternId, PatternRegistry};
 pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
 pub use reflex::{PromotableSegment, PromotionAnalysis, ReflexBridge};
 pub use security::*;
+pub use state::{StateEvent, StateManager, StateStore};
 pub use templates::TemplateLibrary;
 pub use testing::{
     assert_pattern_failure, assert_pattern_has_next_state, assert_pattern_has_variable,

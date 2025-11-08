@@ -5,8 +5,8 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::security::Principal;
-use oxigraph::store::Store;
 use oxigraph::io::RdfFormat;
+use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -102,9 +102,7 @@ impl AbacPolicyEngine {
 
         // Validate SPARQL query
         oxigraph::sparql::Query::parse(&rule.evaluation_query, None)
-            .map_err(|e| {
-                WorkflowError::Validation(format!("Invalid SPARQL query: {:?}", e))
-            })?;
+            .map_err(|e| WorkflowError::Validation(format!("Invalid SPARQL query: {:?}", e)))?;
 
         let mut rules = self.rules.write().await;
         rules.push(rule);
@@ -151,21 +149,17 @@ impl AbacPolicyEngine {
             // Load policy into store
             store
                 .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
-                .map_err(|e| {
-                    WorkflowError::Internal(format!("Failed to load policy: {:?}", e))
-                })?;
+                .map_err(|e| WorkflowError::Internal(format!("Failed to load policy: {:?}", e)))?;
 
             // Execute evaluation query
-            let query = oxigraph::sparql::Query::parse(&rule.evaluation_query, None)
-                .map_err(|e| {
+            let query =
+                oxigraph::sparql::Query::parse(&rule.evaluation_query, None).map_err(|e| {
                     WorkflowError::Internal(format!("Invalid evaluation query: {:?}", e))
                 })?;
 
             let results = store
                 .query(query)
-                .map_err(|e| {
-                    WorkflowError::Internal(format!("SPARQL query failed: {:?}", e))
-                })?;
+                .map_err(|e| WorkflowError::Internal(format!("SPARQL query failed: {:?}", e)))?;
 
             // Check if query returned results (policy matches)
             if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
@@ -205,7 +199,10 @@ impl AbacPolicyEngine {
         rdf.push_str("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n\n");
 
         // Principal
-        rdf.push_str(&format!("abac:principal_{} a abac:Principal ;\n", principal.id));
+        rdf.push_str(&format!(
+            "abac:principal_{} a abac:Principal ;\n",
+            principal.id
+        ));
         rdf.push_str(&format!("    abac:principalId \"{}\" ;\n", principal.id));
         rdf.push_str(&format!(
             "    abac:principalType \"{:?}\" .\n\n",
@@ -224,8 +221,14 @@ impl AbacPolicyEngine {
         }
 
         // Resource
-        rdf.push_str(&format!("abac:resource_{} a abac:Resource ;\n", context.resource_id));
-        rdf.push_str(&format!("    abac:resourceId \"{}\" .\n\n", context.resource_id));
+        rdf.push_str(&format!(
+            "abac:resource_{} a abac:Resource ;\n",
+            context.resource_id
+        ));
+        rdf.push_str(&format!(
+            "    abac:resourceId \"{}\" .\n\n",
+            context.resource_id
+        ));
 
         // Resource attributes
         for (key, value) in &context.resource_attributes {
@@ -256,10 +259,7 @@ impl AbacPolicyEngine {
     /// Get environment attributes (time, IP, etc.)
     async fn get_environment_attributes(&self) -> HashMap<String, String> {
         let mut attrs = HashMap::new();
-        attrs.insert(
-            "time".to_string(),
-            chrono::Utc::now().to_rfc3339(),
-        );
+        attrs.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
         // FUTURE: Add IP address, region, etc.
         attrs
     }
@@ -276,7 +276,10 @@ impl AbacPolicyEngine {
         let initial_len = rules.len();
         rules.retain(|r| r.name != name);
         if rules.len() == initial_len {
-            Err(WorkflowError::Validation(format!("Rule {} not found", name)))
+            Err(WorkflowError::Validation(format!(
+                "Rule {} not found",
+                name
+            )))
         } else {
             Ok(())
         }
@@ -285,8 +288,7 @@ impl AbacPolicyEngine {
 
 impl Default for AbacPolicyEngine {
     fn default() -> Self {
-        Self::new()
-            .expect("AbacPolicyEngine::new should succeed with default configuration")
+        Self::new().expect("AbacPolicyEngine::new should succeed with default configuration")
     }
 }
 
@@ -297,8 +299,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_abac_policy_engine() {
-        let engine = AbacPolicyEngine::new()
-            .expect("AbacPolicyEngine::new should succeed");
+        let engine = AbacPolicyEngine::new().expect("AbacPolicyEngine::new should succeed");
 
         let rule = AbacPolicyRule {
             name: "test-rule".to_string(),
@@ -325,7 +326,8 @@ ASK WHERE {
             enabled: true,
         };
 
-        engine.add_rule(rule)
+        engine
+            .add_rule(rule)
             .await
             .expect("add_rule should succeed");
 
@@ -348,4 +350,3 @@ ASK WHERE {
         ));
     }
 }
-

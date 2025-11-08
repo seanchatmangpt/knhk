@@ -83,7 +83,10 @@ impl StateManager {
     }
 
     /// Load workflow spec with caching
-    pub async fn load_spec(&self, spec_id: &WorkflowSpecId) -> WorkflowResult<Option<WorkflowSpec>> {
+    pub async fn load_spec(
+        &self,
+        spec_id: &WorkflowSpecId,
+    ) -> WorkflowResult<Option<WorkflowSpec>> {
         // Check cache first
         {
             let cache = self.spec_cache.read().await;
@@ -113,10 +116,7 @@ impl StateManager {
         };
 
         // Save to store
-        {
-            let store = self.store.clone();
-            store.save_case(case.id, case)?;
-        }
+        self.store.save_case(case.id, case)?;
 
         // Update cache
         {
@@ -153,10 +153,7 @@ impl StateManager {
         }
 
         // Load from store
-        let case = {
-            let store = self.store.clone();
-            store.load_case(case_id)?
-        };
+        let case = self.store.load_case(case_id)?;
 
         // Update cache if found
         if let Some(ref case) = case {
@@ -185,4 +182,3 @@ impl StateManager {
         case_cache.clear();
     }
 }
-

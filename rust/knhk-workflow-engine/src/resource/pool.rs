@@ -62,9 +62,9 @@ impl ResourcePoolManager {
         request: &AllocationRequest,
     ) -> WorkflowResult<AllocationResult> {
         let mut pools = self.pools.write().await;
-        let pool = pools
-            .get_mut(pool_name)
-            .ok_or_else(|| WorkflowError::ResourceUnavailable(format!("Pool {} not found", pool_name)))?;
+        let pool = pools.get_mut(pool_name).ok_or_else(|| {
+            WorkflowError::ResourceUnavailable(format!("Pool {} not found", pool_name))
+        })?;
 
         // Find available resource
         if let Some(resource_id) = pool.available.pop() {
@@ -77,9 +77,10 @@ impl ResourcePoolManager {
                 policy: request.policy,
             })
         } else {
-            Err(WorkflowError::ResourceUnavailable(
-                format!("No available resources in pool {}", pool_name),
-            ))
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "No available resources in pool {}",
+                pool_name
+            )))
         }
     }
 
@@ -90,9 +91,9 @@ impl ResourcePoolManager {
         resource_id: ResourceId,
     ) -> WorkflowResult<()> {
         let mut pools = self.pools.write().await;
-        let pool = pools
-            .get_mut(pool_name)
-            .ok_or_else(|| WorkflowError::ResourceUnavailable(format!("Pool {} not found", pool_name)))?;
+        let pool = pools.get_mut(pool_name).ok_or_else(|| {
+            WorkflowError::ResourceUnavailable(format!("Pool {} not found", pool_name))
+        })?;
 
         // Remove from allocated
         pool.allocated.retain(|_, &mut id| id != resource_id);

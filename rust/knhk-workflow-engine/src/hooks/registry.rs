@@ -176,7 +176,9 @@ impl HookRegistry {
     /// Register a hook
     pub async fn register(&self, hook: WorkflowHook) -> WorkflowResult<()> {
         if hook.id.is_empty() {
-            return Err(WorkflowError::Validation("Hook ID cannot be empty".to_string()));
+            return Err(WorkflowError::Validation(
+                "Hook ID cannot be empty".to_string(),
+            ));
         }
 
         let mut hooks = self.hooks.write().await;
@@ -328,14 +330,15 @@ mod tests {
             hook_type: HookType::BeforeTaskExecution,
             name: "Test Hook".to_string(),
             description: "Test hook".to_string(),
-            hook_fn: Arc::new(|_ctx| {
-                Box::pin(async move { HookResult::success() })
-            }),
+            hook_fn: Arc::new(|_ctx| Box::pin(async move { HookResult::success() })),
             enabled: true,
             priority: 0,
         };
 
-        registry.register(hook).await.expect("Failed to register hook");
+        registry
+            .register(hook)
+            .await
+            .expect("Failed to register hook");
 
         let hooks = registry.list_hooks().await;
         assert_eq!(hooks.len(), 1);
@@ -363,7 +366,10 @@ mod tests {
             priority: 0,
         };
 
-        registry.register(hook).await.expect("Failed to register hook");
+        registry
+            .register(hook)
+            .await
+            .expect("Failed to register hook");
 
         let context = HookContext {
             hook_type: HookType::BeforeTaskExecution,
@@ -386,4 +392,3 @@ mod tests {
         );
     }
 }
-

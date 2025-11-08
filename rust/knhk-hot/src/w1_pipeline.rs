@@ -419,7 +419,7 @@ impl TapeBuilder {
                 if *pos + 3 < json.len() && &json[*pos..*pos + 4] == b"true" {
                     self.tape.push(TapeToken {
                         kind: 4, // bool
-                        aux: 1,   // true
+                        aux: 1,  // true
                         payload: 0,
                     });
                     *pos += 4;
@@ -548,7 +548,10 @@ impl TapeBuilder {
                     has_exponent = true;
                     *pos += 1;
                     // Parse exponent sign
-                    if *pos < json.len() && *pos < end_pos && (json[*pos] == b'+' || json[*pos] == b'-') {
+                    if *pos < json.len()
+                        && *pos < end_pos
+                        && (json[*pos] == b'+' || json[*pos] == b'-')
+                    {
                         *pos += 1;
                     }
                     // Parse exponent digits
@@ -581,7 +584,7 @@ impl TapeBuilder {
         let arena_offset = self.arena.len() as u32;
         self.arena.extend_from_slice(number_bytes);
         self.tape.push(TapeToken {
-            kind: 3, // number
+            kind: 3,                              // number
             aux: if has_decimal { 1 } else { 0 }, // 1 = decimal, 0 = integer
             payload: arena_offset as u64,
         });
@@ -801,9 +804,11 @@ impl SoAPacker {
                         if let Some(key_idx) = current_key_idx {
                             if key_idx < 16 && shape.has_field(key_idx) {
                                 let predicate = field_to_predicate[key_idx as usize];
-                                
+
                                 // Check if we need a new run (different predicate or run full)
-                                if current_run.len > 0 && (predicate != current_predicate || current_run.len >= 8) {
+                                if current_run.len > 0
+                                    && (predicate != current_predicate || current_run.len >= 8)
+                                {
                                     if current_run.len > 0 {
                                         self.runs.push(current_run);
                                     }
@@ -811,7 +816,7 @@ impl SoAPacker {
                                 }
 
                                 current_predicate = predicate;
-                                
+
                                 // Guard: enforce max_run_len ≤ 8
                                 if current_run.len >= 8 {
                                     // Start new run
@@ -821,7 +826,7 @@ impl SoAPacker {
 
                                 // Extract value from string token
                                 let value = Self::extract_value_from_token(token, arena);
-                                
+
                                 // Store in SoA run
                                 let idx = current_run.len as usize;
                                 if idx < 8 {
@@ -841,7 +846,8 @@ impl SoAPacker {
                             // Find matching field in dictionary by comparing hashes
                             let name_hash = Self::hash_field_name(&field_name);
                             for j in 0..16 {
-                                if shape.has_field(j) && shape.field_names[j as usize] == name_hash {
+                                if shape.has_field(j) && shape.field_names[j as usize] == name_hash
+                                {
                                     current_key_idx = Some(j);
                                     expecting_value = true;
                                     break;
@@ -856,9 +862,11 @@ impl SoAPacker {
                         if let Some(key_idx) = current_key_idx {
                             if key_idx < 16 && shape.has_field(key_idx) {
                                 let predicate = field_to_predicate[key_idx as usize];
-                                
+
                                 // Check if we need a new run
-                                if current_run.len > 0 && (predicate != current_predicate || current_run.len >= 8) {
+                                if current_run.len > 0
+                                    && (predicate != current_predicate || current_run.len >= 8)
+                                {
                                     if current_run.len > 0 {
                                         self.runs.push(current_run);
                                     }
@@ -866,7 +874,7 @@ impl SoAPacker {
                                 }
 
                                 current_predicate = predicate;
-                                
+
                                 // Guard: enforce max_run_len ≤ 8
                                 if current_run.len >= 8 {
                                     self.runs.push(current_run);
@@ -881,7 +889,7 @@ impl SoAPacker {
                                     // Decimal (stored in arena) - hash for now
                                     token.payload
                                 };
-                                
+
                                 let idx = current_run.len as usize;
                                 if idx < 8 {
                                     current_run.subjects[idx] = 0;
@@ -901,8 +909,10 @@ impl SoAPacker {
                         if let Some(key_idx) = current_key_idx {
                             if key_idx < 16 && shape.has_field(key_idx) {
                                 let predicate = field_to_predicate[key_idx as usize];
-                                
-                                if current_run.len > 0 && (predicate != current_predicate || current_run.len >= 8) {
+
+                                if current_run.len > 0
+                                    && (predicate != current_predicate || current_run.len >= 8)
+                                {
                                     if current_run.len > 0 {
                                         self.runs.push(current_run);
                                     }
@@ -910,14 +920,14 @@ impl SoAPacker {
                                 }
 
                                 current_predicate = predicate;
-                                
+
                                 if current_run.len >= 8 {
                                     self.runs.push(current_run);
                                     current_run = SoARun::new();
                                 }
 
                                 let value = token.aux as u64; // 1 = true, 0 = false
-                                
+
                                 let idx = current_run.len as usize;
                                 if idx < 8 {
                                     current_run.subjects[idx] = 0;
@@ -1253,9 +1263,7 @@ impl ATMShapeKernel {
                     0
                 }
             }
-            _ => {
-                0
-            }
+            _ => 0,
         }
     }
 
@@ -1282,7 +1290,14 @@ impl ATMShapeKernel {
             }
             b'0'..=b'9' | b'-' => {
                 // Number
-                while *pos < json.len() && (json[*pos].is_ascii_digit() || json[*pos] == b'.' || json[*pos] == b'e' || json[*pos] == b'E' || json[*pos] == b'+' || json[*pos] == b'-') {
+                while *pos < json.len()
+                    && (json[*pos].is_ascii_digit()
+                        || json[*pos] == b'.'
+                        || json[*pos] == b'e'
+                        || json[*pos] == b'E'
+                        || json[*pos] == b'+'
+                        || json[*pos] == b'-')
+                {
                     *pos += 1;
                 }
             }

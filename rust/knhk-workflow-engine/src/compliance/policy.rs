@@ -83,8 +83,7 @@ impl PolicyEngine {
 
 impl Default for PolicyEngine {
     fn default() -> Self {
-        Self::new()
-            .expect("PolicyEngine::new should succeed with default configuration")
+        Self::new().expect("PolicyEngine::new should succeed with default configuration")
     }
 }
 
@@ -94,16 +93,14 @@ mod tests {
 
     #[test]
     fn test_policy_engine() {
-        let mut engine = PolicyEngine::new()
-            .expect("PolicyEngine::new should succeed");
+        let mut engine = PolicyEngine::new().expect("PolicyEngine::new should succeed");
         let rule = PolicyRule {
             name: "test-rule".to_string(),
             description: "Test rule".to_string(),
             rdf_policy: "".to_string(),
             enabled: true,
         };
-        engine.add_rule(rule)
-            .expect("add_rule should succeed");
+        engine.add_rule(rule).expect("add_rule should succeed");
 
         let decision = engine
             .evaluate("resource-1", "read", &serde_json::json!({}))

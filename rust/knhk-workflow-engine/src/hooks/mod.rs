@@ -8,4 +8,3 @@ mod schema;
 
 pub use registry::{HookError, HookRegistry, HookType, WorkflowHook};
 pub use schema::{SchemaRegistry, SchemaValidationError};
-

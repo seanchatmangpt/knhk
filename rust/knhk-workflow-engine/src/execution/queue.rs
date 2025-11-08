@@ -79,4 +79,3 @@ impl Worker {
         self.receiver.recv().await
     }
 }
-

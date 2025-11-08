@@ -68,7 +68,7 @@ impl ExecutionEngine {
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
         let execution_id = format!("{}:{}", context.case_id, pattern_id.0);
-        
+
         // Create execution handle
         let handle = ExecutionHandle {
             execution_id: execution_id.clone(),
@@ -95,7 +95,9 @@ impl ExecutionEngine {
             if let Some(handle) = executions.get_mut(&execution_id) {
                 handle.status = match &result {
                     Ok(r) if r.success => ExecutionStatus::Completed,
-                    Ok(_) => ExecutionStatus::Failed("Pattern execution returned failure".to_string()),
+                    Ok(_) => {
+                        ExecutionStatus::Failed("Pattern execution returned failure".to_string())
+                    }
                     Err(e) => ExecutionStatus::Failed(e.to_string()),
                 };
             }
@@ -116,10 +118,7 @@ impl ExecutionEngine {
     }
 
     /// Get execution status
-    pub async fn get_execution_status(
-        &self,
-        execution_id: &str,
-    ) -> Option<ExecutionHandle> {
+    pub async fn get_execution_status(&self, execution_id: &str) -> Option<ExecutionHandle> {
         let executions = self.active_executions.read().await;
         executions.get(execution_id).cloned()
     }
@@ -151,7 +150,7 @@ impl ExecutionPipeline {
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
         let mut ctx = context;
-        
+
         // Run through pipeline stages
         for stage in &self.stages {
             ctx = stage.process(registry, pattern_id, ctx).await?;
@@ -180,7 +179,9 @@ pub trait PipelineStage: Send + Sync {
         registry: &PatternRegistry,
         pattern_id: PatternId,
         context: PatternExecutionContext,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>>;
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>,
+    >;
 }
 
 /// Validation stage - validates execution context
@@ -235,7 +236,9 @@ impl PipelineStage for ExecutionStage {
         _registry: &PatternRegistry,
         _pattern_id: PatternId,
         context: PatternExecutionContext,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>> {
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = WorkflowResult<PatternExecutionContext>> + Send + '_>,
+    > {
         Box::pin(async move {
             // FUTURE: Add execution preparation like:
             // - Resource pre-allocation
@@ -245,10 +248,3 @@ impl PipelineStage for ExecutionStage {
         })
     }
 }
-        // - Resource pre-allocation
-        // - Dependency resolution
-        // - Execution plan creation
-        Ok(context)
-    }
-}
-

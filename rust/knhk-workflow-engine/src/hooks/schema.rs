@@ -5,8 +5,8 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
-use oxigraph::store::Store;
 use oxigraph::io::RdfFormat;
+use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -115,7 +115,9 @@ impl SchemaRegistry {
     /// Register a schema
     pub async fn register_schema(&self, schema: SchemaMetadata) -> WorkflowResult<()> {
         if schema.name.is_empty() {
-            return Err(WorkflowError::Validation("Schema name cannot be empty".to_string()));
+            return Err(WorkflowError::Validation(
+                "Schema name cannot be empty".to_string(),
+            ));
         }
 
         // Validate RDF format
@@ -125,10 +127,7 @@ impl SchemaRegistry {
         store
             .load_from_reader(RdfFormat::Turtle, schema.rdf_content.as_bytes())
             .map_err(|e| {
-                WorkflowError::Validation(format!(
-                    "Invalid RDF schema format: {:?}",
-                    e
-                ))
+                WorkflowError::Validation(format!("Invalid RDF schema format: {:?}", e))
             })?;
 
         let mut schemas = self.schemas.write().await;
@@ -146,9 +145,7 @@ impl SchemaRegistry {
         let schemas = self.schemas.read().await;
         let schema = schemas
             .get(schema_name)
-            .ok_or_else(|| {
-                WorkflowError::Validation(format!("Schema {} not found", schema_name))
-            })?
+            .ok_or_else(|| WorkflowError::Validation(format!("Schema {} not found", schema_name)))?
             .clone();
         drop(schemas);
 
@@ -241,7 +238,10 @@ impl SchemaRegistry {
             schema.enabled = enabled;
             Ok(())
         } else {
-            Err(WorkflowError::Validation(format!("Schema {} not found", name)))
+            Err(WorkflowError::Validation(format!(
+                "Schema {} not found",
+                name
+            )))
         }
     }
 
@@ -251,7 +251,10 @@ impl SchemaRegistry {
         if schemas.remove(name).is_some() {
             Ok(())
         } else {
-            Err(WorkflowError::Validation(format!("Schema {} not found", name)))
+            Err(WorkflowError::Validation(format!(
+                "Schema {} not found",
+                name
+            )))
         }
     }
 }
@@ -263,8 +266,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_schema_registry() {
-        let registry = SchemaRegistry::new()
-            .expect("SchemaRegistry::new should succeed");
+        let registry = SchemaRegistry::new().expect("SchemaRegistry::new should succeed");
 
         let schema = SchemaMetadata {
             name: "test-schema".to_string(),
@@ -281,7 +283,9 @@ wf:Task a rdf:Class .
             enabled: true,
         };
 
-        registry.register_schema(schema).await
+        registry
+            .register_schema(schema)
+            .await
             .expect("register_schema should succeed");
 
         let schemas = registry.list_schemas().await;
@@ -291,8 +295,7 @@ wf:Task a rdf:Class .
 
     #[tokio::test]
     async fn test_schema_validation() {
-        let registry = SchemaRegistry::new()
-            .expect("SchemaRegistry::new should succeed");
+        let registry = SchemaRegistry::new().expect("SchemaRegistry::new should succeed");
 
         let schema = SchemaMetadata {
             name: "test-schema".to_string(),
@@ -309,7 +312,9 @@ wf:Task a rdf:Class .
             enabled: true,
         };
 
-        registry.register_schema(schema).await
+        registry
+            .register_schema(schema)
+            .await
             .expect("register_schema should succeed");
 
         let spec = WorkflowSpec {
@@ -350,4 +355,3 @@ wf:Task a rdf:Class .
         assert!(result.valid);
     }
 }
-

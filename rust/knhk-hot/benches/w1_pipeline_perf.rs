@@ -2,14 +2,16 @@
 // Measures cycles/byte, IPC, branch-miss, L1D miss for W1 JSON parsing
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use knhk_hot::w1_pipeline::{stage1_structural_index, StructuralIndex, TapeBuilder, SoAPacker, ShapeCard};
+use knhk_hot::w1_pipeline::{
+    stage1_structural_index, ShapeCard, SoAPacker, StructuralIndex, TapeBuilder,
+};
 
 #[cfg(target_os = "linux")]
 use knhk_hot::bench::perf::{benchmark_with_perf, PerfEventManager};
 
 fn bench_w1_stage1_perf(c: &mut Criterion) {
     let json = br#"{"account_id":"12345","transaction_id":"tx-001","amount":100.50,"currency":"USD","timestamp":"2024-01-01T00:00:00Z","status":"pending"}"#;
-    
+
     c.bench_function("w1_stage1_structural_index", |b| {
         b.iter(|| {
             let mut index = StructuralIndex::new();
@@ -45,7 +47,7 @@ fn bench_w1_stage1_perf(c: &mut Criterion) {
 
 fn bench_w1_stage2_perf(c: &mut Criterion) {
     let json = br#"{"account_id":"12345","transaction_id":"tx-001","amount":100.50,"currency":"USD","timestamp":"2024-01-01T00:00:00Z","status":"pending"}"#;
-    
+
     // Stage 1: Build structural index
     let mut index = StructuralIndex::new();
     unsafe {
@@ -81,7 +83,7 @@ fn bench_w1_stage2_perf(c: &mut Criterion) {
 
 fn bench_w1_soa_packing_perf(c: &mut Criterion) {
     let json = br#"{"account_id":"12345","transaction_id":"tx-001","amount":100.50,"currency":"USD","timestamp":"2024-01-01T00:00:00Z","status":"pending"}"#;
-    
+
     // Build tape first
     let mut index = StructuralIndex::new();
     unsafe {
@@ -120,6 +122,10 @@ fn bench_w1_soa_packing_perf(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, bench_w1_stage1_perf, bench_w1_stage2_perf, bench_w1_soa_packing_perf);
+criterion_group!(
+    benches,
+    bench_w1_stage1_perf,
+    bench_w1_stage2_perf,
+    bench_w1_soa_packing_perf
+);
 criterion_main!(benches);
-

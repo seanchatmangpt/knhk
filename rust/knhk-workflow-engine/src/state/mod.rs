@@ -5,9 +5,8 @@
 //! - State caching
 //! - State snapshots
 
-mod store;
 pub mod manager;
+mod store;
 
 pub use manager::{StateEvent, StateManager};
 pub use store::StateStore;
-

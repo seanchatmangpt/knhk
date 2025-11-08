@@ -57,7 +57,10 @@ impl ReflexBridge {
     /// - Tasks with tick budget ≤ 8
     /// - Tasks that meet SLO compliance
     /// - Tasks that are safe for hot path execution
-    pub fn bind_hot_segments(&mut self, spec: &WorkflowSpec) -> WorkflowResult<Vec<PromotableSegment>> {
+    pub fn bind_hot_segments(
+        &mut self,
+        spec: &WorkflowSpec,
+    ) -> WorkflowResult<Vec<PromotableSegment>> {
         let mut promotable_segments = Vec::new();
 
         // Analyze workflow spec for promotable tasks
@@ -69,7 +72,7 @@ impl ReflexBridge {
                     if self.is_task_safe_for_hot_path(task_id, task) {
                         // Determine pattern ID from task type/split/join
                         let pattern_id = self.infer_pattern_id(task);
-                        
+
                         let segment = PromotableSegment {
                             segment_id: format!("segment_{}", task_id),
                             pattern_ids: vec![pattern_id],
@@ -89,7 +92,8 @@ impl ReflexBridge {
 
         // Cache bound segments
         for segment in &promotable_segments {
-            self.bound_segments.insert(segment.segment_id.clone(), segment.clone());
+            self.bound_segments
+                .insert(segment.segment_id.clone(), segment.clone());
         }
 
         Ok(promotable_segments)
@@ -124,8 +128,8 @@ impl ReflexBridge {
         match (task.split_type, task.join_type) {
             (crate::parser::SplitType::And, crate::parser::JoinType::And) => 2, // Parallel Split + Sync
             (crate::parser::SplitType::Xor, crate::parser::JoinType::Xor) => 4, // Exclusive Choice + Simple Merge
-            (crate::parser::SplitType::Or, _) => 6, // Multi-Choice
-            _ => 1, // Default: Sequence
+            (crate::parser::SplitType::Or, _) => 6,                             // Multi-Choice
+            _ => 1,                                                             // Default: Sequence
         }
     }
 
@@ -211,7 +215,7 @@ mod tests {
     #[test]
     fn test_bind_hot_segments() {
         let mut bridge = ReflexBridge::new();
-        
+
         // Create a simple workflow spec with promotable task
         let mut spec = WorkflowSpec {
             id: WorkflowSpecId::new(),
@@ -228,7 +232,7 @@ mod tests {
             task_type: crate::parser::TaskType::Atomic,
             split_type: crate::parser::SplitType::And,
             join_type: crate::parser::JoinType::And,
-            max_ticks: Some(4),  // Within hot path budget
+            max_ticks: Some(4), // Within hot path budget
             priority: None,
             use_simd: false,
             input_conditions: Vec::new(),
@@ -243,7 +247,8 @@ mod tests {
 
         spec.tasks.insert("task1".to_string(), task);
 
-        let segments = bridge.bind_hot_segments(&spec)
+        let segments = bridge
+            .bind_hot_segments(&spec)
             .expect("bind_hot_segments should succeed");
         assert!(!segments.is_empty());
         assert_eq!(segments[0].tick_budget, 4);
@@ -253,7 +258,7 @@ mod tests {
     #[test]
     fn test_promotion_analysis() {
         let bridge = ReflexBridge::new();
-        
+
         let mut spec = WorkflowSpec {
             id: WorkflowSpecId::new(),
             name: "Test Workflow".to_string(),
@@ -311,4 +316,3 @@ mod tests {
         assert_eq!(analysis.total_tasks, 2);
     }
 }
-

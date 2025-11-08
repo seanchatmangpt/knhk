@@ -63,16 +63,24 @@ impl PerfEventManager {
     pub fn start(&mut self) -> Result<(), String> {
         // Enable counters
         if let Some(ref mut counter) = self.cycle_counter {
-            counter.enable().map_err(|e| format!("Failed to enable cycle counter: {}", e))?;
+            counter
+                .enable()
+                .map_err(|e| format!("Failed to enable cycle counter: {}", e))?;
         }
         if let Some(ref mut counter) = self.instruction_counter {
-            counter.enable().map_err(|e| format!("Failed to enable instruction counter: {}", e))?;
+            counter
+                .enable()
+                .map_err(|e| format!("Failed to enable instruction counter: {}", e))?;
         }
         if let Some(ref mut counter) = self.branch_miss_counter {
-            counter.enable().map_err(|e| format!("Failed to enable branch miss counter: {}", e))?;
+            counter
+                .enable()
+                .map_err(|e| format!("Failed to enable branch miss counter: {}", e))?;
         }
         if let Some(ref mut counter) = self.l1d_miss_counter {
-            counter.enable().map_err(|e| format!("Failed to enable L1D miss counter: {}", e))?;
+            counter
+                .enable()
+                .map_err(|e| format!("Failed to enable L1D miss counter: {}", e))?;
         }
         Ok(())
     }
@@ -81,29 +89,45 @@ impl PerfEventManager {
     pub fn stop(&mut self, bytes_processed: usize) -> Result<PerfMeasurement, String> {
         // Disable counters
         if let Some(ref mut counter) = self.cycle_counter {
-            counter.disable().map_err(|e| format!("Failed to disable cycle counter: {}", e))?;
+            counter
+                .disable()
+                .map_err(|e| format!("Failed to disable cycle counter: {}", e))?;
         }
         if let Some(ref mut counter) = self.instruction_counter {
-            counter.disable().map_err(|e| format!("Failed to disable instruction counter: {}", e))?;
+            counter
+                .disable()
+                .map_err(|e| format!("Failed to disable instruction counter: {}", e))?;
         }
         if let Some(ref mut counter) = self.branch_miss_counter {
-            counter.disable().map_err(|e| format!("Failed to disable branch miss counter: {}", e))?;
+            counter
+                .disable()
+                .map_err(|e| format!("Failed to disable branch miss counter: {}", e))?;
         }
         if let Some(ref mut counter) = self.l1d_miss_counter {
-            counter.disable().map_err(|e| format!("Failed to disable L1D miss counter: {}", e))?;
+            counter
+                .disable()
+                .map_err(|e| format!("Failed to disable L1D miss counter: {}", e))?;
         }
 
         // Read counters
-        let cycles = self.cycle_counter.as_ref()
+        let cycles = self
+            .cycle_counter
+            .as_ref()
             .and_then(|c| c.read().ok())
             .unwrap_or(0);
-        let instructions = self.instruction_counter.as_ref()
+        let instructions = self
+            .instruction_counter
+            .as_ref()
             .and_then(|c| c.read().ok())
             .unwrap_or(0);
-        let branch_misses = self.branch_miss_counter.as_ref()
+        let branch_misses = self
+            .branch_miss_counter
+            .as_ref()
             .and_then(|c| c.read().ok())
             .unwrap_or(0);
-        let l1d_misses = self.l1d_miss_counter.as_ref()
+        let l1d_misses = self
+            .l1d_miss_counter
+            .as_ref()
             .and_then(|c| c.read().ok())
             .unwrap_or(0);
 
@@ -218,4 +242,3 @@ mod tests {
         assert!(result.macos_time_ns > 0);
     }
 }
-

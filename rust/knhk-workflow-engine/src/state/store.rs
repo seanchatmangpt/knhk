@@ -114,4 +114,3 @@ impl StateStore {
         Ok(())
     }
 }
-

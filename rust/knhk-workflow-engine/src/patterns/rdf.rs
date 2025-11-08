@@ -59,7 +59,7 @@ impl PatternMetadata {
 /// Get all pattern metadata
 pub fn get_all_pattern_metadata() -> Vec<PatternMetadata> {
     vec![
-    // Basic Control Flow (1-5)
+        // Basic Control Flow (1-5)
         PatternMetadata::new(
             1,
             "Sequence".to_string(),
@@ -513,7 +513,7 @@ pub fn serialize_result_to_rdf(
 
     if !result.variables.is_empty() {
         turtle.push_str("    pattern:hasOutputVariables [\n");
-    for (key, value) in &result.variables {
+        for (key, value) in &result.variables {
             turtle.push_str(&format!(
                 "        pattern:variable \"{}\" \"{}\" ;\n",
                 escape_string(key),
@@ -541,7 +541,10 @@ pub fn serialize_metadata_to_rdf(metadata: &PatternMetadata) -> WorkflowResult<S
         pattern_ns
     );
 
-    turtle.push_str(&format!("<{}> rdf:type pattern:WorkflowPattern ;\n", pattern_iri));
+    turtle.push_str(&format!(
+        "<{}> rdf:type pattern:WorkflowPattern ;\n",
+        pattern_iri
+    ));
     turtle.push_str(&format!(
         "    pattern:patternId {} ;\n",
         metadata.pattern_id
@@ -667,7 +670,9 @@ pub fn deserialize_metadata_from_rdf(
                 if let Some(dep_term) = solution.get("dep") {
                     if let Term::NamedNode(node) = dep_term {
                         let dep_str = node.as_str();
-                        if let Some(dep_id_str) = dep_str.strip_prefix(&format!("{}pattern:", pattern_ns)) {
+                        if let Some(dep_id_str) =
+                            dep_str.strip_prefix(&format!("{}pattern:", pattern_ns))
+                        {
                             if let Ok(dep_id) = dep_id_str.parse::<u32>() {
                                 dependencies.push(dep_id);
                             }
@@ -689,9 +694,7 @@ pub fn deserialize_metadata_from_rdf(
             get_all_pattern_metadata()
                 .into_iter()
                 .find(|m| m.pattern_id == pattern_id.0)
-                .ok_or_else(|| {
-                    WorkflowError::PatternNotFound(pattern_id.0)
-                })
+                .ok_or_else(|| WorkflowError::PatternNotFound(pattern_id.0))
         }
     } else {
         Err(WorkflowError::Parse(
@@ -906,15 +909,13 @@ pub fn deserialize_result_from_rdf(turtle: &str) -> WorkflowResult<PatternExecut
                 })
                 .unwrap_or(false);
 
-            let next_state = solution
-                .get("nextState")
-                .and_then(|t| {
-                    if let Term::Literal(lit) = t {
-                        Some(lit.value().to_string())
-                    } else {
-                        None
-                    }
-                });
+            let next_state = solution.get("nextState").and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    Some(lit.value().to_string())
+                } else {
+                    None
+                }
+            });
 
             let mut variables = HashMap::new();
 
