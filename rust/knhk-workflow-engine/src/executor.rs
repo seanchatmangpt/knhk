@@ -60,14 +60,28 @@ impl WorkflowEngine {
         detector.validate(&spec)?;
 
         let mut specs = self.specs.write().await;
+        let spec_clone = spec.clone();
         specs.insert(spec.id, spec);
+
+        // Persist to state store
+        let store = self.state_store.write().await;
+        store.save_spec(&spec_clone)?;
+
         Ok(())
     }
 
     /// Get workflow specification
     pub async fn get_workflow(&self, spec_id: WorkflowSpecId) -> WorkflowResult<WorkflowSpec> {
+        // Try in-memory first
         let specs = self.specs.read().await;
-        specs.get(&spec_id).cloned().ok_or_else(|| {
+        if let Some(spec) = specs.get(&spec_id) {
+            return Ok(spec.clone());
+        }
+        drop(specs);
+
+        // Fallback to state store
+        let store = self.state_store.read().await;
+        store.load_spec(&spec_id)?.ok_or_else(|| {
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })
     }
@@ -242,6 +256,18 @@ impl WorkflowEngine {
             .get(&case_id)
             .cloned()
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))
+    }
+
+    /// List all registered workflow specifications
+    pub async fn list_workflows(&self) -> WorkflowResult<Vec<WorkflowSpecId>> {
+        let specs = self.specs.read().await;
+        Ok(specs.keys().cloned().collect())
+    }
+
+    /// List all cases for a workflow specification
+    pub async fn list_cases(&self, spec_id: WorkflowSpecId) -> WorkflowResult<Vec<CaseId>> {
+        let store = self.state_store.read().await;
+        store.list_cases(&spec_id)
     }
 
     /// Execute a pattern

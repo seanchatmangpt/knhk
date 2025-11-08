@@ -91,6 +91,13 @@ knhk workflow execute <case-id>
 
 # 5. Check status
 knhk workflow get <case-id>
+
+# 6. List workflows or cases
+knhk workflow list              # List all workflows
+knhk workflow list <spec-id>    # List cases for workflow
+
+# 7. List all patterns
+knhk workflow patterns
 ```
 
 ## REST API

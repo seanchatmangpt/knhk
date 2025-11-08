@@ -16,4 +16,3 @@ pub use fortune5::*;
 pub use lockchain::LockchainIntegration;
 pub use otel::OtelIntegration;
 pub use registry::{IntegrationMetadata, IntegrationRegistry, IntegrationStatus};
-pub use unified::{UnifiedIntegration, UnifiedIntegrationBuilder, UnifiedIntegrationConfig};

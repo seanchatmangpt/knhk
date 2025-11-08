@@ -271,20 +271,35 @@ pub fn get(case_id: String, state_store: Option<String>) -> CnvResult<()> {
 #[verb]
 pub fn list(spec_id: Option<String>, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
-    let _engine = get_engine(state_store.as_deref())?;
+    let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
         if let Some(spec_id_str) = spec_id {
-            let _spec_id_uuid = WorkflowSpecId::parse_str(&spec_id_str).map_err(|e| {
+            let spec_id_uuid = WorkflowSpecId::parse_str(&spec_id_str).map_err(|e| {
                 clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
             })?;
-            println!("Listing cases for workflow {}...", spec_id_str);
-            // FUTURE: Implement list_cases method in WorkflowEngine
-            println!("(Feature not yet implemented)");
+            let cases = engine.list_cases(spec_id_uuid).await.map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to list cases: {}",
+                    e
+                ))
+            })?;
+            println!("Cases for workflow {}:", spec_id_str);
+            for case_id in cases {
+                println!("  - {}", case_id);
+            }
         } else {
-            println!("Listing all cases...");
-            // FUTURE: Implement list_all_cases method in WorkflowEngine
-            println!("(Feature not yet implemented)");
+            // List all workflows
+            let workflows = engine.list_workflows().await.map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to list workflows: {}",
+                    e
+                ))
+            })?;
+            println!("Registered workflows:");
+            for spec_id in workflows {
+                println!("  - {}", spec_id);
+            }
         }
         Ok(())
     })
