@@ -155,7 +155,7 @@ impl WorkflowEngine {
         Ok(Arc::try_unwrap(engine_arc).unwrap_or_else(|arc| {
             // If there are multiple references, clone the engine
             // This should not happen in normal usage
-            (*arc).clone()
+            arc.clone()
         }))
     }
 

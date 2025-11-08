@@ -63,16 +63,18 @@ impl PolicyEngine {
             })?;
 
         // Load policy into main store
-        let mut main_store = self
-            .rdf_store
-            .write()
-            .map_err(|e| WorkflowError::Internal(format!("Failed to lock store: {:?}", e)))?;
+        {
+            let store_arc = self
+                .rdf_store
+                .read()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to lock store: {:?}", e)))?;
 
-        main_store
-            .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
-            .map_err(|e| {
-                WorkflowError::Internal(format!("Failed to load policy into store: {:?}", e))
-            })?;
+            store_arc
+                .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
+                .map_err(|e| {
+                    WorkflowError::Internal(format!("Failed to load policy into store: {:?}", e))
+                })?;
+        }
 
         self.rules.push(rule);
         Ok(())

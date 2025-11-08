@@ -189,22 +189,114 @@ impl WorkletRepository {
         rule: &WorkletRule,
         context: &PatternExecutionContext,
     ) -> WorkflowResult<bool> {
-        // Simple condition evaluation (in production, would use proper expression evaluator)
-        // For now, check if condition is a context variable name and if it exists
-        if context.variables.contains_key(&rule.condition) || rule.condition == "true" {
-            Ok(true)
-        } else if rule.condition == "false" {
-            Ok(false)
-        } else {
-            // Unknown condition format - cannot evaluate without proper expression evaluator
-            // Return error instead of false positive (claiming rule doesn't match when we can't evaluate)
-            Err(crate::error::WorkflowError::Internal(
-                format!(
-                    "Cannot evaluate worklet rule condition '{}' - proper expression evaluator not implemented. Rule evaluation requires expression parsing and evaluation.",
-                    rule.condition
-                )
-            ))
+        // Evaluate condition expression against context
+        // Support simple boolean expressions and variable checks
+
+        let condition = rule.condition.trim();
+
+        // Handle simple boolean literals
+        if condition == "true" {
+            return Ok(true);
         }
+        if condition == "false" {
+            return Ok(false);
+        }
+
+        // Handle variable existence checks: "variable_name"
+        if !condition.contains(' ') && !condition.contains('(') {
+            return Ok(context.variables.contains_key(condition));
+        }
+
+        // Handle simple comparisons: "variable == value" or "variable != value"
+        if let Some((left, right)) = condition.split_once("==") {
+            let left = left.trim();
+            let right = right.trim().trim_matches('"').trim_matches('\'');
+            if let Some(value) = context.variables.get(left) {
+                return Ok(value.to_string() == right);
+            }
+            return Ok(false);
+        }
+
+        if let Some((left, right)) = condition.split_once("!=") {
+            let left = left.trim();
+            let right = right.trim().trim_matches('"').trim_matches('\'');
+            if let Some(value) = context.variables.get(left) {
+                return Ok(value.to_string() != right);
+            }
+            return Ok(true); // Variable doesn't exist, so != is true
+        }
+
+        // Handle numeric comparisons: "variable > value", "variable < value", etc.
+        if let Some((left, right)) = condition.split_once(">") {
+            let left = left.trim();
+            let right = right.trim();
+            if let Some(value) = context.variables.get(left) {
+                if let (Ok(left_num), Ok(right_num)) =
+                    (value.to_string().parse::<f64>(), right.parse::<f64>())
+                {
+                    return Ok(left_num > right_num);
+                }
+            }
+            return Ok(false);
+        }
+
+        if let Some((left, right)) = condition.split_once("<") {
+            let left = left.trim();
+            let right = right.trim();
+            if let Some(value) = context.variables.get(left) {
+                if let (Ok(left_num), Ok(right_num)) =
+                    (value.to_string().parse::<f64>(), right.parse::<f64>())
+                {
+                    return Ok(left_num < right_num);
+                }
+            }
+            return Ok(false);
+        }
+
+        // Default: evaluate as boolean expression (simple AND/OR)
+        if condition.contains("&&") {
+            let parts: Vec<&str> = condition.split("&&").collect();
+            for part in parts {
+                if !self.evaluate_rule(
+                    &WorkletRule {
+                        id: rule.id.clone(),
+                        name: rule.name.clone(),
+                        condition: part.trim().to_string(),
+                        worklet_id: rule.worklet_id,
+                        priority: rule.priority,
+                    },
+                    context,
+                )? {
+                    return Ok(false);
+                }
+            }
+            return Ok(true);
+        }
+
+        if condition.contains("||") {
+            let parts: Vec<&str> = condition.split("||").collect();
+            for part in parts {
+                if self.evaluate_rule(
+                    &WorkletRule {
+                        id: rule.id.clone(),
+                        name: rule.name.clone(),
+                        condition: part.trim().to_string(),
+                        worklet_id: rule.worklet_id,
+                        priority: rule.priority,
+                    },
+                    context,
+                )? {
+                    return Ok(true);
+                }
+            }
+            return Ok(false);
+        }
+
+        // Unknown condition format - cannot evaluate
+        Err(crate::error::WorkflowError::Internal(format!(
+            "Cannot evaluate condition: {}",
+            condition
+        )))
     }
 
     /// List all worklets

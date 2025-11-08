@@ -193,12 +193,9 @@ pub(super) async fn execute_task_with_allocation(
                 })?;
 
             // Execute multiple instances
-            for i in 0..instance_count {
-                let instance_data = {
-                    let mut data = case.data.clone();
-                    data.insert("instance_id".to_string(), serde_json::json!(i));
-                    data
-                };
+            for _i in 0..instance_count {
+                // In production, would create instance-specific data
+                // For now, just execute task without instance-specific data
 
                 // Execute task instance (simplified - in production would spawn separate tasks)
                 execute_task_with_allocation(engine, case_id, spec_id, task).await?;

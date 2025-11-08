@@ -167,12 +167,12 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
 
         // Extract bit positions using leading zeros
         // For each set bit in reversed mask, calculate position
-        let mut pos = offset;
+        let mut pos = offset as u32;
         let mut mask = low_reversed;
         while mask != 0 {
             let bit_pos = mask.trailing_zeros() as u32;
             if bit_pos < 8 {
-                index.structural_chars.push((pos as u32) + bit_pos);
+                index.structural_chars.push(pos + bit_pos);
             }
             mask &= mask - 1; // Clear lowest set bit
         }
@@ -182,7 +182,7 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
         while mask != 0 {
             let bit_pos = mask.trailing_zeros() as u32;
             if bit_pos < 8 {
-                index.structural_chars.push((pos as u32) + bit_pos);
+                index.structural_chars.push(pos + bit_pos);
             }
             mask &= mask - 1; // Clear lowest set bit
         }

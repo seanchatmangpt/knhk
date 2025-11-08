@@ -49,7 +49,7 @@ impl PatternValidator {
 
     /// Validate pattern composition
     pub fn validate_composition(&self, pattern_ids: &[PatternId]) -> PatternValidationResult {
-        let errors = Vec::new();
+        let mut errors = Vec::new();
         let mut warnings = Vec::new();
 
         // Check for circular dependencies using DFS cycle detection
