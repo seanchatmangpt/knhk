@@ -24,6 +24,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tempfile::TempDir;
 use tokio::time::sleep;
+use uuid::Uuid;
 
 // ============================================================================
 // Test Fixtures
@@ -76,22 +77,44 @@ fn create_relaxed_slo_config() -> Fortune5Config {
 /// Create test engine with Fortune 5
 fn create_fortune5_engine(config: Fortune5Config) -> WorkflowEngine {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
-    let state_store = StateStore::new(temp_dir.path()).expect("Failed to create state store");
 
     // Create unique lockchain path for each test to avoid conflicts
-    let lockchain_temp = TempDir::new().expect("Failed to create lockchain temp dir");
-    let lockchain_path = lockchain_temp.path().to_str().unwrap().to_string();
+    // Use a UUID-based path to ensure uniqueness even with parallel test execution
+    let lockchain_path = format!(
+        "{}/knhk-lockchain-{}",
+        std::env::temp_dir().to_str().unwrap(),
+        Uuid::new_v4()
+    );
 
     // Set environment variable for this test
     std::env::set_var("KNHK_LOCKCHAIN_PATH", &lockchain_path);
 
     // Create engine - it will use the environment variable
-    let engine = WorkflowEngine::with_fortune5(state_store, config)
-        .expect("Failed to create Fortune 5 engine");
+    // Add small retry logic for lockchain initialization
+    let mut last_error = None;
+    for attempt in 0..3 {
+        // Recreate state store for each attempt (since it doesn't implement Clone)
+        let state_store = StateStore::new(temp_dir.path()).expect("Failed to create state store");
 
-    // Keep temp dir alive by storing it (will be dropped when engine is dropped)
-    // Note: In real scenario, this would be managed differently
-    engine
+        match WorkflowEngine::with_fortune5(state_store, config.clone()) {
+            Ok(e) => {
+                return e;
+            }
+            Err(e) => {
+                last_error = Some(e);
+                if attempt < 2 {
+                    // Small delay before retry
+                    std::thread::sleep(Duration::from_millis(10 * (attempt + 1) as u64));
+                    continue;
+                }
+            }
+        }
+    }
+
+    panic!(
+        "Failed to create Fortune 5 engine after 3 attempts: {:?}",
+        last_error.expect("Should have error after 3 attempts")
+    )
 }
 
 /// Create test execution context
