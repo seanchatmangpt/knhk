@@ -239,10 +239,10 @@ npx claude-flow@alpha hooks session-end --export-metrics true
 npx claude-flow@alpha memory store --key "hive/architect/mu-spawn-api" --value "api-design.json"
 ```
 
-**Files Created**:
-- `rust/knhk-etl/src/mu_spawn.rs`
-- `c/include/knhk/mu_spawn.h`
-- `c/src/mu_spawn.c`
+**Files to Create** (not yet implemented):
+- `rust/knhk-etl/src/mu_spawn.rs` - ⚠️ Not implemented
+- `c/include/knhk/mu_spawn.h` - ⚠️ Not implemented
+- `c/src/mu_spawn.c` - ⚠️ Not implemented
 
 ---
 
@@ -296,10 +296,10 @@ pub fn mu_spawn(delta: &[RawTriple], k: usize) -> Result<Receipt, Error> {
 npx claude-flow@alpha hooks post-task --task-id "mu-spawn-tests"
 ```
 
-**Files Created**:
-- `rust/knhk-etl/tests/mu_spawn_unit.rs`
-- `rust/knhk-etl/tests/mu_spawn_integration.rs`
-- `rust/knhk-etl/tests/mu_spawn_performance.rs`
+**Files to Create** (not yet implemented):
+- `rust/knhk-etl/tests/mu_spawn_unit.rs` - ⚠️ Not implemented (mu_spawn not yet implemented)
+- `rust/knhk-etl/tests/mu_spawn_integration.rs` - ⚠️ Not implemented (mu_spawn not yet implemented)
+- `rust/knhk-etl/tests/mu_spawn_performance.rs` - ⚠️ Not implemented (mu_spawn not yet implemented)
 
 ---
 

@@ -24,8 +24,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 3. Generate some telemetry
     let span_ctx = tracer.start_span("knhk.operation.execute".to_string(), None);
-    tracer.add_attribute(span_ctx.clone(), "operation".to_string(), "ASK_SP".to_string());
-    tracer.add_attribute(span_ctx.clone(), "predicate".to_string(), "rdf:type".to_string());
+    tracer.add_attribute(
+        span_ctx.clone(),
+        "operation".to_string(),
+        "ASK_SP".to_string(),
+    );
+    tracer.add_attribute(
+        span_ctx.clone(),
+        "predicate".to_string(),
+        "rdf:type".to_string(),
+    );
 
     MetricsHelper::record_hook_latency(&mut tracer, 5, "ASK_SP");
     MetricsHelper::record_receipt(&mut tracer, "receipt-123");

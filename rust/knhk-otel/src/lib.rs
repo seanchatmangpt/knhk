@@ -1040,7 +1040,10 @@ mod tests {
             assert_eq!(tracer.metrics().len(), 2);
 
             // Verify span has correct attributes
-            let span = tracer.spans().first().expect("Expected at least one span in tracer");
+            let span = tracer
+                .spans()
+                .first()
+                .expect("Expected at least one span in tracer");
             assert_eq!(span.name, "knhk.operation.execute");
             assert_eq!(
                 span.attributes.get("knhk.operation.name"),
@@ -1111,13 +1114,19 @@ mod tests {
             assert_eq!(tracer.metrics().len(), 1);
 
             // Step 5: Verify span has semantic convention attributes
-            let span = tracer.spans().first().expect("Expected at least one span in tracer");
+            let span = tracer
+                .spans()
+                .first()
+                .expect("Expected at least one span in tracer");
             assert_eq!(span.name, "knhk.boot.init");
             assert!(span.attributes.contains_key("knhk.operation.name"));
             assert!(span.attributes.contains_key("knhk.operation.type"));
 
             // Step 6: Verify metrics have correct attributes
-            let metric = tracer.metrics().first().expect("Expected at least one metric in tracer");
+            let metric = tracer
+                .metrics()
+                .first()
+                .expect("Expected at least one metric in tracer");
             assert_eq!(metric.name, "knhk.operation.executed");
             assert_eq!(
                 metric.attributes.get("operation"),
@@ -1181,7 +1190,10 @@ mod tests {
             tracer.end_span(span_ctx, SpanStatus::Ok);
 
             // Verify span name follows convention: knhk.<noun>.<verb>
-            let span = tracer.spans().first().expect("Expected at least one span in tracer");
+            let span = tracer
+                .spans()
+                .first()
+                .expect("Expected at least one span in tracer");
             assert!(span.name.starts_with("knhk."));
             assert!(span.name.contains("."));
 
@@ -1248,7 +1260,10 @@ mod tests {
             MetricsHelper::record_operation(&mut tracer, "weaver.start", false);
 
             // Verify metric was recorded with failure status
-            let metric = tracer.metrics().first().expect("Expected at least one metric in tracer");
+            let metric = tracer
+                .metrics()
+                .first()
+                .expect("Expected at least one metric in tracer");
             assert_eq!(metric.attributes.get("success"), Some(&"false".to_string()));
             assert_eq!(
                 metric.attributes.get("operation"),

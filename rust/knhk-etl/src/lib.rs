@@ -48,8 +48,8 @@ pub mod error;
 pub mod failure_actions;
 pub mod fiber; // Cooperative fibers for deterministic execution
 pub mod hash; // Provenance hashing for LAW: hash(A) = hash(μ(O))
-pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
 pub mod hook_orchestration; // Pattern-based hook orchestration
+pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
 pub mod ingest;
 pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod load;

@@ -32,8 +32,12 @@ pub enum PatternType {
     ExclusiveChoice = 4,
     SimpleMerge = 5,
     MultiChoice = 6,
+    Discriminator = 9, // Pattern 9: First-wins (race condition)
     ArbitraryCycles = 10,
+    ImplicitTermination = 11, // Pattern 11: Workflow completion
     DeferredChoice = 16,
+    Timeout = 20,      // Production: Timeout pattern
+    Cancellation = 21, // Production: Cancellation pattern
 }
 
 pub type BranchFn = unsafe extern "C" fn(*mut PatternContext) -> bool;
@@ -86,10 +90,8 @@ extern "C" {
     ) -> PatternResult;
 
     // Pattern 5: Simple Merge
-    pub fn knhk_pattern_simple_merge(
-        ctx: *mut PatternContext,
-        branch_result: u64,
-    ) -> PatternResult;
+    pub fn knhk_pattern_simple_merge(ctx: *mut PatternContext, branch_result: u64)
+        -> PatternResult;
 
     // Pattern 6: Multi-Choice
     pub fn knhk_pattern_multi_choice(
@@ -157,11 +159,7 @@ impl PatternResult {
             let error_msg = if self.error.is_null() {
                 "Unknown error".to_string()
             } else {
-                unsafe {
-                    CStr::from_ptr(self.error)
-                        .to_string_lossy()
-                        .into_owned()
-                }
+                unsafe { CStr::from_ptr(self.error).to_string_lossy().into_owned() }
             };
             Err(error_msg)
         }
@@ -179,27 +177,85 @@ impl PatternType {
 
     /// Get tick budget for ingress validation
     pub fn tick_budget(&self) -> u32 {
-        unsafe { knhk_pattern_tick_budget(*self) }
+        // Hardcoded budgets for new patterns not in C yet
+        match self {
+            PatternType::Sequence => 1,
+            PatternType::ParallelSplit => 2,
+            PatternType::Synchronization => 3,
+            PatternType::ExclusiveChoice => 2,
+            PatternType::SimpleMerge => 1,
+            PatternType::MultiChoice => 3,
+            PatternType::Discriminator => 3, // First-wins with atomic coordination
+            PatternType::ArbitraryCycles => 2,
+            PatternType::ImplicitTermination => 2, // Track active branches
+            PatternType::DeferredChoice => 3,
+            PatternType::Timeout => 2,      // Check timeout + execute
+            PatternType::Cancellation => 1, // Atomic cancel check
+        }
     }
 
     /// Validate pattern at ingress (guards enforce constraints ONCE)
     pub fn validate_ingress(&self, num_branches: u32) -> Result<(), String> {
-        unsafe {
-            let mut error_ptr: *const c_char = std::ptr::null();
-            let valid = knhk_pattern_validate_ingress(*self, num_branches, &mut error_ptr);
+        // For new patterns not yet in C, validate in Rust
+        match self {
+            PatternType::Discriminator
+            | PatternType::ImplicitTermination
+            | PatternType::Timeout
+            | PatternType::Cancellation => {
+                // Rust-side validation for new patterns
+                const MAX_BRANCHES: u32 = 1024;
 
-            if valid {
+                match self {
+                    PatternType::Timeout | PatternType::Cancellation => {
+                        if num_branches != 1 {
+                            return Err(format!(
+                                "{} requires exactly 1 branch",
+                                match self {
+                                    PatternType::Timeout => "Timeout",
+                                    PatternType::Cancellation => "Cancellation",
+                                    _ => unreachable!(),
+                                }
+                            ));
+                        }
+                    }
+                    PatternType::Discriminator | PatternType::ImplicitTermination => {
+                        if num_branches == 0 {
+                            return Err(format!(
+                                "{} requires at least 1 branch",
+                                match self {
+                                    PatternType::Discriminator => "Discriminator",
+                                    PatternType::ImplicitTermination => "ImplicitTermination",
+                                    _ => unreachable!(),
+                                }
+                            ));
+                        }
+                        if num_branches > MAX_BRANCHES {
+                            return Err(format!(
+                                "Too many branches: {} (max {})",
+                                num_branches, MAX_BRANCHES
+                            ));
+                        }
+                    }
+                    _ => {}
+                }
                 Ok(())
-            } else {
-                let error_msg = if error_ptr.is_null() {
-                    "Validation failed".to_string()
-                } else {
-                    CStr::from_ptr(error_ptr)
-                        .to_string_lossy()
-                        .into_owned()
-                };
-                Err(error_msg)
             }
+            // For existing patterns, use C validation
+            _ => unsafe {
+                let mut error_ptr: *const c_char = std::ptr::null();
+                let valid = knhk_pattern_validate_ingress(*self, num_branches, &mut error_ptr);
+
+                if valid {
+                    Ok(())
+                } else {
+                    let error_msg = if error_ptr.is_null() {
+                        "Validation failed".to_string()
+                    } else {
+                        CStr::from_ptr(error_ptr).to_string_lossy().into_owned()
+                    };
+                    Err(error_msg)
+                }
+            },
         }
     }
 
@@ -210,6 +266,7 @@ impl PatternType {
             PatternType::ParallelSplit
                 | PatternType::Synchronization
                 | PatternType::MultiChoice
+                | PatternType::Discriminator // SIMD for parallel race
         )
     }
 }

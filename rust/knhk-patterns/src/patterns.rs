@@ -63,7 +63,8 @@ pub struct SequencePattern<T> {
 impl<T: Clone + Send + Sync> SequencePattern<T> {
     pub fn new(branches: Vec<BranchFn<T>>) -> PatternResult<Self> {
         // Ingress validation
-        PatternType::Sequence.validate_ingress(branches.len() as u32)
+        PatternType::Sequence
+            .validate_ingress(branches.len() as u32)
             .map_err(PatternError::ValidationFailed)?;
 
         Ok(Self { branches })
@@ -90,6 +91,7 @@ impl<T: Clone + Send + Sync> Pattern<T> for SequencePattern<T> {
 
 pub struct ParallelSplitPattern<T> {
     branches: Vec<BranchFn<T>>,
+    #[allow(dead_code)]
     use_simd: bool,
 }
 
@@ -100,7 +102,8 @@ impl<T: Clone + Send + Sync> ParallelSplitPattern<T> {
 
     pub fn with_simd(branches: Vec<BranchFn<T>>, use_simd: bool) -> PatternResult<Self> {
         // Ingress validation
-        PatternType::ParallelSplit.validate_ingress(branches.len() as u32)
+        PatternType::ParallelSplit
+            .validate_ingress(branches.len() as u32)
             .map_err(PatternError::ValidationFailed)?;
 
         Ok(Self { branches, use_simd })
@@ -129,6 +132,7 @@ impl<T: Clone + Send + Sync> Pattern<T> for ParallelSplitPattern<T> {
 // ============================================================================
 
 pub struct SynchronizationPattern<T> {
+    #[allow(dead_code)]
     use_simd: bool,
     _phantom: std::marker::PhantomData<T>,
 }
@@ -178,7 +182,8 @@ pub struct ExclusiveChoicePattern<T> {
 impl<T: Clone + Send + Sync> ExclusiveChoicePattern<T> {
     pub fn new(choices: Vec<(ConditionFn<T>, BranchFn<T>)>) -> PatternResult<Self> {
         // Ingress validation
-        PatternType::ExclusiveChoice.validate_ingress(choices.len() as u32)
+        PatternType::ExclusiveChoice
+            .validate_ingress(choices.len() as u32)
             .map_err(PatternError::ValidationFailed)?;
 
         Ok(Self { choices })
@@ -244,6 +249,7 @@ impl<T: Clone + Send + Sync> Pattern<T> for SimpleMergePattern<T> {
 
 pub struct MultiChoicePattern<T> {
     choices: Vec<(ConditionFn<T>, BranchFn<T>)>,
+    #[allow(dead_code)]
     use_simd: bool,
 }
 
@@ -257,7 +263,8 @@ impl<T: Clone + Send + Sync> MultiChoicePattern<T> {
         use_simd: bool,
     ) -> PatternResult<Self> {
         // Ingress validation
-        PatternType::MultiChoice.validate_ingress(choices.len() as u32)
+        PatternType::MultiChoice
+            .validate_ingress(choices.len() as u32)
             .map_err(PatternError::ValidationFailed)?;
 
         Ok(Self { choices, use_simd })
@@ -312,7 +319,8 @@ impl<T: Clone + Send + Sync> ArbitraryCyclesPattern<T> {
         max_iterations: u32,
     ) -> PatternResult<Self> {
         // Ingress validation
-        PatternType::ArbitraryCycles.validate_ingress(1)
+        PatternType::ArbitraryCycles
+            .validate_ingress(1)
             .map_err(PatternError::ValidationFailed)?;
 
         if max_iterations == 0 {
@@ -362,7 +370,8 @@ impl<T: Clone + Send + Sync> DeferredChoicePattern<T> {
         timeout_ms: u64,
     ) -> PatternResult<Self> {
         // Ingress validation
-        PatternType::DeferredChoice.validate_ingress(choices.len() as u32)
+        PatternType::DeferredChoice
+            .validate_ingress(choices.len() as u32)
             .map_err(PatternError::ValidationFailed)?;
 
         Ok(Self {
@@ -403,5 +412,291 @@ impl<T: Clone + Send + Sync> Pattern<T> for DeferredChoicePattern<T> {
             // Brief yield to avoid busy-waiting
             std::thread::yield_now();
         }
+    }
+}
+
+// ============================================================================
+// Pattern 9: Discriminator (First-Wins / Race Condition)
+// ============================================================================
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc as StdArc;
+
+pub struct DiscriminatorPattern<T> {
+    branches: Vec<BranchFn<T>>,
+    #[allow(dead_code)]
+    use_simd: bool,
+}
+
+impl<T: Clone + Send + Sync + 'static> DiscriminatorPattern<T> {
+    pub fn new(branches: Vec<BranchFn<T>>) -> PatternResult<Self> {
+        Self::with_simd(branches, false)
+    }
+
+    pub fn with_simd(branches: Vec<BranchFn<T>>, use_simd: bool) -> PatternResult<Self> {
+        // Ingress validation
+        PatternType::Discriminator
+            .validate_ingress(branches.len() as u32)
+            .map_err(PatternError::ValidationFailed)?;
+
+        if branches.is_empty() {
+            return Err(PatternError::InvalidConfiguration(
+                "Discriminator requires at least one branch".to_string(),
+            ));
+        }
+
+        Ok(Self { branches, use_simd })
+    }
+}
+
+impl<T: Clone + Send + Sync + 'static> Pattern<T> for DiscriminatorPattern<T> {
+    fn pattern_type(&self) -> PatternType {
+        PatternType::Discriminator
+    }
+
+    fn execute(&self, input: T) -> PatternResult<Vec<T>> {
+        use crossbeam_channel::bounded;
+
+        // Create channel for first result
+        let (tx, rx) = bounded(1);
+        let won = StdArc::new(AtomicBool::new(false));
+
+        // Execute all branches in parallel
+        self.branches.par_iter().for_each(|branch| {
+            let tx = tx.clone();
+            let won = won.clone();
+            let input = input.clone();
+
+            // Execute branch
+            if let Ok(result) = branch(input) {
+                // Try to be first to send result
+                if !won.swap(true, Ordering::SeqCst) {
+                    let _ = tx.send(result); // First one wins, others ignored
+                }
+            }
+        });
+
+        // Wait for first result
+        drop(tx); // Drop original sender
+        match rx.recv() {
+            Ok(result) => Ok(vec![result]),
+            Err(_) => Err(PatternError::ExecutionFailed(
+                "All branches failed in discriminator".to_string(),
+            )),
+        }
+    }
+}
+
+// ============================================================================
+// Pattern 11: Implicit Termination (Workflow Completion Detection)
+// ============================================================================
+
+pub struct ImplicitTerminationPattern<T> {
+    branches: Vec<BranchFn<T>>,
+}
+
+impl<T: Clone + Send + Sync> ImplicitTerminationPattern<T> {
+    pub fn new(branches: Vec<BranchFn<T>>) -> PatternResult<Self> {
+        // Ingress validation
+        PatternType::ImplicitTermination
+            .validate_ingress(branches.len() as u32)
+            .map_err(PatternError::ValidationFailed)?;
+
+        Ok(Self { branches })
+    }
+}
+
+impl<T: Clone + Send + Sync> Pattern<T> for ImplicitTerminationPattern<T> {
+    fn pattern_type(&self) -> PatternType {
+        PatternType::ImplicitTermination
+    }
+
+    fn execute(&self, input: T) -> PatternResult<Vec<T>> {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        // Track active branches
+        let active_count = StdArc::new(AtomicUsize::new(self.branches.len()));
+        let results = StdArc::new(std::sync::Mutex::new(Vec::new()));
+
+        // Execute all branches in parallel
+        self.branches.par_iter().for_each(|branch| {
+            let input = input.clone();
+            let active = active_count.clone();
+            let results_lock = results.clone();
+
+            // Execute branch
+            if let Ok(result) = branch(input) {
+                if let Ok(mut results) = results_lock.lock() {
+                    results.push(result);
+                }
+            }
+
+            // Decrement active count
+            active.fetch_sub(1, Ordering::SeqCst);
+        });
+
+        // Wait for all branches to complete
+        while active_count.load(Ordering::SeqCst) > 0 {
+            std::thread::yield_now();
+        }
+
+        // Extract results
+        let final_results = results
+            .lock()
+            .map_err(|_| PatternError::ExecutionFailed("Lock poisoned".to_string()))?
+            .clone();
+
+        if final_results.is_empty() {
+            Err(PatternError::ExecutionFailed(
+                "All branches failed in implicit termination".to_string(),
+            ))
+        } else {
+            Ok(final_results)
+        }
+    }
+}
+
+// ============================================================================
+// Pattern 20: Timeout (Production-Critical)
+// ============================================================================
+
+pub struct TimeoutPattern<T> {
+    branch: BranchFn<T>,
+    timeout_ms: u64,
+    fallback: Option<BranchFn<T>>,
+}
+
+impl<T: Clone + Send + Sync + 'static> TimeoutPattern<T> {
+    pub fn new(branch: BranchFn<T>, timeout_ms: u64) -> PatternResult<Self> {
+        Self::with_fallback(branch, timeout_ms, None)
+    }
+
+    pub fn with_fallback(
+        branch: BranchFn<T>,
+        timeout_ms: u64,
+        fallback: Option<BranchFn<T>>,
+    ) -> PatternResult<Self> {
+        // Ingress validation
+        PatternType::Timeout
+            .validate_ingress(1)
+            .map_err(PatternError::ValidationFailed)?;
+
+        if timeout_ms == 0 {
+            return Err(PatternError::InvalidConfiguration(
+                "Timeout must be > 0".to_string(),
+            ));
+        }
+
+        Ok(Self {
+            branch,
+            timeout_ms,
+            fallback,
+        })
+    }
+}
+
+impl<T: Clone + Send + Sync + 'static> Pattern<T> for TimeoutPattern<T> {
+    fn pattern_type(&self) -> PatternType {
+        PatternType::Timeout
+    }
+
+    fn execute(&self, input: T) -> PatternResult<Vec<T>> {
+        use crossbeam_channel::{bounded, select};
+        use std::time::Duration;
+
+        let (tx, rx) = bounded(1);
+        let branch = self.branch.clone();
+        let input_clone = input.clone();
+
+        // Execute branch in thread
+        std::thread::spawn(move || {
+            if let Ok(result) = branch(input_clone) {
+                let _ = tx.send(Ok(result));
+            } else {
+                let _ = tx.send(Err(()));
+            }
+        });
+
+        // Wait for result or timeout
+        select! {
+            recv(rx) -> result => {
+                match result {
+                    Ok(Ok(value)) => Ok(vec![value]),
+                    Ok(Err(_)) | Err(_) => {
+                        // Branch failed, try fallback
+                        if let Some(fallback) = &self.fallback {
+                            let result = fallback(input)?;
+                            Ok(vec![result])
+                        } else {
+                            Err(PatternError::ExecutionFailed("Branch failed".to_string()))
+                        }
+                    }
+                }
+            }
+            default(Duration::from_millis(self.timeout_ms)) => {
+                // Timeout occurred, try fallback
+                if let Some(fallback) = &self.fallback {
+                    let result = fallback(input)?;
+                    Ok(vec![result])
+                } else {
+                    Err(PatternError::ExecutionFailed(
+                        format!("Timeout after {}ms", self.timeout_ms)
+                    ))
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Pattern 21: Cancellation (Production-Critical)
+// ============================================================================
+
+pub struct CancellationPattern<T> {
+    branch: BranchFn<T>,
+    should_cancel: Arc<dyn Fn() -> bool + Send + Sync>,
+}
+
+impl<T: Clone + Send + Sync> CancellationPattern<T> {
+    pub fn new(
+        branch: BranchFn<T>,
+        should_cancel: Arc<dyn Fn() -> bool + Send + Sync>,
+    ) -> PatternResult<Self> {
+        // Ingress validation
+        PatternType::Cancellation
+            .validate_ingress(1)
+            .map_err(PatternError::ValidationFailed)?;
+
+        Ok(Self {
+            branch,
+            should_cancel,
+        })
+    }
+}
+
+impl<T: Clone + Send + Sync> Pattern<T> for CancellationPattern<T> {
+    fn pattern_type(&self) -> PatternType {
+        PatternType::Cancellation
+    }
+
+    fn execute(&self, input: T) -> PatternResult<Vec<T>> {
+        // Check for cancellation before execution
+        if (self.should_cancel)() {
+            return Err(PatternError::ExecutionFailed(
+                "Operation cancelled before execution".to_string(),
+            ));
+        }
+
+        // Execute branch
+        let result = (self.branch)(input)?;
+
+        // Check for cancellation after execution
+        if (self.should_cancel)() {
+            return Err(PatternError::ExecutionFailed(
+                "Operation cancelled after execution".to_string(),
+            ));
+        }
+
+        Ok(vec![result])
     }
 }

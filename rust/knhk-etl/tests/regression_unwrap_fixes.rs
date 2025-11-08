@@ -7,8 +7,8 @@
 
 use knhk_etl::beat_scheduler::{BeatScheduler, BeatSchedulerError};
 use knhk_etl::hook_registry::{HookRegistry, HookRegistryError};
-use knhk_etl::RawTriple;
 use knhk_etl::Pipeline;
+use knhk_etl::RawTriple;
 
 /// Test Suite: BeatScheduler Error Path Coverage
 ///

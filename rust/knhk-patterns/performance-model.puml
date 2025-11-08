@@ -1,0 +1,105 @@
+@startuml Performance Model
+
+title Workflow Pattern Performance Model
+skinparam backgroundColor #FEFEFE
+
+!define HOTCOLOR #E74C3C
+!define COLDCOLOR #3498DB
+!define WARNCOLOR #F39C12
+
+skinparam rectangle {
+  BackgroundColor<<hot>> HOTCOLOR
+  BackgroundColor<<cold>> COLDCOLOR
+  BackgroundColor<<warn>> WARNCOLOR
+}
+
+rectangle "Chatman Constant\n≤8 Ticks" as chatman <<hot>> {
+
+  rectangle "Pattern 1: Sequence\n1 tick" as p1 {
+    (A) -> (B) -> (C)
+  }
+
+  rectangle "Pattern 2: Parallel Split\n2 ticks (SIMD)" as p2 {
+    (Input) -down-> (Branch 1)
+    (Input) -down-> (Branch 2)
+    (Input) -down-> (Branch 3)
+  }
+
+  rectangle "Pattern 3: Synchronization\n3 ticks (SIMD)" as p3 {
+    (Branch 1) -down-> (Sync)
+    (Branch 2) -down-> (Sync)
+    (Branch 3) -down-> (Sync)
+  }
+
+  rectangle "Pattern 4: Exclusive Choice\n2 ticks" as p4 {
+    (Condition) -down-> (Branch A)
+    (Condition) -down-> (Branch B)
+    note bottom: XOR - only one executes
+  }
+
+  rectangle "Pattern 5: Simple Merge\n1 tick" as p5 {
+    (Branch A) -down-> (Continue)
+    (Branch B) -down-> (Continue)
+    note bottom: XOR - continue immediately
+  }
+
+  rectangle "Pattern 6: Multi-Choice\n3 ticks (SIMD)" as p6 {
+    (Conditions) -down-> (Branch 1)
+    (Conditions) -down-> (Branch 2)
+    (Conditions) -down-> (Branch 3)
+    note bottom: OR - all matching execute
+  }
+
+  rectangle "Pattern 10: Arbitrary Cycles\n2 ticks" as p10 {
+    (Check) -> (Execute) -> (Check)
+    note bottom: Loop until condition met
+  }
+
+  rectangle "Pattern 16: Deferred Choice\n3 ticks" as p16 {
+    (Wait) -> (Event) -> (Execute)
+    note bottom: Event-driven selection
+  }
+}
+
+rectangle "Performance Characteristics" as perf {
+  card "Ingress Validation (Cold Path)" as ingress <<cold>> {
+    • Branch count limits (max 1024)
+    • Pattern configuration validation
+    • Tick budget check (≤8 ticks)
+    • **ONCE** at pattern creation
+  }
+
+  card "Hot Path Execution" as hotpath <<hot>> {
+    • Zero validation overhead
+    • SIMD optimization (patterns 2, 3, 6)
+    • Branchless dispatch
+    • Lock-free operations
+    • **Performance target: ≤8 ticks**
+  }
+
+  card "SIMD Optimization" as simd {
+    • ARM64 NEON: 4 branches parallel
+    • AVX2: 4 branches parallel
+    • AVX-512: 8 branches parallel
+    • Vectorized condition checks
+  }
+}
+
+note bottom of chatman
+  **Chatman Constant Enforcement**
+  All patterns ≤8 ticks ensures:
+  • Predictable latency
+  • No performance fraud (52,704x threshold)
+  • Real-time guarantees
+  • Hot path efficiency
+end note
+
+note bottom of perf
+  **Performance Validation**
+  • Criterion benchmarks
+  • Tick budget tests
+  • SIMD effectiveness
+  • Memory footprint
+end note
+
+@enduml

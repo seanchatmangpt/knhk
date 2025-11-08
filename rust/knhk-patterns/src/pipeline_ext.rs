@@ -1,12 +1,10 @@
 // rust/knhk-patterns/src/pipeline_ext.rs
 // Extension trait to add workflow patterns to KNHK Pipeline
 
-use crate::patterns::{BranchFn, ConditionFn, Pattern, PatternResult};
 use crate::hook_patterns::{HookCondition, HookRetryCondition};
+use crate::patterns::{BranchFn, ConditionFn, Pattern, PatternResult};
 use knhk_etl::{
-    hook_orchestration::HookExecutionResult,
-    hook_registry::HookRegistry,
-    EmitResult, Pipeline,
+    hook_orchestration::HookExecutionResult, hook_registry::HookRegistry, EmitResult, Pipeline,
 };
 
 // ============================================================================
@@ -20,10 +18,7 @@ pub trait PipelinePatternExt {
         F: Fn(EmitResult) -> PatternResult<EmitResult> + Send + Sync + 'static;
 
     /// Execute pipeline with conditional routing
-    fn execute_conditional<F, C>(
-        &mut self,
-        choices: Vec<(C, F)>,
-    ) -> PatternResult<Vec<EmitResult>>
+    fn execute_conditional<F, C>(&mut self, choices: Vec<(C, F)>) -> PatternResult<Vec<EmitResult>>
     where
         F: Fn(EmitResult) -> PatternResult<EmitResult> + Send + Sync + 'static,
         C: Fn(&EmitResult) -> bool + Send + Sync + 'static;
@@ -87,10 +82,7 @@ impl PipelinePatternExt for Pipeline {
         Pattern::execute(&pattern, result)
     }
 
-    fn execute_conditional<F, C>(
-        &mut self,
-        choices: Vec<(C, F)>,
-    ) -> PatternResult<Vec<EmitResult>>
+    fn execute_conditional<F, C>(&mut self, choices: Vec<(C, F)>) -> PatternResult<Vec<EmitResult>>
     where
         F: Fn(EmitResult) -> PatternResult<EmitResult> + Send + Sync + 'static,
         C: Fn(&EmitResult) -> bool + Send + Sync + 'static,
@@ -154,8 +146,8 @@ impl PipelinePatternExt for Pipeline {
         hook_registry: &HookRegistry,
         predicates: Vec<u64>,
     ) -> PatternResult<HookExecutionResult> {
-        use crate::hook_patterns::HookParallelPattern;
         use crate::hook_patterns::create_hook_context;
+        use crate::hook_patterns::HookParallelPattern;
 
         // Execute pipeline up to Load stage
         let load_result = self
@@ -179,8 +171,8 @@ impl PipelinePatternExt for Pipeline {
         hook_registry: &HookRegistry,
         choices: Vec<(HookCondition, u64)>,
     ) -> PatternResult<HookExecutionResult> {
-        use crate::hook_patterns::HookChoicePattern;
         use crate::hook_patterns::create_hook_context;
+        use crate::hook_patterns::HookChoicePattern;
 
         // Execute pipeline up to Load stage
         let load_result = self
@@ -206,8 +198,8 @@ impl PipelinePatternExt for Pipeline {
         should_retry: HookRetryCondition,
         max_attempts: u32,
     ) -> PatternResult<HookExecutionResult> {
-        use crate::hook_patterns::HookRetryPattern;
         use crate::hook_patterns::create_hook_context;
+        use crate::hook_patterns::HookRetryPattern;
 
         // Execute pipeline up to Load stage
         let load_result = self

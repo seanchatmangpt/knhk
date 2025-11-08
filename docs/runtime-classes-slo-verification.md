@@ -39,9 +39,7 @@
 ### Test Coverage
 
 **Created Test Files:**
-- ✅ `rust/knhk-etl/tests/runtime_class_test.rs` - 11 tests
-- ✅ `rust/knhk-etl/tests/slo_monitor_test.rs` - 10 tests
-- ✅ `rust/knhk-etl/tests/failure_actions_test.rs` - 7 tests
+- ✅ `rust/knhk-etl/tests/chicago_tdd_runtime_class.rs` - Tests for runtime_class, slo_monitor, and failure_actions
 - ✅ `rust/knhk-otel/src/runtime_class.rs` - 6 tests (inline)
 
 **Test Categories:**

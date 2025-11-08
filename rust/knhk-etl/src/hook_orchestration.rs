@@ -13,7 +13,10 @@ use crate::reflex::{Action, Receipt, ReflexStage};
 
 /// Hook choice type: condition function and predicate ID
 /// Factored out to reduce type complexity for clippy compliance
-pub type HookChoice = (Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>, u64);
+pub type HookChoice = (
+    Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
+    u64,
+);
 
 /// Hook execution context: Contains all data needed for hook execution
 pub struct HookExecutionContext {
@@ -148,9 +151,7 @@ impl HookOrchestrator {
             HookExecutionPattern::Parallel(predicates) => {
                 self.execute_parallel(context, &predicates)
             }
-            HookExecutionPattern::Choice(choices) => {
-                self.execute_choice(context, &choices)
-            }
+            HookExecutionPattern::Choice(choices) => self.execute_choice(context, &choices),
             HookExecutionPattern::Retry {
                 predicate,
                 should_retry,
@@ -171,11 +172,7 @@ impl HookOrchestrator {
 
         // Find runs for each predicate and execute in order
         for predicate in predicates {
-            if let Some(run) = context
-                .predicate_runs
-                .iter()
-                .find(|r| r.pred == *predicate)
-            {
+            if let Some(run) = context.predicate_runs.iter().find(|r| r.pred == *predicate) {
                 // Validate tick budget
                 if run.len > context.tick_budget as u64 {
                     return Err(PipelineError::ReflexError(format!(
@@ -227,12 +224,7 @@ impl HookOrchestrator {
         // Find runs for predicates
         let runs: Vec<&PredRun> = predicates
             .iter()
-            .filter_map(|pred| {
-                context
-                    .predicate_runs
-                    .iter()
-                    .find(|r| r.pred == *pred)
-            })
+            .filter_map(|pred| context.predicate_runs.iter().find(|r| r.pred == *pred))
             .collect();
 
         #[cfg(feature = "parallel")]
@@ -356,11 +348,7 @@ impl HookOrchestrator {
         for (condition, predicate) in choices {
             if condition(context) {
                 // Execute matching hook
-                if let Some(run) = context
-                    .predicate_runs
-                    .iter()
-                    .find(|r| r.pred == *predicate)
-                {
+                if let Some(run) = context.predicate_runs.iter().find(|r| r.pred == *predicate) {
                     // Validate tick budget
                     if run.len > context.tick_budget as u64 {
                         return Err(PipelineError::ReflexError(format!(
@@ -413,11 +401,7 @@ impl HookOrchestrator {
         should_retry: &dyn Fn(&Receipt) -> bool,
         max_attempts: u32,
     ) -> Result<HookExecutionResult, PipelineError> {
-        if let Some(run) = context
-            .predicate_runs
-            .iter()
-            .find(|r| r.pred == predicate)
-        {
+        if let Some(run) = context.predicate_runs.iter().find(|r| r.pred == predicate) {
             let mut attempt = 0;
             let mut last_receipt = None;
 
@@ -482,4 +466,3 @@ impl Default for HookOrchestrator {
         Self::new()
     }
 }
-

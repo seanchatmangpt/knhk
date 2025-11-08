@@ -141,11 +141,13 @@ fn test_conditional_routing_first_match() {
 
     let choices = vec![
         (
-            Box::new(|ctx: &HookExecutionContext| ctx.predicate_runs.len() > 1) as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
+            Box::new(|ctx: &HookExecutionContext| ctx.predicate_runs.len() > 1)
+                as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
             100u64,
         ),
         (
-            Box::new(|_ctx: &HookExecutionContext| true) as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
+            Box::new(|_ctx: &HookExecutionContext| true)
+                as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
             200u64,
         ),
     ];
@@ -173,11 +175,13 @@ fn test_conditional_routing_no_match() {
 
     let choices = vec![
         (
-            Box::new(|_ctx: &HookExecutionContext| false) as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
+            Box::new(|_ctx: &HookExecutionContext| false)
+                as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
             100u64,
         ),
         (
-            Box::new(|_ctx: &HookExecutionContext| false) as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
+            Box::new(|_ctx: &HookExecutionContext| false)
+                as Box<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>,
             200u64,
         ),
     ];
@@ -272,7 +276,7 @@ fn test_receipt_aggregation() {
     assert!(result.is_ok());
     let hook_result = result.unwrap();
     assert_eq!(hook_result.receipts.len(), 2);
-    
+
     // Aggregated receipt should have max ticks
     assert!(hook_result.aggregated_receipt.ticks >= hook_result.receipts[0].ticks);
     assert!(hook_result.aggregated_receipt.ticks >= hook_result.receipts[1].ticks);
@@ -319,4 +323,3 @@ fn test_empty_predicate_list() {
     let hook_result = result.unwrap();
     assert_eq!(hook_result.receipts.len(), 0);
 }
-

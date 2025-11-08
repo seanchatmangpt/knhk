@@ -6,7 +6,7 @@
 mod tests {
     #[cfg(feature = "diagnostics")]
     use knhk_validation::diagnostics::{
-        DiagnosticMessage, Diagnostics, Severity, format_diagnostics, format_diagnostics_json,
+        format_diagnostics, format_diagnostics_json, DiagnosticMessage, Diagnostics, Severity,
     };
     #[cfg(feature = "policy-engine")]
     use knhk_validation::policy_engine::{PolicyEngine, PolicyViolation, ViolationLevel};
@@ -194,11 +194,8 @@ mod tests {
     #[test]
     fn test_diagnostic_message_creation() {
         // Act: Create diagnostic message
-        let diag = DiagnosticMessage::new(
-            "E001".to_string(),
-            "Test error message".to_string(),
-        )
-        .with_severity(Severity::Error);
+        let diag = DiagnosticMessage::new("E001".to_string(), "Test error message".to_string())
+            .with_severity(Severity::Error);
 
         // Assert: Verify state (message has correct fields)
         assert_eq!(diag.severity, Severity::Error);
@@ -252,12 +249,18 @@ mod tests {
         let mut diags = Diagnostics::new();
 
         // Act: Add various diagnostics
-        diags.add(DiagnosticMessage::new("I001".to_string(), "Info message".to_string())
-            .with_severity(Severity::Info));
-        diags.add(DiagnosticMessage::new("W001".to_string(), "Warning message".to_string())
-            .with_severity(Severity::Warning));
-        diags.add(DiagnosticMessage::new("E001".to_string(), "Error message".to_string())
-            .with_severity(Severity::Error));
+        diags.add(
+            DiagnosticMessage::new("I001".to_string(), "Info message".to_string())
+                .with_severity(Severity::Info),
+        );
+        diags.add(
+            DiagnosticMessage::new("W001".to_string(), "Warning message".to_string())
+                .with_severity(Severity::Warning),
+        );
+        diags.add(
+            DiagnosticMessage::new("E001".to_string(), "Error message".to_string())
+                .with_severity(Severity::Error),
+        );
 
         // Assert: Verify state (messages added correctly)
         assert_eq!(diags.messages().len(), 3);
@@ -270,8 +273,10 @@ mod tests {
     #[test]
     fn test_diagnostic_messages_json() {
         let mut diags = Diagnostics::new();
-        diags.add(DiagnosticMessage::new("E001".to_string(), "Test error".to_string())
-            .with_severity(Severity::Error));
+        diags.add(
+            DiagnosticMessage::new("E001".to_string(), "Test error".to_string())
+                .with_severity(Severity::Error),
+        );
 
         // Act: Format as JSON
         let json_result = format_diagnostics_json(&diags);
@@ -442,7 +447,12 @@ mod tests {
 
         // Act: Get violation and convert to diagnostic
         let violation = engine.validate_guard_constraint(9).unwrap_err();
-        let diag = DiagnosticMessage::new("GUARD_CONSTRAINT_VIOLATION".to_string(), violation.message().with_severity(Severity::Error).to_string(),
+        let diag = DiagnosticMessage::new(
+            "GUARD_CONSTRAINT_VIOLATION".to_string(),
+            violation
+                .message()
+                .with_severity(Severity::Error)
+                .to_string(),
         )
         .with_context("run_len".to_string(), "9".to_string())
         .with_context("max_run_len".to_string(), "8".to_string());
@@ -467,7 +477,12 @@ mod tests {
         let violations = engine.check_all(Some(9), Some(10), None);
 
         for violation in violations {
-            let diag = DiagnosticMessage::new(violation.id().to_string(), violation.message().with_severity(Severity::Error).to_string(),
+            let diag = DiagnosticMessage::new(
+                violation.id().to_string(),
+                violation
+                    .message()
+                    .with_severity(Severity::Error)
+                    .to_string(),
             );
             diags.add(diag);
         }

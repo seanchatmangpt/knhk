@@ -2,9 +2,8 @@
 // Pattern composition: Build complex workflows from simple primitives
 
 use crate::patterns::{
-    ArbitraryCyclesPattern, BranchFn, ConditionFn, ExclusiveChoicePattern,
-    MultiChoicePattern, ParallelSplitPattern, Pattern, PatternError, PatternResult,
-    SequencePattern,
+    ArbitraryCyclesPattern, BranchFn, ConditionFn, ExclusiveChoicePattern, MultiChoicePattern,
+    ParallelSplitPattern, Pattern, PatternError, PatternResult, SequencePattern,
 };
 use std::sync::Arc;
 
@@ -217,12 +216,10 @@ impl<T: Clone + Send + Sync + 'static> PatternBuilder<T> {
     /// Build the composite pattern
     pub fn build(self) -> CompositePattern<T> {
         if self.patterns.len() == 1 {
-            CompositePattern::Atomic(
-                self.patterns
-                    .into_iter()
-                    .next()
-                    .expect("Patterns vector should have exactly one element when len() == 1"),
-            )
+            // Safe: We just checked len() == 1
+            let mut patterns = self.patterns;
+            let pattern = patterns.pop().unwrap_or_else(|| unreachable!());
+            CompositePattern::Atomic(pattern)
         } else {
             CompositePattern::Sequence(self.patterns)
         }

@@ -204,7 +204,11 @@ impl ReflexStage {
     }
 
     /// Execute a single hook using C hot path API via FFI
-    pub(crate) fn execute_hook(&self, soa: &SoAArrays, run: &PredRun) -> Result<Receipt, PipelineError> {
+    pub(crate) fn execute_hook(
+        &self,
+        soa: &SoAArrays,
+        run: &PredRun,
+    ) -> Result<Receipt, PipelineError> {
         use knhk_hot::{Engine, Ir, Op, Receipt as HotReceipt, Run as HotRun};
 
         // Initialize engine with SoA arrays

@@ -35,10 +35,12 @@ This document defines a comprehensive error type hierarchy for KNHK's Rust codeb
 
 ## 2. Error Type Hierarchy
 
-### 2.1 Top-Level Error (knhk-core)
+### 2.1 Top-Level Error (knhk-etl)
+
+**Note**: Error hierarchy is distributed across crates. Base error types are in `knhk-etl`.
 
 ```rust
-// rust/knhk-core/src/error.rs
+// rust/knhk-etl/src/error.rs
 
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
@@ -667,7 +669,7 @@ pub type ValidationResult<T> = std::result::Result<T, ValidationError>;
 ### 3.1 FFI-Safe Error Representation
 
 ```rust
-// rust/knhk-core/src/ffi/error.rs
+// rust/knhk-hot/src/error.rs (FFI error boundary)
 
 use std::ffi::{CString, c_char, c_int};
 use std::ptr;
@@ -1008,7 +1010,7 @@ int32_t knhk_error_code(const knhk_error_t* error);
 ### 4.1 Standard Library Conversions
 
 ```rust
-// rust/knhk-core/src/error/conversions.rs
+// rust/knhk-etl/src/error.rs (error conversions)
 
 use super::*;
 use std::io;
@@ -1149,7 +1151,7 @@ pub fn add_otel_context(mut error: KnhkError, trace_id: [u8; 16], span_id: [u8; 
 ### 5.2 Error Result Macros
 
 ```rust
-// rust/knhk-core/src/error/macros.rs
+// rust/knhk-etl/src/error.rs (error macros/helpers)
 
 /// Quick error creation with source location
 #[macro_export]
@@ -1273,7 +1275,7 @@ int main() {
 ## 7. Implementation Roadmap
 
 ### Phase 1: Foundation (Week 1)
-1. Create `knhk-core` crate with base error types
+1. ~~Create `knhk-core` crate with base error types~~ (Error types are in individual crates: knhk-etl, knhk-warm, etc.)
 2. Implement `OtelContext` structure
 3. Create FFI error boundary
 4. Add error conversion traits

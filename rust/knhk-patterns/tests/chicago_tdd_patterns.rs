@@ -58,7 +58,9 @@ fn test_sequence_stops_on_first_error() {
     let branch1 = Arc::new(|data: TestData| Ok(data));
 
     let branch2 = Arc::new(|_data: TestData| {
-        Err(PatternError::ExecutionFailed("Intentional error".to_string()))
+        Err(PatternError::ExecutionFailed(
+            "Intentional error".to_string(),
+        ))
     });
 
     let branch3 = Arc::new(|mut data: TestData| {
@@ -321,10 +323,7 @@ fn test_composite_pattern_sequence_of_parallels() {
 
     let sequential = SequencePattern::new(vec![sequential_branch]).unwrap();
 
-    let composite = CompositePattern::Sequence(vec![
-        Box::new(parallel1),
-        Box::new(sequential),
-    ]);
+    let composite = CompositePattern::Sequence(vec![Box::new(parallel1), Box::new(sequential)]);
 
     // Act
     let input = TestData::new(5);

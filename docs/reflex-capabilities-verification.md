@@ -26,7 +26,7 @@ Based on REFLEX-CONVO.txt Fortune-5 Blueprint requirements.
 - ✅ Data size validation: R1 requires ≤8 items
 - ✅ Metadata includes budget_ns and slo_p99_ns per class
 
-**Tests**: `rust/knhk-etl/tests/runtime_class_test.rs` (13 tests)
+**Tests**: `rust/knhk-etl/tests/chicago_tdd_runtime_class.rs` (tests for runtime_class, slo_monitor, failure_actions)
 
 ### ✅ 2. SLO Monitoring
 
@@ -45,7 +45,7 @@ Based on REFLEX-CONVO.txt Fortune-5 Blueprint requirements.
 - ✅ Window-based sampling (configurable window size)
 - ✅ `SloViolation` struct provides detailed violation information
 
-**Tests**: `rust/knhk-etl/tests/slo_monitor_test.rs` (8 tests)
+**Tests**: `rust/knhk-etl/tests/chicago_tdd_runtime_class.rs` (SLO monitor tests included)
 
 ### ✅ 3. Failure Actions
 
@@ -65,7 +65,7 @@ Based on REFLEX-CONVO.txt Fortune-5 Blueprint requirements.
 - ✅ Input validation (empty operation_id check)
 - ✅ Proper error handling (no panics, returns Result)
 
-**Tests**: `rust/knhk-etl/tests/failure_actions_test.rs` (8 tests)
+**Tests**: `rust/knhk-etl/tests/chicago_tdd_runtime_class.rs` (failure actions tests included)
 
 **Note**: W1 cache degradation and C1 async scheduling are implemented at integration level (see below)
 

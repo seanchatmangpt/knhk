@@ -86,8 +86,8 @@ fn test_pipeline_with_retry_hook_execution() {
     );
 
     let registry = HookRegistry::new();
-    let should_retry = Arc::new(|receipt: &knhk_etl::Receipt| receipt.ticks == 0)
-        as HookRetryCondition;
+    let should_retry =
+        Arc::new(|receipt: &knhk_etl::Receipt| receipt.ticks == 0) as HookRetryCondition;
 
     // Act
     use knhk_patterns::PipelinePatternExt;
@@ -158,14 +158,11 @@ fn test_hook_pattern_composition() {
     let hook_result = parallel_result.unwrap();
 
     // Use aggregated receipt to make choice
-    let choices = vec![
-        (
-            Arc::new(|ctx: &HookExecutionContext| {
-                ctx.predicate_runs.iter().any(|r| r.pred == 100)
-            }) as HookCondition,
-            100u64,
-        ),
-    ];
+    let choices = vec![(
+        Arc::new(|ctx: &HookExecutionContext| ctx.predicate_runs.iter().any(|r| r.pred == 100))
+            as HookCondition,
+        100u64,
+    )];
 
     let choice_pattern = HookChoicePattern::new(choices).unwrap();
     let choice_result = choice_pattern.execute_hooks(&context);
@@ -204,4 +201,3 @@ fn test_pattern_hook_execution_respects_tick_budget() {
     let hook_result = result.unwrap();
     assert!(hook_result.max_ticks <= 8, "Tick budget exceeded");
 }
-

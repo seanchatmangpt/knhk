@@ -12,4 +12,5 @@ blake3 = "1.5"
 subtle = "2.5"
 
 [build-dependencies]
+cc = "1.0"
 

@@ -222,7 +222,8 @@ mod tests {
     #[test]
     fn test_analyze_ground_triple() {
         let template = "CONSTRUCT { <s> <p> <o> } WHERE { ?x <p2> ?y }";
-        let analysis = analyze_template(template).expect("Failed to analyze ground triple template");
+        let analysis =
+            analyze_template(template).expect("Failed to analyze ground triple template");
 
         assert_eq!(analysis.ground_triples.len(), 1);
         assert_eq!(analysis.variable_triples.len(), 0);
@@ -231,7 +232,8 @@ mod tests {
     #[test]
     fn test_analyze_variable_triple() {
         let template = "CONSTRUCT { ?x <p> ?y } WHERE { ?x <p2> ?y }";
-        let analysis = analyze_template(template).expect("Failed to analyze variable triple template");
+        let analysis =
+            analyze_template(template).expect("Failed to analyze variable triple template");
 
         assert_eq!(analysis.ground_triples.len(), 0);
         assert_eq!(analysis.variable_triples.len(), 1);

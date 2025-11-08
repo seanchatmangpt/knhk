@@ -97,7 +97,8 @@ mod stress_tests {
             .collect();
 
         let start = Instant::now();
-        let results = evaluate_hooks_batch_native(&hooks, &turtle_data).expect("Failed to evaluate large batch of 1000 hooks");
+        let results = evaluate_hooks_batch_native(&hooks, &turtle_data)
+            .expect("Failed to evaluate large batch of 1000 hooks");
         let duration = start.elapsed();
 
         assert_eq!(results.len(), 1000);
@@ -144,7 +145,8 @@ mod stress_tests {
                                 JsonValue::Object(def)
                             },
                         };
-                        reg.register(hook).expect("Failed to register hook in concurrent test");
+                        reg.register(hook)
+                            .expect("Failed to register hook in concurrent test");
                     }
                 })
             })
@@ -154,7 +156,9 @@ mod stress_tests {
             handle.join().expect("Thread should join successfully");
         }
 
-        let hooks = registry.list().expect("Failed to list hooks after concurrent registration");
+        let hooks = registry
+            .list()
+            .expect("Failed to list hooks after concurrent registration");
         assert_eq!(hooks.len(), num_threads * hooks_per_thread);
     }
 
@@ -166,7 +170,8 @@ mod stress_tests {
 
         let start = Instant::now();
         for _ in 0..100 {
-            let result = evaluate_hook_native(&hook, &large_data).expect("Failed to evaluate hook under memory pressure");
+            let result = evaluate_hook_native(&hook, &large_data)
+                .expect("Failed to evaluate hook under memory pressure");
             assert!(result.fired);
         }
         let duration = start.elapsed();
@@ -186,7 +191,8 @@ mod stress_tests {
 
         let mut receipts = std::collections::HashSet::new();
         for _ in 0..1000 {
-            let result = evaluate_hook_native(&hook, &turtle_data).expect("Failed to evaluate hook for receipt uniqueness test");
+            let result = evaluate_hook_native(&hook, &turtle_data)
+                .expect("Failed to evaluate hook for receipt uniqueness test");
             if let Some(receipt) = result.receipt {
                 // Receipts should be unique (includes timestamp)
                 assert!(
@@ -213,7 +219,8 @@ mod stress_tests {
         ];
 
         let start = Instant::now();
-        let results = evaluate_hooks_batch_native(&hooks, &turtle_data).expect("Failed to evaluate batch with varying complexity");
+        let results = evaluate_hooks_batch_native(&hooks, &turtle_data)
+            .expect("Failed to evaluate batch with varying complexity");
         let duration = start.elapsed();
 
         assert_eq!(results.len(), 4);
@@ -254,7 +261,8 @@ mod stress_tests {
         };
 
         // Valid hook should succeed
-        let valid_result = evaluate_hook_native(&valid_hook, &turtle_data).expect("Valid hook should succeed");
+        let valid_result =
+            evaluate_hook_native(&valid_hook, &turtle_data).expect("Valid hook should succeed");
         assert!(valid_result.fired);
 
         // Invalid hook should fail gracefully

@@ -41,7 +41,10 @@ impl HookSequencePattern {
 
         let orchestrator = HookOrchestrator::new();
         orchestrator
-            .execute_with_pattern(context, HookExecutionPattern::Sequence(self.predicates.clone()))
+            .execute_with_pattern(
+                context,
+                HookExecutionPattern::Sequence(self.predicates.clone()),
+            )
             .map_err(|e| PatternError::ExecutionFailed(e.message().to_string()))
     }
 }
@@ -49,6 +52,7 @@ impl HookSequencePattern {
 /// Hook parallel pattern: Execute hooks in parallel
 pub struct HookParallelPattern {
     predicates: Vec<u64>,
+    #[allow(dead_code)]
     use_simd: bool,
 }
 
@@ -122,7 +126,8 @@ impl HookChoicePattern {
             .map(|(cond, pred)| {
                 let cond_clone = cond.clone();
                 (
-                    Box::new(move |ctx: &HookExecutionContext| (cond_clone)(ctx)) as BoxedHookCondition,
+                    Box::new(move |ctx: &HookExecutionContext| (cond_clone)(ctx))
+                        as BoxedHookCondition,
                     *pred,
                 )
             })
@@ -266,4 +271,3 @@ mod tests {
         assert!(pattern.is_err());
     }
 }
-

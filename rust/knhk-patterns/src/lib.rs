@@ -4,24 +4,39 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
-pub mod ffi;
-pub mod patterns;
 pub mod composition;
-pub mod pipeline_ext;
+pub mod ffi;
 pub mod hook_patterns;
+pub mod patterns;
+pub mod pipeline_ext;
+
+#[cfg(feature = "unrdf")]
+pub mod unrdf_patterns;
+
+pub mod hybrid_patterns;
 
 pub use ffi::PatternType;
 pub use patterns::{
-    Pattern, PatternResult, PatternError,
-    SequencePattern, ParallelSplitPattern, SynchronizationPattern,
-    ExclusiveChoicePattern, SimpleMergePattern, MultiChoicePattern,
-    ArbitraryCyclesPattern, DeferredChoicePattern,
+    ArbitraryCyclesPattern, BranchFn, CancellationPattern, ConditionFn, DeferredChoicePattern,
+    DiscriminatorPattern, ExclusiveChoicePattern, ImplicitTerminationPattern, MultiChoicePattern,
+    ParallelSplitPattern, Pattern, PatternError, PatternResult, SequencePattern,
+    SimpleMergePattern, SynchronizationPattern, TimeoutPattern,
 };
 
 pub use composition::{CompositePattern, PatternBuilder};
-pub use pipeline_ext::PipelinePatternExt;
 pub use hook_patterns::{
-    HookSequencePattern, HookParallelPattern, HookChoicePattern, HookRetryPattern,
-    HookCondition, HookRetryCondition,
-    create_hook_context, create_hook_context_from_components,
+    create_hook_context, create_hook_context_from_components, HookChoicePattern, HookCondition,
+    HookParallelPattern, HookRetryCondition, HookRetryPattern, HookSequencePattern,
+};
+pub use pipeline_ext::PipelinePatternExt;
+
+#[cfg(feature = "unrdf")]
+pub use unrdf_patterns::{
+    UnrdfChoicePattern, UnrdfHookCondition, UnrdfHookRetryCondition, UnrdfParallelPattern,
+    UnrdfRetryPattern, UnrdfSequencePattern,
+};
+
+pub use hybrid_patterns::{
+    HybridChoicePattern, HybridExecutionResult, HybridHookCondition, HybridParallelPattern,
+    HybridSequencePattern,
 };

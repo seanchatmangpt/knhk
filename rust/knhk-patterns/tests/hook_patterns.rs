@@ -1,9 +1,10 @@
 // rust/knhk-patterns/tests/hook_patterns.rs
 // Chicago TDD tests for hook pattern types
 
-use knhk_patterns::hook_patterns::*;
+use knhk_etl::hook_orchestration::HookExecutionContext;
 use knhk_etl::hook_registry::HookRegistry;
 use knhk_etl::load::{LoadResult, PredRun, SoAArrays};
+use knhk_patterns::hook_patterns::*;
 use std::sync::Arc;
 
 // ============================================================================
@@ -135,9 +136,8 @@ fn test_hook_choice_execution() {
     let context = create_test_context();
     let choices = vec![
         (
-            Arc::new(|ctx: &HookExecutionContext| {
-                ctx.predicate_runs.iter().any(|r| r.pred == 100)
-            }) as HookCondition,
+            Arc::new(|ctx: &HookExecutionContext| ctx.predicate_runs.iter().any(|r| r.pred == 100))
+                as HookCondition,
             100u64,
         ),
         (
@@ -246,4 +246,3 @@ fn test_create_hook_context_from_components() {
     assert_eq!(context.tick_budget, 8);
     assert_eq!(context.predicate_runs.len(), 1);
 }
-

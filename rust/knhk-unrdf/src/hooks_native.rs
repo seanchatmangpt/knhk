@@ -366,7 +366,8 @@ mod tests {
             },
         };
 
-        let result = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook in test_basic_hook_execution");
+        let result = evaluate_hook_native(&hook, turtle_data)
+            .expect("Failed to evaluate hook in test_basic_hook_execution");
 
         // Hook should fire if data exists
         assert!(result.fired == true);
@@ -387,7 +388,8 @@ mod tests {
             ex:alice foaf:name "Alice" .
         "#;
 
-        let result = execute_hook_by_name_native(hook_name, hook_query, turtle_data).expect("Failed to execute hook by name");
+        let result = execute_hook_by_name_native(hook_name, hook_query, turtle_data)
+            .expect("Failed to execute hook by name");
 
         assert!(result.fired == true);
     }
@@ -441,7 +443,8 @@ mod tests {
             ex:alice ex:name "Alice" .
         "#;
 
-        let results = evaluate_hooks_batch_native(&hooks, turtle_data).expect("Failed to evaluate hooks batch");
+        let results = evaluate_hooks_batch_native(&hooks, turtle_data)
+            .expect("Failed to evaluate hooks batch");
 
         assert_eq!(results.len(), 2);
         // Both hooks should fire (data exists)
@@ -473,7 +476,9 @@ mod tests {
         };
 
         // Register hook
-        registry.register(hook.clone()).expect("Failed to register hook");
+        registry
+            .register(hook.clone())
+            .expect("Failed to register hook");
 
         // List hooks
         let hooks = registry.list().expect("Failed to list hooks");
@@ -486,10 +491,14 @@ mod tests {
         assert_eq!(retrieved.expect("Hook should exist").id, "test-hook");
 
         // Deregister hook
-        registry.deregister("test-hook").expect("Failed to deregister hook");
+        registry
+            .deregister("test-hook")
+            .expect("Failed to deregister hook");
 
         // Verify deregistered
-        let hooks_after = registry.list().expect("Failed to list hooks after deregister");
+        let hooks_after = registry
+            .list()
+            .expect("Failed to list hooks after deregister");
         assert_eq!(hooks_after.len(), 0);
     }
 
@@ -603,7 +612,8 @@ mod tests {
             },
         };
 
-        let result = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook in test_guard_law_validation_failure");
+        let result = evaluate_hook_native(&hook, turtle_data)
+            .expect("Failed to evaluate hook in test_guard_law_validation_failure");
 
         // Guard should fail: O does not satisfy Σ
         assert!(result.fired == false);
@@ -641,7 +651,8 @@ mod tests {
             },
         };
 
-        let result = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook in test_receipt_canonical_hash");
+        let result = evaluate_hook_native(&hook, turtle_data)
+            .expect("Failed to evaluate hook in test_receipt_canonical_hash");
 
         // Receipt should contain hash derived from canonical hash of O
         // hash(A) = hash(μ(O)) where A includes hook_id and canonical_data_hash
@@ -723,7 +734,8 @@ mod tests {
             ex:alice ex:name "Alice" .
         "#;
 
-        let results = evaluate_hooks_batch_native(&hooks, turtle_data).expect("Failed to evaluate hooks batch");
+        let results = evaluate_hooks_batch_native(&hooks, turtle_data)
+            .expect("Failed to evaluate hooks batch");
 
         // Order Λ is ≺-total: results maintain hook order
         assert_eq!(results.len(), 3);
@@ -820,8 +832,8 @@ mod tests {
             },
         };
 
-        let results =
-            evaluate_hooks_batch_native(&[typing_hook, schema_hook], turtle_data).expect("Failed to evaluate hooks batch for invariant preservation");
+        let results = evaluate_hooks_batch_native(&[typing_hook, schema_hook], turtle_data)
+            .expect("Failed to evaluate hooks batch for invariant preservation");
 
         // All invariants Q should be preserved
         assert_eq!(results.len(), 2);
@@ -860,9 +872,12 @@ mod tests {
         };
 
         // Execute hook multiple times
-        let result1 = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook first time");
-        let result2 = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook second time");
-        let result3 = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook third time");
+        let result1 =
+            evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook first time");
+        let result2 =
+            evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook second time");
+        let result3 =
+            evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook third time");
 
         // μ ∘ μ = μ: repeated execution produces same result (fired state)
         assert_eq!(result1.fired, result2.fired);
@@ -923,11 +938,14 @@ mod tests {
         "#;
 
         // Evaluate as batch: (H₁ ⊕ H₂)
-        let batch_result = evaluate_hooks_batch_native(&hooks, turtle_data).expect("Failed to evaluate hooks batch");
+        let batch_result = evaluate_hooks_batch_native(&hooks, turtle_data)
+            .expect("Failed to evaluate hooks batch");
 
         // Evaluate individually: H₁, then H₂
-        let individual1 = evaluate_hook_native(&hooks[0], turtle_data).expect("Failed to evaluate first hook individually");
-        let individual2 = evaluate_hook_native(&hooks[1], turtle_data).expect("Failed to evaluate second hook individually");
+        let individual1 = evaluate_hook_native(&hooks[0], turtle_data)
+            .expect("Failed to evaluate first hook individually");
+        let individual2 = evaluate_hook_native(&hooks[1], turtle_data)
+            .expect("Failed to evaluate second hook individually");
 
         // Π is ⊕-monoid: batch(H₁ ⊕ H₂) = batch(H₁) ⊕ batch(H₂)
         assert_eq!(batch_result.len(), 2);
@@ -970,7 +988,8 @@ mod tests {
             },
         };
 
-        let result = evaluate_hook_native(&hook, valid_turtle_data).expect("Failed to evaluate hook in test_schema_validation");
+        let result = evaluate_hook_native(&hook, valid_turtle_data)
+            .expect("Failed to evaluate hook in test_schema_validation");
 
         // O ⊨ Σ: operations satisfy schema, hook should fire
         assert!(result.fired);
@@ -1009,8 +1028,10 @@ mod tests {
             },
         };
 
-        let result1 = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook first execution");
-        let result2 = evaluate_hook_native(&hook, turtle_data).expect("Failed to evaluate hook second execution");
+        let result1 = evaluate_hook_native(&hook, turtle_data)
+            .expect("Failed to evaluate hook first execution");
+        let result2 = evaluate_hook_native(&hook, turtle_data)
+            .expect("Failed to evaluate hook second execution");
 
         // Both should fire (same O)
         assert!(result1.fired);
@@ -1021,8 +1042,22 @@ mod tests {
         assert!(result2.receipt.is_some());
 
         // Receipts should be valid SHA-256 hashes (64 hex chars)
-        assert_eq!(result1.receipt.as_ref().expect("Receipt should exist").len(), 64);
-        assert_eq!(result2.receipt.as_ref().expect("Receipt should exist").len(), 64);
+        assert_eq!(
+            result1
+                .receipt
+                .as_ref()
+                .expect("Receipt should exist")
+                .len(),
+            64
+        );
+        assert_eq!(
+            result2
+                .receipt
+                .as_ref()
+                .expect("Receipt should exist")
+                .len(),
+            64
+        );
     }
 
     // ============================================
@@ -1338,7 +1373,9 @@ mod tests {
         };
 
         // Register first hook
-        registry.register(hook1).expect("Failed to register first hook");
+        registry
+            .register(hook1)
+            .expect("Failed to register first hook");
 
         // Register second hook with same ID - should fail (Order constraint: ≺-total)
         let result = registry.register(hook2);

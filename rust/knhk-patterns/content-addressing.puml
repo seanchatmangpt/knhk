@@ -1,0 +1,77 @@
+@startuml Content Addressing Architecture
+
+title Content Addressing with BLAKE3
+skinparam backgroundColor #FEFEFE
+skinparam defaultTextAlignment center
+
+!define BLAKE3COLOR #3498DB
+!define RUSTCOLOR #E74C3C
+!define FFICOLOR #F39C12
+
+package "knhk-hot" as hot {
+  class ContentId <<Rust>> {
+    + bytes: [u8; 32]
+    + magic: u32
+    + flags: u16
+    --
+    + from_bytes(data: &[u8]) -> ContentId
+    + is_valid() -> bool
+    + is_computed() -> bool
+    + constant_time_eq(&self, &other) -> bool
+    + to_hex() -> String
+  }
+
+  note right of ContentId
+    **Performance**: ≤1 tick
+    **Size**: 40 bytes
+    **Alignment**: 8 bytes
+    **ABI**: ByteCore compatible
+  end note
+
+  class BLAKE3 <<Library>> {
+    + hash(data: &[u8]) -> Hash
+    --
+    SIMD-optimized
+    AVX2/AVX-512/NEON
+  }
+
+  ContentId --> BLAKE3 : uses
+}
+
+package "knhk-patterns" as patterns {
+  interface Pattern<T> {
+    + execute(input: T) -> Result<Vec<T>>
+  }
+
+  class WorkflowPattern {
+    + content_id: ContentId
+    + pattern_type: PatternType
+  }
+
+  WorkflowPattern --> ContentId : contains
+  WorkflowPattern ..|> Pattern : implements
+}
+
+package "Application" as app {
+  actor User
+
+  rectangle "Workflow Execution" as workflow {
+    (1) Create Pattern
+    (2) Compute Content ID
+    (3) Execute Pattern
+    (4) Verify Integrity
+  }
+
+  User --> workflow
+  workflow --> WorkflowPattern
+}
+
+note bottom of BLAKE3
+  **BLAKE3 Properties**
+  - 256-bit hash
+  - Tree-based (parallel)
+  - Constant-time operations
+  - Zero allocations
+end note
+
+@enduml
