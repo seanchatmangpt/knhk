@@ -1032,8 +1032,7 @@ chicago_test!(test_all_43_patterns_are_registered, {
     }
 }
 
-chicago_test!
-test_pattern_registry_executes_registered_pattern, {
+chicago_test!(test_pattern_registry_executes_registered_pattern, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -1047,8 +1046,7 @@ test_pattern_registry_executes_registered_pattern, {
     assert!(result.success, "Pattern execution should succeed");
 }
 
-chicago_test!
-test_pattern_registry_returns_none_for_unregistered_pattern, {
+chicago_test!(test_pattern_registry_returns_none_for_unregistered_pattern, {
     // Arrange: Create registry
     let registry = PatternRegistry::new(); // Empty registry
     let ctx = create_test_context();
@@ -1060,8 +1058,7 @@ test_pattern_registry_returns_none_for_unregistered_pattern, {
     assert!(result.is_none(), "Unregistered pattern should return None");
 }
 
-chicago_test!
-test_pattern_execution_preserves_variables, {
+chicago_test!(test_pattern_execution_preserves_variables, {
     // Arrange: Create registry and context with variables
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -1081,8 +1078,7 @@ test_pattern_execution_preserves_variables, {
     );
 }
 
-chicago_test!
-test_pattern_execution_sets_next_state, {
+chicago_test!(test_pattern_execution_sets_next_state, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -1108,8 +1104,7 @@ test_pattern_execution_sets_next_state, {
 // Edge Cases and Error Handling
 // ============================================================================
 
-chicago_test!
-test_pattern_execution_handles_empty_context, {
+chicago_test!(test_pattern_execution_handles_empty_context, {
     // Arrange: Create registry with empty context
     let registry = create_test_registry();
     let ctx = PatternExecutionContext {
@@ -1132,8 +1127,7 @@ test_pattern_execution_handles_empty_context, {
     );
 }
 
-chicago_test!
-test_pattern_execution_handles_missing_variables, {
+chicago_test!(test_pattern_execution_handles_missing_variables, {
     // Arrange: Create registry and context without required variables
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -1150,8 +1144,7 @@ test_pattern_execution_handles_missing_variables, {
     );
 }
 
-chicago_test!
-test_pattern_id_validation, {
+chicago_test!(test_pattern_id_validation, {
     // Arrange: Test valid and invalid pattern IDs
     let valid_id = PatternId::new(1);
     let invalid_id_low = PatternId::new(0);
@@ -1165,8 +1158,7 @@ test_pattern_id_validation, {
     assert!(invalid_id_high.is_err(), "Pattern ID 44 should be invalid");
 }
 
-chicago_test!
-test_pattern_registry_list_patterns_returns_all_ids, {
+chicago_test!(test_pattern_registry_list_patterns_returns_all_ids, {
     // Arrange: Create registry
     let registry = create_test_registry();
 
@@ -1185,8 +1177,7 @@ test_pattern_registry_list_patterns_returns_all_ids, {
     }
 }
 
-chicago_test!
-test_pattern_registry_has_pattern_checks_registration, {
+chicago_test!(test_pattern_registry_has_pattern_checks_registration, {
     // Arrange: Create registry
     let registry = create_test_registry();
 

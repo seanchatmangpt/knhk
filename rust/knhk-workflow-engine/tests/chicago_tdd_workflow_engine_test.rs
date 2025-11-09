@@ -128,10 +128,9 @@ chicago_async_test!(test_create_case_with_test_data_builder, {
     assert_eq!(case.data["order_id"], "ORD-001");
     assert_eq!(case.data["total_amount"], "100.00");
     assert_eq!(case.data["customer_id"], "CUST-001");
-}
+});
 
-chicago_async_test!(
-test_create_case_with_empty_data, {
+chicago_async_test!(test_create_case_with_empty_data, {
     // Arrange: Create fixture and workflow
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -145,10 +144,9 @@ test_create_case_with_empty_data, {
 
     // Assert: Case created
     assert!(fixture.cases.contains(&case_id));
-}
+});
 
-chicago_async_test!(
-test_create_multiple_cases, {
+chicago_async_test!(test_create_multiple_cases, {
     // Arrange: Create fixture and workflow
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -182,14 +180,13 @@ test_create_multiple_cases, {
     assert!(fixture.cases.contains(&case_id1));
     assert!(fixture.cases.contains(&case_id2));
     assert!(fixture.cases.contains(&case_id3));
-}
+});
 
 // ============================================================================
 // Case Execution Tests
 // ============================================================================
 
-chicago_async_test!(
-test_execute_case, {
+chicago_async_test!(test_execute_case, {
     // Arrange: Create fixture, workflow, and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow")
@@ -224,10 +221,9 @@ test_execute_case, {
         "Case should be in a valid execution state, got {:?}",
         case.state
     );
-}
+});
 
-chicago_async_test!(
-test_execute_case_with_data, {
+chicago_async_test!(test_execute_case_with_data, {
     // Arrange: Create fixture, workflow, and case with test data
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow")
@@ -269,14 +265,13 @@ test_execute_case_with_data, {
     // Verify test data is preserved
     assert_eq!(case.data["order_id"], "ORD-001");
     assert_eq!(case.data["customer_id"], "CUST-001");
-}
+});
 
 // ============================================================================
 // Case State Assertion Tests
 // ============================================================================
 
-chicago_async_test!(
-test_assert_case_completed, {
+chicago_async_test!(test_assert_case_completed, {
     // Arrange: Create fixture and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -293,10 +288,9 @@ test_assert_case_completed, {
     let mut completed_case = case;
     completed_case.state = CaseState::Completed;
     fixture.assert_case_completed(&completed_case);
-}
+});
 
-chicago_async_test!(
-test_assert_case_failed, {
+chicago_async_test!(test_assert_case_failed, {
     // Arrange: Create fixture and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -313,14 +307,13 @@ test_assert_case_failed, {
     let mut failed_case = case;
     failed_case.state = CaseState::Failed;
     fixture.assert_case_failed(&failed_case);
-}
+});
 
 // ============================================================================
 // Workflow Builder Tests
 // ============================================================================
 
-chicago_async_test!(
-test_workflow_spec_builder_with_tasks, {
+chicago_async_test!(test_workflow_spec_builder_with_tasks, {
     // Arrange: Create workflow spec with multiple tasks
     let spec = WorkflowSpecBuilder::new("Complex Workflow")
         .add_task(
@@ -348,10 +341,9 @@ test_workflow_spec_builder_with_tasks, {
     assert!(spec.tasks.contains_key("task1"));
     assert!(spec.tasks.contains_key("task2"));
     assert!(spec.tasks.contains_key("task3"));
-}
+});
 
-chicago_async_test!(
-test_task_builder_with_all_options, {
+chicago_async_test!(test_task_builder_with_all_options, {
     // Arrange: Create task with all builder options
     let task = TaskBuilder::new("task1", "Task 1")
         .with_type(TaskType::MultipleInstance)
@@ -370,14 +362,13 @@ test_task_builder_with_all_options, {
     assert_eq!(task.join_type, JoinType::Xor);
     assert_eq!(task.max_ticks, Some(100));
     assert_eq!(task.outgoing_flows.len(), 2);
-}
+});
 
 // ============================================================================
 // Integration Tests
 // ============================================================================
 
-chicago_async_test!(
-test_full_workflow_lifecycle, {
+chicago_async_test!(test_full_workflow_lifecycle, {
     // Arrange: Create fixture, workflow, and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Full Lifecycle Workflow")
@@ -423,10 +414,9 @@ test_full_workflow_lifecycle, {
     // Verify data is preserved through lifecycle
     assert_eq!(case.data["order_id"], "ORD-001");
     assert_eq!(case.data["customer_id"], "CUST-001");
-}
+});
 
-chicago_async_test!(
-test_multiple_workflows_and_cases, {
+chicago_async_test!(test_multiple_workflows_and_cases, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -457,14 +447,13 @@ test_multiple_workflows_and_cases, {
     assert_eq!(fixture.cases.len(), 2);
     assert!(fixture.cases.contains(&case_id1));
     assert!(fixture.cases.contains(&case_id2));
-}
+});
 
 // ============================================================================
 // Test Data Builder Integration Tests
 // ============================================================================
 
-chicago_async_test!(
-test_test_data_builder_integration, {
+chicago_async_test!(test_test_data_builder_integration, {
     // Arrange: Create test data using chicago-tdd-tools TestDataBuilder
     let test_data = TestDataBuilder::new()
         .with_var("key1", "value1")
@@ -482,10 +471,9 @@ test_test_data_builder_integration, {
     assert_eq!(test_data["total_amount"], "100.00");
     assert_eq!(test_data["customer_id"], "CUST-001");
     assert_eq!(test_data["request_id"], "REQ-001");
-}
+});
 
-chicago_async_test!(
-test_test_data_builder_with_workflow, {
+chicago_async_test!(test_test_data_builder_with_workflow, {
     // Arrange: Create fixture, workflow, and test data
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -504,14 +492,13 @@ test_test_data_builder_with_workflow, {
     let case = fixture.engine.get_case(case_id).await.unwrap();
     assert_eq!(case.data["order_id"], "ORD-001");
     assert_eq!(case.data["customer_id"], "CUST-001");
-}
+});
 
 // ============================================================================
 // Error Handling Tests
 // ============================================================================
 
-chicago_async_test!(
-test_register_workflow_with_invalid_spec, {
+chicago_async_test!(test_register_workflow_with_invalid_spec, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -533,10 +520,9 @@ test_register_workflow_with_invalid_spec, {
             assert!(!e.to_string().is_empty());
         }
     }
-}
+});
 
-chicago_async_test!(
-test_create_case_with_invalid_spec_id, {
+chicago_async_test!(test_create_case_with_invalid_spec_id, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -549,14 +535,13 @@ test_create_case_with_invalid_spec_id, {
 
     // Assert: Creation should fail
     assert!(result.is_err());
-}
+});
 
 // ============================================================================
 // Cleanup Tests
 // ============================================================================
 
-chicago_async_test!(
-test_fixture_cleanup, {
+chicago_async_test!(test_fixture_cleanup, {
     // Arrange: Create fixture and add some state
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();

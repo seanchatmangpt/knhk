@@ -70,7 +70,7 @@ impl WorkflowEngine {
         {
             otel_conformance!(
                 otel,
-                span_ctx,
+                span_ctx.clone(),
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
             )
@@ -78,12 +78,13 @@ impl WorkflowEngine {
         }
 
         // Execute pattern
+        let span_ctx_for_error = span_ctx.clone();
         let result = self
             .pattern_registry
             .execute(&pattern_id, &context)
             .ok_or_else(|| {
                 if let (Some(ref otel), Some(ref span)) =
-                    (self.otel_integration.as_ref(), span_ctx.as_ref())
+                    (self.otel_integration.as_ref(), span_ctx_for_error.as_ref())
                 {
                     let _ = otel.add_attribute(
                         (*span).clone(),
