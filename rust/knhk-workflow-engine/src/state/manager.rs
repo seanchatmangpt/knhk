@@ -87,13 +87,16 @@ impl StateManager {
         }
 
         // Log event
+        let event = StateEvent::SpecRegistered {
+            spec_id: spec.id,
+            timestamp: chrono::Utc::now(),
+        };
         {
             let mut log = self.event_log.write().await;
-            log.push(StateEvent::SpecRegistered {
-                spec_id: spec.id,
-                timestamp: chrono::Utc::now(),
-            });
+            log.push(event.clone());
         }
+        // Persist event to store (for audit trail)
+        // Note: Spec events don't have a case_id, so we don't persist them to case history
 
         Ok(())
     }
@@ -145,13 +148,17 @@ impl StateManager {
 
             // Log state change event
             if old_state_str != case.state.to_string() {
-                let mut log = self.event_log.write().await;
-                log.push(StateEvent::CaseStateChanged {
+                let event = StateEvent::CaseStateChanged {
                     case_id: case.id,
                     old_state: old_state_str,
                     new_state: case.state.to_string(),
                     timestamp: chrono::Utc::now(),
-                });
+                };
+                let mut log = self.event_log.write().await;
+                log.push(event.clone());
+                // Persist event to store (for audit trail)
+                drop(log);
+                self.store.save_case_history_event(&case.id, &event)?;
             }
         }
 
@@ -206,14 +213,25 @@ impl StateManager {
     }
 
     /// Log task started event
-    pub async fn log_task_started(&self, case_id: CaseId, task_id: String, task_name: String) {
-        let mut log = self.event_log.write().await;
-        log.push(StateEvent::TaskStarted {
+    pub async fn log_task_started(
+        &self,
+        case_id: CaseId,
+        task_id: String,
+        task_name: String,
+    ) -> WorkflowResult<()> {
+        let event = StateEvent::TaskStarted {
             case_id,
             task_id,
             task_name,
             timestamp: chrono::Utc::now(),
-        });
+        };
+        {
+            let mut log = self.event_log.write().await;
+            log.push(event.clone());
+        }
+        // Persist event to store (for audit trail)
+        self.store.save_case_history_event(&case_id, &event)?;
+        Ok(())
     }
 
     /// Log task completed event
@@ -223,15 +241,22 @@ impl StateManager {
         task_id: String,
         task_name: String,
         duration_ms: u64,
-    ) {
-        let mut log = self.event_log.write().await;
-        log.push(StateEvent::TaskCompleted {
+    ) -> WorkflowResult<()> {
+        let event = StateEvent::TaskCompleted {
             case_id,
             task_id,
             task_name,
             duration_ms,
             timestamp: chrono::Utc::now(),
-        });
+        };
+        {
+            let mut log = self.event_log.write().await;
+            log.push(event.clone());
+        }
+        // Persist event to store (for audit trail)
+        self.store
+            .save_case_history_event(&event.case_id(), &event)?;
+        Ok(())
     }
 
     /// Clear cache (for testing/debugging)
