@@ -36,7 +36,7 @@ This document analyzes how the extracted YAWL artifacts (9 C4 diagrams, 407 code
 **Action Items**:
 1. Compare `C2_Container.puml` with actual `knhk-workflow-engine` structure
 2. Verify component relationships match `C3_Components_*.puml` diagrams
-3. Update `rust/docs/architecture.md` with C4 diagram references
+3. Update [Architecture Guide](../../docs/ARCHITECTURE.md) with C4 diagram references
 4. Use `C4_Code_Level.puml` to validate class structure
 
 **Files to Review**:

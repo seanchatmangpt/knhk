@@ -25,7 +25,8 @@ use knhk_workflow_engine::{
     WorkflowEngine,
 };
 use process_mining::{
-    alphappp_discover_petri_net, event_log::activity_projection::EventLogActivityProjection,
+    alphappp::full::{alphappp_discover_petri_net, AlphaPPPConfig},
+    event_log::activity_projection::EventLogActivityProjection,
     export_petri_net_to_pnml, import_xes_file, XESImportOptions,
 };
 use std::path::PathBuf;
@@ -472,15 +473,28 @@ pub fn discover(
     let projection: EventLogActivityProjection = (&log).into();
 
     // Run Alpha+++ discovery with default or provided parameters
-    // Note: Alpha+++ function takes projection and alpha parameter, returns (PetriNet, AlgoDuration)
+    // Note: Alpha+++ function takes projection and AlphaPPPConfig, returns (PetriNet, AlgoDuration)
     let alpha_param = alpha.unwrap_or(2.0);
     let beta_param = beta.unwrap_or(0.5);
     let theta_param = theta.unwrap_or(0.5);
     let rho_param = rho.unwrap_or(0.5);
 
-    // Alpha+++ discovery: function signature is (projection, alpha) -> (PetriNet, AlgoDuration)
-    // Note: beta, theta, rho parameters may not be exposed in this version of the API
-    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, alpha_param);
+    // Alpha+++ discovery: function signature is (projection, config) -> (PetriNet, AlgoDuration)
+    // Map user parameters to AlphaPPPConfig:
+    // - alpha -> log_repair_skip_df_thresh_rel and log_repair_loop_df_thresh_rel
+    // - beta -> balance_thresh
+    // - theta -> fitness_thresh
+    // - rho -> replay_thresh
+    let config = AlphaPPPConfig {
+        balance_thresh: beta_param as f32,
+        fitness_thresh: theta_param as f32,
+        replay_thresh: rho_param as f32,
+        log_repair_skip_df_thresh_rel: alpha_param as f32,
+        log_repair_loop_df_thresh_rel: alpha_param as f32,
+        absolute_df_clean_thresh: 1,
+        relative_df_clean_thresh: 0.01,
+    };
+    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Export Petri net to PNML (needs a writer)
     let mut pnml_writer = Vec::new();

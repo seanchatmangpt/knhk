@@ -227,5 +227,6 @@ Guard tests verify constraint enforcement:
 - [Integration Tests](integration/README.md) - Integration test guide
 - [Chicago TDD Standards](../../.cursor/rules/chicago-tdd-standards.mdc) - TDD methodology
 - [Testing Documentation](../../docs/testing.md) - Testing overview
-- [Architecture](../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../docs/architecture.md) - Detailed architecture reference
 

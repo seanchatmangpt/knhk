@@ -30,11 +30,13 @@ All consolidated guides follow the 80/20 principle: covering 80% of use cases wi
 - ✅ README.md - Project overview and quick start
 - ✅ docs/QUICK_START.md - 5-minute setup guide
 - ✅ docs/cli.md - CLI command reference
-- ✅ docs/architecture.md - System architecture
+- ✅ docs/ARCHITECTURE.md - 🆕 Consolidated 80/20 guide (System architecture)
+- ✅ docs/architecture.md - Detailed architecture reference
 - ✅ docs/api.md - API reference
 - ✅ docs/integration.md - Integration guide
 - ✅ docs/deployment.md - Deployment guide
-- ✅ docs/performance.md - Performance characteristics
+- ✅ docs/PERFORMANCE.md - 🆕 Consolidated 80/20 guide (Performance optimization)
+- ✅ docs/performance.md - Detailed performance reference
 - ✅ docs/archived/v0.4.0/v0.4.0-status.md - Release status summary
 
 ### Rust Crates

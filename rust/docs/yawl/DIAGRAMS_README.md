@@ -314,7 +314,8 @@ This library provides:
 - [README.md](README.md) - Main YAWL artifacts documentation
 - [CODE_INDEX.md](CODE_INDEX.md) - Code file index
 - [ARCHITECTURE_IMPROVEMENTS.md](ARCHITECTURE_IMPROVEMENTS.md) - Architecture documentation
-- [Main Architecture Docs](../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../docs/architecture.md) - Detailed architecture reference
 
 ## References
 
