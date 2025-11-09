@@ -212,8 +212,16 @@ impl StateManager {
 
     /// Get case history (all events for a specific case)
     pub async fn get_case_history(&self, case_id: CaseId) -> Vec<StateEvent> {
+        // Try to load from store first (persistent history)
+        let mut events = match self.store.load_case_history(&case_id) {
+            Ok(loaded_events) if !loaded_events.is_empty() => loaded_events,
+            _ => Vec::new(),
+        };
+
+        // Merge with in-memory events (for recent events not yet persisted)
         let log = self.event_log.read().await;
-        log.iter()
+        let in_memory_events: Vec<StateEvent> = log
+            .iter()
             .filter(|event| match event {
                 StateEvent::CaseCreated { case_id: cid, .. } => cid == &case_id,
                 StateEvent::CaseStateChanged { case_id: cid, .. } => cid == &case_id,
@@ -222,7 +230,28 @@ impl StateManager {
                 StateEvent::SpecRegistered { .. } => false,
             })
             .cloned()
-            .collect()
+            .collect();
+
+        // Merge and deduplicate (prefer in-memory for recent events)
+        events.extend(in_memory_events);
+        events.sort_by(|a, b| {
+            let a_ts = match a {
+                StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
+                StateEvent::CaseCreated { timestamp, .. } => *timestamp,
+                StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
+                StateEvent::TaskStarted { timestamp, .. } => *timestamp,
+                StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
+            };
+            let b_ts = match b {
+                StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
+                StateEvent::CaseCreated { timestamp, .. } => *timestamp,
+                StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
+                StateEvent::TaskStarted { timestamp, .. } => *timestamp,
+                StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
+            };
+            a_ts.cmp(&b_ts)
+        });
+        events
     }
 
     /// Log task started event
