@@ -134,7 +134,7 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            let span_ctx_clone = span.clone();
+            let span_ctx_clone = Some(span.clone());
             otel_attr!(
                 otel,
                 span_ctx_clone,
@@ -143,7 +143,7 @@ impl WorkflowEngine {
             .await?;
             otel_span_end!(
                 otel,
-                span.clone(),
+                Some(span.clone()),
                 success: success,
                 latency_ms: latency_ms
             )
@@ -273,14 +273,14 @@ impl WorkflowEngine {
             if let Ok(case) = self.get_case(case_id).await {
                 otel_attr!(
                     otel,
-                    span.clone(),
+                    Some(span.clone()),
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
                 )
                 .await?;
             }
             otel_span_end!(
                 otel,
-                span.clone(),
+                Some(span.clone()),
                 success: success,
                 latency_ms: latency_ms
             )

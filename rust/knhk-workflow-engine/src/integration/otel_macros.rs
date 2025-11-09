@@ -133,7 +133,7 @@ macro_rules! otel_span_end {
         success: $success:expr,
         start_time: $start_time:expr
     ) => {{
-        async move {
+        async {
             use $crate::integration::otel_helpers::end_span_with_result;
 
             if let Some(span) = $span_ctx.as_ref() {
@@ -149,7 +149,7 @@ macro_rules! otel_span_end {
         success: $success:expr,
         latency_ms: $latency_ms:expr
     ) => {{
-        async move {
+        async {
             use knhk_otel::SpanStatus;
 
             if let Some(span) = $span_ctx.as_ref() {
@@ -208,7 +208,7 @@ macro_rules! otel_attr {
         $span_ctx:expr,
         $($key:expr => $value:expr),+ $(,)?
     ) => {{
-        async move {
+        async {
             if let Some(span) = $span_ctx.as_ref() {
                 $(
                     $otel.add_attribute(
@@ -363,7 +363,7 @@ macro_rules! otel_conformance {
         expected_pattern: $expected:expr,
         actual_pattern: $actual:expr
     ) => {{
-        async move {
+        async {
             use $crate::integration::otel_helpers::add_conformance_attributes;
 
             if let Some(span) = $span_ctx.as_ref() {

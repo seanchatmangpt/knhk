@@ -112,7 +112,7 @@ pub(super) async fn execute_task_with_allocation(
                         };
                         otel_attr!(
                             otel,
-                            span.clone(),
+                            Some(span.clone()),
                             "knhk.workflow_engine.resource_utilization" => utilization.to_string()
                         )
                         .await?;
