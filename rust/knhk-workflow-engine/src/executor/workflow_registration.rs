@@ -17,7 +17,12 @@ impl WorkflowEngine {
 
         // Start OTEL span for workflow registration
         let span_ctx = if let Some(ref otel) = self.otel_integration {
-            otel.start_register_workflow_span(&spec.id).await?
+            otel_span!(
+                otel,
+                "knhk.workflow_engine.register_workflow",
+                spec_id: Some(&spec.id)
+            )
+            .await?
         } else {
             None
         };
@@ -105,31 +110,11 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.success".to_string(),
-                success.to_string(),
-            )
-            .await?;
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.latency_ms".to_string(),
-                latency_ms.to_string(),
-            )
-            .await?;
-
-            // Add lifecycle transition based on success
-            let transition = if success { "complete" } else { "cancel" };
-            otel.add_lifecycle_transition((*span).clone(), transition)
-                .await?;
-
-            otel.end_span(
-                (*span).clone(),
-                if success {
-                    SpanStatus::Ok
-                } else {
-                    SpanStatus::Error
-                },
+            otel_span_end!(
+                otel,
+                span,
+                success: success,
+                latency_ms: latency_ms
             )
             .await?;
         }

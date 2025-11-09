@@ -40,7 +40,7 @@ pub(super) async fn execute_task_with_allocation(
             "knhk.workflow_engine.execute_task",
             case_id: Some(&case_id),
             task_id: Some(&task.id),
-            pattern_id: Some(&pattern_id)
+            pattern_id: Some(&pattern_id),
         )
         .await?
     } else {
@@ -157,9 +157,13 @@ pub(super) async fn execute_task_with_allocation(
                         .first()
                         .cloned()
                         .unwrap_or_else(|| "user".to_string());
-                    let _ = otel
-                        .add_resource((*span).clone(), Some("work_item_service"), Some(&role_str))
-                        .await;
+                    otel_resource!(
+                        otel,
+                        span,
+                        resource: Some("work_item_service"),
+                        role: Some(&role_str)
+                    )
+                    .await?;
                 }
 
                 let work_item_id = engine
@@ -279,9 +283,13 @@ pub(super) async fn execute_task_with_allocation(
                 if let (Some(ref otel), Some(ref span)) =
                     (engine.otel_integration.as_ref(), span_ctx.as_ref())
                 {
-                    let _ = otel
-                        .add_resource((*span).clone(), Some("connector"), Some("system"))
-                        .await;
+                    otel_resource!(
+                        otel,
+                        span,
+                        resource: Some("connector"),
+                        role: Some("system")
+                    )
+                    .await?;
                 }
 
                 if let Some(ref connector_integration) = engine.connector_integration {
@@ -452,24 +460,17 @@ pub(super) async fn execute_task_with_allocation(
         let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
         let elapsed_ticks = elapsed_ns / 2; // 2ns per tick
         if elapsed_ticks > max_ticks as u64 {
-            // End OTEL span with error and lifecycle transition
+            // End OTEL span with error
             if let (Some(ref otel), Some(ref span)) =
                 (engine.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
-                );
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.latency_ms".to_string(),
-                    task_start_time.elapsed().as_millis().to_string(),
-                );
-                let _ = otel
-                    .add_lifecycle_transition((*span).clone(), "cancel")
-                    .await;
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error).await;
+                otel_span_end!(
+                    otel,
+                    span,
+                    success: false,
+                    start_time: task_start_time
+                )
+                .await?;
             }
             return Err(WorkflowError::TaskExecutionFailed(format!(
                 "Task {} exceeded tick budget: {} ticks > {} ticks",
@@ -492,50 +493,35 @@ pub(super) async fn execute_task_with_allocation(
         fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
     }
 
-    // Bottleneck detection: Check if latency exceeds thresholds
-    let duration_ms = task_start_time.elapsed().as_millis() as u64;
-    let bottleneck_threshold_ms = 1000; // 1 second threshold
-    let bottleneck_detected = duration_ms > bottleneck_threshold_ms;
-
-    if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref())
-    {
-        if bottleneck_detected {
-            let _ = otel
-                .add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.bottleneck_detected".to_string(),
-                    "true".to_string(),
-                )
-                .await;
-        }
-    }
-
     // Log task completed event for process mining
+    let duration_ms = task_start_time.elapsed().as_millis() as u64;
     engine
         .state_manager
         .log_task_completed(case_id, task.id.clone(), task.name.clone(), duration_ms)
         .await?;
 
+    // Bottleneck detection: Check if latency exceeds thresholds
+    if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref())
+    {
+        otel_bottleneck!(
+            otel,
+            span,
+            latency_ms: duration_ms,
+            threshold_ms: 1000
+        )
+        .await?;
+    }
+
     // End OTEL span with lifecycle transition
     if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref())
     {
-        otel.add_attribute(
-            (*span).clone(),
-            "knhk.workflow_engine.success".to_string(),
-            "true".to_string(),
+        otel_span_end!(
+            otel,
+            span,
+            success: true,
+            start_time: task_start_time
         )
         .await?;
-        otel.add_attribute(
-            (*span).clone(),
-            "knhk.workflow_engine.latency_ms".to_string(),
-            duration_ms.to_string(),
-        )
-        .await?;
-
-        // Add lifecycle transition: complete
-        otel.add_lifecycle_transition((*span).clone(), "complete")
-            .await?;
-        otel.end_span((*span).clone(), SpanStatus::Ok).await?;
     }
 
     Ok(())

@@ -247,6 +247,7 @@ impl ExperimentRunner {
         let mut borrowed_count = 0;
         let mut owned_count = 0;
 
+        let total_triples = triples.len();
         for (subject, predicate, object) in triples {
             let triple = ZeroCopyTriple::borrowed(subject, predicate, object, None);
             if triple.is_fully_borrowed() {
@@ -276,7 +277,7 @@ impl ExperimentRunner {
             results,
             error: None,
             metadata: serde_json::json!({
-                "total_triples": triples.len(),
+                "total_triples": total_triples,
             }),
         };
 
@@ -299,21 +300,25 @@ impl ExperimentRunner {
             .run_deterministic_experiment(format!("{}_deterministic", name), case)
             .await?;
 
-        let formal_result = self.run_formal_verification_experiment(
-            format!("{}_formal", name),
-            spec,
-        )?;
+        let formal_result =
+            self.run_formal_verification_experiment(format!("{}_formal", name), spec)?;
 
-        let hardware_result = self.run_hardware_acceleration_experiment(
-            format!("{}_hardware", name),
-            data,
-        )?;
+        let hardware_result =
+            self.run_hardware_acceleration_experiment(format!("{}_hardware", name), data)?;
 
         let zero_copy_result = self.run_zero_copy_experiment(
             format!("{}_zero_copy", name),
             vec![
-                ("http://example.org/subject1", "http://example.org/predicate1", "http://example.org/object1"),
-                ("http://example.org/subject2", "http://example.org/predicate2", "http://example.org/object2"),
+                (
+                    "http://example.org/subject1",
+                    "http://example.org/predicate1",
+                    "http://example.org/object1",
+                ),
+                (
+                    "http://example.org/subject2",
+                    "http://example.org/predicate2",
+                    "http://example.org/object2",
+                ),
             ],
         )?;
 
@@ -394,4 +399,3 @@ impl ExperimentRunner {
         })
     }
 }
-

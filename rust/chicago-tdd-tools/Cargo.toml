@@ -50,3 +50,7 @@ path = "examples/property_testing.rs"
 [[example]]
 name = "mutation_testing"
 path = "examples/mutation_testing.rs"
+
+[[example]]
+name = "macro_examples"
+path = "examples/macro_examples.rs"

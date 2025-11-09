@@ -122,31 +122,17 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.success".to_string(),
-                success.to_string(),
+            otel_attr!(
+                otel,
+                span,
+                "knhk.workflow_engine.case_state" => "Created"
             )
             .await?;
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.latency_ms".to_string(),
-                latency_ms.to_string(),
-            )
-            .await?;
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.case_state".to_string(),
-                "Created".to_string(),
-            )
-            .await?;
-            otel.end_span(
-                (*span).clone(),
-                if success {
-                    SpanStatus::Ok
-                } else {
-                    SpanStatus::Error
-                },
+            otel_span_end!(
+                otel,
+                span,
+                success: success,
+                latency_ms: latency_ms
             )
             .await?;
         }
@@ -186,7 +172,12 @@ impl WorkflowEngine {
 
         // Start OTEL span for case execution
         let span_ctx = if let Some(ref otel) = self.otel_integration {
-            otel.start_execute_case_span(&case_id).await?
+            otel_span!(
+                otel,
+                "knhk.workflow_engine.execute_case",
+                case_id: Some(&case_id)
+            )
+            .await?
         } else {
             None
         };
@@ -275,40 +266,20 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.success".to_string(),
-                success.to_string(),
-            )
-            .await?;
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.latency_ms".to_string(),
-                latency_ms.to_string(),
-            )
-            .await?;
             // Get final case state
             if let Ok(case) = self.get_case(case_id).await {
-                otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.case_state".to_string(),
-                    format!("{:?}", case.state),
+                otel_attr!(
+                    otel,
+                    span,
+                    "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
                 )
                 .await?;
             }
-
-            // Add lifecycle transition based on success
-            let transition = if success { "complete" } else { "cancel" };
-            otel.add_lifecycle_transition((*span).clone(), transition)
-                .await?;
-
-            otel.end_span(
-                (*span).clone(),
-                if success {
-                    SpanStatus::Ok
-                } else {
-                    SpanStatus::Error
-                },
+            otel_span_end!(
+                otel,
+                span,
+                success: success,
+                latency_ms: latency_ms
             )
             .await?;
         }

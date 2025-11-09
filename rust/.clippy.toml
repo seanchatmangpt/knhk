@@ -1,0 +1,78 @@
+# Clippy configuration for KNHK workspace
+# Evaluates all warnings and configures appropriate behavior
+
+# Allow some warnings that are acceptable for CLI tools
+# These are informational or acceptable patterns
+
+# Allow unwrap/expect in CLI tools (user-facing errors)
+# CLI tools can use unwrap/expect for user-facing errors
+# This is already handled per-crate with #![allow(clippy::unwrap_used)]
+
+# Allow dead code for infrastructure that's reserved for future use
+# This is acceptable for receipt tracking and other future features
+allow-dead-code = true
+
+# Allow unused imports for conditional compilation
+# Some imports are only used with certain features enabled
+allow-unused-imports = false  # We want to catch these
+
+# Allow unused variables for loop iterations that are intentionally unused
+# Some loops iterate for side effects, not for the value
+allow-unused-variables = false  # We want to catch these
+
+# Allow deprecated items (we use some deprecated oxigraph APIs)
+# These are in dependencies and will be updated when dependencies update
+allow-deprecated = false  # We want to know about these
+
+# Allow unexpected cfg values (informational warnings)
+# These are about feature flags that may not be declared
+# They're informational and don't affect functionality
+allow-unexpected-cfgs = false  # We want to know about these
+
+# Performance lints (important for hot path)
+# These are critical for performance-sensitive code
+[performance]
+# Warn about unnecessary clones
+unnecessary-clone = "warn"
+# Warn about inefficient string operations
+inefficient-string-operation = "warn"
+# Warn about large enum variants
+large-enum-variant = "warn"
+
+# Correctness lints (critical for correctness)
+[correctness]
+# Warn about potential panics
+panic = "warn"
+# Warn about incorrect implementations
+incorrect-impl = "warn"
+# Warn about integer arithmetic issues
+integer-arithmetic = "warn"
+
+# Style lints (code quality)
+[style]
+# Warn about unnecessary parentheses
+unnecessary-parens = "warn"
+# Warn about unnecessary casts
+unnecessary-cast = "warn"
+# Warn about redundant closures
+redundant-closure = "warn"
+
+# Complexity lints (code maintainability)
+[complexity]
+# Warn about overly complex functions
+cognitive-complexity = "warn"
+# Warn about too many parameters
+too-many-arguments = "warn"
+# Warn about too many lines
+too-many-lines = "warn"
+
+# Pedantic lints (strict code quality)
+[pedantic]
+# Enable pedantic lints but allow some that are too strict
+# These are disabled per-crate as needed
+allow = [
+    "must-use-candidate",  # Some functions don't need must_use
+    "missing-errors-doc",  # CLI tools don't need error docs
+    "missing-panics-doc",  # CLI tools don't need panic docs
+]
+

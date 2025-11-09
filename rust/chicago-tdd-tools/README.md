@@ -18,6 +18,7 @@
 - ✅ **Test Fixtures**: Reusable fixtures with automatic cleanup
 - ✅ **Test Data Builders**: Fluent builders for test data
 - ✅ **Assertion Helpers**: Comprehensive assertion utilities
+- ✅ **Macros**: AAA pattern enforcement and test helpers
 - ✅ **Property-Based Testing**: QuickCheck-style random test generation
 - ✅ **Mutation Testing**: Test quality validation through mutations
 - ✅ **Coverage Analysis**: Test coverage reporting and analysis
@@ -52,6 +53,95 @@ async fn test_example() {
     // Assert: Verify state
     assert!(counter >= 0);
 }
+```
+
+### Using Macros
+
+The framework provides macros to reduce boilerplate and enforce Chicago TDD principles:
+
+#### Test Macros
+
+```rust
+use chicago_tdd_tools::prelude::*;
+
+// Synchronous test with AAA pattern
+chicago_test!(test_basic, {
+    // Arrange: Set up test data
+    let input = 5;
+    
+    // Act: Execute feature
+    let result = input * 2;
+    
+    // Assert: Verify behavior
+    assert_eq!(result, 10);
+});
+
+// Async test with AAA pattern
+chicago_async_test!(test_async, {
+    // Arrange: Set up test data
+    let input = "test";
+    
+    // Act: Execute async operation
+    let result = async_function(input).await;
+    
+    // Assert: Verify behavior
+    assert_eq!(result, "processed");
+});
+
+// Test with automatic fixture setup/teardown
+chicago_fixture_test!(test_with_fixture, fixture, {
+    // Arrange: Use provided fixture
+    let counter = fixture.test_counter();
+    
+    // Act: Execute test
+    let result = counter + 1;
+    
+    // Assert: Verify behavior
+    assert!(result > 0);
+});
+
+// Performance test with tick budget validation
+chicago_performance_test!(test_hot_path, {
+    // Arrange: Set up test data
+    let input = create_test_input();
+    
+    // Act: Execute hot path and measure ticks
+    let (result, ticks) = measure_ticks(|| hot_path(&input));
+    
+    // Assert: Verify performance constraint
+    assert_within_tick_budget!(ticks, "Hot path operation");
+    assert_ok!(result);
+});
+```
+
+#### Assertion Macros
+
+```rust
+use chicago_tdd_tools::prelude::*;
+
+// Assert Result is Ok
+let result: Result<u32, String> = Ok(42);
+assert_ok!(result);
+assert_ok!(result, "Operation should succeed");
+
+// Assert Result is Err
+let result: Result<u32, String> = Err("error".to_string());
+assert_err!(result);
+assert_err!(result, "Operation should fail");
+
+// Assert tick budget compliance (≤8 ticks)
+assert_within_tick_budget!(5);
+assert_within_tick_budget!(ticks, "Custom message");
+
+// Assert value is in range
+assert_in_range!(value, 0, 10);
+assert_in_range!(value, 0, 10, "Value should be valid");
+
+// Assert equality with custom message
+assert_eq_msg!(actual, expected, "Values should match");
+
+// Assert guard constraint
+assert_guard_constraint!(max_run_len <= 8, "max_run_len");
 ```
 
 ### Test Data Builder
@@ -139,6 +229,9 @@ Fluent builders for test data
 ### `assertions`
 Assertion helpers and utilities
 
+### `macros`
+Test macros for AAA pattern enforcement and assertions
+
 ### `property`
 Property-based testing framework
 
@@ -171,6 +264,7 @@ Test code generation
 
 See `examples/` directory for complete examples:
 - `basic_test.rs`: Basic fixture and builder usage
+- `macro_examples.rs`: Macro usage examples
 - `property_testing.rs`: Property-based testing examples
 - `mutation_testing.rs`: Mutation testing examples
 

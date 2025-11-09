@@ -2,6 +2,8 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
+use crate::otel_bottleneck;
+use crate::otel_conformance;
 use crate::otel_span;
 use crate::otel_span_end;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
@@ -61,29 +63,17 @@ impl WorkflowEngine {
             None
         };
 
-        // Add expected pattern attribute for conformance checking
-        if let (Some(ref otel), Some(ref span), Some(expected)) = (
-            self.otel_integration.as_ref(),
-            span_ctx.as_ref(),
-            expected_pattern,
-        ) {
-            let _ = otel
-                .add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.expected_pattern".to_string(),
-                    expected.to_string(),
-                )
-                .await;
-
-            // Check conformance: compare actual vs expected
-            let conformance_violation = expected != pattern_id.0;
-            let _ = otel
-                .add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.conformance_violation".to_string(),
-                    conformance_violation.to_string(),
-                )
-                .await;
+        // Add conformance checking attributes
+        if let (Some(ref otel), Some(ref span)) =
+            (self.otel_integration.as_ref(), span_ctx.as_ref())
+        {
+            otel_conformance!(
+                otel,
+                span,
+                expected_pattern: expected_pattern,
+                actual_pattern: pattern_id.0
+            )
+            .await?;
         }
 
         // Execute pattern
@@ -175,52 +165,27 @@ impl WorkflowEngine {
 
         // Bottleneck detection: Check if latency exceeds thresholds
         let latency_ms = start_time.elapsed().as_millis();
-        let bottleneck_threshold_ms = 1000; // 1 second threshold
-        let bottleneck_detected = latency_ms > bottleneck_threshold_ms as u128;
-
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            if bottleneck_detected {
-                let _ = otel
-                    .add_attribute(
-                        (*span).clone(),
-                        "knhk.workflow_engine.bottleneck_detected".to_string(),
-                        "true".to_string(),
-                    )
-                    .await;
-            }
+            otel_bottleneck!(
+                otel,
+                span,
+                latency_ms: latency_ms,
+                threshold_ms: 1000
+            )
+            .await?;
         }
 
         // End OTEL span
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.success".to_string(),
-                result.success.to_string(),
-            )
-            .await?;
-            otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.latency_ms".to_string(),
-                latency_ms.to_string(),
-            )
-            .await?;
-
-            // Add lifecycle transition based on result
-            let transition = if result.success { "complete" } else { "cancel" };
-            otel.add_lifecycle_transition((*span).clone(), transition)
-                .await?;
-
-            otel.end_span(
-                (*span).clone(),
-                if result.success {
-                    SpanStatus::Ok
-                } else {
-                    SpanStatus::Error
-                },
+            otel_span_end!(
+                otel,
+                span,
+                success: result.success,
+                start_time: start_time
             )
             .await?;
         }

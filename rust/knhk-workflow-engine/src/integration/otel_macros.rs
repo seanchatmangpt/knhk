@@ -20,12 +20,12 @@
 macro_rules! otel_span {
     (
         $otel:expr,
-        $span_name:expr,
-        $(case_id: $case_id:expr $(,)?)?
-        $(spec_id: $spec_id:expr,)?
-        $(task_id: $task_id:expr,)?
-        $(pattern_id: $pattern_id:expr,)?
-        $(parent: $parent:expr,)?
+        $span_name:expr
+        $(, case_id: $case_id:expr)?
+        $(, spec_id: $spec_id:expr)?
+        $(, task_id: $task_id:expr)?
+        $(, pattern_id: $pattern_id:expr)?
+        $(, parent: $parent:expr)?
     ) => {{
         use $crate::integration::otel_helpers::create_trace_context;
         use $crate::integration::OtelIntegration;
@@ -34,12 +34,21 @@ macro_rules! otel_span {
         let mut guard = $otel.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
             // Create parent context for trace correlation
-            let parent_ctx = if let Some(parent) = $($parent)? {
-                Some(parent.clone())
-            } else if let Some(cid) = $($case_id)? {
-                create_trace_context(cid)
-            } else {
-                None
+            let parent_ctx = {
+                let mut ctx = None;
+                $(
+                    if let Some(parent) = $parent {
+                        ctx = Some(parent.clone());
+                    }
+                )?
+                if ctx.is_none() {
+                    $(
+                        if let Some(cid) = $case_id {
+                            ctx = create_trace_context(cid);
+                        }
+                    )?
+                }
+                ctx
             };
 
             let span_ctx = tracer.start_span($span_name.to_string(), parent_ctx);

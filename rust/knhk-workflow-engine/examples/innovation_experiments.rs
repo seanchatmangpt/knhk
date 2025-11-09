@@ -12,7 +12,9 @@
 
 use knhk_workflow_engine::case::{Case, CaseId, CaseState};
 use knhk_workflow_engine::innovation::{ExperimentRunner, ExperimentType};
-use knhk_workflow_engine::parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};
+use knhk_workflow_engine::parser::{
+    Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
+};
 use serde_json::json;
 
 #[tokio::main]
@@ -39,27 +41,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run_deterministic_experiment("deterministic_execution".to_string(), &case)
         .await?;
     println!("   ✅ Success: {}", deterministic_result.success);
-    println!("   ⏱️  Execution time: {} ns", deterministic_result.execution_time_ns);
+    println!(
+        "   ⏱️  Execution time: {} ns",
+        deterministic_result.execution_time_ns
+    );
     println!("   📈 Results: {}\n", deterministic_result.results);
 
     // 2. Formal verification experiment
     println!("2️⃣  Running Formal Verification Experiment...");
-    let formal_result = runner.run_formal_verification_experiment(
-        "formal_verification".to_string(),
-        &spec,
-    )?;
+    let formal_result =
+        runner.run_formal_verification_experiment("formal_verification".to_string(), &spec)?;
     println!("   ✅ Success: {}", formal_result.success);
-    println!("   ⏱️  Execution time: {} ns", formal_result.execution_time_ns);
+    println!(
+        "   ⏱️  Execution time: {} ns",
+        formal_result.execution_time_ns
+    );
     println!("   📈 Results: {}\n", formal_result.results);
 
     // 3. Hardware acceleration experiment
     println!("3️⃣  Running Hardware Acceleration Experiment...");
-    let hardware_result = runner.run_hardware_acceleration_experiment(
-        "hardware_acceleration".to_string(),
-        test_data,
-    )?;
+    let hardware_result = runner
+        .run_hardware_acceleration_experiment("hardware_acceleration".to_string(), test_data)?;
     println!("   ✅ Success: {}", hardware_result.success);
-    println!("   ⏱️  Execution time: {} ns", hardware_result.execution_time_ns);
+    println!(
+        "   ⏱️  Execution time: {} ns",
+        hardware_result.execution_time_ns
+    );
     println!("   📈 Results: {}\n", hardware_result.results);
 
     // 4. Zero-copy optimization experiment
@@ -67,27 +74,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let zero_copy_result = runner.run_zero_copy_experiment(
         "zero_copy_optimization".to_string(),
         vec![
-            ("http://example.org/subject1", "http://example.org/predicate1", "http://example.org/object1"),
-            ("http://example.org/subject2", "http://example.org/predicate2", "http://example.org/object2"),
-            ("http://example.org/subject3", "http://example.org/predicate3", "http://example.org/object3"),
+            (
+                "http://example.org/subject1",
+                "http://example.org/predicate1",
+                "http://example.org/object1",
+            ),
+            (
+                "http://example.org/subject2",
+                "http://example.org/predicate2",
+                "http://example.org/object2",
+            ),
+            (
+                "http://example.org/subject3",
+                "http://example.org/predicate3",
+                "http://example.org/object3",
+            ),
         ],
     )?;
     println!("   ✅ Success: {}", zero_copy_result.success);
-    println!("   ⏱️  Execution time: {} ns", zero_copy_result.execution_time_ns);
+    println!(
+        "   ⏱️  Execution time: {} ns",
+        zero_copy_result.execution_time_ns
+    );
     println!("   📈 Results: {}\n", zero_copy_result.results);
 
     // 5. Integrated experiment (all types)
     println!("5️⃣  Running Integrated Experiment (All Types)...");
     let integrated_result = runner
-        .run_integrated_experiment(
-            "integrated_experiment".to_string(),
-            &spec,
-            &case,
-            test_data,
-        )
+        .run_integrated_experiment("integrated_experiment".to_string(), &spec, &case, test_data)
         .await?;
     println!("   ✅ Success: {}", integrated_result.success);
-    println!("   ⏱️  Execution time: {} ns", integrated_result.execution_time_ns);
+    println!(
+        "   ⏱️  Execution time: {} ns",
+        integrated_result.execution_time_ns
+    );
     println!("   📈 Results: {}\n", integrated_result.results);
 
     // Print summary
@@ -101,7 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn create_test_workflow_spec() -> WorkflowSpec {
     let spec_id = WorkflowSpecId::new();
-    
+
     let mut tasks = std::collections::HashMap::new();
     tasks.insert(
         "task1".to_string(),
@@ -180,4 +200,3 @@ fn create_test_case(spec_id: &WorkflowSpecId) -> Case {
         updated_at: chrono::Utc::now(),
     }
 }
-
