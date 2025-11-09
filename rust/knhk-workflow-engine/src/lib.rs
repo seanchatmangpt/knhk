@@ -76,6 +76,9 @@ pub mod innovation;
 pub mod integration;
 
 #[macro_use]
+pub use integration::otel_macros::*;
+
+#[macro_use]
 pub mod observability;
 pub mod parser;
 pub mod patterns;
