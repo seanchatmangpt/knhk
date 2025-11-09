@@ -48,7 +48,7 @@ cd rust/knhk-cli && cargo run -- boot init schema.ttl invariants.sparql
 cargo run -- pipeline run --connectors kafka-prod
 ```
 
-**Basic Usage**:
+**Basic Usage (Workflow Engine)**:
 ```rust
 use knhk_workflow_engine::{WorkflowEngine, WorkflowParser, StateStore};
 
@@ -59,6 +59,8 @@ let spec = parser.parse_file("workflow.ttl")?;
 engine.register_workflow(spec).await?;
 ```
 
+See [Workflow Engine Guide](docs/WORKFLOW_ENGINE.md) for complete workflow engine documentation.
+
 See [Quick Start Guide](docs/QUICK_START.md) for detailed setup instructions.
 
 ---
@@ -68,7 +70,7 @@ See [Quick Start Guide](docs/QUICK_START.md) for detailed setup instructions.
 - **Hot Path Engine** (C) - ≤8 tick query execution (ASK, COUNT, COMPARE, VALIDATE)
 - **Warm Path Engine** (Rust) - ≤500ms emit operations (CONSTRUCT8)
 - **8-Beat Epoch System** - Fixed-cadence reconciliation with branchless operations
-- **Workflow Engine** - YAWL-compatible workflow execution (42/43 patterns)
+- **Workflow Engine** - Enterprise workflow execution with full 43-pattern YAWL support ([Workflow Engine Guide](docs/WORKFLOW_ENGINE.md), [Crate README](rust/knhk-workflow-engine/README.md))
 - **OTEL Observability** - Full OpenTelemetry integration with Weaver validation
 - **Lockchain Provenance** - Cryptographic audit trails for all operations
 - **Chicago TDD** - Comprehensive test coverage with real collaborators
@@ -103,8 +105,9 @@ See [Architecture Guide](docs/ARCHITECTURE.md) for complete system architecture.
 - [CLI Guide](docs/CLI.md) - 🆕 Command-line interface (80% use cases)
 
 **For workflow engine users**:
-- [Workflow Engine Guide](docs/WORKFLOW_ENGINE.md) - Complete workflow engine guide
-- [YAWL Integration Guide](docs/YAWL_INTEGRATION.md) - YAWL compatibility and status
+- [Workflow Engine Guide](docs/WORKFLOW_ENGINE.md) - Complete workflow engine guide (Quick Start, Core API, Critical Patterns)
+- [Workflow Engine Crate](rust/knhk-workflow-engine/README.md) - Crate-specific documentation and examples
+- [YAWL Integration Guide](docs/YAWL_INTEGRATION.md) - YAWL compatibility and status (43/43 patterns)
 
 **Developers**:
 - [Testing Guide](docs/TESTING.md) - Chicago TDD methodology

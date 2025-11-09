@@ -1,14 +1,18 @@
 # KNHK Workflow Engine - 80/20 Guide
 
 **Version**: 1.0  
-**Status**: Production-Ready (82% YAWL parity)  
-**Last Updated**: 2025-01-XX
+**Status**: Production-Ready (43/43 patterns, 82% YAWL parity)  
+**Last Updated**: 2025-01-27
+
+**See also**: [Workflow Engine Crate README](../rust/knhk-workflow-engine/README.md) for crate-specific documentation and examples.
 
 ---
 
 ## Overview
 
 Enterprise-grade workflow execution engine with YAWL compatibility, OTEL observability, and lockchain provenance. Supports all 43 Van der Aalst workflow patterns with production-ready features.
+
+**Crate**: `knhk-workflow-engine` - See [rust/knhk-workflow-engine/README.md](../rust/knhk-workflow-engine/README.md)
 
 **Key Features**:
 - ✅ All 43 Van der Aalst workflow patterns
@@ -228,7 +232,7 @@ Returns case status and data.
 
 - **Core Engine**: Fully functional
 - **REST API**: Complete
-- **Pattern Support**: 42/43 patterns functional
+- **Pattern Support**: 43/43 patterns functional
 - **Human Tasks**: Operational
 - **OTEL Observability**: Integrated
 - **Lockchain Provenance**: Available

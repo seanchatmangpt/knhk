@@ -55,7 +55,7 @@ impl ReceiptStore {
         );
 
         #[allow(deprecated)]
-        let results = store
+        let _results = store
             .query(&query)
             .map_err(|e| format!("SPARQL query failed: {}", e))?;
 

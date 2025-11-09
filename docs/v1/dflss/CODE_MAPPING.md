@@ -446,16 +446,16 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 
 ### DFLSS Documents → Implementation Files
 
-| DFLSS Document | Key Implementation Files |
-|----------------|-------------------------|
-| **PROJECT_CHARTER.md** | `rust/knhk-workflow-engine/src/lib.rs`, `rust/knhk-cli/src/main.rs` |
-| **SIPOC.md** | `rust/knhk-workflow-engine/src/`, `c/src/` |
-| **SYNTHETIC_VOC.md** | `rust/knhk-cli/src/commands/`, `rust/knhk-workflow-engine/src/api/` |
-| **define/PHASE_SUMMARY.md** | `rust/knhk-workflow-engine/src/parser/`, `rust/knhk-workflow-engine/src/executor/` |
-| **measure/PHASE_SUMMARY.md** | `rust/knhk-hot/benches/`, `c/tools/knhk_bench.c`, `rust/knhk-workflow-engine/src/integration/weaver.rs` |
-| **analyze/PHASE_SUMMARY.md** | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs`, `rust/knhk-workflow-engine/tests/` |
-| **improve/PHASE_SUMMARY.md** | `rust/knhk-hot/src/`, `rust/knhk-warm/src/`, `rust/knhk-etl/src/` |
-| **control/PHASE_SUMMARY.md** | `.github/workflows/`, `scripts/weaver-validate-all-43-patterns.sh` |
+| DFLSS Document | Key Implementation Files | Code References |
+|----------------|-------------------------|----------------|
+| **PROJECT_CHARTER.md** | `rust/knhk-workflow-engine/src/lib.rs`, `rust/knhk-cli/src/main.rs` | ```1:142:rust/knhk-workflow-engine/src/lib.rs```, ```1:100:rust/knhk-cli/src/main.rs``` |
+| **SIPOC.md** | `rust/knhk-workflow-engine/src/`, `c/src/` | ```1:69:rust/knhk-workflow-engine/src/executor/engine.rs```, ```1:100:c/src/knhk_core.c``` |
+| **SYNTHETIC_VOC.md** | `rust/knhk-cli/src/commands/`, `rust/knhk-workflow-engine/src/api/` | ```1:100:rust/knhk-cli/src/commands/validate.rs```, ```1:50:rust/knhk-workflow-engine/src/api/rest/mod.rs``` |
+| **define/PHASE_SUMMARY.md** | `rust/knhk-workflow-engine/src/parser/`, `rust/knhk-workflow-engine/src/executor/` | ```1:141:rust/knhk-workflow-engine/src/parser/mod.rs```, ```1:69:rust/knhk-workflow-engine/src/executor/engine.rs``` |
+| **measure/PHASE_SUMMARY.md** | `rust/knhk-hot/benches/`, `c/tools/knhk_bench.c`, `rust/knhk-workflow-engine/src/integration/weaver.rs` | ```1:100:rust/knhk-hot/benches/cycle_bench.rs```, ```1:220:c/tools/knhk_bench.c```, ```1:267:rust/knhk-workflow-engine/src/integration/weaver.rs``` |
+| **analyze/PHASE_SUMMARY.md** | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs`, `rust/knhk-workflow-engine/tests/` | ```1:1471:rust/knhk-workflow-engine/src/testing/chicago_tdd.rs```, ```1:100:rust/knhk-workflow-engine/tests/chicago_tdd_tools_integration.rs``` |
+| **improve/PHASE_SUMMARY.md** | `rust/knhk-hot/src/`, `rust/knhk-warm/src/`, `rust/knhk-etl/src/` | ```1:33:rust/knhk-hot/src/lib.rs```, ```1:173:rust/knhk-warm/src/construct8.rs```, ```1:200:rust/knhk-etl/src/reflex.rs``` |
+| **control/PHASE_SUMMARY.md** | `.github/workflows/`, `scripts/weaver-validate-all-43-patterns.sh` | ```1:50:.github/workflows/ci.yml```, ```1:100:scripts/weaver-validate-all-43-patterns.sh``` |
 
 ### Weaver Validation Files
 
@@ -566,6 +566,51 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | **Total Code** | 308 | 50,941 | All implementation files |
 | **Grand Total** | 315 | 53,515 | Documentation + Code |
 
+## Direct DFLSS Document → Code File Mapping
+
+### Complete File-to-Code Reference
+
+| DFLSS Document | Section | Code File | Line Range | Type |
+|----------------|---------|-----------|------------|------|
+| **README.md** | DMEDI Methodology | `rust/knhk-workflow-engine/src/lib.rs` | 1-142 | Library entry point |
+| **README.md** | CTQ Requirements | `rust/knhk-workflow-engine/src/validation/mod.rs` | 1-41 | Validation framework |
+| **PROJECT_CHARTER.md** | Core Engine | `rust/knhk-workflow-engine/src/executor/engine.rs` | 28-69 | `WorkflowEngine` struct |
+| **PROJECT_CHARTER.md** | Workflow Parser | `rust/knhk-workflow-engine/src/parser/mod.rs` | 1-141 | `WorkflowParser` |
+| **PROJECT_CHARTER.md** | State Management | `rust/knhk-workflow-engine/src/state/manager.rs` | 1-324 | `StateManager` |
+| **PROJECT_CHARTER.md** | State Store | `rust/knhk-workflow-engine/src/state/store.rs` | 1-240 | `StateStore` |
+| **PROJECT_CHARTER.md** | Pattern Registry | `rust/knhk-workflow-engine/src/patterns/mod.rs` | 1-320 | `PatternRegistry` |
+| **PROJECT_CHARTER.md** | API Layer | `rust/knhk-workflow-engine/src/api/rest/mod.rs` | 1-50 | REST API |
+| **PROJECT_CHARTER.md** | CLI | `rust/knhk-cli/src/main.rs` | 1-100 | CLI entry point |
+| **SIPOC.md** | Process Steps | `rust/knhk-workflow-engine/src/executor/case.rs` | 1-200 | Case execution |
+| **SIPOC.md** | Input Processing | `rust/knhk-workflow-engine/src/parser/mod.rs` | 1-141 | Workflow parsing |
+| **SIPOC.md** | Output Generation | `rust/knhk-workflow-engine/src/executor/task.rs` | 1-200 | Task execution |
+| **SYNTHETIC_VOC.md** | Weaver Validation | `rust/knhk-workflow-engine/src/integration/weaver.rs` | 15-267 | `WeaverIntegration` |
+| **SYNTHETIC_VOC.md** | Performance ≤8 ticks | `rust/knhk-hot/src/lib.rs` | 1-33 | Hot path operations |
+| **SYNTHETIC_VOC.md** | RDTSC Measurement | `c/include/knhk/pmu.h` | 12-34 | `knhk_pmu_rdtsc()` |
+| **SYNTHETIC_VOC.md** | Cycle Counting | `rust/knhk-hot/src/cycle_counter.rs` | 11-29 | `read_cycles()` |
+| **SYNTHETIC_VOC.md** | Tick Budget | `rust/knhk-workflow-engine/src/performance/tick_budget.rs` | 8-56 | `HOT_PATH_TICK_BUDGET` |
+| **define/PHASE_SUMMARY.md** | CTQ Definition | `rust/knhk-workflow-engine/src/validation/mod.rs` | 1-41 | Validation framework |
+| **define/PHASE_SUMMARY.md** | Baseline Metrics | `rust/knhk-workflow-engine/src/validation/process_mining.rs` | 1-206 | Process capability |
+| **define/PHASE_SUMMARY.md** | Problem Statement | `rust/knhk-workflow-engine/src/error/mod.rs` | 1-100 | Error types |
+| **measure/PHASE_SUMMARY.md** | Weaver Metrics | `rust/knhk-workflow-engine/src/integration/weaver.rs` | 24-206 | `WeaverIntegration::validate()` |
+| **measure/PHASE_SUMMARY.md** | Performance RDTSC | `rust/knhk-hot/src/cycle_counter.rs` | 11-62 | Cycle counting |
+| **measure/PHASE_SUMMARY.md** | Performance Benchmarks | `rust/knhk-hot/benches/cycle_bench.rs` | 1-100 | Benchmark tests |
+| **measure/PHASE_SUMMARY.md** | C Benchmarks | `c/tools/knhk_bench.c` | 1-220 | C performance tests |
+| **measure/PHASE_SUMMARY.md** | Process Capability | `rust/knhk-workflow-engine/src/validation/process_mining.rs` | 1-206 | Cp/Cpk calculation |
+| **measure/PHASE_SUMMARY.md** | Test Coverage | `rust/knhk-workflow-engine/src/testing/coverage.rs` | 1-176 | Coverage analysis |
+| **measure/PHASE_SUMMARY.md** | Defect Tracking | `.git/hooks/pre-commit` | 1-50 | Pre-commit validation |
+| **analyze/PHASE_SUMMARY.md** | Root Cause Analysis | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` | 1-1471 | Chicago TDD framework |
+| **analyze/PHASE_SUMMARY.md** | Chicago TDD Tests | `rust/knhk-workflow-engine/tests/chicago_tdd_tools_integration.rs` | 1-100 | Integration tests |
+| **analyze/PHASE_SUMMARY.md** | Error Analysis | `rust/knhk-workflow-engine/src/error/mod.rs` | 1-100 | Error handling |
+| **improve/PHASE_SUMMARY.md** | Hot Path Optimization | `rust/knhk-hot/src/lib.rs` | 1-33 | Hot path engine |
+| **improve/PHASE_SUMMARY.md** | CONSTRUCT8 | `rust/knhk-warm/src/construct8.rs` | 1-173 | CONSTRUCT8 implementation |
+| **improve/PHASE_SUMMARY.md** | Tick Budget | `rust/knhk-etl/src/reflex.rs` | 22-23 | `tick_budget: u32 = 8` |
+| **improve/PHASE_SUMMARY.md** | Performance AOT | `rust/knhk-workflow-engine/src/performance/aot.rs` | 1-414 | AOT kernel |
+| **control/PHASE_SUMMARY.md** | CI/CD Gates | `.github/workflows/ci.yml` | 1-50 | CI pipeline |
+| **control/PHASE_SUMMARY.md** | Pre-commit Hooks | `.git/hooks/pre-commit` | 1-50 | Pre-commit validation |
+| **control/PHASE_SUMMARY.md** | Pre-push Hooks | `.git/hooks/pre-push` | 1-50 | Pre-push validation |
+| **control/PHASE_SUMMARY.md** | SPC Charts | `rust/knhk-workflow-engine/src/validation/process_mining.rs` | 1-206 | Process control |
+
 ## Revision History
 
 | Version | Date | Changes |
@@ -573,6 +618,7 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | 1.0 | 2025-11-09 | Initial code mapping creation |
 | 1.1 | 2025-11-09 | Updated with verified file paths and code references |
 | 1.2 | 2025-01-27 | Added direct file-to-LOC mapping with complete statistics (315 files, 53,515 LOC) |
+| 1.3 | 2025-01-27 | Added comprehensive DFLSS document → code file mapping with line references |
 
 ---
 

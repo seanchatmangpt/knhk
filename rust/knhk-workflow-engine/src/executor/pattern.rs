@@ -2,7 +2,9 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
+use crate::integration::OtelIntegration;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
+use knhk_otel::SpanStatus;
 use std::time::Instant;
 
 use super::WorkflowEngine;
@@ -16,9 +18,27 @@ impl WorkflowEngine {
     ) -> WorkflowResult<PatternExecutionResult> {
         let start_time = Instant::now();
 
+        // Start OTEL span for pattern execution
+        let span_ctx = if let Some(ref otel) = self.otel_integration {
+            otel.start_execute_pattern_span(&pattern_id, &context.case_id)
+                .await?
+        } else {
+            None
+        };
+
         // Check Fortune 5 promotion gate if enabled
         if let Some(ref fortune5) = self.fortune5_integration {
             if !fortune5.check_promotion_gate().await? {
+                if let (Some(ref otel), Some(ref span)) =
+                    (self.otel_integration.as_ref(), span_ctx.as_ref())
+                {
+                    let _ = otel.add_attribute(
+                        (*span).clone(),
+                        "knhk.workflow_engine.success".to_string(),
+                        "false".to_string(),
+                    );
+                    let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),
                 ));
@@ -30,6 +50,16 @@ impl WorkflowEngine {
             .pattern_registry
             .execute(&pattern_id, &context)
             .ok_or_else(|| {
+                if let (Some(ref otel), Some(ref span)) =
+                    (self.otel_integration.as_ref(), span_ctx.as_ref())
+                {
+                    let _ = otel.add_attribute(
+                        (*span).clone(),
+                        "knhk.workflow_engine.success".to_string(),
+                        "false".to_string(),
+                    );
+                    let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                }
                 WorkflowError::InvalidSpecification(format!("Pattern {} not found", pattern_id))
             })?;
 
@@ -100,6 +130,34 @@ impl WorkflowEngine {
                 RuntimeClass::C1 // Cold path
             };
             fortune5.record_slo_metric(runtime_class, duration_ns).await;
+        }
+
+        // End OTEL span
+        let latency_ms = start_time.elapsed().as_millis();
+        if let (Some(ref otel), Some(ref span)) =
+            (self.otel_integration.as_ref(), span_ctx.as_ref())
+        {
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.success".to_string(),
+                result.success.to_string(),
+            )
+            .await?;
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.latency_ms".to_string(),
+                latency_ms.to_string(),
+            )
+            .await?;
+            otel.end_span(
+                (*span).clone(),
+                if result.success {
+                    SpanStatus::Ok
+                } else {
+                    SpanStatus::Error
+                },
+            )
+            .await?;
         }
 
         Ok(result)

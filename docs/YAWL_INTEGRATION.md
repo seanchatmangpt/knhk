@@ -11,13 +11,15 @@
 knhk-workflow-engine provides 82% functional equivalence to YAWL with significant innovations. This guide covers the critical 20% of information that provides 80% of value for YAWL integration.
 
 **Key Features**:
-- ✅ 42/43 Van der Aalst workflow patterns functional
+- ✅ 43/43 Van der Aalst workflow patterns functional
 - ✅ YAWL compatibility (Turtle/RDF)
 - ✅ REST API complete
 - ✅ State persistence (Sled-based)
 - ✅ OTEL observability
 - ✅ Lockchain provenance
 - ✅ Hot path optimization (≤8 ticks)
+
+**See also**: [Workflow Engine Guide](WORKFLOW_ENGINE.md) and [Workflow Engine Crate README](../rust/knhk-workflow-engine/README.md)
 
 ---
 
@@ -28,10 +30,10 @@ knhk-workflow-engine provides 82% functional equivalence to YAWL with significan
 **Overall**: 82% functional equivalence to YAWL
 
 **What Works** (100% Functional):
-- ✅ Workflow Engine: Complete execution pipeline
+- ✅ Workflow Engine: Complete execution pipeline ([Workflow Engine Guide](WORKFLOW_ENGINE.md), [Crate README](../rust/knhk-workflow-engine/README.md))
 - ✅ State Management: Sled-based persistence + event sourcing
 - ✅ REST API: Full enterprise API with OpenAPI
-- ✅ Pattern Support: 42/43 patterns fully functional
+- ✅ Pattern Support: 43/43 patterns fully functional
 - ✅ Resource Allocation: Policy-based allocator with workload tracking
 - ✅ Worklet Framework: Selection, repository, indexing complete
 - ✅ Observability: OTEL integration (spans, metrics, logs)

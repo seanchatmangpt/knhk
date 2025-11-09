@@ -144,6 +144,7 @@ pub fn self_validate(
         }
         #[cfg(not(feature = "policy-engine"))]
         {
+            let _run_len = run_len; // Suppress unused warning
             let guard_result = knhk_validation::property_validation::validate_guard_constraints();
             report.add_result(guard_result);
         }
@@ -163,6 +164,7 @@ pub fn self_validate(
         }
         #[cfg(not(feature = "policy-engine"))]
         {
+            let _ticks = ticks; // Suppress unused warning
             let perf_result =
                 knhk_validation::performance_validation::validate_hot_path_performance();
             report.add_result(perf_result);
@@ -364,6 +366,7 @@ pub fn self_validate_daemon(
 }
 
 /// Create validation receipt
+#[allow(dead_code)] // Receipt tracking infrastructure (currently unused)
 fn create_validation_receipt(operation: &str, passed: bool) -> Result<Receipt, String> {
     let timestamp_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -383,6 +386,7 @@ fn create_validation_receipt(operation: &str, passed: bool) -> Result<Receipt, S
 }
 
 /// Hash operation name to u32 hook_id
+#[allow(dead_code)] // Receipt tracking infrastructure (currently unused)
 fn hash_operation(operation: &str) -> u32 {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};

@@ -3,9 +3,11 @@
 use crate::case::CaseId;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
+use crate::integration::OtelIntegration;
 use crate::parser::{Task, WorkflowSpecId};
-use crate::patterns::PatternExecutionContext;
+use crate::patterns::{PatternExecutionContext, PatternId};
 use crate::resource::AllocationRequest;
+use knhk_otel::SpanStatus;
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -19,6 +21,26 @@ pub(super) async fn execute_task_with_allocation(
     task: &Task,
 ) -> WorkflowResult<()> {
     let task_start_time = Instant::now();
+
+    // Start OTEL span for task execution
+    let span_ctx = if let Some(ref otel) = engine.otel_integration {
+        // Identify pattern for task (simplified - use task split/join types)
+        let pattern_id = if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
+            PatternId(12) // MI Without Sync
+        } else {
+            // Map split/join to pattern (simplified)
+            match (task.split_type, task.join_type) {
+                (crate::parser::SplitType::And, crate::parser::JoinType::And) => PatternId(1),
+                (crate::parser::SplitType::Xor, crate::parser::JoinType::Xor) => PatternId(2),
+                (crate::parser::SplitType::Or, crate::parser::JoinType::Or) => PatternId(3),
+                _ => PatternId(1), // Default to Sequence
+            }
+        };
+        otel.start_execute_task_span(&case_id, &task.id, Some(&pattern_id))
+            .await?
+    } else {
+        None
+    };
 
     // Log task started event for process mining
     engine
@@ -365,6 +387,22 @@ pub(super) async fn execute_task_with_allocation(
         let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
         let elapsed_ticks = elapsed_ns / 2; // 2ns per tick
         if elapsed_ticks > max_ticks as u64 {
+            // End OTEL span with error
+            if let (Some(ref otel), Some(ref span)) =
+                (engine.otel_integration.as_ref(), span_ctx.as_ref())
+            {
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    "false".to_string(),
+                );
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.latency_ms".to_string(),
+                    task_start_time.elapsed().as_millis().to_string(),
+                );
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+            }
             return Err(WorkflowError::TaskExecutionFailed(format!(
                 "Task {} exceeded tick budget: {} ticks > {} ticks",
                 task.id, elapsed_ticks, max_ticks
@@ -392,6 +430,24 @@ pub(super) async fn execute_task_with_allocation(
         .state_manager
         .log_task_completed(case_id, task.id.clone(), task.name.clone(), duration_ms)
         .await?;
+
+    // End OTEL span
+    if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref())
+    {
+        otel.add_attribute(
+            (*span).clone(),
+            "knhk.workflow_engine.success".to_string(),
+            "true".to_string(),
+        )
+        .await?;
+        otel.add_attribute(
+            (*span).clone(),
+            "knhk.workflow_engine.latency_ms".to_string(),
+            duration_ms.to_string(),
+        )
+        .await?;
+        otel.end_span((*span).clone(), SpanStatus::Ok).await?;
+    }
 
     Ok(())
 }

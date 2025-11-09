@@ -5,7 +5,7 @@ mod check;
 mod connectors;
 pub mod fortune5;
 mod lockchain;
-mod otel;
+pub mod otel;
 mod pattern_otel;
 mod registry;
 mod sidecar;

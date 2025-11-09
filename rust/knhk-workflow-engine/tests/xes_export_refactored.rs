@@ -10,7 +10,12 @@ use knhk_workflow_engine::*;
 
 /// Helper: Setup workflow from TTL string
 async fn setup_workflow(harness: &mut TestHarness, workflow: &str) -> parser::WorkflowSpec {
-    let spec = setup_workflow(&mut harness, workflow).await;
+    let spec = harness.parser.parse_turtle(workflow).unwrap();
+    harness
+        .engine
+        .register_workflow(spec.clone())
+        .await
+        .unwrap();
     spec
 }
 

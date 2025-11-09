@@ -24,7 +24,7 @@
 
 **📖 Consolidated guides covering 80% of use cases:**
 
-- **[WORKFLOW_ENGINE.md](WORKFLOW_ENGINE.md)** - Workflow engine guide (Quick Start, Core API, Critical Patterns)
+- **[WORKFLOW_ENGINE.md](WORKFLOW_ENGINE.md)** - Workflow engine guide (Quick Start, Core API, Critical Patterns) - **See also**: [Workflow Engine Crate README](../rust/knhk-workflow-engine/README.md)
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture guide (Hot/Warm/Cold paths, Core Components)
 - **[YAWL_INTEGRATION.md](YAWL_INTEGRATION.md)** - YAWL integration guide (Status, Critical Gaps, Quick Reference)
 - **[ONTOLOGY.md](ONTOLOGY.md)** - Ontology integration guide (Integration Patterns, Common Operations)

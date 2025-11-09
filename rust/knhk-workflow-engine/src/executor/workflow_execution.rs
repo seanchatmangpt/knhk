@@ -21,7 +21,7 @@ use super::WorkflowEngine;
 ///
 /// Maps task split/join types to pattern IDs (1-43) following YAWL pattern semantics.
 /// This is the core of Van der Aalst's pattern-based execution methodology.
-fn identify_task_pattern(task: &Task) -> PatternId {
+pub(crate) fn identify_task_pattern(task: &Task) -> PatternId {
     // Handle Multiple Instance patterns (12-15) based on task type
     if matches!(task.task_type, TaskType::MultipleInstance) {
         // Pattern 12: MI Without Sync (default for MI tasks)

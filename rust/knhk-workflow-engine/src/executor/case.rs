@@ -3,7 +3,9 @@
 use crate::case::{Case, CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
+use crate::integration::OtelIntegration;
 use crate::parser::WorkflowSpecId;
+use knhk_otel::SpanStatus;
 use std::time::Instant;
 
 use super::WorkflowEngine;
@@ -15,22 +17,81 @@ impl WorkflowEngine {
         spec_id: WorkflowSpecId,
         data: serde_json::Value,
     ) -> WorkflowResult<CaseId> {
+        let start_time = Instant::now();
+
+        // Start OTEL span for case creation
+        let span_ctx = if let Some(ref otel) = self.otel_integration {
+            otel.start_create_case_span(&spec_id, &CaseId::new())
+                .await?
+        } else {
+            None
+        };
+
         // Admission gate: validate case data before execution
-        self.admission_gate.admit(&data)?;
+        let admit_result = self.admission_gate.admit(&data);
+        if let Err(e) = admit_result {
+            if let (Some(ref otel), Some(ref span)) =
+                (self.otel_integration.as_ref(), span_ctx.as_ref())
+            {
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    "false".to_string(),
+                );
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+            }
+            return Err(e);
+        }
 
         // Verify workflow exists
-        let _spec = self.get_workflow(spec_id).await?;
+        let spec_result = self.get_workflow(spec_id).await;
+        if let Err(e) = spec_result {
+            if let (Some(ref otel), Some(ref span)) =
+                (self.otel_integration.as_ref(), span_ctx.as_ref())
+            {
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    "false".to_string(),
+                );
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+            }
+            return Err(e);
+        }
 
         // Create case
         let case = Case::new(spec_id, data.clone());
         let case_id = case.id;
 
+        // Update span with actual case_id
+        if let (Some(ref otel), Some(ref span)) =
+            (self.otel_integration.as_ref(), span_ctx.as_ref())
+        {
+            let _ = otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.case_id".to_string(),
+                case_id.to_string(),
+            );
+        }
+
         // Create case RDF store
-        self.create_case_rdf_store(case_id, &data)
-            .await
-            .map_err(|e| {
-                WorkflowError::Internal(format!("Failed to create case RDF store: {}", e))
-            })?;
+        let rdf_result = self.create_case_rdf_store(case_id, &data).await;
+        if let Err(e) = rdf_result {
+            if let (Some(ref otel), Some(ref span)) =
+                (self.otel_integration.as_ref(), span_ctx.as_ref())
+            {
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    "false".to_string(),
+                );
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+            }
+            return Err(WorkflowError::Internal(format!(
+                "Failed to create case RDF store: {}",
+                e
+            )));
+        }
 
         // Store case (lock-free DashMap access)
         let case_clone = case.clone();
@@ -38,10 +99,10 @@ impl WorkflowEngine {
 
         // Persist to state store
         let store_arc = self.state_store.read().await;
-        (*store_arc).save_case(case_id, &case_clone)?;
+        let persist_result = (*store_arc).save_case(case_id, &case_clone);
 
         // Save to state manager for event sourcing
-        self.state_manager.save_case(&case_clone).await?;
+        let state_result = self.state_manager.save_case(&case_clone).await;
 
         // Log CaseCreated event
         let event = crate::state::manager::StateEvent::CaseCreated {
@@ -49,11 +110,52 @@ impl WorkflowEngine {
             spec_id,
             timestamp: chrono::Utc::now(),
         };
-        {
+        let event_result = {
             // Persist event to store (StateManager will load it via get_case_history)
             let store_arc = self.state_store.read().await;
-            (*store_arc).save_case_history_event(&case_id, &event)?;
+            (*store_arc).save_case_history_event(&case_id, &event)
+        };
+
+        let latency_ms = start_time.elapsed().as_millis();
+        let success = persist_result.is_ok() && state_result.is_ok() && event_result.is_ok();
+
+        // End OTEL span
+        if let (Some(ref otel), Some(ref span)) =
+            (self.otel_integration.as_ref(), span_ctx.as_ref())
+        {
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.success".to_string(),
+                success.to_string(),
+            )
+            .await?;
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.latency_ms".to_string(),
+                latency_ms.to_string(),
+            )
+            .await?;
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.case_state".to_string(),
+                "Created".to_string(),
+            )
+            .await?;
+            otel.end_span(
+                (*span).clone(),
+                if success {
+                    SpanStatus::Ok
+                } else {
+                    SpanStatus::Error
+                },
+            )
+            .await?;
         }
+
+        // Return first error if any
+        persist_result?;
+        state_result?;
+        event_result?;
 
         Ok(case_id)
     }
@@ -81,23 +183,49 @@ impl WorkflowEngine {
 
     /// Execute a case (run workflow) with resource allocation, worklet support, and Fortune 5 SLO tracking
     pub async fn execute_case(&self, case_id: CaseId) -> WorkflowResult<()> {
+        let start_time = Instant::now();
+
+        // Start OTEL span for case execution
+        let span_ctx = if let Some(ref otel) = self.otel_integration {
+            otel.start_execute_case_span(&case_id).await?
+        } else {
+            None
+        };
+
         // Check promotion gate if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {
             let gate_allowed = fortune5.check_promotion_gate().await?;
             if !gate_allowed {
+                if let (Some(ref otel), Some(ref span)) =
+                    (self.otel_integration.as_ref(), span_ctx.as_ref())
+                {
+                    let _ = otel.add_attribute(
+                        (*span).clone(),
+                        "knhk.workflow_engine.success".to_string(),
+                        "false".to_string(),
+                    );
+                    let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked case execution".to_string(),
                 ));
             }
         }
 
-        let start_time = Instant::now();
-
         // Get case (DashMap is thread-safe, no lock needed)
-        let mut case_ref = self
-            .cases
-            .get_mut(&case_id)
-            .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
+        let mut case_ref = self.cases.get_mut(&case_id).ok_or_else(|| {
+            if let (Some(ref otel), Some(ref span)) =
+                (self.otel_integration.as_ref(), span_ctx.as_ref())
+            {
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    "false".to_string(),
+                );
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+            }
+            WorkflowError::CaseNotFound(case_id.to_string())
+        })?;
 
         // Start if not already started
         if case_ref.value().state == CaseState::Created {
@@ -107,6 +235,16 @@ impl WorkflowEngine {
         // Get workflow specification (DashMap is thread-safe)
         let spec_id = case_ref.value().spec_id;
         let spec = self.specs.get(&spec_id).ok_or_else(|| {
+            if let (Some(ref otel), Some(ref span)) =
+                (self.otel_integration.as_ref(), span_ctx.as_ref())
+            {
+                let _ = otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    "false".to_string(),
+                );
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+            }
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })?;
         let spec_clone = spec.value().clone();
@@ -114,7 +252,11 @@ impl WorkflowEngine {
 
         // Execute workflow from start to end condition
         // Note: execute_workflow doesn't actually recurse to execute_case, so this is safe
-        super::workflow_execution::execute_workflow(self, case_id, &spec_clone).await?;
+        let execution_result =
+            super::workflow_execution::execute_workflow(self, case_id, &spec_clone).await;
+
+        let latency_ms = start_time.elapsed().as_millis();
+        let success = execution_result.is_ok();
 
         // Record SLO metrics if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {
@@ -130,7 +272,43 @@ impl WorkflowEngine {
             fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
         }
 
-        Ok(())
+        // End OTEL span
+        if let (Some(ref otel), Some(ref span)) =
+            (self.otel_integration.as_ref(), span_ctx.as_ref())
+        {
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.success".to_string(),
+                success.to_string(),
+            )
+            .await?;
+            otel.add_attribute(
+                (*span).clone(),
+                "knhk.workflow_engine.latency_ms".to_string(),
+                latency_ms.to_string(),
+            )
+            .await?;
+            // Get final case state
+            if let Ok(case) = self.get_case(case_id).await {
+                otel.add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.case_state".to_string(),
+                    format!("{:?}", case.state),
+                )
+                .await?;
+            }
+            otel.end_span(
+                (*span).clone(),
+                if success {
+                    SpanStatus::Ok
+                } else {
+                    SpanStatus::Error
+                },
+            )
+            .await?;
+        }
+
+        execution_result
     }
 
     /// Cancel a case
