@@ -277,12 +277,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Starting REST API server on {}:{}", host, port);
             use knhk_workflow_engine::api::rest::RestApiServer;
             let app = RestApiServer::new(engine.clone()).router();
-            let addr = format!("{}:{}", host, port)
+            use std::net::SocketAddr;
+            let addr: SocketAddr = format!("{}:{}", host, port)
                 .parse()
                 .map_err(|e| format!("Invalid address {}:{}: {}", host, port, e))?;
             println!("Server listening on http://{}:{}", host, port);
-            axum::Server::bind(&addr)
-                .serve(app.into_make_service())
+            use tokio::net::TcpListener;
+            let listener = TcpListener::bind(&addr)
+                .await
+                .map_err(|e| format!("Failed to bind to {}:{}: {}", host, port, e))?;
+            axum::serve(listener, app)
                 .await
                 .map_err(|e| format!("Server error: {}", e))?;
         }
