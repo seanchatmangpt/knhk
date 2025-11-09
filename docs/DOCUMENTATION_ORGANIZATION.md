@@ -19,6 +19,9 @@ This document describes the organization of KNHK documentation files following t
 - **[PERFORMANCE.md](PERFORMANCE.md)** - Performance guide
 - **[PRODUCTION.md](PRODUCTION.md)** - Production readiness guide
 - **[TESTING.md](TESTING.md)** - Testing guide
+- **[API.md](API.md)** - API guide
+- **[CLI.md](CLI.md)** - CLI guide
+- **[INTEGRATION.md](INTEGRATION.md)** - Integration guide
 
 ### Essential (Indexed in INDEX.md)
 - Core documentation for users and developers

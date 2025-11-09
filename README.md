@@ -90,22 +90,27 @@ See [Architecture Guide](docs/ARCHITECTURE.md) for complete system architecture.
 - **[Production Guide](docs/PRODUCTION.md)** - Production readiness and deployment
 - **[YAWL Integration Guide](docs/YAWL_INTEGRATION.md)** - YAWL compatibility and status
 - **[Ontology Guide](docs/ONTOLOGY.md)** - Ontology integration patterns
+- **[API Guide](docs/API.md)** - 🆕 C, Rust, Erlang APIs (80% use cases)
+- **[CLI Guide](docs/CLI.md)** - 🆕 Command-line interface (80% use cases)
+- **[Integration Guide](docs/INTEGRATION.md)** - 🆕 Integration patterns (80% use cases)
 
 ### By User Type
 
 **New Users**:
 - [Quick Start Guide](docs/QUICK_START.md) - 5-minute setup
 - [Architecture Guide](docs/ARCHITECTURE.md) - System overview
-- [API Documentation](docs/api.md) - C, Rust, and Erlang APIs
+- [API Guide](docs/API.md) - 🆕 C, Rust, Erlang APIs (80% use cases)
+- [CLI Guide](docs/CLI.md) - 🆕 Command-line interface (80% use cases)
+
+**For workflow engine users**:
+- [Workflow Engine Guide](docs/WORKFLOW_ENGINE.md) - Complete workflow engine guide
+- [YAWL Integration Guide](docs/YAWL_INTEGRATION.md) - YAWL compatibility and status
 
 **Developers**:
 - [Testing Guide](docs/TESTING.md) - Chicago TDD methodology
 - [Performance Guide](docs/PERFORMANCE.md) - Hot path optimization
 - [Production Guide](docs/PRODUCTION.md) - Deployment and troubleshooting
-
-**Workflow Users**:
-- [Workflow Engine Guide](docs/WORKFLOW_ENGINE.md) - Complete workflow guide
-- [YAWL Integration Guide](docs/YAWL_INTEGRATION.md) - YAWL compatibility
+- [Integration Guide](docs/INTEGRATION.md) - 🆕 Integration patterns (80% use cases)
 
 **Complete Documentation**: See [Documentation Index](docs/INDEX.md) for all available guides.
 

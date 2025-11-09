@@ -24,6 +24,9 @@
 - **[PERFORMANCE.md](PERFORMANCE.md)** - Performance guide (Hot Path ≤8 ticks, Benchmarks, Optimization)
 - **[PRODUCTION.md](PRODUCTION.md)** - Production readiness guide (Status, Deployment, Troubleshooting)
 - **[TESTING.md](TESTING.md)** - Testing guide (Chicago TDD, Validation, Test Coverage)
+- **[API.md](API.md)** - 🆕 API guide (C, Rust, Erlang APIs - 80% use cases)
+- **[CLI.md](CLI.md)** - 🆕 CLI guide (Command reference - 80% use cases)
+- **[INTEGRATION.md](INTEGRATION.md)** - 🆕 Integration guide (Integration patterns - 80% use cases)
 
 ---
 
@@ -42,7 +45,8 @@
 - **[Branchless C Engine](BRANCHLESS_C_ENGINE_IMPLEMENTATION.md)** - Hot path implementation
 
 ### Integration Guides
-- **[Integration Guide](integration-guide.md)** - How to integrate with KNHK
+- **[Integration Guide](INTEGRATION.md)** - 🆕 Consolidated 80/20 guide (Integration patterns - 80% use cases)
+- **[Integration Guide](integration-guide.md)** - Detailed integration reference
 - **[Weaver Integration](WEAVER.md)** - OpenTelemetry Weaver integration
 - **[unrdf Integration](v1.0-unrdf-integration-plan.md)** - Cold path integration
 
@@ -65,8 +69,10 @@
 ## Reference Documentation
 
 ### API Reference
-- **[API Documentation](api.md)** - Public API reference
-- **[CLI Documentation](cli.md)** - Command-line interface
+- **[API Guide](API.md)** - 🆕 Consolidated 80/20 guide (C, Rust, Erlang APIs - 80% use cases)
+- **[API Documentation](api.md)** - Complete API reference with all functions
+- **[CLI Guide](CLI.md)** - 🆕 Consolidated 80/20 guide (Command reference - 80% use cases)
+- **[CLI Documentation](cli.md)** - Complete CLI command reference
 - **[Configuration](configuration.md)** - Configuration options
 
 ### Development

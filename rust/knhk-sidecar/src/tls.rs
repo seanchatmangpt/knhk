@@ -1,10 +1,7 @@
 // knhk-sidecar: TLS configuration and setup
 
 use crate::error::{SidecarError, SidecarResult};
-use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use rustls_pemfile::{certs, pkcs8_private_keys};
 use std::fs;
-use std::io::BufReader;
 use std::path::Path;
 
 /// TLS configuration
@@ -161,179 +158,54 @@ impl TlsConfig {
     }
 }
 
-/// Create TLS server config for tonic 0.14 using rustls
-pub fn create_tls_server_config(config: &TlsConfig) -> SidecarResult<rustls::ServerConfig> {
+/// Create TLS server config for tonic 0.14
+pub fn create_tls_server_config(
+    config: &TlsConfig,
+) -> SidecarResult<tonic::transport::ServerTlsConfig> {
     config.validate()?;
 
-    // Load certificate
-    let cert_file = config
-        .cert_file
-        .as_ref()
-        .ok_or_else(|| SidecarError::tls_error("Certificate file not configured".to_string()))?;
-    let cert_data = fs::read(cert_file).map_err(|e| {
-        SidecarError::tls_error(format!(
-            "Failed to read certificate file {}: {}",
-            cert_file, e
-        ))
-    })?;
-    let mut cert_reader = BufReader::new(cert_data.as_slice());
-    let certs: Vec<CertificateDer> = certs(&mut cert_reader)
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| SidecarError::tls_error(format!("Failed to parse certificate: {}", e)))?;
+    // Load certificate and key
+    let cert = config.load_cert()?;
+    let key = config.load_key()?;
 
-    // Load private key
-    let key_file = config
-        .key_file
-        .as_ref()
-        .ok_or_else(|| SidecarError::tls_error("Key file not configured".to_string()))?;
-    let key_data = fs::read(key_file).map_err(|e| {
-        SidecarError::tls_error(format!("Failed to read key file {}: {}", key_file, e))
-    })?;
-    let mut key_reader = BufReader::new(key_data.as_slice());
-    let keys: Vec<PrivateKeyDer> = pkcs8_private_keys(&mut key_reader)
-        .map(|key| key.map(|k| PrivateKeyDer::Pkcs8(k)))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| SidecarError::tls_error(format!("Failed to parse private key: {}", e)))?;
+    // Create Identity using tonic's API
+    let identity = tonic::transport::Identity::from_pem(cert, key);
 
-    if keys.is_empty() {
-        return Err(SidecarError::tls_error("No private keys found".to_string()));
-    }
+    let mut server_config = tonic::transport::ServerTlsConfig::new().identity(identity);
 
     // Configure mTLS if enabled
     if config.mtls_enabled {
-        let ca_file = config
-            .ca_file
-            .as_ref()
-            .ok_or_else(|| SidecarError::tls_error("CA file not configured".to_string()))?;
-        let ca_data = fs::read(ca_file).map_err(|e| {
-            SidecarError::tls_error(format!(
-                "Failed to read CA certificate file {}: {}",
-                ca_file, e
-            ))
-        })?;
-        let mut ca_reader = BufReader::new(ca_data.as_slice());
-        let ca_certs: Vec<CertificateDer> = certs(&mut ca_reader)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| {
-                SidecarError::tls_error(format!("Failed to parse CA certificate: {}", e))
-            })?;
-
-        // Build root cert store for client authentication
-        let mut root_store = rustls::RootCertStore::empty();
-        for ca_cert in ca_certs {
-            root_store.add(ca_cert).map_err(|e| {
-                SidecarError::tls_error(format!("Failed to add CA certificate: {}", e))
-            })?;
-        }
-
-        // Create client verifier
-        let client_verifier = rustls::server::WebPkiClientVerifier::builder(root_store.into())
-            .build()
-            .map_err(|e| {
-                SidecarError::tls_error(format!("Failed to create client verifier: {}", e))
-            })?;
-
-        rustls::ServerConfig::builder()
-            .with_client_cert_verifier(client_verifier)
-            .with_single_cert(certs, keys[0].clone_key())
-            .map_err(|e| {
-                SidecarError::tls_error(format!("Failed to create mTLS server config: {}", e))
-            })
-    } else {
-        // Regular TLS without client authentication
-        rustls::ServerConfig::builder()
-            .with_no_client_auth()
-            .with_single_cert(certs, keys[0].clone_key())
-            .map_err(|e| {
-                SidecarError::tls_error(format!("Failed to create server TLS config: {}", e))
-            })
+        let ca_cert = config.load_ca()?;
+        let client_ca_root = tonic::transport::Certificate::from_pem(ca_cert);
+        server_config = server_config.client_ca_root(client_ca_root);
     }
+
+    Ok(server_config)
 }
 
-/// Create TLS client config for tonic 0.14 using rustls
-pub fn create_tls_client_config(config: &TlsConfig) -> SidecarResult<rustls::ClientConfig> {
+/// Create TLS client config for tonic 0.14
+pub fn create_tls_client_config(
+    config: &TlsConfig,
+) -> SidecarResult<tonic::transport::ClientTlsConfig> {
     config.validate()?;
 
-    // Build root cert store
-    let mut root_store = rustls::RootCertStore::empty();
-
-    // Add system root certificates
-    // Use rustls-native-certs to load system root certificates
-    let native_certs = rustls_native_certs::load_native_certs().map_err(|e| {
-        SidecarError::tls_error(format!("Failed to load system certificates: {}", e))
-    })?;
-    for cert in native_certs {
-        root_store.add(cert).map_err(|e| {
-            SidecarError::tls_error(format!("Failed to add system certificate: {}", e))
-        })?;
-    }
+    let mut client_config = tonic::transport::ClientTlsConfig::new();
 
     // Configure mTLS if enabled
     if config.mtls_enabled {
-        // Load CA certificate if provided
-        if let Some(ref ca_file) = config.ca_file {
-            let ca_data = fs::read(ca_file).map_err(|e| {
-                SidecarError::tls_error(format!(
-                    "Failed to read CA certificate file {}: {}",
-                    ca_file, e
-                ))
-            })?;
-            let mut ca_reader = BufReader::new(ca_data.as_slice());
-            let ca_certs: Vec<CertificateDer> = certs(&mut ca_reader)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| {
-                    SidecarError::tls_error(format!("Failed to parse CA certificate: {}", e))
-                })?;
+        let cert = config.load_cert()?;
+        let key = config.load_key()?;
+        let identity = tonic::transport::Identity::from_pem(cert, key);
+        client_config = client_config.identity(identity);
 
-            for ca_cert in ca_certs {
-                root_store.add(ca_cert).map_err(|e| {
-                    SidecarError::tls_error(format!("Failed to add CA certificate: {}", e))
-                })?;
-            }
+        if let Some(_) = config.ca_file {
+            let ca_cert = config.load_ca()?;
+            let ca = tonic::transport::Certificate::from_pem(ca_cert);
+            client_config = client_config.ca_certificate(ca);
         }
-
-        // Load client certificate and key
-        let cert_file = config.cert_file.as_ref().ok_or_else(|| {
-            SidecarError::tls_error("Certificate file not configured".to_string())
-        })?;
-        let cert_data = fs::read(cert_file).map_err(|e| {
-            SidecarError::tls_error(format!(
-                "Failed to read certificate file {}: {}",
-                cert_file, e
-            ))
-        })?;
-        let mut cert_reader = BufReader::new(cert_data.as_slice());
-        let certs: Vec<CertificateDer> = certs(&mut cert_reader)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| SidecarError::tls_error(format!("Failed to parse certificate: {}", e)))?;
-
-        let key_file = config
-            .key_file
-            .as_ref()
-            .ok_or_else(|| SidecarError::tls_error("Key file not configured".to_string()))?;
-        let key_data = fs::read(key_file).map_err(|e| {
-            SidecarError::tls_error(format!("Failed to read key file {}: {}", key_file, e))
-        })?;
-        let mut key_reader = BufReader::new(key_data.as_slice());
-        let keys: Vec<PrivateKeyDer> = pkcs8_private_keys(&mut key_reader)
-            .map(|key| key.map(|k| PrivateKeyDer::Pkcs8(k)))
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| SidecarError::tls_error(format!("Failed to parse private key: {}", e)))?;
-
-        if keys.is_empty() {
-            return Err(SidecarError::tls_error("No private keys found".to_string()));
-        }
-
-        rustls::ClientConfig::builder()
-            .with_root_certificates(root_store)
-            .with_client_auth_cert(certs, keys[0].clone_key())
-            .map_err(|e| {
-                SidecarError::tls_error(format!("Failed to create mTLS client config: {}", e))
-            })
-    } else {
-        // Regular TLS without client certificate
-        Ok(rustls::ClientConfig::builder()
-            .with_root_certificates(root_store)
-            .with_no_client_auth())
     }
+    // When mTLS is not enabled, tonic uses system root certificates by default
+    // No need to explicitly load CA certificate
+
+    Ok(client_config)
 }

@@ -31,6 +31,9 @@
 - **[PERFORMANCE.md](PERFORMANCE.md)** - Performance guide (Hot Path ≤8 ticks, Benchmarks, Optimization)
 - **[PRODUCTION.md](PRODUCTION.md)** - Production readiness guide (Status, Deployment, Troubleshooting)
 - **[TESTING.md](TESTING.md)** - Testing guide (Chicago TDD, Validation, Test Coverage)
+- **[API.md](API.md)** - 🆕 API guide (C, Rust, Erlang APIs - 80% use cases)
+- **[CLI.md](CLI.md)** - 🆕 CLI guide (Command reference - 80% use cases)
+- **[INTEGRATION.md](INTEGRATION.md)** - 🆕 Integration guide (Integration patterns - 80% use cases)
 
 ## Essential Documentation
 
@@ -38,10 +41,14 @@
 - **[QUICK_START.md](QUICK_START.md)** - Quick setup and first steps
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - 🆕 Consolidated 80/20 guide (Hot/Warm/Cold paths, Core Components)
 - **[architecture.md](architecture.md)** - Detailed architecture reference
-- **[api.md](api.md)** - C, Rust, and Erlang API documentation
+- **[API.md](API.md)** - 🆕 Consolidated 80/20 guide (C, Rust, Erlang APIs - 80% use cases)
+- **[api.md](api.md)** - Complete API reference
+- **[CLI.md](CLI.md)** - 🆕 Consolidated 80/20 guide (Command reference - 80% use cases)
+- **[cli.md](cli.md)** - Complete CLI command reference
 
 ### Core Reference
-- **[integration-guide.md](integration-guide.md)** - Integration examples and patterns
+- **[Integration Guide](INTEGRATION.md)** - 🆕 Consolidated 80/20 guide (Integration patterns - 80% use cases)
+- **[integration-guide.md](integration-guide.md)** - Detailed integration reference
 - **[v1.0-unrdf-integration-plan.md](v1.0-unrdf-integration-plan.md)** - unrdf integration roadmap
 - **[lockchain-unrdf-compatibility-check.md](lockchain-unrdf-compatibility-check.md)** - Lockchain compatibility analysis
 

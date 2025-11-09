@@ -1,5 +1,13 @@
 # KNHK Integration Guide
 
+**⚠️ This document has been consolidated. See the [80/20 Integration Guide](INTEGRATION.md) for the single source of truth.**
+
+This file is kept for backward compatibility. All new documentation should reference the consolidated guide.
+
+---
+
+# KNHK Integration Guide
+
 **Version**: 1.0.0
 **Date**: 2025-11-06
 **Audience**: Developers integrating KNHK components
