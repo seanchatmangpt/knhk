@@ -9,7 +9,7 @@
 use crate::case::{Case, CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::executor::WorkflowEngine;
-use crate::parser::{JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};
+use crate::parser::{Condition, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};
 use crate::patterns::{
     PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
 };
@@ -273,6 +273,63 @@ impl WorkflowSpecBuilder {
         self
     }
 
+    /// Add a condition to the workflow
+    pub fn add_condition(mut self, condition: Condition) -> Self {
+        self.spec.conditions.insert(condition.id.clone(), condition);
+        self
+    }
+
+    /// Automatically set up start and end conditions based on task IDs
+    /// This creates condition objects and connects them to the first and last tasks
+    ///
+    /// # Arguments
+    /// * `start_task_id` - ID of the first task in the workflow
+    /// * `end_task_id` - ID of the last task in the workflow
+    pub fn with_auto_conditions(
+        mut self,
+        start_task_id: impl Into<String>,
+        end_task_id: impl Into<String>,
+    ) -> Self {
+        let start_id = start_task_id.into();
+        let end_id = end_task_id.into();
+
+        // Create start condition
+        let start_condition = Condition {
+            id: format!("condition:{}", start_id),
+            name: "Start".to_string(),
+            outgoing_flows: vec![start_id.clone()],
+            incoming_flows: vec![],
+        };
+        self.spec
+            .conditions
+            .insert(start_condition.id.clone(), start_condition.clone());
+        self.spec.start_condition = Some(start_condition.id.clone());
+
+        // Update first task to have input condition
+        if let Some(task) = self.spec.tasks.get_mut(&start_id) {
+            task.input_conditions.push(start_condition.id.clone());
+        }
+
+        // Create end condition
+        let end_condition = Condition {
+            id: format!("condition:{}", end_id),
+            name: "End".to_string(),
+            outgoing_flows: vec![],
+            incoming_flows: vec![end_id.clone()],
+        };
+        self.spec
+            .conditions
+            .insert(end_condition.id.clone(), end_condition.clone());
+        self.spec.end_condition = Some(end_condition.id.clone());
+
+        // Update last task to have output condition
+        if let Some(task) = self.spec.tasks.get_mut(&end_id) {
+            task.output_conditions.push(end_condition.id.clone());
+        }
+
+        self
+    }
+
     /// Set start condition
     pub fn with_start_condition(mut self, condition_id: impl Into<String>) -> Self {
         self.spec.start_condition = Some(condition_id.into());
@@ -353,9 +410,61 @@ impl TaskBuilder {
         self
     }
 
+    /// Add input condition to task
+    pub fn with_input_condition(mut self, condition_id: impl Into<String>) -> Self {
+        self.task.input_conditions.push(condition_id.into());
+        self
+    }
+
+    /// Add output condition to task
+    pub fn with_output_condition(mut self, condition_id: impl Into<String>) -> Self {
+        self.task.output_conditions.push(condition_id.into());
+        self
+    }
+
     /// Build the task
     pub fn build(self) -> Task {
         self.task
+    }
+}
+
+// ============================================================================
+// Condition Builder
+// ============================================================================
+
+/// Builder for creating test conditions
+pub struct ConditionBuilder {
+    condition: Condition,
+}
+
+impl ConditionBuilder {
+    /// Create a new condition builder
+    pub fn new(id: impl Into<String>, name: impl Into<String>) -> Self {
+        Self {
+            condition: Condition {
+                id: id.into(),
+                name: name.into(),
+                outgoing_flows: vec![],
+                incoming_flows: vec![],
+            },
+        }
+    }
+
+    /// Add outgoing flow (to task)
+    pub fn add_outgoing_flow(mut self, task_id: impl Into<String>) -> Self {
+        self.condition.outgoing_flows.push(task_id.into());
+        self
+    }
+
+    /// Add incoming flow (from task)
+    pub fn add_incoming_flow(mut self, task_id: impl Into<String>) -> Self {
+        self.condition.incoming_flows.push(task_id.into());
+        self
+    }
+
+    /// Build the condition
+    pub fn build(self) -> Condition {
+        self.condition
     }
 }
 
@@ -621,6 +730,101 @@ impl WorkflowPropertyTester {
 
         Ok(true) // All tasks comply with tick budget
     }
+}
+
+// ============================================================================
+// Workflow Helper Functions
+// ============================================================================
+
+/// Create a simple sequential workflow with proper conditions
+/// This helper creates a workflow with start → task → end structure
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `task_id` - ID of the single task
+/// * `task_name` - Name of the single task
+pub fn create_simple_sequential_workflow(
+    name: impl Into<String>,
+    task_id: impl Into<String>,
+    task_name: impl Into<String>,
+) -> WorkflowSpec {
+    let task_id_str = task_id.into();
+    let start_condition_id = "condition:start".to_string();
+    let end_condition_id = "condition:end".to_string();
+
+    let task = TaskBuilder::new(task_id_str.clone(), task_name)
+        .with_input_condition(start_condition_id.clone())
+        .with_output_condition(end_condition_id.clone())
+        .build();
+
+    let start_condition = ConditionBuilder::new(start_condition_id.clone(), "Start")
+        .add_outgoing_flow(task_id_str.clone())
+        .build();
+
+    let end_condition = ConditionBuilder::new(end_condition_id.clone(), "End")
+        .add_incoming_flow(task_id_str.clone())
+        .build();
+
+    WorkflowSpecBuilder::new(name)
+        .add_task(task)
+        .add_condition(start_condition)
+        .add_condition(end_condition)
+        .with_start_condition(start_condition_id)
+        .with_end_condition(end_condition_id)
+        .build()
+}
+
+/// Create a workflow with multiple tasks in sequence with proper conditions
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `task_ids` - Vector of (task_id, task_name) tuples
+pub fn create_sequential_workflow(
+    name: impl Into<String>,
+    task_ids: Vec<(String, String)>,
+) -> WorkflowSpec {
+    if task_ids.is_empty() {
+        panic!("Cannot create workflow with no tasks");
+    }
+
+    let start_condition_id = "condition:start".to_string();
+    let end_condition_id = "condition:end".to_string();
+
+    let mut builder = WorkflowSpecBuilder::new(name);
+
+    // Create start condition
+    let start_condition = ConditionBuilder::new(start_condition_id.clone(), "Start")
+        .add_outgoing_flow(task_ids[0].0.clone())
+        .build();
+    builder = builder.add_condition(start_condition);
+
+    // Create tasks with proper connections
+    for (idx, (task_id, task_name)) in task_ids.iter().enumerate() {
+        let mut task_builder = TaskBuilder::new(task_id.clone(), task_name.clone());
+
+        // First task gets start condition as input
+        if idx == 0 {
+            task_builder = task_builder.with_input_condition(start_condition_id.clone());
+        }
+
+        // Last task gets end condition as output
+        if idx == task_ids.len() - 1 {
+            task_builder = task_builder.with_output_condition(end_condition_id.clone());
+        }
+
+        builder = builder.add_task(task_builder.build());
+    }
+
+    // Create end condition
+    let end_condition = ConditionBuilder::new(end_condition_id.clone(), "End")
+        .add_incoming_flow(task_ids.last().unwrap().0.clone())
+        .build();
+    builder = builder.add_condition(end_condition);
+
+    builder
+        .with_start_condition(start_condition_id)
+        .with_end_condition(end_condition_id)
+        .build()
 }
 
 // ============================================================================

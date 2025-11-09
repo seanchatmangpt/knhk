@@ -94,6 +94,8 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # Storage
 sled = { workspace = true }
+tempfile = { workspace = true }
+process_mining = "0.3"
 
 [features]
 default = ["unrdf"]
@@ -114,9 +116,7 @@ tonic-prost-build = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
-tempfile = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 futures = { workspace = true }
 serial_test = "3.0"
-process_mining = "0.3"
 regex = "1.10"
