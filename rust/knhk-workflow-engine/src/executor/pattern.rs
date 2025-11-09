@@ -27,7 +27,7 @@ impl WorkflowEngine {
                 otel,
                 "knhk.workflow_engine.execute_pattern",
                 case_id: Some(&context.case_id),
-                pattern_id: Some(&pattern_id)
+                pattern_id: Some(&pattern_id),
             )
             .await?
         } else {

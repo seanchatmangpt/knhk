@@ -27,76 +27,88 @@ macro_rules! otel_span {
         $(pattern_id: $pattern_id:expr,)?
         $(parent: $parent:expr,)?
     ) => {{
-        use $crate::integration::otel_helpers::create_trace_context;
-        use knhk_otel::SpanContext;
+        async move {
+            use $crate::integration::otel_helpers::create_trace_context;
+            use $crate::integration::OtelIntegration;
+            use knhk_otel::SpanContext;
 
-        let mut guard = $otel.tracer.write().await;
-        if let Some(ref mut tracer) = *guard {
-            // Create parent context for trace correlation
-            let parent_ctx = if let Some(parent) = $($parent)? {
-                Some(parent.clone())
-            } else if let Some(cid) = $($case_id)? {
-                create_trace_context(cid)
+            let mut guard = $otel.tracer.write().await;
+            if let Some(ref mut tracer) = *guard {
+                // Create parent context for trace correlation
+                let parent_ctx = {
+                    let mut ctx = None;
+                    $(
+                        if let Some(parent) = $parent {
+                            ctx = Some(parent.clone());
+                        }
+                    )?
+                    if ctx.is_none() {
+                        $(
+                            if let Some(cid) = $case_id {
+                                ctx = create_trace_context(cid);
+                            }
+                        )?
+                    }
+                    ctx
+                };
+
+                let span_ctx = tracer.start_span($span_name.to_string(), parent_ctx);
+
+                // Add XES-compatible attributes
+                let timestamp = chrono::Utc::now().to_rfc3339();
+                tracer.add_attribute(
+                    span_ctx.clone(),
+                    "time:timestamp".to_string(),
+                    timestamp,
+                );
+                tracer.add_attribute(
+                    span_ctx.clone(),
+                    "lifecycle:transition".to_string(),
+                    "start".to_string(),
+                );
+
+                // Add workflow attributes
+                $(
+                    if let Some(cid) = $case_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.case_id".to_string(),
+                            cid.to_string(),
+                        );
+                    }
+                )?
+                $(
+                    if let Some(sid) = $spec_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.spec_id".to_string(),
+                            sid.to_string(),
+                        );
+                    }
+                )?
+                $(
+                    if let Some(tid) = $task_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.task_id".to_string(),
+                            tid.to_string(),
+                        );
+                    }
+                )?
+                $(
+                    if let Some(pid) = $pattern_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.pattern_id".to_string(),
+                            pid.0.to_string(),
+                        );
+                    }
+                )?
+
+                Ok(Some(span_ctx))
             } else {
-                None
-            };
-
-            let span_ctx = tracer.start_span($span_name.to_string(), parent_ctx);
-
-            // Add XES-compatible attributes
-            let timestamp = chrono::Utc::now().to_rfc3339();
-            tracer.add_attribute(
-                span_ctx.clone(),
-                "time:timestamp".to_string(),
-                timestamp,
-            );
-            tracer.add_attribute(
-                span_ctx.clone(),
-                "lifecycle:transition".to_string(),
-                "start".to_string(),
-            );
-
-            // Add workflow attributes
-            $(
-                if let Some(cid) = $case_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.case_id".to_string(),
-                        cid.to_string(),
-                    );
-                }
-            )?
-            $(
-                if let Some(sid) = $spec_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.spec_id".to_string(),
-                        sid.to_string(),
-                    );
-                }
-            )?
-            $(
-                if let Some(tid) = $task_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.task_id".to_string(),
-                        tid.to_string(),
-                    );
-                }
-            )?
-            $(
-                if let Some(pid) = $pattern_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.pattern_id".to_string(),
-                        pid.0.to_string(),
-                    );
-                }
-            )?
-
-            Ok(Some(span_ctx))
-        } else {
-            Ok(None)
+                Ok(None)
+            }
         }
     }};
 }
