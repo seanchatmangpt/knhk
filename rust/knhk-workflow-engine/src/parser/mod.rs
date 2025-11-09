@@ -51,6 +51,38 @@ impl WorkflowParser {
         Ok(spec)
     }
 
+    /// Parse workflow from JSON-LD string with deadlock validation
+    pub fn parse_jsonld(&mut self, jsonld: &str) -> WorkflowResult<WorkflowSpec> {
+        // Parse JSON-LD into RDF store using oxigraph's built-in parser
+        // Use default JSON-LD profile (expanded)
+        self.store
+            .load_from_reader(
+                RdfFormat::JsonLd {
+                    profile: oxigraph::io::JsonLdProfile::Expanded,
+                },
+                jsonld.as_bytes(),
+            )
+            .map_err(|e| WorkflowError::Parse(format!("Failed to load JSON-LD: {:?}", e)))?;
+
+        // Extract workflow specification
+        let spec = extractor::extract_workflow_spec(&self.store)?;
+
+        // Validate for deadlocks
+        self.deadlock_detector.validate(&spec)?;
+
+        Ok(spec)
+    }
+
+    /// Parse workflow from JSON-LD file
+    pub fn parse_jsonld_file(&mut self, path: &std::path::Path) -> WorkflowResult<WorkflowSpec> {
+        let mut file = std::fs::File::open(path)
+            .map_err(|e| WorkflowError::Parse(format!("Failed to open file: {}", e)))?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
+            .map_err(|e| WorkflowError::Parse(format!("Failed to read file: {}", e)))?;
+        self.parse_jsonld(&contents)
+    }
+
     /// Parse workflow from file
     pub fn parse_file(&mut self, path: &std::path::Path) -> WorkflowResult<WorkflowSpec> {
         let mut file = std::fs::File::open(path)

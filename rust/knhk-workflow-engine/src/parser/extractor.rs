@@ -100,13 +100,13 @@ pub fn extract_tasks(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\
-             SELECT ?task ?name ?type ?split ?join ?maxTicks ?priority ?simd WHERE {{\n\
+             SELECT ?task ?name ?type ?splitType ?joinType ?maxTicks ?priority ?simd WHERE {{\n\
                {} yawl:hasTask ?task .\n\
                ?task rdf:type ?type .\n\
                OPTIONAL {{ ?task rdfs:label ?name }}\n\
                OPTIONAL {{ ?task yawl:taskName ?name }}\n\
-               OPTIONAL {{ ?task yawl:splitType ?split }}\n\
-               OPTIONAL {{ ?task yawl:joinType ?join }}\n\
+               OPTIONAL {{ ?task yawl:hasSplit ?split . ?split rdf:type ?splitType }}\n\
+               OPTIONAL {{ ?task yawl:hasJoin ?join . ?join rdf:type ?joinType }}\n\
                OPTIONAL {{ ?task yawl:maxTicks ?maxTicks }}\n\
                OPTIONAL {{ ?task yawl:priority ?priority }}\n\
                OPTIONAL {{ ?task yawl:useSimd ?simd }}\n\
@@ -117,11 +117,12 @@ pub fn extract_tasks(
         format!(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
-             SELECT ?task ?name ?split ?join WHERE {{\n\
-               ?task rdf:type yawl:AtomicTask .\n\
+             SELECT ?task ?name ?splitType ?joinType WHERE {{\n\
+               ?task rdf:type yawl:Task .\n\
+               OPTIONAL {{ ?task rdfs:label ?name }}\n\
                OPTIONAL {{ ?task yawl:taskName ?name }}\n\
-               OPTIONAL {{ ?task yawl:split ?split }}\n\
-               OPTIONAL {{ ?task yawl:join ?join }}\n\
+               OPTIONAL {{ ?task yawl:hasSplit ?split . ?split rdf:type ?splitType }}\n\
+               OPTIONAL {{ ?task yawl:hasJoin ?join . ?join rdf:type ?joinType }}\n\
              }}",
             yawl_ns
         )
@@ -175,9 +176,27 @@ pub fn extract_tasks(
                 .unwrap_or(TaskType::Atomic);
 
             let split_type = solution
-                .get("split")
+                .get("splitType")
+                .or_else(|| solution.get("split"))
                 .and_then(|s| {
-                    if let oxigraph::model::Term::Literal(lit) = s {
+                    if let oxigraph::model::Term::NamedNode(node) = s {
+                        let type_str = node.as_str();
+                        if type_str.contains("ControlTypeAnd") || type_str.contains("And") {
+                            Some(SplitType::And)
+                        } else if type_str.contains("ControlTypeXor")
+                            || type_str.contains("Xor")
+                            || type_str.contains("XOR")
+                        {
+                            Some(SplitType::Xor)
+                        } else if type_str.contains("ControlTypeOr")
+                            || type_str.contains("Or")
+                            || type_str.contains("OR")
+                        {
+                            Some(SplitType::Or)
+                        } else {
+                            None
+                        }
+                    } else if let oxigraph::model::Term::Literal(lit) = s {
                         match lit.value() {
                             "AND" => Some(SplitType::And),
                             "XOR" => Some(SplitType::Xor),
@@ -191,9 +210,27 @@ pub fn extract_tasks(
                 .unwrap_or(SplitType::And);
 
             let join_type = solution
-                .get("join")
+                .get("joinType")
+                .or_else(|| solution.get("join"))
                 .and_then(|j| {
-                    if let oxigraph::model::Term::Literal(lit) = j {
+                    if let oxigraph::model::Term::NamedNode(node) = j {
+                        let type_str = node.as_str();
+                        if type_str.contains("ControlTypeAnd") || type_str.contains("And") {
+                            Some(JoinType::And)
+                        } else if type_str.contains("ControlTypeXor")
+                            || type_str.contains("Xor")
+                            || type_str.contains("XOR")
+                        {
+                            Some(JoinType::Xor)
+                        } else if type_str.contains("ControlTypeOr")
+                            || type_str.contains("Or")
+                            || type_str.contains("OR")
+                        {
+                            Some(JoinType::Or)
+                        } else {
+                            None
+                        }
+                    } else if let oxigraph::model::Term::Literal(lit) = j {
                         match lit.value() {
                             "AND" => Some(JoinType::And),
                             "XOR" => Some(JoinType::Xor),

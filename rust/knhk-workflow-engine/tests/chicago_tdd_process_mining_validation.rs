@@ -19,7 +19,6 @@ use process_mining::{
     event_log::activity_projection::EventLogActivityProjection,
     import_xes_file, XESImportOptions,
 };
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Create a simple test workflow specification
@@ -130,6 +129,9 @@ async fn test_process_discovery_from_workflow_execution() {
         log_repair_loop_df_thresh_rel: 2.0,
         absolute_df_clean_thresh: 1,
         relative_df_clean_thresh: 0.01,
+        balance_thresh: 0.5,
+        fitness_thresh: 0.5,
+        replay_thresh: 0.5,
     };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
@@ -189,6 +191,9 @@ async fn test_consistent_process_discovery_across_executions() {
         log_repair_loop_df_thresh_rel: 2.0,
         absolute_df_clean_thresh: 1,
         relative_df_clean_thresh: 0.01,
+        balance_thresh: 0.5,
+        fitness_thresh: 0.5,
+        replay_thresh: 0.5,
     };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
@@ -311,6 +316,9 @@ async fn test_process_discovery_multiple_cases() {
         log_repair_loop_df_thresh_rel: 2.0,
         absolute_df_clean_thresh: 1,
         relative_df_clean_thresh: 0.01,
+        balance_thresh: 0.5,
+        fitness_thresh: 0.5,
+        replay_thresh: 0.5,
     };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
@@ -440,6 +448,9 @@ async fn test_process_discovery_produces_valid_petri_net() {
         log_repair_loop_df_thresh_rel: 2.0,
         absolute_df_clean_thresh: 1,
         relative_df_clean_thresh: 0.01,
+        balance_thresh: 0.5,
+        fitness_thresh: 0.5,
+        replay_thresh: 0.5,
     };
     let configs = vec![
         base_config.clone(),
@@ -448,12 +459,18 @@ async fn test_process_discovery_produces_valid_petri_net() {
             log_repair_loop_df_thresh_rel: 1.0,
             absolute_df_clean_thresh: 1,
             relative_df_clean_thresh: 0.01,
+            balance_thresh: 0.5,
+            fitness_thresh: 0.5,
+            replay_thresh: 0.5,
         },
         AlphaPPPConfig {
             log_repair_skip_df_thresh_rel: 3.0,
             log_repair_loop_df_thresh_rel: 3.0,
             absolute_df_clean_thresh: 1,
             relative_df_clean_thresh: 0.01,
+            balance_thresh: 0.5,
+            fitness_thresh: 0.5,
+            replay_thresh: 0.5,
         },
     ];
 
