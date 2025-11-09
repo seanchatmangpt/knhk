@@ -1,0 +1,224 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Data Layer
+
+Container_Boundary(data, "Data Gateway") {
+    Component(xquery_processor, "XQuery Processor", "Rust/Saxon-rs", "Execute XQuery expressions on XML/JSON data")
+    Component(connector_framework, "Connector Framework", "Rust", "Plugin system for external data sources")
+    Component(sql_connector, "SQL Connector", "Rust/SQLx", "Connect to PostgreSQL, MySQL, Oracle")
+    Component(rest_connector, "REST Connector", "Rust/Reqwest", "Call HTTP/REST APIs")
+    Component(schema_validator, "Schema Validator", "Rust", "Validate data against XML Schema, JSON Schema")
+    Component(type_registry, "Type Registry", "Rust", "Register and resolve custom data types")
+    Component(mapping_engine, "Mapping Engine", "Rust", "Transform data between formats")
+
+    ComponentDb(schema_store, "Schema Store", "Sled", "Cached schemas and type definitions")
+}
+
+Container_Ext(external_db, "External Databases", "PostgreSQL/MySQL/Oracle")
+Container_Ext(external_api, "External APIs", "REST/SOAP")
+Container_Ext(engine_core, "Engine Core")
+
+Rel(xquery_processor, schema_validator, "Validates query results")
+Rel(xquery_processor, type_registry, "Resolves types")
+
+Rel(connector_framework, sql_connector, "SQL connections")
+Rel(connector_framework, rest_connector, "HTTP connections")
+
+Rel(sql_connector, external_db, "Queries/updates", "JDBC")
+Rel(rest_connector, external_api, "HTTP requests", "REST")
+
+Rel(schema_validator, schema_store, "Loads schemas")
+Rel(type_registry, schema_store, "Loads type defs")
+
+Rel(mapping_engine, schema_validator, "Validates mapped data")
+Rel(mapping_engine, type_registry, "Converts types")
+
+Rel(engine_core, xquery_processor, "Queries data")
+Rel(engine_core, connector_framework, "Reads/writes data")
+
+note right of xquery_processor
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **XQuery Features:**
+  - XPath navigation
+  - FLWOR expressions
+  - Type checking
+  - Function library
+  - Update facility
+
+  **Implementation Options:**
+  1. **Saxon-rs** (Rust bindings to Saxon)
+     - Pro: Full XQuery 3.1 support
+     - Con: JNI overhead, complex build
+
+  2. **xrust** (Pure Rust XQuery)
+     - Pro: Native Rust, fast
+     - Con: Incomplete spec coverage
+
+  3. **Embedded Saxon** (via JNI)
+     - Pro: Battle-tested
+     - Con: JVM dependency
+
+  **Complexity:** HIGH (10-15 days)
+
+  **80/20 Decision:** DEFER to v2.0
+  - Use simple JSONPath for v1.0
+  - XQuery is advanced feature
+  - Limited enterprise adoption
+  - Focus on connector framework instead
+end note
+
+note right of connector_framework
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **Connector Plugin System:**
+  - Trait-based plugin architecture
+  - Dynamic loading (libloading crate)
+  - Connector registry
+  - Configuration management
+
+  **Core Trait:**
+  ```rust
+  pub trait Connector: Send + Sync {
+      fn connect(&mut self, config: &Config) -> Result<()>;
+      fn execute(&self, query: &Query) -> Result<ResultSet>;
+      fn disconnect(&mut self) -> Result<()>;
+  }
+  ```
+
+  **Built-in Connectors:**
+  1. SQL (PostgreSQL, MySQL, Oracle)
+  2. REST (HTTP/HTTPS)
+  3. File (CSV, JSON, XML)
+  4. LDAP (directory services)
+  5. Message Queue (RabbitMQ, Kafka)
+
+  **Complexity:** MEDIUM (5-7 days)
+
+  **80/20 Decision:** Implement SQL + REST
+  - Covers 85% of enterprise integrations
+  - File/LDAP/MQ can defer
+end note
+
+note right of sql_connector
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **SQL Connector Features:**
+  - Connection pooling (r2d2)
+  - Prepared statements
+  - Transaction support
+  - Batch operations
+  - Multiple database support
+
+  **Supported Databases:**
+  - PostgreSQL (via tokio-postgres)
+  - MySQL (via mysql_async)
+  - Oracle (via oracle crate)
+  - SQL Server (via tiberius)
+
+  **Design:**
+  - SQLConnector struct
+  - Database enum (Postgres, MySQL, etc)
+  - Query builder
+  - Result mapper
+
+  **Complexity:** MEDIUM (4-6 days)
+end note
+
+note right of rest_connector
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **REST Connector Features:**
+  - HTTP client (reqwest)
+  - Authentication (Basic, Bearer, OAuth2)
+  - Request/response mapping
+  - Retry logic
+  - Circuit breaker
+
+  **Supported Methods:**
+  - GET, POST, PUT, DELETE, PATCH
+  - Custom headers
+  - Query parameters
+  - Request/response bodies (JSON, XML)
+
+  **Design:**
+  - RESTConnector struct
+  - AuthConfig enum
+  - RequestBuilder
+  - ResponseParser
+
+  **Complexity:** MEDIUM (3-5 days)
+end note
+
+note right of schema_validator
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Schema Types:**
+  - XML Schema (XSD)
+  - JSON Schema (draft 7+)
+  - Custom schemas
+
+  **Validation:**
+  - Type checking
+  - Constraint validation
+  - Error reporting
+
+  **Libraries:**
+  - xsd-parser (XML Schema)
+  - jsonschema (JSON Schema)
+
+  **Complexity:** MEDIUM (4-5 days)
+
+  **80/20 Decision:** JSON Schema only
+  - Most modern APIs use JSON
+  - XML Schema adds complexity
+  - Defer XSD to v2.0
+end note
+
+note right of type_registry
+  **Status:** 🔴 Missing - LOW PRIORITY
+
+  **Custom Type System:**
+  - Register business types
+  - Type conversions
+  - Type validation
+  - Type serialization
+
+  **Use Cases:**
+  - Currency types
+  - Business identifiers
+  - Domain enums
+
+  **Complexity:** LOW-MEDIUM (3-4 days)
+
+  **80/20 Decision:** DEFER to v2.0
+  - Use primitive types initially
+  - Custom types are optimization
+end note
+
+note right of mapping_engine
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Data Transformation:**
+  - JSON to XML
+  - XML to JSON
+  - SQL result to JSON
+  - Custom mappings
+
+  **Mapping Language:**
+  - JSONata expressions
+  - XPath/XQuery
+  - Custom Rust functions
+
+  **Complexity:** MEDIUM (5-6 days)
+
+  **80/20 Decision:** Basic JSON mapping
+  - Use serde for JSON transforms
+  - Skip complex mapping DSL
+  - Manual mapping for v1.0
+end note
+
+@enduml

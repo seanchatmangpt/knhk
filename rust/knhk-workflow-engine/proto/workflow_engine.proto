@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package knhk.workflow_engine.v1;
+
+// Workflow Engine gRPC Service
+service WorkflowEngineService {
+  // Register a workflow specification
+  rpc RegisterWorkflow(RegisterWorkflowRequest) returns (RegisterWorkflowResponse);
+  
+  // Get workflow specification
+  rpc GetWorkflow(GetWorkflowRequest) returns (GetWorkflowResponse);
+  
+  // Create a new case
+  rpc CreateCase(CreateCaseRequest) returns (CreateCaseResponse);
+  
+  // Get case status
+  rpc GetCase(GetCaseRequest) returns (GetCaseResponse);
+  
+  // Get case history
+  rpc GetCaseHistory(GetCaseHistoryRequest) returns (GetCaseHistoryResponse);
+  
+  // Start a case
+  rpc StartCase(StartCaseRequest) returns (StartCaseResponse);
+  
+  // Execute a case
+  rpc ExecuteCase(ExecuteCaseRequest) returns (ExecuteCaseResponse);
+  
+  // Cancel a case
+  rpc CancelCase(CancelCaseRequest) returns (CancelCaseResponse);
+}
+
+// Register workflow request
+message RegisterWorkflowRequest {
+  WorkflowSpec spec = 1;
+}
+
+// Register workflow response
+message RegisterWorkflowResponse {
+  string spec_id = 1;
+}
+
+// Get workflow request
+message GetWorkflowRequest {
+  string spec_id = 1;
+}
+
+// Get workflow response
+message GetWorkflowResponse {
+  WorkflowSpec spec = 1;
+}
+
+// Create case request
+message CreateCaseRequest {
+  string spec_id = 1;
+  string data = 2; // JSON string
+}
+
+// Create case response
+message CreateCaseResponse {
+  string case_id = 1;
+}
+
+// Get case request
+message GetCaseRequest {
+  string case_id = 1;
+}
+
+// Get case response
+message GetCaseResponse {
+  Case case = 1;
+}
+
+// Get case history request
+message GetCaseHistoryRequest {
+  string case_id = 1;
+}
+
+// Get case history response
+message GetCaseHistoryResponse {
+  repeated CaseHistoryEntry entries = 1;
+}
+
+// Start case request
+message StartCaseRequest {
+  string case_id = 1;
+}
+
+// Start case response
+message StartCaseResponse {
+  bool success = 1;
+}
+
+// Execute case request
+message ExecuteCaseRequest {
+  string case_id = 1;
+}
+
+// Execute case response
+message ExecuteCaseResponse {
+  bool success = 1;
+}
+
+// Cancel case request
+message CancelCaseRequest {
+  string case_id = 1;
+}
+
+// Cancel case response
+message CancelCaseResponse {
+  bool success = 1;
+}
+
+// Workflow specification (simplified representation)
+message WorkflowSpec {
+  string id = 1;
+  string name = 2;
+  string spec_data = 3; // JSON string
+}
+
+// Case representation
+message Case {
+  string id = 1;
+  string spec_id = 2;
+  string state = 3;
+  string data = 4; // JSON string
+  int64 created_at = 5;
+  int64 updated_at = 6;
+}
+
+// Case history entry
+message CaseHistoryEntry {
+  int64 timestamp = 1;
+  string event_type = 2;
+  string data = 3; // JSON string
+}
+

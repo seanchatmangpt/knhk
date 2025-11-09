@@ -4,17 +4,22 @@ use crate::case::{Case, CaseId};
 use crate::compliance::ProvenanceTracker;
 use crate::enterprise::EnterpriseConfig;
 use crate::integration::fortune5::Fortune5Integration;
-use crate::integration::{LockchainIntegration, OtelIntegration, SidecarIntegration};
+use crate::integration::{
+    ConnectorIntegration, LockchainIntegration, OtelIntegration, SidecarIntegration,
+};
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::patterns::PatternRegistry;
 use crate::resource::ResourceAllocator;
 use crate::security::AuthManager;
 use crate::services::timer::TimerService;
 use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
+use crate::state::manager::StateManager;
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
 use dashmap::DashMap;
+use oxigraph::store::Store;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -25,6 +30,8 @@ pub struct WorkflowEngine {
     pub(crate) pattern_registry: Arc<PatternRegistry>,
     /// State store
     pub(crate) state_store: Arc<RwLock<Arc<StateStore>>>,
+    /// State manager for event sourcing and case history
+    pub(crate) state_manager: Arc<StateManager>,
     /// Registered workflow specifications (lock-free DashMap for concurrent access)
     pub(crate) specs: Arc<DashMap<WorkflowSpecId, WorkflowSpec>>,
     /// Active cases (lock-free DashMap for concurrent access)
@@ -57,4 +64,12 @@ pub struct WorkflowEngine {
     pub(crate) provenance_tracker: Option<Arc<ProvenanceTracker>>,
     /// Sidecar integration (if enabled)
     pub(crate) sidecar_integration: Option<Arc<SidecarIntegration>>,
+    /// Connector integration (if enabled)
+    pub(crate) connector_integration: Option<Arc<tokio::sync::Mutex<ConnectorIntegration>>>,
+    /// RDF store for workflow specifications (SPARQL queries)
+    pub(crate) spec_rdf_store: Arc<RwLock<Store>>,
+    /// RDF store for pattern metadata
+    pub(crate) pattern_metadata_store: Arc<RwLock<Store>>,
+    /// RDF stores for case runtime state (per case)
+    pub(crate) case_rdf_stores: Arc<RwLock<HashMap<CaseId, Store>>>,
 }

@@ -46,6 +46,7 @@ async fn test_workflow_registration_and_retrieval() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     let task = Task {
@@ -113,6 +114,7 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     let task = Task {
@@ -197,6 +199,7 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     // Create multiple tasks
@@ -267,6 +270,7 @@ async fn test_error_handling_invalid_workflow() {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     // Act: Try to register empty workflow
@@ -362,6 +366,7 @@ async fn test_case_cancellation() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     let task = Task {
@@ -434,6 +439,7 @@ async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         let task = Task {
@@ -523,6 +529,7 @@ async fn test_state_persistence() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     let task = Task {
@@ -588,6 +595,7 @@ async fn test_admission_gate_integration() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     let task = Task {
@@ -668,6 +676,7 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
         conditions: HashMap::new(),
         start_condition: None,
         end_condition: None,
+        source_turtle: None,
     };
 
     for i in 1..=2 {

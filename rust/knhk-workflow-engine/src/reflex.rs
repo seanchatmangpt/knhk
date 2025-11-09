@@ -242,6 +242,7 @@ mod tests {
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         let task = crate::parser::Task {
@@ -284,6 +285,7 @@ mod tests {
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         // Add tasks with different tick budgets

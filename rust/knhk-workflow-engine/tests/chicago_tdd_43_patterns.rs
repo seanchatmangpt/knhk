@@ -26,6 +26,8 @@ fn create_test_context() -> PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     }
 }
 
@@ -1158,6 +1160,8 @@ fn test_pattern_execution_handles_empty_context() {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
 
     // Act: Execute pattern 1

@@ -1,0 +1,162 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Resource Service (Interface B)
+
+Container_Boundary(resource, "Resource Service") {
+    Component(allocator, "Resource Allocator", "Rust", "3-phase allocation: Offer → Allocate → Start")
+    Component(filter_engine, "Filter Engine", "Rust", "10 filter types for capability matching")
+    Component(constraint_engine, "Constraint Engine", "Rust", "8 constraint types (separation of duties, etc)")
+    Component(calendar, "Calendar Service", "Rust", "Resource availability, working hours, holidays")
+    Component(privilege_manager, "Privilege Manager", "Rust", "Can-do, can-pile, can-start privileges")
+    Component(pool_manager, "Pool Manager", "Rust", "Resource pooling and lifecycle")
+
+    ComponentDb(resource_repo, "Resource Repository", "Sled", "Resource profiles, roles, capabilities")
+    ComponentDb(allocation_state, "Allocation State", "DashMap", "Current allocations and offers")
+}
+
+Container_Ext(data_gateway, "Data Gateway")
+Container_Ext(workitem_service, "Work Item Service")
+Container_Ext(event_bus, "Event Bus")
+
+Rel(allocator, filter_engine, "Applies filters")
+Rel(allocator, constraint_engine, "Checks constraints")
+Rel(allocator, calendar, "Checks availability")
+Rel(allocator, resource_repo, "Queries resources")
+Rel(allocator, allocation_state, "Tracks allocations")
+
+Rel(filter_engine, resource_repo, "Reads capabilities")
+Rel(constraint_engine, allocation_state, "Checks existing allocations")
+Rel(calendar, data_gateway, "Loads calendar data")
+
+Rel(privilege_manager, workitem_service, "Manages work item access")
+Rel(pool_manager, resource_repo, "Manages resource lifecycle")
+
+Rel(allocator, event_bus, "Publishes allocation events")
+
+note right of allocator
+  **Status:** 🔴 Missing - CRITICAL
+
+  **3-Phase Allocation:**
+  1. **Offer Phase:**
+     - Apply filters to find candidates
+     - Check constraints
+     - Return offer set to work item
+
+  2. **Allocate Phase:**
+     - Resource accepts/claims offer
+     - Check still available
+     - Lock resource for work item
+
+  3. **Start Phase:**
+     - Transfer work item to resource
+     - Remove from offered/allocated queues
+     - Update work item state to executing
+
+  **Implementation Priority:** CRITICAL (80/20)
+  - Core enterprise feature
+  - Required for Interface B compliance
+  - Complexity: MEDIUM (5-7 days)
+end note
+
+note right of filter_engine
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **10 Filter Types:**
+  1. Capability filter (skill matching)
+  2. Role filter (organizational hierarchy)
+  3. Separation of duties (SOD)
+  4. Retain familiar (same resource preference)
+  5. Random choice
+  6. Round robin
+  7. Shortest queue
+  8. Organizational distribution
+  9. Geographic distribution
+  10. Custom filter (plugin)
+
+  **Design:**
+  - Filter trait with execute method
+  - FilterChain for composing filters
+  - FilterRegistry for dynamic filters
+
+  **Complexity:** MEDIUM (3-5 days)
+end note
+
+note right of constraint_engine
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **8 Constraint Types:**
+  1. Separation of duties (4-eyes principle)
+  2. Case handling (same resource for case)
+  3. Retain familiar (history-based)
+  4. Capability-based (required skills)
+  5. History-based (past performance)
+  6. Organizational (reporting structure)
+  7. Cardinality (max concurrent allocations)
+  8. Custom constraints (plugin)
+
+  **Design:**
+  - Constraint trait with validate method
+  - ConstraintViolation error type
+  - Constraint solver for optimization
+
+  **Complexity:** MEDIUM-HIGH (5-7 days)
+end note
+
+note right of calendar
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Features:**
+  - Working hours/shifts
+  - Holidays and leave
+  - Resource availability zones
+  - Timezone handling
+  - Recurring schedules
+
+  **Data Model:**
+  - CalendarEntry (start, end, type)
+  - ResourceSchedule (weekly pattern)
+  - TimeZone mapping
+
+  **Complexity:** MEDIUM (3-4 days)
+
+  **80/20 Decision:** DEFER to v2.0
+  - Basic availability can use simple flags
+  - Full calendar adds complexity
+  - Not critical for initial migration
+end note
+
+note right of privilege_manager
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **3 Privilege Types:**
+  1. **Can-do:** Resource sees work item in queue
+  2. **Can-pile:** Resource can pile (defer) item
+  3. **Can-start:** Resource can start execution
+
+  **Design:**
+  - Privilege enum (CanDo, CanPile, CanStart)
+  - PrivilegeSet per resource-workitem pair
+  - Dynamic privilege evaluation
+
+  **Complexity:** LOW-MEDIUM (2-3 days)
+end note
+
+note right of resource_repo
+  **Status:** 🟡 Partial
+  ✅ Resource type defined
+  ✅ Capability type defined
+  ✅ Role type defined
+  🔴 Persistence layer missing
+
+  **Schema:**
+  - Resource (id, name, roles, capabilities)
+  - Role (id, name, parent_role)
+  - Capability (id, name, level)
+
+  **Complexity:** LOW (1-2 days)
+end note
+
+@enduml

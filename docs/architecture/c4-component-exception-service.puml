@@ -1,0 +1,77 @@
+@startuml C4_Component_Exception_Service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Exception Service (Worklet & Exlet Framework)
+
+Container_Boundary(exception_service, "Exception Service") {
+    Component(exception_detector, "Exception Detector", "Rust", "Detects anticipated and unanticipated exceptions")
+    Component(rdr_engine, "RDR Engine", "Rust", "Ripple Down Rules for worklet selection")
+    Component(worklet_selector, "Worklet Selector", "Rust", "Selects appropriate worklet")
+    Component(worklet_executor, "Worklet Executor", "Rust", "Executes worklet sub-process")
+    Component(exlet_handler, "Exlet Handler", "Rust", "Handles exception processes")
+    Component(compensation_handler, "Compensation Handler", "Rust", "Implements compensation strategies")
+    Component(worklet_repository, "Worklet Repository", "Rust", "Stores worklet specifications and rules")
+}
+
+Container_Ext(workflow_engine, "Workflow Engine", "Invokes worklets")
+Container_Ext(state_store, "State Store", "Persists worklet state")
+Container_Ext(otel_exporter, "OTEL Exporter", "Exception events")
+
+Rel(exception_detector, worklet_selector, "Triggers selection", "Rust fn")
+Rel(exception_detector, exlet_handler, "Triggers exlet", "Rust fn")
+
+Rel(worklet_selector, rdr_engine, "Evaluates rules", "Rust fn")
+Rel(worklet_selector, worklet_repository, "Gets candidates", "Rust fn")
+Rel(worklet_selector, worklet_executor, "Selects worklet", "Rust fn")
+
+Rel(worklet_executor, workflow_engine, "Executes sub-process", "Rust fn")
+Rel(worklet_executor, worklet_repository, "Gets specification", "Rust fn")
+
+Rel(exlet_handler, compensation_handler, "Triggers compensation", "Rust fn")
+
+Rel(worklet_repository, state_store, "Persists", "Sled API")
+Rel(exception_detector, otel_exporter, "Emits exception events", "OTLP")
+
+note right of exception_detector
+  **Exception Types**:
+
+  **Anticipated**:
+  - Constraint violations
+  - Timeout exceptions
+  - External exceptions (Interface X)
+
+  **Unanticipated**:
+  - Resource failures
+  - Service unavailability
+  - Data corruption
+  - External system errors
+end note
+
+note right of rdr_engine
+  **RDR Features**:
+  - Hierarchical decision tree
+  - Incremental learning
+  - Cornerstone cases
+  - Rule conflict resolution
+  - Knowledge capture
+
+  **Rule Structure**:
+  IF <conditions> THEN <worklet>
+  EXCEPT IF <refined-conditions> THEN <alternative-worklet>
+end note
+
+note right of compensation_handler
+  **Compensation Strategies**:
+  - Compensate (undo)
+  - Force-complete
+  - Force-fail
+  - Restart
+  - Rollback
+  - Suspend
+  - Skip
+  - Invoke Worklet
+end note
+
+@enduml

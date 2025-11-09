@@ -249,6 +249,7 @@ mod tests {
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         let dot = visualizer.generate_dot(&spec).unwrap();

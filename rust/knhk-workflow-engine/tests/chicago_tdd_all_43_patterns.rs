@@ -20,6 +20,8 @@ fn create_test_context() -> PatternExecutionContext {
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     }
 }
 
@@ -29,6 +31,8 @@ fn create_test_context_with_vars(vars: HashMap<String, String>) -> PatternExecut
         case_id: CaseId::new(),
         workflow_id: WorkflowSpecId::new(),
         variables: vars,
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     }
 }
 

@@ -8,7 +8,12 @@ use crate::ingest::RawTriple;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::sync::atomic::AtomicU64;
 use knhk_hot::KernelType;
+use std::sync::Arc;
+
+/// Shared reference to HookRegistry for Arc-based sharing
+pub type SharedHookRegistry = Arc<HookRegistry>;
 
 /// Guard function type: validates triple against invariants
 /// Returns true if triple passes guard, false otherwise
@@ -45,21 +50,13 @@ pub struct HookRegistry {
 
     /// Default kernel type for unregistered predicates
     default_kernel: KernelType,
+
+    /// Hook counter for generating unique IDs
+    hook_counter: AtomicU64,
 }
 
-impl Clone for HookRegistry {
-    fn clone(&self) -> Self {
-        // Note: guard_map cannot be cloned (functions are not Clone)
-        // For now, create a new empty guard_map
-        // In production, would need to re-register guards after cloning
-        Self {
-            kernel_map: self.kernel_map.clone(),
-            guard_map: BTreeMap::new(), // Guard functions cannot be cloned
-            hooks: self.hooks.clone(),
-            default_kernel: self.default_kernel,
-        }
-    }
-}
+// NOTE: HookRegistry is NOT Clone because guard_map contains function pointers.
+// Use Arc<HookRegistry> (or SharedHookRegistry type alias) for shared ownership.
 
 impl HookRegistry {
     /// Create new hook registry with default kernel
@@ -69,6 +66,7 @@ impl HookRegistry {
             guard_map: BTreeMap::new(),
             hooks: Vec::new(),
             default_kernel: KernelType::AskSp, // Conservative default
+            hook_counter: AtomicU64::new(0),
         }
     }
 
@@ -79,7 +77,19 @@ impl HookRegistry {
             guard_map: BTreeMap::new(),
             hooks: Vec::new(),
             default_kernel,
+            hook_counter: AtomicU64::new(0),
         }
+    }
+
+    /// Create a shared HookRegistry wrapped in Arc
+    /// Use this when you need to share the registry across multiple contexts
+    pub fn shared() -> SharedHookRegistry {
+        Arc::new(Self::new())
+    }
+
+    /// Create a shared HookRegistry with custom default kernel
+    pub fn shared_with_default(default_kernel: KernelType) -> SharedHookRegistry {
+        Arc::new(Self::with_default_kernel(default_kernel))
     }
 
     /// Registers a validation hook for a predicate with kernel and guard.

@@ -9,8 +9,8 @@
 
 use crate::resilience::{CircuitBreaker, KeyedRateLimiter, RateLimitConfig};
 use axum::{
-    extract::Request,
-    http::{HeaderMap, StatusCode},
+    body::Body,
+    http::{HeaderMap, Request, StatusCode},
     middleware::Next,
     response::Response,
 };
@@ -53,8 +53,8 @@ impl Fortune5Middleware {
 /// Authentication middleware
 pub async fn auth_middleware(
     headers: HeaderMap,
-    request: Request,
-    next: Next,
+    request: Request<Body>,
+    next: Next<Body>,
 ) -> Result<Response, StatusCode> {
     // Extract authorization header
     let auth_header = headers
@@ -106,7 +106,10 @@ fn get_rate_limiter() -> Arc<KeyedRateLimiter<String>> {
 /// Implements per-client rate limiting using governor library.
 /// Extracts client identifier from request headers (x-forwarded-for, x-real-ip, or remote address)
 /// and applies rate limits per client.
-pub async fn rate_limit_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
+pub async fn rate_limit_middleware(
+    request: Request<Body>,
+    next: Next<Body>,
+) -> Result<Response, StatusCode> {
     // Extract client identifier from request
     let client_id = extract_client_id(&request);
 
@@ -131,7 +134,7 @@ pub async fn rate_limit_middleware(request: Request, next: Next) -> Result<Respo
 /// 2. x-real-ip
 /// 3. Remote address from extensions
 /// 4. Falls back to "unknown" if none available
-fn extract_client_id(request: &Request) -> String {
+fn extract_client_id(request: &Request<Body>) -> String {
     // Try x-forwarded-for header (first IP if comma-separated list)
     if let Some(forwarded) = request.headers().get("x-forwarded-for") {
         if let Ok(forwarded_str) = forwarded.to_str() {
@@ -180,8 +183,8 @@ fn get_circuit_breaker() -> Arc<CircuitBreaker> {
 /// Tracks request failures and opens circuit after threshold is exceeded.
 /// Automatically transitions to half-open after timeout to test recovery.
 pub async fn circuit_breaker_middleware(
-    request: Request,
-    next: Next,
+    request: Request<Body>,
+    next: Next<Body>,
 ) -> Result<Response, StatusCode> {
     let circuit_breaker = get_circuit_breaker();
 
@@ -216,7 +219,7 @@ pub async fn circuit_breaker_middleware(
 }
 
 /// Request tracing middleware
-pub async fn tracing_middleware(request: Request, next: Next) -> Response {
+pub async fn tracing_middleware(request: Request<Body>, next: Next<Body>) -> Response {
     let path = request.uri().path().to_string();
     let method = request.method().to_string();
 
@@ -239,7 +242,11 @@ pub async fn tracing_middleware(request: Request, next: Next) -> Response {
 }
 
 /// Audit logging middleware
-pub async fn audit_middleware(headers: HeaderMap, request: Request, next: Next) -> Response {
+pub async fn audit_middleware(
+    headers: HeaderMap,
+    request: Request<Body>,
+    next: Next<Body>,
+) -> Response {
     let user = headers
         .get("x-user-id")
         .and_then(|h| h.to_str().ok())

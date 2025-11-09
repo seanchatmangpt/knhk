@@ -11,6 +11,7 @@
 //! - `pattern.rs`: Pattern execution with reflex bridge integration
 //! - `accessors.rs`: Getter methods for engine components
 //! - `fortune5.rs`: Fortune 5 integration methods
+//! - `rdf_query.rs`: Runtime RDF query API
 
 mod accessors;
 mod case;
@@ -20,8 +21,10 @@ mod events;
 mod fortune5;
 mod pattern;
 mod provenance;
+mod rdf_query;
 mod task;
 mod workflow_query;
 mod workflow_registration;
+mod xes_export;
 
 pub use engine::WorkflowEngine;

@@ -104,6 +104,7 @@ mod tests {
             conditions: std::collections::HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         });
 
         cache.insert_spec(spec_id.clone(), spec.clone());

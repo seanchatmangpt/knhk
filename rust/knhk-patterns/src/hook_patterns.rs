@@ -4,7 +4,7 @@
 use crate::patterns::{PatternError, PatternResult};
 use knhk_etl::{
     hook_orchestration::{HookExecutionContext, HookExecutionPattern, HookExecutionResult},
-    hook_registry::HookRegistry,
+    hook_registry::SharedHookRegistry,
     load::{LoadResult, PredRun, SoAArrays},
 };
 use std::sync::Arc;
@@ -195,7 +195,7 @@ impl HookRetryPattern {
 
 /// Helper function to create hook execution context from LoadResult
 pub fn create_hook_context(
-    hook_registry: HookRegistry,
+    hook_registry: SharedHookRegistry,
     load_result: LoadResult,
     tick_budget: u32,
 ) -> HookExecutionContext {
@@ -204,7 +204,7 @@ pub fn create_hook_context(
 
 /// Helper function to create hook execution context from components
 pub fn create_hook_context_from_components(
-    hook_registry: HookRegistry,
+    hook_registry: SharedHookRegistry,
     predicate_runs: Vec<PredRun>,
     soa_arrays: SoAArrays,
     tick_budget: u32,

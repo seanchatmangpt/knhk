@@ -91,6 +91,7 @@ impl PropertyTestGenerator {
             conditions: HashMap::new(),
             start_condition: Some("condition:start".to_string()),
             end_condition: Some("condition:end".to_string()),
+            source_turtle: None,
         }
     }
 

@@ -14,6 +14,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// State manager with event sourcing and caching
+#[derive(Clone)]
 pub struct StateManager {
     /// State store
     store: Arc<StateStore>,

@@ -10,6 +10,7 @@ keywords = ["workflow", "yawl", "bpmn", "enterprise", "automation"]
 categories = ["development-tools", "web-programming"]
 license = "MIT"
 authors = ["KNHK Team"]
+build = "build.rs"
 
 [lib]
 name = "knhk_workflow_engine"
@@ -56,7 +57,7 @@ tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 tonic-build = "0.10"
 prost = "0.12"
 prost-types = "0.12"
-axum = { version = "0.7", features = ["json", "multipart"] }
+axum = { version = "0.6", features = ["json", "multipart"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 
@@ -101,6 +102,9 @@ rdf = []
 [[example]]
 name = "workflow_weaver_livecheck"
 path = "examples/workflow_weaver_livecheck.rs"
+
+[build-dependencies]
+tonic-build = "0.10"
 
 [dev-dependencies]
 tokio-test = "0.4"

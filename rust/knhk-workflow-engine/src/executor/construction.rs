@@ -3,11 +3,14 @@
 use crate::compliance::ProvenanceTracker;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::Fortune5Config;
-use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
+use crate::integration::{
+    ConnectorIntegration, Fortune5Integration, LockchainIntegration, OtelIntegration,
+};
 use crate::patterns::{PatternRegistry, RegisterAllExt};
 use crate::resource::ResourceAllocator;
 use crate::services::timer::TimerService;
 use crate::services::{AdmissionGate, EventSidecar, TimerFired, WorkItemService};
+use crate::state::manager::StateManager;
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
@@ -17,6 +20,8 @@ use tokio::sync::{mpsc, RwLock};
 
 use super::events::{start_event_loop, start_timer_loop};
 use super::WorkflowEngine;
+use oxigraph::store::Store;
+use std::collections::HashMap;
 
 impl WorkflowEngine {
     /// Create a new workflow engine with all 43 patterns registered
@@ -35,6 +40,7 @@ impl WorkflowEngine {
         // Create services
         let timebase = Arc::new(SysClock);
         let state_store_arc = Arc::new(state_store);
+        let state_manager = Arc::new(StateManager::new(state_store_arc.clone()));
         let timer_service = Arc::new(TimerService::new(
             timebase,
             timer_tx.clone(),
@@ -44,9 +50,20 @@ impl WorkflowEngine {
         let admission_gate = Arc::new(AdmissionGate::new());
         let event_sidecar = Arc::new(EventSidecar::new(event_tx.clone()));
 
+        // Create RDF stores for runtime queries
+        let spec_rdf_store = Arc::new(RwLock::new(
+            Store::new().unwrap_or_else(|_| panic!("Failed to create spec RDF store")),
+        ));
+        let pattern_metadata_store =
+            Arc::new(RwLock::new(Store::new().unwrap_or_else(|_| {
+                panic!("Failed to create pattern metadata RDF store")
+            })));
+        let case_rdf_stores = Arc::new(RwLock::new(HashMap::new()));
+
         let engine = Self {
             pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store_arc)),
+            state_manager,
             specs: Arc::new(DashMap::new()),
             cases: Arc::new(DashMap::new()),
             resource_allocator,
@@ -63,7 +80,17 @@ impl WorkflowEngine {
             provenance_tracker: None,
             fortune5_integration: None,
             sidecar_integration: None,
+            connector_integration: Some(Arc::new(tokio::sync::Mutex::new(
+                ConnectorIntegration::new(),
+            ))),
+            spec_rdf_store,
+            pattern_metadata_store,
+            case_rdf_stores,
         };
+
+        // Note: Pattern metadata loading must be done by the caller after engine creation
+        // because WorkflowEngine::new is synchronous. Call engine.load_pattern_metadata_rdf().await
+        // after creating the engine in async context.
 
         // Start event loops
         let pattern_registry_clone = Arc::clone(&engine.pattern_registry);
@@ -92,6 +119,7 @@ impl WorkflowEngine {
         // Create services
         let timebase = Arc::new(SysClock);
         let state_store_arc = Arc::new(state_store);
+        let state_manager = Arc::new(StateManager::new(state_store_arc.clone()));
         let timer_service = Arc::new(TimerService::new(
             timebase,
             timer_tx.clone(),
@@ -117,9 +145,20 @@ impl WorkflowEngine {
             std::env::var("KNHK_LOCKCHAIN_PATH").unwrap_or_else(|_| "./lockchain".to_string());
         let lockchain_integration = Some(Arc::new(LockchainIntegration::new(&lockchain_path)?));
 
+        // Create RDF stores for runtime queries
+        let spec_rdf_store = Arc::new(RwLock::new(
+            Store::new().unwrap_or_else(|_| panic!("Failed to create spec RDF store")),
+        ));
+        let pattern_metadata_store =
+            Arc::new(RwLock::new(Store::new().unwrap_or_else(|_| {
+                panic!("Failed to create pattern metadata RDF store")
+            })));
+        let case_rdf_stores = Arc::new(RwLock::new(HashMap::new()));
+
         let engine = Self {
             pattern_registry: Arc::new(registry),
             state_store: Arc::new(RwLock::new(state_store_arc)),
+            state_manager,
             specs: Arc::new(DashMap::new()),
             cases: Arc::new(DashMap::new()),
             resource_allocator,
@@ -136,7 +175,17 @@ impl WorkflowEngine {
             auth_manager: None,
             provenance_tracker: Some(Arc::new(ProvenanceTracker::new(true))),
             sidecar_integration: None,
+            connector_integration: Some(Arc::new(tokio::sync::Mutex::new(
+                ConnectorIntegration::new(),
+            ))),
+            spec_rdf_store,
+            pattern_metadata_store,
+            case_rdf_stores,
         };
+
+        // Note: Pattern metadata loading must be done by the caller after engine creation
+        // because WorkflowEngine::new is synchronous. Call engine.load_pattern_metadata_rdf().await
+        // after creating the engine in async context.
 
         // Start event loops
         let pattern_registry_clone = Arc::clone(&engine.pattern_registry);

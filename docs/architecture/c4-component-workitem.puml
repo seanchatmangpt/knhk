@@ -1,0 +1,185 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Work Item Service (Interface B)
+
+Container_Boundary(workitem, "Work Item Service") {
+    Component(lifecycle, "Work Item Lifecycle Manager", "Rust", "14 lifecycle operations (create, offer, allocate, start, suspend, etc)")
+    Component(launchmode, "Launch Mode Manager", "Rust", "5 launch modes: User, Auto, External, Timed, Chained")
+    Component(statemachine, "State Machine", "Rust", "Work item state transitions with guards")
+    Component(queue_manager, "Queue Manager", "Rust", "Offered, Allocated, Executing, Suspended queues")
+    Component(bulk_ops, "Bulk Operations API", "Rust", "Batch operations on work items")
+    Component(privilege_checker, "Privilege Checker", "Rust", "Verifies resource privileges")
+
+    ComponentDb(workitem_store, "Work Item Store", "Sled", "Persistent work item state")
+    ComponentDb(queue_index, "Queue Index", "DashMap", "In-memory queue access")
+}
+
+Container_Ext(resource_service, "Resource Service")
+Container_Ext(engine_core, "Engine Core")
+Container_Ext(event_bus, "Event Bus")
+
+Rel(lifecycle, statemachine, "Validates transitions")
+Rel(lifecycle, queue_manager, "Updates queues")
+Rel(lifecycle, workitem_store, "Persists state")
+Rel(lifecycle, privilege_checker, "Checks access")
+
+Rel(launchmode, lifecycle, "Creates work items")
+Rel(launchmode, resource_service, "Allocates resources")
+
+Rel(queue_manager, queue_index, "Maintains indexes")
+Rel(queue_manager, event_bus, "Publishes queue events")
+
+Rel(bulk_ops, lifecycle, "Batch operations")
+
+Rel(privilege_checker, resource_service, "Queries privileges")
+
+Rel(statemachine, event_bus, "Publishes state changes")
+
+note right of lifecycle
+  **Status:** 🔴 Missing - CRITICAL
+
+  **14 Lifecycle Operations:**
+  1. **create** - Create work item from task
+  2. **offer** - Offer to resource(s)
+  3. **allocate** - Resource claims offer
+  4. **start** - Begin execution
+  5. **suspend** - Pause execution
+  6. **resume** - Continue from suspension
+  7. **complete** - Finish successfully
+  8. **fail** - Mark as failed
+  9. **rollback** - Revert to previous state
+  10. **skip** - Skip work item
+  11. **pile** - Defer to later
+  12. **unpile** - Remove from pile
+  13. **cancel** - Cancel work item
+  14. **reallocate** - Change resource allocation
+
+  **Implementation Priority:** CRITICAL (80/20)
+  - Core of Interface B
+  - Required for all enterprise workflows
+  - Complexity: MEDIUM-HIGH (7-10 days)
+
+  **Design:**
+  - WorkItemLifecycle struct with methods
+  - Each operation returns Result<WorkItemState, Error>
+  - Async for I/O operations
+  - Transaction support for rollback
+end note
+
+note right of launchmode
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **5 Launch Modes:**
+  1. **User-Initiated:**
+     - Resource manually starts work item
+     - Most common in knowledge work
+
+  2. **Auto-Initiated:**
+     - System automatically starts
+     - For automated tasks
+
+  3. **External-Initiated:**
+     - External service triggers start
+     - Web service callback
+
+  4. **Time-Initiated:**
+     - Timer triggers start
+     - Scheduled tasks
+
+  5. **Chained:**
+     - Previous work item completion triggers
+     - Sequential dependencies
+
+  **Implementation:**
+  - LaunchMode enum
+  - LaunchStrategy trait
+  - Mode-specific configuration
+
+  **Complexity:** MEDIUM (3-5 days)
+
+  **80/20 Decision:** Implement User + Auto first
+  - Covers 90% of enterprise use cases
+  - External/Timed/Chained can defer
+end note
+
+note right of statemachine
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **Work Item States:**
+  - Created
+  - Offered
+  - Allocated
+  - Executing
+  - Suspended
+  - Completed
+  - Failed
+  - Cancelled
+
+  **Transition Guards:**
+  - Validate state preconditions
+  - Check resource privileges
+  - Verify allocation status
+  - Enforce business rules
+
+  **Design:**
+  - WorkItemState enum
+  - Transition struct (from, to, guard)
+  - StateMachine validates transitions
+
+  **Complexity:** MEDIUM (3-4 days)
+end note
+
+note right of queue_manager
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **4 Queue Types:**
+  1. **Offered Queue:**
+     - Work items offered to resources
+     - Sorted by priority/deadline
+
+  2. **Allocated Queue:**
+     - Work items claimed by resources
+     - Awaiting start
+
+  3. **Executing Queue:**
+     - Active work items
+     - Monitored for timeouts
+
+  4. **Suspended Queue:**
+     - Paused work items
+     - Can resume later
+
+  **Features:**
+  - Per-resource queues
+  - Global queue views
+  - Queue filters (priority, deadline)
+  - Queue statistics
+
+  **Complexity:** MEDIUM (4-5 days)
+end note
+
+note right of bulk_ops
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Bulk Operations:**
+  - Batch offer to multiple resources
+  - Batch suspend/resume
+  - Batch cancel
+  - Batch reallocate
+
+  **Use Cases:**
+  - Shift changes (reallocate all items)
+  - Emergency suspension (disaster)
+  - Bulk cancellation (case cancel)
+
+  **Complexity:** LOW-MEDIUM (2-3 days)
+
+  **80/20 Decision:** DEFER to v2.0
+  - Individual operations cover MVP
+  - Batch is optimization
+end note
+
+@enduml

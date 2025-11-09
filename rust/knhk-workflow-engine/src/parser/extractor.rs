@@ -79,6 +79,7 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
         conditions,
         start_condition,
         end_condition,
+        source_turtle: None,
     })
 }
 

@@ -7,6 +7,7 @@ use git2::{Oid, Repository, Signature};
 use serde::{Deserialize, Serialize};
 use sled::Db;
 use std::path::Path;
+use std::sync::Mutex;
 use thiserror::Error;
 
 /// Storage error types
@@ -38,7 +39,7 @@ pub struct LockchainEntry {
 /// Includes Git integration for immutable audit log (v1.0 requirement)
 pub struct LockchainStorage {
     db: Db,
-    git_repo: Option<Repository>, // Optional Git repository for audit log
+    git_repo: Option<Mutex<Repository>>, // Optional Git repository for audit log (wrapped in Mutex for Sync)
     #[allow(dead_code)]
     git_path: Option<String>, // Git repository path
 }
@@ -76,7 +77,7 @@ impl LockchainStorage {
 
         Ok(Self {
             db,
-            git_repo: Some(repo),
+            git_repo: Some(Mutex::new(repo)),
             git_path: Some(git_path.to_string()),
         })
     }
@@ -88,7 +89,10 @@ impl LockchainStorage {
         receipt_hash: &[u8; 32],
         cycle: u64,
     ) -> Result<Oid, StorageError> {
-        if let Some(ref mut repo) = self.git_repo {
+        if let Some(ref repo_mutex) = self.git_repo {
+            let mut repo = repo_mutex.lock().map_err(|e| {
+                StorageError::GitError(format!("Failed to lock git repository: {:?}", e))
+            })?;
             // Create receipt file content
             let content = format!("cycle: {}\nhash: {}\n", cycle, hex::encode(receipt_hash));
 
@@ -268,6 +272,9 @@ impl LockchainStorage {
         Ok(())
     }
 }
+
+// LockchainStorage is now Sync because git_repo is wrapped in Mutex
+unsafe impl Sync for LockchainStorage {}
 
 impl std::fmt::Debug for LockchainStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

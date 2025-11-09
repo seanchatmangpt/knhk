@@ -339,30 +339,58 @@ impl WorkletExecutor {
     }
 
     /// Execute worklet as replacement for a task
+    ///
+    /// # Arguments
+    /// * `worklet_id` - Worklet identifier
+    /// * `context` - Pattern execution context
+    /// * `engine` - Workflow engine to execute the worklet's workflow spec
     pub async fn execute_worklet(
         &self,
         worklet_id: WorkletId,
-        _context: PatternExecutionContext,
+        context: PatternExecutionContext,
+        engine: &crate::executor::WorkflowEngine,
     ) -> WorkflowResult<PatternExecutionResult> {
         let worklet = self.repository.get(worklet_id).await?;
 
-        // NOTE: This implementation requires access to WorkflowEngine, which creates a circular dependency
-        // In production, WorkletExecutor would need to be refactored to accept WorkflowEngine as parameter
-        // or use a different architecture pattern (e.g., dependency injection)
-        // For now, return error indicating worklet execution requires WorkflowEngine integration
-        Err(crate::error::WorkflowError::Internal(
-            format!(
-                "Worklet execution requires WorkflowEngine integration. Worklet {} workflow spec {} needs to be executed through WorkflowEngine.execute_case()",
-                worklet_id.0, worklet.workflow_spec.id
-            )
-        ))
+        // Convert context variables to JSON Value
+        let data = serde_json::json!(context.variables);
+
+        // Create a case for the worklet's workflow spec
+        let case_id = engine.create_case(worklet.workflow_spec.id, data).await?;
+
+        // Execute the case
+        engine.execute_case(case_id).await?;
+
+        // Get the case to check its state
+        let case = engine.get_case(case_id).await?;
+
+        // Convert case result to pattern execution result
+        Ok(PatternExecutionResult {
+            success: matches!(case.state, crate::case::CaseState::Completed),
+            next_state: None,
+            next_activities: vec![], // Worklet execution completes the pattern
+            variables: context.variables.clone(),
+            cancel_activities: vec![],
+            terminates: false,
+            updates: Some(serde_json::json!({
+                "worklet_id": worklet_id.0,
+                "case_id": case_id,
+                "state": format!("{:?}", case.state),
+            })),
+        })
     }
 
     /// Handle exception with worklet
+    ///
+    /// # Arguments
+    /// * `exception_type` - Exception type to handle
+    /// * `context` - Pattern execution context
+    /// * `engine` - Workflow engine to execute the worklet's workflow spec
     pub async fn handle_exception(
         &self,
         exception_type: &str,
         context: PatternExecutionContext,
+        engine: &crate::executor::WorkflowEngine,
     ) -> WorkflowResult<Option<PatternExecutionResult>> {
         // Select appropriate worklet for exception
         if let Some(worklet_id) = self
@@ -370,7 +398,7 @@ impl WorkletExecutor {
             .select_worklet(&context, Some(exception_type))
             .await?
         {
-            let result = self.execute_worklet(worklet_id, context).await?;
+            let result = self.execute_worklet(worklet_id, context, engine).await?;
             Ok(Some(result))
         } else {
             Ok(None)
@@ -405,6 +433,7 @@ mod tests {
                 conditions: HashMap::new(),
                 start_condition: None,
                 end_condition: None,
+                source_turtle: None,
             },
             rules: vec![WorkletRule {
                 id: "rule1".to_string(),
@@ -443,6 +472,7 @@ mod tests {
                 conditions: HashMap::new(),
                 start_condition: None,
                 end_condition: None,
+                source_turtle: None,
             },
             rules: vec![WorkletRule {
                 id: "rule1".to_string(),

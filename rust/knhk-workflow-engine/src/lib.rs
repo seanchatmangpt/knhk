@@ -77,6 +77,7 @@ pub mod observability;
 pub mod parser;
 pub mod patterns;
 pub mod performance;
+pub mod process_mining;
 pub mod reflex;
 pub mod resilience;
 pub mod resource;
@@ -118,6 +119,7 @@ pub use innovation::{
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};
 pub use patterns::{PatternId, PatternRegistry, RegisterAllExt};
 pub use performance::{HotPathResult, HotPathValidator, PerformanceMetrics};
+pub use process_mining::{WorkflowEvent, XesExporter};
 pub use reflex::{PromotableSegment, PromotionAnalysis, ReflexBridge};
 pub use security::*;
 pub use services::{AdmissionGate, EventSidecar, TimerFired, TimerService, WorkItemService};

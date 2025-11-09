@@ -1,0 +1,75 @@
+@startuml C4_Component_Resource_Manager
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Resource Manager (3-Phase Allocation)
+
+Container_Boundary(resource_manager, "Resource Manager") {
+    Component(allocation_orchestrator, "Allocation Orchestrator", "Rust", "Coordinates 3-phase allocation")
+    Component(offer_phase, "Offer Phase", "Rust", "Selects eligible participants")
+    Component(allocate_phase, "Allocate Phase", "Rust", "Selects one participant")
+    Component(start_phase, "Start Phase", "Rust", "Determines when to start")
+    Component(filter_engine, "Filter Engine", "Rust", "Applies filters (capability, role, position)")
+    Component(constraint_engine, "Constraint Engine", "Rust", "Enforces constraints (SOD, 4-eyes)")
+    Component(calendar_service, "Calendar Service", "Rust", "Manages resource availability")
+    Component(resource_repository, "Resource Repository", "Rust", "Stores users, roles, capabilities")
+}
+
+Container_Ext(state_store, "State Store", "Persistent resource data")
+Container_Ext(otel_exporter, "OTEL Exporter", "Allocation events")
+
+Rel(allocation_orchestrator, offer_phase, "Phase 1", "Rust fn")
+Rel(allocation_orchestrator, allocate_phase, "Phase 2", "Rust fn")
+Rel(allocation_orchestrator, start_phase, "Phase 3", "Rust fn")
+
+Rel(offer_phase, filter_engine, "Applies filters", "Rust fn")
+Rel(offer_phase, constraint_engine, "Checks constraints", "Rust fn")
+Rel(offer_phase, calendar_service, "Validates availability", "Rust fn")
+Rel(offer_phase, resource_repository, "Gets participants", "Rust fn")
+
+Rel(allocate_phase, filter_engine, "Refines selection", "Rust fn")
+Rel(allocate_phase, resource_repository, "Gets workload", "Rust fn")
+
+Rel(start_phase, calendar_service, "Checks availability", "Rust fn")
+
+Rel(resource_repository, state_store, "Persists", "Sled API")
+Rel(allocation_orchestrator, otel_exporter, "Emits events", "OTLP")
+
+note right of filter_engine
+  **Filters**:
+  1. CapabilityFilter
+  2. RoleFilter
+  3. PositionFilter
+  4. OrgGroupFilter
+  5. WithExperienceFilter
+  6. LeastQueuedFilter
+  7. FamiliarityFilter
+  8. AvailabilityFilter
+  9. PileFilter
+  10. CustomFilter
+end note
+
+note right of constraint_engine
+  **Constraints**:
+  1. SeparationOfDuties (SOD)
+  2. RetainFamiliar
+  3. CaseCompletion
+  4. SimultaneousExecution
+  5. 4EyesPrinciple
+  6. HistoryConstraint
+  7. DataBasedConstraint
+  8. CustomConstraint
+end note
+
+note right of allocate_phase
+  **Allocation Strategies**:
+  - RoundRobin
+  - Random
+  - ShortestQueue
+  - LeastBusy
+  - FastestCompletion
+  - Custom
+end note
+
+@enduml

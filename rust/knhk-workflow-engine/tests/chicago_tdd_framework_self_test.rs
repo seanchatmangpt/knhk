@@ -168,6 +168,10 @@ fn test_assert_pattern_success_passes_for_successful_result() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: HashMap::new(),
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should not panic
@@ -182,6 +186,10 @@ fn test_assert_pattern_success_fails_for_failed_result() {
         success: false,
         next_state: None,
         variables: HashMap::new(),
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should panic
@@ -195,6 +203,10 @@ fn test_assert_pattern_failure_passes_for_failed_result() {
         success: false,
         next_state: None,
         variables: HashMap::new(),
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should not panic
@@ -208,6 +220,10 @@ fn test_assert_pattern_has_next_state_passes_when_state_set() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: HashMap::new(),
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should not panic
@@ -222,6 +238,10 @@ fn test_assert_pattern_has_next_state_fails_when_state_not_set() {
         success: true,
         next_state: None,
         variables: HashMap::new(),
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should panic
@@ -237,6 +257,10 @@ fn test_assert_pattern_has_variable_passes_when_variable_exists() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: vars,
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should not panic
@@ -251,6 +275,10 @@ fn test_assert_pattern_has_variable_fails_when_variable_missing() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: HashMap::new(),
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should panic
@@ -266,6 +294,10 @@ fn test_assert_pattern_variable_equals_passes_when_value_matches() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: vars,
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should not panic
@@ -282,6 +314,10 @@ fn test_assert_pattern_variable_equals_fails_when_value_mismatches() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: vars,
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Should panic
@@ -841,6 +877,10 @@ fn test_framework_assertion_helpers_provide_clear_messages() {
         success: true,
         next_state: Some("next_state".to_string()),
         variables: vars,
+        updates: None,
+        cancel_activities: Vec::new(),
+        next_activities: Vec::new(),
+        terminates: false,
     };
 
     // Act & Assert: Assertion helpers provide clear error messages

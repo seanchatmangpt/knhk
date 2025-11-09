@@ -104,6 +104,31 @@ enum Commands {
 
     /// List all registered patterns
     ListPatterns,
+
+    /// Export case to XES format for ProM process mining
+    ExportXes {
+        /// Case ID to export
+        case_id: String,
+        /// Output XES file path
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+
+    /// Export all cases for a workflow to XES format
+    ExportWorkflowXes {
+        /// Workflow specification ID
+        spec_id: String,
+        /// Output XES file path
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+
+    /// Export all cases (all workflows) to XES format
+    ExportAllXes {
+        /// Output XES file path
+        #[arg(short, long)]
+        output: PathBuf,
+    },
 }
 
 #[tokio::main]
@@ -252,11 +277,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Starting REST API server on {}:{}", host, port);
             use knhk_workflow_engine::api::rest::RestApiServer;
             let app = RestApiServer::new(engine.clone()).router();
-            let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
-                .await
-                .map_err(|e| format!("Failed to bind to {}:{}: {}", host, port, e))?;
+            let addr = format!("{}:{}", host, port)
+                .parse()
+                .map_err(|e| format!("Invalid address {}:{}: {}", host, port, e))?;
             println!("Server listening on http://{}:{}", host, port);
-            axum::serve(listener, app)
+            axum::Server::bind(&addr)
+                .serve(app.into_make_service())
                 .await
                 .map_err(|e| format!("Server error: {}", e))?;
         }
@@ -268,6 +294,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for pattern_id in patterns {
                 println!("  - Pattern {}", pattern_id.0);
             }
+        }
+
+        Commands::ExportXes { case_id, output } => {
+            let case_id =
+                CaseId::parse_str(&case_id).map_err(|e| format!("Invalid case ID: {}", e))?;
+            let xes = engine
+                .export_case_to_xes(case_id)
+                .await
+                .map_err(|e| format!("Failed to export case to XES: {}", e))?;
+
+            std::fs::write(&output, xes).map_err(|e| format!("Failed to write XES file: {}", e))?;
+
+            println!("Case {} exported to XES: {}", case_id, output.display());
+            println!("Import into ProM: prom --import {}", output.display());
+        }
+
+        Commands::ExportWorkflowXes { spec_id, output } => {
+            let spec_id = WorkflowSpecId::parse_str(&spec_id)
+                .map_err(|e| format!("Invalid spec ID: {}", e))?;
+            let xes = engine
+                .export_workflow_to_xes(spec_id)
+                .await
+                .map_err(|e| format!("Failed to export workflow to XES: {}", e))?;
+
+            std::fs::write(&output, xes).map_err(|e| format!("Failed to write XES file: {}", e))?;
+
+            println!("Workflow {} exported to XES: {}", spec_id, output.display());
+            println!(
+                "Discover process model: prom --discover-model {} --output model.pnml",
+                output.display()
+            );
+        }
+
+        Commands::ExportAllXes { output } => {
+            let xes = engine
+                .export_all_cases_to_xes()
+                .await
+                .map_err(|e| format!("Failed to export all cases to XES: {}", e))?;
+
+            std::fs::write(&output, xes).map_err(|e| format!("Failed to write XES file: {}", e))?;
+
+            println!("All cases exported to XES: {}", output.display());
+            println!(
+                "Check conformance: prom --check-conformance model.pnml {}",
+                output.display()
+            );
         }
     }
 

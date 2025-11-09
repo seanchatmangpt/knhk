@@ -1,0 +1,150 @@
+@startuml YAWL Ontology Integration - C4 Component Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title YAWL Ontology Integration with knhk-workflow-engine
+
+' External Data Sources
+System_Ext(yawl_ttl, "YAWL Ontology (TTL)", "RDF/Turtle", "yawl.ttl - 1500+ triples defining YAWL workflow schema")
+System_Ext(workflow_ttl, "Workflow Specs (TTL)", "RDF/Turtle", "User-defined workflows in YAWL format")
+System_Ext(knhk_extensions_ttl, "knhk Extensions (TTL)", "RDF/Turtle", "knhk-specific ontology extensions")
+
+Container_Boundary(parser, "Workflow Parser") {
+    Component(workflow_parser, "WorkflowParser", "Rust", "Main parser using Oxigraph triplestore")
+    Component(ttl_loader, "TTL Loader", "Oxigraph", "Loads Turtle files into RDF store")
+    Component(extractor, "SPARQL Extractor", "Rust", "Extracts workflow elements via SPARQL queries")
+    Component(mapper, "Type Mapper", "Rust", "Maps RDF triples to Rust types (WorkflowSpec, Task, Condition)")
+}
+
+Container_Boundary(triplestore, "RDF Triplestore") {
+    ComponentDb(oxigraph, "Oxigraph Store", "RocksDB/In-Memory", "RDF quad store with SPARQL 1.1 support")
+    Component(sparql_engine, "SPARQL Engine", "Oxigraph", "Query engine for SPARQL 1.1")
+    Component(reasoner, "RDFS Reasoner", "Oxigraph", "Optional RDFS reasoning (future)")
+}
+
+Container_Boundary(validator, "Validation Pipeline") {
+    Component(shacl_validator, "SHACL Validator", "Future", "Schema validation using SHACL shapes")
+    Component(sparql_validator, "SPARQL Validator", "Rust", "Semantic validation via SPARQL ASK queries")
+    Component(deadlock_detector, "Deadlock Detector", "Rust", "Control flow soundness validation")
+    Component(weaver_validator, "Weaver Validator", "OTEL", "OpenTelemetry schema validation")
+}
+
+Container_Boundary(executor, "Workflow Engine") {
+    Component(engine, "WorkflowEngine", "Rust", "Main execution engine")
+    Component(pattern_registry, "PatternRegistry", "Rust", "43 Van der Aalst patterns")
+    Component(resource_allocator, "ResourceAllocator", "Rust", "Resource allocation policies")
+    Component(case_manager, "CaseManager", "Rust", "Workflow instance lifecycle")
+}
+
+Container_Boundary(state, "State Management") {
+    Component(state_manager, "StateManager", "Rust", "Event-sourced state management")
+    ComponentDb(rdf_state_store, "RDF State Store", "Oxigraph", "Runtime state as RDF triples")
+    Component(provenance_tracker, "ProvenanceTracker", "Rust", "Git commit provenance tracking")
+}
+
+Container_Boundary(observability, "Observability") {
+    Component(otel_exporter, "OTEL Exporter", "Rust", "OpenTelemetry span/metric export")
+    Component(lockchain, "Lockchain", "Git", "Git-based provenance chain")
+    ComponentDb(weaver_registry, "Weaver Registry", "YAML", "OTEL semantic conventions")
+}
+
+' Relationships - Data Flow
+
+' Input: TTL files → Parser
+Rel(yawl_ttl, ttl_loader, "Load ontology", "Turtle")
+Rel(workflow_ttl, ttl_loader, "Load workflows", "Turtle")
+Rel(knhk_extensions_ttl, ttl_loader, "Load extensions", "Turtle")
+
+' Parser → Triplestore
+Rel(ttl_loader, oxigraph, "Store triples", "RDF quads")
+Rel(workflow_parser, oxigraph, "Load into store")
+
+' Parser → Extractor
+Rel(workflow_parser, extractor, "Extract workflow")
+Rel(extractor, sparql_engine, "SPARQL queries", "SELECT/ASK")
+Rel(sparql_engine, oxigraph, "Query triples")
+
+' Extractor → Mapper
+Rel(extractor, mapper, "RDF results")
+Rel(mapper, workflow_parser, "WorkflowSpec", "Rust types")
+
+' Parser → Validator
+Rel(workflow_parser, sparql_validator, "Validate spec")
+Rel(sparql_validator, sparql_engine, "Validation queries", "ASK")
+Rel(workflow_parser, deadlock_detector, "Check deadlocks")
+Rel(workflow_parser, weaver_validator, "Validate OTEL", "Future")
+
+' Validator → Engine (if valid)
+Rel(workflow_parser, engine, "Valid WorkflowSpec", "Rust struct")
+
+' Engine → Pattern Execution
+Rel(engine, pattern_registry, "Execute pattern")
+Rel(engine, resource_allocator, "Allocate resources")
+Rel(engine, case_manager, "Manage cases")
+
+' Engine → State Management
+Rel(engine, state_manager, "Update state", "State events")
+Rel(state_manager, rdf_state_store, "Persist as RDF", "Turtle")
+Rel(state_manager, provenance_tracker, "Track provenance")
+
+' Observability
+Rel(engine, otel_exporter, "Emit telemetry", "OTLP")
+Rel(provenance_tracker, lockchain, "Store commits", "Git")
+Rel(otel_exporter, weaver_registry, "Validate schema")
+
+' Feedback loops
+Rel_Back(rdf_state_store, sparql_engine, "Query state", "SPARQL")
+Rel_Back(case_manager, rdf_state_store, "Load state")
+
+' Annotations
+note right of oxigraph
+  **Storage Options:**
+  - In-memory (dev/test)
+  - RocksDB (production)
+  - Persistent across restarts
+end note
+
+note right of extractor
+  **SPARQL Queries:**
+  - Extract tasks
+  - Extract conditions
+  - Extract flows
+  - Extract resources
+  - Extract timers
+end note
+
+note right of mapper
+  **Mapping:**
+  yawl:Task → Task
+  yawl:Condition → Condition
+  yawl:FlowsInto → outgoing_flows
+  knhk:tickBudget → max_ticks
+end note
+
+note right of sparql_validator
+  **30+ Validation Rules:**
+  - Start has no incoming
+  - End has no outgoing
+  - All tasks have join/split
+  - Data flow type checking
+  - Deadlock detection
+end note
+
+note right of weaver_validator
+  **Source of Truth:**
+  Weaver validation is the
+  ONLY trusted validation.
+  Traditional tests can have
+  false positives.
+end note
+
+note right of rdf_state_store
+  **Runtime State:**
+  - WorkflowInstance
+  - Task execution state
+  - Variable values
+  - Provenance chains
+end note
+
+@enduml

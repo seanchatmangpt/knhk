@@ -123,6 +123,8 @@ fn create_test_context(workflow_id: WorkflowSpecId) -> PatternExecutionContext {
         case_id: knhk_workflow_engine::case::CaseId::new(),
         workflow_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     }
 }
 

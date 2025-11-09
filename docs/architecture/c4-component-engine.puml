@@ -1,0 +1,127 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Engine Core
+
+Container_Boundary(engine, "Engine Core") {
+    Component(workflow_parser, "Workflow Parser", "Rust", "Parses Turtle RDF and YAWL XML into WorkflowSpec")
+    Component(pattern_executor, "Pattern Executor", "Rust", "Executes 43 Van der Aalst patterns")
+    Component(case_manager, "Case Manager", "Rust", "Creates, starts, executes, cancels cases")
+    Component(task_executor, "Task Executor", "Rust", "Executes tasks with resource allocation")
+    Component(state_manager, "State Manager", "Rust", "Event sourcing for case/workflow state")
+    Component(event_loop, "Event Loop", "Rust", "Processes timers, external events, completions")
+    Component(reflex_bridge, "Reflex Bridge", "Rust", "Sub-tick integration with knhk-hot")
+
+    ComponentDb(pattern_registry, "Pattern Registry", "HashMap", "43 registered pattern executors")
+    ComponentDb(workflow_cache, "Workflow Cache", "DashMap", "In-memory workflow specs")
+    ComponentDb(case_cache, "Case Cache", "DashMap", "In-memory case state")
+}
+
+Container_Ext(state_store, "State Store", "Sled")
+Container_Ext(resource_service, "Resource Service")
+Container_Ext(workitem_service, "Work Item Service")
+Container_Ext(event_bus, "Event Bus")
+
+Rel(workflow_parser, workflow_cache, "Stores parsed specs")
+Rel(workflow_parser, pattern_registry, "Validates pattern refs")
+
+Rel(case_manager, case_cache, "Manages case state")
+Rel(case_manager, state_manager, "Records state changes")
+Rel(case_manager, task_executor, "Schedules tasks")
+Rel(case_manager, event_loop, "Subscribes to events")
+
+Rel(task_executor, pattern_executor, "Executes pattern")
+Rel(task_executor, resource_service, "Allocates resources")
+Rel(task_executor, workitem_service, "Creates work items")
+Rel(task_executor, reflex_bridge, "Hot-path execution")
+
+Rel(pattern_executor, pattern_registry, "Looks up executor")
+Rel(pattern_executor, case_cache, "Updates case state")
+
+Rel(event_loop, case_manager, "Triggers case execution")
+Rel(event_loop, event_bus, "Publishes events")
+
+Rel(state_manager, state_store, "Persists events")
+Rel(case_cache, state_store, "Syncs periodically")
+
+note right of workflow_parser
+  **Status:** 🟡 Partial
+  ✅ Turtle RDF parsing (rio crate)
+  🔴 YAWL XML parsing (missing)
+  ✅ WorkflowSpec type definitions
+
+  **Implementation Priority:** HIGH
+  - YAWL XML parser critical for migration
+  - Use quick-xml or roxmltree
+  - Map YAWL elements to WorkflowSpec
+end note
+
+note right of pattern_executor
+  **Status:** ✅ Implemented
+  - 43 pattern executors registered
+  - PatternExecutionContext defined
+  - PatternExecutionResult handling
+
+  **Quality:** NEEDS REVIEW
+  - Many patterns may be stubs
+  - Test coverage unknown
+  - Edge cases unhandled
+end note
+
+note right of case_manager
+  **Status:** ✅ Implemented
+  - create_case ✅
+  - start_case ✅
+  - execute_case ✅
+  - cancel_case ✅
+  - get_case ✅
+  - list_cases ✅
+end note
+
+note right of task_executor
+  **Status:** 🟡 Partial
+  ✅ Basic task execution
+  🔴 Resource allocation integration
+  🔴 Work item creation
+  🔴 Timeout handling
+
+  **Implementation Gap:**
+  - Needs 3-phase resource allocation
+  - Needs work item lifecycle
+  - Needs exception handling
+end note
+
+note right of event_loop
+  **Status:** 🔴 Missing
+  **Critical for:**
+  - Timer-based patterns (timeout, delay)
+  - External event patterns
+  - Asynchronous completion
+
+  **Design:**
+  - tokio::time for timers
+  - mpsc channels for events
+  - Priority queue for scheduling
+end note
+
+note right of reflex_bridge
+  **Status:** ✅ Implemented
+  - Integrates with knhk-hot
+  - Sub-tick latency (<8 ticks)
+  - Zero-copy data sharing
+end note
+
+note right of state_manager
+  **Status:** ✅ Implemented
+  - Event sourcing architecture
+  - StateEvent enum
+  - Snapshot support
+
+  **Integration Gap:**
+  - Not yet wired to WorkflowEngine
+  - Case history endpoint stubbed
+end note
+
+@enduml

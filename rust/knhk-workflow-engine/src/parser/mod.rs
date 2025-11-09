@@ -40,7 +40,10 @@ impl WorkflowParser {
             .map_err(|e| WorkflowError::Parse(format!("Failed to load Turtle: {:?}", e)))?;
 
         // Extract workflow specification
-        let spec = extractor::extract_workflow_spec(&self.store)?;
+        let mut spec = extractor::extract_workflow_spec(&self.store)?;
+
+        // Store source turtle for runtime RDF queries
+        spec.source_turtle = Some(turtle.to_string());
 
         // Validate for deadlocks
         self.deadlock_detector.validate(&spec)?;
@@ -72,6 +75,27 @@ impl WorkflowParser {
             .map_err(|e| WorkflowError::Parse(format!("Failed to load Turtle: {:?}", e)))?;
 
         Ok(())
+    }
+
+    /// Export current RDF store as Turtle string
+    pub fn export_turtle(&self) -> WorkflowResult<String> {
+        use oxigraph::io::RdfSerializer;
+        use oxigraph::model::GraphNameRef;
+
+        let mut buffer = Vec::new();
+        self.store
+            .dump_graph_to_writer(
+                GraphNameRef::DefaultGraph,
+                RdfSerializer::from_format(RdfFormat::Turtle),
+                &mut buffer,
+            )
+            .map_err(|e| {
+                WorkflowError::Internal(format!("Failed to export RDF store as Turtle: {:?}", e))
+            })?;
+
+        String::from_utf8(buffer).map_err(|e| {
+            WorkflowError::Internal(format!("Failed to convert Turtle to UTF-8: {}", e))
+        })
     }
 }
 

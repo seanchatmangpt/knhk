@@ -1,0 +1,198 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Worklet Service (Dynamic Process Selection)
+
+Container_Boundary(worklet, "Worklet Service") {
+    Component(rdr_engine, "RDR Engine", "Rust", "Ripple-Down Rules for exception handling")
+    Component(worklet_repo, "Worklet Repository", "Rust", "Repository of worklet specifications")
+    Component(selection_strategy, "Selection Strategy", "Rust", "Selects best worklet for exception")
+    Component(exception_handler, "Exception Handler", "Rust", "Catches and handles workflow exceptions")
+    Component(exlet_framework, "Exlet Framework", "Rust", "External service integration for worklets")
+
+    ComponentDb(rdr_tree, "RDR Tree", "Sled", "Persistent rule tree structure")
+    ComponentDb(worklet_store, "Worklet Store", "Sled", "Worklet specifications and versions")
+    ComponentDb(case_cache, "Case Cache", "Sled", "Worklet execution history")
+}
+
+Container_Ext(engine_core, "Engine Core")
+Container_Ext(data_gateway, "Data Gateway")
+Container_Ext(event_bus, "Event Bus")
+
+Rel(exception_handler, rdr_engine, "Evaluates rules")
+Rel(exception_handler, selection_strategy, "Selects worklet")
+Rel(exception_handler, engine_core, "Launches sub-process")
+
+Rel(rdr_engine, rdr_tree, "Traverses rule tree")
+Rel(rdr_engine, case_cache, "Learns from cases")
+
+Rel(selection_strategy, worklet_repo, "Queries worklets")
+Rel(worklet_repo, worklet_store, "Loads specifications")
+
+Rel(exlet_framework, data_gateway, "Invokes external services")
+Rel(exlet_framework, exception_handler, "Provides execution results")
+
+Rel(exception_handler, event_bus, "Publishes exception events")
+
+note right of rdr_engine
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Ripple-Down Rules (RDR):**
+  - Decision tree for exception classification
+  - Each node: condition + conclusion + exceptions
+  - Incremental learning from case-by-case analysis
+
+  **Algorithm:**
+  ```
+  fn evaluate(case: &Case, tree: &RDRNode) -> Conclusion {
+      if tree.condition.matches(case) {
+          for exception in &tree.exceptions {
+              if exception.condition.matches(case) {
+                  return evaluate(case, exception)
+              }
+          }
+          return tree.conclusion
+      }
+      return tree.parent.map(|p| evaluate(case, p))
+  }
+  ```
+
+  **Data Model:**
+  - RDRNode { condition, conclusion, exceptions }
+  - Condition { attribute, operator, value }
+  - Conclusion { worklet_id, parameters }
+
+  **Complexity:** MEDIUM-HIGH (7-10 days)
+
+  **80/20 Decision:** DEFER to v2.0
+  - Simple rule matching covers 70% of cases
+  - Full RDR adds complexity
+  - Learning capability is advanced feature
+end note
+
+note right of worklet_repo
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Features:**
+  - Store worklet specifications
+  - Version management
+  - Worklet templates
+  - Parameter binding
+
+  **Schema:**
+  - Worklet (id, name, spec, version)
+  - WorkletVersion (id, spec, created_at)
+  - WorkletTemplate (id, parameters)
+
+  **Complexity:** LOW-MEDIUM (3-4 days)
+
+  **80/20 Decision:** Basic repository only
+  - Simple CRUD operations
+  - No versioning in v1.0
+  - Templates can be pre-configured
+end note
+
+note right of selection_strategy
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Selection Strategies:**
+  1. **RDR-based:** Use RDR tree decision
+  2. **Priority-based:** Select by priority score
+  3. **Performance-based:** Select fastest worklet
+  4. **Cost-based:** Select cheapest worklet
+  5. **Custom:** User-defined selection
+
+  **Design:**
+  - SelectionStrategy trait
+  - Context (exception, case data, history)
+  - Returns ranked list of worklets
+
+  **Complexity:** MEDIUM (4-5 days)
+
+  **80/20 Decision:** Single strategy (RDR) for v1.0
+  - Multiple strategies add complexity
+  - RDR covers most enterprise needs
+end note
+
+note right of exception_handler
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Exception Types:**
+  - Item-level (work item failure)
+  - Case-level (case constraint violation)
+  - Resource-level (allocation failure)
+  - External (service unavailable)
+  - Timeout (deadline exceeded)
+
+  **Handling Flow:**
+  1. Catch exception
+  2. Classify exception type
+  3. Consult RDR engine
+  4. Select worklet
+  5. Launch worklet as sub-process
+  6. Monitor worklet execution
+  7. Handle worklet completion/failure
+
+  **Complexity:** MEDIUM (5-7 days)
+
+  **80/20 Decision:** Basic exception handling
+  - Focus on item-level and timeout
+  - Defer complex recovery strategies
+end note
+
+note right of exlet_framework
+  **Status:** 🔴 Missing - LOW PRIORITY
+
+  **Exlets (External Worklets):**
+  - Invoke external services as worklets
+  - Service discovery
+  - Parameter mapping
+  - Result transformation
+
+  **Use Cases:**
+  - Call external approval service
+  - Invoke credit check API
+  - Trigger notification service
+
+  **Complexity:** MEDIUM (4-6 days)
+
+  **80/20 Decision:** DEFER to v2.0
+  - Can use regular connector framework
+  - Specialized exlet features not critical
+  - Advanced integration capability
+end note
+
+note left of worklet
+  **Enterprise Value Assessment:**
+
+  **High Value (60%):**
+  - Basic exception handling
+  - Simple rule matching
+  - Worklet repository
+
+  **Medium Value (30%):**
+  - RDR engine with learning
+  - Multiple selection strategies
+  - Advanced recovery
+
+  **Low Value (10%):**
+  - Exlet framework
+  - Complex versioning
+  - Performance-based selection
+
+  **Recommendation:**
+  - Implement basic exception handling (HIGH)
+  - Defer RDR learning to v2.0 (MEDIUM)
+  - Skip exlet framework (LOW)
+
+  **Estimated ROI:**
+  - Basic worklets: 3 weeks, 60% value
+  - Full RDR: 8 weeks, 90% value
+  - With exlets: 12 weeks, 100% value
+
+  **Decision:** Start with basic worklets
+end note
+
+@enduml

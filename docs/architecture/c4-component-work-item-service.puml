@@ -1,0 +1,67 @@
+@startuml C4_Component_Work_Item_Service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Work Item Service (Interface B Implementation)
+
+Container_Boundary(work_item_service, "Work Item Service") {
+    Component(lifecycle_manager, "Lifecycle Manager", "Rust", "Manages work item state transitions")
+    Component(checkout_handler, "Checkout Handler", "Rust", "Handles checkout/checkin operations")
+    Component(delegation_handler, "Delegation Handler", "Rust", "Handles delegation and reallocation")
+    Component(offer_handler, "Offer Handler", "Rust", "Manages offered items and user queues")
+    Component(allocation_handler, "Allocation Handler", "Rust", "Manages allocated items")
+    Component(pile_manager, "Pile Manager", "Rust", "Manages pile-based work sharing")
+    Component(privilege_checker, "Privilege Checker", "Rust", "Validates user privileges")
+    Component(work_item_repository, "Work Item Repository", "Rust", "Persistent work item storage")
+}
+
+Container_Ext(resource_manager, "Resource Manager", "Validates eligibility")
+Container_Ext(state_store, "State Store", "Persists work items")
+Container_Ext(otel_exporter, "OTEL Exporter", "Emits events")
+
+Rel(lifecycle_manager, checkout_handler, "Validates state", "Rust fn")
+Rel(lifecycle_manager, delegation_handler, "Validates state", "Rust fn")
+Rel(lifecycle_manager, offer_handler, "Validates state", "Rust fn")
+Rel(lifecycle_manager, allocation_handler, "Validates state", "Rust fn")
+
+Rel(checkout_handler, privilege_checker, "Checks privileges", "Rust fn")
+Rel(checkout_handler, work_item_repository, "Updates state", "Rust fn")
+Rel(checkout_handler, resource_manager, "Validates eligibility", "Rust fn")
+
+Rel(delegation_handler, privilege_checker, "Checks delegate privilege", "Rust fn")
+Rel(delegation_handler, work_item_repository, "Updates assignment", "Rust fn")
+Rel(delegation_handler, resource_manager, "Validates new user", "Rust fn")
+
+Rel(offer_handler, pile_manager, "Manages shared queues", "Rust fn")
+Rel(offer_handler, work_item_repository, "Updates offered items", "Rust fn")
+Rel(offer_handler, resource_manager, "Gets eligible users", "Rust fn")
+
+Rel(work_item_repository, state_store, "Persists", "Sled API")
+Rel(lifecycle_manager, otel_exporter, "Emits lifecycle events", "OTLP")
+
+note right of lifecycle_manager
+  **State Machine**:
+  enabled → offered → allocated → executing → completed
+
+  **Allowed Transitions**:
+  - checkout: offered → executing
+  - checkin: executing → offered
+  - start: allocated → executing
+  - complete: executing → completed
+  - suspend: executing → suspended
+  - delegate: executing → offered (reassign)
+end note
+
+note right of privilege_checker
+  **Privileges**:
+  - suspend-case
+  - skip
+  - pile
+  - reorder
+  - view-other
+  - chain
+  - manage-resourcing
+end note
+
+@enduml

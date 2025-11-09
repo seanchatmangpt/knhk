@@ -25,6 +25,13 @@ impl WorkflowEngine {
         let detector = DeadlockDetector;
         detector.validate(&spec)?;
 
+        // Load source turtle into RDF store if available
+        if let Some(ref turtle) = spec.source_turtle {
+            self.load_spec_rdf(turtle)
+                .await
+                .map_err(|e| WorkflowError::Internal(format!("Failed to load spec RDF: {}", e)))?;
+        }
+
         let spec_clone = spec.clone();
         self.specs.insert(spec.id, spec);
 

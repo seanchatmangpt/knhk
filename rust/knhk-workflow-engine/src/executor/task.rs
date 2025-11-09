@@ -16,7 +16,7 @@ pub(super) fn execute_workflow_tasks<'a>(
     engine: &'a WorkflowEngine,
     case_id: CaseId,
     spec: &'a WorkflowSpec,
-) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + 'a>> {
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + 'a>> {
     Box::pin(async move {
         // Start from start condition
         if let Some(ref start_condition_id) = spec.start_condition {
@@ -76,7 +76,7 @@ pub(super) async fn execute_task_with_allocation(
                     };
                     if let Some(result) = engine
                         .worklet_executor
-                        .handle_exception("resource_unavailable", context)
+                        .handle_exception("resource_unavailable", context, engine)
                         .await?
                     {
                         if !result.success {
@@ -155,11 +155,42 @@ pub(super) async fn execute_task_with_allocation(
                 }
             } else {
                 // Automated task: Execute via connector integration
-                // FUTURE: Add connector integration for automated atomic tasks
-                // For now, return error indicating connector execution is not implemented
-                return Err(WorkflowError::TaskExecutionFailed(
-                    format!("Automated atomic task execution requires connector integration - task {} needs connector implementation", task.id)
-                ));
+                if let Some(ref connector_integration) = engine.connector_integration {
+                    // Determine connector name from task ID or use default
+                    // In production, would use task configuration or connector registry
+                    let connector_name = "default";
+
+                    // Execute task via connector
+                    let mut connector = connector_integration.lock().await;
+                    let result = connector
+                        .execute_task(connector_name, case.data.clone())
+                        .await
+                        .map_err(|e| {
+                            WorkflowError::TaskExecutionFailed(format!(
+                                "Connector execution failed for task {}: {}",
+                                task.id, e
+                            ))
+                        })?;
+
+                    // Update case with connector result
+                    let mut case = engine.get_case(case_id).await?;
+                    if let (Some(case_obj), Some(result_obj)) =
+                        (case.data.as_object_mut(), result.as_object())
+                    {
+                        for (key, value) in result_obj {
+                            case_obj.insert(key.clone(), value.clone());
+                        }
+                    }
+
+                    // Save updated case
+                    let store_arc = engine.state_store.read().await;
+                    (*store_arc).save_case(case_id, &case)?;
+                } else {
+                    return Err(WorkflowError::TaskExecutionFailed(format!(
+                        "Automated task {} requires connector integration - connector integration not available",
+                        task.id
+                    )));
+                }
             }
         }
         crate::parser::TaskType::Composite => {

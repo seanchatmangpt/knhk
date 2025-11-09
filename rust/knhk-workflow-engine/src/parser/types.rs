@@ -135,4 +135,7 @@ pub struct WorkflowSpec {
     pub start_condition: Option<String>,
     /// End condition ID
     pub end_condition: Option<String>,
+    /// Source RDF/Turtle (for runtime RDF queries)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_turtle: Option<String>,
 }

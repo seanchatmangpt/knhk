@@ -5,7 +5,7 @@ use knhk_connectors::Connector;
 
 /// Connector integration for external task execution
 pub struct ConnectorIntegration {
-    connectors: std::collections::HashMap<String, Box<dyn Connector>>,
+    connectors: std::collections::HashMap<String, Box<dyn Connector + Send + Sync>>,
 }
 
 impl ConnectorIntegration {
@@ -17,7 +17,11 @@ impl ConnectorIntegration {
     }
 
     /// Register a connector
-    pub fn register_connector(&mut self, name: String, connector: Box<dyn Connector>) {
+    pub fn register_connector(
+        &mut self,
+        name: String,
+        connector: Box<dyn Connector + Send + Sync>,
+    ) {
         self.connectors.insert(name, connector);
     }
 

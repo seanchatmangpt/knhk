@@ -1,0 +1,86 @@
+@startuml C4_Component_Data_Service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Data Service (XQuery & Data Gateway)
+
+Container_Boundary(data_service, "Data Service") {
+    Component(xquery_processor, "XQuery Processor", "Saxon-rs", "Executes XQuery transformations")
+    Component(xpath_evaluator, "XPath Evaluator", "Rust", "Evaluates XPath expressions")
+    Component(data_mapper, "Data Mapper", "Rust", "Maps task inputs/outputs")
+    Component(data_gateway, "Data Gateway", "Rust", "Integrates external data sources")
+    Component(sql_connector, "SQL Connector", "SQLx", "Executes SQL queries")
+    Component(rest_connector, "REST Connector", "Reqwest", "Calls REST APIs")
+    Component(schema_validator, "Schema Validator", "Rust", "Validates against XML Schema")
+    Component(data_cache, "Data Cache", "Rust", "Caches frequently accessed data")
+}
+
+Container_Ext(workflow_engine, "Workflow Engine", "Requests transformations")
+Container_Ext(external_database, "External Database", "SQL data source")
+Container_Ext(external_api, "External API", "REST data source")
+Container_Ext(otel_exporter, "OTEL Exporter", "Data operation events")
+
+Rel(workflow_engine, data_mapper, "Maps data", "Rust fn")
+Rel(data_mapper, xquery_processor, "Transforms", "XQuery")
+Rel(data_mapper, xpath_evaluator, "Extracts", "XPath")
+Rel(data_mapper, schema_validator, "Validates", "XSD")
+
+Rel(data_mapper, data_gateway, "Gets external data", "Rust fn")
+Rel(data_gateway, sql_connector, "Query database", "SQL")
+Rel(data_gateway, rest_connector, "Call API", "HTTP")
+Rel(data_gateway, data_cache, "Cache results", "Rust fn")
+
+Rel(sql_connector, external_database, "Executes SQL", "TCP")
+Rel(rest_connector, external_api, "HTTP request", "HTTPS")
+
+Rel(xquery_processor, otel_exporter, "Emits transformation events", "OTLP")
+
+note right of xquery_processor
+  **XQuery Capabilities**:
+  - Data transformation (mappings)
+  - Complex data manipulation
+  - Function library (built-in + custom)
+  - Entity unescaping (2-level)
+  - CDATA handling
+
+  **Example**:
+  ```xquery
+  for $task in /workflow/tasks
+  where $task/@role = 'manager'
+  return $task/name
+  ```
+end note
+
+note right of data_mapper
+  **Mapping Types**:
+  1. Starting mappings
+     (initialize task input)
+  2. Completed mappings
+     (extract task output)
+  3. Enablement mappings
+     (conditional task enabling)
+
+  **Features**:
+  - Expression evaluation
+  - Multi-source aggregation
+  - Type coercion
+  - Default values
+end note
+
+note right of data_gateway
+  **Data Sources**:
+  - SQL databases (PostgreSQL, MySQL)
+  - REST APIs (JSON, XML)
+  - SOAP services (via WSDL)
+  - Message queues (Kafka, RabbitMQ)
+  - File systems (S3, local)
+
+  **Features**:
+  - Connection pooling
+  - Retry logic
+  - Circuit breaker
+  - Response caching
+end note
+
+@enduml

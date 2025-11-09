@@ -34,8 +34,7 @@ pub async fn get_workflow(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
 ) -> Result<Json<crate::parser::WorkflowSpec>, StatusCode> {
-    let spec_id =
-        WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let spec_id = WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let spec = engine
         .get_workflow(spec_id)
@@ -90,33 +89,58 @@ pub async fn cancel_case(
 
 /// Get case history
 pub async fn get_case_history(
-    State(_engine): State<Arc<WorkflowEngine>>,
+    State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
 ) -> Result<Json<CaseHistoryResponse>, StatusCode> {
+    use crate::state::manager::StateEvent;
+
     let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    // NOTE: Case history retrieval requires StateManager integration
-    // StateManager tracks case state transitions via event sourcing
-    // For now, return a placeholder response indicating the feature exists
-    // but requires StateManager to be integrated into WorkflowEngine
-    //
-    // To fully implement:
-    // 1. Add StateManager field to WorkflowEngine
-    // 2. Call state_manager.get_case_history(case_id).await
-    // 3. Transform StateEvent::CaseStateChanged events into response format
-    //
-    // Example transformation:
-    // StateEvent::CaseStateChanged { old_state, new_state, timestamp, .. } =>
-    //   { "event": "state_changed", "from": old_state, "to": new_state, "at": timestamp }
+    // Get case history from StateManager
+    let events = engine.state_manager.get_case_history(case_id).await;
 
-    let entries: Vec<serde_json::Value> = vec![
-        serde_json::json!({
-            "event": "case_created",
-            "case_id": case_id.to_string(),
-            "timestamp": chrono::Utc::now().to_rfc3339(),
-            "note": "Case history requires StateManager integration (see state/manager.rs)"
+    // Transform StateEvent enum variants to CaseHistoryEntry format
+    let entries: Vec<crate::api::models::CaseHistoryEntry> = events
+        .into_iter()
+        .map(|event| {
+            match event {
+                StateEvent::CaseCreated {
+                    case_id,
+                    spec_id,
+                    timestamp,
+                } => crate::api::models::CaseHistoryEntry {
+                    timestamp,
+                    event_type: "case_created".to_string(),
+                    data: serde_json::json!({
+                        "case_id": case_id.to_string(),
+                        "spec_id": spec_id.to_string(),
+                    }),
+                },
+                StateEvent::CaseStateChanged {
+                    case_id,
+                    old_state,
+                    new_state,
+                    timestamp,
+                } => crate::api::models::CaseHistoryEntry {
+                    timestamp,
+                    event_type: "state_changed".to_string(),
+                    data: serde_json::json!({
+                        "case_id": case_id.to_string(),
+                        "from": old_state,
+                        "to": new_state,
+                    }),
+                },
+                StateEvent::SpecRegistered { .. } => {
+                    // This shouldn't appear in case history, but handle it gracefully
+                    crate::api::models::CaseHistoryEntry {
+                        timestamp: chrono::Utc::now(),
+                        event_type: "unknown".to_string(),
+                        data: serde_json::json!({}),
+                    }
+                }
+            }
         })
-    ];
+        .collect();
 
     Ok(Json(CaseHistoryResponse { entries }))
 }
@@ -272,8 +296,7 @@ pub async fn delete_workflow(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, StatusCode> {
-    let spec_id =
-        WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let spec_id = WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     // Verify workflow exists
     engine
@@ -352,8 +375,8 @@ pub async fn list_cases(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // If workflow_id is provided, list cases for that workflow
     if let Some(workflow_id_str) = params.get("workflow_id") {
-        let spec_id = WorkflowSpecId::parse_str(workflow_id_str)
-            .map_err(|_| StatusCode::BAD_REQUEST)?;
+        let spec_id =
+            WorkflowSpecId::parse_str(workflow_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
 
         let case_ids = engine
             .list_cases(spec_id)
@@ -416,8 +439,7 @@ pub async fn get_pattern(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<u32>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let pattern_id =
-        PatternId::new(id).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let pattern_id = PatternId::new(id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let registry = engine.pattern_registry();
     let executor = registry
@@ -437,8 +459,7 @@ pub async fn execute_pattern(
     Path(id): Path<u32>,
     Json(request): Json<serde_json::Value>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let pattern_id =
-        PatternId::new(id).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let pattern_id = PatternId::new(id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let registry = engine.pattern_registry();
     let executor = registry
@@ -473,4 +494,3 @@ pub async fn execute_pattern(
         "variables": result.variables
     })))
 }
-

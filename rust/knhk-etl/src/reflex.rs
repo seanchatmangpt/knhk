@@ -395,7 +395,7 @@ impl ReflexStage {
 
         // Create execution context
         let context = HookExecutionContext::from_load_result(
-            crate::hook_registry::HookRegistry::new(), // Default registry
+            crate::hook_registry::HookRegistry::shared(), // Default shared registry
             input,
             self.tick_budget,
         );

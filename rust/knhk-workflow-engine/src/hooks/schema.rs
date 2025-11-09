@@ -395,6 +395,7 @@ wf:Task a rdf:Class .
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         let result = registry

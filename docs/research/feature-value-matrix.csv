@@ -1,0 +1,64 @@
+Feature,Category,Enterprise Value (1-10),Complexity (XS-XXL),Evidence,Usage %,ROI Score,Priority,Weeks Effort,Must Have For
+Work Item Lifecycle,Interface B,10,XL,12/12 workflows + 78 tests,100%,2.50,P0,4,v1.0
+Resource Allocation,Resource Mgmt,10,XL,11/12 workflows + 45 tests,95%,2.50,P0,4,v1.0
+Resource Filters,Resource Mgmt,9,L,10/12 workflows + 18 tests,90%,3.00,P0,3,v1.0
+Resource Allocators,Resource Mgmt,7,M,9/12 workflows + 15 tests,75%,3.50,P0,2,v1.0
+Resource Constraints,Compliance,9,L,7/12 workflows + 12 tests,60%,3.00,P0,3,v1.0
+Data Mappings,Core Engine,10,XL,12/12 workflows + 34 tests,100%,2.00,P0,5,v1.0
+Timer Support,Advanced,8,XL,6/12 workflows + 8 tests,50%,2.00,P0,4,v1.0
+State Persistence,Core Engine,10,XL,12/12 workflows + 22 tests,100%,2.00,P0,5,v1.0
+Email Notifications,Integration,5,S,5/12 workflows + 4 tests,40%,5.00,P0,1,v1.0
+Basic Exception Handling,Advanced,7,M,8/12 workflows + 16 tests,70%,3.50,P0,2,v1.0
+HTTP Connector,Integration,7,M,7/12 workflows + 8 tests,60%,3.50,P1,2,v1.0
+SMS Notifications,Integration,4,S,2/12 workflows + 2 tests,20%,4.00,P1,1,v1.5
+Multiple Instance Tasks,Advanced,7,XL,5/12 workflows + 14 tests,40%,1.75,P1,4,v1.5
+XPath/XQuery Full,Data Transform,8,XXL,11/12 workflows + 28 tests,95%,1.00,P1,8,v1.5
+SOAP/WSDL Connector,Integration,6,L,3/12 workflows + 4 tests,25%,2.00,P1,3,v1.5
+OpenXES Logging,Analytics,5,L,2/12 workflows + 6 tests,15%,1.67,P2,3,v2.0
+Resource Calendars,Scheduling,6,XL,4/12 workflows + 8 tests,35%,1.50,P2,4,v2.0
+Digital Signatures,Compliance,5,XL,0/12 workflows + 1 test,10%,1.00,P2,5,v2.0
+Worklets (RDR),Exception Mgmt,7,XXL,8/12 workflows + 16 tests,70%,0.88,P2,8,v2.0
+Custom Forms,UI,4,XL,4/12 workflows + 11 tests,30%,0.80,P3,5,v2.0
+Simulation Support,Analytics,4,XL,2/12 workflows + 3 tests,20%,0.80,P3,5,v3.0
+Cost Tracking,Analytics,2,L,0/12 workflows + 2 tests,5%,0.67,P4,3,v3.0
+Proclet Service,Advanced,3,XXL,0/12 workflows + 0 tests,<5%,0.38,P5,8,Never
+Twitter Service,Integration,1,S,0/12 workflows + 0 tests,<1%,1.00,P5,1,Never
+Desktop UI (Swing),UI,2,XXL,Not analyzed,<5%,0.25,P5,8,Never
+Document Store,Integration,4,L,Not analyzed,25%,1.33,P2,3,v2.0
+Authentication,Security,8,M,All workflows,100%,4.00,P0,2,v1.0
+Authorization,Security,9,L,All workflows,100%,3.00,P0,3,v1.0
+Audit Logging,Compliance,10,M,All workflows,100%,5.00,P0,2,v1.0
+Case Management API,Interface B,10,L,All workflows,100%,3.33,P0,3,v1.0
+Work Item Query API,Interface B,9,M,All workflows,100%,4.50,P0,2,v1.0
+YAWL XML Import,Migration,8,XL,Migration requirement,100%,1.60,P0,5,v1.0
+Process Deployment API,Core Engine,9,L,All workflows,100%,3.00,P0,3,v1.0
+Schema Validation,Data Quality,8,L,All workflows,100%,2.67,P0,3,v1.0
+XPath Basic (Simple Expressions),Data Transform,9,M,11/12 workflows,95%,4.50,P0,2,v1.0
+Data Type Conversions,Data Transform,8,M,10/12 workflows,90%,4.00,P0,2,v1.0
+Workflow Patterns (20 core),Core Engine,10,XXL,All workflows,100%,1.25,P0,8,v1.0
+Cancelation Regions,Advanced,6,L,4/12 workflows,35%,2.00,P1,3,v1.5
+OR-Join,Advanced,5,XL,3/12 workflows,25%,1.00,P2,5,v2.0
+Composite Tasks,Advanced,4,L,2/12 workflows,15%,1.33,P2,3,v2.0
+Secondary Resources,Resource Mgmt,5,M,3/12 workflows,25%,2.50,P1,2,v1.5
+Non-Human Resources,Resource Mgmt,4,L,2/12 workflows,15%,1.33,P2,3,v2.0
+Resource Availability,Scheduling,6,L,4/12 workflows,35%,2.00,P2,3,v2.0
+Deferred Choice Pattern,Advanced,7,L,5/12 workflows,40%,2.33,P1,3,v1.5
+Interleaved Routing,Advanced,3,XL,1/12 workflows,10%,0.60,P3,5,v2.0
+Milestone Pattern,Advanced,4,L,2/12 workflows,15%,1.33,P2,3,v2.0
+Subprocess Decomposition,Core Engine,9,XL,10/12 workflows,85%,1.80,P0,5,v1.0
+Atomic Task Execution,Core Engine,8,M,All workflows,100%,4.00,P0,2,v1.0
+Join Types (XOR/AND/OR),Core Engine,10,L,All workflows,100%,3.33,P0,3,v1.0
+Split Types (XOR/AND/OR),Core Engine,10,L,All workflows,100%,3.33,P0,3,v1.0
+Conditions (Guards),Core Engine,9,M,11/12 workflows,95%,4.50,P0,2,v1.0
+Case Data Variables,Core Engine,10,M,All workflows,100%,5.00,P0,2,v1.0
+Task Input/Output Params,Core Engine,10,M,All workflows,100%,5.00,P0,2,v1.0
+Specification Loading,Core Engine,9,M,All workflows,100%,4.50,P0,2,v1.0
+Case Launching,Core Engine,10,S,All workflows,100%,10.00,P0,1,v1.0
+Task Enabling,Core Engine,10,M,All workflows,100%,5.00,P0,2,v1.0
+Token Passing,Core Engine,9,M,All workflows,100%,4.50,P0,2,v1.0
+Proper Completion,Core Engine,10,S,All workflows,100%,10.00,P0,1,v1.0
+Cancellation,Core Engine,8,M,8/12 workflows,70%,4.00,P0,2,v1.0
+REST API (Interface B),Integration,10,L,All deployments,100%,3.33,P0,3,v1.0
+Database Backend,Infrastructure,10,L,All deployments,100%,3.33,P0,3,v1.0
+Transaction Management,Infrastructure,9,L,All deployments,100%,3.00,P0,3,v1.0
+Error Recovery,Infrastructure,8,XL,All deployments,100%,1.60,P0,5,v1.0

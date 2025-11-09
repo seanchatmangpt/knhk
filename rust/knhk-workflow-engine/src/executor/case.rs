@@ -23,8 +23,15 @@ impl WorkflowEngine {
         let _spec = self.get_workflow(spec_id).await?;
 
         // Create case
-        let case = Case::new(spec_id, data);
+        let case = Case::new(spec_id, data.clone());
         let case_id = case.id;
+
+        // Create case RDF store
+        self.create_case_rdf_store(case_id, &data)
+            .await
+            .map_err(|e| {
+                WorkflowError::Internal(format!("Failed to create case RDF store: {}", e))
+            })?;
 
         // Store case (lock-free DashMap access)
         let case_clone = case.clone();
@@ -33,6 +40,9 @@ impl WorkflowEngine {
         // Persist to state store
         let store_arc = self.state_store.read().await;
         (*store_arc).save_case(case_id, &case_clone)?;
+
+        // Save to state manager for event sourcing
+        self.state_manager.save_case(&case_clone).await?;
 
         Ok(case_id)
     }
@@ -51,6 +61,9 @@ impl WorkflowEngine {
         // Persist state
         let store_arc = self.state_store.read().await;
         (*store_arc).save_case(case_id, &case_clone)?;
+
+        // Save to state manager for event sourcing (will emit CaseStateChanged event)
+        self.state_manager.save_case(&case_clone).await?;
 
         Ok(())
     }
@@ -122,6 +135,9 @@ impl WorkflowEngine {
         drop(case_guard);
         let store_arc = self.state_store.read().await;
         (*store_arc).save_case(case_id, &case_clone)?;
+
+        // Save to state manager for event sourcing (will emit CaseStateChanged event)
+        self.state_manager.save_case(&case_clone).await?;
 
         Ok(())
     }

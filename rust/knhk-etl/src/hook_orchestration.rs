@@ -7,7 +7,7 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use crate::error::PipelineError;
-use crate::hook_registry::HookRegistry;
+use crate::hook_registry::SharedHookRegistry;
 use crate::load::{LoadResult, PredRun, SoAArrays};
 use crate::reflex::{Action, Receipt, ReflexStage};
 
@@ -20,8 +20,8 @@ pub type HookChoice = (
 
 /// Hook execution context: Contains all data needed for hook execution
 pub struct HookExecutionContext {
-    /// Hook registry mapping predicates to kernels
-    pub hook_registry: HookRegistry,
+    /// Hook registry mapping predicates to kernels (wrapped in Arc for sharing)
+    pub hook_registry: SharedHookRegistry,
     /// Predicate runs to execute
     pub predicate_runs: Vec<PredRun>,
     /// SoA arrays containing triple data
@@ -33,7 +33,7 @@ pub struct HookExecutionContext {
 impl HookExecutionContext {
     /// Create new hook execution context
     pub fn new(
-        hook_registry: HookRegistry,
+        hook_registry: SharedHookRegistry,
         predicate_runs: Vec<PredRun>,
         soa_arrays: SoAArrays,
         tick_budget: u32,
@@ -48,7 +48,7 @@ impl HookExecutionContext {
 
     /// Create from LoadResult
     pub fn from_load_result(
-        hook_registry: HookRegistry,
+        hook_registry: SharedHookRegistry,
         load_result: LoadResult,
         tick_budget: u32,
     ) -> Self {

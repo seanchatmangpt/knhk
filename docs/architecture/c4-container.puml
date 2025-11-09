@@ -1,0 +1,98 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container Diagram - KNHK Workflow Engine
+
+Person(user, "User")
+
+System_Boundary(engine, "KNHK Workflow Engine") {
+    Container(rest_api, "REST API", "Axum", "HTTP/JSON API for workflow management")
+    Container(grpc_api, "gRPC API", "Tonic", "High-performance binary API for work item execution")
+    Container(engine_core, "Engine Core", "Rust", "Pattern execution, case management, workflow orchestration")
+    Container(resource_service, "Resource Service", "Rust", "3-phase allocation, filters, constraints, calendar")
+    Container(workitem_service, "Work Item Service", "Rust", "14-operation lifecycle, 5 launch modes, privileges")
+    Container(worklet_service, "Worklet Service", "Rust", "RDR rule engine, exception handling, dynamic selection")
+    Container(data_gateway, "Data Gateway", "Rust", "XQuery, SQL, REST connectors, schema validation")
+    Container(event_bus, "Event Bus", "Rust", "Async event processing with tokio channels")
+
+    ContainerDb(state_store, "State Store", "Sled", "Embedded KV store for workflow/case state")
+    ContainerDb(audit_store, "Audit Store", "PostgreSQL", "Relational audit trail and reporting")
+}
+
+System_Ext(otel_collector, "OTLP Collector", "OpenTelemetry")
+System_Ext(lockchain, "Lockchain", "Blockchain")
+
+Rel(user, rest_api, "CRUD operations", "HTTPS/JSON")
+Rel(user, grpc_api, "Work item ops", "gRPC/Protobuf")
+
+Rel(rest_api, engine_core, "Manages workflows/cases")
+Rel(grpc_api, workitem_service, "Executes work items")
+
+Rel(engine_core, resource_service, "Allocates resources")
+Rel(engine_core, workitem_service, "Creates work items")
+Rel(engine_core, worklet_service, "Handles exceptions")
+Rel(engine_core, data_gateway, "Reads/writes data")
+Rel(engine_core, event_bus, "Publishes events")
+
+Rel(workitem_service, resource_service, "Checks allocation")
+Rel(worklet_service, data_gateway, "Queries worklet repo")
+Rel(resource_service, data_gateway, "Queries resource data")
+
+Rel(engine_core, state_store, "Reads/writes state")
+Rel(engine_core, audit_store, "Logs operations")
+Rel(workitem_service, state_store, "Persists work items")
+Rel(resource_service, state_store, "Persists allocations")
+
+Rel(event_bus, otel_collector, "Exports spans/metrics", "OTLP")
+Rel(event_bus, lockchain, "Records provenance", "gRPC")
+
+note right of rest_api
+  **Status:** ✅ Implemented
+  - Workflow CRUD
+  - Case management
+  - Pattern listing
+  - Health checks
+end note
+
+note right of grpc_api
+  **Status:** 🟡 Partial
+  - Proto definitions exist
+  - Server needs implementation
+end note
+
+note right of engine_core
+  **Status:** 🟡 Partial
+  - Pattern registry ✅
+  - Case management ✅
+  - Task execution 🟡
+  - Event loop 🔴
+end note
+
+note right of workitem_service
+  **Status:** 🔴 Missing
+  - Needs full implementation
+  - Critical for enterprise
+end note
+
+note right of worklet_service
+  **Status:** 🔴 Missing
+  - RDR engine required
+  - Exception handling
+end note
+
+note right of resource_service
+  **Status:** 🟡 Partial
+  - Types defined ✅
+  - 3-phase allocation 🔴
+  - Filters/constraints 🔴
+end note
+
+note right of data_gateway
+  **Status:** 🔴 Missing
+  - XQuery integration
+  - Connector framework
+end note
+
+@enduml

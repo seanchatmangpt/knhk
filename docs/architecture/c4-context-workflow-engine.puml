@@ -1,0 +1,34 @@
+@startuml C4_Context_Workflow_Engine
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram - KNHK Workflow Engine
+
+Person(workflow_author, "Workflow Author", "Designs and deploys workflow specifications")
+Person(workflow_participant, "Workflow Participant", "Executes assigned work items")
+Person(system_admin, "System Administrator", "Monitors and manages workflow engine")
+Person(compliance_officer, "Compliance Officer", "Audits workflow execution for regulatory compliance")
+
+System(knhk_engine, "KNHK Workflow Engine", "Executes all 43 Van der Aalst workflow patterns with enterprise features")
+
+System_Ext(external_services, "External Services", "Third-party systems integrated via connectors (Salesforce, SAP, etc.)")
+System_Ext(identity_provider, "Identity Provider", "SPIFFE/SPIRE for zero-trust authentication")
+System_Ext(observability_platform, "Observability Platform", "Grafana, Prometheus, Jaeger for monitoring")
+System_Ext(process_mining, "Process Mining Tools", "ProM, Celonis for process analysis")
+System_Ext(document_management, "Document Management", "S3, SharePoint for attachments")
+System_Ext(notification_system, "Notification System", "Email, SMS, Slack for alerts")
+
+Rel(workflow_author, knhk_engine, "Deploys specifications", "Turtle/RDF, REST API")
+Rel(workflow_participant, knhk_engine, "Claims and executes work items", "REST API, gRPC")
+Rel(system_admin, knhk_engine, "Monitors health and performance", "REST API, OTEL")
+Rel(compliance_officer, knhk_engine, "Retrieves audit trails", "REST API, OpenXES")
+
+Rel(knhk_engine, external_services, "Invokes via connectors", "HTTP, gRPC, Kafka")
+Rel(knhk_engine, identity_provider, "Authenticates users", "mTLS, SPIFFE")
+Rel(knhk_engine, observability_platform, "Exports telemetry", "OTLP, Prometheus")
+Rel(knhk_engine, process_mining, "Exports event logs", "OpenXES XML")
+Rel(knhk_engine, document_management, "Stores attachments", "S3 API")
+Rel(knhk_engine, notification_system, "Sends alerts", "SMTP, webhooks")
+
+@enduml

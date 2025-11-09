@@ -83,6 +83,8 @@ fn create_swift_payment_context(
         case_id,
         workflow_id: spec_id,
         variables,
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     }
 }
 
@@ -104,6 +106,8 @@ fn create_fibo_compliance_context(
         case_id,
         workflow_id: spec_id,
         variables,
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     }
 }
 
@@ -374,6 +378,8 @@ async fn test_swift_multiple_instance_settlement_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -420,6 +426,8 @@ async fn test_fibo_deferred_choice_risk_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -459,6 +467,8 @@ async fn test_fibo_milestone_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -502,6 +512,8 @@ async fn test_swift_cancel_activity_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -541,6 +553,8 @@ async fn test_swift_timeout_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -580,6 +594,8 @@ async fn test_swift_cancel_case_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -624,6 +640,8 @@ async fn test_fibo_audit_trail_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -667,6 +685,8 @@ async fn test_swift_external_trigger_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -707,6 +727,8 @@ async fn test_swift_event_based_trigger_enterprise() {
         case_id: case.id,
         workflow_id: spec_id,
         variables: HashMap::new(),
+        arrived_from: std::collections::HashSet::new(),
+        scope_id: String::new(),
     };
     context
         .variables
@@ -901,6 +923,8 @@ async fn test_swift_fibo_risk_management_enterprise() {
             case_id: case.id,
             workflow_id: spec_id,
             variables: HashMap::new(),
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
         };
         context
             .variables
@@ -955,6 +979,8 @@ async fn test_swift_fibo_settlement_clearing_enterprise() {
             case_id: case.id,
             workflow_id: spec_id,
             variables: HashMap::new(),
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
         };
         context
             .variables
@@ -1008,6 +1034,8 @@ async fn test_swift_fibo_exception_handling_enterprise() {
             case_id: case.id,
             workflow_id: spec_id,
             variables: HashMap::new(),
+            arrived_from: std::collections::HashSet::new(),
+            scope_id: String::new(),
         };
         context
             .variables

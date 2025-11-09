@@ -1,0 +1,58 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram - KNHK Workflow Engine
+
+Person(user, "Workflow Developer", "Designs and deploys workflows using Turtle/YAWL XML")
+Person(admin, "System Administrator", "Monitors, configures, and maintains the workflow engine")
+Person(participant, "Workflow Participant", "Executes work items and completes tasks")
+
+System_Boundary(knhk, "KNHK Workflow Engine") {
+    System(engine, "Workflow Engine", "Executes workflow instances with 43-pattern support, resource allocation, and exception handling")
+}
+
+System_Ext(monitoring, "Observability Stack", "OpenTelemetry Collector, Prometheus, Grafana, Jaeger")
+System_Ext(storage, "Persistent Storage", "Sled KV store for state, PostgreSQL for audit")
+System_Ext(external_services, "External Services", "REST/gRPC APIs, SOAP services, databases")
+System_Ext(yawl_system, "Legacy YAWL System", "Existing YAWL installations for migration")
+System_Ext(lockchain, "Lockchain Blockchain", "Tamper-proof audit trail and provenance")
+
+Rel(user, engine, "Deploys workflows", "REST/gRPC API")
+Rel(admin, engine, "Monitors and configures", "REST API, CLI")
+Rel(participant, engine, "Executes work items", "REST API, gRPC")
+
+Rel(engine, monitoring, "Exports telemetry", "OTLP")
+Rel(engine, storage, "Persists state and audit logs", "Native/JDBC")
+Rel(engine, external_services, "Invokes external services", "Connectors")
+Rel(engine, lockchain, "Records provenance", "gRPC")
+
+Rel_Back(yawl_system, engine, "Migrates workflows", "Import API")
+
+note right of engine
+  **Technology Stack:**
+  - Rust (performance, safety)
+  - Axum (REST API)
+  - Tonic (gRPC API)
+  - Sled (embedded KV store)
+  - OpenTelemetry (observability)
+  - Lockchain (audit trail)
+
+  **Key Capabilities:**
+  - 43 Van der Aalst patterns
+  - 3-phase resource allocation
+  - RDR exception handling
+  - YAWL XML compatibility
+  - Sub-tick latency (<8 ticks)
+end note
+
+note left of yawl_system
+  **Migration Support:**
+  - YAWL XML import
+  - Workflow conversion
+  - State migration
+  - Gradual cutover
+end note
+
+@enduml

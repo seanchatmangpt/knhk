@@ -1,0 +1,49 @@
+@startuml C4_Container_Workflow_Engine
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container Diagram - KNHK Workflow Engine
+
+Person(workflow_participant, "Workflow Participant")
+Person(workflow_author, "Workflow Author")
+Person(system_admin, "System Administrator")
+
+System_Boundary(knhk_system, "KNHK Workflow Engine") {
+    Container(rest_api, "REST API", "Axum, Rust", "Provides HTTP/JSON interface for workflow operations")
+    Container(grpc_api, "gRPC API", "Tonic, Rust", "Provides high-performance RPC interface")
+    Container(workflow_engine, "Workflow Engine", "Rust", "Core execution engine supporting all 43 patterns")
+    Container(resource_manager, "Resource Manager", "Rust", "Manages resource allocation with filters and constraints")
+    Container(work_item_service, "Work Item Service", "Rust", "Handles work item lifecycle (checkout, checkin, delegate)")
+    Container(exception_service, "Exception Service", "Rust", "Worklet and exlet-based exception handling")
+    Container(data_service, "Data Service", "Rust", "XQuery transformations and data mappings")
+    Container(state_store, "State Store", "Sled", "Persistent case and work item state")
+    Container(lockchain, "Lockchain", "Git2, Rust", "Immutable audit trail with blockchain guarantees")
+    Container(otel_exporter, "OTEL Exporter", "opentelemetry-rust", "Distributed tracing and metrics")
+}
+
+System_Ext(identity_provider, "SPIFFE/SPIRE")
+System_Ext(observability, "Grafana/Prometheus")
+System_Ext(external_services, "External Services")
+
+Rel(workflow_participant, rest_api, "Claims work items", "HTTPS")
+Rel(workflow_participant, grpc_api, "Executes tasks", "gRPC/TLS")
+Rel(workflow_author, rest_api, "Deploys workflows", "HTTPS")
+Rel(system_admin, rest_api, "Monitors engine", "HTTPS")
+
+Rel(rest_api, workflow_engine, "Invokes", "Rust fn calls")
+Rel(grpc_api, workflow_engine, "Invokes", "Rust fn calls")
+Rel(workflow_engine, resource_manager, "Allocates resources", "Rust fn calls")
+Rel(workflow_engine, work_item_service, "Manages work items", "Rust fn calls")
+Rel(workflow_engine, exception_service, "Handles exceptions", "Rust fn calls")
+Rel(workflow_engine, data_service, "Transforms data", "Rust fn calls")
+Rel(workflow_engine, state_store, "Persists state", "Sled API")
+Rel(workflow_engine, lockchain, "Records provenance", "Git2 API")
+Rel(workflow_engine, otel_exporter, "Emits telemetry", "OTLP")
+
+Rel(rest_api, identity_provider, "Authenticates", "mTLS")
+Rel(grpc_api, identity_provider, "Authenticates", "mTLS")
+Rel(otel_exporter, observability, "Exports", "OTLP")
+Rel(work_item_service, external_services, "Invokes connectors", "HTTP/gRPC")
+
+@enduml

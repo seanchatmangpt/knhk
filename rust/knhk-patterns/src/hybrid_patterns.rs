@@ -4,7 +4,7 @@
 use crate::patterns::{PatternError, PatternResult};
 use knhk_etl::{
     hook_orchestration::{HookExecutionContext, HookExecutionResult},
-    hook_registry::HookRegistry,
+    hook_registry::SharedHookRegistry,
 };
 use std::sync::Arc;
 
@@ -26,7 +26,7 @@ pub struct HybridSequencePattern {
     cold_hook_ids: Vec<String>,
     #[cfg(not(feature = "unrdf"))]
     _phantom: PhantomData<()>,
-    hot_registry: HookRegistry,
+    hot_registry: SharedHookRegistry,
     #[cfg(feature = "unrdf")]
     cold_registry: Arc<NativeHookRegistry>,
 }
@@ -37,7 +37,7 @@ impl HybridSequencePattern {
     pub fn new(
         hot_predicates: Vec<u64>,
         cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
     ) -> PatternResult<Self> {
         Self::with_registries(
             hot_predicates,
@@ -52,7 +52,7 @@ impl HybridSequencePattern {
     pub fn with_registries(
         hot_predicates: Vec<u64>,
         cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
         cold_registry: Arc<NativeHookRegistry>,
     ) -> PatternResult<Self> {
         if hot_predicates.is_empty() && cold_hook_ids.is_empty() {
@@ -73,7 +73,7 @@ impl HybridSequencePattern {
     pub fn new(
         hot_predicates: Vec<u64>,
         _cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
     ) -> PatternResult<Self> {
         if hot_predicates.is_empty() {
             return Err(PatternError::InvalidConfiguration(
@@ -102,7 +102,7 @@ impl HybridSequencePattern {
         // Execute hot path hooks if predicates provided
         if !self.hot_predicates.is_empty() {
             let hot_context = HookExecutionContext {
-                hook_registry: self.hot_registry.clone(),
+                hook_registry: Arc::clone(&self.hot_registry),
                 predicate_runs: context.predicate_runs.clone(),
                 soa_arrays: context.soa_arrays.clone(),
                 tick_budget: context.tick_budget,
@@ -170,7 +170,7 @@ pub struct HybridParallelPattern {
     cold_hook_ids: Vec<String>,
     #[cfg(not(feature = "unrdf"))]
     _phantom: PhantomData<()>,
-    hot_registry: HookRegistry,
+    hot_registry: SharedHookRegistry,
     #[cfg(feature = "unrdf")]
     cold_registry: Arc<NativeHookRegistry>,
 }
@@ -181,7 +181,7 @@ impl HybridParallelPattern {
     pub fn new(
         hot_predicates: Vec<u64>,
         cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
     ) -> PatternResult<Self> {
         Self::with_registries(
             hot_predicates,
@@ -196,7 +196,7 @@ impl HybridParallelPattern {
     pub fn with_registries(
         hot_predicates: Vec<u64>,
         cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
         cold_registry: Arc<NativeHookRegistry>,
     ) -> PatternResult<Self> {
         if hot_predicates.is_empty() && cold_hook_ids.is_empty() {
@@ -217,7 +217,7 @@ impl HybridParallelPattern {
     pub fn new(
         hot_predicates: Vec<u64>,
         _cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
     ) -> PatternResult<Self> {
         if hot_predicates.is_empty() {
             return Err(PatternError::InvalidConfiguration(
@@ -250,7 +250,7 @@ impl HybridParallelPattern {
         // Hot path execution
         if !self.hot_predicates.is_empty() {
             let hot_context = HookExecutionContext {
-                hook_registry: self.hot_registry.clone(),
+                hook_registry: Arc::clone(&self.hot_registry),
                 predicate_runs: context.predicate_runs.clone(),
                 soa_arrays: context.soa_arrays.clone(),
                 tick_budget: context.tick_budget,
@@ -338,7 +338,7 @@ pub struct HybridChoicePattern {
     cold_hook_ids: Vec<String>,
     #[cfg(not(feature = "unrdf"))]
     _phantom: PhantomData<()>,
-    hot_registry: HookRegistry,
+    hot_registry: SharedHookRegistry,
     #[cfg(feature = "unrdf")]
     cold_registry: Arc<NativeHookRegistry>,
 }
@@ -348,7 +348,7 @@ impl HybridChoicePattern {
     #[cfg(feature = "unrdf")]
     pub fn new(
         condition: HybridHookCondition,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
         cold_hook_ids: Vec<String>,
     ) -> PatternResult<Self> {
         Self::with_registries(
@@ -365,7 +365,7 @@ impl HybridChoicePattern {
     pub fn with_hot_predicates(
         condition: HybridHookCondition,
         hot_predicates: Vec<u64>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
         cold_hook_ids: Vec<String>,
     ) -> PatternResult<Self> {
         Self::with_registries(
@@ -383,7 +383,7 @@ impl HybridChoicePattern {
         condition: HybridHookCondition,
         hot_predicates: Vec<u64>,
         cold_hook_ids: Vec<String>,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
         cold_registry: Arc<NativeHookRegistry>,
     ) -> PatternResult<Self> {
         Ok(Self {
@@ -398,7 +398,7 @@ impl HybridChoicePattern {
     #[cfg(not(feature = "unrdf"))]
     pub fn new(
         condition: HybridHookCondition,
-        hot_registry: HookRegistry,
+        hot_registry: SharedHookRegistry,
         _cold_hook_ids: Vec<String>,
     ) -> PatternResult<Self> {
         Ok(Self {
@@ -445,7 +445,7 @@ impl HybridChoicePattern {
                 use crate::hook_patterns::HookSequencePattern;
 
                 let hot_context = HookExecutionContext {
-                    hook_registry: self.hot_registry.clone(),
+                    hook_registry: Arc::clone(&self.hot_registry),
                     predicate_runs: context.predicate_runs.clone(),
                     soa_arrays: context.soa_arrays.clone(),
                     tick_budget: context.tick_budget,

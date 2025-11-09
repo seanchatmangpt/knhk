@@ -252,6 +252,7 @@ mod tests {
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         let result = detector.detect_deadlocks(&spec);
@@ -268,6 +269,7 @@ mod tests {
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         };
 
         // Create a simple cycle: task1 -> condition1 -> task1

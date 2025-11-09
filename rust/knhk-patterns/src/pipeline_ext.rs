@@ -4,8 +4,10 @@
 use crate::hook_patterns::{HookCondition, HookRetryCondition};
 use crate::patterns::{BranchFn, ConditionFn, Pattern, PatternResult};
 use knhk_etl::{
-    hook_orchestration::HookExecutionResult, hook_registry::HookRegistry, EmitResult, Pipeline,
+    hook_orchestration::HookExecutionResult, hook_registry::SharedHookRegistry, EmitResult,
+    Pipeline,
 };
+use std::sync::Arc;
 
 // ============================================================================
 // Pipeline Extension Trait
@@ -37,21 +39,21 @@ pub trait PipelinePatternExt {
     /// Execute hooks in parallel using hook registry
     fn execute_hooks_parallel(
         &mut self,
-        hook_registry: &HookRegistry,
+        hook_registry: &SharedHookRegistry,
         predicates: Vec<u64>,
     ) -> PatternResult<HookExecutionResult>;
 
     /// Execute hooks conditionally using hook registry
     fn execute_hooks_conditional(
         &mut self,
-        hook_registry: &HookRegistry,
+        hook_registry: &SharedHookRegistry,
         choices: Vec<(HookCondition, u64)>,
     ) -> PatternResult<HookExecutionResult>;
 
     /// Execute hooks with retry logic using hook registry
     fn execute_hooks_with_retry(
         &mut self,
-        hook_registry: &HookRegistry,
+        hook_registry: &SharedHookRegistry,
         predicate: u64,
         should_retry: HookRetryCondition,
         max_attempts: u32,
@@ -143,7 +145,7 @@ impl PipelinePatternExt for Pipeline {
 
     fn execute_hooks_parallel(
         &mut self,
-        hook_registry: &HookRegistry,
+        hook_registry: &SharedHookRegistry,
         predicates: Vec<u64>,
     ) -> PatternResult<HookExecutionResult> {
         use crate::hook_patterns::create_hook_context;
@@ -156,7 +158,7 @@ impl PipelinePatternExt for Pipeline {
 
         // Create hook execution context
         let context = create_hook_context(
-            (*hook_registry).clone(),
+            Arc::clone(hook_registry),
             load_result,
             8, // tick budget
         );
@@ -168,7 +170,7 @@ impl PipelinePatternExt for Pipeline {
 
     fn execute_hooks_conditional(
         &mut self,
-        hook_registry: &HookRegistry,
+        hook_registry: &SharedHookRegistry,
         choices: Vec<(HookCondition, u64)>,
     ) -> PatternResult<HookExecutionResult> {
         use crate::hook_patterns::create_hook_context;
@@ -181,7 +183,7 @@ impl PipelinePatternExt for Pipeline {
 
         // Create hook execution context
         let context = create_hook_context(
-            (*hook_registry).clone(),
+            Arc::clone(hook_registry),
             load_result,
             8, // tick budget
         );
@@ -193,7 +195,7 @@ impl PipelinePatternExt for Pipeline {
 
     fn execute_hooks_with_retry(
         &mut self,
-        hook_registry: &HookRegistry,
+        hook_registry: &SharedHookRegistry,
         predicate: u64,
         should_retry: HookRetryCondition,
         max_attempts: u32,
@@ -208,7 +210,7 @@ impl PipelinePatternExt for Pipeline {
 
         // Create hook execution context
         let context = create_hook_context(
-            (*hook_registry).clone(),
+            Arc::clone(hook_registry),
             load_result,
             8, // tick budget
         );

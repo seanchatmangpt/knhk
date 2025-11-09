@@ -250,6 +250,7 @@ impl WorkflowSpecBuilder {
                 conditions: HashMap::new(),
                 start_condition: None,
                 end_condition: None,
+                source_turtle: None,
             },
         }
     }
@@ -411,6 +412,7 @@ pub fn create_test_worklet(name: impl Into<String>, exception_types: Vec<String>
             conditions: HashMap::new(),
             start_condition: None,
             end_condition: None,
+            source_turtle: None,
         },
         rules: vec![],
     }

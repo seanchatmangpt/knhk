@@ -30,29 +30,24 @@ impl RestApiServer {
 
     /// Create the router
     ///
-    /// NOTE: Currently returns empty router due to LockchainStorage Sync issue.
-    /// LockchainStorage contains git2::Repository which is not Sync, preventing
-    /// WorkflowEngine from being used in axum Router state.
-    ///
-    /// Routes are disabled until LockchainStorage is made thread-safe.
-    /// In production, would implement:
+    /// Provides REST API routes for workflow management:
     /// - Health check route (GET /health)
     /// - Workflow registration (POST /workflows)
     /// - Case creation (POST /cases)
     /// - Case execution (POST /cases/:id/execute)
     /// - Case status (GET /cases/:id)
     pub fn router(&self) -> Router {
-        // Return empty router - routes disabled due to LockchainStorage Sync issue
-        // FUTURE: Re-enable when LockchainStorage is thread-safe
-        // Example implementation:
-        // Router::new()
-        //     .route("/health", get(health_check))
-        //     .route("/workflows", post(register_workflow))
-        //     .route("/cases", post(create_case))
-        //     .route("/cases/:id/execute", post(execute_case))
-        //     .route("/cases/:id", get(get_case))
-        //     .with_state(self.engine.clone())
+        use crate::api::rest::handlers;
+        use axum::routing::{get, post};
+
         Router::new()
+            .route("/health", get(handlers::health))
+            .route("/workflows", post(handlers::register_workflow))
+            .route("/cases", post(handlers::create_case))
+            .route("/cases/:id/execute", post(handlers::execute_case))
+            .route("/cases/:id/history", get(handlers::get_case_history))
+            .route("/cases/:id", get(handlers::get_case))
+            .with_state(self.engine.clone())
     }
 
     /// Get engine reference

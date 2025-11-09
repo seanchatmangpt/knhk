@@ -1,0 +1,240 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Integration & Services
+
+Container_Boundary(integration, "Integration Layer") {
+    Component(codelet_executor, "Codelet Executor", "Rust", "Execute custom code snippets in tasks")
+    Component(service_registry, "Service Registry", "Rust", "Discover and register external services")
+    Component(ws_client, "Web Service Client", "Rust", "SOAP/REST client with WSDL support")
+    Component(event_publisher, "Event Publisher", "Rust", "Publish workflow events to external systems")
+    Component(yawl_compat, "YAWL Compatibility Layer", "Rust", "Compatibility shims for YAWL migrations")
+
+    ComponentDb(service_cache, "Service Cache", "DashMap", "Cached service metadata")
+}
+
+Container_Ext(external_services, "External Services", "SOAP/REST")
+Container_Ext(event_bus, "Event Bus")
+Container_Ext(engine_core, "Engine Core")
+Container_Ext(message_queue, "Message Queue", "RabbitMQ/Kafka")
+
+Rel(codelet_executor, engine_core, "Executes in task context")
+Rel(service_registry, service_cache, "Caches metadata")
+Rel(ws_client, external_services, "Invokes services", "SOAP/REST")
+Rel(event_publisher, message_queue, "Publishes events", "AMQP/Kafka")
+Rel(yawl_compat, engine_core, "Adapts YAWL APIs")
+
+Rel(event_bus, event_publisher, "Subscribes to events")
+Rel(engine_core, codelet_executor, "Invokes codelets")
+Rel(engine_core, ws_client, "Calls external services")
+
+note right of codelet_executor
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Codelet Concept:**
+  - Small code snippets embedded in workflow tasks
+  - Execute custom logic at task execution
+  - Access to case data and context
+
+  **YAWL Codelet Types:**
+  1. **Java Codelet:** Execute Java code
+  2. **JavaScript Codelet:** Execute JS in V8
+  3. **External Codelet:** Call external program
+
+  **Rust Implementation:**
+  ```rust
+  pub trait Codelet: Send + Sync {
+      fn execute(&self, context: &CodeletContext)
+          -> Result<CodeletResult>;
+  }
+
+  pub enum CodeletType {
+      Rust(Box<dyn Codelet>),
+      WASM(WasmModule),
+      External(Command),
+  }
+  ```
+
+  **Security Considerations:**
+  - Sandboxed execution (WASM)
+  - Resource limits (CPU, memory)
+  - Timeout enforcement
+
+  **Complexity:** MEDIUM-HIGH (6-8 days)
+
+  **80/20 Decision:** WASM codelets only
+  - Safe sandboxed execution
+  - Cross-language support
+  - Skip Java/JS engines (complexity)
+end note
+
+note right of service_registry
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Service Discovery:**
+  - Manual registration
+  - DNS-SD (Bonjour/Avahi)
+  - Consul integration
+  - Kubernetes services
+
+  **Service Metadata:**
+  - Service URL/endpoint
+  - Authentication config
+  - Rate limits
+  - Health check endpoint
+  - Schema/WSDL
+
+  **Design:**
+  ```rust
+  pub struct ServiceMetadata {
+      pub id: ServiceId,
+      pub name: String,
+      pub endpoint: Url,
+      pub auth: AuthConfig,
+      pub schema: Option<String>,
+  }
+
+  pub trait ServiceRegistry {
+      fn register(&mut self, metadata: ServiceMetadata);
+      fn discover(&self, name: &str) -> Option<&ServiceMetadata>;
+      fn list(&self) -> Vec<&ServiceMetadata>;
+  }
+  ```
+
+  **Complexity:** MEDIUM (4-5 days)
+
+  **80/20 Decision:** Manual registration only
+  - Simple HashMap-based registry
+  - Config file for services
+  - Skip dynamic discovery (v2.0)
+end note
+
+note right of ws_client
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Web Service Support:**
+  1. **REST:** HTTP client with JSON/XML
+  2. **SOAP:** XML-based RPC
+  3. **WSDL:** Service description parsing
+
+  **Features:**
+  - Request/response mapping
+  - Authentication (Basic, OAuth, WS-Security)
+  - Error handling
+  - Retry logic
+  - Circuit breaker
+
+  **Libraries:**
+  - reqwest (HTTP/REST)
+  - quick-xml (XML parsing)
+  - soap (SOAP client - if exists)
+
+  **Complexity:** MEDIUM-HIGH (6-8 days)
+
+  **80/20 Decision:** REST client only
+  - Modern APIs use REST
+  - SOAP is legacy (defer to v2.0)
+  - WSDL parsing is complex
+
+  **Overlap:** Use REST connector from Data Gateway
+end note
+
+note right of event_publisher
+  **Status:** 🔴 Missing - MEDIUM PRIORITY
+
+  **Event Types:**
+  - Workflow events (registered, deleted)
+  - Case events (created, started, completed)
+  - Work item events (offered, allocated, started)
+  - Resource events (allocated, released)
+
+  **Event Format:**
+  - CloudEvents standard
+  - Custom KNHK format
+  - YAWL event format (compatibility)
+
+  **Targets:**
+  - Message queue (RabbitMQ, Kafka)
+  - Webhook (HTTP POST)
+  - Event bus (internal)
+
+  **Design:**
+  ```rust
+  pub trait EventPublisher {
+      async fn publish(&self, event: Event) -> Result<()>;
+  }
+
+  pub enum EventTarget {
+      MessageQueue(QueueConfig),
+      Webhook(Url),
+      EventBus,
+  }
+  ```
+
+  **Complexity:** MEDIUM (4-5 days)
+
+  **80/20 Decision:** Internal event bus only
+  - Use tokio channels
+  - Defer external publishers (v2.0)
+end note
+
+note right of yawl_compat
+  **Status:** 🔴 Missing - HIGH PRIORITY
+
+  **YAWL Compatibility Shims:**
+  - Interface B API emulation
+  - YAWL XML format support
+  - YAWL event format
+  - Legacy endpoint support
+
+  **Migration Strategy:**
+  1. Parse YAWL XML workflows
+  2. Convert to KNHK WorkflowSpec
+  3. Map YAWL API calls to KNHK
+  4. Maintain dual endpoints during migration
+
+  **API Mapping:**
+  ```
+  YAWL Interface B          -> KNHK API
+  ------------------           ---------
+  launchCase()             -> POST /cases
+  getWorkItem()            -> GET /workitems/{id}
+  checkoutWorkItem()       -> POST /workitems/{id}/allocate
+  checkinWorkItem()        -> POST /workitems/{id}/complete
+  ```
+
+  **Complexity:** MEDIUM-HIGH (7-10 days)
+
+  **80/20 Decision:** HIGH PRIORITY
+  - Critical for migration path
+  - Enables gradual cutover
+  - Reduces migration risk
+end note
+
+note left of integration
+  **Enterprise Migration Dependencies:**
+
+  **Critical Path:**
+  1. YAWL Compatibility Layer (WEEK 1-2)
+  2. Service Registry (WEEK 2)
+  3. Event Publisher (WEEK 3)
+  4. Codelet Executor (WEEK 3-4)
+  5. Web Service Client (WEEK 4-5)
+
+  **Parallel Development:**
+  - Compatibility layer can start immediately
+  - Service registry needed for testing
+  - Event publisher for monitoring
+  - Codelets for custom logic
+  - WS client for integrations
+
+  **Risk Mitigation:**
+  - YAWL compat is highest risk
+  - Early testing with real workflows
+  - Incremental migration approach
+  - Fallback to YAWL if needed
+end note
+
+@enduml
