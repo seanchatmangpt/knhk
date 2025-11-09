@@ -2,8 +2,10 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
+use crate::otel_span;
+use crate::otel_span_end;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
-use knhk_otel::SpanStatus;
+use knhk_otel::{SpanContext, SpanStatus};
 use std::time::Instant;
 
 use super::WorkflowEngine;
@@ -18,9 +20,14 @@ impl WorkflowEngine {
         let start_time = Instant::now();
 
         // Start OTEL span for pattern execution
-        let span_ctx = if let Some(ref otel) = self.otel_integration {
-            otel.start_execute_pattern_span(&pattern_id, &context.case_id, None)
-                .await?
+        let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
+            otel_span!(
+                otel,
+                "knhk.workflow_engine.execute_pattern",
+                case_id: Some(&context.case_id),
+                pattern_id: Some(&pattern_id)
+            )
+            .await?
         } else {
             None
         };
@@ -31,15 +38,13 @@ impl WorkflowEngine {
                 if let (Some(ref otel), Some(ref span)) =
                     (self.otel_integration.as_ref(), span_ctx.as_ref())
                 {
-                    let _ = otel.add_attribute(
-                        (*span).clone(),
-                        "knhk.workflow_engine.success".to_string(),
-                        "false".to_string(),
-                    );
-                    let _ = otel
-                        .add_lifecycle_transition((*span).clone(), "cancel")
-                        .await;
-                    let _ = otel.end_span((*span).clone(), SpanStatus::Error).await;
+                    otel_span_end!(
+                        otel,
+                        span,
+                        success: false,
+                        start_time: start_time
+                    )
+                    .await?;
                 }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),

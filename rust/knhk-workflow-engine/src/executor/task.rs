@@ -22,7 +22,7 @@ pub(super) async fn execute_task_with_allocation(
     let task_start_time = Instant::now();
 
     // Start OTEL span for task execution
-    let span_ctx = if let Some(ref otel) = engine.otel_integration {
+    let span_ctx: Option<SpanContext> = if let Some(ref otel) = engine.otel_integration {
         // Identify pattern for task (simplified - use task split/join types)
         let pattern_id = if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
             PatternId(12) // MI Without Sync

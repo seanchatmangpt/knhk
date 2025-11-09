@@ -9,6 +9,7 @@
 //! - **Test Fixtures**: Reusable test fixtures with automatic cleanup
 //! - **Builders**: Fluent builders for test data and workflows
 //! - **Assertion Helpers**: Comprehensive assertion utilities
+//! - **Macros**: AAA pattern enforcement and test helpers
 //! - **Property-Based Testing**: QuickCheck-style random test generation
 //! - **Mutation Testing**: Test quality validation through mutations
 //! - **Coverage Analysis**: Test coverage reporting and analysis
@@ -45,10 +46,26 @@
 //! - `fixture`: Test fixtures and setup utilities
 //! - `builders`: Fluent builders for test data
 //! - `assertions`: Assertion helpers and utilities
+//! - `macros`: Test macros for AAA pattern enforcement and assertions
 //! - `property`: Property-based testing framework
 //! - `mutation`: Mutation testing framework
 //! - `coverage`: Test coverage analysis
 //! - `generator`: Test code generation
+//!
+//! ## Macros
+//!
+//! The crate provides several macros to reduce boilerplate and enforce Chicago TDD principles:
+//!
+//! - `chicago_test!`: Enforce AAA pattern for synchronous tests
+//! - `chicago_async_test!`: Enforce AAA pattern for async tests
+//! - `chicago_fixture_test!`: Async test with automatic fixture setup/teardown
+//! - `chicago_performance_test!`: Performance test with tick budget validation
+//! - `assert_ok!`: Assert Result is Ok with detailed error messages
+//! - `assert_err!`: Assert Result is Err with detailed error messages
+//! - `assert_within_tick_budget!`: Validate performance constraints (≤8 ticks)
+//! - `assert_in_range!`: Assert value is within range with detailed messages
+//! - `assert_eq_msg!`: Assert equality with custom message
+//! - `assert_guard_constraint!`: Validate guard constraints
 
 #![deny(clippy::unwrap_used)]
 #![warn(missing_docs)]
@@ -58,6 +75,8 @@ pub mod builders;
 pub mod coverage;
 pub mod fixture;
 pub mod generator;
+#[macro_use]
+pub mod macros;
 pub mod mutation;
 pub mod property;
 

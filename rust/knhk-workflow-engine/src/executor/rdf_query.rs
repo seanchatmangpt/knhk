@@ -15,8 +15,12 @@ fn execute_sparql_query(
     store: &Store,
     sparql: &str,
 ) -> Result<Vec<HashMap<String, String>>, String> {
-    let query_result = store
-        .query(sparql)
+    // Use SparqlEvaluator (oxigraph 0.5 best practices)
+    let query_result = oxigraph::sparql::SparqlEvaluator::new()
+        .parse_query(sparql)
+        .map_err(|e| format!("Failed to parse SPARQL query: {:?}", e))?
+        .on_store(store)
+        .execute()
         .map_err(|e| format!("Invalid SPARQL query: {:?}", e))?;
 
     match query_result {

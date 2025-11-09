@@ -88,7 +88,8 @@ impl BestPracticesIntegration {
     ) -> WorkflowResult<serde_json::Value> {
         // Start OTEL span for workflow execution
         let span_ctx = if let Some(ref otel) = self.otel {
-            otel.start_workflow_span(&WorkflowSpecId::new())
+            // Use start_register_workflow_span instead of deprecated start_workflow_span
+            otel.start_register_workflow_span(&WorkflowSpecId::new())
                 .await
                 .ok()
                 .flatten()

@@ -486,8 +486,12 @@ impl ShaclValidator {
         severity: ValidationSeverity,
         message_template: &str,
     ) -> Result<Vec<ShaclViolation>, String> {
-        let results = store
-            .query(query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let results = oxigraph::sparql::SparqlEvaluator::new()
+            .parse_query(query)
+            .map_err(|e| format!("SHACL validation query failed: {:?}", e))?
+            .on_store(&self.shapes_store)
+            .execute()
             .map_err(|e| format!("{}: SPARQL query failed: {:?}", rule_id, e))?;
 
         let mut violations = Vec::new();

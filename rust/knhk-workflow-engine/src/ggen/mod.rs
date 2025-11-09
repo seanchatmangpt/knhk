@@ -173,11 +173,12 @@ impl GgenGenerator {
             ));
         };
 
-        let query = oxigraph::sparql::Query::parse(query, None)
-            .map_err(|e| WorkflowError::Internal(format!("Invalid SPARQL query: {}", e)))?;
-
-        let results = store
-            .query(query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let results = oxigraph::sparql::SparqlEvaluator::new()
+            .parse_query(query)
+            .map_err(|e| WorkflowError::Internal(format!("Invalid SPARQL query: {}", e)))?
+            .on_store(store)
+            .execute()
             .map_err(|e| WorkflowError::Internal(format!("SPARQL query failed: {}", e)))?;
 
         // Convert results to JSON

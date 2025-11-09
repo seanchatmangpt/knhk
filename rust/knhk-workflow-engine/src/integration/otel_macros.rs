@@ -21,7 +21,7 @@ macro_rules! otel_span {
     (
         $otel:expr,
         $span_name:expr,
-        $(case_id: $case_id:expr,)?
+        $(case_id: $case_id:expr $(,)?)?
         $(spec_id: $spec_id:expr,)?
         $(task_id: $task_id:expr,)?
         $(pattern_id: $pattern_id:expr,)?

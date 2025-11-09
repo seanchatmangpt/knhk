@@ -67,8 +67,12 @@ impl SparqlValidator {
             }
         "#;
 
-        let spec_results = store
-            .query(check_spec_query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let spec_results = oxigraph::sparql::SparqlEvaluator::new()
+            .parse_query(check_spec_query)
+            .map_err(|e| format!("VR-N001: Failed to parse query: {:?}", e))?
+            .on_store(store)
+            .execute()
             .map_err(|e| format!("VR-N001: Failed to check specifications: {:?}", e))?;
 
         let mut has_specs = false;
@@ -101,8 +105,12 @@ impl SparqlValidator {
             }
         "#;
 
-        let results = store
-            .query(query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let results = oxigraph::sparql::SparqlEvaluator::new()
+            .parse_query(query)
+            .map_err(|e| format!("VR-N001: Failed to parse query: {:?}", e))?
+            .on_store(store)
+            .execute()
             .map_err(|e| format!("VR-N001: SPARQL query failed: {:?}", e))?;
 
         // Check if any violations found
@@ -165,8 +173,12 @@ impl SparqlValidator {
             }
         "#;
 
-        let results = store
-            .query(query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let results = oxigraph::sparql::SparqlEvaluator::new()
+            .parse_query(query)
+            .map_err(|e| format!("VR-N001: Failed to parse query: {:?}", e))?
+            .on_store(store)
+            .execute()
             .map_err(|e| format!("VR-DF001: SPARQL query failed: {:?}", e))?;
 
         // Check if any violations found

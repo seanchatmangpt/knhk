@@ -164,7 +164,7 @@ impl DataGateway {
         request: &DataQueryRequest,
     ) -> WorkflowResult<serde_json::Value> {
         // Use oxigraph to execute SPARQL query
-        use oxigraph::sparql::Query;
+        use oxigraph::sparql::SparqlEvaluator;
         use oxigraph::store::Store;
 
         // Create or connect to store from connection string
@@ -172,15 +172,15 @@ impl DataGateway {
         let store = Store::new()
             .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
 
-        // Parse SPARQL query (using deprecated API for now - would need SparqlEvaluator for new API)
-        let query = Query::parse(&request.query, None).map_err(|e| {
-            WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e))
-        })?;
-
-        // Execute query (using deprecated API for now)
-        let _results = store.query(query).map_err(|e| {
-            WorkflowError::Internal(format!("Failed to execute SPARQL query: {:?}", e))
-        })?;
+        // Execute query using SparqlEvaluator (oxigraph 0.5 best practices)
+        let _results = SparqlEvaluator::new()
+            .parse_query(&request.query)
+            .map_err(|e| WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e)))?
+            .on_store(&store)
+            .execute()
+            .map_err(|e| {
+                WorkflowError::Internal(format!("Failed to execute SPARQL query: {:?}", e))
+            })?;
 
         // Convert results to JSON (simplified - would need proper serialization)
         let json_results = serde_json::json!({

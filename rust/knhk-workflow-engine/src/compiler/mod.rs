@@ -370,7 +370,9 @@ fn map_pattern_id(split: SplitType, join: JoinType) -> u8 {
         (SplitType::And, JoinType::Or) => 7,
         (SplitType::Xor, JoinType::Or) => 8,
         (SplitType::Or, JoinType::Xor) => 9,
-        // Default to pattern 1 for unknown combinations
+        // All combinations are covered above - this should never be reached
+        // But kept for exhaustiveness checking
+        #[allow(unreachable_patterns)]
         _ => 1,
     }
 }
