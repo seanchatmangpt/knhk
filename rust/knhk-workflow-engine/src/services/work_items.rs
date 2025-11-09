@@ -1208,7 +1208,7 @@ impl WorkItemService {
     pub async fn bulk_complete(
         &self,
         work_item_ids: Vec<String>,
-        resource_id: &str,
+        _resource_id: &str,
         results: Vec<serde_json::Value>,
     ) -> WorkflowResult<Vec<String>> {
         if work_item_ids.len() != results.len() {

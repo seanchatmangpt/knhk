@@ -160,7 +160,7 @@ impl ResourceAllocator {
 
         // Phase 3: Start - Activate allocation
         // Update resource workload
-        for resource_id in &allocate_result.allocated_resources {
+        for resource_id in &allocate_result.resource_ids {
             self.update_workload(*resource_id, 1).await?;
         }
 
@@ -185,7 +185,7 @@ impl ResourceAllocator {
 
         // Check resource availability
         let resources = self.ctx.resources.read().await;
-        for resource_id in &result.allocated_resources {
+        for resource_id in &result.resource_ids {
             if let Some(resource) = resources.get(resource_id) {
                 if !resource.available {
                     return Err(crate::error::WorkflowError::ResourceUnavailable(format!(
