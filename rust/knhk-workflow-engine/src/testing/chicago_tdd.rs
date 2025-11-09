@@ -1326,7 +1326,6 @@ pub fn create_mi_workflow(
 /// let (engine, _temp_dir) = create_test_engine_with_temp_store().unwrap();
 /// // _temp_dir will be cleaned up when dropped
 /// ```
-#[allow(unexpected_cfgs)]
 #[cfg(feature = "tempfile")]
 pub fn create_test_engine_with_temp_store() -> WorkflowResult<(WorkflowEngine, tempfile::TempDir)> {
     let temp_dir = tempfile::tempdir().map_err(|e| {

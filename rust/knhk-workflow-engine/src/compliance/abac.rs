@@ -3,6 +3,8 @@
 //! Implements full ABAC using RDF/SPARQL for policy evaluation.
 //! Policies are defined in RDF/Turtle format and evaluated using SPARQL queries.
 
+#![allow(unexpected_cfgs)] // Allow network feature for IP detection
+
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::security::Principal;
 use oxigraph::io::RdfFormat;
@@ -264,7 +266,6 @@ impl AbacPolicyEngine {
         attrs.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
 
         // Add IP address if available
-        #[cfg_attr(not(feature = "network"), allow(unexpected_cfgs))]
         #[cfg(feature = "network")]
         {
             use std::net::TcpListener;
