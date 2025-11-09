@@ -106,9 +106,9 @@ macro_rules! otel_span {
                     }
                 )?
 
-                Ok::<Option<SpanContext>, $crate::error::WorkflowError>(Some(span_ctx))
+                Ok(Some(span_ctx))
             } else {
-                Ok::<Option<SpanContext>, $crate::error::WorkflowError>(None)
+                Ok(None)
             }
         }
     }};
@@ -153,7 +153,7 @@ macro_rules! otel_span_end {
             use knhk_otel::SpanStatus;
 
             if let Some(span) = $span_ctx.as_ref() {
-                let span_clone = span.clone();
+                let span_clone = (*span).clone();
                 $otel
                     .add_attribute(
                         span_clone.clone(),
@@ -300,7 +300,6 @@ macro_rules! otel_resource {
     ) => {{
         async {
             if let Some(ref span) = $span_ctx {
-                $otel
                 $otel.add_resource(span.clone(), $resource, $role).await?;
             }
             Ok::<(), $crate::error::WorkflowError>(())
