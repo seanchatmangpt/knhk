@@ -21,7 +21,7 @@ use chicago_tdd_tools::prelude::*;
 use knhk_workflow_engine::case::{Case, CaseId, CaseState};
 use knhk_workflow_engine::error::{WorkflowError, WorkflowResult};
 use knhk_workflow_engine::parser::{
-    JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
+    Condition, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
 };
 use knhk_workflow_engine::state::StateStore;
 use knhk_workflow_engine::WorkflowEngine;
@@ -119,6 +119,30 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
         source_turtle: None,
     };
 
+    // Create start condition
+    let start_condition_id = "condition:start".to_string();
+    let start_condition = Condition {
+        id: start_condition_id.clone(),
+        name: "Start".to_string(),
+        outgoing_flows: vec!["task:1".to_string()],
+        incoming_flows: vec![],
+    };
+    spec.conditions
+        .insert(start_condition_id.clone(), start_condition);
+    spec.start_condition = Some(start_condition_id.clone());
+
+    // Create end condition
+    let end_condition_id = "condition:end".to_string();
+    let end_condition = Condition {
+        id: end_condition_id.clone(),
+        name: "End".to_string(),
+        outgoing_flows: vec![],
+        incoming_flows: vec!["task:1".to_string()],
+    };
+    spec.conditions
+        .insert(end_condition_id.clone(), end_condition);
+    spec.end_condition = Some(end_condition_id.clone());
+
     let task = Task {
         id: "task:1".to_string(),
         name: "Task 1".to_string(),
@@ -128,8 +152,8 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
         max_ticks: None,
         priority: None,
         use_simd: false,
-        input_conditions: vec![],
-        output_conditions: vec![],
+        input_conditions: vec![start_condition_id.clone()],
+        output_conditions: vec![end_condition_id.clone()],
         outgoing_flows: vec![],
         incoming_flows: vec![],
         allocation_policy: None,
@@ -205,6 +229,30 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
         source_turtle: None,
     };
 
+    // Create start condition
+    let start_condition_id = "condition:start".to_string();
+    let start_condition = Condition {
+        id: start_condition_id.clone(),
+        name: "Start".to_string(),
+        outgoing_flows: vec!["task:1".to_string()],
+        incoming_flows: vec![],
+    };
+    spec.conditions
+        .insert(start_condition_id.clone(), start_condition);
+    spec.start_condition = Some(start_condition_id.clone());
+
+    // Create end condition
+    let end_condition_id = "condition:end".to_string();
+    let end_condition = Condition {
+        id: end_condition_id.clone(),
+        name: "End".to_string(),
+        outgoing_flows: vec![],
+        incoming_flows: vec!["task:3".to_string()],
+    };
+    spec.conditions
+        .insert(end_condition_id.clone(), end_condition);
+    spec.end_condition = Some(end_condition_id.clone());
+
     // Create multiple tasks
     for i in 1..=3 {
         let task = Task {
@@ -216,8 +264,16 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
             max_ticks: None,
             priority: None,
             use_simd: false,
-            input_conditions: vec![],
-            output_conditions: vec![],
+            input_conditions: if i == 1 {
+                vec![start_condition_id.clone()]
+            } else {
+                vec![]
+            },
+            output_conditions: if i == 3 {
+                vec![end_condition_id.clone()]
+            } else {
+                vec![]
+            },
             outgoing_flows: vec![],
             incoming_flows: vec![],
             allocation_policy: None,
@@ -688,6 +744,30 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
         source_turtle: None,
     };
 
+    // Create start condition
+    let start_condition_id = "condition:start".to_string();
+    let start_condition = Condition {
+        id: start_condition_id.clone(),
+        name: "Start".to_string(),
+        outgoing_flows: vec!["task:1".to_string()],
+        incoming_flows: vec![],
+    };
+    spec.conditions
+        .insert(start_condition_id.clone(), start_condition);
+    spec.start_condition = Some(start_condition_id.clone());
+
+    // Create end condition
+    let end_condition_id = "condition:end".to_string();
+    let end_condition = Condition {
+        id: end_condition_id.clone(),
+        name: "End".to_string(),
+        outgoing_flows: vec![],
+        incoming_flows: vec!["task:2".to_string()],
+    };
+    spec.conditions
+        .insert(end_condition_id.clone(), end_condition);
+    spec.end_condition = Some(end_condition_id.clone());
+
     for i in 1..=2 {
         let task = Task {
             id: format!("task:{}", i),
@@ -698,8 +778,16 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
             max_ticks: None,
             priority: None,
             use_simd: false,
-            input_conditions: vec![],
-            output_conditions: vec![],
+            input_conditions: if i == 1 {
+                vec![start_condition_id.clone()]
+            } else {
+                vec![]
+            },
+            output_conditions: if i == 2 {
+                vec![end_condition_id.clone()]
+            } else {
+                vec![]
+            },
             outgoing_flows: vec![],
             incoming_flows: vec![],
             allocation_policy: None,

@@ -21,11 +21,13 @@ use clap_noun_verb_macros::verb;
 use knhk_workflow_engine::{
     case::CaseId,
     parser::{WorkflowParser, WorkflowSpecId},
-    patterns::PatternId,
     state::StateStore,
     WorkflowEngine,
 };
-use process_mining::{alphappp_discover_petri_net, import_xes_file, XESImportOptions};
+use process_mining::{
+    alphappp_discover_petri_net, event_log::activity_projection::EventLogActivityProjection,
+    export_petri_net_to_pnml, import_xes_file, petri_net::PetriNet, XESImportOptions,
+};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
@@ -467,32 +469,28 @@ pub fn discover(
     })?;
 
     // Create activity projection (required for Alpha+++)
-    let projection = log.activity_projection();
+    let projection: EventLogActivityProjection = (&log).into();
 
     // Run Alpha+++ discovery with default or provided parameters
+    // Note: Alpha+++ takes projection and alpha parameter, returns (PetriNet, AlgoDuration)
     let alpha_param = alpha.unwrap_or(2.0);
     let beta_param = beta.unwrap_or(0.5);
     let theta_param = theta.unwrap_or(0.5);
     let rho_param = rho.unwrap_or(0.5);
 
-    let petri_net =
-        alphappp_discover_petri_net(&projection, alpha_param, beta_param, theta_param, rho_param)
-            .map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!(
-                "Failed to discover Petri net: {}",
-                e
-            ))
-        })?;
+    // Alpha+++ function signature: (projection, alpha) -> (PetriNet, AlgoDuration)
+    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, alpha_param);
 
-    // Export Petri net to PNML
-    let pnml = process_mining::export_petri_net_to_pnml(&petri_net).map_err(|e| {
+    // Export Petri net to PNML (needs a writer)
+    let mut pnml_writer = Vec::new();
+    export_petri_net_to_pnml(&petri_net, &mut pnml_writer).map_err(|e| {
         clap_noun_verb::NounVerbError::execution_error(format!(
             "Failed to export Petri net to PNML: {}",
             e
         ))
     })?;
 
-    std::fs::write(&output, pnml).map_err(|e| {
+    std::fs::write(&output, pnml_writer).map_err(|e| {
         clap_noun_verb::NounVerbError::execution_error(format!("Failed to write PNML file: {}", e))
     })?;
 
