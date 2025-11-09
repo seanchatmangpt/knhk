@@ -18,8 +18,9 @@ rustls-pemfile = { workspace = true }
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
-# knhk-workflow-engine dependency removed to avoid circular dependency
-# Sidecar should not depend on workflow engine - they are separate services
+# knhk-workflow-engine dependency (optional, for REST API serving)
+knhk-workflow-engine = { path = "../knhk-workflow-engine", version = "1.0.0", optional = true }
+axum = { workspace = true, optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", optional = true }
 simd-json = { version = "0.14", features = ["known-key"] }

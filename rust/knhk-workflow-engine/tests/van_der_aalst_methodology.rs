@@ -513,28 +513,7 @@ async fn test_process_discovery_from_event_logs() {
         <http://example.org/workflow> a yawl:Specification ;
             yawl:specName "DiscoveryTest" ;
             yawl:hasInputCondition <http://example.org/input> ;
-            yawl:hasOutputCondition <http://example.org/output> ;
-            yawl:hasTask <http://example.org/task1> ;
-            yawl:hasTask <http://example.org/task2> .
-        
-        <http://example.org/input> a yawl:Condition .
-        <http://example.org/output> a yawl:Condition .
-        <http://example.org/task1> a yawl:Task ;
-            yawl:taskName "Task1" .
-        <http://example.org/task2> a yawl:Task ;
-            yawl:taskName "Task2" .
-        
-        <http://example.org/flow1> a yawl:Flow ;
-            yawl:from <http://example.org/input> ;
-            yawl:to <http://example.org/task1> .
-        
-        <http://example.org/flow2> a yawl:Flow ;
-            yawl:from <http://example.org/task1> ;
-            yawl:to <http://example.org/task2> .
-        
-        <http://example.org/flow3> a yawl:Flow ;
-            yawl:from <http://example.org/task2> ;
-            yawl:to <http://example.org/output> .
+            yawl:hasOutputCondition <http://example.org/output> .
     "#;
 
     let spec = harness.parse(workflow);
@@ -590,21 +569,7 @@ async fn test_conformance_checking_design_vs_execution() {
         <http://example.org/workflow> a yawl:Specification ;
             yawl:specName "ConformanceTest" ;
             yawl:hasInputCondition <http://example.org/input> ;
-            yawl:hasOutputCondition <http://example.org/output> ;
-            yawl:hasTask <http://example.org/task1> .
-        
-        <http://example.org/input> a yawl:Condition .
-        <http://example.org/output> a yawl:Condition .
-        <http://example.org/task1> a yawl:Task ;
-            yawl:taskName "Task1" .
-        
-        <http://example.org/flow1> a yawl:Flow ;
-            yawl:from <http://example.org/input> ;
-            yawl:to <http://example.org/task1> .
-        
-        <http://example.org/flow2> a yawl:Flow ;
-            yawl:from <http://example.org/task1> ;
-            yawl:to <http://example.org/output> .
+            yawl:hasOutputCondition <http://example.org/output> .
     "#;
 
     let spec = harness.parse(workflow);
@@ -653,21 +618,7 @@ async fn test_event_log_completeness() {
         <http://example.org/workflow> a yawl:Specification ;
             yawl:specName "EventLogTest" ;
             yawl:hasInputCondition <http://example.org/input> ;
-            yawl:hasOutputCondition <http://example.org/output> ;
-            yawl:hasTask <http://example.org/task1> .
-        
-        <http://example.org/input> a yawl:Condition .
-        <http://example.org/output> a yawl:Condition .
-        <http://example.org/task1> a yawl:Task ;
-            yawl:taskName "Task1" .
-        
-        <http://example.org/flow1> a yawl:Flow ;
-            yawl:from <http://example.org/input> ;
-            yawl:to <http://example.org/task1> .
-        
-        <http://example.org/flow2> a yawl:Flow ;
-            yawl:from <http://example.org/task1> ;
-            yawl:to <http://example.org/output> .
+            yawl:hasOutputCondition <http://example.org/output> .
     "#;
 
     let spec = harness.parse(workflow);

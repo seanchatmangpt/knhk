@@ -50,8 +50,6 @@ fn identify_task_pattern(task: &Task) -> PatternId {
         (SplitType::And, JoinType::Or) => 7,
         (SplitType::Xor, JoinType::Or) => 8,
         (SplitType::Or, JoinType::Xor) => 9,
-        // Default to Sequence (Pattern 1) for unknown combinations
-        _ => 1,
     };
 
     PatternId(pattern_id as u32)
