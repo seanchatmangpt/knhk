@@ -72,6 +72,7 @@ pub mod compiler;
 pub mod compliance;
 pub mod config;
 pub mod constants;
+/// Data gateway module for workflow data ingress and egress
 pub mod data;
 pub mod enterprise;
 pub mod error;
@@ -92,6 +93,7 @@ pub mod parser;
 pub mod patterns;
 pub mod performance;
 pub mod process_mining;
+/// Reflex module for autonomic workflow control and self-adaptation
 pub mod reflex;
 pub mod resilience;
 pub mod resource;

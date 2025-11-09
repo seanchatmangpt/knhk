@@ -4,6 +4,8 @@
 [build]
 # Enable incremental compilation (default in dev profile)
 incremental = true
+# Parallel compilation
+jobs = 8  # Use 8 parallel jobs (adjust based on CPU cores)
 
 # Use sccache for compilation caching (if installed)
 # Uncomment after installing sccache: cargo install sccache
@@ -17,10 +19,6 @@ incremental = true
 # rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld"]
 # [target.aarch64-apple-darwin]
 # rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld"]
-
-# Parallel compilation
-[build]
-jobs = 8  # Use 8 parallel jobs (adjust based on CPU cores)
 
 # Profile optimizations
 [profile.dev]

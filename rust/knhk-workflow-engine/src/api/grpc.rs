@@ -17,6 +17,7 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 // Include generated proto code
+/// Generated gRPC protocol buffer definitions
 pub mod proto {
     tonic::include_proto!("knhk.workflow_engine.v1");
 }
