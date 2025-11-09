@@ -342,6 +342,52 @@ impl WorkflowSpecBuilder {
         self
     }
 
+    /// Add a flow to the workflow
+    pub fn add_flow(mut self, from: impl Into<String>, to: impl Into<String>) -> Self {
+        use crate::parser::Flow;
+        self.spec.flows.push(Flow {
+            id: format!("flow:{}:{}", from.into(), to.into()),
+            from: from.into(),
+            to: to.into(),
+            predicate: None,
+        });
+        self
+    }
+
+    /// Add a flow with a specific ID
+    pub fn add_flow_with_id(
+        mut self,
+        flow_id: impl Into<String>,
+        from: impl Into<String>,
+        to: impl Into<String>,
+    ) -> Self {
+        use crate::parser::Flow;
+        self.spec.flows.push(Flow {
+            id: flow_id.into(),
+            from: from.into(),
+            to: to.into(),
+            predicate: None,
+        });
+        self
+    }
+
+    /// Add a flow with a predicate
+    pub fn add_flow_with_predicate(
+        mut self,
+        from: impl Into<String>,
+        to: impl Into<String>,
+        predicate: impl Into<String>,
+    ) -> Self {
+        use crate::parser::Flow;
+        self.spec.flows.push(Flow {
+            id: format!("flow:{}:{}", from.into(), to.into()),
+            from: from.into(),
+            to: to.into(),
+            predicate: Some(predicate.into()),
+        });
+        self
+    }
+
     /// Build the workflow specification
     pub fn build(self) -> WorkflowSpec {
         self.spec
