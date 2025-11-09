@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"] }
 tokio = { workspace = true, features = ["full"] }
-tonic = { version = "0.14.2", default-features = true, features = ["server", "channel", "tls-ring"] }
+tonic = { workspace = true, default-features = true, features = ["server", "channel", "tls-ring"] }
 tonic-prost = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
