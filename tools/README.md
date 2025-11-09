@@ -158,7 +158,9 @@ Script for testing different row counts:
 
 ## Related Documentation
 
-- [Performance Guide](../../docs/performance.md) - Performance characteristics
+- [Performance Guide](../../docs/PERFORMANCE.md) - 🆕 Consolidated 80/20 guide (Performance optimization)
+- [Architecture Guide](../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Performance Reference](../../docs/performance.md) - Detailed performance reference
+- [Architecture Reference](../../docs/architecture.md) - Detailed architecture reference
 - [C Hot Path](../../c/docs/README.md) - C implementation details
-- [Architecture](../../docs/architecture.md) - System architecture
 

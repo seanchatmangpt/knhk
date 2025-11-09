@@ -49,6 +49,8 @@ rust/knhk-connectors/
 
 ## Related Documentation
 
-- [Architecture](../../../docs/architecture.md) - System architecture
-- [Integration](../../../docs/integration.md) - Integration guide
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Integration Guide](../../../docs/INTEGRATION.md) - 🆕 Consolidated 80/20 guide (Integration patterns)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
+- [Integration Reference](../../../docs/integration-guide.md) - Detailed integration reference
 

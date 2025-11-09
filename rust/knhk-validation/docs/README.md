@@ -230,6 +230,8 @@ report.add_result(custom_validation());
 ## Related Documentation
 
 - [Definition of Done](../../../docs/DEFINITION_OF_DONE.md) - DoD criteria
-- [Architecture](../../../docs/architecture.md) - System architecture
-- [Performance](../../../docs/performance.md) - Performance guide
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Performance Guide](../../../docs/PERFORMANCE.md) - 🆕 Consolidated 80/20 guide (Performance optimization)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
+- [Performance Reference](../../../docs/performance.md) - Detailed performance reference
 - [Testing](../../../docs/testing.md) - Testing documentation

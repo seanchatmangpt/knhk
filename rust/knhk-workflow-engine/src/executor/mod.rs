@@ -23,6 +23,7 @@ mod pattern;
 mod provenance;
 mod rdf_query;
 mod task;
+mod workflow_execution;
 mod workflow_query;
 mod workflow_registration;
 mod xes_export;

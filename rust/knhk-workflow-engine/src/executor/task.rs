@@ -9,28 +9,19 @@ use crate::resource::AllocationRequest;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use super::workflow_execution::execute_workflow;
 use super::WorkflowEngine;
 
 /// Execute workflow tasks with resource allocation
+/// Uses the real workflow execution engine to follow flows from start to end condition
 pub(super) fn execute_workflow_tasks<'a>(
     engine: &'a WorkflowEngine,
     case_id: CaseId,
     spec: &'a WorkflowSpec,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + 'a>> {
     Box::pin(async move {
-        // Start from start condition
-        if let Some(ref start_condition_id) = spec.start_condition {
-            if let Some(start_condition) = spec.conditions.get(start_condition_id) {
-                // Execute tasks from start condition
-                for task_id in &start_condition.outgoing_flows {
-                    if let Some(task) = spec.tasks.get(task_id) {
-                        execute_task_with_allocation(engine, case_id, spec.id, task).await?;
-                    }
-                }
-            }
-        }
-
-        Ok(())
+        // Use the real workflow execution engine
+        execute_workflow(engine, case_id, spec).await
     })
 }
 

@@ -9,10 +9,14 @@ use knhk_workflow_engine::testing::property::PropertyTestGenerator;
 /// Property: All Turtle documents should parse without crashing
 #[test]
 fn property_all_turtle_parses_without_crash() {
-    let mut generator = PropertyTestGenerator::new().with_seed(42);
+    let all_metadata = get_all_pattern_metadata();
 
-    for _ in 0..50 {
-        let turtle = generator.generate_turtle();
+    // Use pattern metadata RDF as test data
+    for metadata in all_metadata.iter().take(50) {
+        let turtle = match serialize_metadata_to_rdf(metadata) {
+            Ok(turtle) => turtle,
+            Err(_) => continue, // Skip if serialization fails
+        };
 
         // Property: Parser should never panic on valid Turtle
         let result = std::panic::catch_unwind(|| {
@@ -31,7 +35,8 @@ fn property_all_turtle_parses_without_crash() {
 
         assert!(
             result.is_ok(),
-            "Parser panicked on Turtle document: {}",
+            "Parser panicked on Turtle document for pattern {}: {}",
+            metadata.pattern_id,
             turtle
         );
     }

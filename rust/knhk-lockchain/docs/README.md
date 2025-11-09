@@ -269,7 +269,8 @@ Receipts are hashed using SHA-256 after URDNA2015-like canonicalization:
 
 ## Related Documentation
 
-- [Architecture](../../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
 - [Integration](../../../docs/integration.md) - Integration guide
 - [ETL Pipeline](../../../rust/knhk-etl/docs/README.md) - ETL pipeline integration
 - [Formal Foundations](../../../docs/formal-foundations.md) - Mathematical foundations (provenance laws)

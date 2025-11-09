@@ -157,7 +157,7 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
         outgoing_flows: vec![],
         incoming_flows: vec![],
         allocation_policy: None,
-        required_roles: vec![],
+        required_roles: vec!["test_role".to_string()],
         required_capabilities: vec![],
         exception_worklet: None,
     };
@@ -277,7 +277,7 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
             outgoing_flows: vec![],
             incoming_flows: vec![],
             allocation_policy: None,
-            required_roles: vec![],
+            required_roles: vec!["test_role".to_string()],
             required_capabilities: vec![],
             exception_worklet: None,
         };
@@ -791,7 +791,7 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
             outgoing_flows: vec![],
             incoming_flows: vec![],
             allocation_policy: None,
-            required_roles: vec![],
+            required_roles: vec!["test_role".to_string()],
             required_capabilities: vec![],
             exception_worklet: None,
         };

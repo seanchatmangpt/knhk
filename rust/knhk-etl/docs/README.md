@@ -67,7 +67,8 @@ let pipeline = Pipeline::new();
 
 ## Related Documentation
 
-- [Architecture](../../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
 - [Integration](../../../docs/integration.md) - Integration guide
 - [Path Selector](../../../docs/ggen-integration-guide.md) - Path selection details
 

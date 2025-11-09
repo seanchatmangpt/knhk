@@ -87,5 +87,6 @@ rust/knhk-unrdf/
 
 - [unrdf Integration Status](../../../docs/unrdf-integration-status.md) - Integration status
 - [unrdf Integration DoD](../../../docs/unrdf-integration-dod.md) - DoD validation
-- [Architecture](../../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
 

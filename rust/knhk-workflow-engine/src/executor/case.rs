@@ -6,10 +6,18 @@ use crate::integration::fortune5::RuntimeClass;
 use crate::parser::WorkflowSpecId;
 use std::time::Instant;
 
-use super::task;
 use super::WorkflowEngine;
 
 impl WorkflowEngine {
+    /// Internal helper to execute workflow (avoids recursion detection)
+    async fn execute_workflow_internal(
+        engine: &WorkflowEngine,
+        case_id: CaseId,
+        spec: &crate::parser::WorkflowSpec,
+    ) -> WorkflowResult<()> {
+        super::workflow_execution::execute_workflow(engine, case_id, spec).await
+    }
+
     /// Create a new case
     pub async fn create_case(
         &self,
@@ -101,11 +109,9 @@ impl WorkflowEngine {
         let spec_clone = spec.value().clone();
         drop(case_ref);
 
-        // Real workflow execution not yet implemented
-        // Previous simple_execution was fake simulation code - removed
-        return Err(WorkflowError::Internal(
-            "Real workflow execution not yet implemented - simple_execution was fake simulation code and has been removed".to_string()
-        ));
+        // Execute workflow from start to end condition
+        // Use helper to avoid recursion detection (execute_workflow doesn't actually recurse)
+        Self::execute_workflow_internal(self, case_id, &spec_clone).await?;
 
         // Record SLO metrics if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {

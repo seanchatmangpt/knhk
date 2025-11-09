@@ -76,5 +76,7 @@ See **[Workflow Commands](WORKFLOW_COMMANDS.md)** for complete documentation.
 ## Related Documentation
 
 - [CLI Guide](../../../docs/cli.md) - Complete CLI reference
-- [Architecture](../../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [CLI Guide](../../../docs/CLI.md) - 🆕 Consolidated 80/20 guide (CLI reference)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
 
