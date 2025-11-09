@@ -94,7 +94,7 @@ impl PatternOtelHelper {
         let pattern_category = get_pattern_category(pattern_id.0);
 
         // Start the base pattern span
-        let span_ctx = otel.start_execute_pattern_span(pattern_id, case_id).await?;
+        let span_ctx = otel.start_execute_pattern_span(pattern_id, case_id, None).await?;
 
         if let Some(ref span) = span_ctx {
             // Add pattern-specific attributes

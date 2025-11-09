@@ -6,7 +6,6 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::security::Principal;
 use oxigraph::io::RdfFormat;
-use oxigraph::sparql::SparqlEvaluator;
 use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

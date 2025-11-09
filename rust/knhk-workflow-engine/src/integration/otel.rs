@@ -45,6 +45,16 @@ impl OtelIntegration {
         if let Some(ref mut tracer) = *guard {
             let span_ctx =
                 tracer.start_span("knhk.workflow_engine.register_workflow".to_string(), None);
+
+            // Add XES-compatible attributes
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            tracer.add_attribute(span_ctx.clone(), "time:timestamp".to_string(), timestamp);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "lifecycle:transition".to_string(),
+                "start".to_string(),
+            );
+
             tracer.add_attribute(
                 span_ctx.clone(),
                 "knhk.workflow_engine.spec_id".to_string(),
@@ -69,7 +79,27 @@ impl OtelIntegration {
     ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
-            let span_ctx = tracer.start_span("knhk.workflow_engine.create_case".to_string(), None);
+            // Create parent context with trace_id from case_id for trace correlation
+            let trace_id = Self::trace_id_from_case_id(case_id);
+            let parent_ctx = Some(SpanContext {
+                trace_id,
+                span_id: knhk_otel::SpanId(0), // Root span
+                parent_span_id: None,
+                flags: 1,
+            });
+
+            let span_ctx =
+                tracer.start_span("knhk.workflow_engine.create_case".to_string(), parent_ctx);
+
+            // Add XES-compatible attributes
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            tracer.add_attribute(span_ctx.clone(), "time:timestamp".to_string(), timestamp);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "lifecycle:transition".to_string(),
+                "start".to_string(),
+            );
+
             tracer.add_attribute(
                 span_ctx.clone(),
                 "knhk.workflow_engine.spec_id".to_string(),
@@ -103,7 +133,27 @@ impl OtelIntegration {
     ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
-            let span_ctx = tracer.start_span("knhk.workflow_engine.execute_case".to_string(), None);
+            // Create parent context with trace_id from case_id for trace correlation
+            let trace_id = Self::trace_id_from_case_id(case_id);
+            let parent_ctx = Some(SpanContext {
+                trace_id,
+                span_id: knhk_otel::SpanId(0), // Root span
+                parent_span_id: None,
+                flags: 1,
+            });
+
+            let span_ctx =
+                tracer.start_span("knhk.workflow_engine.execute_case".to_string(), parent_ctx);
+
+            // Add XES-compatible attributes
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            tracer.add_attribute(span_ctx.clone(), "time:timestamp".to_string(), timestamp);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "lifecycle:transition".to_string(),
+                "start".to_string(),
+            );
+
             tracer.add_attribute(
                 span_ctx.clone(),
                 "knhk.workflow_engine.case_id".to_string(),
@@ -131,10 +181,36 @@ impl OtelIntegration {
         case_id: &CaseId,
         task_id: &str,
         pattern_id: Option<&PatternId>,
+        parent_span: Option<&SpanContext>,
     ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
-            let span_ctx = tracer.start_span("knhk.workflow_engine.execute_task".to_string(), None);
+            // Use parent span for trace correlation, or create from case_id
+            let parent_ctx = if let Some(parent) = parent_span {
+                Some(parent.clone())
+            } else {
+                // Create parent context with trace_id from case_id
+                let trace_id = Self::trace_id_from_case_id(case_id);
+                Some(SpanContext {
+                    trace_id,
+                    span_id: knhk_otel::SpanId(0),
+                    parent_span_id: None,
+                    flags: 1,
+                })
+            };
+
+            let span_ctx =
+                tracer.start_span("knhk.workflow_engine.execute_task".to_string(), parent_ctx);
+
+            // Add XES-compatible attributes
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            tracer.add_attribute(span_ctx.clone(), "time:timestamp".to_string(), timestamp);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "lifecycle:transition".to_string(),
+                "start".to_string(),
+            );
+
             tracer.add_attribute(
                 span_ctx.clone(),
                 "knhk.workflow_engine.case_id".to_string(),
@@ -163,11 +239,38 @@ impl OtelIntegration {
         &self,
         pattern_id: &PatternId,
         case_id: &CaseId,
+        parent_span: Option<&SpanContext>,
     ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
-            let span_ctx =
-                tracer.start_span("knhk.workflow_engine.execute_pattern".to_string(), None);
+            // Use parent span for trace correlation, or create from case_id
+            let parent_ctx = if let Some(parent) = parent_span {
+                Some(parent.clone())
+            } else {
+                // Create parent context with trace_id from case_id
+                let trace_id = Self::trace_id_from_case_id(case_id);
+                Some(SpanContext {
+                    trace_id,
+                    span_id: knhk_otel::SpanId(0),
+                    parent_span_id: None,
+                    flags: 1,
+                })
+            };
+
+            let span_ctx = tracer.start_span(
+                "knhk.workflow_engine.execute_pattern".to_string(),
+                parent_ctx,
+            );
+
+            // Add XES-compatible attributes
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            tracer.add_attribute(span_ctx.clone(), "time:timestamp".to_string(), timestamp);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "lifecycle:transition".to_string(),
+                "start".to_string(),
+            );
+
             tracer.add_attribute(
                 span_ctx.clone(),
                 "knhk.workflow_engine.pattern_id".to_string(),
@@ -271,14 +374,25 @@ impl OtelIntegration {
         // Legacy method doesn't have case_id, so we create a dummy one
         // This is for backward compatibility only
         let dummy_case_id = CaseId::new();
-        self.start_execute_pattern_span(pattern_id, &dummy_case_id)
+        self.start_execute_pattern_span(pattern_id, &dummy_case_id, None)
             .await
     }
 
-    /// End a span with status
+    /// End a span with status and lifecycle transition
     pub async fn end_span(&self, span_ctx: SpanContext, status: SpanStatus) -> WorkflowResult<()> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
+            // Add lifecycle transition based on status
+            let transition = match status {
+                SpanStatus::Ok => "complete",
+                SpanStatus::Error => "cancel",
+                SpanStatus::Unset => "complete",
+            };
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "lifecycle:transition".to_string(),
+                transition.to_string(),
+            );
             tracer.end_span(span_ctx, status);
         }
         Ok(())
@@ -307,6 +421,88 @@ impl OtelIntegration {
             })?;
         }
         Ok(())
+    }
+
+    /// Add lifecycle transition attribute (XES standard)
+    /// Values: "start", "complete", "cancel"
+    pub async fn add_lifecycle_transition(
+        &self,
+        span_ctx: SpanContext,
+        transition: &str,
+    ) -> WorkflowResult<()> {
+        self.add_attribute(
+            span_ctx,
+            "lifecycle:transition".to_string(),
+            transition.to_string(),
+        )
+        .await
+    }
+
+    /// Add timestamp attribute (XES standard, ISO 8601)
+    pub async fn add_timestamp(
+        &self,
+        span_ctx: SpanContext,
+        timestamp: &str,
+    ) -> WorkflowResult<()> {
+        self.add_attribute(
+            span_ctx,
+            "time:timestamp".to_string(),
+            timestamp.to_string(),
+        )
+        .await
+    }
+
+    /// Add resource attributes (XES standard)
+    pub async fn add_resource(
+        &self,
+        span_ctx: SpanContext,
+        resource: Option<&str>,
+        role: Option<&str>,
+    ) -> WorkflowResult<()> {
+        if let Some(res) = resource {
+            self.add_attribute(
+                span_ctx.clone(),
+                "org:resource".to_string(),
+                res.to_string(),
+            )
+            .await?;
+        }
+        if let Some(r) = role {
+            self.add_attribute(span_ctx, "org:role".to_string(), r.to_string())
+                .await?;
+        }
+        Ok(())
+    }
+
+    /// Add all XES-compatible attributes at once
+    /// Includes lifecycle transition, timestamp, and optionally resource
+    pub async fn add_xes_attributes(
+        &self,
+        span_ctx: SpanContext,
+        transition: &str,
+        timestamp: &str,
+        resource: Option<&str>,
+        role: Option<&str>,
+    ) -> WorkflowResult<()> {
+        self.add_lifecycle_transition(span_ctx.clone(), transition)
+            .await?;
+        self.add_timestamp(span_ctx.clone(), timestamp).await?;
+        self.add_resource(span_ctx, resource, role).await?;
+        Ok(())
+    }
+
+    /// Generate trace_id from case_id for trace correlation
+    /// All spans for a case share the same trace_id
+    pub fn trace_id_from_case_id(case_id: &CaseId) -> knhk_otel::TraceId {
+        // Use case_id UUID bytes to generate trace_id
+        // Convert case_id string to bytes and hash to 128-bit trace_id
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
+        case_id.to_string().hash(&mut hasher);
+        let hash = hasher.finish();
+        // Create 128-bit trace_id from hash (use hash twice for 128 bits)
+        knhk_otel::TraceId((hash as u128) << 64 | hash as u128)
     }
 }
 

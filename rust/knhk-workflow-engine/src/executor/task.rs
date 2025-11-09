@@ -35,7 +35,7 @@ pub(super) async fn execute_task_with_allocation(
                 _ => PatternId(1), // Default to Sequence
             }
         };
-        otel.start_execute_task_span(&case_id, &task.id, Some(&pattern_id))
+        otel.start_execute_task_span(&case_id, &task.id, Some(&pattern_id), None)
             .await?
     } else {
         None
@@ -61,11 +61,39 @@ pub(super) async fn execute_task_with_allocation(
             Ok(allocation) => {
                 // Resources allocated - proceed with task execution
                 // In production, would track allocation and release after execution
+                let mut resource_ids = Vec::new();
                 for resource_id in &allocation.resource_ids {
                     engine
                         .resource_allocator
                         .update_workload(*resource_id, 1)
                         .await?;
+                    resource_ids.push(*resource_id);
+                }
+                
+                // Add resource tracking to OTEL span
+                if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref()) {
+                    // Use first resource ID as org:resource, first role as org:role
+                    if let Some(first_resource) = resource_ids.first() {
+                        let resource_str = format!("resource_{}", first_resource.0);
+                        let role_str = if !task.required_roles.is_empty() {
+                            task.required_roles.first().cloned().unwrap_or_else(|| "executor".to_string())
+                        } else {
+                            "system".to_string()
+                        };
+                        let _ = otel.add_resource((*span).clone(), Some(&resource_str), Some(&role_str)).await;
+                        
+                        // Calculate resource utilization (simplified: based on allocation count)
+                        let utilization = if !resource_ids.is_empty() {
+                            (resource_ids.len() as f64) / 10.0 // Assume max 10 resources
+                        } else {
+                            0.0
+                        };
+                        let _ = otel.add_attribute(
+                            (*span).clone(),
+                            "knhk.workflow_engine.resource_utilization".to_string(),
+                            utilization.to_string(),
+                        ).await;
+                    }
                 }
             }
             Err(e) => {
@@ -105,6 +133,12 @@ pub(super) async fn execute_task_with_allocation(
             // Check if task requires human interaction (has required_roles) or is automated
             if !task.required_roles.is_empty() {
                 // Human task: Create work item and wait for completion
+                // Add resource tracking for human tasks
+                if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref()) {
+                    let role_str = task.required_roles.first().cloned().unwrap_or_else(|| "user".to_string());
+                    let _ = otel.add_resource((*span).clone(), Some("work_item_service"), Some(&role_str)).await;
+                }
+                
                 let work_item_id = engine
                     .work_item_service
                     .create_work_item(
@@ -218,6 +252,11 @@ pub(super) async fn execute_task_with_allocation(
                 }
             } else {
                 // Automated task: Execute via connector integration
+                // Add resource tracking for automated tasks
+                if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref()) {
+                    let _ = otel.add_resource((*span).clone(), Some("connector"), Some("system")).await;
+                }
+                
                 if let Some(ref connector_integration) = engine.connector_integration {
                     // Determine connector name from task ID or use default
                     // In production, would use task configuration or connector registry
@@ -430,7 +469,7 @@ pub(super) async fn execute_task_with_allocation(
         .log_task_completed(case_id, task.id.clone(), task.name.clone(), duration_ms)
         .await?;
 
-    // End OTEL span
+    // End OTEL span with lifecycle transition
     if let (Some(ref otel), Some(ref span)) = (engine.otel_integration.as_ref(), span_ctx.as_ref())
     {
         otel.add_attribute(
@@ -445,6 +484,9 @@ pub(super) async fn execute_task_with_allocation(
             duration_ms.to_string(),
         )
         .await?;
+        
+        // Add lifecycle transition: complete
+        otel.add_lifecycle_transition((*span).clone(), "complete").await?;
         otel.end_span((*span).clone(), SpanStatus::Ok).await?;
     }
 

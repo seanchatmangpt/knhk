@@ -105,7 +105,7 @@ impl AotKernel {
         let diff: u8 = input
             .iter()
             .zip(data.iter())
-            .map(|(a, b)| (a ^ b))
+            .map(|(a, b)| a ^ b)
             .fold(0, |a, b| a | b);
         diff == 0
     }

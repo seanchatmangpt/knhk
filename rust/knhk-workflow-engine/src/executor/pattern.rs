@@ -19,7 +19,7 @@ impl WorkflowEngine {
 
         // Start OTEL span for pattern execution
         let span_ctx = if let Some(ref otel) = self.otel_integration {
-            otel.start_execute_pattern_span(&pattern_id, &context.case_id)
+            otel.start_execute_pattern_span(&pattern_id, &context.case_id, None)
                 .await?
         } else {
             None
