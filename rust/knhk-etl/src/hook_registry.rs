@@ -52,6 +52,7 @@ pub struct HookRegistry {
     default_kernel: KernelType,
 
     /// Hook counter for generating unique IDs
+    #[allow(dead_code)]
     hook_counter: AtomicU64,
 }
 

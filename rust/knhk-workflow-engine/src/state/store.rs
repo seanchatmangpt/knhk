@@ -236,24 +236,8 @@ impl StateStore {
             events.push(event);
         }
 
-        // Sort by timestamp (key contains timestamp)
-        events.sort_by(|a, b| {
-            let a_ts = match a {
-                crate::state::manager::StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::CaseCreated { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::TaskStarted { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
-            };
-            let b_ts = match b {
-                crate::state::manager::StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::CaseCreated { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::TaskStarted { timestamp, .. } => *timestamp,
-                crate::state::manager::StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
-            };
-            a_ts.cmp(&b_ts)
-        });
+        // Sort by timestamp using StateEvent::timestamp() method
+        events.sort_by(|a, b| a.timestamp().cmp(&b.timestamp()));
 
         Ok(events)
     }

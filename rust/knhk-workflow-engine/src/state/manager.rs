@@ -75,6 +75,17 @@ impl StateEvent {
             StateEvent::TaskCompleted { case_id, .. } => Some(*case_id),
         }
     }
+
+    /// Get timestamp from event
+    pub fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
+        match self {
+            StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
+            StateEvent::CaseCreated { timestamp, .. } => *timestamp,
+            StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
+            StateEvent::TaskStarted { timestamp, .. } => *timestamp,
+            StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
+        }
+    }
 }
 
 impl StateManager {
@@ -222,36 +233,39 @@ impl StateManager {
         let log = self.event_log.read().await;
         let in_memory_events: Vec<StateEvent> = log
             .iter()
-            .filter(|event| match event {
-                StateEvent::CaseCreated { case_id: cid, .. } => cid == &case_id,
-                StateEvent::CaseStateChanged { case_id: cid, .. } => cid == &case_id,
-                StateEvent::TaskStarted { case_id: cid, .. } => cid == &case_id,
-                StateEvent::TaskCompleted { case_id: cid, .. } => cid == &case_id,
-                StateEvent::SpecRegistered { .. } => false,
-            })
+            .filter(|event| event.case_id() == Some(case_id))
             .cloned()
             .collect();
 
         // Merge and deduplicate (prefer in-memory for recent events)
-        events.extend(in_memory_events);
-        events.sort_by(|a, b| {
-            let a_ts = match a {
-                StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
-                StateEvent::CaseCreated { timestamp, .. } => *timestamp,
-                StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
-                StateEvent::TaskStarted { timestamp, .. } => *timestamp,
-                StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
-            };
-            let b_ts = match b {
-                StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
-                StateEvent::CaseCreated { timestamp, .. } => *timestamp,
-                StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
-                StateEvent::TaskStarted { timestamp, .. } => *timestamp,
-                StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
-            };
-            a_ts.cmp(&b_ts)
-        });
-        events
+        // Use HashMap to deduplicate by timestamp + event type
+        let mut dedup_map: std::collections::HashMap<
+            (chrono::DateTime<chrono::Utc>, String),
+            StateEvent,
+        > = std::collections::HashMap::new();
+
+        // First add persisted events
+        for event in events {
+            let key = (
+                event.timestamp(),
+                format!("{:?}", std::mem::discriminant(&event)),
+            );
+            dedup_map.insert(key, event);
+        }
+
+        // Then add in-memory events (will overwrite duplicates, preferring newer)
+        for event in in_memory_events {
+            let key = (
+                event.timestamp(),
+                format!("{:?}", std::mem::discriminant(&event)),
+            );
+            dedup_map.insert(key, event);
+        }
+
+        // Convert back to Vec and sort by timestamp
+        let mut result: Vec<StateEvent> = dedup_map.into_values().collect();
+        result.sort_by(|a, b| a.timestamp().cmp(&b.timestamp()));
+        result
     }
 
     /// Log task started event

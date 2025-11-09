@@ -181,16 +181,32 @@ impl WorkflowEngine {
     /// Import XES log file
     ///
     /// Loads workflow execution history from XES format (ProM export).
-    /// Creates cases and replays execution history.
+    /// Parses XES content and returns the number of traces (cases) found.
+    ///
+    /// **80/20 Focus:**
+    /// - Parse XES format correctly
+    /// - Extract trace count (cases)
+    /// - Validate XES structure
+    ///
+    /// **Future Enhancement:**
+    /// Full import would create workflow specs from event log structure
+    /// and replay cases from traces. Currently returns trace count only.
     ///
     /// # Arguments
     /// * `xes_content` - XES XML string to import
     ///
     /// # Returns
-    /// Number of cases imported
+    /// Number of traces (cases) found in XES log
+    ///
+    /// # Errors
+    /// Returns `WorkflowError::Internal` if XES parsing fails
     pub async fn import_xes(&self, xes_content: &str) -> WorkflowResult<usize> {
-        // Parse XES content using process_mining crate
         use process_mining::{import_xes_file, XESImportOptions};
+
+        // Validate XES content is not empty
+        if xes_content.trim().is_empty() {
+            return Err(WorkflowError::Internal("XES content is empty".to_string()));
+        }
 
         // Write XES content to temporary file (import_xes_file expects a file path)
         let temp_dir = tempfile::tempdir().map_err(|e| {
@@ -205,12 +221,14 @@ impl WorkflowEngine {
         let event_log = import_xes_file(&temp_file, XESImportOptions::default())
             .map_err(|e| WorkflowError::Internal(format!("Failed to import XES: {:?}", e)))?;
 
-        // Count traces (cases) in event log
-        let imported = event_log.traces.len();
+        // Validate event log structure
+        let trace_count = event_log.traces.len();
+        if trace_count == 0 {
+            return Err(WorkflowError::Internal(
+                "XES log contains no traces".to_string(),
+            ));
+        }
 
-        // Note: In production, would create workflow specs from event log structure
-        // and create cases from traces. For now, just return count of imported traces.
-
-        Ok(imported)
+        Ok(trace_count)
     }
 }

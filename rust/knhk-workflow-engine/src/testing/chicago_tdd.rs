@@ -345,10 +345,12 @@ impl WorkflowSpecBuilder {
     /// Add a flow to the workflow
     pub fn add_flow(mut self, from: impl Into<String>, to: impl Into<String>) -> Self {
         use crate::parser::Flow;
+        let from_str = from.into();
+        let to_str = to.into();
         self.spec.flows.push(Flow {
-            id: format!("flow:{}:{}", from.into(), to.into()),
-            from: from.into(),
-            to: to.into(),
+            id: format!("flow:{}:{}", from_str, to_str),
+            from: from_str,
+            to: to_str,
             predicate: None,
         });
         self
@@ -379,10 +381,12 @@ impl WorkflowSpecBuilder {
         predicate: impl Into<String>,
     ) -> Self {
         use crate::parser::Flow;
+        let from_str = from.into();
+        let to_str = to.into();
         self.spec.flows.push(Flow {
-            id: format!("flow:{}:{}", from.into(), to.into()),
-            from: from.into(),
-            to: to.into(),
+            id: format!("flow:{}:{}", from_str, to_str),
+            from: from_str,
+            to: to_str,
             predicate: Some(predicate.into()),
         });
         self
@@ -820,6 +824,56 @@ pub fn create_simple_sequential_workflow(
         .build()
 }
 
+/// Create a sequential workflow using flows (not conditions)
+/// This is useful for tests that need Flow objects explicitly
+/// Creates: start → task1 → task2 → ... → end
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `task_ids` - Vector of (task_id, task_name) tuples
+pub fn create_sequential_workflow_with_flows(
+    name: impl Into<String>,
+    task_ids: Vec<(String, String)>,
+) -> WorkflowSpec {
+    if task_ids.is_empty() {
+        panic!("Cannot create workflow with no tasks");
+    }
+
+    let mut builder = WorkflowSpecBuilder::new(name);
+
+    // Create tasks
+    for (idx, (task_id, task_name)) in task_ids.iter().enumerate() {
+        let mut task_builder = TaskBuilder::new(task_id.clone(), task_name.clone());
+
+        // Set up incoming/outgoing flows
+        if idx > 0 {
+            let prev_task_id = &task_ids[idx - 1].0;
+            task_builder =
+                task_builder.add_outgoing_flow(format!("{}_to_{}", prev_task_id, task_id));
+        }
+        if idx < task_ids.len() - 1 {
+            let next_task_id = &task_ids[idx + 1].0;
+            task_builder =
+                task_builder.add_outgoing_flow(format!("{}_to_{}", task_id, next_task_id));
+        }
+
+        builder = builder.add_task(task_builder.build());
+    }
+
+    // Create flows
+    builder = builder.add_flow_with_id("start_to_first", "start", &task_ids[0].0);
+    for idx in 0..task_ids.len() - 1 {
+        let flow_id = format!("{}_to_{}", task_ids[idx].0, task_ids[idx + 1].0);
+        builder = builder.add_flow_with_id(flow_id, &task_ids[idx].0, &task_ids[idx + 1].0);
+    }
+    builder = builder.add_flow_with_id("last_to_end", &task_ids.last().unwrap().0, "end");
+
+    builder
+        .with_start_condition("start")
+        .with_end_condition("end")
+        .build()
+}
+
 /// Create a workflow with multiple tasks in sequence with proper conditions
 ///
 /// # Arguments
@@ -1076,6 +1130,29 @@ pub fn create_mi_workflow(
         .with_start_condition(start_condition_id)
         .with_end_condition(end_condition_id)
         .build()
+}
+
+/// Create a test engine with a temporary state store
+/// This is useful for tests that need isolated state stores
+///
+/// # Returns
+/// A tuple of (WorkflowEngine, TempDir) where TempDir keeps the temp directory alive
+///
+/// # Example
+/// ```rust
+/// let (engine, _temp_dir) = create_test_engine_with_temp_store().unwrap();
+/// // _temp_dir will be cleaned up when dropped
+/// ```
+#[cfg(feature = "tempfile")]
+pub fn create_test_engine_with_temp_store() -> WorkflowResult<(WorkflowEngine, tempfile::TempDir)> {
+    let temp_dir = tempfile::tempdir().map_err(|e| {
+        WorkflowError::StatePersistence(format!("Failed to create temp directory: {}", e))
+    })?;
+    let state_store = StateStore::new(temp_dir.path()).map_err(|e| {
+        WorkflowError::StatePersistence(format!("Failed to create state store: {}", e))
+    })?;
+    let engine = WorkflowEngine::new(state_store);
+    Ok((engine, temp_dir))
 }
 
 /// Create a workflow with a loop pattern
