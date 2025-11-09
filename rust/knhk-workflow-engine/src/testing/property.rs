@@ -57,6 +57,8 @@ impl PropertyTestGenerator {
         for i in 0..num_tasks {
             let task_id = format!("task:{}", i);
             let task = Task {
+                input_parameters: Vec::new(),
+                output_parameters: Vec::new(),
                 id: task_id.clone(),
                 name: format!("Task {}", i),
                 task_type: if rng.next() % 2 == 0 {

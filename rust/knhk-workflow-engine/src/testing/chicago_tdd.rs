@@ -290,6 +290,8 @@ impl TaskBuilder {
     pub fn new(id: impl Into<String>, name: impl Into<String>) -> Self {
         Self {
             task: Task {
+                input_parameters: Vec::new(),
+                output_parameters: Vec::new(),
                 id: id.into(),
                 name: name.into(),
                 task_type: TaskType::Atomic,
