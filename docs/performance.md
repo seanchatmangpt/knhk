@@ -215,6 +215,12 @@ See [Formal Mathematical Foundations](formal-foundations.md) for complete treatm
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and hot/warm/cold paths
+- **[Testing Guide](TESTING.md)** - Performance testing and validation
+- **[Production Guide](PRODUCTION.md)** - Production performance monitoring
+- **[API Guide](API.md)** - API performance considerations
+
 ### Detailed Documentation
 - **Performance Guide**: [Performance Documentation](performance.md)
 - **Benchmarks**: [Performance Benchmarks](performance-benchmarks.md)

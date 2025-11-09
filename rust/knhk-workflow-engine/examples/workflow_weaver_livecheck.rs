@@ -10,7 +10,7 @@
 //!   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 cargo run --example workflow_weaver_livecheck
 
 use knhk_otel::{SpanContext, SpanStatus};
-use knhk_workflow_engine::integration::otel::OtelIntegration;
+use knhk_workflow_engine::integration::OtelIntegration;
 use knhk_workflow_engine::{
     CaseId, PatternId, StateStore, WorkflowEngine, WorkflowParser, WorkflowSpecId,
 };

@@ -204,6 +204,12 @@ cargo test --workspace
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Testing Guide](TESTING.md)** - Test coverage and validation methodology
+- **[Performance Guide](PERFORMANCE.md)** - Performance benchmarks and optimization
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and deployment patterns
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
+
 ### Detailed Documentation
 - **Production Certification**: [Production Readiness Certification](PRODUCTION_READINESS_CERTIFICATION.md)
 - **Certification Summary**: [Production Certification Summary](PRODUCTION_CERTIFICATION_SUMMARY.md)

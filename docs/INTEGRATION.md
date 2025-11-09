@@ -342,6 +342,12 @@ match connector.fetch_delta().await {
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and component design
+- **[API Guide](API.md)** - API interfaces and usage patterns
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
+- **[CLI Guide](CLI.md)** - CLI usage and command reference
+
 ### Detailed Documentation
 - **Integration Guide**: [Integration Guide](integration-guide.md) - Complete integration reference
 - **unrdf Integration**: [unrdf Integration Plan](v1.0-unrdf-integration-plan.md) - Cold path integration
