@@ -90,7 +90,7 @@ impl LockchainStorage {
         cycle: u64,
     ) -> Result<Oid, StorageError> {
         if let Some(ref repo_mutex) = self.git_repo {
-            let mut repo = repo_mutex.lock().map_err(|e| {
+            let repo = repo_mutex.lock().map_err(|e| {
                 StorageError::GitError(format!("Failed to lock git repository: {:?}", e))
             })?;
             // Create receipt file content
