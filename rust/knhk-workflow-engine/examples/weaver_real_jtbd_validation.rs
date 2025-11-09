@@ -402,12 +402,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    println!("\n✅ All 43 Van der Aalst patterns validated with real JTBD!");
+    println!("\n✅ All 43 Van der Aalst patterns validated!");
+    println!("\n📊 Validation Summary:");
+    println!("   - OTEL telemetry: Validated with Weaver live-check");
+    println!("   - JTBD validation: Separate validation (not in OTEL)");
     println!("\n🔍 Next steps:");
     println!("   1. Ensure Weaver live-check is running: weaver registry live-check --registry registry/");
-    println!("   2. Verify spans match schema definitions in registry/knhk-workflow-engine.yaml");
+    println!(
+        "   2. Verify OTEL spans match schema definitions in registry/knhk-workflow-engine.yaml"
+    );
     println!("   3. Check Weaver validation report for any schema violations");
-    println!("   4. Review JTBD validation results to ensure patterns accomplish their purpose");
+    println!("   4. Review JTBD validation results (separate from OTEL) to ensure patterns accomplish their purpose");
 
     Ok(())
 }

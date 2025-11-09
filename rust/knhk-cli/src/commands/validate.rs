@@ -14,7 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(feature = "otel")]
 use knhk_otel::{MetricsHelper, Tracer};
 #[cfg(feature = "otel")]
-use tracing::{debug, info, span, Level};
+use tracing::{info, span, Level};
 
 /// Self-validation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
