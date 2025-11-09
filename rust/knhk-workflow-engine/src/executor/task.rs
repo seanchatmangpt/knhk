@@ -6,6 +6,10 @@ use crate::integration::fortune5::RuntimeClass;
 use crate::parser::{Task, WorkflowSpecId};
 use crate::patterns::{PatternExecutionContext, PatternId};
 use crate::resource::AllocationRequest;
+#[allow(unused_imports)]
+use crate::{
+    otel_attr, otel_bottleneck, otel_conformance, otel_resource, otel_span, otel_span_end,
+};
 use knhk_otel::SpanContext;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -37,10 +41,10 @@ pub(super) async fn execute_task_with_allocation(
         };
         otel_span!(
             otel,
-            "knhk.workflow_engine.execute_task"
-            , case_id: Some(&case_id)
-            , task_id: Some(&task.id)
-            , pattern_id: Some(&pattern_id)
+            "knhk.workflow_engine.execute_task",
+            case_id: Some(&case_id),
+            task_id: Some(&task.id),
+            pattern_id: Some(&pattern_id)
         )
         .await?
     } else {

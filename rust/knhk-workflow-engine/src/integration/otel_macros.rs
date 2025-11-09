@@ -20,95 +20,97 @@
 macro_rules! otel_span {
     (
         $otel:expr,
-        $span_name:expr,
-        $(case_id: $case_id:expr,)?
-        $(spec_id: $spec_id:expr,)?
-        $(task_id: $task_id:expr,)?
-        $(pattern_id: $pattern_id:expr,)?
-        $(parent: $parent:expr,)?
+        $span_name:expr
+        $(, case_id: $case_id:expr)?
+        $(, spec_id: $spec_id:expr)?
+        $(, task_id: $task_id:expr)?
+        $(, pattern_id: $pattern_id:expr)?
+        $(, parent: $parent:expr)?
     ) => {{
         async {
-            use crate::integration::otel_helpers::create_trace_context;
+            #[allow(unused_imports)]
+            use $crate::integration::otel_helpers::create_trace_context;
+            #[allow(unused_imports)]
             use knhk_otel::SpanContext;
 
             let mut guard = $otel.tracer.write().await;
             if let Some(ref mut tracer) = *guard {
-            // Create parent context for trace correlation
-            let parent_ctx = {
-                let mut ctx = None;
-                $(
-                    if let Some(parent) = $parent {
-                        ctx = Some(parent.clone());
-                    }
-                )?
-                if ctx.is_none() {
+                // Create parent context for trace correlation
+                let parent_ctx = {
+                    let mut ctx = None;
                     $(
-                        if let Some(cid) = $case_id {
-                            ctx = create_trace_context(cid);
+                        if let Some(parent) = $parent {
+                            ctx = Some(parent.clone());
                         }
                     )?
-                }
-                ctx
-            };
+                    if ctx.is_none() {
+                        $(
+                            if let Some(cid) = $case_id {
+                                ctx = create_trace_context(cid);
+                            }
+                        )?
+                    }
+                    ctx
+                };
 
-            let span_ctx = tracer.start_span($span_name.to_string(), parent_ctx);
+                let span_ctx = tracer.start_span($span_name.to_string(), parent_ctx);
 
-            // Add XES-compatible attributes
-            let timestamp = chrono::Utc::now().to_rfc3339();
-            tracer.add_attribute(
-                span_ctx.clone(),
-                "time:timestamp".to_string(),
-                timestamp,
-            );
-            tracer.add_attribute(
-                span_ctx.clone(),
-                "lifecycle:transition".to_string(),
-                "start".to_string(),
-            );
+                // Add XES-compatible attributes
+                let timestamp = chrono::Utc::now().to_rfc3339();
+                tracer.add_attribute(
+                    span_ctx.clone(),
+                    "time:timestamp".to_string(),
+                    timestamp,
+                );
+                tracer.add_attribute(
+                    span_ctx.clone(),
+                    "lifecycle:transition".to_string(),
+                    "start".to_string(),
+                );
 
-            // Add workflow attributes
-            $(
-                if let Some(cid) = $case_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.case_id".to_string(),
-                        cid.to_string(),
-                    );
-                }
-            )?
-            $(
-                if let Some(sid) = $spec_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.spec_id".to_string(),
-                        sid.to_string(),
-                    );
-                }
-            )?
-            $(
-                if let Some(tid) = $task_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.task_id".to_string(),
-                        tid.to_string(),
-                    );
-                }
-            )?
-            $(
-                if let Some(pid) = $pattern_id {
-                    tracer.add_attribute(
-                        span_ctx.clone(),
-                        "knhk.workflow_engine.pattern_id".to_string(),
-                        pid.0.to_string(),
-                    );
-                }
-            )?
+                // Add workflow attributes
+                $(
+                    if let Some(cid) = $case_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.case_id".to_string(),
+                            cid.to_string(),
+                        );
+                    }
+                )?
+                $(
+                    if let Some(sid) = $spec_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.spec_id".to_string(),
+                            sid.to_string(),
+                        );
+                    }
+                )?
+                $(
+                    if let Some(tid) = $task_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.task_id".to_string(),
+                            tid.to_string(),
+                        );
+                    }
+                )?
+                $(
+                    if let Some(pid) = $pattern_id {
+                        tracer.add_attribute(
+                            span_ctx.clone(),
+                            "knhk.workflow_engine.pattern_id".to_string(),
+                            pid.0.to_string(),
+                        );
+                    }
+                )?
 
-            Ok(Some(span_ctx))
-        } else {
-            Ok(None)
+                Ok(Some(span_ctx))
+            } else {
+                Ok(None)
+            }
         }
-    }.await
     }};
 }
 
@@ -131,7 +133,7 @@ macro_rules! otel_span_end {
         success: $success:expr,
         start_time: $start_time:expr
     ) => {{
-        async {
+        async move {
             use $crate::integration::otel_helpers::end_span_with_result;
 
             if let Some(ref span) = $span_ctx.as_ref() {
@@ -139,7 +141,6 @@ macro_rules! otel_span_end {
             }
             Ok::<(), $crate::error::WorkflowError>(())
         }
-        .await
     }};
 
     (
@@ -151,7 +152,7 @@ macro_rules! otel_span_end {
         async {
             use knhk_otel::SpanStatus;
 
-            if let Some(span) = (*$span_ctx).as_ref() {
+            if let Some(ref span) = $span_ctx.as_ref() {
                 $otel
                     .add_attribute(
                         span.clone(),
@@ -184,7 +185,7 @@ macro_rules! otel_span_end {
                     )
                     .await?;
             }
-            Ok::<(), crate::error::WorkflowError>(())
+            Ok::<(), $crate::error::WorkflowError>(())
         }
     }};
 }
@@ -207,17 +208,19 @@ macro_rules! otel_attr {
         $span_ctx:expr,
         $($key:expr => $value:expr),+ $(,)?
     ) => {{
-        if let Some(ref span) = $span_ctx.as_ref() {
-            $(
-                $otel.add_attribute(
-                    (*span).clone(),
-                    $key.to_string(),
-                    $value.to_string(),
-                )
-                .await?;
-            )+
+        async {
+            if let Some(ref span) = $span_ctx.as_ref() {
+                $(
+                    $otel.add_attribute(
+                        span.clone(),
+                        $key.to_string(),
+                        $value.to_string(),
+                    )
+                    .await?;
+                )+
+            }
+            Ok::<(), $crate::error::WorkflowError>(())
         }
-        Ok::<(), $crate::error::WorkflowError>(())
     }};
 }
 
@@ -295,12 +298,11 @@ macro_rules! otel_resource {
         role: $role:expr
     ) => {{
         async {
-            if let Some(ref span) = $span_ctx {
+            if let Some(ref span) = $span_ctx.as_ref() {
                 $otel.add_resource(span.clone(), $resource, $role).await?;
             }
             Ok::<(), $crate::error::WorkflowError>(())
         }
-        .await
     }};
 }
 
@@ -324,9 +326,9 @@ macro_rules! otel_bottleneck {
         threshold_ms: $threshold_ms:expr
     ) => {{
         async {
-            use crate::integration::otel_helpers::add_bottleneck_if_detected;
+            use $crate::integration::otel_helpers::add_bottleneck_if_detected;
 
-            if let Some(span) = (*$span_ctx).as_ref() {
+            if let Some(ref span) = $span_ctx.as_ref() {
                 add_bottleneck_if_detected(
                     $otel,
                     span.clone(),
@@ -335,7 +337,7 @@ macro_rules! otel_bottleneck {
                 )
                 .await?;
             }
-            Ok::<(), crate::error::WorkflowError>(())
+            Ok::<(), $crate::error::WorkflowError>(())
         }
     }};
 }
@@ -359,7 +361,7 @@ macro_rules! otel_conformance {
         expected_pattern: $expected:expr,
         actual_pattern: $actual:expr
     ) => {{
-        async {
+        async move {
             use $crate::integration::otel_helpers::add_conformance_attributes;
 
             if let Some(ref span) = $span_ctx.as_ref() {
@@ -367,6 +369,5 @@ macro_rules! otel_conformance {
             }
             Ok::<(), $crate::error::WorkflowError>(())
         }
-        .await
     }};
 }

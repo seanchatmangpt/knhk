@@ -3,6 +3,10 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
+#[allow(unused_imports)]
+use crate::{
+    otel_attr, otel_bottleneck, otel_conformance, otel_resource, otel_span, otel_span_end,
+};
 use knhk_otel::SpanContext;
 use std::time::Instant;
 
@@ -21,9 +25,9 @@ impl WorkflowEngine {
         let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
             otel_span!(
                 otel,
-                "knhk.workflow_engine.execute_pattern"
-                , case_id: Some(&context.case_id)
-                , pattern_id: Some(&pattern_id)
+                "knhk.workflow_engine.execute_pattern",
+                case_id: Some(&context.case_id),
+                pattern_id: Some(&pattern_id)
             )
             .await?
         } else {
@@ -68,7 +72,9 @@ impl WorkflowEngine {
                 span_ctx,
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
-            )?;
+            )
+            .await
+            .await?;
         }
 
         // Execute pattern

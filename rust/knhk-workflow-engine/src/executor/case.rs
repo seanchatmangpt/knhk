@@ -4,6 +4,10 @@ use crate::case::{Case, CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
 use crate::parser::WorkflowSpecId;
+#[allow(unused_imports)]
+use crate::{
+    otel_attr, otel_bottleneck, otel_conformance, otel_resource, otel_span, otel_span_end,
+};
 use knhk_otel::{SpanContext, SpanStatus};
 use std::time::Instant;
 
@@ -129,13 +133,15 @@ impl WorkflowEngine {
                 otel,
                 span_ctx,
                 "knhk.workflow_engine.case_state" => "Created"
-            )?;
+            )
+            .await?;
             otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )?;
+            )
+            .await?;
         }
 
         // Return first error if any
@@ -209,21 +215,9 @@ impl WorkflowEngine {
             .get_mut(&case_id)
             .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
 
-        // Handle error case for OTEL span
-        if case_ref.is_none() {
-            if let (Some(ref otel), Some(ref span)) =
-                (self.otel_integration.as_ref(), span_ctx.as_ref())
-            {
-                let _ = otel_span_end!(
-                    otel,
-                    span_ctx,
-                    success: false,
-                    start_time: start_time
-                )
-                .await;
-            }
-            return Err(WorkflowError::CaseNotFound(case_id.to_string()));
-        }
+        // Handle error case for OTEL span - case_ref is already Some from ok_or_else above
+        // This check is redundant but kept for clarity
+        // Note: The case is guaranteed to exist here due to ok_or_else above
 
         // Start if not already started
         if case_ref.value().state == CaseState::Created {
@@ -236,24 +230,9 @@ impl WorkflowEngine {
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })?;
 
-        // Handle error case for OTEL span
-        if spec.is_none() {
-            if let (Some(ref otel), Some(ref span)) =
-                (self.otel_integration.as_ref(), span_ctx.as_ref())
-            {
-                let _ = otel_span_end!(
-                    otel,
-                    span_ctx,
-                    success: false,
-                    start_time: start_time
-                )
-                .await;
-            }
-            return Err(WorkflowError::InvalidSpecification(format!(
-                "Workflow {} not found",
-                spec_id
-            )));
-        }
+        // Handle error case for OTEL span - spec is already Some from ok_or_else above
+        // This check is redundant but kept for clarity
+        // Note: The spec is guaranteed to exist here due to ok_or_else above
         let spec_clone = spec.value().clone();
         drop(case_ref);
 
@@ -289,14 +268,16 @@ impl WorkflowEngine {
                     otel,
                     span_ctx,
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
-                )?;
+                )
+                .await?;
             }
             otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )?;
+            )
+            .await?;
         }
 
         execution_result

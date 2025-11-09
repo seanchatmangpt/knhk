@@ -5,6 +5,8 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
 use crate::validation::DeadlockDetector;
+#[allow(unused_imports)]
+use crate::{otel_span, otel_span_end};
 use knhk_otel::SpanStatus;
 use std::time::Instant;
 
@@ -18,12 +20,14 @@ impl WorkflowEngine {
         // Start OTEL span for workflow registration
         let span_ctx: Option<knhk_otel::SpanContext> = if let Some(ref otel) = self.otel_integration
         {
-            otel_span!(
-                otel,
-                "knhk.workflow_engine.register_workflow"
-                , spec_id: Some(&spec.id)
+            Some(
+                otel_span!(
+                    otel,
+                    "knhk.workflow_engine.register_workflow",
+                    spec_id: Some(&spec.id)
+                )
+                .await?,
             )
-            .await?
         } else {
             None
         };
@@ -32,13 +36,17 @@ impl WorkflowEngine {
         if let Some(ref fortune5) = self.fortune5_integration {
             let gate_allowed = fortune5.check_promotion_gate().await?;
             if !gate_allowed {
-                otel_span_end!(
-                    otel,
-                    span_ctx,
-                    success: false,
-                    start_time: start_time
-                )
-                .await?;
+                if let (Some(ref otel), Some(ref span)) =
+                    (self.otel_integration.as_ref(), span_ctx.as_ref())
+                {
+                    otel_span_end!(
+                        otel,
+                        span_ctx,
+                        success: false,
+                        start_time: start_time
+                    )
+                    .await?;
+                }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked workflow registration".to_string(),
                 ));
