@@ -386,6 +386,8 @@ wf:Task a rdf:Class .
                         output_conditions: Vec::new(),
                         incoming_flows: vec!["task-1".to_string()],
                         outgoing_flows: Vec::new(),
+                        input_parameters: Vec::new(),
+                        output_parameters: Vec::new(),
                         allocation_policy: None,
                         required_roles: Vec::new(),
                         required_capabilities: Vec::new(),

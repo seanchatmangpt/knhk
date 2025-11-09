@@ -102,26 +102,30 @@ pub async fn get_case_history(
     // Transform StateEvent enum variants to CaseHistoryEntry format
     let entries: Vec<crate::api::models::CaseHistoryEntry> = events
         .into_iter()
-        .map(|event| {
+        .filter_map(|event| {
             match event {
+                StateEvent::TaskStarted { .. } | StateEvent::TaskCompleted { .. } => {
+                    // Task events are logged but not returned in case history
+                    return None;
+                }
                 StateEvent::CaseCreated {
                     case_id,
                     spec_id,
                     timestamp,
-                } => crate::api::models::CaseHistoryEntry {
+                } => Some(crate::api::models::CaseHistoryEntry {
                     timestamp,
                     event_type: "case_created".to_string(),
                     data: serde_json::json!({
                         "case_id": case_id.to_string(),
                         "spec_id": spec_id.to_string(),
                     }),
-                },
+                }),
                 StateEvent::CaseStateChanged {
                     case_id,
                     old_state,
                     new_state,
                     timestamp,
-                } => crate::api::models::CaseHistoryEntry {
+                } => Some(crate::api::models::CaseHistoryEntry {
                     timestamp,
                     event_type: "state_changed".to_string(),
                     data: serde_json::json!({
@@ -129,14 +133,14 @@ pub async fn get_case_history(
                         "from": old_state,
                         "to": new_state,
                     }),
-                },
+                }),
                 StateEvent::SpecRegistered { .. } => {
                     // This shouldn't appear in case history, but handle it gracefully
-                    crate::api::models::CaseHistoryEntry {
+                    Some(crate::api::models::CaseHistoryEntry {
                         timestamp: chrono::Utc::now(),
                         event_type: "unknown".to_string(),
                         data: serde_json::json!({}),
-                    }
+                    })
                 }
             }
         })

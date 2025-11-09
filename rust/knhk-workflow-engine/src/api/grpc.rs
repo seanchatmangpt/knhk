@@ -202,12 +202,16 @@ impl WorkflowEngineService for GrpcService {
         use crate::state::manager::StateEvent;
         let entries: Vec<proto::CaseHistoryEntry> = events
             .into_iter()
-            .map(|event| match event {
+            .filter_map(|event| match event {
+                StateEvent::TaskStarted { .. } | StateEvent::TaskCompleted { .. } => {
+                    // Task events are logged but not returned in case history
+                    None
+                }
                 StateEvent::CaseCreated {
                     case_id,
                     spec_id,
                     timestamp,
-                } => proto::CaseHistoryEntry {
+                } => Some(proto::CaseHistoryEntry {
                     timestamp: timestamp.timestamp(),
                     event_type: "case_created".to_string(),
                     data: serde_json::json!({
@@ -215,13 +219,13 @@ impl WorkflowEngineService for GrpcService {
                         "spec_id": spec_id.to_string(),
                     })
                     .to_string(),
-                },
+                }),
                 StateEvent::CaseStateChanged {
                     case_id,
                     old_state,
                     new_state,
                     timestamp,
-                } => proto::CaseHistoryEntry {
+                } => Some(proto::CaseHistoryEntry {
                     timestamp: timestamp.timestamp(),
                     event_type: "state_changed".to_string(),
                     data: serde_json::json!({
@@ -230,12 +234,12 @@ impl WorkflowEngineService for GrpcService {
                         "to": new_state,
                     })
                     .to_string(),
-                },
-                StateEvent::SpecRegistered { .. } => proto::CaseHistoryEntry {
+                }),
+                StateEvent::SpecRegistered { .. } => Some(proto::CaseHistoryEntry {
                     timestamp: chrono::Utc::now().timestamp(),
                     event_type: "unknown".to_string(),
                     data: "{}".to_string(),
-                },
+                }),
             })
             .collect();
 
