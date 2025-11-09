@@ -368,7 +368,7 @@ pub fn precision(
 
         // Extract unique activity sequences from event log
         let mut log_sequences = std::collections::HashSet::new();
-        for _trace in &event_log.traces {
+        for trace in &event_log.traces {
             let activities: Vec<String> = trace
                 .events
                 .iter()
@@ -512,7 +512,7 @@ pub fn generalization(
 
         // Calculate log complexity (simplified: based on unique sequences)
         let mut log_sequences = std::collections::HashSet::new();
-        for _trace in &event_log.traces {
+        for trace in &event_log.traces {
             let activities: Vec<String> = trace
                 .events
                 .iter()

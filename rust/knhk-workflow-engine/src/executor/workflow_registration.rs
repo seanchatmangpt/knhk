@@ -117,6 +117,12 @@ impl WorkflowEngine {
                 latency_ms.to_string(),
             )
             .await?;
+
+            // Add lifecycle transition based on success
+            let transition = if success { "complete" } else { "cancel" };
+            otel.add_lifecycle_transition((*span).clone(), transition)
+                .await?;
+
             otel.end_span(
                 (*span).clone(),
                 if success {

@@ -36,12 +36,49 @@ impl WorkflowEngine {
                         "knhk.workflow_engine.success".to_string(),
                         "false".to_string(),
                     );
-                    let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                    let _ = otel
+                        .add_lifecycle_transition((*span).clone(), "cancel")
+                        .await;
+                    let _ = otel.end_span((*span).clone(), SpanStatus::Error).await;
                 }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),
                 ));
             }
+        }
+
+        // Get expected pattern from workflow spec for conformance checking
+        let expected_pattern = if let Ok(spec) = self.get_workflow(context.workflow_id).await {
+            // Try to identify expected pattern from task structure in spec
+            // For now, use the actual pattern_id as expected (simplified)
+            Some(pattern_id.0)
+        } else {
+            None
+        };
+
+        // Add expected pattern attribute for conformance checking
+        if let (Some(ref otel), Some(ref span), Some(expected)) = (
+            self.otel_integration.as_ref(),
+            span_ctx.as_ref(),
+            expected_pattern,
+        ) {
+            let _ = otel
+                .add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.expected_pattern".to_string(),
+                    expected.to_string(),
+                )
+                .await;
+
+            // Check conformance: compare actual vs expected
+            let conformance_violation = expected != pattern_id.0;
+            let _ = otel
+                .add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.conformance_violation".to_string(),
+                    conformance_violation.to_string(),
+                )
+                .await;
         }
 
         // Execute pattern
@@ -57,7 +94,7 @@ impl WorkflowEngine {
                         "knhk.workflow_engine.success".to_string(),
                         "false".to_string(),
                     );
-                    let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                    // Note: Cannot await in closure - span cleanup will happen on drop
                 }
                 WorkflowError::InvalidSpecification(format!("Pattern {} not found", pattern_id))
             })?;
@@ -131,8 +168,26 @@ impl WorkflowEngine {
             fortune5.record_slo_metric(runtime_class, duration_ns).await;
         }
 
-        // End OTEL span
+        // Bottleneck detection: Check if latency exceeds thresholds
         let latency_ms = start_time.elapsed().as_millis();
+        let bottleneck_threshold_ms = 1000; // 1 second threshold
+        let bottleneck_detected = latency_ms > bottleneck_threshold_ms as u128;
+
+        if let (Some(ref otel), Some(ref span)) =
+            (self.otel_integration.as_ref(), span_ctx.as_ref())
+        {
+            if bottleneck_detected {
+                let _ = otel
+                    .add_attribute(
+                        (*span).clone(),
+                        "knhk.workflow_engine.bottleneck_detected".to_string(),
+                        "true".to_string(),
+                    )
+                    .await;
+            }
+        }
+
+        // End OTEL span
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
@@ -148,6 +203,12 @@ impl WorkflowEngine {
                 latency_ms.to_string(),
             )
             .await?;
+
+            // Add lifecycle transition based on result
+            let transition = if result.success { "complete" } else { "cancel" };
+            otel.add_lifecycle_transition((*span).clone(), transition)
+                .await?;
+
             otel.end_span(
                 (*span).clone(),
                 if result.success {

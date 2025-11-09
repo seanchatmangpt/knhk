@@ -94,7 +94,9 @@ impl PatternOtelHelper {
         let pattern_category = get_pattern_category(pattern_id.0);
 
         // Start the base pattern span
-        let span_ctx = otel.start_execute_pattern_span(pattern_id, case_id, None).await?;
+        let span_ctx = otel
+            .start_execute_pattern_span(pattern_id, case_id, None)
+            .await?;
 
         if let Some(ref span) = span_ctx {
             // Add pattern-specific attributes
@@ -187,12 +189,17 @@ impl PatternOtelHelper {
         Self::start_pattern_span(otel, pattern_id, case_id, Some(attrs)).await
     }
 
-    /// End a pattern span with success status
+    /// End a pattern span with success status and lifecycle transition
     pub async fn end_pattern_span(
         otel: &OtelIntegration,
         span_ctx: SpanContext,
         success: bool,
     ) -> WorkflowResult<()> {
+        // Add lifecycle transition based on success
+        let transition = if success { "complete" } else { "cancel" };
+        otel.add_lifecycle_transition(span_ctx.clone(), transition)
+            .await?;
+
         let status = if success {
             SpanStatus::Ok
         } else {

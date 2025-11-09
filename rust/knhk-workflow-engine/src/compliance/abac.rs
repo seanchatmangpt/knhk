@@ -6,6 +6,7 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::security::Principal;
 use oxigraph::io::RdfFormat;
+use oxigraph::sparql::SparqlEvaluator;
 use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -100,9 +101,9 @@ impl AbacPolicyEngine {
                 WorkflowError::Validation(format!("Invalid RDF policy format: {:?}", e))
             })?;
 
-        // Validate SPARQL query using deprecated Query::parse
-        #[allow(deprecated)]
-        oxigraph::sparql::Query::parse(&rule.evaluation_query, None)
+        // Validate SPARQL query using SparqlEvaluator
+        SparqlEvaluator::new()
+            .parse_query(&rule.evaluation_query)
             .map_err(|e| WorkflowError::Validation(format!("Invalid SPARQL query: {:?}", e)))?;
 
         let mut rules = self.rules.write().await;
@@ -153,13 +154,13 @@ impl AbacPolicyEngine {
                 .map_err(|e| WorkflowError::Internal(format!("Failed to load policy: {:?}", e)))?;
 
             // Execute evaluation query using SparqlEvaluator
-            #[allow(deprecated)]
-            let query =
-                oxigraph::sparql::Query::parse(&rule.evaluation_query, None).map_err(|e| {
-                    WorkflowError::Validation(format!("Failed to parse SPARQL query: {:?}", e))
-                })?;
-            let results = store
-                .query(query)
+            let results = SparqlEvaluator::new()
+                .parse_query(&rule.evaluation_query)
+                .map_err(|e| {
+                    WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e))
+                })?
+                .on_store(&store)
+                .execute()
                 .map_err(|e| WorkflowError::Internal(format!("SPARQL query failed: {:?}", e)))?;
 
             // Check if query returned results (policy matches)
