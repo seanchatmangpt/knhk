@@ -38,6 +38,7 @@ use knhk_workflow_engine::patterns::rdf::get_all_pattern_metadata;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
+use chicago_tdd_tools::{chicago_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // Test Data Structures
@@ -76,8 +77,7 @@ impl WorkflowContext {
 // BASIC CONTROL FLOW PATTERNS (1-5)
 // ============================================================================
 
-#[test]
-fn test_pattern_01_sequence() {
+chicago_test!(test_pattern_01_sequence, {
     // Arrange: Create sequential workflow context
     let mut context = WorkflowContext::new("seq-test");
 
@@ -99,8 +99,7 @@ fn test_pattern_01_sequence() {
     assert_eq!(context.counter, 3);
 }
 
-#[test]
-fn test_pattern_02_parallel_split() {
+chicago_test!(test_pattern_02_parallel_split, {
     // Arrange: Create parallel workflow context
     let counter = Arc::new(AtomicUsize::new(0));
     let contexts: Vec<_> = (0..3)
@@ -122,8 +121,7 @@ fn test_pattern_02_parallel_split() {
     assert_eq!(contexts.len(), 3);
 }
 
-#[test]
-fn test_pattern_03_synchronization() {
+chicago_test!(test_pattern_03_synchronization, {
     // Arrange: Create synchronization point
     let branch_count = 3;
     let completed = Arc::new(AtomicUsize::new(0));
@@ -142,8 +140,7 @@ fn test_pattern_03_synchronization() {
     assert!(synchronized.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_04_exclusive_choice() {
+chicago_test!(test_pattern_04_exclusive_choice, {
     // Arrange: Create XOR choice workflow
     let mut context = WorkflowContext::new("xor-test");
     let condition_value = 42;
@@ -161,8 +158,7 @@ fn test_pattern_04_exclusive_choice() {
     assert_eq!(context.state, "branch_b");
 }
 
-#[test]
-fn test_pattern_05_simple_merge() {
+chicago_test!(test_pattern_05_simple_merge, {
     // Arrange: Create merge point from XOR branches
     let mut contexts = vec![
         WorkflowContext::new("merge-1"),
@@ -182,8 +178,7 @@ fn test_pattern_05_simple_merge() {
 // ADVANCED BRANCHING PATTERNS (6-11)
 // ============================================================================
 
-#[test]
-fn test_pattern_06_multi_choice() {
+chicago_test!(test_pattern_06_multi_choice, {
     // Arrange: Create OR-split workflow (multiple branches can execute)
     let mut executed_branches = Vec::new();
     let condition_value = 45;
@@ -206,8 +201,7 @@ fn test_pattern_06_multi_choice() {
     assert!(!executed_branches.contains(&"branch_c"));
 }
 
-#[test]
-fn test_pattern_07_structured_synchronizing_merge() {
+chicago_test!(test_pattern_07_structured_synchronizing_merge, {
     // Arrange: Synchronize branches from multi-choice
     let active_branches = vec!["branch_a", "branch_b"];
     let completed = Arc::new(AtomicUsize::new(0));
@@ -226,8 +220,7 @@ fn test_pattern_07_structured_synchronizing_merge() {
     assert!(synchronized.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_08_multi_merge() {
+chicago_test!(test_pattern_08_multi_merge, {
     // Arrange: Create multi-merge point (no synchronization)
     let mut merge_counter = 0;
     let incoming_branches = vec!["branch_1", "branch_2", "branch_3"];
@@ -241,8 +234,7 @@ fn test_pattern_08_multi_merge() {
     assert_eq!(merge_counter, 3);
 }
 
-#[test]
-fn test_pattern_09_discriminator() {
+chicago_test!(test_pattern_09_discriminator, {
     // Arrange: Create discriminator (first-wins race)
     let winner = Arc::new(AtomicBool::new(false));
     let first_result = Arc::new(AtomicUsize::new(0));
@@ -260,8 +252,7 @@ fn test_pattern_09_discriminator() {
     assert_eq!(first_result.load(Ordering::SeqCst), 1);
 }
 
-#[test]
-fn test_pattern_10_arbitrary_cycles() {
+chicago_test!(test_pattern_10_arbitrary_cycles, {
     // Arrange: Create retry/loop workflow
     let mut context = WorkflowContext::new("retry-test");
     let max_retries = 5;
@@ -279,8 +270,7 @@ fn test_pattern_10_arbitrary_cycles() {
     assert!(retry_count <= max_retries);
 }
 
-#[test]
-fn test_pattern_11_implicit_termination() {
+chicago_test!(test_pattern_11_implicit_termination, {
     // Arrange: Create workflow with implicit termination
     let active_count = Arc::new(AtomicUsize::new(3));
     let terminated = Arc::new(AtomicBool::new(false));
@@ -304,8 +294,7 @@ fn test_pattern_11_implicit_termination() {
 // MULTIPLE INSTANCE PATTERNS (12-15)
 // ============================================================================
 
-#[test]
-fn test_pattern_12_mi_without_sync() {
+chicago_test!(test_pattern_12_mi_without_sync, {
     // Arrange: Create multiple instances without synchronization
     let instance_count = 5;
     let mut completed_instances = Vec::new();
@@ -324,8 +313,7 @@ fn test_pattern_12_mi_without_sync() {
     }
 }
 
-#[test]
-fn test_pattern_13_mi_with_design_time_knowledge() {
+chicago_test!(test_pattern_13_mi_with_design_time_knowledge, {
     // Arrange: Create MI with known count at design time
     const DESIGN_TIME_COUNT: usize = 3;
     let completed = Arc::new(AtomicUsize::new(0));
@@ -344,8 +332,7 @@ fn test_pattern_13_mi_with_design_time_knowledge() {
     assert!(all_completed.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_14_mi_with_runtime_knowledge() {
+chicago_test!(test_pattern_14_mi_with_runtime_knowledge, {
     // Arrange: Create MI with count known at runtime
     let runtime_count = 7; // Determined at runtime
     let completed = Arc::new(AtomicUsize::new(0));
@@ -364,8 +351,7 @@ fn test_pattern_14_mi_with_runtime_knowledge() {
     assert!(all_completed.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_15_mi_without_runtime_knowledge() {
+chicago_test!(test_pattern_15_mi_without_runtime_knowledge, {
     // Arrange: Create MI with unknown count (dynamic)
     let completed_instances = Arc::new(AtomicUsize::new(0));
     let termination_signal = Arc::new(AtomicBool::new(false));
@@ -392,8 +378,7 @@ fn test_pattern_15_mi_without_runtime_knowledge() {
 // STATE-BASED PATTERNS (16-18)
 // ============================================================================
 
-#[test]
-fn test_pattern_16_deferred_choice() {
+chicago_test!(test_pattern_16_deferred_choice, {
     // Arrange: Create deferred choice (event-driven)
     let external_event = Arc::new(AtomicUsize::new(0));
     let mut context = WorkflowContext::new("deferred-test");
@@ -412,8 +397,7 @@ fn test_pattern_16_deferred_choice() {
     assert_eq!(context.state, "event_2_branch");
 }
 
-#[test]
-fn test_pattern_17_interleaved_parallel_routing() {
+chicago_test!(test_pattern_17_interleaved_parallel_routing, {
     // Arrange: Create interleaved execution workflow
     let mut execution_order = Vec::new();
     let tasks = vec!["A", "B", "C"];
@@ -430,8 +414,7 @@ fn test_pattern_17_interleaved_parallel_routing() {
     assert_eq!(execution_order, vec!["A", "B", "C", "A", "B"]);
 }
 
-#[test]
-fn test_pattern_18_milestone() {
+chicago_test!(test_pattern_18_milestone, {
     // Arrange: Create milestone-based workflow
     let milestone_reached = Arc::new(AtomicBool::new(false));
     let mut context = WorkflowContext::new("milestone-test");
@@ -459,8 +442,7 @@ fn test_pattern_18_milestone() {
 // CANCELLATION PATTERNS (19-25)
 // ============================================================================
 
-#[test]
-fn test_pattern_19_cancel_activity() {
+chicago_test!(test_pattern_19_cancel_activity, {
     // Arrange: Create workflow with cancellable activity
     let mut context = WorkflowContext::new("cancel-test");
     let cancel_requested = Arc::new(AtomicBool::new(false));
@@ -480,8 +462,7 @@ fn test_pattern_19_cancel_activity() {
     assert_eq!(context.state, "cancelled");
 }
 
-#[test]
-fn test_pattern_20_cancel_case() {
+chicago_test!(test_pattern_20_cancel_case, {
     // Arrange: Create entire workflow case
     let mut contexts = vec![
         WorkflowContext::new("case-1"),
@@ -506,8 +487,7 @@ fn test_pattern_20_cancel_case() {
     }
 }
 
-#[test]
-fn test_pattern_21_cancel_region() {
+chicago_test!(test_pattern_21_cancel_region, {
     // Arrange: Create workflow with cancellable region
     let mut contexts = vec![
         WorkflowContext::new("region-1"),
@@ -533,8 +513,7 @@ fn test_pattern_21_cancel_region() {
     assert_eq!(contexts[2].state, "running");
 }
 
-#[test]
-fn test_pattern_22_cancel_mi_activity() {
+chicago_test!(test_pattern_22_cancel_mi_activity, {
     // Arrange: Create multiple instances to cancel
     let instance_count = 5;
     let mut instances = Vec::new();
@@ -558,8 +537,7 @@ fn test_pattern_22_cancel_mi_activity() {
     }
 }
 
-#[test]
-fn test_pattern_23_complete_mi_activity() {
+chicago_test!(test_pattern_23_complete_mi_activity, {
     // Arrange: Create MI activity with completion threshold
     let total_instances = 10;
     let completion_threshold = 6; // Complete when 6 out of 10 finish
@@ -580,8 +558,7 @@ fn test_pattern_23_complete_mi_activity() {
     assert!(completed_count.load(Ordering::SeqCst) < total_instances);
 }
 
-#[test]
-fn test_pattern_24_blocking_discriminator() {
+chicago_test!(test_pattern_24_blocking_discriminator, {
     // Arrange: Create discriminator that blocks other branches
     let winner = Arc::new(AtomicBool::new(false));
     let blocked_count = Arc::new(AtomicUsize::new(0));
@@ -602,8 +579,7 @@ fn test_pattern_24_blocking_discriminator() {
     assert_eq!(blocked_count.load(Ordering::SeqCst), 4);
 }
 
-#[test]
-fn test_pattern_25_cancelling_discriminator() {
+chicago_test!(test_pattern_25_cancelling_discriminator, {
     // Arrange: Create discriminator that cancels other branches
     let winner = Arc::new(AtomicBool::new(false));
     let cancelled_count = Arc::new(AtomicUsize::new(0));
@@ -628,8 +604,7 @@ fn test_pattern_25_cancelling_discriminator() {
 // ADVANCED CONTROL PATTERNS (26-39)
 // ============================================================================
 
-#[test]
-fn test_pattern_26_stateful_resource_allocation() {
+chicago_test!(test_pattern_26_stateful_resource_allocation, {
     // Arrange: Create workflow with stateful resources
     let available_resources = Arc::new(AtomicUsize::new(10));
     let mut context = WorkflowContext::new("resource-test");
@@ -650,8 +625,7 @@ fn test_pattern_26_stateful_resource_allocation() {
     assert_eq!(available_resources.load(Ordering::SeqCst), 7);
 }
 
-#[test]
-fn test_pattern_27_general_synchronizing_merge() {
+chicago_test!(test_pattern_27_general_synchronizing_merge, {
     // Arrange: Create merge with runtime synchronization requirements
     let active_branches = vec![1, 2, 3]; // Runtime determined
     let completed = Arc::new(AtomicUsize::new(0));
@@ -670,8 +644,7 @@ fn test_pattern_27_general_synchronizing_merge() {
     assert!(synchronized.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_28_thread_safe_blocking_discriminator() {
+chicago_test!(test_pattern_28_thread_safe_blocking_discriminator, {
     // Arrange: Create thread-safe discriminator
     let winner = Arc::new(AtomicBool::new(false));
     let blocked = Arc::new(AtomicUsize::new(0));
@@ -694,8 +667,7 @@ fn test_pattern_28_thread_safe_blocking_discriminator() {
     assert_eq!(blocked.load(Ordering::SeqCst), 4);
 }
 
-#[test]
-fn test_pattern_29_structured_cancelling_discriminator() {
+chicago_test!(test_pattern_29_structured_cancelling_discriminator, {
     // Arrange: Create discriminator with structured cleanup
     let winner = Arc::new(AtomicBool::new(false));
     let mut cancelled_branches = Vec::new();
@@ -716,8 +688,7 @@ fn test_pattern_29_structured_cancelling_discriminator() {
     assert_eq!(cancelled_branches[0], "branch_2_cleanup");
 }
 
-#[test]
-fn test_pattern_30_structured_partial_join_mi() {
+chicago_test!(test_pattern_30_structured_partial_join_mi, {
     // Arrange: Create MI with partial join threshold
     let total_instances = 10;
     let threshold = 6; // Join when 6 complete
@@ -738,8 +709,7 @@ fn test_pattern_30_structured_partial_join_mi() {
     assert!(completed.load(Ordering::SeqCst) < total_instances);
 }
 
-#[test]
-fn test_pattern_31_blocking_partial_join_mi() {
+chicago_test!(test_pattern_31_blocking_partial_join_mi, {
     // Arrange: Create MI with blocking partial join
     let threshold = 5;
     let completed = Arc::new(AtomicUsize::new(0));
@@ -762,8 +732,7 @@ fn test_pattern_31_blocking_partial_join_mi() {
     assert_eq!(blocked.load(Ordering::SeqCst), 3);
 }
 
-#[test]
-fn test_pattern_32_cancelling_partial_join_mi() {
+chicago_test!(test_pattern_32_cancelling_partial_join_mi, {
     // Arrange: Create MI with cancelling partial join
     let threshold = 4;
     let completed = Arc::new(AtomicUsize::new(0));
@@ -785,8 +754,7 @@ fn test_pattern_32_cancelling_partial_join_mi() {
     assert_eq!(cancelled.load(Ordering::SeqCst), 3);
 }
 
-#[test]
-fn test_pattern_33_generalized_and_join() {
+chicago_test!(test_pattern_33_generalized_and_join, {
     // Arrange: Create flexible AND-join based on process structure
     let expected_branches = vec![1, 3, 5]; // Determined by process structure
     let completed_branches = Arc::new(AtomicUsize::new(0));
@@ -808,8 +776,7 @@ fn test_pattern_33_generalized_and_join() {
     assert!(joined.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_34_static_partial_join_mi() {
+chicago_test!(test_pattern_34_static_partial_join_mi, {
     // Arrange: Create MI with static (design-time) partial join
     const STATIC_THRESHOLD: usize = 5; // Known at design time
     let completed = Arc::new(AtomicUsize::new(0));
@@ -828,8 +795,7 @@ fn test_pattern_34_static_partial_join_mi() {
     assert!(joined.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_35_cancelling_partial_join_early_termination() {
+chicago_test!(test_pattern_35_cancelling_partial_join_early_termination, {
     // Arrange: Create partial join with early termination
     let threshold = 3;
     let completed = Arc::new(AtomicUsize::new(0));
@@ -849,8 +815,7 @@ fn test_pattern_35_cancelling_partial_join_early_termination() {
     assert!(early_terminated.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_36_dynamic_partial_join_mi() {
+chicago_test!(test_pattern_36_dynamic_partial_join_mi, {
     // Arrange: Create MI with dynamic (runtime) threshold
     let runtime_threshold = 7; // Determined at runtime
     let completed = Arc::new(AtomicUsize::new(0));
@@ -869,8 +834,7 @@ fn test_pattern_36_dynamic_partial_join_mi() {
     assert!(joined.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_37_acyclic_synchronizing_merge() {
+chicago_test!(test_pattern_37_acyclic_synchronizing_merge, {
     // Arrange: Create acyclic merge with predictable semantics
     let branches = vec!["branch_a", "branch_b", "branch_c"];
     let completed = Arc::new(AtomicUsize::new(0));
@@ -889,8 +853,7 @@ fn test_pattern_37_acyclic_synchronizing_merge() {
     assert!(merged.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_38_local_synchronizing_merge() {
+chicago_test!(test_pattern_38_local_synchronizing_merge, {
     // Arrange: Create general merge supporting arbitrary control flow
     let local_branches = vec![1, 2, 3]; // Local synchronization scope
     let completed = Arc::new(AtomicUsize::new(0));
@@ -909,8 +872,7 @@ fn test_pattern_38_local_synchronizing_merge() {
     assert!(synchronized.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_39_critical_section() {
+chicago_test!(test_pattern_39_critical_section, {
     // Arrange: Create critical section (mutual exclusion)
     let in_critical_section = Arc::new(AtomicBool::new(false));
     let execution_count = Arc::new(AtomicUsize::new(0));
@@ -942,8 +904,7 @@ fn test_pattern_39_critical_section() {
 // TRIGGER PATTERNS (40-43)
 // ============================================================================
 
-#[test]
-fn test_pattern_40_transient_trigger() {
+chicago_test!(test_pattern_40_transient_trigger, {
     // Arrange: Create transient trigger (point-in-time event)
     let trigger_occurred = Arc::new(AtomicBool::new(false));
     let mut context = WorkflowContext::new("transient-trigger");
@@ -962,8 +923,7 @@ fn test_pattern_40_transient_trigger() {
     assert!(!trigger_occurred.load(Ordering::SeqCst)); // No longer available
 }
 
-#[test]
-fn test_pattern_41_persistent_trigger() {
+chicago_test!(test_pattern_41_persistent_trigger, {
     // Arrange: Create persistent trigger (condition remains true)
     let persistent_condition = Arc::new(AtomicBool::new(true));
     let mut context = WorkflowContext::new("persistent-trigger");
@@ -984,8 +944,7 @@ fn test_pattern_41_persistent_trigger() {
     assert!(!persistent_condition.load(Ordering::SeqCst));
 }
 
-#[test]
-fn test_pattern_42_auto_start_task() {
+chicago_test!(test_pattern_42_auto_start_task, {
     // Arrange: Create auto-start task with enabling conditions
     let precondition_met = Arc::new(AtomicBool::new(false));
     let mut context = WorkflowContext::new("auto-start");
@@ -1002,8 +961,7 @@ fn test_pattern_42_auto_start_task() {
     assert_eq!(context.state, "auto_started");
 }
 
-#[test]
-fn test_pattern_43_fire_and_forget() {
+chicago_test!(test_pattern_43_fire_and_forget, {
     // Arrange: Create fire-and-forget task
     let task_initiated = Arc::new(AtomicBool::new(false));
     let mut context = WorkflowContext::new("fire-forget");
@@ -1023,8 +981,7 @@ fn test_pattern_43_fire_and_forget() {
 // INTEGRATION TESTS (Pattern Combinations)
 // ============================================================================
 
-#[test]
-fn integration_order_processing_workflow() {
+chicago_test!(integration_order_processing_workflow, {
     // Integration test combining: Sequence, Parallel Split, XOR, Sync
     // Real-world order processing workflow
 
@@ -1061,8 +1018,7 @@ fn integration_order_processing_workflow() {
     assert_eq!(context.counter, 1);
 }
 
-#[test]
-fn integration_cancellation_with_compensation() {
+chicago_test!(integration_cancellation_with_compensation, {
     // Integration test: Cancel Region + Sync Merge + Cancel Discriminator
 
     // Arrange
@@ -1100,8 +1056,7 @@ fn integration_cancellation_with_compensation() {
     }
 }
 
-#[test]
-fn integration_mi_with_partial_join_and_timeout() {
+chicago_test!(integration_mi_with_partial_join_and_timeout, {
     // Integration test: MI + Partial Join + Timeout
 
     // Arrange
@@ -1131,8 +1086,7 @@ fn integration_mi_with_partial_join_and_timeout() {
 // PROPERTY-BASED TESTS (Invariants)
 // ============================================================================
 
-#[test]
-fn property_all_patterns_have_metadata() {
+chicago_test!(property_all_patterns_have_metadata, {
     // Property: Every pattern (1-43) must have metadata
 
     // Arrange & Act
@@ -1155,8 +1109,7 @@ fn property_all_patterns_have_metadata() {
     }
 }
 
-#[test]
-fn property_all_patterns_have_unique_ids() {
+chicago_test!(property_all_patterns_have_unique_ids, {
     // Property: Pattern IDs must be unique
 
     // Arrange & Act
@@ -1173,8 +1126,7 @@ fn property_all_patterns_have_unique_ids() {
     }
 }
 
-#[test]
-fn property_all_pattern_dependencies_are_valid() {
+chicago_test!(property_all_pattern_dependencies_are_valid, {
     // Property: All pattern dependencies must reference valid patterns
 
     // Arrange & Act
@@ -1208,8 +1160,7 @@ fn property_all_pattern_dependencies_are_valid() {
     }
 }
 
-#[test]
-fn property_synchronization_patterns_deterministic() {
+chicago_test!(property_synchronization_patterns_deterministic, {
     // Property: Synchronization must be deterministic (same inputs = same output)
 
     // Arrange
@@ -1233,8 +1184,7 @@ fn property_synchronization_patterns_deterministic() {
     }
 }
 
-#[test]
-fn property_cancellation_patterns_idempotent() {
+chicago_test!(property_cancellation_patterns_idempotent, {
     // Property: Cancelling twice has same effect as cancelling once
 
     // Arrange
@@ -1263,8 +1213,7 @@ fn property_cancellation_patterns_idempotent() {
 // PERFORMANCE TESTS (Chatman Constant: ≤8 ticks)
 // ============================================================================
 
-#[test]
-fn performance_basic_patterns_within_8_ticks() {
+chicago_test!(performance_basic_patterns_within_8_ticks, {
     // Performance: Basic patterns (1-5) execute within 8 ticks
 
     // Pattern 1: Sequence
@@ -1297,8 +1246,7 @@ fn performance_basic_patterns_within_8_ticks() {
     );
 }
 
-#[test]
-fn performance_advanced_patterns_within_8_ticks() {
+chicago_test!(performance_advanced_patterns_within_8_ticks, {
     // Performance: Advanced patterns execute within reasonable time
 
     // Pattern 9: Discriminator (first-wins)
@@ -1320,8 +1268,7 @@ fn performance_advanced_patterns_within_8_ticks() {
     assert!(elapsed.as_micros() < 50, "Resource allocation too slow");
 }
 
-#[test]
-fn performance_mi_patterns_scale_linearly() {
+chicago_test!(performance_mi_patterns_scale_linearly, {
     // Performance: MI patterns scale linearly with instance count
 
     // Test with increasing instance counts
@@ -1350,8 +1297,7 @@ fn performance_mi_patterns_scale_linearly() {
 // METADATA VALIDATION TESTS
 // ============================================================================
 
-#[test]
-fn metadata_all_patterns_have_descriptions() {
+chicago_test!(metadata_all_patterns_have_descriptions, {
     // Metadata: All patterns have meaningful descriptions
 
     let all_metadata = get_all_pattern_metadata();
@@ -1381,8 +1327,7 @@ fn metadata_all_patterns_have_descriptions() {
     }
 }
 
-#[test]
-fn metadata_complexity_values_are_valid() {
+chicago_test!(metadata_complexity_values_are_valid, {
     // Metadata: Complexity values must be valid
 
     let all_metadata = get_all_pattern_metadata();
@@ -1398,8 +1343,7 @@ fn metadata_complexity_values_are_valid() {
     }
 }
 
-#[test]
-fn metadata_categories_are_consistent() {
+chicago_test!(metadata_categories_are_consistent, {
     // Metadata: Pattern categories match expected ranges
 
     let all_metadata = get_all_pattern_metadata();
@@ -1429,8 +1373,7 @@ fn metadata_categories_are_consistent() {
 // TEST SUMMARY
 // ============================================================================
 
-#[test]
-fn test_suite_completeness() {
+chicago_test!(test_suite_completeness, {
     // Verify test suite covers all 43 patterns
 
     let all_metadata = get_all_pattern_metadata();

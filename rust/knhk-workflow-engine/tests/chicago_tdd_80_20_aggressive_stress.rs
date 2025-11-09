@@ -13,13 +13,13 @@ use knhk_workflow_engine::patterns::{
     advanced_control, PatternExecutionContext, PatternExecutionResult,
 };
 use std::collections::{HashMap, HashSet};
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // AGGRESSIVE STRESS: PATTERN 26 & 27 (DISCRIMINATORS)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_26_27_extreme_stress() {
+chicago_async_test!(test_pattern_26_27_extreme_stress, {
     // Push discriminators to breaking point
 
     let (_, executor_26) = advanced_control::create_pattern_26();
@@ -71,8 +71,7 @@ async fn test_pattern_26_27_extreme_stress() {
 // AGGRESSIVE STRESS: PATTERN 28 & 29 (LOOPS/RECURSION)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_28_29_infinite_loop_protection() {
+chicago_async_test!(test_pattern_28_29_infinite_loop_protection, {
     // Test for infinite loop breaks
 
     let (_, executor_28) = advanced_control::create_pattern_28();
@@ -109,8 +108,7 @@ async fn test_pattern_28_29_infinite_loop_protection() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_28_29_memory_pressure() {
+chicago_async_test!(test_pattern_28_29_memory_pressure, {
     // Test with memory pressure (large contexts)
 
     let (_, executor_28) = advanced_control::create_pattern_28();
@@ -152,8 +150,7 @@ async fn test_pattern_28_29_memory_pressure() {
 // AGGRESSIVE STRESS: PATTERN 33 (CANCEL PROCESS)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_33_termination_guarantee() {
+chicago_async_test!(test_pattern_33_termination_guarantee, {
     // CRITICAL: Pattern 33 MUST always terminate - test extensively
 
     let (_, executor) = advanced_control::create_pattern_33();
@@ -200,8 +197,7 @@ async fn test_pattern_33_termination_guarantee() {
     }
 }
 
-#[tokio::test]
-async fn test_pattern_33_vs_others_termination_isolation() {
+chicago_async_test!(test_pattern_33_vs_others_termination_isolation, {
     // CRITICAL: Verify pattern 33 termination doesn't affect other patterns
 
     let (_, executor_26) = advanced_control::create_pattern_26();
@@ -244,8 +240,7 @@ async fn test_pattern_33_vs_others_termination_isolation() {
 // AGGRESSIVE STRESS: PATTERN 38 & 39 (THREADING)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_38_thread_scheduling_consistency() {
+chicago_async_test!(test_pattern_38_thread_scheduling_consistency, {
     // CRITICAL: Thread scheduling must be consistent
 
     let (_, executor) = advanced_control::create_pattern_38();
@@ -303,8 +298,7 @@ async fn test_pattern_38_thread_scheduling_consistency() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_38_39_threading_sequence_stress() {
+chicago_async_test!(test_pattern_38_39_threading_sequence_stress, {
     // Stress test threading sequence
 
     let (_, executor_38) = advanced_control::create_pattern_38();
@@ -365,8 +359,7 @@ async fn test_pattern_38_39_threading_sequence_stress() {
 // COMPREHENSIVE BREAK-FINDING: ALL CRITICAL PATTERNS
 // ============================================================================
 
-#[tokio::test]
-async fn test_all_critical_patterns_concurrent_execution() {
+chicago_async_test!(test_all_critical_patterns_concurrent_execution, {
     // Simulate concurrent execution of all critical patterns
 
     let executors = vec![
@@ -475,8 +468,7 @@ async fn test_all_critical_patterns_concurrent_execution() {
     }
 }
 
-#[tokio::test]
-async fn test_critical_patterns_state_corruption_detection() {
+chicago_async_test!(test_critical_patterns_state_corruption_detection, {
     // Test for state corruption across pattern executions
 
     let patterns = vec![
@@ -528,8 +520,7 @@ async fn test_critical_patterns_state_corruption_detection() {
     }
 }
 
-#[tokio::test]
-async fn test_critical_patterns_edge_case_combinations() {
+chicago_async_test!(test_critical_patterns_edge_case_combinations, {
     // Test edge case combinations
 
     let (_, executor_26) = advanced_control::create_pattern_26();

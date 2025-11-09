@@ -300,19 +300,18 @@ pub(super) async fn execute_task_with_allocation(
                 }
 
                 if let Some(ref connector_integration) = engine.connector_integration {
-                    // Determine connector name from task ID or use default
-                    // In production, would use task configuration or connector registry
-                    let connector_name = "default";
+                    // Determine connector name from task ID (metadata not available)
+                    let connector_name = task.id.clone();
 
                     // Execute task via connector
                     let mut connector = connector_integration.lock().await;
                     let result = connector
-                        .execute_task(connector_name, case.data.clone())
+                        .execute_task(&connector_name, case.data.clone())
                         .await
                         .map_err(|e| {
                             WorkflowError::TaskExecutionFailed(format!(
-                                "Connector execution failed for task {}: {}",
-                                task.id, e
+                                "Connector execution failed for task {} (connector: {}): {}",
+                                task.id, connector_name, e
                             ))
                         })?;
 
@@ -340,21 +339,11 @@ pub(super) async fn execute_task_with_allocation(
                     let store_arc = engine.state_store.read().await;
                     (*store_arc).save_case(case_id, &case)?;
                 } else {
-                    // No connector: Produce outputs based on declared output parameters
-                    // This follows van der Aalst's formal YAWL semantics - tasks produce declared outputs
-                    let mut case = engine.get_case(case_id).await?;
-                    let outputs = produce_task_outputs(task, &case.data);
-
-                    // Merge outputs into case data
-                    if let Some(case_obj) = case.data.as_object_mut() {
-                        for (key, value) in outputs {
-                            case_obj.insert(key, value);
-                        }
-                    }
-
-                    // Save updated case
-                    let store_arc = engine.state_store.read().await;
-                    (*store_arc).save_case(case_id, &case)?;
+                    // No connector: Automated tasks require connector integration
+                    return Err(WorkflowError::TaskExecutionFailed(format!(
+                        "Automated atomic task {} requires connector integration - no connector available for task execution",
+                        task.id
+                    )));
                 }
             }
         }
@@ -476,7 +465,8 @@ pub(super) async fn execute_task_with_allocation(
                     span_ctx,
                     success: false,
                     start_time: task_start_time
-                )?;
+                )
+                .await?;
             }
             return Err(WorkflowError::TaskExecutionFailed(format!(
                 "Task {} exceeded tick budget: {} ticks > {} ticks",
@@ -514,7 +504,8 @@ pub(super) async fn execute_task_with_allocation(
             span_ctx,
             latency_ms: duration_ms,
             threshold_ms: 1000
-        )?;
+        )
+        .await?;
     }
 
     // End OTEL span with lifecycle transition
@@ -525,7 +516,8 @@ pub(super) async fn execute_task_with_allocation(
             span_ctx,
             success: true,
             start_time: task_start_time
-        )?;
+        )
+        .await?;
     }
 
     Ok(())

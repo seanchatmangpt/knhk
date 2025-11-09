@@ -12,13 +12,13 @@
 use knhk_workflow_engine::patterns::{PatternId, PatternRegistry};
 use knhk_workflow_engine::testing::chicago_tdd::*;
 use std::collections::HashMap;
+use chicago_tdd_tools::{chicago_async_test, chicago_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // Basic Control Flow Patterns (1-5) - UPGRADED
 // ============================================================================
 
-#[test]
-fn test_pattern_1_sequence_executes_branches_sequentially() {
+chicago_test!(test_pattern_1_sequence_executes_branches_sequentially, {
     // Arrange: Use Chicago TDD helper
     let registry = create_test_registry();
     let mut vars = HashMap::new();
@@ -37,8 +37,7 @@ fn test_pattern_1_sequence_executes_branches_sequentially() {
     assert_pattern_variable_equals(&result, "value", "5");
 }
 
-#[test]
-fn test_pattern_2_parallel_split_executes_branches_in_parallel() {
+chicago_test!(test_pattern_2_parallel_split_executes_branches_in_parallel, {
     // Arrange: Use Chicago TDD helper
     let registry = create_test_registry();
     let mut vars = HashMap::new();
@@ -55,8 +54,7 @@ fn test_pattern_2_parallel_split_executes_branches_in_parallel() {
     assert_pattern_has_next_state(&result);
 }
 
-#[test]
-fn test_pattern_3_synchronization_waits_for_all_branches() {
+chicago_test!(test_pattern_3_synchronization_waits_for_all_branches, {
     // Arrange: Use Chicago TDD helper
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -71,8 +69,7 @@ fn test_pattern_3_synchronization_waits_for_all_branches() {
     assert_pattern_has_next_state(&result);
 }
 
-#[test]
-fn test_pattern_4_exclusive_choice_routes_based_on_condition() {
+chicago_test!(test_pattern_4_exclusive_choice_routes_based_on_condition, {
     // Arrange: Use Chicago TDD helper
     let registry = create_test_registry();
     let mut vars = HashMap::new();
@@ -89,8 +86,7 @@ fn test_pattern_4_exclusive_choice_routes_based_on_condition() {
     assert_pattern_has_next_state(&result);
 }
 
-#[test]
-fn test_pattern_5_simple_merge_combines_branches() {
+chicago_test!(test_pattern_5_simple_merge_combines_branches, {
     // Arrange: Use Chicago TDD helper
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -109,8 +105,7 @@ fn test_pattern_5_simple_merge_combines_branches() {
 // Property-Based Testing for Patterns
 // ============================================================================
 
-#[tokio::test]
-async fn test_property_all_patterns_executable() {
+chicago_async_test!(test_property_all_patterns_executable, {
     // Property: All 43 patterns can be executed
 
     // Arrange: Use Chicago TDD helper
@@ -137,8 +132,7 @@ async fn test_property_all_patterns_executable() {
     }
 }
 
-#[tokio::test]
-async fn test_property_patterns_preserve_variables() {
+chicago_async_test!(test_property_patterns_preserve_variables, {
     // Property: Patterns preserve input variables
 
     // Arrange: Use Chicago TDD helper
@@ -164,8 +158,7 @@ async fn test_property_patterns_preserve_variables() {
 // Pattern Execution Helpers Usage Examples
 // ============================================================================
 
-#[test]
-fn test_pattern_execution_with_context_for_workflow() {
+chicago_test!(test_pattern_execution_with_context_for_workflow, {
     // Demonstrate using workflow-specific context helper
 
     // Arrange: Use Chicago TDD helper
@@ -183,8 +176,7 @@ fn test_pattern_execution_with_context_for_workflow() {
     assert_eq!(ctx.workflow_id, workflow_id);
 }
 
-#[test]
-fn test_pattern_execution_with_empty_context() {
+chicago_test!(test_pattern_execution_with_empty_context, {
     // Demonstrate using empty context helper
 
     // Arrange: Use Chicago TDD helper

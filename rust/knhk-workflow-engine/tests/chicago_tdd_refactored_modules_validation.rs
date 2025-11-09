@@ -18,9 +18,9 @@ use knhk_workflow_engine::patterns::{
 use knhk_workflow_engine::resource::allocation::{
     AllocationPolicy, AllocationRequest, Resource, ResourceAllocator, ResourceId, Role,
 };
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
-#[tokio::test]
-async fn test_rdf_metadata_serialization() {
+chicago_async_test!(test_rdf_metadata_serialization, {
     // Arrange: Create pattern metadata
     let metadata = PatternMetadata::new(
         1,
@@ -46,8 +46,7 @@ async fn test_rdf_metadata_serialization() {
     );
 }
 
-#[tokio::test]
-async fn test_rdf_context_serialization() {
+chicago_async_test!(test_rdf_context_serialization, {
     // Arrange: Create pattern execution context
     let pattern_id = PatternId::new(26).expect("Invalid pattern ID");
     let context = PatternExecutionContext {
@@ -76,8 +75,7 @@ async fn test_rdf_context_serialization() {
     );
 }
 
-#[tokio::test]
-async fn test_rdf_result_serialization() {
+chicago_async_test!(test_rdf_result_serialization, {
     // Arrange: Create pattern execution result
     let pattern_id = PatternId::new(26).expect("Invalid pattern ID");
     let context = PatternExecutionContext {
@@ -112,8 +110,7 @@ async fn test_rdf_result_serialization() {
     );
 }
 
-#[tokio::test]
-async fn test_rdf_get_all_metadata() {
+chicago_async_test!(test_rdf_get_all_metadata, {
     // Arrange: Get all pattern metadata
     // Act: Retrieve metadata
     let metadata = get_all_pattern_metadata();
@@ -124,8 +121,7 @@ async fn test_rdf_get_all_metadata() {
     assert_eq!(metadata[42].pattern_id, 43, "Last pattern should be ID 43");
 }
 
-#[tokio::test]
-async fn test_advanced_control_pattern_26() {
+chicago_async_test!(test_advanced_control_pattern_26, {
     // Arrange: Create blocking discriminator pattern
     let (pattern_id, executor) = advanced_control::create_pattern_26();
     let context = PatternExecutionContext {
@@ -145,8 +141,7 @@ async fn test_advanced_control_pattern_26() {
     assert!(result.next_state.is_some(), "Pattern should set next state");
 }
 
-#[tokio::test]
-async fn test_advanced_control_pattern_27() {
+chicago_async_test!(test_advanced_control_pattern_27, {
     // Arrange: Create cancelling discriminator pattern
     let (pattern_id, executor) = advanced_control::create_pattern_27();
     let context = PatternExecutionContext {
@@ -169,8 +164,7 @@ async fn test_advanced_control_pattern_27() {
     );
 }
 
-#[tokio::test]
-async fn test_advanced_control_patterns_28_39() {
+chicago_async_test!(test_advanced_control_patterns_28_39, {
     // Arrange: Create all advanced control patterns
     let patterns = vec![
         advanced_control::create_pattern_28(),
@@ -218,8 +212,7 @@ async fn test_advanced_control_patterns_28_39() {
     }
 }
 
-#[tokio::test]
-async fn test_resource_allocation_four_eyes() {
+chicago_async_test!(test_resource_allocation_four_eyes, {
     // Arrange: Create allocator and resources
     let allocator = ResourceAllocator::new();
 
@@ -288,8 +281,7 @@ async fn test_resource_allocation_four_eyes() {
     );
 }
 
-#[tokio::test]
-async fn test_resource_allocation_round_robin() {
+chicago_async_test!(test_resource_allocation_round_robin, {
     // Arrange: Create allocator and resources
     let allocator = ResourceAllocator::new();
 
@@ -359,8 +351,7 @@ async fn test_resource_allocation_round_robin() {
     );
 }
 
-#[tokio::test]
-async fn test_resource_allocation_shortest_queue() {
+chicago_async_test!(test_resource_allocation_shortest_queue, {
     // Arrange: Create allocator and resources with different queue lengths
     let allocator = ResourceAllocator::new();
 
@@ -421,8 +412,7 @@ async fn test_resource_allocation_shortest_queue() {
     );
 }
 
-#[tokio::test]
-async fn test_resource_allocation_role_based() {
+chicago_async_test!(test_resource_allocation_role_based, {
     // Arrange: Create allocator and resources with roles
     let allocator = ResourceAllocator::new();
 
@@ -473,8 +463,7 @@ async fn test_resource_allocation_role_based() {
     );
 }
 
-#[tokio::test]
-async fn test_resource_allocation_chained() {
+chicago_async_test!(test_resource_allocation_chained, {
     // Arrange: Create allocator and resources
     let allocator = ResourceAllocator::new();
 
@@ -530,8 +519,7 @@ async fn test_resource_allocation_chained() {
     );
 }
 
-#[tokio::test]
-async fn test_rdf_namespace_constants() {
+chicago_async_test!(test_rdf_namespace_constants, {
     // Arrange & Act: Check namespace constants
     // Assert: Namespaces are defined
     assert!(

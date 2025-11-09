@@ -18,6 +18,7 @@
 //! - Workflow listing and case listing
 
 use chicago_tdd_tools::prelude::*;
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::{Case, CaseId, CaseState};
 use knhk_workflow_engine::error::{WorkflowError, WorkflowResult};
 use knhk_workflow_engine::parser::{
@@ -77,20 +78,20 @@ async fn test_workflow_registration_and_retrieval() -> WorkflowResult<()> {
 
     // Assert: Verify workflow can be retrieved
     let retrieved_spec = engine.get_workflow(spec.id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &retrieved_spec.id,
         &spec.id,
-        "Retrieved workflow should have same ID",
+        "Retrieved workflow should have same ID"
     );
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &retrieved_spec.name,
         &spec.name,
-        "Retrieved workflow should have same name",
+        "Retrieved workflow should have same name"
     );
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &retrieved_spec.tasks.len(),
         &spec.tasks.len(),
-        "Retrieved workflow should have same number of tasks",
+        "Retrieved workflow should have same number of tasks"
     );
 
     // Assert: Verify workflow appears in list
@@ -181,15 +182,15 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
 
     // Assert: Case is created with Created state
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.state,
         &CaseState::Created,
-        "New case should be in Created state",
+        "New case should be in Created state"
     );
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.spec_id,
         &spec.id,
-        "Case should reference correct workflow spec",
+        "Case should reference correct workflow spec"
     );
 
     // Act: Start case
@@ -197,10 +198,10 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
 
     // Assert: Case transitions to Running state
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.state,
         &CaseState::Running,
-        "Case should transition to Running state after start",
+        "Case should transition to Running state after start"
     );
 
     // Act: Execute case
@@ -312,7 +313,7 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
         case.state == CaseState::Completed || case.state == CaseState::Running,
         "Case should complete or be running after execution"
     );
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.spec_id,
         &spec.id,
         "Case should reference correct workflow spec",
@@ -322,8 +323,7 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
 }
 
 /// Test error handling for invalid workflow registration
-#[tokio::test]
-async fn test_error_handling_invalid_workflow() {
+chicago_async_test!(test_error_handling_invalid_workflow, {
     // Arrange: Create engine
     let state_store =
         StateStore::new("./test_workflow_db_errors").expect("Failed to create state store");
@@ -357,7 +357,7 @@ async fn test_error_handling_invalid_workflow() {
         }
         Err(ref e) => {
             // If registration fails, verify it's a proper error
-            assert_error(&result);
+            assert_err!(&result, "Empty workflow registration should fail");
             assert!(
                 matches!(e, WorkflowError::Validation(_) | WorkflowError::Parse(_)),
                 "Error should be Validation or Parse error"
@@ -367,8 +367,7 @@ async fn test_error_handling_invalid_workflow() {
 }
 
 /// Test error handling for missing workflow
-#[tokio::test]
-async fn test_error_handling_missing_workflow() {
+chicago_async_test!(test_error_handling_missing_workflow, {
     // Arrange: Create engine
     let state_store =
         StateStore::new("./test_workflow_db_missing").expect("Failed to create state store");
@@ -379,7 +378,7 @@ async fn test_error_handling_missing_workflow() {
     let result = engine.get_workflow(non_existent_id).await;
 
     // Assert: Should return proper error
-    assert_error(&result);
+    assert_err!(&result, "Should not find non-existent workflow");
     match result {
         Err(WorkflowError::InvalidSpecification(_)) => {
             // Expected error type
@@ -394,8 +393,7 @@ async fn test_error_handling_missing_workflow() {
 }
 
 /// Test error handling for missing case
-#[tokio::test]
-async fn test_error_handling_missing_case() {
+chicago_async_test!(test_error_handling_missing_case, {
     // Arrange: Create engine
     let state_store =
         StateStore::new("./test_workflow_db_missing_case").expect("Failed to create state store");
@@ -406,7 +404,7 @@ async fn test_error_handling_missing_case() {
     let result = engine.get_case(non_existent_case_id).await;
 
     // Assert: Should return proper error
-    assert_error(&result);
+    assert_err!(&result, "Should not find non-existent case");
     match result {
         Err(WorkflowError::CaseNotFound(_)) => {
             // Expected error type
@@ -473,7 +471,7 @@ async fn test_case_cancellation() -> WorkflowResult<()> {
 
     // Assert: Case is running
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.state,
         &CaseState::Running,
         "Case should be running after start",
@@ -484,7 +482,7 @@ async fn test_case_cancellation() -> WorkflowResult<()> {
 
     // Assert: Case is cancelled
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.state,
         &CaseState::Cancelled,
         "Case should be cancelled after cancel",
@@ -542,7 +540,7 @@ async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
 
     // Assert: All workflows are registered
     let workflows = engine.list_workflows().await?;
-    assert_eq_with_msg(&workflows.len(), &3, "Should have 3 registered workflows");
+    assert_eq_msg!(&workflows.len(), &3, "Should have 3 registered workflows");
 
     for workflow_id in &workflow_ids {
         assert!(
@@ -563,12 +561,12 @@ async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
     }
 
     // Assert: All cases are created
-    assert_eq_with_msg(&case_ids.len(), &3, "Should have created 3 cases");
+    assert_eq_msg!(&case_ids.len(), &3, "Should have created 3 cases");
 
     // Assert: Can retrieve each case
     for case_id in &case_ids {
         let case = engine.get_case(*case_id).await?;
-        assert_eq_with_msg(
+        assert_eq_msg!(
             &case.state,
             &CaseState::Created,
             "Case should be in Created state",
@@ -645,7 +643,7 @@ async fn test_state_persistence() -> WorkflowResult<()> {
 
     // Assert: Second engine can retrieve workflow
     let retrieved_spec = engine2.get_workflow(spec.id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &retrieved_spec.id,
         &spec.id,
         "Second engine should retrieve persisted workflow",
@@ -710,7 +708,7 @@ async fn test_admission_gate_integration() -> WorkflowResult<()> {
 
     // Assert: Case is created successfully
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &case.state,
         &CaseState::Created,
         "Case should be created when data passes admission gate",
@@ -720,8 +718,7 @@ async fn test_admission_gate_integration() -> WorkflowResult<()> {
 }
 
 /// Test workflow engine services are accessible
-#[tokio::test]
-async fn test_engine_services_access() {
+chicago_async_test!(test_engine_services_access, {
     // Arrange: Create engine
     let state_store =
         StateStore::new("./test_workflow_db_services").expect("Failed to create state store");
@@ -822,7 +819,7 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
 
     // Assert: Workflow is registered
     let retrieved_spec = engine.get_workflow(spec.id).await?;
-    assert_eq_with_msg(
+    assert_eq_msg!(
         &retrieved_spec.id,
         &spec.id,
         "Workflow should be registered",
@@ -839,15 +836,15 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
 
     // Assert: Case is created
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(&case.state, &CaseState::Created, "Case should be created");
-    assert_eq_with_msg(&case.spec_id, &spec.id, "Case should reference workflow");
+    assert_eq_msg!(&case.state, &CaseState::Created, "Case should be created");
+    assert_eq_msg!(&case.spec_id, &spec.id, "Case should reference workflow");
 
     // Act: Start case
     engine.start_case(case_id).await?;
 
     // Assert: Case is running
     let case = engine.get_case(case_id).await?;
-    assert_eq_with_msg(&case.state, &CaseState::Running, "Case should be running");
+    assert_eq_msg!(&case.state, &CaseState::Running, "Case should be running");
 
     // Act: Execute case
     engine.execute_case(case_id).await?;

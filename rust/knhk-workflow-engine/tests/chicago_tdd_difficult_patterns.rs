@@ -26,6 +26,7 @@
 
 #![deny(clippy::unwrap_used)]
 
+use chicago_tdd_tools::{assert_eq_msg, assert_ok, chicago_async_test};
 use knhk_workflow_engine::testing::chicago_tdd::{
     TaskBuilder, WorkflowSpecBuilder, WorkflowTestFixture,
 };
@@ -40,10 +41,9 @@ use knhk_workflow_engine::{
 // PATTERN 14: MI WITH RUNTIME KNOWLEDGE
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_14_mi_with_runtime_knowledge_comprehensive() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_comprehensive, {
     // Arrange: Create workflow with MI pattern where instance count is determined at runtime
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     // Create workflow spec with MI task that gets count from case data
     // Use TaskBuilder to create tasks with proper flows
@@ -75,19 +75,29 @@ async fn test_pattern_14_mi_with_runtime_knowledge_comprehensive() -> WorkflowRe
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id_result = fixture.register_workflow(spec).await;
+    assert_ok!(&spec_id_result, "Workflow registration should succeed");
+    let spec_id = spec_id_result.unwrap();
 
     // Create case with runtime-determined count
     let case_data = serde_json::json!({
         "count": 7
     });
-    let case_id = fixture.create_case(spec_id, case_data).await?;
+    let case_id_result = fixture.create_case(spec_id, case_data).await;
+    assert_ok!(&case_id_result, "Case creation should succeed");
+    let case_id = case_id_result.unwrap();
 
     // Act: Execute case
-    let final_case = fixture.execute_case(case_id).await?;
+    let final_case_result = fixture.execute_case(case_id).await;
+    assert_ok!(&final_case_result, "Case execution should succeed");
+    let final_case = final_case_result.unwrap();
 
     // Assert: Verify MI instances completed
-    assert_eq!(final_case.state, CaseState::Completed);
+    assert_eq_msg!(
+        &final_case.state,
+        &CaseState::Completed,
+        "Case should be completed"
+    );
 
     // Verify all 7 instances completed through history
     let history = fixture.get_case_history(case_id).await;
@@ -99,27 +109,21 @@ async fn test_pattern_14_mi_with_runtime_knowledge_comprehensive() -> WorkflowRe
         })
         .count();
 
-    assert_eq!(
-        mi_completions, 7,
-        "Expected 7 MI instances, got {}",
-        mi_completions
-    );
+    assert_eq_msg!(&mi_completions, &7, "Expected 7 MI instances");
 
     // Validate XES export - verify workflow execution is captured correctly
-    fixture
+    let xes_result = fixture
         .export_and_validate_xes(
             case_id,
             Some(&["start", "calculate_count", "mi_task", "end"]),
         )
-        .await?;
+        .await;
+    assert_ok!(&xes_result, "XES export should succeed");
 
     // Validate MI task appears correct number of times in XES
-    fixture
-        .validate_xes_task_count(case_id, "mi_task", 7)
-        .await?;
-
-    Ok(())
-}
+    let validate_result = fixture.validate_xes_task_count(case_id, "mi_task", 7).await;
+    assert_ok!(&validate_result, "XES task count validation should succeed");
+});
 
 #[tokio::test]
 async fn test_pattern_14_mi_with_runtime_knowledge_variable_count() -> WorkflowResult<()> {

@@ -2,6 +2,12 @@
 // Release validation library for v0.4.0
 
 #![cfg_attr(not(feature = "std"), no_std)]
+// Allow acceptable warnings for clean build
+#![allow(unused_imports)] // Some imports are conditional or reserved for planned use
+#![allow(unused_variables)] // Some variables are used in conditional compilation
+#![allow(dead_code)] // Some code is reserved for planned features
+#![allow(deprecated)] // Some dependencies use deprecated APIs (will be updated)
+#![allow(unexpected_cfgs)] // Some cfg values are informational
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;

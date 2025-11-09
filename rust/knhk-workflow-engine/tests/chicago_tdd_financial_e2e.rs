@@ -13,6 +13,7 @@
 
 mod common;
 
+use chicago_tdd_tools::{assert_ok, assert_eq_msg, chicago_async_test};
 use common::{timing::TimedOperation, TestHarness};
 use knhk_workflow_engine::*;
 use serde_json::json;
@@ -35,8 +36,7 @@ async fn setup_atm_workflow(harness: &mut TestHarness) -> parser::WorkflowSpec {
     spec
 }
 
-#[tokio::test]
-async fn test_atm_withdrawal_successful_flow() {
+chicago_async_test!(test_atm_withdrawal_successful_flow, {
     // Arrange: Real ATM withdrawal workflow
     let mut harness = TestHarness::new();
     let spec = setup_atm_workflow(&mut harness).await;
@@ -50,38 +50,40 @@ async fn test_atm_withdrawal_successful_flow() {
     });
 
     // Act: Execute ATM withdrawal
-    let case_id = harness
+    let result = harness
         .engine
         .create_case(spec.id, transaction_data)
-        .await
-        .expect("Should create ATM case");
+        .await;
+    assert_ok!(&result, "Should create ATM case");
+    let case_id = result.unwrap();
 
-    harness
+    let exec_result = harness
         .engine
         .execute_case(case_id)
-        .await
-        .expect("Should execute withdrawal");
+        .await;
+    assert_ok!(&exec_result, "Should execute withdrawal");
 
     // Assert: Chicago TDD - verify state
-    let case = harness
+    let case_result = harness
         .engine
         .get_case(case_id)
-        .await
-        .expect("Should get case");
+        .await;
+    assert_ok!(&case_result, "Should get case");
+    let case = case_result.unwrap();
 
-    assert_eq!(
-        case.state,
-        CaseState::Completed,
+    assert_eq_msg!(
+        &case.state,
+        &CaseState::Completed,
         "ATM withdrawal should complete successfully"
     );
 
     // Assert: Workflow executed all critical tasks
     // Pattern 1 (Sequence): verify_card → verify_pin → check_balance → dispense_cash → update_balance
     // Real collaborators (actual engine) executed the full flow
-}
+});
 
-#[tokio::test]
-async fn test_atm_withdrawal_insufficient_funds() {
+chicago_async_test!
+test_atm_withdrawal_insufficient_funds, {
     // Arrange: ATM withdrawal with insufficient balance
     let mut harness = TestHarness::new();
     let spec = setup_atm_workflow(&mut harness).await;
@@ -122,8 +124,8 @@ async fn test_atm_withdrawal_insufficient_funds() {
     );
 }
 
-#[tokio::test]
-async fn test_atm_workflow_performance() {
+chicago_async_test!
+test_atm_workflow_performance, {
     // Arrange: ATM workflow with performance constraints
     let mut harness = TestHarness::new();
     let spec = setup_atm_workflow(&mut harness).await;
@@ -170,8 +172,8 @@ async fn setup_swift_workflow(harness: &mut TestHarness) -> parser::WorkflowSpec
     spec
 }
 
-#[tokio::test]
-async fn test_swift_payment_successful_flow() {
+chicago_async_test!
+test_swift_payment_successful_flow, {
     // Arrange: Real SWIFT MT103 payment workflow
     let mut harness = TestHarness::new();
     let spec = setup_swift_workflow(&mut harness).await;
@@ -219,8 +221,8 @@ async fn test_swift_payment_successful_flow() {
     // Real collaborators executed full compliance pipeline
 }
 
-#[tokio::test]
-async fn test_swift_payment_sanctions_rejection() {
+chicago_async_test!
+test_swift_payment_sanctions_rejection, {
     // Arrange: Payment to sanctioned country
     let mut harness = TestHarness::new();
     let spec = setup_swift_workflow(&mut harness).await;
@@ -255,8 +257,8 @@ async fn test_swift_payment_sanctions_rejection() {
     );
 }
 
-#[tokio::test]
-async fn test_swift_payment_parallel_compliance_checks() {
+chicago_async_test!
+test_swift_payment_parallel_compliance_checks, {
     // Arrange: Verify parallel execution of compliance checks
     let mut harness = TestHarness::new();
     let spec = setup_swift_workflow(&mut harness).await;
@@ -316,8 +318,8 @@ async fn setup_payroll_workflow(harness: &mut TestHarness) -> parser::WorkflowSp
     spec
 }
 
-#[tokio::test]
-async fn test_payroll_multi_instance_processing() {
+chicago_async_test!
+test_payroll_multi_instance_processing, {
     // Arrange: Payroll for 100 employees (multi-instance pattern)
     let mut harness = TestHarness::new();
     let spec = setup_payroll_workflow(&mut harness).await;
@@ -366,8 +368,8 @@ async fn test_payroll_multi_instance_processing() {
     // Real collaborators created 100 parallel instances
 }
 
-#[tokio::test]
-async fn test_payroll_approval_milestone() {
+chicago_async_test!
+test_payroll_approval_milestone, {
     // Arrange: Payroll requires manager approval before payment
     let mut harness = TestHarness::new();
     let spec = setup_payroll_workflow(&mut harness).await;
@@ -398,8 +400,8 @@ async fn test_payroll_approval_milestone() {
     );
 }
 
-#[tokio::test]
-async fn test_payroll_performance_scalability() {
+chicago_async_test!
+test_payroll_performance_scalability, {
     // Arrange: Test performance with 1000 employees
     let mut harness = TestHarness::new();
     let spec = setup_payroll_workflow(&mut harness).await;
@@ -456,8 +458,7 @@ async fn test_payroll_performance_scalability() {
 // Pattern Coverage Summary
 // ============================================================================
 
-#[test]
-fn test_financial_workflow_pattern_coverage() {
+chicago_test!(test_financial_workflow_pattern_coverage, {
     // Document which Van der Aalst patterns are validated by financial workflows
     let patterns_validated = vec![
         (1, "Sequence - ATM transaction flow"),

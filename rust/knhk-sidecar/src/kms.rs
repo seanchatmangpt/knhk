@@ -244,6 +244,9 @@ impl KmsManager {
             }
         };
 
+        // All match arms either return early or create a client
+        // This code is reachable when fortune5 feature is enabled and client creation succeeds
+        #[allow(unreachable_code)]
         Ok(Self {
             config,
             client,

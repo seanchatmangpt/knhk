@@ -7,6 +7,7 @@
 
 use knhk_workflow_engine::integration::fortune5::*;
 use std::sync::Arc;
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 /// Test fixture for Fortune 5 readiness tests
 struct Fortune5ReadinessFixture {
@@ -57,8 +58,7 @@ impl Fortune5ReadinessFixture {
     }
 }
 
-#[tokio::test]
-async fn test_fortune5_integration_creation() {
+chicago_async_test!(test_fortune5_integration_creation, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -72,8 +72,7 @@ async fn test_fortune5_integration_creation() {
     );
 }
 
-#[tokio::test]
-async fn test_slo_metric_recording() {
+chicago_async_test!(test_slo_metric_recording, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -100,8 +99,7 @@ async fn test_slo_metric_recording() {
     assert!(compliant, "SLO metrics should be compliant");
 }
 
-#[tokio::test]
-async fn test_slo_compliance_failure() {
+chicago_async_test!(test_slo_compliance_failure, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -133,8 +131,7 @@ async fn test_slo_compliance_failure() {
     );
 }
 
-#[tokio::test]
-async fn test_promotion_gate_allows_execution() {
+chicago_async_test!(test_promotion_gate_allows_execution, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -152,8 +149,7 @@ async fn test_promotion_gate_allows_execution() {
     );
 }
 
-#[tokio::test]
-async fn test_promotion_gate_blocks_on_slo_violation() {
+chicago_async_test!(test_promotion_gate_blocks_on_slo_violation, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -178,8 +174,7 @@ async fn test_promotion_gate_blocks_on_slo_violation() {
     );
 }
 
-#[tokio::test]
-async fn test_feature_flag_enabled() {
+chicago_async_test!(test_feature_flag_enabled, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -190,8 +185,7 @@ async fn test_feature_flag_enabled() {
     assert!(enabled, "Feature flag 'fortune5' should be enabled");
 }
 
-#[tokio::test]
-async fn test_feature_flag_disabled() {
+chicago_async_test!(test_feature_flag_disabled, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -202,8 +196,7 @@ async fn test_feature_flag_disabled() {
     assert!(!enabled, "Non-existent feature flag should be disabled");
 }
 
-#[tokio::test]
-async fn test_environment_detection() {
+chicago_async_test!(test_environment_detection, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -217,8 +210,7 @@ async fn test_environment_detection() {
     );
 }
 
-#[tokio::test]
-async fn test_slo_config_validation() {
+chicago_async_test!(test_slo_config_validation, {
     // Arrange: Create SLO config with invalid values
     let invalid_config = SloConfig {
         r1_p99_max_ns: 3_000_000, // 3ms (exceeds 2ms limit)
@@ -237,8 +229,7 @@ async fn test_slo_config_validation() {
     );
 }
 
-#[tokio::test]
-async fn test_slo_config_validation_success() {
+chicago_async_test!(test_slo_config_validation_success, {
     // Arrange: Create SLO config with valid values
     let valid_config = SloConfig {
         r1_p99_max_ns: 1_000_000, // 1ms (within 2ms limit)
@@ -257,8 +248,7 @@ async fn test_slo_config_validation_success() {
     );
 }
 
-#[tokio::test]
-async fn test_concurrent_slo_metric_recording() {
+chicago_async_test!(test_concurrent_slo_metric_recording, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -292,8 +282,7 @@ async fn test_concurrent_slo_metric_recording() {
     );
 }
 
-#[tokio::test]
-async fn test_promotion_gate_with_auto_rollback() {
+chicago_async_test!(test_promotion_gate_with_auto_rollback, {
     // Arrange: Create fixture with auto-rollback enabled
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -318,8 +307,7 @@ async fn test_promotion_gate_with_auto_rollback() {
     );
 }
 
-#[tokio::test]
-async fn test_stress_slo_metric_recording() {
+chicago_async_test!(test_stress_slo_metric_recording, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 
@@ -347,8 +335,7 @@ async fn test_stress_slo_metric_recording() {
     );
 }
 
-#[tokio::test]
-async fn test_multiple_runtime_classes() {
+chicago_async_test!(test_multiple_runtime_classes, {
     // Arrange: Create fixture
     let fixture = Fortune5ReadinessFixture::new().expect("Failed to create Fortune 5 fixture");
 

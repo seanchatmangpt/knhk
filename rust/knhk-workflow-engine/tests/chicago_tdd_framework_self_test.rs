@@ -4,6 +4,7 @@
 //! This demonstrates "eating our own dog food" - using the framework to test itself.
 
 use chicago_tdd_tools::builders::TestDataBuilder;
+use chicago_tdd_tools::{assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::CaseState;
 use knhk_workflow_engine::parser::{JoinType, SplitType, TaskType};
 use knhk_workflow_engine::patterns::{PatternExecutionResult, PatternId};
@@ -14,8 +15,7 @@ use std::collections::HashMap;
 // Test Fixture Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_fixture_creation_creates_unique_databases() {
+chicago_async_test!(test_fixture_creation_creates_unique_databases, {
     // Arrange & Act: Create multiple fixtures
     let fixture1 = WorkflowTestFixture::new().unwrap();
     let fixture2 = WorkflowTestFixture::new().unwrap();
@@ -26,41 +26,39 @@ async fn test_fixture_creation_creates_unique_databases() {
     assert!(fixture1.specs.len() == 0);
     assert!(fixture2.specs.len() == 0);
     assert!(fixture3.specs.len() == 0);
-}
+});
 
-#[tokio::test]
-async fn test_fixture_registers_workflow() {
+chicago_async_test!(test_fixture_registers_workflow, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
 
     // Act: Register workflow
-    let spec_id = fixture.register_workflow(spec.clone()).await.unwrap();
+    let result = fixture.register_workflow(spec.clone()).await;
+    assert_ok!(&result, "Workflow registration should succeed");
+    let spec_id = result.unwrap();
 
     // Assert: Workflow registered
     assert!(fixture.specs.contains_key(&spec_id));
     assert_eq!(fixture.specs.get(&spec_id).unwrap().name, "Test Workflow");
-}
+});
 
-#[tokio::test]
-async fn test_fixture_creates_case() {
+chicago_async_test!(test_fixture_creates_case, {
     // Arrange: Create fixture and register workflow
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
     let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Act: Create case
-    let case_id = fixture
-        .create_case(spec_id, serde_json::json!({}))
-        .await
-        .unwrap();
+    let result = fixture.create_case(spec_id, serde_json::json!({})).await;
+    assert_ok!(&result, "Case creation should succeed");
+    let case_id = result.unwrap();
 
     // Assert: Case created and tracked
     assert!(fixture.cases.contains(&case_id));
-}
+});
 
-#[tokio::test]
-async fn test_fixture_executes_case() {
+chicago_async_test!(test_fixture_executes_case, {
     // Arrange: Create fixture, workflow, and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -71,7 +69,9 @@ async fn test_fixture_executes_case() {
         .unwrap();
 
     // Act: Execute case
-    let case = fixture.execute_case(case_id).await.unwrap();
+    let result = fixture.execute_case(case_id).await;
+    assert_ok!(&result, "Case execution should succeed");
+    let case = result.unwrap();
 
     // Assert: Case executed (may be in various states depending on workflow)
     assert!(
@@ -81,10 +81,9 @@ async fn test_fixture_executes_case() {
         ),
         "Case should be in a valid execution state"
     );
-}
+});
 
-#[tokio::test]
-async fn test_fixture_assert_case_completed() {
+chicago_async_test!(test_fixture_assert_case_completed, {
     // Arrange: Create fixture and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -106,8 +105,7 @@ async fn test_fixture_assert_case_completed() {
 // Pattern Helper Tests
 // ============================================================================
 
-#[test]
-fn test_create_test_registry_registers_all_patterns() {
+chicago_test!(test_create_test_registry_registers_all_patterns, {
     // Arrange & Act: Create registry
     let registry = create_test_registry();
 
@@ -123,8 +121,7 @@ fn test_create_test_registry_registers_all_patterns() {
     }
 }
 
-#[test]
-fn test_create_test_context_creates_empty_context() {
+chicago_test!(test_create_test_context_creates_empty_context, {
     // Arrange & Act: Create context
     let ctx = create_test_context();
 
@@ -133,8 +130,7 @@ fn test_create_test_context_creates_empty_context() {
     assert!(ctx.case_id != knhk_workflow_engine::case::CaseId::new()); // Should be unique
 }
 
-#[test]
-fn test_create_test_context_with_vars_includes_variables() {
+chicago_test!(test_create_test_context_with_vars_includes_variables, {
     // Arrange: Create variables
     let mut vars = HashMap::new();
     vars.insert("key1".to_string(), "value1".to_string());
@@ -149,8 +145,7 @@ fn test_create_test_context_with_vars_includes_variables() {
     assert_eq!(ctx.variables.get("key2"), Some(&"value2".to_string()));
 }
 
-#[test]
-fn test_create_test_context_for_workflow_sets_workflow_id() {
+chicago_test!(test_create_test_context_for_workflow_sets_workflow_id, {
     // Arrange: Create workflow ID
     let workflow_id = knhk_workflow_engine::parser::WorkflowSpecId::new();
 
@@ -161,8 +156,7 @@ fn test_create_test_context_for_workflow_sets_workflow_id() {
     assert_eq!(ctx.workflow_id, workflow_id);
 }
 
-#[test]
-fn test_assert_pattern_success_passes_for_successful_result() {
+chicago_test!(test_assert_pattern_success_passes_for_successful_result, {
     // Arrange: Create successful result
     let result = PatternExecutionResult {
         success: true,
@@ -196,8 +190,7 @@ fn test_assert_pattern_success_fails_for_failed_result() {
     assert_pattern_success(&result);
 }
 
-#[test]
-fn test_assert_pattern_failure_passes_for_failed_result() {
+chicago_test!(test_assert_pattern_failure_passes_for_failed_result, {
     // Arrange: Create failed result
     let result = PatternExecutionResult {
         success: false,
@@ -213,8 +206,7 @@ fn test_assert_pattern_failure_passes_for_failed_result() {
     assert_pattern_failure(&result);
 }
 
-#[test]
-fn test_assert_pattern_has_next_state_passes_when_state_set() {
+chicago_test!(test_assert_pattern_has_next_state_passes_when_state_set, {
     // Arrange: Create result with next state
     let result = PatternExecutionResult {
         success: true,
@@ -248,8 +240,7 @@ fn test_assert_pattern_has_next_state_fails_when_state_not_set() {
     assert_pattern_has_next_state(&result);
 }
 
-#[test]
-fn test_assert_pattern_has_variable_passes_when_variable_exists() {
+chicago_test!(test_assert_pattern_has_variable_passes_when_variable_exists, {
     // Arrange: Create result with variable
     let mut vars = HashMap::new();
     vars.insert("test_key".to_string(), "test_value".to_string());
@@ -285,8 +276,7 @@ fn test_assert_pattern_has_variable_fails_when_variable_missing() {
     assert_pattern_has_variable(&result, "missing_key");
 }
 
-#[test]
-fn test_assert_pattern_variable_equals_passes_when_value_matches() {
+chicago_test!(test_assert_pattern_variable_equals_passes_when_value_matches, {
     // Arrange: Create result with variable
     let mut vars = HashMap::new();
     vars.insert("test_key".to_string(), "expected_value".to_string());
@@ -328,8 +318,7 @@ fn test_assert_pattern_variable_equals_fails_when_value_mismatches() {
 // Workflow Builder Tests
 // ============================================================================
 
-#[test]
-fn test_workflow_spec_builder_creates_workflow() {
+chicago_test!(test_workflow_spec_builder_creates_workflow, {
     // Arrange & Act: Build workflow
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
 
@@ -338,8 +327,7 @@ fn test_workflow_spec_builder_creates_workflow() {
     assert!(!spec.id.to_string().is_empty());
 }
 
-#[test]
-fn test_workflow_spec_builder_sets_start_condition() {
+chicago_test!(test_workflow_spec_builder_sets_start_condition, {
     // Arrange & Act: Build workflow with start condition
     let spec = WorkflowSpecBuilder::new("Test Workflow")
         .with_start_condition("condition:start")
@@ -349,8 +337,7 @@ fn test_workflow_spec_builder_sets_start_condition() {
     assert_eq!(spec.start_condition, Some("condition:start".to_string()));
 }
 
-#[test]
-fn test_workflow_spec_builder_sets_end_condition() {
+chicago_test!(test_workflow_spec_builder_sets_end_condition, {
     // Arrange & Act: Build workflow with end condition
     let spec = WorkflowSpecBuilder::new("Test Workflow")
         .with_end_condition("condition:end")
@@ -360,8 +347,7 @@ fn test_workflow_spec_builder_sets_end_condition() {
     assert_eq!(spec.end_condition, Some("condition:end".to_string()));
 }
 
-#[test]
-fn test_workflow_spec_builder_adds_tasks() {
+chicago_test!(test_workflow_spec_builder_adds_tasks, {
     // Arrange: Create task
     let task = TaskBuilder::new("task:1", "Task 1").build();
 
@@ -376,8 +362,7 @@ fn test_workflow_spec_builder_adds_tasks() {
     assert_eq!(spec.tasks.get("task:1").unwrap().name, "Task 1");
 }
 
-#[test]
-fn test_task_builder_creates_task() {
+chicago_test!(test_task_builder_creates_task, {
     // Arrange & Act: Build task
     let task = TaskBuilder::new("task:1", "Task 1").build();
 
@@ -389,8 +374,7 @@ fn test_task_builder_creates_task() {
     assert_eq!(task.join_type, JoinType::And);
 }
 
-#[test]
-fn test_task_builder_sets_task_type() {
+chicago_test!(test_task_builder_sets_task_type, {
     // Arrange & Act: Build task with type
     let task = TaskBuilder::new("task:1", "Task 1")
         .with_type(TaskType::Composite)
@@ -400,8 +384,7 @@ fn test_task_builder_sets_task_type() {
     assert_eq!(task.task_type, TaskType::Composite);
 }
 
-#[test]
-fn test_task_builder_sets_split_type() {
+chicago_test!(test_task_builder_sets_split_type, {
     // Arrange & Act: Build task with split type
     let task = TaskBuilder::new("task:1", "Task 1")
         .with_split_type(SplitType::Xor)
@@ -411,8 +394,7 @@ fn test_task_builder_sets_split_type() {
     assert_eq!(task.split_type, SplitType::Xor);
 }
 
-#[test]
-fn test_task_builder_sets_join_type() {
+chicago_test!(test_task_builder_sets_join_type, {
     // Arrange & Act: Build task with join type
     let task = TaskBuilder::new("task:1", "Task 1")
         .with_join_type(JoinType::Or)
@@ -422,8 +404,7 @@ fn test_task_builder_sets_join_type() {
     assert_eq!(task.join_type, JoinType::Or);
 }
 
-#[test]
-fn test_task_builder_sets_max_ticks() {
+chicago_test!(test_task_builder_sets_max_ticks, {
     // Arrange & Act: Build task with max ticks
     let task = TaskBuilder::new("task:1", "Task 1")
         .with_max_ticks(8)
@@ -433,8 +414,7 @@ fn test_task_builder_sets_max_ticks() {
     assert_eq!(task.max_ticks, Some(8));
 }
 
-#[test]
-fn test_task_builder_adds_outgoing_flow() {
+chicago_test!(test_task_builder_adds_outgoing_flow, {
     // Arrange & Act: Build task with outgoing flow
     let task = TaskBuilder::new("task:1", "Task 1")
         .add_outgoing_flow("task:2")
@@ -449,8 +429,7 @@ fn test_task_builder_adds_outgoing_flow() {
 // Test Data Builder Tests
 // ============================================================================
 
-#[test]
-fn test_test_data_builder_creates_empty_data() {
+chicago_test!(test_test_data_builder_creates_empty_data, {
     // Arrange & Act: Build empty data
     let data = TestDataBuilder::new().build_json();
 
@@ -459,8 +438,7 @@ fn test_test_data_builder_creates_empty_data() {
     assert_eq!(data.as_object().unwrap().len(), 0);
 }
 
-#[test]
-fn test_test_data_builder_adds_variable() {
+chicago_test!(test_test_data_builder_adds_variable, {
     // Arrange & Act: Build data with variable
     let data = TestDataBuilder::new()
         .with_var("key1", "value1")
@@ -470,8 +448,7 @@ fn test_test_data_builder_adds_variable() {
     assert_eq!(data["key1"], "value1");
 }
 
-#[test]
-fn test_test_data_builder_adds_multiple_variables() {
+chicago_test!(test_test_data_builder_adds_multiple_variables, {
     // Arrange & Act: Build data with multiple variables
     let data = TestDataBuilder::new()
         .with_var("key1", "value1")
@@ -485,8 +462,7 @@ fn test_test_data_builder_adds_multiple_variables() {
     assert_eq!(data["key3"], "value3");
 }
 
-#[test]
-fn test_test_data_builder_with_order_data() {
+chicago_test!(test_test_data_builder_with_order_data, {
     // Arrange & Act: Build order data
     let data = TestDataBuilder::new()
         .with_order_data("ORD-001", "100.00")
@@ -499,8 +475,7 @@ fn test_test_data_builder_with_order_data() {
     assert_eq!(data["order_status"], "pending");
 }
 
-#[test]
-fn test_test_data_builder_with_customer_data() {
+chicago_test!(test_test_data_builder_with_customer_data, {
     // Arrange & Act: Build customer data
     let data = TestDataBuilder::new()
         .with_customer_data("CUST-001")
@@ -511,8 +486,7 @@ fn test_test_data_builder_with_customer_data() {
     assert_eq!(data["customer_email"], "customer@example.com");
 }
 
-#[test]
-fn test_test_data_builder_with_approval_data() {
+chicago_test!(test_test_data_builder_with_approval_data, {
     // Arrange & Act: Build approval data
     let data = TestDataBuilder::new()
         .with_approval_data("REQ-001", "5000.00")
@@ -524,8 +498,7 @@ fn test_test_data_builder_with_approval_data() {
     assert_eq!(data["condition"], "true");
 }
 
-#[test]
-fn test_test_data_builder_combines_scenarios() {
+chicago_test!(test_test_data_builder_combines_scenarios, {
     // Arrange & Act: Build combined data
     let data = TestDataBuilder::new()
         .with_order_data("ORD-001", "100.00")
@@ -543,8 +516,7 @@ fn test_test_data_builder_combines_scenarios() {
 // Resource Helper Tests
 // ============================================================================
 
-#[test]
-fn test_create_test_role_creates_role() {
+chicago_test!(test_create_test_role_creates_role, {
     // Arrange & Act: Create role
     let role = create_test_role("approver", "Approver");
 
@@ -554,8 +526,7 @@ fn test_create_test_role_creates_role() {
     assert_eq!(role.capabilities.len(), 0);
 }
 
-#[test]
-fn test_create_test_capability_creates_capability() {
+chicago_test!(test_create_test_capability_creates_capability, {
     // Arrange & Act: Create capability
     let capability = create_test_capability("approval", "Approval", 100);
 
@@ -565,8 +536,7 @@ fn test_create_test_capability_creates_capability() {
     assert_eq!(capability.level, 100);
 }
 
-#[test]
-fn test_create_test_resource_creates_resource() {
+chicago_test!(test_create_test_resource_creates_resource, {
     // Arrange: Create role and capability
     let role = create_test_role("approver", "Approver");
     let capability = create_test_capability("approval", "Approval", 100);
@@ -587,8 +557,7 @@ fn test_create_test_resource_creates_resource() {
 // Worklet Helper Tests
 // ============================================================================
 
-#[test]
-fn test_create_test_worklet_creates_worklet() {
+chicago_test!(test_create_test_worklet_creates_worklet, {
     // Arrange & Act: Create worklet
     let worklet = create_test_worklet(
         "Exception Handler",
@@ -609,8 +578,7 @@ fn test_create_test_worklet_creates_worklet() {
 // Performance Helper Tests
 // ============================================================================
 
-#[test]
-fn test_performance_helper_verifies_tick_budget() {
+chicago_test!(test_performance_helper_verifies_tick_budget, {
     // Arrange: Create performance helper with very large budget for test
     // (actual workflow execution takes longer than 8 ticks)
     let perf = PerformanceTestHelper::new(100000);
@@ -623,8 +591,7 @@ fn test_performance_helper_verifies_tick_budget() {
     perf.verify_tick_budget();
 }
 
-#[test]
-fn test_performance_helper_elapsed_ticks() {
+chicago_test!(test_performance_helper_elapsed_ticks, {
     // Arrange: Create performance helper
     let perf = PerformanceTestHelper::new(8);
 
@@ -640,8 +607,7 @@ fn test_performance_helper_elapsed_ticks() {
 // Integration Helper Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_integration_helper_executes_complete_workflow() {
+chicago_async_test!(test_integration_helper_executes_complete_workflow, {
     // Arrange: Create integration helper
     let mut helper = IntegrationTestHelper::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -662,8 +628,7 @@ async fn test_integration_helper_executes_complete_workflow() {
     );
 }
 
-#[tokio::test]
-async fn test_integration_helper_provides_fixture_access() {
+chicago_async_test!(test_integration_helper_provides_fixture_access, {
     // Arrange: Create integration helper
     let helper = IntegrationTestHelper::new().unwrap();
 
@@ -679,8 +644,7 @@ async fn test_integration_helper_provides_fixture_access() {
 // Property Tester Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_property_tester_creates_tester() {
+chicago_async_test!(test_property_tester_creates_tester, {
     // Arrange & Act: Create property tester
     let _tester = WorkflowPropertyTester::new(10).unwrap();
 
@@ -688,8 +652,7 @@ async fn test_property_tester_creates_tester() {
     // Note: num_cases is private, but creation succeeds which validates the struct
 }
 
-#[tokio::test]
-async fn test_property_tester_tests_completion_property() {
+chicago_async_test!(test_property_tester_tests_completion_property, {
     // Arrange: Create property tester and workflow
     let mut tester = WorkflowPropertyTester::new(5).unwrap();
 
@@ -710,8 +673,7 @@ async fn test_property_tester_tests_completion_property() {
 // End-to-End Framework Validation
 // ============================================================================
 
-#[tokio::test]
-async fn test_complete_workflow_test_using_all_framework_features() {
+chicago_async_test!(test_complete_workflow_test_using_all_framework_features, {
     // Arrange: Use all framework features
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -753,8 +715,7 @@ async fn test_complete_workflow_test_using_all_framework_features() {
     // Performance testing should be done with micro-benchmarks, not integration tests
 }
 
-#[tokio::test]
-async fn test_pattern_execution_using_framework_helpers() {
+chicago_async_test!(test_pattern_execution_using_framework_helpers, {
     // Arrange: Use pattern helpers
     let registry = create_test_registry();
     let mut vars = HashMap::new();
@@ -771,8 +732,7 @@ async fn test_pattern_execution_using_framework_helpers() {
     assert_pattern_has_next_state(&result);
 }
 
-#[tokio::test]
-async fn test_resource_allocation_using_framework_helpers() {
+chicago_async_test!(test_resource_allocation_using_framework_helpers, {
     // Arrange: Create resources using helpers
     let fixture = WorkflowTestFixture::new().unwrap();
     let role = create_test_role("approver", "Approver");
@@ -791,8 +751,7 @@ async fn test_resource_allocation_using_framework_helpers() {
     // In production, would verify resource is available
 }
 
-#[tokio::test]
-async fn test_worklet_exception_handling_using_framework_helpers() {
+chicago_async_test!(test_worklet_exception_handling_using_framework_helpers, {
     // Arrange: Create worklet using helper
     let fixture = WorkflowTestFixture::new().unwrap();
     let worklet = create_test_worklet(
@@ -816,8 +775,7 @@ async fn test_worklet_exception_handling_using_framework_helpers() {
 // Framework Meta-Tests: Testing the Test Framework
 // ============================================================================
 
-#[test]
-fn test_framework_helpers_follow_chicago_tdd_principles() {
+chicago_test!(test_framework_helpers_follow_chicago_tdd_principles, {
     // This test validates that our framework helpers follow Chicago TDD:
     // 1. State-based (not interaction-based)
     // 2. Real collaborators (no mocks)
@@ -837,8 +795,7 @@ fn test_framework_helpers_follow_chicago_tdd_principles() {
     assert_pattern_success(&result); // Verify output, not implementation
 }
 
-#[test]
-fn test_framework_builders_create_valid_workflows() {
+chicago_test!(test_framework_builders_create_valid_workflows, {
     // Arrange & Act: Build workflow using builders
     let spec = WorkflowSpecBuilder::new("Test Workflow")
         .with_start_condition("condition:start")
@@ -853,8 +810,7 @@ fn test_framework_builders_create_valid_workflows() {
     assert!(spec.end_condition.is_some());
 }
 
-#[test]
-fn test_framework_data_builders_create_valid_json() {
+chicago_test!(test_framework_data_builders_create_valid_json, {
     // Arrange & Act: Build test data
     let data = TestDataBuilder::new()
         .with_order_data("ORD-001", "100.00")
@@ -868,8 +824,7 @@ fn test_framework_data_builders_create_valid_json() {
     assert_eq!(data["customer_id"], "CUST-001");
 }
 
-#[test]
-fn test_framework_assertion_helpers_provide_clear_messages() {
+chicago_test!(test_framework_assertion_helpers_provide_clear_messages, {
     // Arrange: Create result with variable
     let mut vars = HashMap::new();
     vars.insert("test_key".to_string(), "test_value".to_string());
@@ -894,8 +849,7 @@ fn test_framework_assertion_helpers_provide_clear_messages() {
 // Framework Coverage: Test All Framework Features
 // ============================================================================
 
-#[tokio::test]
-async fn test_all_framework_features_together() {
+chicago_async_test!(test_all_framework_features_together, {
     // This test demonstrates using ALL framework features together
     // to validate the framework works end-to-end
 

@@ -7,6 +7,7 @@
 //! - Tests use real collaborators (no mocks)
 //! - Tests are production-ready with proper error handling
 
+use chicago_tdd_tools::{assert_ok, chicago_test};
 use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::{
@@ -37,12 +38,12 @@ fn create_test_context_with_vars(vars: HashMap<String, String>) -> PatternExecut
 }
 
 /// Helper to assert successful execution
-fn assert_success(result: &PatternExecutionResult) {
+fn assert_pattern_success(result: &PatternExecutionResult) {
     assert!(result.success, "Pattern execution should succeed");
 }
 
 /// Helper to assert failure
-fn assert_failure(result: &PatternExecutionResult) {
+fn assert_pattern_failure(result: &PatternExecutionResult) {
     assert!(!result.success, "Pattern execution should fail");
 }
 
@@ -57,8 +58,7 @@ fn create_test_registry() -> PatternRegistry {
 // Basic Control Flow Patterns (1-5)
 // ============================================================================
 
-#[test]
-fn test_pattern_1_sequence_jtbd() {
+chicago_test!(test_pattern_1_sequence_jtbd, {
     // JTBD: Execute tasks sequentially, passing data through each step
     // Arrange
     let registry = create_test_registry();
@@ -70,12 +70,11 @@ fn test_pattern_1_sequence_jtbd() {
         .expect("Pattern 1 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:1:completed".to_string()));
-}
+});
 
-#[test]
-fn test_pattern_2_parallel_split_jtbd() {
+chicago_test!(test_pattern_2_parallel_split_jtbd, {
     // JTBD: Split workflow into multiple parallel branches
     // Arrange
     let registry = create_test_registry();
@@ -87,12 +86,11 @@ fn test_pattern_2_parallel_split_jtbd() {
         .expect("Pattern 2 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:2:completed".to_string()));
-}
+});
 
-#[test]
-fn test_pattern_3_synchronization_jtbd() {
+chicago_test!(test_pattern_3_synchronization_jtbd, {
     // JTBD: Wait for all parallel branches to complete before continuing
     // Arrange
     let registry = create_test_registry();
@@ -104,12 +102,11 @@ fn test_pattern_3_synchronization_jtbd() {
         .expect("Pattern 3 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:3:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_4_exclusive_choice_jtbd() {
+chicago_test!(test_pattern_4_exclusive_choice_jtbd, {
     // JTBD: Choose exactly one branch based on condition
     // Arrange
     let registry = create_test_registry();
@@ -123,12 +120,11 @@ fn test_pattern_4_exclusive_choice_jtbd() {
         .expect("Pattern 4 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:4:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_5_simple_merge_jtbd() {
+chicago_test!(test_pattern_5_simple_merge_jtbd, {
     // JTBD: Merge multiple branches into single flow
     // Arrange
     let registry = create_test_registry();
@@ -140,7 +136,7 @@ fn test_pattern_5_simple_merge_jtbd() {
         .expect("Pattern 5 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:5:completed".to_string()));
 }
 
@@ -148,8 +144,7 @@ fn test_pattern_5_simple_merge_jtbd() {
 // Advanced Branching Patterns (6-11)
 // ============================================================================
 
-#[test]
-fn test_pattern_6_multi_choice_jtbd() {
+chicago_test!(test_pattern_6_multi_choice_jtbd, {
     // JTBD: Choose one or more branches based on conditions
     // Arrange
     let registry = create_test_registry();
@@ -164,12 +159,11 @@ fn test_pattern_6_multi_choice_jtbd() {
         .expect("Pattern 6 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:6:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_7_structured_synchronizing_merge_jtbd() {
+chicago_test!(test_pattern_7_structured_synchronizing_merge_jtbd, {
     // JTBD: Synchronize multiple branches that were split by same split
     // Arrange
     let registry = create_test_registry();
@@ -181,12 +175,11 @@ fn test_pattern_7_structured_synchronizing_merge_jtbd() {
         .expect("Pattern 7 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:7:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_8_multi_merge_jtbd() {
+chicago_test!(test_pattern_8_multi_merge_jtbd, {
     // JTBD: Merge multiple branches without synchronization
     // Arrange
     let registry = create_test_registry();
@@ -198,12 +191,11 @@ fn test_pattern_8_multi_merge_jtbd() {
         .expect("Pattern 8 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:8:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_9_discriminator_jtbd() {
+chicago_test!(test_pattern_9_discriminator_jtbd, {
     // JTBD: Continue after first branch completes, cancel others
     // Arrange
     let registry = create_test_registry();
@@ -215,12 +207,11 @@ fn test_pattern_9_discriminator_jtbd() {
         .expect("Pattern 9 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:9:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_10_arbitrary_cycles_jtbd() {
+chicago_test!(test_pattern_10_arbitrary_cycles_jtbd, {
     // JTBD: Support arbitrary cycles in workflow
     // Arrange
     let registry = create_test_registry();
@@ -232,12 +223,11 @@ fn test_pattern_10_arbitrary_cycles_jtbd() {
         .expect("Pattern 10 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:10:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_11_implicit_termination_jtbd() {
+chicago_test!(test_pattern_11_implicit_termination_jtbd, {
     // JTBD: Terminate when no active tasks remain
     // Arrange
     let registry = create_test_registry();
@@ -249,7 +239,7 @@ fn test_pattern_11_implicit_termination_jtbd() {
         .expect("Pattern 11 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:11:completed".to_string()));
 }
 
@@ -257,8 +247,7 @@ fn test_pattern_11_implicit_termination_jtbd() {
 // Multiple Instance Patterns (12-15)
 // ============================================================================
 
-#[test]
-fn test_pattern_12_mi_without_sync_jtbd() {
+chicago_test!(test_pattern_12_mi_without_sync_jtbd, {
     // JTBD: Create multiple instances without synchronization
     // Arrange
     let registry = create_test_registry();
@@ -272,12 +261,11 @@ fn test_pattern_12_mi_without_sync_jtbd() {
         .expect("Pattern 12 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:12:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_13_mi_with_design_time_knowledge_jtbd() {
+chicago_test!(test_pattern_13_mi_with_design_time_knowledge_jtbd, {
     // JTBD: Create multiple instances with known count at design time
     // Arrange
     let registry = create_test_registry();
@@ -291,12 +279,11 @@ fn test_pattern_13_mi_with_design_time_knowledge_jtbd() {
         .expect("Pattern 13 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:13:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_14_mi_with_runtime_knowledge_jtbd() {
+chicago_test!(test_pattern_14_mi_with_runtime_knowledge_jtbd, {
     // JTBD: Create multiple instances with count known at runtime
     // Arrange
     let registry = create_test_registry();
@@ -310,12 +297,11 @@ fn test_pattern_14_mi_with_runtime_knowledge_jtbd() {
         .expect("Pattern 14 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:14:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_15_mi_without_runtime_knowledge_jtbd() {
+chicago_test!(test_pattern_15_mi_without_runtime_knowledge_jtbd, {
     // JTBD: Create multiple instances with unknown count
     // Arrange
     let registry = create_test_registry();
@@ -327,7 +313,7 @@ fn test_pattern_15_mi_without_runtime_knowledge_jtbd() {
         .expect("Pattern 15 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:15:completed".to_string()));
 }
 
@@ -335,8 +321,7 @@ fn test_pattern_15_mi_without_runtime_knowledge_jtbd() {
 // State-Based Patterns (16-18)
 // ============================================================================
 
-#[test]
-fn test_pattern_16_deferred_choice_jtbd() {
+chicago_test!(test_pattern_16_deferred_choice_jtbd, {
     // JTBD: Defer choice until one of several events occurs
     // Arrange
     let registry = create_test_registry();
@@ -348,12 +333,11 @@ fn test_pattern_16_deferred_choice_jtbd() {
         .expect("Pattern 16 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:16:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_17_interleaved_parallel_routing_jtbd() {
+chicago_test!(test_pattern_17_interleaved_parallel_routing_jtbd, {
     // JTBD: Execute tasks in parallel but interleaved order
     // Arrange
     let registry = create_test_registry();
@@ -365,12 +349,11 @@ fn test_pattern_17_interleaved_parallel_routing_jtbd() {
         .expect("Pattern 17 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:17:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_18_milestone_jtbd() {
+chicago_test!(test_pattern_18_milestone_jtbd, {
     // JTBD: Enable task only when milestone is reached
     // Arrange
     let registry = create_test_registry();
@@ -384,7 +367,7 @@ fn test_pattern_18_milestone_jtbd() {
         .expect("Pattern 18 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:18:completed".to_string()));
 }
 
@@ -392,8 +375,7 @@ fn test_pattern_18_milestone_jtbd() {
 // Cancellation Patterns (19-25)
 // ============================================================================
 
-#[test]
-fn test_pattern_19_cancel_activity_jtbd() {
+chicago_test!(test_pattern_19_cancel_activity_jtbd, {
     // JTBD: Cancel a specific activity
     // Arrange
     let registry = create_test_registry();
@@ -407,12 +389,11 @@ fn test_pattern_19_cancel_activity_jtbd() {
         .expect("Pattern 19 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:19:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_20_cancel_case_jtbd() {
+chicago_test!(test_pattern_20_cancel_case_jtbd, {
     // JTBD: Cancel entire workflow case
     // Arrange
     let registry = create_test_registry();
@@ -424,12 +405,11 @@ fn test_pattern_20_cancel_case_jtbd() {
         .expect("Pattern 20 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:20:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_21_cancel_region_jtbd() {
+chicago_test!(test_pattern_21_cancel_region_jtbd, {
     // JTBD: Cancel a region of workflow
     // Arrange
     let registry = create_test_registry();
@@ -443,12 +423,11 @@ fn test_pattern_21_cancel_region_jtbd() {
         .expect("Pattern 21 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:21:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_22_cancel_mi_activity_jtbd() {
+chicago_test!(test_pattern_22_cancel_mi_activity_jtbd, {
     // JTBD: Cancel multiple instance activity
     // Arrange
     let registry = create_test_registry();
@@ -462,12 +441,11 @@ fn test_pattern_22_cancel_mi_activity_jtbd() {
         .expect("Pattern 22 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:22:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_23_complete_mi_activity_jtbd() {
+chicago_test!(test_pattern_23_complete_mi_activity_jtbd, {
     // JTBD: Complete multiple instance activity
     // Arrange
     let registry = create_test_registry();
@@ -481,12 +459,11 @@ fn test_pattern_23_complete_mi_activity_jtbd() {
         .expect("Pattern 23 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:23:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_24_blocking_discriminator_jtbd() {
+chicago_test!(test_pattern_24_blocking_discriminator_jtbd, {
     // JTBD: Block until first branch completes
     // Arrange
     let registry = create_test_registry();
@@ -498,12 +475,11 @@ fn test_pattern_24_blocking_discriminator_jtbd() {
         .expect("Pattern 24 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:24:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_25_cancelling_discriminator_jtbd() {
+chicago_test!(test_pattern_25_cancelling_discriminator_jtbd, {
     // JTBD: Cancel other branches when first completes
     // Arrange
     let registry = create_test_registry();
@@ -515,7 +491,7 @@ fn test_pattern_25_cancelling_discriminator_jtbd() {
         .expect("Pattern 25 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:25:completed".to_string()));
 }
 
@@ -523,8 +499,7 @@ fn test_pattern_25_cancelling_discriminator_jtbd() {
 // Advanced Patterns (26-39)
 // ============================================================================
 
-#[test]
-fn test_pattern_26_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_26_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 26
     // Arrange
     let registry = create_test_registry();
@@ -536,12 +511,11 @@ fn test_pattern_26_advanced_pattern_jtbd() {
         .expect("Pattern 26 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:26:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_27_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_27_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 27
     // Arrange
     let registry = create_test_registry();
@@ -553,12 +527,11 @@ fn test_pattern_27_advanced_pattern_jtbd() {
         .expect("Pattern 27 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:27:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_28_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_28_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 28
     // Arrange
     let registry = create_test_registry();
@@ -570,12 +543,11 @@ fn test_pattern_28_advanced_pattern_jtbd() {
         .expect("Pattern 28 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:28:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_29_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_29_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 29
     // Arrange
     let registry = create_test_registry();
@@ -587,12 +559,11 @@ fn test_pattern_29_advanced_pattern_jtbd() {
         .expect("Pattern 29 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:29:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_30_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_30_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 30
     // Arrange
     let registry = create_test_registry();
@@ -604,12 +575,11 @@ fn test_pattern_30_advanced_pattern_jtbd() {
         .expect("Pattern 30 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:30:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_31_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_31_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 31
     // Arrange
     let registry = create_test_registry();
@@ -621,12 +591,11 @@ fn test_pattern_31_advanced_pattern_jtbd() {
         .expect("Pattern 31 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:31:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_32_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_32_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 32
     // Arrange
     let registry = create_test_registry();
@@ -638,12 +607,11 @@ fn test_pattern_32_advanced_pattern_jtbd() {
         .expect("Pattern 32 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:32:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_33_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_33_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 33
     // Arrange
     let registry = create_test_registry();
@@ -655,12 +623,11 @@ fn test_pattern_33_advanced_pattern_jtbd() {
         .expect("Pattern 33 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:33:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_34_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_34_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 34
     // Arrange
     let registry = create_test_registry();
@@ -672,12 +639,11 @@ fn test_pattern_34_advanced_pattern_jtbd() {
         .expect("Pattern 34 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:34:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_35_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_35_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 35
     // Arrange
     let registry = create_test_registry();
@@ -689,12 +655,11 @@ fn test_pattern_35_advanced_pattern_jtbd() {
         .expect("Pattern 35 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:35:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_36_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_36_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 36
     // Arrange
     let registry = create_test_registry();
@@ -706,12 +671,11 @@ fn test_pattern_36_advanced_pattern_jtbd() {
         .expect("Pattern 36 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:36:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_37_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_37_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 37
     // Arrange
     let registry = create_test_registry();
@@ -723,12 +687,11 @@ fn test_pattern_37_advanced_pattern_jtbd() {
         .expect("Pattern 37 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:37:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_38_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_38_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 38
     // Arrange
     let registry = create_test_registry();
@@ -740,12 +703,11 @@ fn test_pattern_38_advanced_pattern_jtbd() {
         .expect("Pattern 38 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:38:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_39_advanced_pattern_jtbd() {
+chicago_test!(test_pattern_39_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 39
     // Arrange
     let registry = create_test_registry();
@@ -757,7 +719,7 @@ fn test_pattern_39_advanced_pattern_jtbd() {
         .expect("Pattern 39 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:39:completed".to_string()));
 }
 
@@ -765,8 +727,7 @@ fn test_pattern_39_advanced_pattern_jtbd() {
 // Trigger Patterns (40-43)
 // ============================================================================
 
-#[test]
-fn test_pattern_40_trigger_pattern_jtbd() {
+chicago_test!(test_pattern_40_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 40
     // Arrange
     let registry = create_test_registry();
@@ -778,12 +739,11 @@ fn test_pattern_40_trigger_pattern_jtbd() {
         .expect("Pattern 40 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:40:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_41_trigger_pattern_jtbd() {
+chicago_test!(test_pattern_41_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 41
     // Arrange
     let registry = create_test_registry();
@@ -795,12 +755,11 @@ fn test_pattern_41_trigger_pattern_jtbd() {
         .expect("Pattern 41 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:41:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_42_trigger_pattern_jtbd() {
+chicago_test!(test_pattern_42_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 42
     // Arrange
     let registry = create_test_registry();
@@ -812,12 +771,11 @@ fn test_pattern_42_trigger_pattern_jtbd() {
         .expect("Pattern 42 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:42:completed".to_string()));
 }
 
-#[test]
-fn test_pattern_43_trigger_pattern_jtbd() {
+chicago_test!(test_pattern_43_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 43
     // Arrange
     let registry = create_test_registry();
@@ -829,7 +787,7 @@ fn test_pattern_43_trigger_pattern_jtbd() {
         .expect("Pattern 43 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:43:completed".to_string()));
 }
 
@@ -837,8 +795,7 @@ fn test_pattern_43_trigger_pattern_jtbd() {
 // Comprehensive Test Suite
 // ============================================================================
 
-#[test]
-fn test_all_patterns_registered() {
+chicago_test!(test_all_patterns_registered, {
     // JTBD: Verify all 43 patterns are registered
     // Arrange
     let registry = create_test_registry();
@@ -858,8 +815,7 @@ fn test_all_patterns_registered() {
     }
 }
 
-#[test]
-fn test_pattern_ids_valid() {
+chicago_test!(test_pattern_ids_valid, {
     // JTBD: Verify all pattern IDs are valid (1-43)
     // Arrange
     let registry = create_test_registry();
@@ -878,8 +834,7 @@ fn test_pattern_ids_valid() {
     );
 }
 
-#[test]
-fn test_pattern_execution_with_variables() {
+chicago_test!(test_pattern_execution_with_variables, {
     // JTBD: Verify patterns can execute with input variables
     // Arrange
     let registry = create_test_registry();
@@ -892,12 +847,11 @@ fn test_pattern_execution_with_variables() {
         let result = registry
             .execute(&PatternId(pattern_id), &ctx)
             .expect(&format!("Pattern {} should be registered", pattern_id));
-        assert_success(&result);
+        assert_pattern_success(&result);
     }
 }
 
-#[test]
-fn test_pattern_execution_output_variables() {
+chicago_test!(test_pattern_execution_output_variables, {
     // JTBD: Verify patterns produce output variables
     // Arrange
     let registry = create_test_registry();
@@ -909,7 +863,7 @@ fn test_pattern_execution_output_variables() {
         .expect("Pattern 1 should be registered");
 
     // Assert
-    assert_success(&result);
+    assert_pattern_success(&result);
     // Output variables may be empty for some patterns, but structure should exist
     assert!(result.variables.is_empty() || !result.variables.is_empty());
 }

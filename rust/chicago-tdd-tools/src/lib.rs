@@ -86,6 +86,10 @@ pub mod prelude {
     pub use crate::builders::*;
     pub use crate::fixture::*;
 
+    // Macros are automatically exported via #[macro_use] in lib.rs
+    // They can be used directly: chicago_test!, assert_ok!, etc.
+    // Or explicitly: use chicago_tdd_tools::{chicago_test, assert_ok};
+
     #[cfg(feature = "property-testing")]
     pub use crate::property::*;
 

@@ -20,14 +20,12 @@ impl WorkflowEngine {
         // Start OTEL span for workflow registration
         let span_ctx: Option<knhk_otel::SpanContext> = if let Some(ref otel) = self.otel_integration
         {
-            Some(
-                otel_span!(
-                    otel,
-                    "knhk.workflow_engine.register_workflow",
-                    spec_id: Some(&spec.id)
-                )
-                .await?,
+            otel_span!(
+                otel,
+                "knhk.workflow_engine.register_workflow",
+                spec_id: Some(&spec.id)
             )
+            .await?
         } else {
             None
         };

@@ -19,8 +19,7 @@ use std::collections::{HashMap, HashSet};
 // PATTERN 26: BLOCKING DISCRIMINATOR - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_26_breaking_point_max_branches() {
+chicago_async_test!(test_pattern_26_breaking_point_max_branches, {
     // BREAKING POINT: Test with extremely large number of branches
 
     let (_, executor) = advanced_control::create_pattern_26();
@@ -50,8 +49,7 @@ async fn test_pattern_26_breaking_point_max_branches() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_26_breaking_point_invalid_expected_branches() {
+chicago_async_test!(test_pattern_26_breaking_point_invalid_expected_branches, {
     // BREAKING POINT: Invalid expected_branches value
 
     let (_, executor) = advanced_control::create_pattern_26();
@@ -74,8 +72,7 @@ async fn test_pattern_26_breaking_point_invalid_expected_branches() {
     assert!(result.success, "Should handle negative expected_branches");
 }
 
-#[tokio::test]
-async fn test_pattern_26_breaking_point_empty_arrived_from() {
+chicago_async_test!(test_pattern_26_breaking_point_empty_arrived_from, {
     // BREAKING POINT: Empty arrived_from with expected_branches > 0
 
     let (_, executor) = advanced_control::create_pattern_26();
@@ -104,8 +101,7 @@ async fn test_pattern_26_breaking_point_empty_arrived_from() {
 // PATTERN 27: CANCELLING DISCRIMINATOR - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_27_breaking_point_malformed_all_branches() {
+chicago_async_test!(test_pattern_27_breaking_point_malformed_all_branches, {
     // BREAKING POINT: Malformed all_branches string
 
     let (_, executor) = advanced_control::create_pattern_27();
@@ -141,8 +137,7 @@ async fn test_pattern_27_breaking_point_malformed_all_branches() {
     assert!(result2.success, "Should handle malformed all_branches");
 }
 
-#[tokio::test]
-async fn test_pattern_27_breaking_point_mismatched_branches() {
+chicago_async_test!(test_pattern_27_breaking_point_mismatched_branches, {
     // BREAKING POINT: arrived_from contains branches not in all_branches
 
     let (_, executor) = advanced_control::create_pattern_27();
@@ -173,8 +168,7 @@ async fn test_pattern_27_breaking_point_mismatched_branches() {
 // PATTERN 28: STRUCTURED LOOP - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_28_breaking_point_max_iterations_overflow() {
+chicago_async_test!(test_pattern_28_breaking_point_max_iterations_overflow, {
     // BREAKING POINT: Iteration count exceeds max_iterations
 
     let (_, executor) = advanced_control::create_pattern_28();
@@ -201,8 +195,7 @@ async fn test_pattern_28_breaking_point_max_iterations_overflow() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_28_breaking_point_invalid_iteration_value() {
+chicago_async_test!(test_pattern_28_breaking_point_invalid_iteration_value, {
     // BREAKING POINT: Invalid iteration value
 
     let (_, executor) = advanced_control::create_pattern_28();
@@ -244,8 +237,7 @@ async fn test_pattern_28_breaking_point_invalid_iteration_value() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_28_breaking_point_max_iterations_zero() {
+chicago_async_test!(test_pattern_28_breaking_point_max_iterations_zero, {
     // BREAKING POINT: max_iterations = 0
 
     let (_, executor) = advanced_control::create_pattern_28();
@@ -276,8 +268,7 @@ async fn test_pattern_28_breaking_point_max_iterations_zero() {
 // PATTERN 29: RECURSION - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_29_breaking_point_max_depth_overflow() {
+chicago_async_test!(test_pattern_29_breaking_point_max_depth_overflow, {
     // BREAKING POINT: Depth exceeds max_depth
 
     let (_, executor) = advanced_control::create_pattern_29();
@@ -304,8 +295,7 @@ async fn test_pattern_29_breaking_point_max_depth_overflow() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_29_breaking_point_max_depth_zero() {
+chicago_async_test!(test_pattern_29_breaking_point_max_depth_zero, {
     // BREAKING POINT: max_depth = 0
 
     let (_, executor) = advanced_control::create_pattern_29();
@@ -332,8 +322,7 @@ async fn test_pattern_29_breaking_point_max_depth_zero() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_29_breaking_point_invalid_depth_value() {
+chicago_async_test!(test_pattern_29_breaking_point_invalid_depth_value, {
     // BREAKING POINT: Invalid depth value
 
     let (_, executor) = advanced_control::create_pattern_29();
@@ -365,8 +354,7 @@ async fn test_pattern_29_breaking_point_invalid_depth_value() {
 // PATTERN 33: CANCEL PROCESS INSTANCE - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_33_breaking_point_always_terminates() {
+chicago_async_test!(test_pattern_33_breaking_point_always_terminates, {
     // BREAKING POINT: Pattern 33 MUST always terminate regardless of context
 
     let (_, executor) = advanced_control::create_pattern_33();
@@ -424,8 +412,7 @@ async fn test_pattern_33_breaking_point_always_terminates() {
 // PATTERN 38: MULTIPLE THREADS - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_38_breaking_point_max_threads() {
+chicago_async_test!(test_pattern_38_breaking_point_max_threads, {
     // BREAKING POINT: Maximum thread count (should be capped at 1000)
 
     let (_, executor) = advanced_control::create_pattern_38();
@@ -451,8 +438,7 @@ async fn test_pattern_38_breaking_point_max_threads() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_38_breaking_point_zero_threads() {
+chicago_async_test!(test_pattern_38_breaking_point_zero_threads, {
     // BREAKING POINT: thread_count = 0 (should default to 1)
 
     let (_, executor) = advanced_control::create_pattern_38();
@@ -477,8 +463,7 @@ async fn test_pattern_38_breaking_point_zero_threads() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_38_breaking_point_invalid_thread_count() {
+chicago_async_test!(test_pattern_38_breaking_point_invalid_thread_count, {
     // BREAKING POINT: Invalid thread_count value
 
     let (_, executor) = advanced_control::create_pattern_38();
@@ -523,8 +508,7 @@ async fn test_pattern_38_breaking_point_invalid_thread_count() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_38_breaking_point_memory_pressure() {
+chicago_async_test!(test_pattern_38_breaking_point_memory_pressure, {
     // BREAKING POINT: Memory pressure with many threads
 
     let (_, executor) = advanced_control::create_pattern_38();
@@ -564,8 +548,7 @@ async fn test_pattern_38_breaking_point_memory_pressure() {
 // PATTERN 39: THREAD MERGE - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_39_breaking_point_mismatched_threads() {
+chicago_async_test!(test_pattern_39_breaking_point_mismatched_threads, {
     // BREAKING POINT: arrived_from contains threads not matching expected pattern
 
     let (_, executor) = advanced_control::create_pattern_39();
@@ -594,8 +577,7 @@ async fn test_pattern_39_breaking_point_mismatched_threads() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_39_breaking_point_zero_expected_threads() {
+chicago_async_test!(test_pattern_39_breaking_point_zero_expected_threads, {
     // BREAKING POINT: expected_threads = 0
 
     let (_, executor) = advanced_control::create_pattern_39();
@@ -620,8 +602,7 @@ async fn test_pattern_39_breaking_point_zero_expected_threads() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_39_breaking_point_more_arrived_than_expected() {
+chicago_async_test!(test_pattern_39_breaking_point_more_arrived_than_expected, {
     // BREAKING POINT: More threads arrived than expected
 
     let (_, executor) = advanced_control::create_pattern_39();
@@ -654,8 +635,7 @@ async fn test_pattern_39_breaking_point_more_arrived_than_expected() {
 // PATTERN 30 & 31: TRIGGERS - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_30_breaking_point_missing_trigger_fired() {
+chicago_async_test!(test_pattern_30_breaking_point_missing_trigger_fired, {
     // BREAKING POINT: Missing trigger_fired (should default to false/waiting)
 
     let (_, executor) = advanced_control::create_pattern_30();
@@ -681,8 +661,7 @@ async fn test_pattern_30_breaking_point_missing_trigger_fired() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_30_breaking_point_trigger_fired() {
+chicago_async_test!(test_pattern_30_breaking_point_trigger_fired, {
     // BREAKING POINT: Trigger fired should schedule activities
 
     let (_, executor) = advanced_control::create_pattern_30();
@@ -711,8 +690,7 @@ async fn test_pattern_30_breaking_point_trigger_fired() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_30_breaking_point_extreme_trigger_source() {
+chicago_async_test!(test_pattern_30_breaking_point_extreme_trigger_source, {
     // BREAKING POINT: Extreme trigger_source length
 
     let (_, executor) = advanced_control::create_pattern_30();
@@ -735,8 +713,7 @@ async fn test_pattern_30_breaking_point_extreme_trigger_source() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_31_breaking_point_trigger_count_zero() {
+chicago_async_test!(test_pattern_31_breaking_point_trigger_count_zero, {
     // BREAKING POINT: trigger_count = 0
 
     let (_, executor) = advanced_control::create_pattern_31();
@@ -761,8 +738,7 @@ async fn test_pattern_31_breaking_point_trigger_count_zero() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_31_breaking_point_fired_exceeds_count() {
+chicago_async_test!(test_pattern_31_breaking_point_fired_exceeds_count, {
     // BREAKING POINT: fired_count >= trigger_count
 
     let (_, executor) = advanced_control::create_pattern_31();
@@ -792,8 +768,7 @@ async fn test_pattern_31_breaking_point_fired_exceeds_count() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_31_breaking_point_invalid_trigger_count() {
+chicago_async_test!(test_pattern_31_breaking_point_invalid_trigger_count, {
     // BREAKING POINT: Invalid trigger_count value
 
     let (_, executor) = advanced_control::create_pattern_31();
@@ -839,8 +814,7 @@ async fn test_pattern_31_breaking_point_invalid_trigger_count() {
 // PATTERN 32: CANCEL ACTIVITY INSTANCE - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_32_breaking_point_empty_activity_ids() {
+chicago_async_test!(test_pattern_32_breaking_point_empty_activity_ids, {
     // BREAKING POINT: Empty activity_ids string
 
     let (_, executor) = advanced_control::create_pattern_32();
@@ -865,8 +839,7 @@ async fn test_pattern_32_breaking_point_empty_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_32_breaking_point_malformed_activity_ids() {
+chicago_async_test!(test_pattern_32_breaking_point_malformed_activity_ids, {
     // BREAKING POINT: Malformed activity_ids
 
     let (_, executor) = advanced_control::create_pattern_32();
@@ -915,8 +888,7 @@ async fn test_pattern_32_breaking_point_malformed_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_32_breaking_point_extreme_activity_ids() {
+chicago_async_test!(test_pattern_32_breaking_point_extreme_activity_ids, {
     // BREAKING POINT: Extreme number of activity_ids
 
     let (_, executor) = advanced_control::create_pattern_32();
@@ -949,8 +921,7 @@ async fn test_pattern_32_breaking_point_extreme_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_32_breaking_point_missing_all_parameters() {
+chicago_async_test!(test_pattern_32_breaking_point_missing_all_parameters, {
     // BREAKING POINT: Missing both activity_ids and instance_id
 
     let (_, executor) = advanced_control::create_pattern_32();
@@ -987,8 +958,7 @@ async fn test_pattern_32_breaking_point_missing_all_parameters() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_32_breaking_point_never_terminates() {
+chicago_async_test!(test_pattern_32_breaking_point_never_terminates, {
     // BREAKING POINT: Pattern 32 must NEVER terminate (unlike Pattern 33)
 
     let (_, executor) = advanced_control::create_pattern_32();
@@ -1031,8 +1001,7 @@ async fn test_pattern_32_breaking_point_never_terminates() {
 // PATTERN 34: STOP PROCESS INSTANCE - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_34_breaking_point_always_terminates() {
+chicago_async_test!(test_pattern_34_breaking_point_always_terminates, {
     // BREAKING POINT: Pattern 34 MUST always terminate
 
     let (_, executor) = advanced_control::create_pattern_34();
@@ -1081,8 +1050,7 @@ async fn test_pattern_34_breaking_point_always_terminates() {
     }
 }
 
-#[tokio::test]
-async fn test_pattern_34_breaking_point_vs_pattern_33() {
+chicago_async_test!(test_pattern_34_breaking_point_vs_pattern_33, {
     // BREAKING POINT: Pattern 34 vs 33 difference
 
     let (_, executor_33) = advanced_control::create_pattern_33();
@@ -1118,8 +1086,7 @@ async fn test_pattern_34_breaking_point_vs_pattern_33() {
 // PATTERN 35: ABORT PROCESS INSTANCE - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_35_breaking_point_always_terminates() {
+chicago_async_test!(test_pattern_35_breaking_point_always_terminates, {
     // BREAKING POINT: Pattern 35 MUST always terminate
 
     let (_, executor) = advanced_control::create_pattern_35();
@@ -1159,8 +1126,7 @@ async fn test_pattern_35_breaking_point_always_terminates() {
     }
 }
 
-#[tokio::test]
-async fn test_pattern_35_breaking_point_missing_abort_reason() {
+chicago_async_test!(test_pattern_35_breaking_point_missing_abort_reason, {
     // BREAKING POINT: Missing abort_reason (should default)
 
     let (_, executor) = advanced_control::create_pattern_35();
@@ -1187,10 +1153,10 @@ async fn test_pattern_35_breaking_point_missing_abort_reason() {
             .contains("Aborted by pattern 35"),
         "BREAKING POINT: Should use default abort reason"
     );
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 }
 
-#[tokio::test]
-async fn test_pattern_35_breaking_point_extreme_abort_reason() {
+chicago_async_test!(test_pattern_35_breaking_point_extreme_abort_reason, {
     // BREAKING POINT: Extreme abort_reason length
 
     let (_, executor) = advanced_control::create_pattern_35();
@@ -1219,8 +1185,7 @@ async fn test_pattern_35_breaking_point_extreme_abort_reason() {
 // PATTERN 36: DISABLE ACTIVITY - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_36_breaking_point_empty_activity_ids() {
+chicago_async_test!(test_pattern_36_breaking_point_empty_activity_ids, {
     // BREAKING POINT: Empty activity_ids
 
     let (_, executor) = advanced_control::create_pattern_36();
@@ -1249,8 +1214,7 @@ async fn test_pattern_36_breaking_point_empty_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_36_breaking_point_extreme_activity_ids() {
+chicago_async_test!(test_pattern_36_breaking_point_extreme_activity_ids, {
     // BREAKING POINT: Extreme number of activity_ids
 
     let (_, executor) = advanced_control::create_pattern_36();
@@ -1280,8 +1244,7 @@ async fn test_pattern_36_breaking_point_extreme_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_36_breaking_point_never_terminates() {
+chicago_async_test!(test_pattern_36_breaking_point_never_terminates, {
     // BREAKING POINT: Pattern 36 must NEVER terminate
 
     let (_, executor) = advanced_control::create_pattern_36();
@@ -1329,8 +1292,7 @@ async fn test_pattern_36_breaking_point_never_terminates() {
 // PATTERN 37: SKIP ACTIVITY - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_37_breaking_point_empty_activity_ids() {
+chicago_async_test!(test_pattern_37_breaking_point_empty_activity_ids, {
     // BREAKING POINT: Empty activity_ids
 
     let (_, executor) = advanced_control::create_pattern_37();
@@ -1364,8 +1326,7 @@ async fn test_pattern_37_breaking_point_empty_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_37_breaking_point_extreme_activity_ids() {
+chicago_async_test!(test_pattern_37_breaking_point_extreme_activity_ids, {
     // BREAKING POINT: Extreme number of activity_ids
 
     let (_, executor) = advanced_control::create_pattern_37();
@@ -1400,8 +1361,7 @@ async fn test_pattern_37_breaking_point_extreme_activity_ids() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_37_breaking_point_never_schedules() {
+chicago_async_test!(test_pattern_37_breaking_point_never_schedules, {
     // BREAKING POINT: Pattern 37 must NEVER schedule activities
 
     let (_, executor) = advanced_control::create_pattern_37();
@@ -1450,8 +1410,7 @@ async fn test_pattern_37_breaking_point_never_schedules() {
 // PATTERNS 40-43: TRIGGER PATTERNS - BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_40_breaking_point_missing_trigger_source() {
+chicago_async_test!(test_pattern_40_breaking_point_missing_trigger_source, {
     // BREAKING POINT: Missing trigger_source (should default)
 
     let (_, executor) = trigger::create_pattern_40();
@@ -1473,8 +1432,7 @@ async fn test_pattern_40_breaking_point_missing_trigger_source() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_40_breaking_point_extreme_trigger_source() {
+chicago_async_test!(test_pattern_40_breaking_point_extreme_trigger_source, {
     // BREAKING POINT: Extreme trigger_source length
 
     let (_, executor) = trigger::create_pattern_40();
@@ -1501,8 +1459,7 @@ async fn test_pattern_40_breaking_point_extreme_trigger_source() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_41_breaking_point_missing_event_type() {
+chicago_async_test!(test_pattern_41_breaking_point_missing_event_type, {
     // BREAKING POINT: Missing event_type (should default)
 
     let (_, executor) = trigger::create_pattern_41();
@@ -1524,8 +1481,7 @@ async fn test_pattern_41_breaking_point_missing_event_type() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_41_breaking_point_extreme_event_type() {
+chicago_async_test!(test_pattern_41_breaking_point_extreme_event_type, {
     // BREAKING POINT: Extreme event_type length
 
     let (_, executor) = trigger::create_pattern_41();
@@ -1545,8 +1501,7 @@ async fn test_pattern_41_breaking_point_extreme_event_type() {
     assert!(result.success, "Should handle extreme event_type length");
 }
 
-#[tokio::test]
-async fn test_pattern_42_breaking_point_trigger_count_zero() {
+chicago_async_test!(test_pattern_42_breaking_point_trigger_count_zero, {
     // BREAKING POINT: trigger_count = 0
 
     let (_, executor) = trigger::create_pattern_42();
@@ -1572,8 +1527,7 @@ async fn test_pattern_42_breaking_point_trigger_count_zero() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_42_breaking_point_invalid_trigger_count() {
+chicago_async_test!(test_pattern_42_breaking_point_invalid_trigger_count, {
     // BREAKING POINT: Invalid trigger_count
 
     let (_, executor) = trigger::create_pattern_42();
@@ -1620,8 +1574,7 @@ async fn test_pattern_42_breaking_point_invalid_trigger_count() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_43_breaking_point_missing_trigger_id() {
+chicago_async_test!(test_pattern_43_breaking_point_missing_trigger_id, {
     // BREAKING POINT: Missing trigger_id (should default)
 
     let (_, executor) = trigger::create_pattern_43();
@@ -1643,8 +1596,7 @@ async fn test_pattern_43_breaking_point_missing_trigger_id() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_43_breaking_point_extreme_trigger_id() {
+chicago_async_test!(test_pattern_43_breaking_point_extreme_trigger_id, {
     // BREAKING POINT: Extreme trigger_id length
 
     let (_, executor) = trigger::create_pattern_43();
@@ -1668,8 +1620,7 @@ async fn test_pattern_43_breaking_point_extreme_trigger_id() {
     );
 }
 
-#[tokio::test]
-async fn test_patterns_40_43_breaking_point_never_terminate() {
+chicago_async_test!(test_patterns_40_43_breaking_point_never_terminate, {
     // BREAKING POINT: Trigger patterns must NEVER terminate
 
     let patterns = vec![
@@ -1701,8 +1652,7 @@ async fn test_patterns_40_43_breaking_point_never_terminate() {
 // COMPREHENSIVE: ALL REMAINING PATTERNS BREAKING POINTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_all_remaining_patterns_breaking_point_empty_context() {
+chicago_async_test!(test_all_remaining_patterns_breaking_point_empty_context, {
     // BREAKING POINT: All remaining patterns with empty context
 
     let patterns = vec![
@@ -1752,8 +1702,7 @@ async fn test_all_remaining_patterns_breaking_point_empty_context() {
     }
 }
 
-#[tokio::test]
-async fn test_all_remaining_patterns_breaking_point_state_consistency() {
+chicago_async_test!(test_all_remaining_patterns_breaking_point_state_consistency, {
     // BREAKING POINT: State consistency under rapid execution
 
     let patterns = vec![

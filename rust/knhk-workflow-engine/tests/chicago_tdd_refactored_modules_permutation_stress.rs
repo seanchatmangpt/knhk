@@ -15,13 +15,13 @@ use knhk_workflow_engine::resource::allocation::{
     AllocationPolicy, AllocationRequest, Resource, ResourceAllocator, ResourceId, Role,
 };
 use std::collections::HashMap;
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // PERMUTATION TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_rdf_serialization_permutations() {
+chicago_async_test!(test_rdf_serialization_permutations, {
     // Test all combinations of metadata serialization
     let patterns = vec![1, 5, 10, 20, 30, 43];
 
@@ -46,8 +46,7 @@ async fn test_rdf_serialization_permutations() {
     }
 }
 
-#[tokio::test]
-async fn test_pattern_execution_permutations() {
+chicago_async_test!(test_pattern_execution_permutations, {
     // Test all advanced control patterns in different orders
     let pattern_creators = vec![
         advanced_control::create_pattern_26,
@@ -89,8 +88,7 @@ async fn test_pattern_execution_permutations() {
     }
 }
 
-#[tokio::test]
-async fn test_resource_allocation_policy_permutations() {
+chicago_async_test!(test_resource_allocation_policy_permutations, {
     let allocator = ResourceAllocator::new();
 
     // Create multiple resources
@@ -156,8 +154,7 @@ async fn test_resource_allocation_policy_permutations() {
 // STRESS TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_rdf_serialization_stress() {
+chicago_async_test!(test_rdf_serialization_stress, {
     // Stress test: Serialize many patterns rapidly
     let metadata_list: Vec<PatternMetadata> = (1..=43)
         .map(|id| {
@@ -182,8 +179,7 @@ async fn test_rdf_serialization_stress() {
     }
 }
 
-#[tokio::test]
-async fn test_pattern_execution_stress() {
+chicago_async_test!(test_pattern_execution_stress, {
     // Stress test: Execute patterns many times
     let (pattern_id, executor) = advanced_control::create_pattern_26();
     let context = PatternExecutionContext {
@@ -202,8 +198,7 @@ async fn test_pattern_execution_stress() {
     }
 }
 
-#[tokio::test]
-async fn test_resource_allocation_stress() {
+chicago_async_test!(test_resource_allocation_stress, {
     // Stress test: Many concurrent allocations
     let allocator = ResourceAllocator::new();
 
@@ -245,8 +240,7 @@ async fn test_resource_allocation_stress() {
     }
 }
 
-#[tokio::test]
-async fn test_resource_allocation_boundary_conditions() {
+chicago_async_test!(test_resource_allocation_boundary_conditions, {
     // Stress test: Boundary conditions
     let allocator = ResourceAllocator::new();
 
@@ -314,8 +308,7 @@ async fn test_resource_allocation_boundary_conditions() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_context_variable_stress() {
+chicago_async_test!(test_pattern_context_variable_stress, {
     // Stress test: Many variables in context
     let mut variables = HashMap::new();
 
@@ -342,8 +335,7 @@ async fn test_pattern_context_variable_stress() {
     );
 }
 
-#[tokio::test]
-async fn test_resource_workload_updates_stress() {
+chicago_async_test!(test_resource_workload_updates_stress, {
     // Stress test: Many workload updates
     let allocator = ResourceAllocator::new();
 
@@ -377,8 +369,7 @@ async fn test_resource_workload_updates_stress() {
     assert!(retrieved.is_ok(), "Resource should still be accessible");
 }
 
-#[tokio::test]
-async fn test_all_patterns_metadata_stress() {
+chicago_async_test!(test_all_patterns_metadata_stress, {
     // Stress test: Get and serialize all pattern metadata
     let metadata = get_all_pattern_metadata();
     assert_eq!(metadata.len(), 43, "Should have 43 patterns");
@@ -397,8 +388,7 @@ async fn test_all_patterns_metadata_stress() {
     }
 }
 
-#[tokio::test]
-async fn test_concurrent_pattern_execution() {
+chicago_async_test!(test_concurrent_pattern_execution, {
     // Stress test: Simulate concurrent pattern execution
     let (pattern_id, executor) = advanced_control::create_pattern_26();
 
@@ -425,8 +415,7 @@ async fn test_concurrent_pattern_execution() {
     }
 }
 
-#[tokio::test]
-async fn test_resource_availability_toggle_stress() {
+chicago_async_test!(test_resource_availability_toggle_stress, {
     // Stress test: Toggle resource availability many times
     let allocator = ResourceAllocator::new();
 
@@ -463,8 +452,7 @@ async fn test_resource_availability_toggle_stress() {
     }
 }
 
-#[tokio::test]
-async fn test_mixed_allocation_policies_stress() {
+chicago_async_test!(test_mixed_allocation_policies_stress, {
     // Stress test: Mix different allocation policies
     let allocator = ResourceAllocator::new();
 

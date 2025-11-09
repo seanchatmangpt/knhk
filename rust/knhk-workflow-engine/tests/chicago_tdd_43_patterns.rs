@@ -7,6 +7,7 @@
 //! - AAA pattern (Arrange, Act, Assert)
 //! - Descriptive test names that explain what is being tested
 
+use chicago_tdd_tools::{assert_ok, chicago_test};
 use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::register_all_patterns;
@@ -35,8 +36,7 @@ fn create_test_context() -> PatternExecutionContext {
 // Basic Control Flow Patterns (1-5)
 // ============================================================================
 
-#[test]
-fn test_pattern_1_sequence_executes_branches_sequentially() {
+chicago_test!(test_pattern_1_sequence_executes_branches_sequentially, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -56,10 +56,9 @@ fn test_pattern_1_sequence_executes_branches_sequentially() {
         result.next_state.is_some(),
         "Sequence pattern should set next state"
     );
-}
+});
 
-#[test]
-fn test_pattern_2_parallel_split_executes_branches_in_parallel() {
+chicago_test!(test_pattern_2_parallel_split_executes_branches_in_parallel, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -79,10 +78,9 @@ fn test_pattern_2_parallel_split_executes_branches_in_parallel() {
         result.next_state.is_some(),
         "Parallel Split pattern should set next state"
     );
-}
+});
 
-#[test]
-fn test_pattern_3_synchronization_waits_for_all_branches() {
+chicago_test!(test_pattern_3_synchronization_waits_for_all_branches, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -101,10 +99,9 @@ fn test_pattern_3_synchronization_waits_for_all_branches() {
         result.next_state.is_some(),
         "Synchronization pattern should set next state"
     );
-}
+});
 
-#[test]
-fn test_pattern_4_exclusive_choice_selects_one_branch() {
+chicago_test!(test_pattern_4_exclusive_choice_selects_one_branch, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -127,7 +124,7 @@ fn test_pattern_4_exclusive_choice_selects_one_branch() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_5_simple_merge_merges_alternative_branches() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -153,7 +150,7 @@ fn test_pattern_5_simple_merge_merges_alternative_branches() {
 // Advanced Branching Patterns (6-11)
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_pattern_6_multi_choice_selects_one_or_more_branches() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -175,7 +172,7 @@ fn test_pattern_6_multi_choice_selects_one_or_more_branches() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_7_structured_synchronizing_merge_synchronizes_or_join() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -193,7 +190,7 @@ fn test_pattern_7_structured_synchronizing_merge_synchronizes_or_join() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_8_multi_merge_merges_all_incoming_branches() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -211,7 +208,7 @@ fn test_pattern_8_multi_merge_merges_all_incoming_branches() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_9_discriminator_first_wins() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -229,7 +226,7 @@ fn test_pattern_9_discriminator_first_wins() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_10_arbitrary_cycles_supports_loops() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -249,7 +246,7 @@ fn test_pattern_10_arbitrary_cycles_supports_loops() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_11_implicit_termination_detects_completion() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -271,7 +268,7 @@ fn test_pattern_11_implicit_termination_detects_completion() {
 // Multiple Instance Patterns (12-15)
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_pattern_12_multiple_instance_without_sync_executes_instances() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -295,7 +292,7 @@ fn test_pattern_12_multiple_instance_without_sync_executes_instances() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_13_multiple_instance_design_time_executes_known_count() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -319,7 +316,7 @@ fn test_pattern_13_multiple_instance_design_time_executes_known_count() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_14_multiple_instance_runtime_executes_runtime_count() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -343,7 +340,7 @@ fn test_pattern_14_multiple_instance_runtime_executes_runtime_count() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -369,7 +366,7 @@ fn test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically() {
 // State-Based Patterns (16-18)
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_pattern_16_deferred_choice_waits_for_external_event() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -387,7 +384,7 @@ fn test_pattern_16_deferred_choice_waits_for_external_event() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_17_interleaved_parallel_routing_executes_interleaved() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -409,7 +406,7 @@ fn test_pattern_17_interleaved_parallel_routing_executes_interleaved() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_18_milestone_enables_activity_when_reached() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -433,7 +430,7 @@ fn test_pattern_18_milestone_enables_activity_when_reached() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_18_milestone_blocks_activity_when_not_reached() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -462,7 +459,7 @@ fn test_pattern_18_milestone_blocks_activity_when_not_reached() {
 // Cancellation Patterns (19-25)
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_pattern_19_cancel_activity_cancels_specific_activity() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -486,7 +483,7 @@ fn test_pattern_19_cancel_activity_cancels_specific_activity() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_20_timeout_executes_with_timeout() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -504,7 +501,7 @@ fn test_pattern_20_timeout_executes_with_timeout() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_21_cancellation_cancels_execution() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -522,7 +519,7 @@ fn test_pattern_21_cancellation_cancels_execution() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_22_cancel_case_cancels_entire_case() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -546,7 +543,7 @@ fn test_pattern_22_cancel_case_cancels_entire_case() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_23_cancel_region_cancels_region() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -570,7 +567,7 @@ fn test_pattern_23_cancel_region_cancels_region() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_24_cancel_multiple_instance_activity_cancels_instances() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -596,7 +593,7 @@ fn test_pattern_24_cancel_multiple_instance_activity_cancels_instances() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_25_complete_multiple_instance_activity_completes_instances() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -624,7 +621,7 @@ fn test_pattern_25_complete_multiple_instance_activity_completes_instances() {
 // Advanced Control Patterns (26-39)
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_pattern_26_blocking_discriminator_blocks_after_first() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -646,7 +643,7 @@ fn test_pattern_26_blocking_discriminator_blocks_after_first() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_27_cancelling_discriminator_cancels_others() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -668,7 +665,7 @@ fn test_pattern_27_cancelling_discriminator_cancels_others() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_28_structured_loop_executes_with_exit_condition() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -692,7 +689,7 @@ fn test_pattern_28_structured_loop_executes_with_exit_condition() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_29_recursion_executes_recursively() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -715,7 +712,7 @@ fn test_pattern_29_recursion_executes_recursively() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_30_transient_trigger_handles_transient_event() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -737,7 +734,7 @@ fn test_pattern_30_transient_trigger_handles_transient_event() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_31_persistent_trigger_handles_persistent_event() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -759,7 +756,7 @@ fn test_pattern_31_persistent_trigger_handles_persistent_event() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_32_cancel_activity_instance_cancels_specific_instance() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -783,7 +780,7 @@ fn test_pattern_32_cancel_activity_instance_cancels_specific_instance() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_33_cancel_process_instance_cancels_process() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -807,7 +804,7 @@ fn test_pattern_33_cancel_process_instance_cancels_process() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_34_stop_process_instance_stops_process() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -829,7 +826,7 @@ fn test_pattern_34_stop_process_instance_stops_process() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_35_abort_process_instance_aborts_process() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -851,7 +848,7 @@ fn test_pattern_35_abort_process_instance_aborts_process() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_36_disable_activity_disables_activity() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -875,7 +872,7 @@ fn test_pattern_36_disable_activity_disables_activity() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_37_skip_activity_skips_activity() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -899,7 +896,7 @@ fn test_pattern_37_skip_activity_skips_activity() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_38_activity_instance_multiple_threads_executes_in_threads() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -923,7 +920,7 @@ fn test_pattern_38_activity_instance_multiple_threads_executes_in_threads() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_39_thread_merge_merges_threads() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -949,7 +946,7 @@ fn test_pattern_39_thread_merge_merges_threads() {
 // Trigger Patterns (40-43)
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_pattern_40_external_trigger_handles_external_event() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -978,7 +975,7 @@ fn test_pattern_40_external_trigger_handles_external_event() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_41_event_based_trigger_handles_event() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -1002,7 +999,7 @@ fn test_pattern_41_event_based_trigger_handles_event() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_42_multiple_trigger_waits_for_all_triggers() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -1026,7 +1023,7 @@ fn test_pattern_42_multiple_trigger_waits_for_all_triggers() {
     );
 }
 
-#[test]
+chicago_test!
 fn test_pattern_43_cancel_trigger_cancels_trigger_based_activity() {
     // Arrange: Create registry and context
     let registry = create_test_registry();
@@ -1054,7 +1051,7 @@ fn test_pattern_43_cancel_trigger_cancels_trigger_based_activity() {
 // Integration Tests - Pattern Registry
 // ============================================================================
 
-#[test]
+chicago_test!
 fn test_all_43_patterns_are_registered() {
     // Arrange: Create registry
     let registry = create_test_registry();
@@ -1076,8 +1073,8 @@ fn test_all_43_patterns_are_registered() {
     }
 }
 
-#[test]
-fn test_pattern_registry_executes_registered_pattern() {
+chicago_test!
+test_pattern_registry_executes_registered_pattern, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -1091,8 +1088,8 @@ fn test_pattern_registry_executes_registered_pattern() {
     assert!(result.success, "Pattern execution should succeed");
 }
 
-#[test]
-fn test_pattern_registry_returns_none_for_unregistered_pattern() {
+chicago_test!
+test_pattern_registry_returns_none_for_unregistered_pattern, {
     // Arrange: Create registry
     let registry = PatternRegistry::new(); // Empty registry
     let ctx = create_test_context();
@@ -1104,8 +1101,8 @@ fn test_pattern_registry_returns_none_for_unregistered_pattern() {
     assert!(result.is_none(), "Unregistered pattern should return None");
 }
 
-#[test]
-fn test_pattern_execution_preserves_variables() {
+chicago_test!
+test_pattern_execution_preserves_variables, {
     // Arrange: Create registry and context with variables
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -1125,8 +1122,8 @@ fn test_pattern_execution_preserves_variables() {
     );
 }
 
-#[test]
-fn test_pattern_execution_sets_next_state() {
+chicago_test!
+test_pattern_execution_sets_next_state, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -1152,8 +1149,8 @@ fn test_pattern_execution_sets_next_state() {
 // Edge Cases and Error Handling
 // ============================================================================
 
-#[test]
-fn test_pattern_execution_handles_empty_context() {
+chicago_test!
+test_pattern_execution_handles_empty_context, {
     // Arrange: Create registry with empty context
     let registry = create_test_registry();
     let ctx = PatternExecutionContext {
@@ -1176,8 +1173,8 @@ fn test_pattern_execution_handles_empty_context() {
     );
 }
 
-#[test]
-fn test_pattern_execution_handles_missing_variables() {
+chicago_test!
+test_pattern_execution_handles_missing_variables, {
     // Arrange: Create registry and context without required variables
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -1194,8 +1191,8 @@ fn test_pattern_execution_handles_missing_variables() {
     );
 }
 
-#[test]
-fn test_pattern_id_validation() {
+chicago_test!
+test_pattern_id_validation, {
     // Arrange: Test valid and invalid pattern IDs
     let valid_id = PatternId::new(1);
     let invalid_id_low = PatternId::new(0);
@@ -1209,8 +1206,8 @@ fn test_pattern_id_validation() {
     assert!(invalid_id_high.is_err(), "Pattern ID 44 should be invalid");
 }
 
-#[test]
-fn test_pattern_registry_list_patterns_returns_all_ids() {
+chicago_test!
+test_pattern_registry_list_patterns_returns_all_ids, {
     // Arrange: Create registry
     let registry = create_test_registry();
 
@@ -1229,8 +1226,8 @@ fn test_pattern_registry_list_patterns_returns_all_ids() {
     }
 }
 
-#[test]
-fn test_pattern_registry_has_pattern_checks_registration() {
+chicago_test!
+test_pattern_registry_has_pattern_checks_registration, {
     // Arrange: Create registry
     let registry = create_test_registry();
 

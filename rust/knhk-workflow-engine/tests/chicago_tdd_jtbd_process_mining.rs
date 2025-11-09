@@ -24,6 +24,7 @@ use process_mining::{
 };
 use std::collections::HashMap;
 use tempfile::TempDir;
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 /// Helper: Extract activity names from XES content
 /// Validates that XES export contains actual task execution events
@@ -220,8 +221,7 @@ fn create_sequential_workflow() -> WorkflowSpec {
 }
 
 /// JTBD 1: Process Discovery - Discover process model from execution logs
-#[tokio::test]
-async fn test_jtbd_process_discovery_from_execution_logs() {
+chicago_async_test!(test_jtbd_process_discovery_from_execution_logs, {
     println!("[JTBD TEST] Process Discovery from Execution Logs");
     println!("  Job: Discover process model from workflow execution logs");
     println!("  Context: Van der Aalst needs to discover process structure from event logs");
@@ -294,8 +294,7 @@ async fn test_jtbd_process_discovery_from_execution_logs() {
 }
 
 /// JTBD 2: Conformance Checking - Verify discovered model matches original workflow
-#[tokio::test]
-async fn test_jtbd_conformance_checking_discovered_vs_design() {
+chicago_async_test!(test_jtbd_conformance_checking_discovered_vs_design, {
     println!("[JTBD TEST] Conformance Checking: Discovered vs Design");
     println!("  Job: Verify discovered process model matches original workflow design");
     println!("  Context: Van der Aalst needs to check if execution conforms to design");
@@ -391,8 +390,7 @@ async fn test_jtbd_conformance_checking_discovered_vs_design() {
 }
 
 /// JTBD 3: Bottleneck Analysis - Identify performance bottlenecks from execution logs
-#[tokio::test]
-async fn test_jtbd_bottleneck_analysis_from_execution_logs() {
+chicago_async_test!(test_jtbd_bottleneck_analysis_from_execution_logs, {
     println!("[JTBD TEST] Bottleneck Analysis from Execution Logs");
     println!("  Job: Identify performance bottlenecks in workflow execution");
     println!("  Context: Van der Aalst needs to find optimization opportunities");
@@ -493,8 +491,7 @@ async fn test_jtbd_bottleneck_analysis_from_execution_logs() {
 }
 
 /// JTBD 4: Process Enhancement - Use discovered model to improve workflow
-#[tokio::test]
-async fn test_jtbd_process_enhancement_from_discovered_model() {
+chicago_async_test!(test_jtbd_process_enhancement_from_discovered_model, {
     println!("[JTBD TEST] Process Enhancement from Discovered Model");
     println!("  Job: Use discovered process model to improve workflow design");
     println!("  Context: Van der Aalst needs to enhance workflows based on execution patterns");
@@ -566,8 +563,7 @@ async fn test_jtbd_process_enhancement_from_discovered_model() {
 }
 
 /// JTBD 5: Complete Process Mining Workflow - End-to-End Validation
-#[tokio::test]
-async fn test_jtbd_complete_process_mining_workflow() {
+chicago_async_test!(test_jtbd_complete_process_mining_workflow, {
     println!("[JTBD TEST] Complete Process Mining Workflow");
     println!("  Job: Complete end-to-end process mining workflow");
     println!("  Context: Van der Aalst needs full workflow from execution to analysis");
@@ -657,8 +653,7 @@ async fn test_jtbd_complete_process_mining_workflow() {
 }
 
 /// JTBD 6: Multiple Workflow Patterns - Validate process discovery across patterns
-#[tokio::test]
-async fn test_jtbd_multiple_workflow_patterns_discovery() {
+chicago_async_test!(test_jtbd_multiple_workflow_patterns_discovery, {
     println!("[JTBD TEST] Multiple Workflow Patterns Discovery");
     println!("  Job: Discover process models from different workflow patterns");
     println!("  Context: Van der Aalst needs to validate discovery across pattern types");

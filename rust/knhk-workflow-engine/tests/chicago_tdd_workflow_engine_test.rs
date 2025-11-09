@@ -6,6 +6,7 @@
 //! **Architecture**: Uses chicago-tdd-tools for fixtures and builders, extends with workflow-specific testing.
 
 use chicago_tdd_tools::builders::TestDataBuilder;
+use chicago_tdd_tools::{assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::CaseState;
 use knhk_workflow_engine::parser::{JoinType, SplitType, TaskType};
 use knhk_workflow_engine::testing::chicago_tdd::*;
@@ -14,18 +15,16 @@ use knhk_workflow_engine::testing::chicago_tdd::*;
 // Test Fixture Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_workflow_fixture_creation() {
+chicago_async_test!(test_workflow_fixture_creation, {
     // Arrange & Act: Create fixture using chicago-tdd-tools pattern
     let fixture = WorkflowTestFixture::new().unwrap();
 
     // Assert: Fixture created successfully
     assert_eq!(fixture.specs.len(), 0);
     assert_eq!(fixture.cases.len(), 0);
-}
+});
 
-#[tokio::test]
-async fn test_workflow_fixture_isolation() {
+chicago_async_test!(test_workflow_fixture_isolation, {
     // Arrange & Act: Create multiple fixtures
     let mut fixture1 = WorkflowTestFixture::new().unwrap();
     let mut fixture2 = WorkflowTestFixture::new().unwrap();
@@ -33,7 +32,9 @@ async fn test_workflow_fixture_isolation() {
 
     // Act: Register workflow in fixture1
     let spec1 = WorkflowSpecBuilder::new("Workflow 1").build();
-    let spec_id1 = fixture1.register_workflow(spec1).await.unwrap();
+    let result = fixture1.register_workflow(spec1).await;
+    assert_ok!(&result, "Workflow registration should succeed");
+    let spec_id1 = result.unwrap();
 
     // Assert: Each fixture is isolated (unique test databases)
     // fixture1 should have the workflow, others should not
@@ -43,14 +44,13 @@ async fn test_workflow_fixture_isolation() {
     assert!(fixture1.specs.contains_key(&spec_id1));
     assert!(!fixture2.specs.contains_key(&spec_id1));
     assert!(!fixture3.specs.contains_key(&spec_id1));
-}
+});
 
 // ============================================================================
 // Workflow Registration Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_register_workflow_with_builder() {
+chicago_async_test!(test_register_workflow_with_builder, {
     // Arrange: Create fixture and workflow spec using builder
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow")
@@ -62,15 +62,16 @@ async fn test_register_workflow_with_builder() {
         .build();
 
     // Act: Register workflow
-    let spec_id = fixture.register_workflow(spec.clone()).await.unwrap();
+    let result = fixture.register_workflow(spec.clone()).await;
+    assert_ok!(&result, "Workflow registration should succeed");
+    let spec_id = result.unwrap();
 
     // Assert: Workflow registered
     assert!(fixture.specs.contains_key(&spec_id));
     assert_eq!(fixture.specs.get(&spec_id).unwrap().name, "Test Workflow");
-}
+});
 
-#[tokio::test]
-async fn test_register_multiple_workflows() {
+chicago_async_test!(test_register_multiple_workflows, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -79,23 +80,31 @@ async fn test_register_multiple_workflows() {
     let spec2 = WorkflowSpecBuilder::new("Workflow 2").build();
     let spec3 = WorkflowSpecBuilder::new("Workflow 3").build();
 
-    let spec_id1 = fixture.register_workflow(spec1).await.unwrap();
-    let spec_id2 = fixture.register_workflow(spec2).await.unwrap();
-    let spec_id3 = fixture.register_workflow(spec3).await.unwrap();
+    let result1 = fixture.register_workflow(spec1).await;
+    assert_ok!(&result1, "Workflow 1 registration should succeed");
+    let spec_id1 = result1.unwrap();
+
+    let result2 = fixture.register_workflow(spec2).await;
+    assert_ok!(&result2, "Workflow 2 registration should succeed");
+    let spec_id2 = result2.unwrap();
+
+    let result3 = fixture.register_workflow(spec3).await;
+    assert_ok!(&result3, "Workflow 3 registration should succeed");
+    let spec_id3 = result3.unwrap();
 
     // Assert: All workflows registered
     assert_eq!(fixture.specs.len(), 3);
     assert!(fixture.specs.contains_key(&spec_id1));
     assert!(fixture.specs.contains_key(&spec_id2));
     assert!(fixture.specs.contains_key(&spec_id3));
-}
+});
 
 // ============================================================================
 // Case Creation Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_create_case_with_test_data_builder() {
+chicago_async_test!
+test_create_case_with_test_data_builder, {
     // Arrange: Create fixture, workflow, and test data using chicago-tdd-tools
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -122,8 +131,8 @@ async fn test_create_case_with_test_data_builder() {
     assert_eq!(case.data["customer_id"], "CUST-001");
 }
 
-#[tokio::test]
-async fn test_create_case_with_empty_data() {
+chicago_async_test!
+test_create_case_with_empty_data, {
     // Arrange: Create fixture and workflow
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -139,8 +148,8 @@ async fn test_create_case_with_empty_data() {
     assert!(fixture.cases.contains(&case_id));
 }
 
-#[tokio::test]
-async fn test_create_multiple_cases() {
+chicago_async_test!
+test_create_multiple_cases, {
     // Arrange: Create fixture and workflow
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -180,8 +189,8 @@ async fn test_create_multiple_cases() {
 // Case Execution Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_execute_case() {
+chicago_async_test!
+test_execute_case, {
     // Arrange: Create fixture, workflow, and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow")
@@ -218,8 +227,8 @@ async fn test_execute_case() {
     );
 }
 
-#[tokio::test]
-async fn test_execute_case_with_data() {
+chicago_async_test!
+test_execute_case_with_data, {
     // Arrange: Create fixture, workflow, and case with test data
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow")
@@ -267,8 +276,8 @@ async fn test_execute_case_with_data() {
 // Case State Assertion Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_assert_case_completed() {
+chicago_async_test!
+test_assert_case_completed, {
     // Arrange: Create fixture and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -287,8 +296,8 @@ async fn test_assert_case_completed() {
     fixture.assert_case_completed(&completed_case);
 }
 
-#[tokio::test]
-async fn test_assert_case_failed() {
+chicago_async_test!
+test_assert_case_failed, {
     // Arrange: Create fixture and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -311,8 +320,8 @@ async fn test_assert_case_failed() {
 // Workflow Builder Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_workflow_spec_builder_with_tasks() {
+chicago_async_test!
+test_workflow_spec_builder_with_tasks, {
     // Arrange: Create workflow spec with multiple tasks
     let spec = WorkflowSpecBuilder::new("Complex Workflow")
         .add_task(
@@ -342,8 +351,8 @@ async fn test_workflow_spec_builder_with_tasks() {
     assert!(spec.tasks.contains_key("task3"));
 }
 
-#[tokio::test]
-async fn test_task_builder_with_all_options() {
+chicago_async_test!
+test_task_builder_with_all_options, {
     // Arrange: Create task with all builder options
     let task = TaskBuilder::new("task1", "Task 1")
         .with_type(TaskType::MultipleInstance)
@@ -368,8 +377,8 @@ async fn test_task_builder_with_all_options() {
 // Integration Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_full_workflow_lifecycle() {
+chicago_async_test!
+test_full_workflow_lifecycle, {
     // Arrange: Create fixture, workflow, and case
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Full Lifecycle Workflow")
@@ -417,8 +426,8 @@ async fn test_full_workflow_lifecycle() {
     assert_eq!(case.data["customer_id"], "CUST-001");
 }
 
-#[tokio::test]
-async fn test_multiple_workflows_and_cases() {
+chicago_async_test!
+test_multiple_workflows_and_cases, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -455,8 +464,8 @@ async fn test_multiple_workflows_and_cases() {
 // Test Data Builder Integration Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_test_data_builder_integration() {
+chicago_async_test!
+test_test_data_builder_integration, {
     // Arrange: Create test data using chicago-tdd-tools TestDataBuilder
     let test_data = TestDataBuilder::new()
         .with_var("key1", "value1")
@@ -476,8 +485,8 @@ async fn test_test_data_builder_integration() {
     assert_eq!(test_data["request_id"], "REQ-001");
 }
 
-#[tokio::test]
-async fn test_test_data_builder_with_workflow() {
+chicago_async_test!
+test_test_data_builder_with_workflow, {
     // Arrange: Create fixture, workflow, and test data
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
@@ -502,8 +511,8 @@ async fn test_test_data_builder_with_workflow() {
 // Error Handling Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_register_workflow_with_invalid_spec() {
+chicago_async_test!
+test_register_workflow_with_invalid_spec, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -527,8 +536,8 @@ async fn test_register_workflow_with_invalid_spec() {
     }
 }
 
-#[tokio::test]
-async fn test_create_case_with_invalid_spec_id() {
+chicago_async_test!
+test_create_case_with_invalid_spec_id, {
     // Arrange: Create fixture
     let mut fixture = WorkflowTestFixture::new().unwrap();
 
@@ -547,8 +556,8 @@ async fn test_create_case_with_invalid_spec_id() {
 // Cleanup Tests
 // ============================================================================
 
-#[tokio::test]
-async fn test_fixture_cleanup() {
+chicago_async_test!
+test_fixture_cleanup, {
     // Arrange: Create fixture and add some state
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();

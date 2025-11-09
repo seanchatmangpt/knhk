@@ -73,7 +73,6 @@ impl WorkflowEngine {
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
             )
-            .await
             .await?;
         }
 
@@ -174,7 +173,8 @@ impl WorkflowEngine {
                 span_ctx,
                 latency_ms: latency_ms,
                 threshold_ms: 1000
-            )?;
+            )
+            .await?;
         }
 
         // End OTEL span

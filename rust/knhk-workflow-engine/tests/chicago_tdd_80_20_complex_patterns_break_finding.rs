@@ -25,8 +25,7 @@ use std::collections::{HashMap, HashSet};
 // PATTERN 26 & 27: DISCRIMINATORS (Critical 20% - Race Conditions)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_26_blocking_discriminator_edge_cases() {
+chicago_async_test!(test_pattern_26_blocking_discriminator_edge_cases, {
     // Break-finding: Test edge cases for blocking discriminator
 
     let (pattern_id, executor) = advanced_control::create_pattern_26();
@@ -105,8 +104,7 @@ async fn test_pattern_26_blocking_discriminator_edge_cases() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_27_cancelling_discriminator_break_finding() {
+chicago_async_test!(test_pattern_27_cancelling_discriminator_break_finding, {
     // Break-finding: Test cancelling discriminator for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_27();
@@ -179,8 +177,7 @@ async fn test_pattern_27_cancelling_discriminator_break_finding() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_26_27_discriminator_state_corruption() {
+chicago_async_test!(test_pattern_26_27_discriminator_state_corruption, {
     // Break-finding: Test for state corruption between discriminator patterns
 
     let (pattern_id_26, executor_26) = advanced_control::create_pattern_26();
@@ -252,8 +249,7 @@ async fn test_pattern_26_27_discriminator_state_corruption() {
 // PATTERN 28 & 29: LOOPS/RECURSION (Critical 20% - Iteration)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_28_structured_loop_break_finding() {
+chicago_async_test!(test_pattern_28_structured_loop_break_finding, {
     // Break-finding: Test structured loop for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_28();
@@ -348,8 +344,7 @@ async fn test_pattern_28_structured_loop_break_finding() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_29_recursion_break_finding() {
+chicago_async_test!(test_pattern_29_recursion_break_finding, {
     // Break-finding: Test recursion for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_29();
@@ -421,8 +416,7 @@ async fn test_pattern_29_recursion_break_finding() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_28_29_loop_recursion_infinite_break() {
+chicago_async_test!(test_pattern_28_29_loop_recursion_infinite_break, {
     // Break-finding: Test for infinite loop/recursion breaks
 
     let (pattern_id_28, executor_28) = advanced_control::create_pattern_28();
@@ -507,8 +501,7 @@ async fn test_pattern_28_29_loop_recursion_infinite_break() {
 // PATTERN 33: CANCEL PROCESS INSTANCE (Critical 20% - Critical Cancellation)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_33_cancel_process_break_finding() {
+chicago_async_test!(test_pattern_33_cancel_process_break_finding, {
     // Break-finding: Test cancel process for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_33();
@@ -563,10 +556,10 @@ async fn test_pattern_33_cancel_process_break_finding() {
         result2.cancel_activities[0].contains("process:scope_123"),
         "BREAK: Should use scope_id when provided"
     );
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 }
 
-#[tokio::test]
-async fn test_pattern_33_cancel_process_state_consistency() {
+chicago_async_test!(test_pattern_33_cancel_process_state_consistency, {
     // Break-finding: Test state consistency for cancel process
 
     let (pattern_id, executor) = advanced_control::create_pattern_33();
@@ -600,8 +593,7 @@ async fn test_pattern_33_cancel_process_state_consistency() {
     }
 }
 
-#[tokio::test]
-async fn test_pattern_33_vs_32_cancel_difference() {
+chicago_async_test!(test_pattern_33_vs_32_cancel_difference, {
     // Break-finding: Verify pattern 33 (cancel process) vs 32 (cancel activity) difference
 
     let (pattern_id_32, executor_32) = advanced_control::create_pattern_32();
@@ -676,8 +668,7 @@ async fn test_pattern_33_vs_32_cancel_difference() {
 // PATTERN 38 & 39: THREADING (Critical 20% - Parallelism)
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_38_multiple_threads_break_finding() {
+chicago_async_test!(test_pattern_38_multiple_threads_break_finding, {
     // Break-finding: Test multiple threads pattern for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_38();
@@ -744,8 +735,7 @@ async fn test_pattern_38_multiple_threads_break_finding() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_39_thread_merge_break_finding() {
+chicago_async_test!(test_pattern_39_thread_merge_break_finding, {
     // Break-finding: Test thread merge pattern for breaks
 
     let (pattern_id, executor) = advanced_control::create_pattern_39();
@@ -813,8 +803,7 @@ async fn test_pattern_39_thread_merge_break_finding() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_38_39_threading_sequence_break() {
+chicago_async_test!(test_pattern_38_39_threading_sequence_break, {
     // Break-finding: Test threading sequence for breaks
 
     let (pattern_id_38, executor_38) = advanced_control::create_pattern_38();
@@ -878,8 +867,7 @@ async fn test_pattern_38_39_threading_sequence_break() {
     );
 }
 
-#[tokio::test]
-async fn test_pattern_38_thread_count_consistency() {
+chicago_async_test!(test_pattern_38_thread_count_consistency, {
     // Break-finding: Test thread count consistency
 
     let (pattern_id, executor) = advanced_control::create_pattern_38();
@@ -920,8 +908,7 @@ async fn test_pattern_38_thread_count_consistency() {
 // COMPREHENSIVE BREAK-FINDING: ALL CRITICAL PATTERNS
 // ============================================================================
 
-#[tokio::test]
-async fn test_critical_patterns_state_isolation() {
+chicago_async_test!(test_critical_patterns_state_isolation, {
     // Break-finding: Test state isolation between critical patterns
 
     let patterns = vec![
@@ -989,8 +976,7 @@ async fn test_critical_patterns_state_isolation() {
     }
 }
 
-#[tokio::test]
-async fn test_critical_patterns_boundary_conditions() {
+chicago_async_test!(test_critical_patterns_boundary_conditions, {
     // Break-finding: Test boundary conditions for all critical patterns
 
     let critical_patterns = vec![26, 27, 28, 29, 33, 38, 39];
@@ -1050,8 +1036,7 @@ async fn test_critical_patterns_boundary_conditions() {
     }
 }
 
-#[tokio::test]
-async fn test_critical_patterns_termination_consistency() {
+chicago_async_test!(test_critical_patterns_termination_consistency, {
     // Break-finding: Test termination consistency - CRITICAL BREAK CHECK
 
     // Patterns that MUST terminate

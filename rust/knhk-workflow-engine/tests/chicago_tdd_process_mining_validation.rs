@@ -26,6 +26,7 @@ use tempfile::TempDir;
 /// Real workflow: Task A → Task B (sequential pattern)
 fn create_test_workflow() -> WorkflowSpec {
     use knhk_workflow_engine::parser::{Flow, JoinType, SplitType, Task, TaskType};
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
     let mut tasks = HashMap::new();
     let mut flows = Vec::new();
 
@@ -112,8 +113,7 @@ fn create_test_workflow() -> WorkflowSpec {
 }
 
 /// Test: XES export produces valid XES format that can be imported
-#[tokio::test]
-async fn test_xes_export_import_round_trip() {
+chicago_async_test!(test_xes_export_import_round_trip, {
     println!("[TEST] XES Export/Import Round-Trip Validation");
 
     // Arrange: Create engine and workflow
@@ -157,8 +157,7 @@ async fn test_xes_export_import_round_trip() {
 }
 
 /// Test: Process discovery can discover workflow structure from execution logs
-#[tokio::test]
-async fn test_process_discovery_from_workflow_execution() {
+chicago_async_test!(test_process_discovery_from_workflow_execution, {
     println!("[TEST] Process Discovery from Workflow Execution");
 
     // Arrange: Create engine and execute multiple cases
@@ -226,8 +225,7 @@ async fn test_process_discovery_from_workflow_execution() {
 }
 
 /// Test: Multiple workflow executions produce consistent process models
-#[tokio::test]
-async fn test_consistent_process_discovery_across_executions() {
+chicago_async_test!(test_consistent_process_discovery_across_executions, {
     println!("[TEST] Consistent Process Discovery Across Executions");
 
     // Arrange: Create engine and execute multiple cases
@@ -294,8 +292,7 @@ async fn test_consistent_process_discovery_across_executions() {
 }
 
 /// Test: Workflow execution events are correctly captured in XES format
-#[tokio::test]
-async fn test_workflow_events_captured_in_xes() {
+chicago_async_test!(test_workflow_events_captured_in_xes, {
     println!("[TEST] Workflow Events Captured in XES Format");
 
     // Arrange: Create engine and execute case with state changes
@@ -363,8 +360,7 @@ async fn test_workflow_events_captured_in_xes() {
 }
 
 /// Test: Process discovery handles workflow with multiple cases correctly
-#[tokio::test]
-async fn test_process_discovery_multiple_cases() {
+chicago_async_test!(test_process_discovery_multiple_cases, {
     println!("[TEST] Process Discovery with Multiple Cases");
 
     // Arrange: Create engine with multiple cases
@@ -430,8 +426,7 @@ async fn test_process_discovery_multiple_cases() {
 }
 
 /// Test: XES export maintains event ordering and timestamps
-#[tokio::test]
-async fn test_xes_event_ordering_and_timestamps() {
+chicago_async_test!(test_xes_event_ordering_and_timestamps, {
     println!("[TEST] XES Event Ordering and Timestamps");
 
     // Arrange: Create engine and execute case with multiple state changes
@@ -496,8 +491,7 @@ async fn test_xes_event_ordering_and_timestamps() {
 }
 
 /// Test: Process discovery produces valid Petri net from workflow execution
-#[tokio::test]
-async fn test_process_discovery_produces_valid_petri_net() {
+chicago_async_test!(test_process_discovery_produces_valid_petri_net, {
     println!("[TEST] Process Discovery Produces Valid Petri Net");
 
     // Arrange: Create engine with sufficient execution data
@@ -601,8 +595,7 @@ async fn test_process_discovery_produces_valid_petri_net() {
 }
 
 /// Test: Workflow-engine XES export is compatible with process_mining library
-#[tokio::test]
-async fn test_xes_compatibility_with_process_mining() {
+chicago_async_test!(test_xes_compatibility_with_process_mining, {
     println!("[TEST] XES Compatibility with Process Mining Library");
 
     // Arrange: Create engine and export XES

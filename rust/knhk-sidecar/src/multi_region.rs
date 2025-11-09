@@ -199,17 +199,17 @@ impl ReceiptSyncClient {
         Ok(Self { endpoint })
     }
 
-    async fn send_receipt(&self, receipt: &Receipt) -> SidecarResult<()> {
+    async fn send_receipt(&self, _receipt: &Receipt) -> SidecarResult<()> {
         #[cfg(feature = "fortune5")]
         {
             // Serialize receipt to JSON
             let receipt_json = serde_json::json!({
-                "receipt_id": receipt.receipt_id,
-                "transaction_id": receipt.transaction_id,
-                "hash": hex::encode(&receipt.hash),
-                "ticks": receipt.ticks,
-                "span_id": receipt.span_id,
-                "committed": receipt.committed,
+                "receipt_id": _receipt.receipt_id,
+                "transaction_id": _receipt.transaction_id,
+                "hash": hex::encode(&_receipt.hash),
+                "ticks": _receipt.ticks,
+                "span_id": _receipt.span_id,
+                "committed": _receipt.committed,
             });
 
             // Send via HTTP POST to remote region
@@ -225,7 +225,10 @@ impl ReceiptSyncClient {
             {
                 Ok(response) => {
                     if response.status().is_success() {
-                        info!("Receipt {} synced to {}", receipt.receipt_id, self.endpoint);
+                        info!(
+                            "Receipt {} synced to {}",
+                            _receipt.receipt_id, self.endpoint
+                        );
                         Ok(())
                     } else {
                         Err(SidecarError::config_error(format!(
@@ -252,12 +255,12 @@ impl ReceiptSyncClient {
         }
     }
 
-    async fn verify_receipt(&self, receipt_id: &str) -> SidecarResult<bool> {
+    async fn verify_receipt(&self, _receipt_id: &str) -> SidecarResult<bool> {
         #[cfg(feature = "fortune5")]
         {
             // Query remote region for receipt via HTTP GET
             let client = reqwest::Client::new();
-            let url = format!("{}/api/v1/receipts/{}", self.endpoint, receipt_id);
+            let url = format!("{}/api/v1/receipts/{}", self.endpoint, _receipt_id);
 
             match client
                 .get(&url)
