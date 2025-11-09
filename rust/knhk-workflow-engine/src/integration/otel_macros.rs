@@ -27,7 +27,7 @@ macro_rules! otel_span {
         $(pattern_id: $pattern_id:expr,)?
         $(parent: $parent:expr,)?
     ) => {{
-        use crate::integration::otel_helpers::create_trace_context;
+        use $crate::integration::otel_helpers::create_trace_context;
         use knhk_otel::SpanContext;
 
         let mut guard = $otel.tracer.write().await;
@@ -129,11 +129,11 @@ macro_rules! otel_span_end {
         success: $success:expr,
         start_time: $start_time:expr
     ) => {{
-        use crate::integration::otel_helpers::end_span_with_result;
         use std::time::Instant;
+        use $crate::integration::otel_helpers::end_span_with_result;
 
-        if let Some(span) = (*$span_ctx).as_ref() {
-            end_span_with_result($otel, span.clone(), $success, $start_time).await?;
+        if let Some(ref span) = $span_ctx {
+            end_span_with_result($otel, (*span).clone(), $success, $start_time).await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
     }};
@@ -146,10 +146,10 @@ macro_rules! otel_span_end {
     ) => {{
         use knhk_otel::SpanStatus;
 
-        if let Some(span) = (*$span_ctx).as_ref() {
+        if let Some(ref span) = $span_ctx {
             $otel
                 .add_attribute(
-                    span.clone(),
+                    (*span).clone(),
                     "knhk.workflow_engine.success".to_string(),
                     $success.to_string(),
                 )
@@ -316,12 +316,12 @@ macro_rules! otel_bottleneck {
         latency_ms: $latency_ms:expr,
         threshold_ms: $threshold_ms:expr
     ) => {{
-        use crate::integration::otel_helpers::add_bottleneck_if_detected;
+        use $crate::integration::otel_helpers::add_bottleneck_if_detected;
 
-        if let Some(span) = (*$span_ctx).as_ref() {
+        if let Some(ref span) = $span_ctx {
             add_bottleneck_if_detected(
                 $otel,
-                span.clone(),
+                (*span).clone(),
                 $latency_ms as u128,
                 $threshold_ms as u128,
             )
@@ -350,10 +350,10 @@ macro_rules! otel_conformance {
         expected_pattern: $expected:expr,
         actual_pattern: $actual:expr
     ) => {{
-        use crate::integration::otel_helpers::add_conformance_attributes;
+        use $crate::integration::otel_helpers::add_conformance_attributes;
 
-        if let Some(span) = (*$span_ctx).as_ref() {
-            add_conformance_attributes($otel, span.clone(), $expected, $actual).await?;
+        if let Some(ref span) = $span_ctx {
+            add_conformance_attributes($otel, (*span).clone(), $expected, $actual).await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
     }};

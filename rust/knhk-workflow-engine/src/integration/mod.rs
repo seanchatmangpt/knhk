@@ -8,7 +8,7 @@ mod lockchain;
 pub mod otel;
 pub mod otel_helpers;
 #[macro_use]
-mod otel_macros;
+pub mod otel_macros;
 mod pattern_otel;
 mod registry;
 mod sidecar;
