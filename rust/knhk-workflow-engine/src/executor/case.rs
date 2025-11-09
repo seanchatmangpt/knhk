@@ -77,7 +77,8 @@ impl WorkflowEngine {
     }
 
     /// Execute a case (run workflow) with resource allocation, worklet support, and Fortune 5 SLO tracking
-    pub async fn execute_case(&self, case_id: CaseId) -> WorkflowResult<()> {
+    pub fn execute_case(&self, case_id: CaseId) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + '_>> {
+        Box::pin(async move {
         // Check promotion gate if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {
             let gate_allowed = fortune5.check_promotion_gate().await?;
@@ -111,7 +112,7 @@ impl WorkflowEngine {
 
         // Execute workflow from start to end condition
         // Use helper to avoid recursion detection (execute_workflow doesn't actually recurse)
-        Self::execute_workflow_internal(self, case_id, &spec_clone).await?;
+        super::workflow_execution::execute_workflow(self, case_id, &spec_clone).await?;
 
         // Record SLO metrics if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {
@@ -128,6 +129,7 @@ impl WorkflowEngine {
         }
 
         Ok(())
+        })
     }
 
     /// Cancel a case

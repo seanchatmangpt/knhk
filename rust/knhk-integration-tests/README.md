@@ -252,5 +252,6 @@ lsof -i :9092
 
 - [Integration Tests](../../tests/integration/README.md) - Docker Compose integration tests
 - [Testing](../../docs/testing.md) - Testing overview
-- [Architecture](../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../docs/architecture.md) - Detailed architecture reference
 
