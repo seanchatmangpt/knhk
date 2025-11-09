@@ -273,6 +273,12 @@ POST /cases
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and component design
+- **[Ontology Guide](ONTOLOGY.md)** - Ontology integration and SPARQL patterns
+- **[Integration Guide](INTEGRATION.md)** - Integration patterns and connectors
+
 ### Detailed Documentation
 - **Executive Summary**: [YAWL Executive Summary](yawl-knhk-executive-summary.md)
 - **Implementation Priorities**: [YAWL Implementation Priorities](yawl-knhk-implementation-priorities.md)

@@ -207,6 +207,12 @@ weaver registry live-check --registry registry/
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Production Guide](PRODUCTION.md)** - Production readiness and certification
+- **[Performance Guide](PERFORMANCE.md)** - Performance testing and benchmarks
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and test patterns
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow testing and validation
+
 ### Detailed Documentation
 - **Chicago TDD**: [Chicago TDD Guide](CHICAGO_TDD.md)
 - **Testing Guide**: [Testing Documentation](testing.md)

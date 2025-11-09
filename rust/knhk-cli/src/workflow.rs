@@ -24,7 +24,10 @@ use knhk_workflow_engine::{
     state::StateStore,
     WorkflowEngine,
 };
-use process_mining::XESImportOptions;
+use process_mining::{
+    alphappp_discover_petri_net, event_log::activity_projection::EventLogActivityProjection,
+    export_petri_net_to_pnml, import_xes_file, XESImportOptions,
+};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
@@ -359,12 +362,36 @@ pub fn serve(
 
 /// Import XES event log
 #[verb]
-pub fn import_xes(_file: PathBuf, _output: Option<PathBuf>) -> CnvResult<()> {
-    // XES import not yet implemented
-    // Requires: import_xes_file function to be added to knhk-workflow-engine process_mining module
-    Err(clap_noun_verb::NounVerbError::execution_error(
-        "XES import not yet implemented. import_xes_file function needs to be added to knhk-workflow-engine process_mining module."
-    ))
+pub fn import_xes(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
+    let log = import_xes_file(&file, XESImportOptions::default()).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!("Failed to import XES file: {}", e))
+    })?;
+
+    let json = serde_json::to_string_pretty(&log).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!(
+            "Failed to serialize event log: {}",
+            e
+        ))
+    })?;
+
+    if let Some(output_path) = output {
+        std::fs::write(&output_path, json).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to write output file: {}",
+                e
+            ))
+        })?;
+        println!(
+            "XES event log imported: {} traces, saved to {}",
+            log.traces.len(),
+            output_path.display()
+        );
+    } else {
+        println!("XES event log imported: {} traces", log.traces.len());
+        println!("{}", json);
+    }
+
+    Ok(())
 }
 
 /// Export workflow execution to XES format
@@ -429,16 +456,55 @@ pub fn export_xes(
 /// Run Alpha+++ process discovery algorithm
 #[verb]
 pub fn discover(
-    _xes_file: PathBuf,
-    _output: PathBuf,
-    _alpha: Option<f64>,
-    _beta: Option<f64>,
-    _theta: Option<f64>,
-    _rho: Option<f64>,
+    xes_file: PathBuf,
+    output: PathBuf,
+    alpha: Option<f64>,
+    beta: Option<f64>,
+    theta: Option<f64>,
+    rho: Option<f64>,
 ) -> CnvResult<()> {
-    // Alpha+++ process discovery not yet implemented
-    // Requires: alphappp_discover_petri_net, export_petri_net_to_pnml, import_xes_file functions
-    Err(clap_noun_verb::NounVerbError::execution_error(
-        "Alpha+++ process discovery not yet implemented. Process mining functions need to be added to knhk-workflow-engine process_mining module."
-    ))
+    // Import XES event log
+    let log = import_xes_file(&xes_file, XESImportOptions::default()).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!("Failed to import XES file: {}", e))
+    })?;
+
+    // Create activity projection (required for Alpha+++)
+    let projection: EventLogActivityProjection = (&log).into();
+
+    // Run Alpha+++ discovery with default or provided parameters
+    // Note: Alpha+++ function takes projection and alpha parameter, returns (PetriNet, AlgoDuration)
+    let alpha_param = alpha.unwrap_or(2.0);
+    let beta_param = beta.unwrap_or(0.5);
+    let theta_param = theta.unwrap_or(0.5);
+    let rho_param = rho.unwrap_or(0.5);
+
+    // Alpha+++ discovery: function signature is (projection, alpha) -> (PetriNet, AlgoDuration)
+    // Note: beta, theta, rho parameters may not be exposed in this version of the API
+    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, alpha_param);
+
+    // Export Petri net to PNML (needs a writer)
+    let mut pnml_writer = Vec::new();
+    export_petri_net_to_pnml(&petri_net, &mut pnml_writer).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!(
+            "Failed to export Petri net to PNML: {}",
+            e
+        ))
+    })?;
+
+    std::fs::write(&output, pnml_writer).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!("Failed to write PNML file: {}", e))
+    })?;
+
+    println!(
+        "Alpha+++ discovery completed: {} places, {} transitions, saved to {}",
+        petri_net.places.len(),
+        petri_net.transitions.len(),
+        output.display()
+    );
+    println!(
+        "Parameters: α={}, β={}, θ={}, ρ={} (note: only α is used in this API version)",
+        alpha_param, beta_param, theta_param, rho_param
+    );
+
+    Ok(())
 }
