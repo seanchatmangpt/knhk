@@ -48,6 +48,7 @@ For detailed documentation, see [docs/README.md](docs/README.md).
 ## Related Documentation
 
 - [Definition of Done](../../docs/DEFINITION_OF_DONE.md) - DoD criteria
-- [Architecture](../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../docs/architecture.md) - Detailed architecture reference
 - [Testing](../../docs/testing.md) - Testing documentation
 - [Weaver Integration](../../docs/WEAVER_INTEGRATION.md) - Weaver patterns integration (Advisor & Diagnostic patterns)

@@ -84,7 +84,9 @@ Code blocks and diagrams were extracted from `yawl.txt` using automated parsing 
 
 - [Architecture Improvements](ARCHITECTURE_IMPROVEMENTS.md) - Workflow engine architecture
 - [Main Documentation Index](../../docs/INDEX.md) - Complete KNHK documentation
-- [Workflow Patterns](../../docs/architecture.md) - Pattern documentation
+- [Architecture Guide](../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Workflow Engine Guide](../../docs/WORKFLOW_ENGINE.md) - 🆕 Consolidated 80/20 guide (Workflow patterns)
+- [Architecture Reference](../../docs/architecture.md) - Detailed architecture reference
 
 ## Contributing
 
