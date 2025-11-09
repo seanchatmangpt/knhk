@@ -101,9 +101,11 @@ impl WorkflowEngine {
         let spec_clone = spec.value().clone();
         drop(case_ref);
 
-        // Execute workflow with simple execution (follows flows to completion)
-        // For production, replace with full pattern-based execution
-        self.execute_simple_workflow(case_id, &spec_clone).await?;
+        // Real workflow execution not yet implemented
+        // Previous simple_execution was fake simulation code - removed
+        return Err(WorkflowError::Internal(
+            "Real workflow execution not yet implemented - simple_execution was fake simulation code and has been removed".to_string()
+        ));
 
         // Record SLO metrics if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {

@@ -131,7 +131,10 @@ impl SidecarServer {
 
         // Configure TLS if enabled
         if self.config.tls_config.enabled {
-            let tls_config = create_tls_server_config(&self.config.tls_config)?;
+            let rustls_config = create_tls_server_config(&self.config.tls_config)?;
+            // Convert rustls::ServerConfig to tonic::transport::ServerTlsConfig
+            let tls_config =
+                tonic::transport::ServerTlsConfig::new().rustls_server_config(rustls_config);
             server_builder = server_builder
                 .tls_config(tls_config)
                 .map_err(|e| SidecarError::tls_error(format!("Failed to configure TLS: {}", e)))?;
