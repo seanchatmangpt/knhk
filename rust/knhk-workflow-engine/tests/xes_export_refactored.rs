@@ -113,17 +113,17 @@ async fn test_multiple_cases_export() {
     let spec = setup_workflow(&mut harness, workflow).await;
 
     // Create 3 cases
-    let case1 = harness
+    let _case1 = harness
         .engine
         .create_case(spec.id, simple_case_data())
         .await
         .unwrap();
-    let case2 = harness
+    let _case2 = harness
         .engine
         .create_case(spec.id, simple_case_data())
         .await
         .unwrap();
-    let case3 = harness
+    let _case3 = harness
         .engine
         .create_case(spec.id, simple_case_data())
         .await

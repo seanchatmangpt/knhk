@@ -317,13 +317,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         )
                         .await?;
 
-                        // Add JTBD validation attribute
-                        otel.add_attribute(
-                            span_ctx.clone(),
-                            "knhk.workflow_engine.jtbd_valid".to_string(),
-                            jtbd_valid.to_string(),
-                        )
-                        .await?;
+                        // JTBD validation is done separately, not in OTEL telemetry
 
                         // Add latency attribute
                         otel.add_attribute(
@@ -333,23 +327,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         )
                         .await?;
 
-                        // End span
-                        PatternOtelHelper::end_pattern_span(
-                            &otel,
-                            span_ctx,
-                            result.success && jtbd_valid,
-                        )
-                        .await?;
+                        // End span (OTEL only tracks execution success, not JTBD)
+                        PatternOtelHelper::end_pattern_span(&otel, span_ctx, result.success)
+                            .await?;
 
+                        // JTBD validation is separate from OTEL telemetry
                         if result.success && jtbd_valid {
-                            println!("✅ PASSED (JTBD validated, {}ms)", latency_ms);
+                            println!(
+                                "✅ PASSED (execution: success, JTBD: validated, {}ms)",
+                                latency_ms
+                            );
                             passed += 1;
                         } else if result.success && !jtbd_valid {
-                            println!("⚠️  EXECUTED but JTBD FAILED (pattern ran but didn't accomplish purpose)");
+                            println!(
+                                "⚠️  EXECUTED but JTBD FAILED (execution: success, JTBD: failed)"
+                            );
                             jtbd_failed += 1;
                             failed += 1;
                         } else {
-                            println!("❌ FAILED (execution failed)");
+                            println!("❌ FAILED (execution: failed)");
                             failed += 1;
                         }
                     }
