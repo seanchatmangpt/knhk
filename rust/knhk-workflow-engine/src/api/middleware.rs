@@ -54,7 +54,7 @@ impl Fortune5Middleware {
 pub async fn auth_middleware(
     headers: HeaderMap,
     request: Request<Body>,
-    next: Next<Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     // Extract authorization header
     let auth_header = headers
@@ -108,7 +108,7 @@ fn get_rate_limiter() -> Arc<KeyedRateLimiter<String>> {
 /// and applies rate limits per client.
 pub async fn rate_limit_middleware(
     request: Request<Body>,
-    next: Next<Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     // Extract client identifier from request
     let client_id = extract_client_id(&request);
@@ -184,7 +184,7 @@ fn get_circuit_breaker() -> Arc<CircuitBreaker> {
 /// Automatically transitions to half-open after timeout to test recovery.
 pub async fn circuit_breaker_middleware(
     request: Request<Body>,
-    next: Next<Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     let circuit_breaker = get_circuit_breaker();
 
@@ -219,7 +219,7 @@ pub async fn circuit_breaker_middleware(
 }
 
 /// Request tracing middleware
-pub async fn tracing_middleware(request: Request<Body>, next: Next<Body>) -> Response {
+pub async fn tracing_middleware(request: Request<Body>, next: Next) -> Response {
     let path = request.uri().path().to_string();
     let method = request.method().to_string();
 
@@ -242,11 +242,7 @@ pub async fn tracing_middleware(request: Request<Body>, next: Next<Body>) -> Res
 }
 
 /// Audit logging middleware
-pub async fn audit_middleware(
-    headers: HeaderMap,
-    request: Request<Body>,
-    next: Next<Body>,
-) -> Response {
+pub async fn audit_middleware(headers: HeaderMap, request: Request<Body>, next: Next) -> Response {
     let user = headers
         .get("x-user-id")
         .and_then(|h| h.to_str().ok())
