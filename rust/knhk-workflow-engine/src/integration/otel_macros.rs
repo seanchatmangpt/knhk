@@ -98,7 +98,6 @@ macro_rules! otel_span {
         } else {
             Ok(None)
         }
-    }.await
     }};
 }
 

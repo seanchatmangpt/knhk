@@ -33,9 +33,12 @@ pub fn deserialize_metadata_from_rdf(
         pattern_ns, pattern_iri, pattern_id.0, pattern_iri
     );
 
-    #[allow(deprecated)]
-    let query_results = store
-        .query(&query)
+    // Use SparqlEvaluator (oxigraph 0.5 best practices)
+    let query_results = SparqlEvaluator::new()
+        .parse_query(&query)
+        .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {:?}", e)))?
+        .on_store(store)
+        .execute()
         .map_err(|e| WorkflowError::Parse(format!("Failed to query pattern metadata: {}", e)))?;
 
     if let oxigraph::sparql::QueryResults::Solutions(mut solutions) = query_results {
@@ -184,9 +187,12 @@ pub fn deserialize_context_from_rdf(
         pattern_ns, yawl_ns
     );
 
-    #[allow(deprecated)]
-    let query_results = store
-        .query(&query)
+    // Use SparqlEvaluator (oxigraph 0.5 best practices)
+    let query_results = SparqlEvaluator::new()
+        .parse_query(&query)
+        .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {:?}", e)))?
+        .on_store(store)
+        .execute()
         .map_err(|e| WorkflowError::Parse(format!("Failed to query execution context: {}", e)))?;
 
     if let oxigraph::sparql::QueryResults::Solutions(mut solutions) = query_results {
@@ -314,9 +320,12 @@ pub fn deserialize_result_from_rdf(turtle: &str) -> WorkflowResult<PatternExecut
         pattern_ns
     );
 
-    #[allow(deprecated)]
-    let query_results = store
-        .query(&query)
+    // Use SparqlEvaluator (oxigraph 0.5 best practices)
+    let query_results = SparqlEvaluator::new()
+        .parse_query(&query)
+        .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {:?}", e)))?
+        .on_store(store)
+        .execute()
         .map_err(|e| WorkflowError::Parse(format!("Failed to query execution result: {}", e)))?;
 
     if let oxigraph::sparql::QueryResults::Solutions(mut solutions) = query_results {
