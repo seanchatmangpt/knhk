@@ -76,10 +76,14 @@ Specification documents and requirements.
 ### [Release Notes](./release-notes.md)
 v1.0.0 release notes and changelog.
 
+### [Implementation Guide](./IMPLEMENTATION_GUIDE.md)
+Step-by-step guide for implementing and deploying KNHK v1.0 in production environments.
+
 ---
 
 ## Quick Links
 
+- **Implementation Guide**: [v1.0 Implementation Guide](./IMPLEMENTATION_GUIDE.md) - **START HERE**
 - **Primary DoD**: [Fortune 5 Production Definition of Done](./definition-of-done/fortune5-production.md)
 - **Canonical DoD**: [12-Agent Synthesis DoD](./specs/V1_DEFINITION_OF_DONE.md)
 - **Current Gaps**: [Gaps and Priorities](./status/gaps-and-priorities.md)
