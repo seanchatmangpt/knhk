@@ -74,6 +74,8 @@ pub mod ggen;
 pub mod hooks;
 pub mod innovation;
 pub mod integration;
+
+#[macro_use]
 pub mod observability;
 pub mod parser;
 pub mod patterns;

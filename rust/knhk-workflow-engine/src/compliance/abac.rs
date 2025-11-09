@@ -104,7 +104,7 @@ impl AbacPolicyEngine {
             })?;
 
         // Validate SPARQL query using SparqlEvaluator
-        SparqlEvaluator::new()
+        let _ = SparqlEvaluator::new()
             .parse_query(&rule.evaluation_query)
             .map_err(|e| WorkflowError::Validation(format!("Invalid SPARQL query: {:?}", e)))?;
 

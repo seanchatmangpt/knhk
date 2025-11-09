@@ -30,7 +30,7 @@ macro_rules! otel_span {
         use $crate::integration::otel_helpers::create_trace_context;
         use $crate::integration::OtelIntegration;
         use knhk_otel::SpanContext;
-        
+
         let mut guard = $otel.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
             // Create parent context for trace correlation
@@ -41,9 +41,9 @@ macro_rules! otel_span {
             } else {
                 None
             };
-            
+
             let span_ctx = tracer.start_span($span_name.to_string(), parent_ctx);
-            
+
             // Add XES-compatible attributes
             let timestamp = chrono::Utc::now().to_rfc3339();
             tracer.add_attribute(
@@ -56,7 +56,7 @@ macro_rules! otel_span {
                 "lifecycle:transition".to_string(),
                 "start".to_string(),
             );
-            
+
             // Add workflow attributes
             $(
                 if let Some(cid) = $case_id {
@@ -94,7 +94,7 @@ macro_rules! otel_span {
                     );
                 }
             )?
-            
+
             Ok(Some(span_ctx))
         } else {
             Ok(None)
@@ -121,15 +121,15 @@ macro_rules! otel_span_end {
         success: $success:expr,
         start_time: $start_time:expr
     ) => {{
-        use $crate::integration::otel_helpers::end_span_with_result;
         use std::time::Instant;
-        
+        use $crate::integration::otel_helpers::end_span_with_result;
+
         if let Some(ref span) = $span_ctx {
             end_span_with_result($otel, (*span).clone(), $success, $start_time).await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
     }};
-    
+
     (
         $otel:expr,
         $span_ctx:expr,
@@ -137,34 +137,39 @@ macro_rules! otel_span_end {
         latency_ms: $latency_ms:expr
     ) => {{
         use knhk_otel::SpanStatus;
-        
+
         if let Some(ref span) = $span_ctx {
-            $otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.success".to_string(),
-                $success.to_string(),
-            )
-            .await?;
-            
-            $otel.add_attribute(
-                (*span).clone(),
-                "knhk.workflow_engine.latency_ms".to_string(),
-                $latency_ms.to_string(),
-            )
-            .await?;
-            
+            $otel
+                .add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.success".to_string(),
+                    $success.to_string(),
+                )
+                .await?;
+
+            $otel
+                .add_attribute(
+                    (*span).clone(),
+                    "knhk.workflow_engine.latency_ms".to_string(),
+                    $latency_ms.to_string(),
+                )
+                .await?;
+
             let transition = if $success { "complete" } else { "cancel" };
-            $otel.add_lifecycle_transition((*span).clone(), transition).await?;
-            
-            $otel.end_span(
-                (*span).clone(),
-                if $success {
-                    SpanStatus::Ok
-                } else {
-                    SpanStatus::Error
-                },
-            )
-            .await?;
+            $otel
+                .add_lifecycle_transition((*span).clone(), transition)
+                .await?;
+
+            $otel
+                .end_span(
+                    (*span).clone(),
+                    if $success {
+                        SpanStatus::Ok
+                    } else {
+                        SpanStatus::Error
+                    },
+                )
+                .await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
     }};
@@ -230,7 +235,7 @@ macro_rules! otel_with_span {
         $code:block
     ) => {{
         use std::time::Instant;
-        
+
         let start_time = Instant::now();
         let span_ctx = $crate::otel_span!(
             $otel,
@@ -241,9 +246,9 @@ macro_rules! otel_with_span {
             $(pattern_id: $pattern_id,)?
             $(parent: $parent,)?
         ).await?;
-        
+
         let result = $code;
-        
+
         let success = result.is_ok();
         $crate::otel_span_end!(
             $otel,
@@ -251,7 +256,7 @@ macro_rules! otel_with_span {
             success: success,
             start_time: start_time
         ).await?;
-        
+
         result
     }};
 }
@@ -276,7 +281,9 @@ macro_rules! otel_resource {
         role: $role:expr
     ) => {{
         if let Some(ref span) = $span_ctx {
-            $otel.add_resource((*span).clone(), $resource, $role).await?;
+            $otel
+                .add_resource((*span).clone(), $resource, $role)
+                .await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
     }};
@@ -302,7 +309,7 @@ macro_rules! otel_bottleneck {
         threshold_ms: $threshold_ms:expr
     ) => {{
         use $crate::integration::otel_helpers::add_bottleneck_if_detected;
-        
+
         if let Some(ref span) = $span_ctx {
             add_bottleneck_if_detected(
                 $otel,
@@ -336,17 +343,10 @@ macro_rules! otel_conformance {
         actual_pattern: $actual:expr
     ) => {{
         use $crate::integration::otel_helpers::add_conformance_attributes;
-        
+
         if let Some(ref span) = $span_ctx {
-            add_conformance_attributes(
-                $otel,
-                (*span).clone(),
-                $expected,
-                $actual,
-            )
-            .await?;
+            add_conformance_attributes($otel, (*span).clone(), $expected, $actual).await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
     }};
 }
-

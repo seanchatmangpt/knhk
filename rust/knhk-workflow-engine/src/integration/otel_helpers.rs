@@ -63,25 +63,26 @@ pub async fn end_span_with_result(
     start_time: Instant,
 ) -> WorkflowResult<()> {
     let latency_ms = start_time.elapsed().as_millis();
-    
+
     otel.add_attribute(
         span_ctx.clone(),
         "knhk.workflow_engine.success".to_string(),
         success.to_string(),
     )
     .await?;
-    
+
     otel.add_attribute(
         span_ctx.clone(),
         "knhk.workflow_engine.latency_ms".to_string(),
         latency_ms.to_string(),
     )
     .await?;
-    
+
     // Add lifecycle transition
     let transition = if success { "complete" } else { "cancel" };
-    otel.add_lifecycle_transition(span_ctx.clone(), transition).await?;
-    
+    otel.add_lifecycle_transition(span_ctx.clone(), transition)
+        .await?;
+
     // End span
     otel.end_span(
         span_ctx,
@@ -92,7 +93,7 @@ pub async fn end_span_with_result(
         },
     )
     .await?;
-    
+
     Ok(())
 }
 
@@ -133,7 +134,7 @@ pub async fn add_conformance_attributes(
             expected.to_string(),
         )
         .await?;
-        
+
         let violation = expected != actual_pattern;
         otel.add_attribute(
             span_ctx,
@@ -166,4 +167,3 @@ mod tests {
         assert!(!check_bottleneck(500, 1000));
     }
 }
-
