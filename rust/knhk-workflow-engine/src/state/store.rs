@@ -207,7 +207,7 @@ impl StateStore {
         let key = format!(
             "case_history:{}:{}",
             case_id,
-            chrono::Utc::now().timestamp_nanos()
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
         );
         let value = serde_json::to_vec(event)
             .map_err(|e| WorkflowError::StatePersistence(format!("Serialization error: {}", e)))?;

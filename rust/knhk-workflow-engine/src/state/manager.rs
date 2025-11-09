@@ -9,6 +9,7 @@ use crate::case::{Case, CaseId};
 use crate::error::WorkflowResult;
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::state::store::StateStore;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -27,7 +28,7 @@ pub struct StateManager {
 }
 
 /// State event for event sourcing
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum StateEvent {
     /// Workflow spec registered
     SpecRegistered {
@@ -62,6 +63,19 @@ pub enum StateEvent {
         duration_ms: u64,
         timestamp: chrono::DateTime<chrono::Utc>,
     },
+}
+
+impl StateEvent {
+    /// Get case_id from event if it exists
+    pub fn case_id(&self) -> Option<CaseId> {
+        match self {
+            StateEvent::SpecRegistered { .. } => None,
+            StateEvent::CaseCreated { case_id, .. } => Some(*case_id),
+            StateEvent::CaseStateChanged { case_id, .. } => Some(*case_id),
+            StateEvent::TaskStarted { case_id, .. } => Some(*case_id),
+            StateEvent::TaskCompleted { case_id, .. } => Some(*case_id),
+        }
+    }
 }
 
 impl StateManager {
@@ -254,8 +268,7 @@ impl StateManager {
             log.push(event.clone());
         }
         // Persist event to store (for audit trail)
-        self.store
-            .save_case_history_event(&event.case_id(), &event)?;
+        self.store.save_case_history_event(&case_id, &event)?;
         Ok(())
     }
 

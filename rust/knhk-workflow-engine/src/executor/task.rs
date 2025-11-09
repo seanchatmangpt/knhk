@@ -24,7 +24,7 @@ pub(super) async fn execute_task_with_allocation(
     engine
         .state_manager
         .log_task_started(case_id, task.id.clone(), task.name.clone())
-        .await;
+        .await?;
     // Allocate resources if allocation policy is specified
     if let Some(ref policy) = task.allocation_policy {
         let request = AllocationRequest {

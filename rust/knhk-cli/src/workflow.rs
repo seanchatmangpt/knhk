@@ -19,6 +19,18 @@
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use knhk_workflow_engine::{
+    api::{
+        models::{
+            errors::ApiError,
+            requests::{
+                CancelCaseRequest, CreateCaseRequest, ExecuteCaseRequest, GetCaseHistoryRequest,
+                GetCaseRequest, GetWorkflowRequest, ListCasesRequest, ListWorkflowsRequest,
+                RegisterWorkflowRequest, StartCaseRequest,
+            },
+        },
+        service::{CaseService, PatternService, WorkflowService},
+        transport::CliAdapter,
+    },
     case::CaseId,
     parser::{WorkflowParser, WorkflowSpecId},
     state::StateStore,
@@ -134,14 +146,14 @@ pub fn register(file: PathBuf, state_store: Option<String>) -> CnvResult<()> {
             })?
         };
 
-        engine.register_workflow(spec.clone()).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!(
-                "Failed to register workflow: {}",
-                e
-            ))
+        // Use service layer
+        let service = WorkflowService::new(engine);
+        let request = RegisterWorkflowRequest { spec: spec.clone() };
+        let response = service.register_workflow(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
         })?;
 
-        println!("Workflow registered: {} ({})", spec.name, spec.id);
+        println!("Workflow registered: {} ({})", spec.name, response.spec_id);
         Ok(())
     })
 }
@@ -165,17 +177,17 @@ pub fn create(spec_id: String, data: Option<String>, state_store: Option<String>
             serde_json::json!({})
         };
 
-        let case_id = engine
-            .create_case(spec_id_uuid, case_data)
-            .await
-            .map_err(|e| {
-                clap_noun_verb::NounVerbError::execution_error(format!(
-                    "Failed to create case: {}",
-                    e
-                ))
-            })?;
+        // Use service layer
+        let service = CaseService::new(engine);
+        let request = CreateCaseRequest {
+            spec_id: spec_id_uuid,
+            data: case_data,
+        };
+        let response = service.create_case(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
+        })?;
 
-        println!("Case created: {}", case_id);
+        println!("Case created: {}", response.case_id);
         Ok(())
     })
 }
@@ -191,8 +203,13 @@ pub fn start(case_id: String, state_store: Option<String>) -> CnvResult<()> {
             clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
         })?;
 
-        engine.start_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!("Failed to start case: {}", e))
+        // Use service layer
+        let service = CaseService::new(engine);
+        let request = StartCaseRequest {
+            case_id: case_id_uuid,
+        };
+        service.start_case(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
         })?;
 
         println!("Case started: {}", case_id);
@@ -211,8 +228,13 @@ pub fn execute(case_id: String, state_store: Option<String>) -> CnvResult<()> {
             clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
         })?;
 
-        engine.execute_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!("Failed to execute case: {}", e))
+        // Use service layer
+        let service = CaseService::new(engine);
+        let request = ExecuteCaseRequest {
+            case_id: case_id_uuid,
+        };
+        service.execute_case(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
         })?;
 
         println!("Case executed: {}", case_id);
@@ -231,8 +253,13 @@ pub fn cancel(case_id: String, state_store: Option<String>) -> CnvResult<()> {
             clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
         })?;
 
-        engine.cancel_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!("Failed to cancel case: {}", e))
+        // Use service layer
+        let service = CaseService::new(engine);
+        let request = CancelCaseRequest {
+            case_id: case_id_uuid,
+        };
+        service.cancel_case(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
         })?;
 
         println!("Case cancelled: {}", case_id);
@@ -251,11 +278,16 @@ pub fn get(case_id: String, state_store: Option<String>) -> CnvResult<()> {
             clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
         })?;
 
-        let case = engine.get_case(case_id_uuid).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!("Failed to get case: {}", e))
+        // Use service layer
+        let service = CaseService::new(engine);
+        let request = GetCaseRequest {
+            case_id: case_id_uuid,
+        };
+        let response = service.get_case(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
         })?;
 
-        let json = serde_json::to_string_pretty(&case).map_err(|e| {
+        let json = serde_json::to_string_pretty(&response.case).map_err(|e| {
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to serialize case: {}",
                 e
@@ -275,29 +307,30 @@ pub fn list(spec_id: Option<String>, state_store: Option<String>) -> CnvResult<(
 
     runtime.block_on(async {
         if let Some(spec_id_str) = spec_id {
+            // List cases for specific workflow
             let spec_id_uuid = WorkflowSpecId::parse_str(&spec_id_str).map_err(|e| {
                 clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
             })?;
-            let cases = engine.list_cases(spec_id_uuid).await.map_err(|e| {
-                clap_noun_verb::NounVerbError::execution_error(format!(
-                    "Failed to list cases: {}",
-                    e
-                ))
+            let service = CaseService::new(engine);
+            let request = ListCasesRequest {
+                spec_id: Some(spec_id_uuid),
+            };
+            let response = service.list_cases(request).await.map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
             })?;
             println!("Cases for workflow {}:", spec_id_str);
-            for case_id in cases {
+            for case_id in response.cases {
                 println!("  - {}", case_id);
             }
         } else {
             // List all workflows
-            let workflows = engine.list_workflows().await.map_err(|e| {
-                clap_noun_verb::NounVerbError::execution_error(format!(
-                    "Failed to list workflows: {}",
-                    e
-                ))
+            let service = WorkflowService::new(engine);
+            let request = ListWorkflowsRequest {};
+            let response = service.list_workflows(request).await.map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
             })?;
             println!("Registered workflows:");
-            for spec_id in workflows {
+            for spec_id in response.workflows {
                 println!("  - {}", spec_id);
             }
         }

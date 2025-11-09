@@ -121,6 +121,14 @@ impl WorkflowTestFixture {
         self.assert_case_state(case, CaseState::Cancelled);
     }
 
+    /// Get case history (for testing)
+    pub async fn get_case_history(
+        &self,
+        case_id: CaseId,
+    ) -> WorkflowResult<Vec<crate::state::manager::StateEvent>> {
+        Ok(self.engine.state_manager.get_case_history(case_id).await)
+    }
+
     /// Clean up test resources
     pub fn cleanup(&self) -> WorkflowResult<()> {
         // Clean up state store by removing test database
