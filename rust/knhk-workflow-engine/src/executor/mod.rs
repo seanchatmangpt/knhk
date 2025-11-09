@@ -13,6 +13,9 @@
 //! - `fortune5.rs`: Fortune 5 integration methods
 //! - `rdf_query.rs`: Runtime RDF query API
 
+#[macro_use]
+extern crate knhk_workflow_engine;
+
 mod accessors;
 mod case;
 mod construction;

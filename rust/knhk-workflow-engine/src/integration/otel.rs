@@ -13,7 +13,7 @@ use tokio::sync::RwLock;
 
 /// OTEL integration for workflow engine
 pub struct OtelIntegration {
-    tracer: Arc<RwLock<Option<Tracer>>>,
+    pub(crate) tracer: Arc<RwLock<Option<Tracer>>>,
     otlp_endpoint: Option<String>,
 }
 

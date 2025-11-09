@@ -6,7 +6,7 @@ use crate::integration::fortune5::RuntimeClass;
 use crate::parser::{Task, WorkflowSpecId};
 use crate::patterns::{PatternExecutionContext, PatternId};
 use crate::resource::AllocationRequest;
-use knhk_otel::SpanStatus;
+use knhk_otel::{SpanContext, SpanStatus};
 use std::collections::HashMap;
 use std::time::Instant;
 
