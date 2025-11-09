@@ -527,8 +527,8 @@ fn checkmark(value: bool) -> &'static str {
 
 fn crossmark(value: bool) -> &'static str {
     if value {
-        "✅"
-    } else {
         "❌"
+    } else {
+        "✅"
     }
 }

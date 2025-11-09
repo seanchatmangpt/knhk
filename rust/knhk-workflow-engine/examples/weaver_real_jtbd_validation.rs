@@ -17,9 +17,8 @@ use knhk_workflow_engine::integration::{OtelIntegration, PatternAttributes, Patt
 use knhk_workflow_engine::patterns::{
     PatternExecutionContext, PatternId, PatternRegistry, RegisterAllExt,
 };
-use knhk_workflow_engine::{CaseId, StateStore, WorkflowEngine, WorkflowParser, WorkflowSpecId};
-use std::collections::{HashMap, HashSet};
-use tempfile::TempDir;
+use knhk_workflow_engine::{CaseId, WorkflowSpecId};
+use std::collections::HashMap;
 use tracing::{error, info, warn};
 
 /// Real workflow scenario for testing patterns

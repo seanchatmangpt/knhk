@@ -432,6 +432,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 output.display()
             );
         }
+        Commands::WeaverCheck { .. } => {
+            // WeaverCheck is handled in the if let block above
+            unreachable!("WeaverCheck should be handled before match")
+        }
     }
 
     Ok(())

@@ -2,6 +2,7 @@
 // Validate commands - Self-validation operations
 // "Eating our own dog food" - Using KNHKS to validate itself
 
+use clap_noun_verb::{NounVerbError, Result as CnvResult};
 use clap_noun_verb_macros::{arg, verb};
 #[allow(unused_imports)]
 use knhk_lockchain::{LockchainStorage, Receipt};
@@ -69,17 +70,19 @@ pub fn self_validate(
     #[arg(long)] weaver: bool,
     #[arg(long)] receipts: bool,
     #[arg(long)] output: Option<PathBuf>,
-) -> Result<(), String> {
+) -> CnvResult<()> {
     #[cfg(feature = "otel")]
     let span_ctx = {
-        let _span = span!(
+        let span = span!(
             Level::INFO,
             "knhk.validate.self",
             knhk.operation.name = "validate.self"
         );
-        let _enter = _span.enter();
+        let _enter = span.enter();
         info!("starting_self_validation");
-        _span.id().map(|id| format!("{:x}", id))
+        // Extract span ID for report (if available)
+        // Note: tracing::Span doesn't expose ID directly, use OTEL tracer instead
+        None::<String> // Will be populated by OTEL tracer if needed
     };
 
     let mut report = ValidationReport::new();
@@ -89,22 +92,24 @@ pub fn self_validate(
     #[allow(unused_variables)]
     if receipts {
         let temp_dir = std::env::temp_dir().join(format!("knhk-validation-{}", std::process::id()));
-        std::fs::create_dir_all(&temp_dir)
-            .map_err(|e| format!("Failed to create temp directory: {}", e))?;
-        let _lockchain = LockchainStorage::new(
-            temp_dir
-                .to_str()
-                .ok_or_else(|| "Failed to convert path to string".to_string())?,
-        )
-        .map_err(|e| format!("Failed to initialize lockchain: {}", e))?;
+        std::fs::create_dir_all(&temp_dir).map_err(|e| {
+            NounVerbError::execution_error(format!("Failed to create temp directory: {}", e))
+        })?;
+        let _lockchain = LockchainStorage::new(temp_dir.to_str().ok_or_else(|| {
+            NounVerbError::execution_error("Failed to convert path to string".to_string())
+        })?)
+        .map_err(|e| {
+            NounVerbError::execution_error(format!("Failed to initialize lockchain: {}", e))
+        })?;
         // Lockchain initialized for receipt storage
     }
 
     // 1. Validate CLI binary exists
     info!("validating_cli_binary");
     let cli_result = knhk_validation::cli_validation::validate_cli_binary_exists();
+    let cli_passed = cli_result.passed;
     report.add_result(cli_result);
-    if cli_result.passed && receipts {
+    if cli_passed && receipts {
         // Store receipt metadata (LockchainStorage doesn't have direct write method for Receipt)
         // For now, we'll track receipts in the report
         receipts_generated += 1;
@@ -115,8 +120,9 @@ pub fn self_validate(
     let commands = vec![("hook", &["--help"][..]), ("workflow", &["patterns"][..])];
     for (cmd, args) in commands {
         let cmd_result = knhk_validation::cli_validation::validate_cli_command(cmd, args);
+        let cmd_passed = cmd_result.passed;
         report.add_result(cmd_result);
-        if cmd_result.passed && receipts {
+        if cmd_passed && receipts {
             // Store receipt metadata (LockchainStorage doesn't have direct write method for Receipt)
             // For now, we'll track receipts in the report
             receipts_generated += 1;
@@ -127,16 +133,37 @@ pub fn self_validate(
     info!("validating_guard_constraints");
     let guard_values = vec![1, 4, 8, 9]; // Test valid and invalid
     for run_len in guard_values {
-        let guard_result = knhk_validation::property_validation::validate_guard_constraints();
-        report.add_result(guard_result);
+        #[cfg(feature = "policy-engine")]
+        {
+            let guard_result =
+                knhk_validation::guard_validation::validate_guard_constraint(run_len);
+            report.add_result(guard_result);
+        }
+        #[cfg(not(feature = "policy-engine"))]
+        {
+            let guard_result = knhk_validation::property_validation::validate_guard_constraints();
+            report.add_result(guard_result);
+        }
     }
 
     // 4. Validate performance constraints
     info!("validating_performance_constraints");
     let tick_values = vec![1, 4, 8, 9]; // Test valid and invalid
     for ticks in tick_values {
-        let perf_result = knhk_validation::performance_validation::validate_hot_path_performance();
-        report.add_result(perf_result);
+        #[cfg(feature = "policy-engine")]
+        {
+            let perf_result =
+                knhk_validation::performance_validation::validate_hot_path_performance_with_policy(
+                    ticks as u32,
+                );
+            report.add_result(perf_result);
+        }
+        #[cfg(not(feature = "policy-engine"))]
+        {
+            let perf_result =
+                knhk_validation::performance_validation::validate_hot_path_performance();
+            report.add_result(perf_result);
+        }
     }
 
     // 5. Weaver validation (if enabled)
@@ -180,7 +207,7 @@ pub fn self_validate(
     // 6. Generate final report
     let timestamp_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|e| format!("Failed to get timestamp: {}", e))?
+        .map_err(|e| NounVerbError::execution_error(format!("Failed to get timestamp: {}", e)))?
         .as_millis() as u64;
 
     let validation_report_data = ValidationReportData {
@@ -209,10 +236,12 @@ pub fn self_validate(
 
     // 7. Output report
     if let Some(output_path) = output {
-        let report_json = serde_json::to_string_pretty(&final_report)
-            .map_err(|e| format!("Failed to serialize report: {}", e))?;
-        std::fs::write(&output_path, report_json)
-            .map_err(|e| format!("Failed to write report: {}", e))?;
+        let report_json = serde_json::to_string_pretty(&final_report).map_err(|e| {
+            NounVerbError::execution_error(format!("Failed to serialize report: {}", e))
+        })?;
+        std::fs::write(&output_path, report_json).map_err(|e| {
+            NounVerbError::execution_error(format!("Failed to write report: {}", e))
+        })?;
         info!(output = %output_path.display(), "report_written");
     } else {
         // Print to stdout
@@ -249,10 +278,10 @@ pub fn self_validate(
         info!("self_validation_passed");
         Ok(())
     } else {
-        Err(format!(
+        Err(NounVerbError::execution_error(format!(
             "Self-validation failed: {}/{} checks failed",
             report.failed, report.total
-        ))
+        )))
     }
 }
 
@@ -263,7 +292,7 @@ pub fn self_validate_daemon(
     #[arg(long)] weaver: bool,
     #[arg(long)] receipts: bool,
     #[arg(long)] output: Option<PathBuf>,
-) -> Result<(), String> {
+) -> CnvResult<()> {
     #[cfg(feature = "otel")]
     let _span = span!(
         Level::INFO,
@@ -284,8 +313,9 @@ pub fn self_validate_daemon(
 
     // Create output directory if specified
     if let Some(ref output_path) = output {
-        std::fs::create_dir_all(output_path)
-            .map_err(|e| format!("Failed to create output directory: {}", e))?;
+        std::fs::create_dir_all(output_path).map_err(|e| {
+            NounVerbError::execution_error(format!("Failed to create output directory: {}", e))
+        })?;
     }
 
     let mut iteration = 0u64;
@@ -293,7 +323,7 @@ pub fn self_validate_daemon(
         iteration += 1;
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| format!("Failed to get timestamp: {}", e))?
+            .map_err(|e| NounVerbError::execution_error(format!("Failed to get timestamp: {}", e)))?
             .as_secs();
 
         info!(iteration = iteration, "running_self_validation_iteration");
@@ -341,7 +371,7 @@ fn create_validation_receipt(operation: &str, passed: bool) -> Result<Receipt, S
         shard_id: 0,
         hook_id: hash_operation(operation),
         actual_ticks: if passed { 1 } else { 9 }, // 1 tick if passed, 9 if failed (violation)
-        hash_a: hash_operation(&format!("{}_{}", operation, passed)) as u64,
+        hash_a: hash_operation(&format!("{}_{}", operation, passed)) as u64, // u32 -> u64 cast
     })
 }
 
