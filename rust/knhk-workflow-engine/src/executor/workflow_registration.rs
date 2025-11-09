@@ -20,8 +20,8 @@ impl WorkflowEngine {
         {
             otel_span!(
                 otel,
-                "knhk.workflow_engine.register_workflow",
-                spec_id: Some(&spec.id),
+                "knhk.workflow_engine.register_workflow"
+                , spec_id: Some(&spec.id)
             )
             .await?
         } else {
@@ -100,7 +100,8 @@ impl WorkflowEngine {
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )?;
+            )
+            .await?;
         }
 
         persist_result

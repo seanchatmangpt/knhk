@@ -21,9 +21,9 @@ impl WorkflowEngine {
         let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
             otel_span!(
                 otel,
-                "knhk.workflow_engine.execute_pattern",
-                case_id: Some(&context.case_id),
-                pattern_id: Some(&pattern_id)
+                "knhk.workflow_engine.execute_pattern"
+                , case_id: Some(&context.case_id)
+                , pattern_id: Some(&pattern_id)
             )
             .await?
         } else {
@@ -41,7 +41,8 @@ impl WorkflowEngine {
                         span_ctx,
                         success: false,
                         start_time: start_time
-                    )?;
+                    )
+                    .await?;
                 }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),
@@ -179,7 +180,8 @@ impl WorkflowEngine {
                 span_ctx,
                 success: result.success,
                 start_time: start_time
-            )?;
+            )
+            .await?;
         }
 
         Ok(result)
