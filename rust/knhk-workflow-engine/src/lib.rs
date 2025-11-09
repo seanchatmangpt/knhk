@@ -75,8 +75,7 @@ pub mod hooks;
 pub mod innovation;
 pub mod integration;
 
-#[macro_use]
-pub use integration::otel_macros::*;
+// Macros are exported via #[macro_export] in otel_macros.rs
 
 #[macro_use]
 pub mod observability;

@@ -176,8 +176,7 @@ impl WorkflowEngine {
                 otel,
                 "knhk.workflow_engine.execute_case",
                 case_id: Some(&case_id),
-            )
-            .await
+            )?
         } else {
             None
         };
