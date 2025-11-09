@@ -16,7 +16,6 @@ use knhk_workflow_engine::{
     executor::WorkflowEngine,
     parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId},
     state::StateStore,
-    CaseId,
 };
 use process_mining::{
     alphappp::full::{alphappp_discover_petri_net, AlphaPPPConfig},

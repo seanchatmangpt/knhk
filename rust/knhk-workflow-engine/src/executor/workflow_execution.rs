@@ -218,18 +218,49 @@ pub(super) fn execute_workflow<'a>(
                     continue;
                 }
 
-                // Execute the task
+                // Execute the task (actual work)
                 execute_task_with_allocation(engine, case_id, spec.id, task).await?;
                 completed_tasks.insert(node_id.clone());
+
+                // Van der Aalst Pattern-Based Execution:
+                // Identify pattern and execute via pattern executor for split/join decisions
+                let pattern_id = identify_task_pattern(task);
+                let case = engine.get_case(case_id).await?;
+                
+                // Create pattern execution context
+                let mut pattern_vars = HashMap::new();
+                // Convert case data to pattern variables (string format)
+                if let Some(obj) = case.data.as_object() {
+                    for (k, v) in obj {
+                        if let Some(s) = v.as_str() {
+                            pattern_vars.insert(k.clone(), s.to_string());
+                        } else {
+                            pattern_vars.insert(k.clone(), v.to_string());
+                        }
+                    }
+                }
+
+                let pattern_ctx = PatternExecutionContext {
+                    case_id,
+                    workflow_id: spec.id,
+                    variables: pattern_vars,
+                    arrived_from: std::collections::HashSet::new(),
+                    scope_id: String::new(),
+                };
+
+                // Execute pattern to determine split behavior
+                let pattern_result = engine.execute_pattern(pattern_id, pattern_ctx).await?;
 
                 // Find outgoing flows from this task
                 let outgoing_flows: Vec<&Flow> =
                     spec.flows.iter().filter(|f| f.from == node_id).collect();
 
-                // Evaluate predicates and add enabled flows to queue
-                let case = engine.get_case(case_id).await?;
+                // Use pattern result to determine enabled flows
+                // Pattern executors return next_activities, but we also need to evaluate predicates
                 let case_data = &case.data;
 
+                // Get enabled flows based on pattern execution and predicates
+                let mut enabled_flows = Vec::new();
                 for flow in &outgoing_flows {
                     let flow_enabled = if let Some(predicate) = &flow.predicate {
                         evaluate_predicate(predicate, case_data)
@@ -238,42 +269,87 @@ pub(super) fn execute_workflow<'a>(
                     };
 
                     if flow_enabled {
-                        let target_id = &flow.to;
-
-                        // If target is a task, increment received count
-                        if let Some(target_task) = spec.tasks.get(target_id) {
-                            // For OR joins, track which branches are active
-                            if matches!(target_task.join_type, crate::parser::JoinType::Or) {
-                                let active = or_join_active_branches
-                                    .entry(target_id.clone())
-                                    .or_insert_with(HashSet::new);
-                                active.insert(node_id.clone()); // Mark this branch as active
-
-                                // Update required count for OR join: need all active branches
-                                let required = active.len();
-                                task_incoming_count.insert(target_id.clone(), required);
-                            }
-
-                            let received =
-                                task_received_count.entry(target_id.clone()).or_insert(0);
-                            *received += 1;
-
-                            let required = task_incoming_count.get(target_id).copied().unwrap_or(0);
-                            // Add to queue if ready (received enough incoming flows)
-                            if *received >= required {
-                                queue.push_back(target_id.clone());
-                            }
-                        } else {
-                            // Target is a condition - add to queue
-                            queue.push_back(target_id.clone());
-                        }
+                        enabled_flows.push(flow);
                     }
                 }
 
-                // Handle parallel split (AND split) - all outgoing flows should be taken
-                if matches!(task.split_type, crate::parser::SplitType::And) {
-                    // For AND split, we already added all enabled flows above
-                    // Continue processing
+                // Apply pattern-based split logic (Van der Aalst methodology):
+                // - Pattern 1 (Sequence): Single flow (AND-split + AND-join)
+                // - Pattern 2 (Exclusive Choice): One flow (XOR-split + XOR-join)
+                // - Pattern 3 (Multi-Choice): Multiple flows (OR-split + OR-join)
+                // - Pattern 4-9: Various split/join combinations
+                let flows_to_take = match pattern_id.0 {
+                    1 => {
+                        // Sequence: Take first enabled flow
+                        enabled_flows.first().map(|f| vec![*f]).unwrap_or_default()
+                    }
+                    2 => {
+                        // Exclusive Choice: Take first enabled flow (XOR)
+                        enabled_flows.first().map(|f| vec![*f]).unwrap_or_default()
+                    }
+                    3 => {
+                        // Multi-Choice: Take all enabled flows (OR)
+                        enabled_flows.clone()
+                    }
+                    _ => {
+                        // Patterns 4-9: Use pattern result next_activities if available,
+                        // otherwise fall back to enabled flows
+                        if !pattern_result.next_activities.is_empty() {
+                            // Filter flows to match next_activities from pattern
+                            enabled_flows
+                                .iter()
+                                .filter(|f| pattern_result.next_activities.contains(&f.to))
+                                .copied()
+                                .collect()
+                        } else {
+                            // Fall back to all enabled flows
+                            enabled_flows.clone()
+                        }
+                    }
+                };
+
+                // Process enabled flows
+                for flow in flows_to_take {
+                    let target_id = &flow.to;
+
+                    // If target is a task, increment received count
+                    if let Some(target_task) = spec.tasks.get(target_id) {
+                        // For OR joins, track which branches are active
+                        if matches!(target_task.join_type, crate::parser::JoinType::Or) {
+                            let active = or_join_active_branches
+                                .entry(target_id.clone())
+                                .or_insert_with(HashSet::new);
+                            active.insert(node_id.clone()); // Mark this branch as active
+
+                            // Update required count for OR join: need all active branches
+                            let required = active.len();
+                            task_incoming_count.insert(target_id.clone(), required);
+                        }
+
+                        let received =
+                            task_received_count.entry(target_id.clone()).or_insert(0);
+                        *received += 1;
+
+                        let required = task_incoming_count.get(target_id).copied().unwrap_or(0);
+                        // Add to queue if ready (received enough incoming flows)
+                        if *received >= required {
+                            queue.push_back(target_id.clone());
+                        }
+                    } else {
+                        // Target is a condition - add to queue
+                        queue.push_back(target_id.clone());
+                    }
+                }
+
+                // Handle cancellation patterns (19-25) if pattern result indicates cancellation
+                if !pattern_result.cancel_activities.is_empty() {
+                    for activity_id in &pattern_result.cancel_activities {
+                        // Mark activity as cancelled
+                        if let Some(_cancelled_task) = spec.tasks.get(activity_id) {
+                            // In production, would cancel the task and clean up resources
+                            tracing::debug!("Pattern {} requested cancellation of activity {}", pattern_id.0, activity_id);
+                        }
+                    }
                 }
             } else if let Some(_condition) = spec.conditions.get(&node_id) {
                 // Condition - find outgoing flows
