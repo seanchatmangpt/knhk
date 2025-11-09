@@ -488,12 +488,91 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | **Rust Benchmarks** | `rust/knhk-hot/benches/cycle_bench.rs` |
 | **Tick Budget** | `rust/knhk-etl/src/reflex.rs` (line 22-23: `tick_budget: u32 = 8`) |
 
+---
+
+## Direct File-to-LOC Mapping
+
+**Complete mapping of DFLSS documentation files to code files with line counts**
+
+### DFLSS Documentation Files (docs/v1/dflss/)
+
+| File | LOC | Description |
+|------|-----|-------------|
+| `CODE_MAPPING.md` | 452 | Direct mapping of DFLSS documentation to code files |
+| `SYNTHETIC_VOC.md` | 411 | Voice of Customer analysis |
+| `README.md` | 384 | DFLSS overview and DMEDI methodology |
+| `measure/PHASE_SUMMARY.md` | 376 | MEASURE phase deliverables |
+| `PROJECT_CHARTER.md` | 323 | Project scope, goals, team |
+| `SIPOC.md` | 314 | Suppliers, Inputs, Process, Outputs, Customers |
+| `define/PHASE_SUMMARY.md` | 264 | DEFINE phase deliverables |
+| **Total Documentation** | **2,574** | All DFLSS documentation files |
+
+### Core Workflow Engine Files (rust/knhk-workflow-engine/src/)
+
+| File | LOC | Description |
+|------|-----|-------------|
+| `src/testing/chicago_tdd.rs` | 1,470 | Chicago TDD framework |
+| `src/performance/aot.rs` | 414 | AOT kernel (≤8 ticks requirement) |
+| `src/state/manager.rs` | 324 | StateManager implementation |
+| `src/patterns/mod.rs` | 320 | PatternRegistry |
+| `src/state/store.rs` | 240 | StateStore implementation |
+| `src/integration/weaver.rs` | 266 | Weaver integration (static + live validation) |
+| `src/data/gateway.rs` | 307 | SPARQL queries, data gateway |
+| `src/validation/process_mining.rs` | 206 | Process capability (Cp/Cpk), statistical analysis |
+| `src/testing/coverage.rs` | 176 | Test coverage analysis |
+| `src/lib.rs` | 142 | Main library (Clippy configuration) |
+| `src/parser/mod.rs` | 141 | WorkflowParser |
+| `src/executor/engine.rs` | 75 | WorkflowEngine core implementation |
+| `src/validation/mod.rs` | 41 | Validation framework |
+| **Total Workflow Engine** | **197 files** | **35,286 LOC** |
+
+### Hot Path Files (rust/knhk-hot/)
+
+| File | LOC | Description |
+|------|-----|-------------|
+| `src/lib.rs` | 33 | RDTSC measurement, hot path operations (≤8 ticks) |
+
+### CLI Files (rust/knhk-cli/)
+
+| File | LOC | Description |
+|------|-----|-------------|
+| `src/` | 70 files | CLI implementation |
+| **Total CLI** | **70 files** | **10,626 LOC** |
+
+### C Library Files (c/src/)
+
+| File | LOC | Description |
+|------|-----|-------------|
+| `src/` | 25 files | C library implementation (core, kernels, simd, etc.) |
+| **Total C Library** | **25 files** | **3,959 LOC** |
+
+### Erlang Files (erlang/knhk_rc/src/)
+
+| File | LOC | Description |
+|------|-----|-------------|
+| `src/` | 15 files | Erlang implementation |
+| **Total Erlang** | **15 files** | **1,037 LOC** |
+
+### Summary Statistics
+
+| Category | Files | LOC | Description |
+|----------|-------|-----|-------------|
+| **DFLSS Documentation** | 7 | 2,574 | All DFLSS documentation |
+| **Rust Workflow Engine** | 197 | 35,286 | Core workflow engine |
+| **Rust CLI** | 70 | 10,626 | Command-line interface |
+| **Rust Hot Path** | 1 | 33 | Performance-critical operations |
+| **C Library** | 25 | 3,959 | C implementation |
+| **Erlang** | 15 | 1,037 | Erlang implementation |
+| **Total Code** | 308 | 50,941 | All implementation files |
+| **Grand Total** | 315 | 53,515 | Documentation + Code |
+
 ## Revision History
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-11-09 | Initial code mapping creation |
 | 1.1 | 2025-11-09 | Updated with verified file paths and code references |
+| 1.2 | 2025-01-27 | Added direct file-to-LOC mapping with complete statistics (315 files, 53,515 LOC) |
 
 ---
 
