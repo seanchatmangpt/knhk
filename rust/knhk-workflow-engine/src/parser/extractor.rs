@@ -270,6 +270,10 @@ pub fn extract_tasks(
                 })
                 .unwrap_or(false);
 
+            // Extract input and output parameters
+            let input_parameters = extract_task_parameters(store, &yawl_ns, &task_id, true)?;
+            let output_parameters = extract_task_parameters(store, &yawl_ns, &task_id, false)?;
+
             let task = Task {
                 id: task_id.clone(),
                 name: task_name,
@@ -283,6 +287,8 @@ pub fn extract_tasks(
                 output_conditions: Vec::new(),
                 outgoing_flows: Vec::new(),
                 incoming_flows: Vec::new(),
+                input_parameters,
+                output_parameters,
                 allocation_policy: None,
                 required_roles: Vec::new(),
                 required_capabilities: Vec::new(),
@@ -294,6 +300,72 @@ pub fn extract_tasks(
     }
 
     Ok(tasks)
+}
+
+/// Extract task parameters (input or output) from RDF store
+fn extract_task_parameters(
+    store: &Store,
+    yawl_ns: &str,
+    task_id: &str,
+    is_input: bool,
+) -> WorkflowResult<Vec<crate::parser::types::TaskParameter>> {
+    let param_type = if is_input {
+        "hasInputParameter"
+    } else {
+        "hasOutputParameter"
+    };
+
+    let query = format!(
+        "PREFIX yawl: <{}>\n\
+         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
+         SELECT ?paramName ?paramType WHERE {{\n\
+           <{}> yawl:{} ?param .\n\
+           ?param yawl:paramName ?paramName .\n\
+           OPTIONAL {{ ?param yawl:paramType ?paramType }}\n\
+         }}",
+        yawl_ns, task_id, param_type
+    );
+
+    #[allow(deprecated)]
+    let query_results = store
+        .query(&query)
+        .map_err(|e| WorkflowError::Parse(format!("Failed to query task parameters: {:?}", e)))?;
+
+    let mut parameters = Vec::new();
+
+    if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
+        for solution in solutions {
+            let solution = solution.map_err(|e| {
+                WorkflowError::Parse(format!("Failed to process parameter solution: {:?}", e))
+            })?;
+
+            if let Some(param_name_term) = solution.get("paramName") {
+                let param_name = if let oxigraph::model::Term::Literal(lit) = param_name_term {
+                    lit.value().to_string()
+                } else {
+                    param_name_term.to_string()
+                };
+
+                let param_type = solution
+                    .get("paramType")
+                    .and_then(|t| {
+                        if let oxigraph::model::Term::Literal(lit) = t {
+                            Some(lit.value().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or_else(|| "string".to_string());
+
+                parameters.push(crate::parser::types::TaskParameter {
+                    name: param_name,
+                    param_type,
+                });
+            }
+        }
+    }
+
+    Ok(parameters)
 }
 
 /// Extract conditions from RDF store

@@ -70,6 +70,15 @@ pub enum TaskType {
     MultipleInstance,
 }
 
+/// Task parameter (input or output)
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct TaskParameter {
+    /// Parameter name
+    pub name: String,
+    /// Parameter type (e.g., "string", "boolean", "decimal")
+    pub param_type: String,
+}
+
 /// Workflow task
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Task {
@@ -97,6 +106,10 @@ pub struct Task {
     pub outgoing_flows: Vec<String>,
     /// Incoming flows (task IDs)
     pub incoming_flows: Vec<String>,
+    /// Input parameters (from yawl:hasInputParameter)
+    pub input_parameters: Vec<TaskParameter>,
+    /// Output parameters (from yawl:hasOutputParameter)
+    pub output_parameters: Vec<TaskParameter>,
     /// Resource allocation policy
     pub allocation_policy: Option<crate::resource::AllocationPolicy>,
     /// Required roles for task execution

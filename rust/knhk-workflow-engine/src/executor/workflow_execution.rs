@@ -195,7 +195,19 @@ pub(super) fn execute_workflow<'a>(
                         let target_id = &flow.to;
 
                         // If target is a task, increment received count
-                        if let Some(_target_task) = spec.tasks.get(target_id) {
+                        if let Some(target_task) = spec.tasks.get(target_id) {
+                            // For OR joins, track which branches are active
+                            if matches!(target_task.join_type, crate::parser::JoinType::Or) {
+                                let active = or_join_active_branches
+                                    .entry(target_id.clone())
+                                    .or_insert_with(HashSet::new);
+                                active.insert(node_id.clone()); // Mark this branch as active
+
+                                // Update required count for OR join: need all active branches
+                                let required = active.len();
+                                task_incoming_count.insert(target_id.clone(), required);
+                            }
+
                             let received =
                                 task_received_count.entry(target_id.clone()).or_insert(0);
                             *received += 1;
@@ -237,7 +249,19 @@ pub(super) fn execute_workflow<'a>(
                         let target_id = &flow.to;
 
                         // If target is a task, increment received count
-                        if let Some(_target_task) = spec.tasks.get(target_id) {
+                        if let Some(target_task) = spec.tasks.get(target_id) {
+                            // For OR joins, track which branches are active
+                            if matches!(target_task.join_type, crate::parser::JoinType::Or) {
+                                let active = or_join_active_branches
+                                    .entry(target_id.clone())
+                                    .or_insert_with(HashSet::new);
+                                active.insert(node_id.clone()); // Mark this branch as active
+
+                                // Update required count for OR join: need all active branches
+                                let required = active.len();
+                                task_incoming_count.insert(target_id.clone(), required);
+                            }
+
                             let received =
                                 task_received_count.entry(target_id.clone()).or_insert(0);
                             *received += 1;
