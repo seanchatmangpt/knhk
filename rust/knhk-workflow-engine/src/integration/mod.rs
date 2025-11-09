@@ -7,6 +7,7 @@ pub mod fortune5;
 mod lockchain;
 pub mod otel;
 mod otel_helpers;
+#[macro_use]
 mod otel_macros;
 mod pattern_otel;
 mod registry;

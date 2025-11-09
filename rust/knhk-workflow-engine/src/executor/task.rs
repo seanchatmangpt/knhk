@@ -35,8 +35,14 @@ pub(super) async fn execute_task_with_allocation(
                 _ => PatternId(1), // Default to Sequence
             }
         };
-        otel.start_execute_task_span(&case_id, &task.id, Some(&pattern_id), None)
-            .await?
+        otel_span!(
+            otel,
+            "knhk.workflow_engine.execute_task",
+            case_id: Some(&case_id),
+            task_id: Some(&task.id),
+            pattern_id: Some(&pattern_id)
+        )
+        .await?
     } else {
         None
     };

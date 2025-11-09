@@ -1,4 +1,5 @@
 #![allow(clippy::unwrap_used)] // Test infrastructure - unwrap() acceptable
+#![allow(unexpected_cfgs)] // Allow tempfile feature for test helpers
 //! Chicago TDD Test Framework for Workflows
 //!
 //! Provides a comprehensive framework for writing Chicago TDD tests for workflows following
