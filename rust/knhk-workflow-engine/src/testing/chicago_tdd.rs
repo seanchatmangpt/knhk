@@ -873,6 +873,296 @@ pub fn create_sequential_workflow(
         .build()
 }
 
+/// Create a workflow with parallel split pattern (Pattern 2)
+/// Creates: start → split → [task1, task2, ...] → join → end
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `task_ids` - Vector of (task_id, task_name) tuples for parallel tasks
+pub fn create_parallel_split_workflow(
+    name: impl Into<String>,
+    task_ids: Vec<(String, String)>,
+) -> WorkflowSpec {
+    if task_ids.is_empty() {
+        panic!("Cannot create parallel workflow with no tasks");
+    }
+
+    let start_condition_id = "condition:start".to_string();
+    let split_condition_id = "condition:split".to_string();
+    let join_condition_id = "condition:join".to_string();
+    let end_condition_id = "condition:end".to_string();
+
+    let mut builder = WorkflowSpecBuilder::new(name);
+
+    // Create start condition
+    let start_condition = ConditionBuilder::new(start_condition_id.clone(), "Start")
+        .add_outgoing_flow("split_task")
+        .build();
+    builder = builder.add_condition(start_condition);
+
+    // Create split task
+    let split_task = TaskBuilder::new("split_task", "Split")
+        .with_type(TaskType::Atomic)
+        .with_split_type(SplitType::And)
+        .with_input_condition(start_condition_id.clone())
+        .with_output_condition(split_condition_id.clone())
+        .build();
+    builder = builder.add_task(split_task);
+
+    // Create split condition
+    let mut split_condition = ConditionBuilder::new(split_condition_id.clone(), "Split");
+    for (task_id, _) in &task_ids {
+        split_condition = split_condition.add_outgoing_flow(task_id.clone());
+    }
+    builder = builder.add_condition(split_condition.build());
+
+    // Create parallel tasks
+    for (task_id, task_name) in &task_ids {
+        let task = TaskBuilder::new(task_id.clone(), task_name.clone())
+            .with_type(TaskType::Atomic)
+            .with_input_condition(split_condition_id.clone())
+            .with_output_condition(join_condition_id.clone())
+            .build();
+        builder = builder.add_task(task);
+    }
+
+    // Create join condition
+    let mut join_condition = ConditionBuilder::new(join_condition_id.clone(), "Join");
+    for (task_id, _) in &task_ids {
+        join_condition = join_condition.add_incoming_flow(task_id.clone());
+    }
+    join_condition = join_condition.add_outgoing_flow("join_task");
+    builder = builder.add_condition(join_condition.build());
+
+    // Create join task
+    let join_task = TaskBuilder::new("join_task", "Join")
+        .with_type(TaskType::Atomic)
+        .with_join_type(JoinType::And)
+        .with_input_condition(join_condition_id.clone())
+        .with_output_condition(end_condition_id.clone())
+        .build();
+    builder = builder.add_task(join_task);
+
+    // Create end condition
+    let end_condition = ConditionBuilder::new(end_condition_id.clone(), "End")
+        .add_incoming_flow("join_task")
+        .build();
+    builder = builder.add_condition(end_condition);
+
+    builder
+        .with_start_condition(start_condition_id)
+        .with_end_condition(end_condition_id)
+        .build()
+}
+
+/// Create a workflow with XOR split pattern (Pattern 4)
+/// Creates: start → split → [task1 OR task2 OR ...] → join → end
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `task_ids` - Vector of (task_id, task_name) tuples for XOR branches
+pub fn create_xor_split_workflow(
+    name: impl Into<String>,
+    task_ids: Vec<(String, String)>,
+) -> WorkflowSpec {
+    if task_ids.is_empty() {
+        panic!("Cannot create XOR workflow with no tasks");
+    }
+
+    let start_condition_id = "condition:start".to_string();
+    let split_condition_id = "condition:split".to_string();
+    let join_condition_id = "condition:join".to_string();
+    let end_condition_id = "condition:end".to_string();
+
+    let mut builder = WorkflowSpecBuilder::new(name);
+
+    // Create start condition
+    let start_condition = ConditionBuilder::new(start_condition_id.clone(), "Start")
+        .add_outgoing_flow("split_task")
+        .build();
+    builder = builder.add_condition(start_condition);
+
+    // Create split task
+    let split_task = TaskBuilder::new("split_task", "Split")
+        .with_type(TaskType::Atomic)
+        .with_split_type(SplitType::Xor)
+        .with_input_condition(start_condition_id.clone())
+        .with_output_condition(split_condition_id.clone())
+        .build();
+    builder = builder.add_task(split_task);
+
+    // Create split condition
+    let mut split_condition = ConditionBuilder::new(split_condition_id.clone(), "Split");
+    for (task_id, _) in &task_ids {
+        split_condition = split_condition.add_outgoing_flow(task_id.clone());
+    }
+    builder = builder.add_condition(split_condition.build());
+
+    // Create XOR branch tasks
+    for (task_id, task_name) in &task_ids {
+        let task = TaskBuilder::new(task_id.clone(), task_name.clone())
+            .with_type(TaskType::Atomic)
+            .with_input_condition(split_condition_id.clone())
+            .with_output_condition(join_condition_id.clone())
+            .build();
+        builder = builder.add_task(task);
+    }
+
+    // Create join condition
+    let mut join_condition = ConditionBuilder::new(join_condition_id.clone(), "Join");
+    for (task_id, _) in &task_ids {
+        join_condition = join_condition.add_incoming_flow(task_id.clone());
+    }
+    join_condition = join_condition.add_outgoing_flow("join_task");
+    builder = builder.add_condition(join_condition.build());
+
+    // Create join task
+    let join_task = TaskBuilder::new("join_task", "Join")
+        .with_type(TaskType::Atomic)
+        .with_join_type(JoinType::Xor)
+        .with_input_condition(join_condition_id.clone())
+        .with_output_condition(end_condition_id.clone())
+        .build();
+    builder = builder.add_task(join_task);
+
+    // Create end condition
+    let end_condition = ConditionBuilder::new(end_condition_id.clone(), "End")
+        .add_incoming_flow("join_task")
+        .build();
+    builder = builder.add_condition(end_condition);
+
+    builder
+        .with_start_condition(start_condition_id)
+        .with_end_condition(end_condition_id)
+        .build()
+}
+
+/// Create a workflow with multiple instance pattern
+/// Creates: start → mi_task (MultipleInstance) → end
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `task_id` - ID of the MI task
+/// * `task_name` - Name of the MI task
+/// * `instance_count` - Optional instance count (None for unbounded)
+pub fn create_mi_workflow(
+    name: impl Into<String>,
+    task_id: impl Into<String>,
+    task_name: impl Into<String>,
+    instance_count: Option<usize>,
+) -> WorkflowSpec {
+    let task_id_str = task_id.into();
+    let start_condition_id = "condition:start".to_string();
+    let end_condition_id = "condition:end".to_string();
+
+    let task = TaskBuilder::new(task_id_str.clone(), task_name)
+        .with_type(TaskType::MultipleInstance)
+        .with_input_condition(start_condition_id.clone())
+        .with_output_condition(end_condition_id.clone())
+        .build();
+
+    let start_condition = ConditionBuilder::new(start_condition_id.clone(), "Start")
+        .add_outgoing_flow(task_id_str.clone())
+        .build();
+
+    let end_condition = ConditionBuilder::new(end_condition_id.clone(), "End")
+        .add_incoming_flow(task_id_str.clone())
+        .build();
+
+    WorkflowSpecBuilder::new(name)
+        .add_task(task)
+        .add_condition(start_condition)
+        .add_condition(end_condition)
+        .with_start_condition(start_condition_id)
+        .with_end_condition(end_condition_id)
+        .build()
+}
+
+/// Create a workflow with a loop pattern
+/// Creates: start → task1 → [loop: task2 → task3] → task4 → end
+///
+/// # Arguments
+/// * `name` - Workflow name
+/// * `loop_tasks` - Vector of (task_id, task_name) tuples for loop body
+pub fn create_loop_workflow(
+    name: impl Into<String>,
+    loop_tasks: Vec<(String, String)>,
+) -> WorkflowSpec {
+    if loop_tasks.is_empty() {
+        panic!("Cannot create loop workflow with no loop tasks");
+    }
+
+    let start_condition_id = "condition:start".to_string();
+    let loop_start_condition_id = "condition:loop_start".to_string();
+    let loop_end_condition_id = "condition:loop_end".to_string();
+    let end_condition_id = "condition:end".to_string();
+
+    let mut builder = WorkflowSpecBuilder::new(name);
+
+    // Create start condition
+    let start_condition = ConditionBuilder::new(start_condition_id.clone(), "Start")
+        .add_outgoing_flow("entry_task")
+        .build();
+    builder = builder.add_condition(start_condition);
+
+    // Create entry task
+    let entry_task = TaskBuilder::new("entry_task", "Entry")
+        .with_type(TaskType::Atomic)
+        .with_input_condition(start_condition_id.clone())
+        .with_output_condition(loop_start_condition_id.clone())
+        .build();
+    builder = builder.add_task(entry_task);
+
+    // Create loop start condition
+    let mut loop_start_condition =
+        ConditionBuilder::new(loop_start_condition_id.clone(), "Loop Start");
+    loop_start_condition = loop_start_condition.add_outgoing_flow(loop_tasks[0].0.clone());
+    builder = builder.add_condition(loop_start_condition.build());
+
+    // Create loop tasks
+    for (idx, (task_id, task_name)) in loop_tasks.iter().enumerate() {
+        let mut task_builder =
+            TaskBuilder::new(task_id.clone(), task_name.clone()).with_type(TaskType::Atomic);
+
+        if idx == 0 {
+            task_builder = task_builder.with_input_condition(loop_start_condition_id.clone());
+        }
+
+        if idx == loop_tasks.len() - 1 {
+            // Last task in loop can go back to start or to exit
+            task_builder = task_builder.with_output_condition(loop_end_condition_id.clone());
+        }
+
+        builder = builder.add_task(task_builder.build());
+    }
+
+    // Create loop end condition (can loop back or exit)
+    let mut loop_end_condition = ConditionBuilder::new(loop_end_condition_id.clone(), "Loop End");
+    loop_end_condition = loop_end_condition
+        .add_incoming_flow(loop_tasks.last().unwrap().0.clone())
+        .add_outgoing_flow("exit_task");
+    builder = builder.add_condition(loop_end_condition.build());
+
+    // Create exit task
+    let exit_task = TaskBuilder::new("exit_task", "Exit")
+        .with_type(TaskType::Atomic)
+        .with_input_condition(loop_end_condition_id.clone())
+        .with_output_condition(end_condition_id.clone())
+        .build();
+    builder = builder.add_task(exit_task);
+
+    // Create end condition
+    let end_condition = ConditionBuilder::new(end_condition_id.clone(), "End")
+        .add_incoming_flow("exit_task")
+        .build();
+    builder = builder.add_condition(end_condition);
+
+    builder
+        .with_start_condition(start_condition_id)
+        .with_end_condition(end_condition_id)
+        .build()
+}
+
 // ============================================================================
 // Test Macros
 // ============================================================================
