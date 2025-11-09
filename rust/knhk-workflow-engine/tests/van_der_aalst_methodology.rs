@@ -537,7 +537,7 @@ async fn test_process_discovery_from_event_logs() {
             yawl:to <http://example.org/output> .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
+    let spec = harness.parse(workflow);
     harness
         .engine
         .register_workflow(spec.clone())
@@ -607,7 +607,7 @@ async fn test_conformance_checking_design_vs_execution() {
             yawl:to <http://example.org/output> .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
+    let spec = harness.parse(workflow);
     harness
         .engine
         .register_workflow(spec.clone())
@@ -670,7 +670,7 @@ async fn test_event_log_completeness() {
             yawl:to <http://example.org/output> .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
+    let spec = harness.parse(workflow);
     harness
         .engine
         .register_workflow(spec.clone())
@@ -738,7 +738,7 @@ async fn test_lifecycle_transitions_in_event_log() {
             yawl:to <http://example.org/output> .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
+    let spec = harness.parse(workflow);
     harness
         .engine
         .register_workflow(spec.clone())

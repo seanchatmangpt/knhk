@@ -362,11 +362,9 @@ pub fn serve(
         println!("  POST /cases/:id/execute - Execute case");
         println!("  GET  /cases/:id/history - Get case history");
 
-        axum::serve(listener, app)
-            .await
-            .map_err(|e| {
-                clap_noun_verb::NounVerbError::execution_error(format!("Server error: {}", e))
-            })?;
+        axum::serve(listener, app).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Server error: {}", e))
+        })?;
 
         Ok(())
     })

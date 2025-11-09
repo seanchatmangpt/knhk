@@ -226,7 +226,7 @@ pub(super) fn execute_workflow<'a>(
                 // Identify pattern and execute via pattern executor for split/join decisions
                 let pattern_id = identify_task_pattern(task);
                 let case = engine.get_case(case_id).await?;
-                
+
                 // Create pattern execution context
                 let mut pattern_vars = HashMap::new();
                 // Convert case data to pattern variables (string format)
@@ -326,8 +326,7 @@ pub(super) fn execute_workflow<'a>(
                             task_incoming_count.insert(target_id.clone(), required);
                         }
 
-                        let received =
-                            task_received_count.entry(target_id.clone()).or_insert(0);
+                        let received = task_received_count.entry(target_id.clone()).or_insert(0);
                         *received += 1;
 
                         let required = task_incoming_count.get(target_id).copied().unwrap_or(0);
@@ -347,7 +346,11 @@ pub(super) fn execute_workflow<'a>(
                         // Mark activity as cancelled
                         if let Some(_cancelled_task) = spec.tasks.get(activity_id) {
                             // In production, would cancel the task and clean up resources
-                            tracing::debug!("Pattern {} requested cancellation of activity {}", pattern_id.0, activity_id);
+                            tracing::debug!(
+                                "Pattern {} requested cancellation of activity {}",
+                                pattern_id.0,
+                                activity_id
+                            );
                         }
                     }
                 }
