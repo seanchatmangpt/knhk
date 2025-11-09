@@ -77,7 +77,6 @@ impl WorkflowEngine {
     }
 
     /// Execute a case (run workflow) with resource allocation, worklet support, and Fortune 5 SLO tracking
-    #[allow(async_fn_in_trait)]
     pub async fn execute_case(&self, case_id: CaseId) -> WorkflowResult<()> {
         // Check promotion gate if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {

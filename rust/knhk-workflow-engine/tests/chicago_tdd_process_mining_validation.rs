@@ -184,7 +184,12 @@ async fn test_consistent_process_discovery_across_executions() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run process discovery
-    let config = AlphaPPPConfig::default();
+    let config = AlphaPPPConfig {
+        log_repair_skip_df_thresh_rel: 2.0,
+        log_repair_loop_df_thresh_rel: 2.0,
+        absolute_df_clean_thresh: 1,
+        relative_df_clean_thresh: 0.01,
+    };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Assert: Should have discovered process structure
@@ -301,7 +306,12 @@ async fn test_process_discovery_multiple_cases() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run Alpha+++ discovery
-    let config = AlphaPPPConfig::default();
+    let config = AlphaPPPConfig {
+        log_repair_skip_df_thresh_rel: 2.0,
+        log_repair_loop_df_thresh_rel: 2.0,
+        absolute_df_clean_thresh: 1,
+        relative_df_clean_thresh: 0.01,
+    };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Assert: Should process all cases
@@ -425,10 +435,26 @@ async fn test_process_discovery_produces_valid_petri_net() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run Alpha+++ discovery with different configurations
+    let base_config = AlphaPPPConfig {
+        log_repair_skip_df_thresh_rel: 2.0,
+        log_repair_loop_df_thresh_rel: 2.0,
+        absolute_df_clean_thresh: 1,
+        relative_df_clean_thresh: 0.01,
+    };
     let configs = vec![
-        AlphaPPPConfig::default(),
-        AlphaPPPConfig::default(), // Can customize config if needed
-        AlphaPPPConfig::default(),
+        base_config.clone(),
+        AlphaPPPConfig {
+            log_repair_skip_df_thresh_rel: 1.0,
+            log_repair_loop_df_thresh_rel: 1.0,
+            absolute_df_clean_thresh: 1,
+            relative_df_clean_thresh: 0.01,
+        },
+        AlphaPPPConfig {
+            log_repair_skip_df_thresh_rel: 3.0,
+            log_repair_loop_df_thresh_rel: 3.0,
+            absolute_df_clean_thresh: 1,
+            relative_df_clean_thresh: 0.01,
+        },
     ];
 
     for (i, config) in configs.iter().enumerate() {
