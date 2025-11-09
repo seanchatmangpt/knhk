@@ -46,9 +46,10 @@ tokio-stream = "0.1"
 tokio-test = "0.4"
 
 # gRPC/Protobuf
-tonic = "0.14.2"
+tonic = { version = "0.14.2", features = ["tls", "tls-roots"] }
 tonic-build = "0.14.2"
 tonic-prost-build = "0.14.2"
+tonic-prost = "0.14.2"
 prost = "0.14.1"
 prost-types = "0.14.1"
 

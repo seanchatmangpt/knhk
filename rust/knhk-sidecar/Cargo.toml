@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"] }
 tokio = { workspace = true, features = ["full"] }
 tonic = { workspace = true }
+tonic-prost = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }

@@ -64,17 +64,13 @@ if [ "$TODO_COUNT" -gt 0 ]; then
   exit 1
 fi
 
-# Check for unwrap/expect in production code (excluding allowed modules, CLI, build scripts)
+# Check for unwrap/expect in production code (excluding allowed modules, build scripts)
 UNWRAP_COUNT=$(find rust/knhk-*/src -name "*.rs" -type f 2>/dev/null | \
   grep -v "/tests/" | \
   grep -v "/test/" | \
   grep -v "/example" | \
   grep -v "build.rs" | \
   while read file; do
-    # Skip CLI code (allowed to use expect for user errors)
-    if [[ "$file" =~ knhk-cli/ ]]; then
-      continue
-    fi
     # Skip files with allow attributes (matches both #[allow(...)] and #![allow(...)])
     if grep -qE "#!?\[allow\(clippy::unwrap_used\)\]" "$file" 2>/dev/null; then
       continue
