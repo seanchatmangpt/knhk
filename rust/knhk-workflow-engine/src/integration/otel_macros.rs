@@ -177,7 +177,7 @@ macro_rules! otel_span_end {
 
                 $otel
                     .end_span(
-                        span_clone,
+                        &span_clone,
                         if $success {
                             SpanStatus::Ok
                         } else {
