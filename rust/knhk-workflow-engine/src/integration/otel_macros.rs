@@ -243,25 +243,25 @@ macro_rules! otel_attr {
 macro_rules! otel_with_span {
     (
         $otel:expr,
-        $span_name:expr,
-        $(case_id: $case_id:expr,)?
-        $(spec_id: $spec_id:expr,)?
-        $(task_id: $task_id:expr,)?
-        $(pattern_id: $pattern_id:expr,)?
-        $(parent: $parent:expr,)?
-        $code:block
+        $span_name:expr
+        $(, case_id: $case_id:expr)?
+        $(, spec_id: $spec_id:expr)?
+        $(, task_id: $task_id:expr)?
+        $(, pattern_id: $pattern_id:expr)?
+        $(, parent: $parent:expr)?
+        , $code:block
     ) => {{
         use std::time::Instant;
 
         let start_time = Instant::now();
         let span_ctx = $crate::otel_span!(
             $otel,
-            $span_name,
-            $(case_id: $case_id,)?
-            $(spec_id: $spec_id,)?
-            $(task_id: $task_id,)?
-            $(pattern_id: $pattern_id,)?
-            $(parent: $parent,)?
+            $span_name
+            $(, case_id: $case_id)?
+            $(, spec_id: $spec_id)?
+            $(, task_id: $task_id)?
+            $(, pattern_id: $pattern_id)?
+            $(, parent: $parent)?
         ).await?;
 
         let result = $code;

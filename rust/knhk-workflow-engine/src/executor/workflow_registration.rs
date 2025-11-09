@@ -23,7 +23,7 @@ impl WorkflowEngine {
             otel_span!(
                 otel,
                 "knhk.workflow_engine.register_workflow",
-                spec_id: Some(&spec.id),
+                spec_id: Some(&spec.id)
             )
             .await?
         } else {

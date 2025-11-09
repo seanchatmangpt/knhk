@@ -103,8 +103,7 @@ chicago_async_test!(test_register_multiple_workflows, {
 // Case Creation Tests
 // ============================================================================
 
-chicago_async_test!
-test_create_case_with_test_data_builder, {
+chicago_async_test!(test_create_case_with_test_data_builder, {
     // Arrange: Create fixture, workflow, and test data using chicago-tdd-tools
     let mut fixture = WorkflowTestFixture::new().unwrap();
     let spec = WorkflowSpecBuilder::new("Test Workflow").build();
