@@ -9,6 +9,7 @@
 // Allow acceptable warnings for clean build
 #![allow(unused_imports)] // Some imports are conditional or reserved for planned use
 #![allow(unused_variables)] // Some variables are used in conditional compilation
+#![allow(unused_mut)] // Some mut variables are used in conditional compilation
 #![allow(dead_code)] // Some code is reserved for planned features
 #![allow(deprecated)] // Some dependencies use deprecated APIs (will be updated)
 #![allow(unexpected_cfgs)] // Some cfg values are informational

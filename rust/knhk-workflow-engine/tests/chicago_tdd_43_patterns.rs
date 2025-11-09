@@ -124,8 +124,7 @@ chicago_test!(test_pattern_4_exclusive_choice_selects_one_branch, {
     );
 }
 
-chicago_test!
-fn test_pattern_5_simple_merge_merges_alternative_branches() {
+chicago_test!(test_pattern_5_simple_merge_merges_alternative_branches, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -150,8 +149,7 @@ fn test_pattern_5_simple_merge_merges_alternative_branches() {
 // Advanced Branching Patterns (6-11)
 // ============================================================================
 
-chicago_test!
-fn test_pattern_6_multi_choice_selects_one_or_more_branches() {
+chicago_test!(test_pattern_6_multi_choice_selects_one_or_more_branches, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -172,8 +170,7 @@ fn test_pattern_6_multi_choice_selects_one_or_more_branches() {
     );
 }
 
-chicago_test!
-fn test_pattern_7_structured_synchronizing_merge_synchronizes_or_join() {
+chicago_test!(test_pattern_7_structured_synchronizing_merge_synchronizes_or_join, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -190,8 +187,7 @@ fn test_pattern_7_structured_synchronizing_merge_synchronizes_or_join() {
     );
 }
 
-chicago_test!
-fn test_pattern_8_multi_merge_merges_all_incoming_branches() {
+chicago_test!(test_pattern_8_multi_merge_merges_all_incoming_branches, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -208,8 +204,7 @@ fn test_pattern_8_multi_merge_merges_all_incoming_branches() {
     );
 }
 
-chicago_test!
-fn test_pattern_9_discriminator_first_wins() {
+chicago_test!(test_pattern_9_discriminator_first_wins, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -226,8 +221,7 @@ fn test_pattern_9_discriminator_first_wins() {
     );
 }
 
-chicago_test!
-fn test_pattern_10_arbitrary_cycles_supports_loops() {
+chicago_test!(test_pattern_10_arbitrary_cycles_supports_loops, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -246,8 +240,7 @@ fn test_pattern_10_arbitrary_cycles_supports_loops() {
     );
 }
 
-chicago_test!
-fn test_pattern_11_implicit_termination_detects_completion() {
+chicago_test!(test_pattern_11_implicit_termination_detects_completion, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -268,8 +261,7 @@ fn test_pattern_11_implicit_termination_detects_completion() {
 // Multiple Instance Patterns (12-15)
 // ============================================================================
 
-chicago_test!
-fn test_pattern_12_multiple_instance_without_sync_executes_instances() {
+chicago_test!(test_pattern_12_multiple_instance_without_sync_executes_instances, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -292,8 +284,7 @@ fn test_pattern_12_multiple_instance_without_sync_executes_instances() {
     );
 }
 
-chicago_test!
-fn test_pattern_13_multiple_instance_design_time_executes_known_count() {
+chicago_test!(test_pattern_13_multiple_instance_design_time_executes_known_count, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -316,8 +307,7 @@ fn test_pattern_13_multiple_instance_design_time_executes_known_count() {
     );
 }
 
-chicago_test!
-fn test_pattern_14_multiple_instance_runtime_executes_runtime_count() {
+chicago_test!(test_pattern_14_multiple_instance_runtime_executes_runtime_count, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -340,8 +330,7 @@ fn test_pattern_14_multiple_instance_runtime_executes_runtime_count() {
     );
 }
 
-chicago_test!
-fn test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically() {
+chicago_test!(test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -366,8 +355,7 @@ fn test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically() {
 // State-Based Patterns (16-18)
 // ============================================================================
 
-chicago_test!
-fn test_pattern_16_deferred_choice_waits_for_external_event() {
+chicago_test!(test_pattern_16_deferred_choice_waits_for_external_event, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -384,8 +372,7 @@ fn test_pattern_16_deferred_choice_waits_for_external_event() {
     );
 }
 
-chicago_test!
-fn test_pattern_17_interleaved_parallel_routing_executes_interleaved() {
+chicago_test!(test_pattern_17_interleaved_parallel_routing_executes_interleaved, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -406,8 +393,7 @@ fn test_pattern_17_interleaved_parallel_routing_executes_interleaved() {
     );
 }
 
-chicago_test!
-fn test_pattern_18_milestone_enables_activity_when_reached() {
+chicago_test!(test_pattern_18_milestone_enables_activity_when_reached, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -430,8 +416,7 @@ fn test_pattern_18_milestone_enables_activity_when_reached() {
     );
 }
 
-chicago_test!
-fn test_pattern_18_milestone_blocks_activity_when_not_reached() {
+chicago_test!(test_pattern_18_milestone_blocks_activity_when_not_reached, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -459,8 +444,7 @@ fn test_pattern_18_milestone_blocks_activity_when_not_reached() {
 // Cancellation Patterns (19-25)
 // ============================================================================
 
-chicago_test!
-fn test_pattern_19_cancel_activity_cancels_specific_activity() {
+chicago_test!(test_pattern_19_cancel_activity_cancels_specific_activity, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -483,8 +467,7 @@ fn test_pattern_19_cancel_activity_cancels_specific_activity() {
     );
 }
 
-chicago_test!
-fn test_pattern_20_timeout_executes_with_timeout() {
+chicago_test!(test_pattern_20_timeout_executes_with_timeout, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -501,8 +484,7 @@ fn test_pattern_20_timeout_executes_with_timeout() {
     );
 }
 
-chicago_test!
-fn test_pattern_21_cancellation_cancels_execution() {
+chicago_test!(test_pattern_21_cancellation_cancels_execution, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -519,8 +501,7 @@ fn test_pattern_21_cancellation_cancels_execution() {
     );
 }
 
-chicago_test!
-fn test_pattern_22_cancel_case_cancels_entire_case() {
+chicago_test!(test_pattern_22_cancel_case_cancels_entire_case, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -543,8 +524,7 @@ fn test_pattern_22_cancel_case_cancels_entire_case() {
     );
 }
 
-chicago_test!
-fn test_pattern_23_cancel_region_cancels_region() {
+chicago_test!(test_pattern_23_cancel_region_cancels_region, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -567,8 +547,7 @@ fn test_pattern_23_cancel_region_cancels_region() {
     );
 }
 
-chicago_test!
-fn test_pattern_24_cancel_multiple_instance_activity_cancels_instances() {
+chicago_test!(test_pattern_24_cancel_multiple_instance_activity_cancels_instances, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -593,8 +572,7 @@ fn test_pattern_24_cancel_multiple_instance_activity_cancels_instances() {
     );
 }
 
-chicago_test!
-fn test_pattern_25_complete_multiple_instance_activity_completes_instances() {
+chicago_test!(test_pattern_25_complete_multiple_instance_activity_completes_instances, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -621,8 +599,7 @@ fn test_pattern_25_complete_multiple_instance_activity_completes_instances() {
 // Advanced Control Patterns (26-39)
 // ============================================================================
 
-chicago_test!
-fn test_pattern_26_blocking_discriminator_blocks_after_first() {
+chicago_test!(test_pattern_26_blocking_discriminator_blocks_after_first, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -643,8 +620,7 @@ fn test_pattern_26_blocking_discriminator_blocks_after_first() {
     );
 }
 
-chicago_test!
-fn test_pattern_27_cancelling_discriminator_cancels_others() {
+chicago_test!(test_pattern_27_cancelling_discriminator_cancels_others, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -665,8 +641,7 @@ fn test_pattern_27_cancelling_discriminator_cancels_others() {
     );
 }
 
-chicago_test!
-fn test_pattern_28_structured_loop_executes_with_exit_condition() {
+chicago_test!(test_pattern_28_structured_loop_executes_with_exit_condition, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -689,8 +664,7 @@ fn test_pattern_28_structured_loop_executes_with_exit_condition() {
     );
 }
 
-chicago_test!
-fn test_pattern_29_recursion_executes_recursively() {
+chicago_test!(test_pattern_29_recursion_executes_recursively, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -712,8 +686,7 @@ fn test_pattern_29_recursion_executes_recursively() {
     );
 }
 
-chicago_test!
-fn test_pattern_30_transient_trigger_handles_transient_event() {
+chicago_test!(test_pattern_30_transient_trigger_handles_transient_event, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -734,8 +707,7 @@ fn test_pattern_30_transient_trigger_handles_transient_event() {
     );
 }
 
-chicago_test!
-fn test_pattern_31_persistent_trigger_handles_persistent_event() {
+chicago_test!(test_pattern_31_persistent_trigger_handles_persistent_event, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -756,8 +728,7 @@ fn test_pattern_31_persistent_trigger_handles_persistent_event() {
     );
 }
 
-chicago_test!
-fn test_pattern_32_cancel_activity_instance_cancels_specific_instance() {
+chicago_test!(test_pattern_32_cancel_activity_instance_cancels_specific_instance, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -780,8 +751,7 @@ fn test_pattern_32_cancel_activity_instance_cancels_specific_instance() {
     );
 }
 
-chicago_test!
-fn test_pattern_33_cancel_process_instance_cancels_process() {
+chicago_test!(test_pattern_33_cancel_process_instance_cancels_process, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -804,8 +774,7 @@ fn test_pattern_33_cancel_process_instance_cancels_process() {
     );
 }
 
-chicago_test!
-fn test_pattern_34_stop_process_instance_stops_process() {
+chicago_test!(test_pattern_34_stop_process_instance_stops_process, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -826,8 +795,7 @@ fn test_pattern_34_stop_process_instance_stops_process() {
     );
 }
 
-chicago_test!
-fn test_pattern_35_abort_process_instance_aborts_process() {
+chicago_test!(test_pattern_35_abort_process_instance_aborts_process, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -848,8 +816,7 @@ fn test_pattern_35_abort_process_instance_aborts_process() {
     );
 }
 
-chicago_test!
-fn test_pattern_36_disable_activity_disables_activity() {
+chicago_test!(test_pattern_36_disable_activity_disables_activity, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -872,8 +839,7 @@ fn test_pattern_36_disable_activity_disables_activity() {
     );
 }
 
-chicago_test!
-fn test_pattern_37_skip_activity_skips_activity() {
+chicago_test!(test_pattern_37_skip_activity_skips_activity, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -896,8 +862,7 @@ fn test_pattern_37_skip_activity_skips_activity() {
     );
 }
 
-chicago_test!
-fn test_pattern_38_activity_instance_multiple_threads_executes_in_threads() {
+chicago_test!(test_pattern_38_activity_instance_multiple_threads_executes_in_threads, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -920,8 +885,7 @@ fn test_pattern_38_activity_instance_multiple_threads_executes_in_threads() {
     );
 }
 
-chicago_test!
-fn test_pattern_39_thread_merge_merges_threads() {
+chicago_test!(test_pattern_39_thread_merge_merges_threads, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let ctx = create_test_context();
@@ -946,8 +910,7 @@ fn test_pattern_39_thread_merge_merges_threads() {
 // Trigger Patterns (40-43)
 // ============================================================================
 
-chicago_test!
-fn test_pattern_40_external_trigger_handles_external_event() {
+chicago_test!(test_pattern_40_external_trigger_handles_external_event, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -975,8 +938,7 @@ fn test_pattern_40_external_trigger_handles_external_event() {
     );
 }
 
-chicago_test!
-fn test_pattern_41_event_based_trigger_handles_event() {
+chicago_test!(test_pattern_41_event_based_trigger_handles_event, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -999,8 +961,7 @@ fn test_pattern_41_event_based_trigger_handles_event() {
     );
 }
 
-chicago_test!
-fn test_pattern_42_multiple_trigger_waits_for_all_triggers() {
+chicago_test!(test_pattern_42_multiple_trigger_waits_for_all_triggers, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -1023,8 +984,7 @@ fn test_pattern_42_multiple_trigger_waits_for_all_triggers() {
     );
 }
 
-chicago_test!
-fn test_pattern_43_cancel_trigger_cancels_trigger_based_activity() {
+chicago_test!(test_pattern_43_cancel_trigger_cancels_trigger_based_activity, {
     // Arrange: Create registry and context
     let registry = create_test_registry();
     let mut ctx = create_test_context();
@@ -1051,8 +1011,7 @@ fn test_pattern_43_cancel_trigger_cancels_trigger_based_activity() {
 // Integration Tests - Pattern Registry
 // ============================================================================
 
-chicago_test!
-fn test_all_43_patterns_are_registered() {
+chicago_test!(test_all_43_patterns_are_registered, {
     // Arrange: Create registry
     let registry = create_test_registry();
 
