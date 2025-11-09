@@ -55,6 +55,7 @@ anyhow = { workspace = true }
 # HTTP & gRPC
 tonic = { workspace = true }
 tonic-build = { workspace = true }
+tonic-prost-build = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
 axum = { workspace = true, features = ["json", "multipart"] }
@@ -108,7 +109,7 @@ name = "fortune5_performance"
 harness = false
 
 [build-dependencies]
-tonic-build = "0.14"
+tonic-prost-build = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }

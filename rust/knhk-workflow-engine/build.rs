@@ -1,7 +1,4 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::configure()
-        .build_server(true)
-        .build_client(true)
-        .compile(&["proto/workflow_engine.proto"], &["proto"])?;
+    tonic_prost_build::compile_protos("proto/workflow_engine.proto")?;
     Ok(())
 }
