@@ -2,14 +2,60 @@
 //!
 //! Follows workflow flows from start condition to end condition,
 //! executing tasks and handling patterns (parallel split, synchronization, XOR choice, etc.)
+//!
+//! Implements Van der Aalst's pattern-based execution methodology:
+//! - Pattern Recognition: Identifies patterns from task split/join types
+//! - Pattern-Based Execution: Executes workflows via pattern executors
+//! - Composition: Workflows are compositions of patterns
 
 use crate::case::{CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{Flow, WorkflowSpec};
+use crate::parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec};
+use crate::patterns::{PatternExecutionContext, PatternId};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use super::task::execute_task_with_allocation;
 use super::WorkflowEngine;
+
+/// Identify pattern ID from task structure (Van der Aalst pattern mapping)
+///
+/// Maps task split/join types to pattern IDs (1-43) following YAWL pattern semantics.
+/// This is the core of Van der Aalst's pattern-based execution methodology.
+fn identify_task_pattern(task: &Task) -> PatternId {
+    // Handle Multiple Instance patterns (12-15) based on task type
+    if matches!(task.task_type, TaskType::MultipleInstance) {
+        // Pattern 12: MI Without Sync (default for MI tasks)
+        // In production, would analyze task properties to determine specific MI pattern
+        return PatternId(12);
+    }
+
+    // Map split/join combination to pattern ID (following compiler/mod.rs logic)
+    // Basic YAWL pattern mapping:
+    // Pattern 1: AND-split + AND-join (Sequence)
+    // Pattern 2: XOR-split + XOR-join (Exclusive Choice)
+    // Pattern 3: OR-split + OR-join (Inclusive Choice/Multi-Choice)
+    // Pattern 4: AND-split + XOR-join
+    // Pattern 5: XOR-split + AND-join
+    // Pattern 6: OR-split + AND-join
+    // Pattern 7: AND-split + OR-join
+    // Pattern 8: XOR-split + OR-join
+    // Pattern 9: OR-split + XOR-join
+    let pattern_id = match (task.split_type, task.join_type) {
+        (SplitType::And, JoinType::And) => 1, // Sequence
+        (SplitType::Xor, JoinType::Xor) => 2, // Exclusive Choice
+        (SplitType::Or, JoinType::Or) => 3,   // Multi-Choice
+        (SplitType::And, JoinType::Xor) => 4,
+        (SplitType::Xor, JoinType::And) => 5,
+        (SplitType::Or, JoinType::And) => 6,
+        (SplitType::And, JoinType::Or) => 7,
+        (SplitType::Xor, JoinType::Or) => 8,
+        (SplitType::Or, JoinType::Xor) => 9,
+        // Default to Sequence (Pattern 1) for unknown combinations
+        _ => 1,
+    };
+
+    PatternId(pattern_id as u32)
+}
 
 /// Evaluate a predicate against case data
 /// Supports: "variable == value", "variable >= value", "variable <= value" formats

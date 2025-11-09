@@ -43,8 +43,32 @@
 //!    - Alignment-based conformance
 //!    - Fitness calculation
 //!    - Precision measurement
+//!
+//! # Van der Aalst's Research Methodology
+//!
+//! Van der Aalst's approach emphasizes:
+//! - **Empirical Validation**: Test with real event logs and workflows
+//! - **Formal Verification**: Use Petri net theory for soundness
+//! - **Process Discovery**: Discover models from event logs (Alpha algorithm)
+//! - **Conformance Checking**: Verify execution matches design
+//! - **Pattern Coverage**: Test all 43 workflow patterns systematically
+//! - **Soundness Properties**: Verify three fundamental soundness properties
+//!
+//! # Test Categories
+//!
+//! 1. **Soundness Tests**: Verify fundamental soundness properties
+//! 2. **Pattern Tests**: Comprehensive coverage of all 43 patterns
+//! 3. **Process Mining Tests**: Discovery and conformance algorithms
+//! 4. **Petri Net Tests**: Formal verification properties
+//! 5. **Event Log Tests**: XES generation and analysis
+//! 6. **Conformance Tests**: Design-execution alignment
 
-use knhk_workflow_engine::patterns::{PatternId, PatternRegistry, RegisterAllExt};
+mod common;
+
+use common::{assertions::*, data::*, TestHarness};
+use knhk_workflow_engine::patterns::{
+    PatternExecutionContext, PatternId, PatternRegistry, RegisterAllExt,
+};
 use knhk_workflow_engine::validation::ShaclValidator;
 use std::collections::HashSet;
 
