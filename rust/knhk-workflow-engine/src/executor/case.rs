@@ -29,7 +29,8 @@ impl WorkflowEngine {
                 "knhk.workflow_engine.create_case",
                 spec_id: Some(&spec_id)
             )
-            .await?
+            .await
+            .map_err(|e: crate::error::WorkflowError| e)?
         } else {
             None
         };
@@ -188,7 +189,8 @@ impl WorkflowEngine {
                 "knhk.workflow_engine.execute_case",
                 case_id: Some(&case_id)
             )
-            .await?
+            .await
+            .map_err(|e: crate::error::WorkflowError| e)?
         } else {
             None
         };

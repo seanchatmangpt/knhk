@@ -29,7 +29,8 @@ impl WorkflowEngine {
                 case_id: Some(&context.case_id),
                 pattern_id: Some(&pattern_id)
             )
-            .await?
+            .await
+            .map_err(|e: crate::error::WorkflowError| e)?
         } else {
             None
         };

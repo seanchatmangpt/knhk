@@ -569,4 +569,4 @@ test_fixture_cleanup, {
     assert!(result.is_ok());
     // Verify fixture still exists after cleanup (cleanup doesn't destroy fixture)
     assert_eq!(fixture.specs.len(), 1);
-}
+});
