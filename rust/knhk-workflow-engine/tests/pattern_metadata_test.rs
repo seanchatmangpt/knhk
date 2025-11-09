@@ -13,57 +13,6 @@ use knhk_workflow_engine::patterns::rdf::{get_all_pattern_metadata, PatternMetad
 // ============================================================================
 
 #[test]
-fn test_pattern_26_has_real_metadata() {
-    // Arrange: Get all pattern metadata
-    let all_metadata = get_all_pattern_metadata();
-
-    // Act: Find pattern 26 metadata
-    let pattern_26 = all_metadata
-        .iter()
-        .find(|m| m.pattern_id == 26)
-        .expect("Pattern 26 metadata should exist");
-
-    // Assert: Has real metadata (not placeholder)
-    assert_ne!(
-        pattern_26.name, "Pattern 26",
-        "Pattern 26 should have real name, not placeholder"
-    );
-    assert!(
-        pattern_26.description.len() > 50,
-        "Pattern 26 should have detailed description (>50 chars), got: {}",
-        pattern_26.description
-    );
-    assert!(
-        !pattern_26
-            .description
-            .contains("Advanced control pattern 26"),
-        "Pattern 26 should not have generic description"
-    );
-}
-
-#[test]
-fn test_pattern_27_has_real_metadata() {
-    // Arrange: Get all pattern metadata
-    let all_metadata = get_all_pattern_metadata();
-
-    // Act: Find pattern 27 metadata
-    let pattern_27 = all_metadata
-        .iter()
-        .find(|m| m.pattern_id == 27)
-        .expect("Pattern 27 metadata should exist");
-
-    // Assert: Has real metadata (not placeholder)
-    assert_ne!(
-        pattern_27.name, "Pattern 27",
-        "Pattern 27 should have real name, not placeholder"
-    );
-    assert!(
-        pattern_27.description.len() > 50,
-        "Pattern 27 should have detailed description (>50 chars)"
-    );
-}
-
-#[test]
 fn test_all_patterns_26_to_39_have_real_metadata() {
     // Arrange: Get all pattern metadata
     let all_metadata = get_all_pattern_metadata();

@@ -250,7 +250,7 @@ async fn test_jtbd_conformance_checking_discovered_vs_design() {
     // Verify event log contains expected activities
     let mut found_activities = std::collections::HashSet::new();
     for trace in &event_log.traces {
-        for event in &trace.events {
+        for _event in &trace.events {
             // Extract activity name from event attributes
             // Note: Actual attribute access depends on process_mining API
             found_activities.insert("activity_found".to_string());
@@ -319,7 +319,7 @@ async fn test_jtbd_bottleneck_analysis_from_execution_logs() {
 
     for trace in &event_log.traces {
         total_events += trace.events.len();
-        for event in &trace.events {
+        for _event in &trace.events {
             // Check for timestamp attributes (bottleneck analysis requires timing)
             // Note: Actual attribute access depends on process_mining API
             events_with_timestamps += 1;
