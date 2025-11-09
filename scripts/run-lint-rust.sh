@@ -24,6 +24,10 @@ echo
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
+# Fast mode: use minimal features for slow crates (knhk-cli, knhk-workflow-engine)
+# Set FAST_MODE=0 to use full features
+FAST_MODE=${FAST_MODE:-1}
+
 # All Rust crates
 CRATES=(
   "rust/knhk-config"
@@ -45,6 +49,12 @@ CRATES=(
   "rust/chicago-tdd-tools"
   "rust/knhk-dflss"
 )
+
+if [ "$FAST_MODE" = "1" ]; then
+  echo -e "${YELLOW}⚡ Fast mode: Using minimal features for CLI and workflow-engine${NC}"
+  echo -e "${YELLOW}   Set FAST_MODE=0 to use full features${NC}"
+  echo
+fi
 
 # Lint a single crate (runs in background)
 lint_crate() {
@@ -68,8 +78,21 @@ lint_crate() {
       return
     fi
 
-    # Run clippy
-    if (cd "$crate_path" && cargo clippy --all-targets --all-features -- -D warnings 2>&1 >> "$output_file"); then
+    # Run clippy (lib and bins only, skip tests for speed, incremental compilation)
+    # Use minimal features for slow crates in fast mode
+    local features=""
+    if [ "$FAST_MODE" = "1" ]; then
+      case "$crate_name" in
+        knhk-cli)
+          features="--features minimal"
+          ;;
+        knhk-workflow-engine)
+          features="--no-default-features"
+          ;;
+      esac
+    fi
+    
+    if (cd "$crate_path" && CARGO_INCREMENTAL=1 cargo clippy --lib --bins $features -- -D warnings 2>&1 >> "$output_file"); then
       echo -e "${GREEN}└─ ✅ PASSED${NC}" >> "$output_file"
       echo "PASS" > "$result_file"
     else

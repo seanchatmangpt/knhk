@@ -6,7 +6,7 @@
 //! performance measurements. These tests collect real data and calculate process capability.
 
 use chicago_tdd_tools::prelude::*;
-use chicago_tdd_tools::{assert_ok, assert_within_tick_budget};
+use chicago_tdd_tools::assert_within_tick_budget;
 use knhk_hot::cycle_counter::{cycles_to_ticks, read_cycles};
 use knhk_hot::kernels::{KernelExecutor, KernelType};
 
@@ -79,7 +79,7 @@ fn test_dflss_process_capability_calculation() {
     let measurements = vec![5, 6, 5, 6, 7, 5, 6, 6, 5, 7]; // Sample measurements
     let usl = 8.0; // Upper Specification Limit (8 ticks)
     let lsl = 0.0; // Lower Specification Limit (0 ticks)
-    let target = 4.0; // Target (centered)
+    let _target = 4.0; // Target (centered)
 
     // Act: Calculate statistics
     let n = measurements.len() as f64;

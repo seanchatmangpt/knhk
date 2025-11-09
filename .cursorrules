@@ -15,6 +15,8 @@ All code must be production-ready with proper error handling. Focus on critical 
 5. **Simulated behavior** - Use real libraries when available (rdkafka, reqwest, etc.)
 6. **Claims without verification** - Never claim code works without test/OTEL validation
 7. **Defensive programming** - No validation checks in execution paths (hot path, executor, state). Validation happens at ingress only via guards.
+8. **Meaningless tests** - No tests that only verify `assert_ok!()` or `assert_err!()` without checking observable outputs/state changes
+9. **Tests without behavior verification** - All tests must verify state changes, outputs, execution order, or actual effects
 
 ## Required Patterns ✅
 
@@ -24,6 +26,8 @@ All code must be production-ready with proper error handling. Focus on critical 
 4. **Input validation at ingress** - Validate all inputs at ingress points via guards, enforce guard constraints (max_run_len ≤ 8)
 5. **Test verification** - All code must be testable and tested (OTEL validation preferred)
 6. **Execution paths assume pre-validated inputs** - Hot path, executor, state management assume inputs validated at ingress
+7. **Behavior verification** - Tests must verify what code does (observable outputs/state), not just that functions exist
+8. **Observable outputs** - Tests must check state changes, outputs, execution order, or actual effects
 
 ## Critical Best Practices
 
@@ -60,6 +64,8 @@ All code must be production-ready with proper error handling. Focus on critical 
 - **OTEL validation is ultimate truth source** - verify with real spans/metrics
 - Never trust claims without test/OTEL verification
 - Test results > code comments > agent claims
+- **Test behavior, not existence** - Tests must verify observable outputs/state, not just that functions return Ok/Err
+- **JTBD alignment** - Test names/comments must match what the test actually verifies
 
 ### Determinism & Provenance
 - All operations must be deterministic and idempotent
@@ -106,6 +112,8 @@ All code must be production-ready with proper error handling. Focus on critical 
 - [ ] Hot path operations are branchless/constant-time
 - [ ] Performance constraints met (≤8 ticks for hot path)
 - [ ] Code verified with tests/OTEL validation
+- [ ] Tests verify observable outputs/state changes, not just function existence
+- [ ] Tests match their JTBD comments (test what they claim to test)
 
 ## 80/20 Focus Areas
 

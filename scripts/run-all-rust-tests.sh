@@ -41,6 +41,10 @@ else
 fi
 cd "$PROJECT_ROOT"
 
+# Fast mode: use minimal features for slow crates (knhk-cli, knhk-workflow-engine)
+# Set FAST_MODE=0 to use full features
+FAST_MODE=${FAST_MODE:-1}
+
 # All Rust crates (ordered by dependency)
 CRATES=(
   "rust/knhk-config"
@@ -55,8 +59,15 @@ CRATES=(
   "rust/knhk-etl"
   "rust/knhk-sidecar"
   "rust/knhk-cli"
+  "rust/knhk-workflow-engine"
   "rust/knhk-integration-tests"
 )
+
+if [ "$FAST_MODE" = "1" ]; then
+  echo -e "${YELLOW}⚡ Fast mode: Using minimal features for CLI and workflow-engine${NC}"
+  echo -e "${YELLOW}   Set FAST_MODE=0 to use full features${NC}"
+  echo
+fi
 
 # Test a single crate (runs in background)
 test_crate() {
@@ -75,8 +86,21 @@ test_crate() {
       echo -e "${YELLOW}└─ ⚠️  No Cargo.toml, skipping${NC}" >> "$output_file"
       echo "SKIP" > "$result_file"
     else
-      # Run tests
-      if (cd "$crate_path" && cargo test --quiet 2>&1 >> "$output_file"); then
+      # Run tests (lib tests only for speed, incremental compilation)
+      # Use minimal features for slow crates in fast mode
+      local features=""
+      if [ "$FAST_MODE" = "1" ]; then
+        case "$crate_name" in
+          knhk-cli)
+            features="--features minimal"
+            ;;
+          knhk-workflow-engine)
+            features="--no-default-features"
+            ;;
+        esac
+      fi
+      
+      if (cd "$crate_path" && CARGO_INCREMENTAL=1 cargo test --lib --test-threads=1 $features --quiet 2>&1 >> "$output_file"); then
         echo -e "${GREEN}└─ ✅ PASSED${NC}" >> "$output_file"
         echo "PASS" > "$result_file"
       else

@@ -25,14 +25,14 @@ path = "src/bin/knhk-workflow.rs"
 knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
 knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
-knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", optional = true }
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 # knhk-sidecar dependency removed to avoid circular dependency
 # Sidecar now depends on workflow engine, not the other way around
-chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0" }
+chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0", optional = true }
 
 # RDF & Turtle parsing
-oxigraph = { workspace = true }
+oxigraph = { workspace = true, optional = true }
 rio_turtle = "0.8"
 
 # Template engine (for ggen integration)
@@ -52,16 +52,16 @@ bincode = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 
-# HTTP & gRPC
-tonic = { workspace = true }
-tonic-build = { workspace = true }
-tonic-prost-build = { workspace = true }
-tonic-prost = { workspace = true }
-prost = { workspace = true }
-prost-types = { workspace = true }
-axum = { workspace = true, features = ["json", "multipart"] }
-tower = { workspace = true }
-tower-http = { workspace = true, features = ["cors", "trace"] }
+# HTTP & gRPC (optional)
+tonic = { workspace = true, optional = true }
+tonic-build = { workspace = true, optional = true }
+tonic-prost-build = { workspace = true, optional = true }
+tonic-prost = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+prost-types = { workspace = true, optional = true }
+axum = { workspace = true, features = ["json", "multipart"], optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { workspace = true, features = ["cors", "trace"], optional = true }
 
 # CLI
 clap = { workspace = true, features = ["derive"] }
@@ -92,15 +92,22 @@ tracing = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
-# Storage
-sled = { workspace = true }
+# Storage (optional)
+sled = { workspace = true, optional = true }
 tempfile = { workspace = true }
 process_mining = "0.3"
 
 [features]
-default = ["unrdf"]
+default = []  # Minimal by default for fast builds
+minimal = []  # Core only, no optional deps
 unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
-rdf = []
+rdf = ["oxigraph"]
+storage = ["sled"]
+grpc = ["dep:tonic", "dep:tonic-build", "dep:tonic-prost-build", "dep:tonic-prost", "dep:prost", "dep:prost-types"]
+http = ["dep:axum", "dep:tower", "dep:tower-http"]
+connectors = ["dep:knhk-connectors"]
+testing = ["dep:chicago-tdd-tools"]
+full = ["unrdf", "rdf", "storage", "grpc", "http", "connectors", "testing"]
 # sidecar feature removed to avoid circular dependency
 
 [[example]]

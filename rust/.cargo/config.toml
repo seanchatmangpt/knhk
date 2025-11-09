@@ -1,0 +1,44 @@
+# Cargo configuration for KNHK workspace
+# Optimized for fast incremental builds
+
+[build]
+# Enable incremental compilation (default in dev profile)
+incremental = true
+
+# Use sccache for compilation caching (if installed)
+# Uncomment after installing sccache: cargo install sccache
+# rustc-wrapper = "sccache"
+
+# Fast linker configuration
+# macOS: Use zld for faster linking (install: cargo install -f zld)
+# Linux: Use mold for faster linking (install: sudo apt install mold)
+# Uncomment after installing fast linker:
+# [target.x86_64-apple-darwin]
+# rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld"]
+# [target.aarch64-apple-darwin]
+# rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld"]
+
+# Parallel compilation
+[build]
+jobs = 8  # Use 8 parallel jobs (adjust based on CPU cores)
+
+# Profile optimizations
+[profile.dev]
+# Fast compilation for development
+opt-level = 0
+debug = true
+incremental = true
+overflow-checks = true
+
+[profile.test]
+# Fast test compilation
+opt-level = 0
+debug = true
+incremental = true
+
+[profile.bench]
+# Optimized for benchmarks
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+

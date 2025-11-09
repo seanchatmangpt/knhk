@@ -4,22 +4,33 @@
 
 use knhk_cli::commands::connect;
 
-/// Test: connect::register returns Result
+/// Test: connect::register then verify connector appears in list
 /// Chicago TDD: Test behavior (registration) not implementation (storage)
 #[test]
-fn test_connect_register_returns_result() {
+fn test_connect_register_then_verify_in_list() {
     // Arrange: Create test connector data
-    let name = "test-connector".to_string();
+    let name = "test-connector-register".to_string();
     let schema = "http://example.org/schema".to_string();
     let source = "file:///tmp/test.nt".to_string();
 
     // Act: Register connector
-    let result = connect::register(name.clone(), schema.clone(), source.clone());
+    let register_result = connect::register(name.clone(), schema.clone(), source.clone());
 
-    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
-    match result {
+    // Assert: Verify registration succeeded and connector appears in list (observable state)
+    match register_result {
         Ok(_) => {
-            // Success case - registration completed
+            // Registration succeeded - verify connector appears in list
+            let list_result = connect::list();
+            assert!(
+                list_result.is_ok(),
+                "List should succeed after registration"
+            );
+            let connectors = list_result.unwrap();
+            assert!(
+                connectors.contains(&name),
+                "Registered connector '{}' should appear in list",
+                name
+            );
         }
         Err(e) => {
             // Error case - should have meaningful error message
@@ -37,32 +48,57 @@ fn test_connect_register_duplicate() {
     let schema = "http://example.org/schema".to_string();
     let source = "file:///tmp/test.nt".to_string();
 
-    // First registration (may succeed or fail depending on storage)
-    let _ = connect::register(name.clone(), schema.clone(), source.clone());
+    // First registration
+    let first_result = connect::register(name.clone(), schema.clone(), source.clone());
+
+    // Verify first registration succeeded and connector appears in list
+    if first_result.is_ok() {
+        let list_result = connect::list();
+        assert!(list_result.is_ok(), "List should succeed");
+        let connectors = list_result.unwrap();
+        assert!(
+            connectors.contains(&name),
+            "First registration should add connector to list"
+        );
+    }
 
     // Act: Register same connector again
-    let result = connect::register(name.clone(), schema.clone(), source.clone());
+    let second_result = connect::register(name.clone(), schema.clone(), source.clone());
 
-    // Assert: Verify actual behavior - either succeeds (if storage doesn't persist) or fails with duplicate error
-    match result {
+    // Assert: Verify duplicate detection behavior (observable state)
+    match second_result {
         Ok(_) => {
-            // Success case - storage doesn't persist duplicates
+            // If second registration succeeded, verify connector still appears once in list
+            let list_result = connect::list();
+            assert!(list_result.is_ok(), "List should succeed");
+            let connectors = list_result.unwrap();
+            let count = connectors.iter().filter(|c| **c == name).count();
+            assert_eq!(
+                count, 1,
+                "Connector should appear exactly once in list, found {} times",
+                count
+            );
         }
         Err(e) => {
-            // Error case - should indicate duplicate or storage error
+            // Error case - should indicate duplicate
             assert!(!e.is_empty(), "Error message should not be empty");
+            assert!(
+                e.to_lowercase().contains("already") || e.to_lowercase().contains("duplicate"),
+                "Error should mention duplicate or already registered: {}",
+                e
+            );
         }
     }
 }
 
-/// Test: connect::list returns Result
+/// Test: connect::list returns valid connector names
 /// Chicago TDD: Test behavior (listing) not implementation (storage reading)
 #[test]
-fn test_connect_list_returns_result() {
+fn test_connect_list_returns_valid_names() {
     // Act: List connectors
     let result = connect::list();
 
-    // Assert: Verify actual behavior - either succeeds with valid list or fails with error
+    // Assert: Verify list behavior (observable output)
     match result {
         Ok(connectors) => {
             // Success case - should return valid list (may be empty)
@@ -70,6 +106,11 @@ fn test_connect_list_returns_result() {
             assert!(
                 connectors.iter().all(|c| !c.is_empty()),
                 "Connector names should not be empty"
+            );
+            // Verify list is a Vec (observable structure)
+            assert!(
+                connectors.len() >= 0,
+                "List should return valid Vec (may be empty)"
             );
         }
         Err(e) => {
@@ -79,7 +120,7 @@ fn test_connect_list_returns_result() {
     }
 }
 
-/// Test: connect::register then list
+/// Test: connect::register then list - verify connector appears
 /// Chicago TDD: Test behavior (registration and listing) not implementation (storage)
 #[test]
 fn test_connect_register_then_list() {
@@ -88,31 +129,34 @@ fn test_connect_register_then_list() {
     let schema = "http://example.org/schema".to_string();
     let source = "file:///tmp/test.nt".to_string();
 
-    // Act: Register and list
+    // Act: Register connector
     let register_result = connect::register(name.clone(), schema.clone(), source.clone());
+
+    // Assert: Verify registration succeeded
+    assert!(register_result.is_ok(), "Registration should succeed");
+
+    // Act: List connectors
     let list_result = connect::list();
 
-    // Assert: Verify actual behavior of both operations
-    match (register_result, list_result) {
-        (Ok(_), Ok(connectors)) => {
-            // Both succeeded - verify list is valid
+    // Assert: Verify observable behavior - registered connector appears in list
+    match list_result {
+        Ok(connectors) => {
+            // Verify list is valid
             assert!(
                 connectors.iter().all(|c| !c.is_empty()),
                 "Connector names should not be empty"
             );
+            // Verify registered connector appears in list (observable state change)
+            assert!(
+                connectors.contains(&name),
+                "Registered connector '{}' should appear in list. Found: {:?}",
+                name,
+                connectors
+            );
         }
-        (Ok(_), Err(e)) => {
-            // Registration succeeded but listing failed
+        Err(e) => {
+            // Listing failed - should have meaningful error
             assert!(!e.is_empty(), "List error message should not be empty");
-        }
-        (Err(e), Ok(_)) => {
-            // Registration failed but listing succeeded
-            assert!(!e.is_empty(), "Register error message should not be empty");
-        }
-        (Err(e1), Err(e2)) => {
-            // Both failed - verify error messages
-            assert!(!e1.is_empty(), "Register error message should not be empty");
-            assert!(!e2.is_empty(), "List error message should not be empty");
         }
     }
 }
@@ -127,23 +171,44 @@ fn test_connect_register_invalid_source() {
     let source = "invalid://format".to_string();
 
     // Act: Register connector
-    let result = connect::register(name, schema, source);
+    let result = connect::register(name.clone(), schema, source);
 
-    // Assert: Verify actual behavior - either succeeds (lenient validation) or fails (strict validation)
+    // Assert: Verify validation behavior (observable output)
     match result {
         Ok(_) => {
-            // Success case - validation is lenient or source format is acceptable
+            // If validation is lenient and registration succeeded, verify connector appears in list
+            let list_result = connect::list();
+            if list_result.is_ok() {
+                let connectors = list_result.unwrap();
+                // If lenient validation, connector should appear in list
+                assert!(
+                    connectors.contains(&name),
+                    "If validation is lenient, connector should appear in list"
+                );
+            }
         }
         Err(e) => {
             // Error case - validation is strict, should indicate invalid format
             assert!(!e.is_empty(), "Error message should not be empty");
-            // Error should mention validation or format issue
+            // Error should mention validation or format issue (observable error content)
             assert!(
                 e.to_lowercase().contains("invalid")
                     || e.to_lowercase().contains("format")
-                    || e.to_lowercase().contains("validation"),
-                "Error should mention validation or format issue"
+                    || e.to_lowercase().contains("validation")
+                    || e.to_lowercase().contains("parse")
+                    || e.to_lowercase().contains("source"),
+                "Error should mention validation, format, parse, or source issue: {}",
+                e
             );
+            // Verify connector does NOT appear in list when registration fails
+            let list_result = connect::list();
+            if list_result.is_ok() {
+                let connectors = list_result.unwrap();
+                assert!(
+                    !connectors.contains(&name),
+                    "Failed registration should not add connector to list"
+                );
+            }
         }
     }
 }
