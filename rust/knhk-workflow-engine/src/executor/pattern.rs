@@ -36,12 +36,13 @@ impl WorkflowEngine {
                 if let (Some(ref otel), Some(ref span)) =
                     (self.otel_integration.as_ref(), span_ctx.as_ref())
                 {
-                    crate::otel_span_end!(
+                    crate::                    otel_span_end!(
                         otel,
                         span_ctx,
                         success: false,
                         start_time: start_time
-                    )?;
+                    )
+                    .await?;
                 }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),
@@ -62,12 +63,13 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::otel_conformance!(
+            crate::            otel_conformance!(
                 otel,
                 span_ctx,
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
-            )?;
+            )
+            .await?;
         }
 
         // Execute pattern
@@ -162,24 +164,26 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::otel_bottleneck!(
+            crate::            otel_bottleneck!(
                 otel,
                 span_ctx,
                 latency_ms: latency_ms,
                 threshold_ms: 1000
-            )?;
+            )
+            .await?;
         }
 
         // End OTEL span
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::otel_span_end!(
+            crate::            otel_span_end!(
                 otel,
                 span_ctx,
                 success: result.success,
                 start_time: start_time
-            )?;
+            )
+            .await?;
         }
 
         Ok(result)

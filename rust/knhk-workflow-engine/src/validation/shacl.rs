@@ -480,7 +480,7 @@ impl ShaclValidator {
     /// Execute a SPARQL validation query and convert results to violations
     fn execute_validation_query(
         &self,
-        store: &Store,
+        _store: &Store,
         query: &str,
         rule_id: &str,
         severity: ValidationSeverity,

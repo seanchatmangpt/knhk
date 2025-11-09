@@ -95,12 +95,13 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::otel_span_end!(
+            otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )?;
+            )
+            .await?;
         }
 
         persist_result

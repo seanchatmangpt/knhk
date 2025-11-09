@@ -32,12 +32,13 @@ impl WorkflowEngine {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
-                );
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
+                )
+                .await?;
             }
             return Err(e);
         }
@@ -48,12 +49,13 @@ impl WorkflowEngine {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
-                );
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
+                )
+                .await?;
             }
             return Err(e);
         }
@@ -79,12 +81,13 @@ impl WorkflowEngine {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
-                );
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
+                )
+                .await?;
             }
             return Err(WorkflowError::Internal(format!(
                 "Failed to create case RDF store: {}",
@@ -207,12 +210,13 @@ impl WorkflowEngine {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
-                );
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
+                )
+                .await?;
             }
             WorkflowError::CaseNotFound(case_id.to_string())
         })?;
@@ -228,12 +232,13 @@ impl WorkflowEngine {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                let _ = otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
-                );
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
+                )
+                .await?;
             }
             WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
         })?;
@@ -268,11 +273,12 @@ impl WorkflowEngine {
         {
             // Get final case state
             if let Ok(case) = self.get_case(case_id).await {
-                crate::otel_attr!(
+                otel_attr!(
                     otel,
                     span_ctx,
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
-                )?;
+                )
+                .await?;
             }
             otel_span_end!(
                 otel,
