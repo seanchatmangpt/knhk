@@ -9,8 +9,8 @@ use crate::api::models::{
     ApiResult,
 };
 use crate::executor::WorkflowEngine;
-use crate::patterns::{PatternExecutionContext, PatternId};
-use std::collections::{HashMap, HashSet};
+use crate::patterns::PatternExecutionContext;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 /// Pattern service for pattern operations

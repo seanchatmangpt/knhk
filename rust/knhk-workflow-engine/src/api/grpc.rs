@@ -6,14 +6,12 @@ use crate::api::models::{
     errors::ApiError,
     requests::{
         CancelCaseRequest, CreateCaseRequest, ExecuteCaseRequest, GetCaseHistoryRequest,
-        GetCaseRequest, GetWorkflowRequest, ListWorkflowsRequest, RegisterWorkflowRequest,
-        StartCaseRequest,
+        GetCaseRequest, GetWorkflowRequest, RegisterWorkflowRequest, StartCaseRequest,
     },
 };
 use crate::api::service::{CaseService, WorkflowService};
 use crate::api::transport::GrpcAdapter;
 use crate::executor::WorkflowEngine;
-use crate::parser::WorkflowSpec;
 use crate::{CaseId, WorkflowSpecId};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};

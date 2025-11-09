@@ -4,7 +4,7 @@
 //! in IEEE XES format compatible with ProM.
 
 use crate::case::CaseId;
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use crate::parser::WorkflowSpecId;
 use crate::process_mining::{WorkflowEvent, XesExporter};
 

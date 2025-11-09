@@ -3,11 +3,7 @@
 //! Converts between REST-specific types (axum::Json, StatusCode) and unified models.
 
 use crate::api::models::errors::ApiError;
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Json},
-    Json as AxumJson,
-};
+use axum::{http::StatusCode, response::IntoResponse, Json as AxumJson};
 
 /// REST adapter for converting between REST types and unified models
 pub struct RestAdapter;

@@ -50,9 +50,7 @@ impl WorkflowEngine {
             timestamp: chrono::Utc::now(),
         };
         {
-            // Add to in-memory event log
-            // Note: StateManager doesn't have a public method to add events directly,
-            // so we'll persist it to store and it will be loaded by get_case_history
+            // Persist event to store (StateManager will load it via get_case_history)
             let store_arc = self.state_store.read().await;
             (*store_arc).save_case_history_event(&case_id, &event)?;
         }

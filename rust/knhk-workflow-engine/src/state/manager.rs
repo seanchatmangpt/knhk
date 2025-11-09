@@ -9,7 +9,6 @@ use crate::case::{Case, CaseId};
 use crate::error::WorkflowResult;
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::state::store::StateStore;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;

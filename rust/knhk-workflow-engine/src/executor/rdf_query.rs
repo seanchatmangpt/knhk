@@ -7,8 +7,6 @@ use crate::parser::WorkflowSpecId;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use super::engine::WorkflowEngine;
 
@@ -110,7 +108,7 @@ impl WorkflowEngine {
 
     /// Load workflow specification into RDF store (called during registration)
     pub(crate) async fn load_spec_rdf(&self, turtle: &str) -> Result<(), String> {
-        let mut store = self.spec_rdf_store.write().await;
+        let store = self.spec_rdf_store.write().await;
         store
             .load_from_reader(oxigraph::io::RdfFormat::Turtle, turtle.as_bytes())
             .map_err(|e| format!("Failed to load spec into RDF store: {:?}", e))
@@ -135,7 +133,7 @@ impl WorkflowEngine {
         use crate::patterns::{get_all_pattern_metadata, serialize_metadata_to_rdf};
 
         let metadata = get_all_pattern_metadata();
-        let mut store = self.pattern_metadata_store.write().await;
+        let store = self.pattern_metadata_store.write().await;
 
         for pattern_meta in metadata {
             let turtle = serialize_metadata_to_rdf(&pattern_meta)

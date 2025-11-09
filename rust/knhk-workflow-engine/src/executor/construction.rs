@@ -1,7 +1,7 @@
 //! Workflow engine construction and initialization
 
 use crate::compliance::ProvenanceTracker;
-use crate::error::{WorkflowError, WorkflowResult};
+use crate::error::WorkflowResult;
 use crate::integration::fortune5::Fortune5Config;
 use crate::integration::{
     ConnectorIntegration, Fortune5Integration, LockchainIntegration, OtelIntegration,
