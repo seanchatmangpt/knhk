@@ -91,7 +91,7 @@ pub fn analyze_reflex_map(
 
                     // Filter by date range if specified
                     if let (Some(from_date), Some(to_date)) = (&from, &to) {
-                        if date >= from_date && date <= to_date {
+                        if date >= from_date.as_str() && date <= to_date.as_str() {
                             efficiency_data.push(entry.clone());
                         }
                     } else {

@@ -5,8 +5,8 @@
 //! **CRITICAL GAP IDENTIFIED**: No tests previously collected DFLSS metrics from actual
 //! performance measurements. These tests collect real data and calculate process capability.
 
-use chicago_tdd_tools::prelude::*;
 use chicago_tdd_tools::assert_within_tick_budget;
+use chicago_tdd_tools::prelude::*;
 use knhk_hot::cycle_counter::{cycles_to_ticks, read_cycles};
 use knhk_hot::kernels::{KernelExecutor, KernelType};
 

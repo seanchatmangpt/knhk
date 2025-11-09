@@ -2901,9 +2901,8 @@ chicago_async_test!(test_process_mining_all_complex_patterns_comprehensive, {
     println!("  Context: Van der Aalst needs comprehensive pattern coverage");
 
     // Test all 43 patterns in sequence
-    let patterns_to_test: Vec<(String, u32)> = (1..=43)
-        .map(|i| (format!("Pattern {}", i), i))
-        .collect();
+    let patterns_to_test: Vec<(String, u32)> =
+        (1..=43).map(|i| (format!("Pattern {}", i), i)).collect();
 
     let temp_dir = TempDir::new().unwrap();
     let state_store = StateStore::new(temp_dir.path()).unwrap();

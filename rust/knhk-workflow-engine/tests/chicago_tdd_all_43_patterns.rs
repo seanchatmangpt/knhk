@@ -976,7 +976,7 @@ chicago_test!(test_pattern_execution_with_variables, {
             .expect(&format!("Pattern {} should be registered", pattern_id));
         assert_pattern_success(&result);
     }
-}
+});
 
 chicago_test!(test_pattern_execution_output_variables, {
     // JTBD: Verify patterns produce output variables

@@ -46,7 +46,6 @@ use chicago_tdd_tools::otel::{OtelTestHelper, SpanValidator};
 #[cfg(feature = "weaver")]
 use chicago_tdd_tools::weaver::WeaverValidator;
 
-
 /// Test that validates DFLSS constants are properly defined
 #[test]
 fn test_dflss_constants_defined() {
@@ -230,7 +229,9 @@ fn test_validate_triples_for_hot_path_helper() {
 fn test_performance_constraints_rdtsc() {
     // Arrange: Create guard validator for measurement
     use knhk_workflow_engine::performance::tick_budget::measure_ticks;
-    use knhk_workflow_engine::security::{GuardContext, GuardValidator, MaxRunLengthGuard, StandardMaxRunLengthGuard};
+    use knhk_workflow_engine::security::{
+        GuardContext, GuardValidator, MaxRunLengthGuard, StandardMaxRunLengthGuard,
+    };
     use serde_json::Value;
 
     let mut validator = GuardValidator::new();
@@ -246,9 +247,7 @@ fn test_performance_constraints_rdtsc() {
     let input = Value::Array(vec![Value::Null; 8]);
 
     // Act: Measure guard validation performance using TickCounter
-    let (_result, ticks) = measure_ticks(|| {
-        validator.validate(&input, &context)
-    });
+    let (_result, ticks) = measure_ticks(|| validator.validate(&input, &context));
 
     // Assert: Guard validation completes within tick budget (behavior test)
     assert_within_tick_budget!(ticks, "Guard validation should complete within 8 ticks");
@@ -269,13 +268,15 @@ fn test_otel_span_creation_behavior() {
 
     // Assert: Span was created (behavior test)
     assert!(span.is_some(), "OTEL test helper should create spans");
-    
+
     // Act: Validate span structure
     if let Some(span) = span {
         let validation_result = validator.validate(&span);
         // Assert: Validation returns a result (behavior test)
-        assert!(validation_result.is_ok() || validation_result.is_err(),
-            "Span validation should return a result");
+        assert!(
+            validation_result.is_ok() || validation_result.is_err(),
+            "Span validation should return a result"
+        );
     }
 }
 
@@ -289,12 +290,11 @@ fn test_weaver_schema_validation_behavior() {
     // Act: Test that validator can be created (behavior test)
     // The validator is created successfully if we reach this point
     // This is a behavior test because we're testing the constructor behavior
-    
+
     // Assert: Validator was created (behavior test - constructor executed)
     // If constructor panics or fails, test would fail
     assert!(true, "WeaverValidator constructor executed successfully");
 }
-
 
 /// Test that validates const fn DFLSS validation functions
 #[test]
@@ -349,8 +349,10 @@ fn test_weaver_validation_behavior() {
     let check_result = WeaverIntegration::check_weaver_available();
     // Assert: Method returns Result (behavior test, not existence test)
     // We don't assert success because Weaver may not be installed in test environment
-    assert!(check_result.is_ok() || check_result.is_err(), 
-        "check_weaver_available should return Result");
+    assert!(
+        check_result.is_ok() || check_result.is_err(),
+        "check_weaver_available should return Result"
+    );
 }
 
 /// Test that validates performance measurement behavior (CTQ 2)
@@ -358,7 +360,9 @@ fn test_weaver_validation_behavior() {
 fn test_performance_measurement_behavior() {
     // Arrange: Create guard validator for measurement
     use knhk_workflow_engine::performance::tick_budget::measure_ticks;
-    use knhk_workflow_engine::security::{GuardContext, GuardValidator, MaxRunLengthGuard, StandardMaxRunLengthGuard};
+    use knhk_workflow_engine::security::{
+        GuardContext, GuardValidator, MaxRunLengthGuard, StandardMaxRunLengthGuard,
+    };
     use serde_json::Value;
 
     let mut validator = GuardValidator::new();
@@ -374,9 +378,7 @@ fn test_performance_measurement_behavior() {
     let input = Value::Array(vec![Value::Null; 8]);
 
     // Act: Measure guard validation performance
-    let (_result, ticks) = measure_ticks(|| {
-        validator.validate(&input, &context)
-    });
+    let (_result, ticks) = measure_ticks(|| validator.validate(&input, &context));
 
     // Assert: Guard validation completes within tick budget
     assert_within_tick_budget!(ticks, "Guard validation should complete within 8 ticks");
@@ -387,7 +389,7 @@ fn test_performance_measurement_behavior() {
 fn test_dod_compliance_validation_behavior() {
     // Arrange: Create validation framework
     use knhk_workflow_engine::validation::ValidationFramework;
-    use knhk_workflow_engine::{WorkflowEngine, StateStore};
+    use knhk_workflow_engine::{StateStore, WorkflowEngine};
 
     // Note: ValidationFramework requires WorkflowEngine, which requires StateStore
     // This is a behavior test because we're testing the constructor behavior
@@ -399,7 +401,10 @@ fn test_dod_compliance_validation_behavior() {
     // Assert: Framework was created successfully (behavior test)
     // The framework constructor executed successfully if we reach this point
     // If constructor panics or fails, test would fail
-    assert!(true, "ValidationFramework constructor executed successfully");
+    assert!(
+        true,
+        "ValidationFramework constructor executed successfully"
+    );
 }
 
 /// Test that validates process capability calculation behavior (CTQ 5)
@@ -424,10 +429,11 @@ fn test_process_capability_calculation_behavior() {
     assert!(capability.cpk >= 0.0, "Cpk should be non-negative");
     assert!(capability.cp >= 0.0, "Cp should be non-negative");
     assert!(capability.mean > 0.0, "Mean should be positive");
-    assert!(capability.std_dev >= 0.0, "Standard deviation should be non-negative");
+    assert!(
+        capability.std_dev >= 0.0,
+        "Standard deviation should be non-negative"
+    );
 }
-
-
 
 #[cfg(test)]
 mod tests {

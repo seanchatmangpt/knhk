@@ -108,7 +108,7 @@ pub fn track_contradictions(
 
                     // Filter by date range if specified
                     if let (Some(from_date), Some(to_date)) = (&from, &to) {
-                        if date >= from_date && date <= to_date {
+                        if date >= from_date.as_str() && date <= to_date.as_str() {
                             contradictions.push(contradiction.clone());
                         }
                     } else {
