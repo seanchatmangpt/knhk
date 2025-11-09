@@ -35,7 +35,7 @@ else
   echo "🌿 Branch '$CURRENT_BRANCH' - strict rules relaxed (TODO/FUTURE/unimplemented! allowed)"
 fi
 
-# Check 1: No unwrap() in production code (excluding test files, build scripts, CLI)
+# Check 1: No unwrap() in production code (excluding test files, build scripts)
 echo "   Checking for unwrap() calls in production code..."
 UNWRAP_COUNT=0
 for file in $STAGED_FILES; do
