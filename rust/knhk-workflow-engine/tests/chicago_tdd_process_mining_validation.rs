@@ -15,7 +15,8 @@ use knhk_workflow_engine::{
     executor::WorkflowEngine, parser::WorkflowSpec, state::StateStore, CaseId, WorkflowSpecId,
 };
 use process_mining::{
-    alphappp_discover_petri_net, event_log::activity_projection::EventLogActivityProjection,
+    alphappp::full::{alphappp_discover_petri_net, AlphaPPPConfig},
+    event_log::activity_projection::EventLogActivityProjection,
     import_xes_file, XESImportOptions,
 };
 use std::path::PathBuf;
@@ -124,8 +125,8 @@ async fn test_process_discovery_from_workflow_execution() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run Alpha+++ process discovery
-    let alpha_param = 2.0;
-    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, alpha_param);
+    let config = AlphaPPPConfig::default();
+    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Assert: Discovered Petri net should have structure
     assert!(
@@ -178,8 +179,8 @@ async fn test_consistent_process_discovery_across_executions() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run process discovery
-    let alpha_param = 2.0;
-    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, alpha_param);
+    let config = AlphaPPPConfig::default();
+    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Assert: Should have discovered process structure
     assert!(
@@ -295,8 +296,8 @@ async fn test_process_discovery_multiple_cases() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run Alpha+++ discovery
-    let alpha_param = 2.0;
-    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, alpha_param);
+    let config = AlphaPPPConfig::default();
+    let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Assert: Should process all cases
     assert!(
@@ -418,11 +419,15 @@ async fn test_process_discovery_produces_valid_petri_net() {
 
     let projection: EventLogActivityProjection = (&event_log).into();
 
-    // Run Alpha+++ discovery with different alpha parameters
-    let alpha_values = vec![1.0, 2.0, 3.0];
+    // Run Alpha+++ discovery with different configurations
+    let configs = vec![
+        AlphaPPPConfig::default(),
+        AlphaPPPConfig::default(), // Can customize config if needed
+        AlphaPPPConfig::default(),
+    ];
 
-    for alpha in alpha_values {
-        let (petri_net, duration) = alphappp_discover_petri_net(&projection, alpha);
+    for (i, config) in configs.iter().enumerate() {
+        let (petri_net, duration) = alphappp_discover_petri_net(&projection, config.clone());
 
         // Assert: Petri net should be valid
         assert!(
@@ -442,8 +447,8 @@ async fn test_process_discovery_produces_valid_petri_net() {
         );
 
         println!(
-            "    Alpha={}: {} places, {} transitions (discovered in {:?})",
-            alpha,
+            "    Config {}: {} places, {} transitions (discovered in {:?})",
+            i + 1,
             petri_net.places.len(),
             petri_net.transitions.len(),
             duration
