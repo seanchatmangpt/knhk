@@ -4,7 +4,7 @@
 //! in IEEE XES format compatible with ProM.
 
 use crate::case::CaseId;
-use crate::error::WorkflowResult;
+use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpecId;
 use crate::process_mining::{WorkflowEvent, XesExporter};
 
@@ -188,52 +188,13 @@ impl WorkflowEngine {
     ///
     /// # Returns
     /// Number of cases imported
-    pub async fn import_xes(&self, xes_content: &str) -> WorkflowResult<usize> {
+    pub async fn import_xes(&self, _xes_content: &str) -> WorkflowResult<usize> {
         // Parse XES content using process_mining crate
-        use crate::process_mining::{import_xes_file, XESImportOptions};
-
-        // Import XES file (in-memory)
-        let options = XESImportOptions::default();
-        let event_log = import_xes_file(xes_content.as_bytes(), options)
-            .map_err(|e| WorkflowError::Internal(format!("Failed to import XES: {:?}", e)))?;
-
-        // Group events by case ID
-        let mut cases: std::collections::HashMap<
-            String,
-            Vec<crate::process_mining::WorkflowEvent>,
-        > = std::collections::HashMap::new();
-        for event in event_log.events {
-            let case_id = event.case_id.clone();
-            cases.entry(case_id).or_insert_with(Vec::new).push(event);
-        }
-
-        // Create cases from XES traces
-        let mut imported = 0;
-        for (case_id_str, events) in cases {
-            // Find or create workflow spec from events
-            // For now, create a minimal spec
-            // In production, would infer spec from event log structure
-
-            // Create case data from events
-            let mut case_data = serde_json::json!({});
-            for event in &events {
-                if let Some(data_obj) = case_data.as_object_mut() {
-                    data_obj.insert(
-                        format!("event_{}", event.timestamp),
-                        serde_json::json!({
-                            "activity": event.activity,
-                            "resource": event.resource,
-                            "timestamp": event.timestamp
-                        }),
-                    );
-                }
-            }
-
-            // Note: Would need to create workflow spec first
-            // For now, just count imported cases
-            imported += 1;
-        }
-
-        Ok(imported)
+        // Note: import_xes_file is in knhk-cli, not in process_mining module
+        // For now, return unimplemented - would need to add XES parser to process_mining module
+        Err(WorkflowError::Internal(
+            "XES import not yet implemented - requires XES parser in process_mining module"
+                .to_string(),
+        ))
     }
 }
