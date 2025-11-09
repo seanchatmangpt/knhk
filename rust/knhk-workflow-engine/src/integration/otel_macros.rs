@@ -132,7 +132,7 @@ macro_rules! otel_span_end {
         use std::time::Instant;
         use $crate::integration::otel_helpers::end_span_with_result;
 
-        if let Some(ref span) = $span_ctx {
+        if let Some(ref span) = (*$span_ctx).as_ref() {
             end_span_with_result($otel, (*span).clone(), $success, $start_time).await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
@@ -146,7 +146,7 @@ macro_rules! otel_span_end {
     ) => {{
         use knhk_otel::SpanStatus;
 
-        if let Some(ref span) = $span_ctx {
+        if let Some(ref span) = (*$span_ctx).as_ref() {
             $otel
                 .add_attribute(
                     (*span).clone(),
@@ -318,7 +318,7 @@ macro_rules! otel_bottleneck {
     ) => {{
         use $crate::integration::otel_helpers::add_bottleneck_if_detected;
 
-        if let Some(ref span) = $span_ctx {
+        if let Some(ref span) = (*$span_ctx).as_ref() {
             add_bottleneck_if_detected(
                 $otel,
                 (*span).clone(),
@@ -352,7 +352,7 @@ macro_rules! otel_conformance {
     ) => {{
         use $crate::integration::otel_helpers::add_conformance_attributes;
 
-        if let Some(ref span) = $span_ctx {
+        if let Some(ref span) = (*$span_ctx).as_ref() {
             add_conformance_attributes($otel, (*span).clone(), $expected, $actual).await?;
         }
         Ok::<(), $crate::error::WorkflowError>(())
