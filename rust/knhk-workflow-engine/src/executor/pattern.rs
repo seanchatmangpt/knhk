@@ -19,12 +19,13 @@ impl WorkflowEngine {
 
         // Start OTEL span for pattern execution
         let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
-            otel_span!(
+            crate::otel_span!(
                 otel,
                 "knhk.workflow_engine.execute_pattern",
                 case_id: Some(&context.case_id),
                 pattern_id: Some(&pattern_id),
-            )?
+            )
+            .await?
         } else {
             None
         };
@@ -35,9 +36,9 @@ impl WorkflowEngine {
                 if let (Some(ref otel), Some(ref span)) =
                     (self.otel_integration.as_ref(), span_ctx.as_ref())
                 {
-                    otel_span_end!(
+                    crate::otel_span_end!(
                         otel,
-                        span,
+                        span_ctx,
                         success: false,
                         start_time: start_time
                     )?;
@@ -61,9 +62,9 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel_conformance!(
+            crate::otel_conformance!(
                 otel,
-                span,
+                span_ctx,
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
             )?;
@@ -161,9 +162,9 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel_bottleneck!(
+            crate::otel_bottleneck!(
                 otel,
-                span,
+                span_ctx,
                 latency_ms: latency_ms,
                 threshold_ms: 1000
             )?;
@@ -173,9 +174,9 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel_span_end!(
+            crate::otel_span_end!(
                 otel,
-                span,
+                span_ctx,
                 success: result.success,
                 start_time: start_time
             )?;

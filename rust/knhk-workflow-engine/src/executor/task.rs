@@ -91,9 +91,13 @@ pub(super) async fn execute_task_with_allocation(
                         } else {
                             "system".to_string()
                         };
-                        let _ = otel
-                            .add_resource((*span).clone(), Some(&resource_str), Some(&role_str))
-                            .await;
+                        otel_resource!(
+                            otel,
+                            span_ctx,
+                            resource: Some(&resource_str),
+                            role: Some(&role_str)
+                        )
+                        .await?;
 
                         // Calculate resource utilization (simplified: based on allocation count)
                         let utilization = if !resource_ids.is_empty() {
@@ -101,13 +105,12 @@ pub(super) async fn execute_task_with_allocation(
                         } else {
                             0.0
                         };
-                        let _ = otel
-                            .add_attribute(
-                                (*span).clone(),
-                                "knhk.workflow_engine.resource_utilization".to_string(),
-                                utilization.to_string(),
-                            )
-                            .await;
+                        otel_attr!(
+                            otel,
+                            span_ctx,
+                            "knhk.workflow_engine.resource_utilization" => utilization.to_string()
+                        )
+                        .await?;
                     }
                 }
             }
@@ -159,7 +162,7 @@ pub(super) async fn execute_task_with_allocation(
                         .unwrap_or_else(|| "user".to_string());
                     otel_resource!(
                         otel,
-                        span,
+                        span_ctx,
                         resource: Some("work_item_service"),
                         role: Some(&role_str)
                     )
@@ -285,7 +288,7 @@ pub(super) async fn execute_task_with_allocation(
                 {
                     otel_resource!(
                         otel,
-                        span,
+                        span_ctx,
                         resource: Some("connector"),
                         role: Some("system")
                     )
@@ -466,7 +469,7 @@ pub(super) async fn execute_task_with_allocation(
             {
                 otel_span_end!(
                     otel,
-                    span,
+                    span_ctx,
                     success: false,
                     start_time: task_start_time
                 )
@@ -505,7 +508,7 @@ pub(super) async fn execute_task_with_allocation(
     {
         otel_bottleneck!(
             otel,
-            span,
+            span_ctx,
             latency_ms: duration_ms,
             threshold_ms: 1000
         )
@@ -517,7 +520,7 @@ pub(super) async fn execute_task_with_allocation(
     {
         otel_span_end!(
             otel,
-            span,
+            span_ctx,
             success: true,
             start_time: task_start_time
         )

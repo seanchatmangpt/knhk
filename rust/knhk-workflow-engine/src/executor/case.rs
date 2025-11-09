@@ -122,17 +122,19 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::otel_attr!(
+            otel_attr!(
                 otel,
                 span_ctx,
                 "knhk.workflow_engine.case_state" => "Created"
-            )?;
-            crate::otel_span_end!(
+            )
+            .await?;
+            otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )?;
+            )
+            .await?;
         }
 
         // Return first error if any
@@ -170,10 +172,10 @@ impl WorkflowEngine {
 
         // Start OTEL span for case execution
         let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
-            crate::otel_span!(
+            otel_span!(
                 otel,
                 "knhk.workflow_engine.execute_case",
-                case_id: Some(&case_id),
+                case_id: Some(&case_id)
             )
             .await?
         } else {
@@ -272,12 +274,13 @@ impl WorkflowEngine {
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
                 )?;
             }
-            crate::otel_span_end!(
+            otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )?;
+            )
+            .await?;
         }
 
         execution_result

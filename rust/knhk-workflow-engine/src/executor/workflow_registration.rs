@@ -16,11 +16,12 @@ impl WorkflowEngine {
         let start_time = Instant::now();
 
         // Start OTEL span for workflow registration
-        let span_ctx = if let Some(ref otel) = self.otel_integration {
-            otel_span!(
+        let span_ctx: Option<knhk_otel::SpanContext> = if let Some(ref otel) = self.otel_integration
+        {
+            crate::otel_span!(
                 otel,
                 "knhk.workflow_engine.register_workflow",
-                spec_id: Some(&spec.id)
+                spec_id: Some(&spec.id),
             )
             .await?
         } else {
@@ -31,23 +32,13 @@ impl WorkflowEngine {
         if let Some(ref fortune5) = self.fortune5_integration {
             let gate_allowed = fortune5.check_promotion_gate().await?;
             if !gate_allowed {
-                if let (Some(ref otel), Some(ref span)) =
-                    (self.otel_integration.as_ref(), span_ctx.as_ref())
-                {
-                    otel.add_attribute(
-                        (*span).clone(),
-                        "knhk.workflow_engine.success".to_string(),
-                        "false".to_string(),
-                    )
-                    .await?;
-                    otel.add_attribute(
-                        (*span).clone(),
-                        "knhk.workflow_engine.latency_ms".to_string(),
-                        start_time.elapsed().as_millis().to_string(),
-                    )
-                    .await?;
-                    otel.end_span((*span).clone(), SpanStatus::Error).await?;
-                }
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
+                )
+                .await?;
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked workflow registration".to_string(),
                 ));
@@ -62,19 +53,13 @@ impl WorkflowEngine {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.success".to_string(),
-                    "false".to_string(),
+                otel_span_end!(
+                    otel,
+                    span_ctx,
+                    success: false,
+                    start_time: start_time
                 )
                 .await?;
-                otel.add_attribute(
-                    (*span).clone(),
-                    "knhk.workflow_engine.latency_ms".to_string(),
-                    start_time.elapsed().as_millis().to_string(),
-                )
-                .await?;
-                otel.end_span((*span).clone(), SpanStatus::Error).await?;
             }
             return Err(e);
         }
@@ -110,13 +95,12 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel_span_end!(
+            crate::otel_span_end!(
                 otel,
-                span,
+                span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )
-            .await?;
+            )?;
         }
 
         persist_result
