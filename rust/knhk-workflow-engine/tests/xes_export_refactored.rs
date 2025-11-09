@@ -5,8 +5,14 @@
 
 mod common;
 
-use common::{assertions::*, data::*, TestHarness};
+use common::{assertions::assert_valid_xes, data::simple_case_data, TestHarness};
 use knhk_workflow_engine::*;
+
+/// Helper: Setup workflow from TTL string
+async fn setup_workflow(harness: &mut TestHarness, workflow: &str) -> parser::WorkflowSpec {
+    let spec = setup_workflow(&mut harness, workflow).await;
+    spec
+}
 
 #[tokio::test]
 async fn test_single_case_xes_export() {
@@ -21,12 +27,7 @@ async fn test_single_case_xes_export() {
             yawl:hasOutputCondition <http://example.org/output> .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_workflow(&mut harness, workflow).await;
 
     let case_id = harness
         .engine
@@ -40,7 +41,7 @@ async fn test_single_case_xes_export() {
     let xes = harness.engine.export_case_to_xes(case_id).await.unwrap();
 
     // Assert: Use helper
-    assert_valid_xes(&xes);
+    assert_valid_xes(xes);
     assert!(xes.contains("SimpleWorkflow"));
 }
 
@@ -54,12 +55,7 @@ async fn test_xes_xml_structure() {
             yawl:specName "TestWorkflow" .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_workflow(&mut harness, workflow).await;
 
     let case_id = harness
         .engine
@@ -70,7 +66,7 @@ async fn test_xes_xml_structure() {
     let xes = harness.engine.export_case_to_xes(case_id).await.unwrap();
 
     // Assert: XES 2.0 structure
-    assert_valid_xes(&xes);
+    assert_valid_xes(xes);
     assert!(xes.contains("xes.version=\"2.0\""));
     assert!(xes.contains("<trace>"));
     assert!(xes.contains("</trace>"));
@@ -86,12 +82,7 @@ async fn test_lifecycle_transitions_in_xes() {
             yawl:specName "LifecycleTest" .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_workflow(&mut harness, workflow).await;
 
     let case_id = harness
         .engine
@@ -119,12 +110,7 @@ async fn test_multiple_cases_export() {
             yawl:specName "MultiCaseTest" .
     "#;
 
-    let spec = harness.parser.parse_turtle(workflow).unwrap();
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_workflow(&mut harness, workflow).await;
 
     // Create 3 cases
     let case1 = harness
@@ -147,7 +133,7 @@ async fn test_multiple_cases_export() {
     let xes = harness.engine.export_all_cases_to_xes().await.unwrap();
 
     // Assert: All cases present
-    assert_valid_xes(&xes);
+    assert_valid_xes(xes);
     assert!(xes.matches("<trace>").count() >= 3);
 }
 

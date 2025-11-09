@@ -153,6 +153,31 @@ pub mod assertions {
             "Case should complete successfully"
         );
     }
+
+    /// Assert XES export is valid XML
+    pub fn assert_valid_xes(xes: &str) {
+        assert!(
+            xes.contains("<?xml version"),
+            "XES should have XML declaration"
+        );
+        assert!(
+            xes.contains("<log xes.version="),
+            "XES should have log element"
+        );
+        assert!(xes.contains("</log>"), "XES should close log element");
+    }
+}
+
+/// 80/20: Test data constants
+pub mod data {
+    use serde_json::json;
+
+    pub fn simple_case_data() -> serde_json::Value {
+        json!({
+            "orderAmount": 100.0,
+            "customerId": "TEST-001"
+        })
+    }
 }
 
 /// 80/20: Timing helpers for performance tests
