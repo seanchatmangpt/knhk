@@ -184,8 +184,8 @@ impl WeaverIntegration {
 
     /// Check if Weaver is running
     pub async fn is_running(&self) -> bool {
-        let guard = self.process.read().await;
-        guard.as_ref().map_or(false, |p| {
+        let mut guard = self.process.write().await;
+        guard.as_mut().map_or(false, |p| {
             p.try_wait().map_or(true, |status| status.is_none())
         })
     }

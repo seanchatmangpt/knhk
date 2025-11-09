@@ -296,7 +296,7 @@ impl WorkflowTestFixture {
 
 impl Default for WorkflowTestFixture {
     fn default() -> Self {
-        Self::new().expect("Failed to create test fixture")
+        Self::new().unwrap_or_else(|e| panic!("Failed to create test fixture: {:?}", e))
     }
 }
 

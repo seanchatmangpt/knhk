@@ -159,15 +159,12 @@ pub struct PatternRegistry {
 ### REST API
 
 **Endpoints**:
-- `POST /api/v1/workflows` - Register workflow
-- `GET /api/v1/workflows` - List workflows
-- `GET /api/v1/workflows/{id}` - Get workflow
-- `POST /api/v1/cases` - Create case
-- `GET /api/v1/cases` - List cases
-- `GET /api/v1/cases/{id}` - Get case
-- `POST /api/v1/cases/{id}/start` - Start case
-- `POST /api/v1/cases/{id}/execute` - Execute case
-- `POST /api/v1/cases/{id}/cancel` - Cancel case
+- `GET /health` - Health check
+- `POST /workflows` - Register workflow
+- `POST /cases` - Create case
+- `GET /cases/{id}` - Get case status
+- `POST /cases/{id}/execute` - Execute case
+- `GET /cases/{id}/history` - Get case history
 
 ### gRPC API
 

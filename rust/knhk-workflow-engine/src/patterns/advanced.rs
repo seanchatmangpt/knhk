@@ -83,7 +83,12 @@ pub fn create_arbitrary_cycles_pattern() -> (PatternId, Box<dyn PatternExecutor>
     .unwrap_or_else(|_| {
         Arc::new(
             ArbitraryCyclesPattern::new(Arc::new(|v: Value| Ok(v)), Arc::new(|_| false), 100)
-                .expect("ArbitraryCyclesPattern with valid cycle count should never fail"),
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "ArbitraryCyclesPattern with valid cycle count should never fail: {:?}",
+                        e
+                    )
+                }),
         )
     });
 
@@ -102,7 +107,9 @@ pub fn create_implicit_termination_pattern() -> (PatternId, Box<dyn PatternExecu
         .unwrap_or_else(|_| {
             Arc::new(
                 ImplicitTerminationPattern::new(vec![Arc::new(|v: Value| Ok(v))])
-                    .expect("ArbitraryCyclesPattern with valid cycle count should never fail"),
+                    .unwrap_or_else(|e| {
+                        panic!("ImplicitTerminationPattern with valid configuration should never fail: {:?}", e)
+                    }),
             )
         });
 

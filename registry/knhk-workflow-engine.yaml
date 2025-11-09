@@ -36,6 +36,16 @@ groups:
         stability: experimental
         brief: "Van der Aalst workflow pattern ID (1-43)"
         examples: [1, 2, 3, 12, 15, 26, 43]
+      - id: knhk.workflow_engine.pattern_name
+        type: string
+        stability: experimental
+        brief: "Van der Aalst pattern name"
+        examples: ["Sequence", "Parallel Split", "Synchronization", "Exclusive Choice", "Simple Merge", "Multi-Choice", "MI Without Sync", "Deferred Choice", "Cancel Activity"]
+      - id: knhk.workflow_engine.pattern_category
+        type: string
+        stability: experimental
+        brief: "Pattern category"
+        examples: ["Basic Control Flow", "Advanced Branching", "Multiple Instance", "State-Based", "Cancellation", "Advanced Control", "Trigger"]
       - id: knhk.workflow_engine.task_id
         type: string
         stability: experimental
@@ -170,8 +180,256 @@ groups:
       - ref: knhk.workflow_engine.case_id
       - ref: knhk.workflow_engine.task_id
       - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
       - id: knhk.workflow_engine.instance_count
         type: int
         stability: experimental
         brief: "Number of instances to execute"
         examples: [1, 5, 10]
+
+  # Van der Aalst Pattern-Specific Spans (1-43)
+  # Basic Control Flow Patterns (1-5)
+  - id: knhk.workflow_engine.pattern.sequence
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 1: Sequence"
+    note: "Tasks execute in order (Van der Aalst Pattern 1)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+
+  - id: knhk.workflow_engine.pattern.parallel_split
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 2: Parallel Split"
+    note: "Tasks execute concurrently (Van der Aalst Pattern 2)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - id: knhk.workflow_engine.branch_count
+        type: int
+        stability: experimental
+        brief: "Number of parallel branches"
+        examples: [2, 3, 5]
+
+  - id: knhk.workflow_engine.pattern.synchronization
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 3: Synchronization"
+    note: "Wait for all parallel tasks (Van der Aalst Pattern 3)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - id: knhk.workflow_engine.synchronized_count
+        type: int
+        stability: experimental
+        brief: "Number of branches synchronized"
+        examples: [2, 3, 5]
+
+  - id: knhk.workflow_engine.pattern.exclusive_choice
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 4: Exclusive Choice"
+    note: "Choose one path (Van der Aalst Pattern 4)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - id: knhk.workflow_engine.chosen_branch
+        type: string
+        stability: experimental
+        brief: "The branch that was chosen"
+        examples: ["branch_1", "branch_2"]
+
+  - id: knhk.workflow_engine.pattern.simple_merge
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 5: Simple Merge"
+    note: "Merge multiple paths (Van der Aalst Pattern 5)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+
+  # Advanced Branching Patterns (6-11)
+  - id: knhk.workflow_engine.pattern.multi_choice
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 6: Multi-Choice"
+    note: "Choose multiple paths (Van der Aalst Pattern 6)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - id: knhk.workflow_engine.chosen_branches
+        type: string
+        stability: experimental
+        brief: "Comma-separated list of chosen branches"
+        examples: ["branch_1,branch_2", "branch_1,branch_2,branch_3"]
+
+  # Multiple Instance Patterns (12-15)
+  - id: knhk.workflow_engine.pattern.mi_without_sync
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 12: MI Without Sync"
+    note: "Multiple instances, no synchronization (Van der Aalst Pattern 12)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.instance_count
+
+  - id: knhk.workflow_engine.pattern.mi_design_time
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 13: MI With Design-Time Knowledge"
+    note: "Known instance count (Van der Aalst Pattern 13)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.instance_count
+
+  - id: knhk.workflow_engine.pattern.mi_runtime
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 14: MI With Runtime Knowledge"
+    note: "Runtime-determined count (Van der Aalst Pattern 14)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.instance_count
+
+  - id: knhk.workflow_engine.pattern.mi_no_runtime
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 15: MI Without Runtime Knowledge"
+    note: "Dynamic instance creation (Van der Aalst Pattern 15)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.instance_count
+
+  # State-Based Patterns (16-18)
+  - id: knhk.workflow_engine.pattern.deferred_choice
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 16: Deferred Choice"
+    note: "Runtime choice (Van der Aalst Pattern 16)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - id: knhk.workflow_engine.chosen_branch
+        type: string
+        stability: experimental
+        brief: "The branch that was chosen at runtime"
+        examples: ["branch_1", "branch_2"]
+
+  # Cancellation Patterns (19-25)
+  - id: knhk.workflow_engine.pattern.cancel_activity
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Execute Pattern 19: Cancel Activity"
+    note: "Cancel specific activity (Van der Aalst Pattern 19)"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.task_id
+      - id: knhk.workflow_engine.cancelled_activity
+        type: string
+        stability: experimental
+        brief: "The activity that was cancelled"
+        examples: ["task_1", "task_approve"]
+
+  # Pattern execution metrics
+  - id: metric.knhk.workflow_engine.pattern.execution_count
+    type: metric
+    metric_name: knhk.workflow_engine.pattern.execution_count
+    stability: experimental
+    brief: "Total number of pattern executions"
+    instrument: counter
+    unit: "{executions}"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+
+  - id: metric.knhk.workflow_engine.pattern.execution_latency
+    type: metric
+    metric_name: knhk.workflow_engine.pattern.execution_latency
+    stability: experimental
+    brief: "Pattern execution latency in milliseconds"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category
+
+  - id: metric.knhk.workflow_engine.pattern.success_rate
+    type: metric
+    metric_name: knhk.workflow_engine.pattern.success_rate
+    stability: experimental
+    brief: "Pattern execution success rate (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.pattern_name
+      - ref: knhk.workflow_engine.pattern_category

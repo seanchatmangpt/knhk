@@ -97,7 +97,12 @@ impl PolicyEngine {
 
 impl Default for PolicyEngine {
     fn default() -> Self {
-        Self::new().expect("PolicyEngine::new should succeed with default configuration")
+        Self::new().unwrap_or_else(|e| {
+            panic!(
+                "PolicyEngine::new should succeed with default configuration: {:?}",
+                e
+            )
+        })
     }
 }
 

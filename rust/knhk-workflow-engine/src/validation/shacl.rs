@@ -517,7 +517,7 @@ impl ShaclValidator {
 
 impl Default for ShaclValidator {
     fn default() -> Self {
-        Self::new().expect("Failed to create default SHACL validator")
+        Self::new().unwrap_or_else(|e| panic!("Failed to create default SHACL validator: {:?}", e))
     }
 }
 

@@ -107,6 +107,10 @@ rdf = []
 name = "workflow_weaver_livecheck"
 path = "examples/workflow_weaver_livecheck.rs"
 
+[[example]]
+name = "weaver_all_43_patterns"
+path = "examples/weaver_all_43_patterns.rs"
+
 [[bench]]
 name = "fortune5_performance"
 harness = false

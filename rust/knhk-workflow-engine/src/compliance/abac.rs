@@ -314,7 +314,12 @@ impl AbacPolicyEngine {
 
 impl Default for AbacPolicyEngine {
     fn default() -> Self {
-        Self::new().expect("AbacPolicyEngine::new should succeed with default configuration")
+        Self::new().unwrap_or_else(|e| {
+            panic!(
+                "AbacPolicyEngine::new should succeed with default configuration: {:?}",
+                e
+            )
+        })
     }
 }
 
