@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-09T06:52:23Z",
+  "timestamp": "2025-11-09T07:21:28Z",
   "summary": {
     "total_criteria": 19,
     "passed": 12,
@@ -16,7 +16,7 @@
 ,
     "core_no_unwrap": {
       "status": "failed",
-      "message": "Found 366 instances of unwrap()/expect() in production code (threshold exceeded)"
+      "message": "Found 376 instances of unwrap()/expect() in production code (threshold exceeded)"
     }
 ,
     "core_trait_compatibility": {
@@ -51,7 +51,7 @@
 ,
     "core_no_false_positives": {
       "status": "warning",
-      "message": "Found 336 instances of Ok(())"
+      "message": "Found 355 instances of Ok(())"
     }
 ,
     "core_performance": {
@@ -71,7 +71,7 @@
 ,
     "ext_documentation": {
       "status": "warning",
-      "message": "Found 2440 public items without documentation"
+      "message": "Found 2498 public items without documentation"
     }
 ,
     "ext_performance": {
