@@ -97,7 +97,7 @@ pub fn check(
         let mut conformant_traces = 0;
         let mut non_conformant_traces = 0;
 
-        for trace in &event_log.traces {
+        for _trace in &event_log.traces {
             // Create a case for this trace
             let case_id = engine
                 .create_case(spec.id, serde_json::json!({}))

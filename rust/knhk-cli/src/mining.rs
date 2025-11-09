@@ -243,7 +243,7 @@ pub fn conformance(
         let mut conformant_traces = 0;
         let mut non_conformant_traces = 0;
 
-        for trace in &event_log.traces {
+        for _trace in &event_log.traces {
             // Create a case for this trace
             let case_id = engine
                 .create_case(spec.id, serde_json::json!({}))
@@ -368,7 +368,7 @@ pub fn precision(
 
         // Extract unique activity sequences from event log
         let mut log_sequences = std::collections::HashSet::new();
-        for trace in &event_log.traces {
+        for _trace in &event_log.traces {
             let activities: Vec<String> = trace
                 .events
                 .iter()
@@ -512,7 +512,7 @@ pub fn generalization(
 
         // Calculate log complexity (simplified: based on unique sequences)
         let mut log_sequences = std::collections::HashSet::new();
-        for trace in &event_log.traces {
+        for _trace in &event_log.traces {
             let activities: Vec<String> = trace
                 .events
                 .iter()

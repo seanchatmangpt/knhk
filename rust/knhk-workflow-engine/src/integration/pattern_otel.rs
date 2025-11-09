@@ -89,7 +89,7 @@ impl PatternOtelHelper {
         case_id: &CaseId,
         additional_attributes: Option<HashMap<String, String>>,
     ) -> WorkflowResult<Option<SpanContext>> {
-        let span_name = get_pattern_span_name(pattern_id.0);
+        let _span_name = get_pattern_span_name(pattern_id.0);
         let pattern_name = get_pattern_name(pattern_id.0);
         let pattern_category = get_pattern_category(pattern_id.0);
 

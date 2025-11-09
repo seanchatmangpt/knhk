@@ -3,7 +3,6 @@
 use crate::case::CaseId;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
-use crate::integration::OtelIntegration;
 use crate::parser::{Task, WorkflowSpecId};
 use crate::patterns::{PatternExecutionContext, PatternId};
 use crate::resource::AllocationRequest;

@@ -56,6 +56,52 @@ groups:
         stability: experimental
         brief: "Case state"
         examples: ["Created", "Running", "Completed", "Cancelled"]
+      - id: lifecycle:transition
+        type: string
+        stability: experimental
+        brief: "Event lifecycle transition (XES standard)"
+        examples: ["start", "complete", "cancel"]
+        note: "XES standard lifecycle transition for process mining compatibility"
+      - id: org:resource
+        type: string
+        stability: experimental
+        brief: "Resource assignment (XES standard)"
+        examples: ["user_123", "system", "connector_abc"]
+        note: "XES standard organizational resource for process mining"
+      - id: org:role
+        type: string
+        stability: experimental
+        brief: "Resource role (XES standard)"
+        examples: ["manager", "approver", "executor"]
+        note: "XES standard organizational role for process mining"
+      - id: time:timestamp
+        type: string
+        stability: experimental
+        brief: "Event timestamp (ISO 8601, XES standard)"
+        examples: ["2025-01-15T10:30:00.000Z"]
+        note: "XES standard timestamp for temporal analysis and process mining"
+      - id: knhk.workflow_engine.resource_utilization
+        type: double
+        stability: experimental
+        brief: "Resource utilization (0.0-1.0)"
+        examples: [0.5, 0.75, 1.0]
+        note: "Resource utilization for bottleneck detection"
+      - id: knhk.workflow_engine.bottleneck_detected
+        type: boolean
+        stability: experimental
+        brief: "Whether a bottleneck was detected"
+        note: "True if latency exceeds threshold or resource utilization is high"
+      - id: knhk.workflow_engine.expected_pattern
+        type: int
+        stability: experimental
+        brief: "Expected pattern ID from workflow specification"
+        examples: [1, 2, 3, 12]
+        note: "For conformance checking: compares actual vs expected pattern"
+      - id: knhk.workflow_engine.conformance_violation
+        type: boolean
+        stability: experimental
+        brief: "Whether execution violates workflow specification"
+        note: "True if actual pattern execution doesn't match expected pattern from spec"
 
   # Workflow registration span
   - id: knhk.workflow_engine.register_workflow

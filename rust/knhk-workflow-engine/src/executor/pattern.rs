@@ -2,7 +2,6 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
-use crate::integration::OtelIntegration;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use knhk_otel::SpanStatus;
 use std::time::Instant;

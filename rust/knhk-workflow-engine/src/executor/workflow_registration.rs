@@ -3,7 +3,6 @@
 //! Handles workflow specification registration with validation and persistence.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::integration::OtelIntegration;
 use crate::parser::WorkflowSpec;
 use crate::validation::DeadlockDetector;
 use knhk_otel::SpanStatus;

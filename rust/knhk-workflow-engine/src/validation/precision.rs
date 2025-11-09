@@ -111,7 +111,7 @@ impl PrecisionValidator {
         let xes_content = self.engine.export_workflow_to_xes(spec_id).await?;
 
         // Verify XES contains expected tasks
-        for (task_id, task) in &spec.tasks {
+        for (_task_id, task) in &spec.tasks {
             if !xes_content.contains(&task.name) {
                 return Err(crate::error::WorkflowError::InvalidSpecification(format!(
                     "Task {} not found in XES export",

@@ -207,11 +207,28 @@ impl WorkflowTestFixture {
                                 .attributes
                                 .iter()
                                 .find(|attr| attr.key == "concept:name")
-                                .and_then(|attr| match &attr.value {
-                                    process_mining::event_log::AttributeValue::String(s) => {
-                                        Some(s.clone())
+                                .and_then(|attr| {
+                                    // Extract string value from attribute
+                                    // Use Debug format to handle different AttributeValue variants
+                                    let value_debug = format!("{:?}", attr.value);
+                                    if let Some(start) = value_debug.strip_prefix("String(\"") {
+                                        if let Some(end_pos) = start.rfind("\")") {
+                                            Some(start[..end_pos].to_string())
+                                        } else if let Some(end_pos) = start.rfind('"') {
+                                            Some(start[..end_pos].to_string())
+                                        } else {
+                                            None
+                                        }
+                                    } else if let Some(start) = value_debug.strip_prefix("String(")
+                                    {
+                                        if let Some(end_pos) = start.rfind(')') {
+                                            Some(start[..end_pos].trim_matches('"').to_string())
+                                        } else {
+                                            None
+                                        }
+                                    } else {
+                                        None
                                     }
-                                    _ => None,
                                 })
                         })
                         .collect::<Vec<_>>()
@@ -264,9 +281,26 @@ impl WorkflowTestFixture {
                     .attributes
                     .iter()
                     .find(|attr| attr.key == "concept:name")
-                    .and_then(|attr| match &attr.value {
-                        process_mining::event_log::AttributeValue::String(s) => Some(s == task_id),
-                        _ => None,
+                    .and_then(|attr| {
+                        // Extract string value from attribute using Debug format
+                        let value_debug = format!("{:?}", attr.value);
+                        if let Some(start) = value_debug.strip_prefix("String(\"") {
+                            if let Some(end_pos) = start.rfind("\")") {
+                                Some(start[..end_pos].to_string() == task_id)
+                            } else if let Some(end_pos) = start.rfind('"') {
+                                Some(start[..end_pos].to_string() == task_id)
+                            } else {
+                                None
+                            }
+                        } else if let Some(start) = value_debug.strip_prefix("String(") {
+                            if let Some(end_pos) = start.rfind(')') {
+                                Some(start[..end_pos].trim_matches('"').to_string() == task_id)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
                     })
                     .unwrap_or(false)
             })
@@ -1252,7 +1286,7 @@ pub fn create_mi_workflow(
     name: impl Into<String>,
     task_id: impl Into<String>,
     task_name: impl Into<String>,
-    instance_count: Option<usize>,
+    _instance_count: Option<usize>,
 ) -> WorkflowSpec {
     let task_id_str = task_id.into();
     let start_condition_id = "condition:start".to_string();

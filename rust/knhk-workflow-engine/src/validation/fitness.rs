@@ -105,7 +105,7 @@ impl FitnessValidator {
         let start = std::time::Instant::now();
 
         // Get workflow
-        let spec = self.engine.get_workflow(spec_id).await?;
+        let _spec = self.engine.get_workflow(spec_id).await?;
 
         // Create case
         let case_id = self

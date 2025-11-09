@@ -178,7 +178,7 @@ impl DataGateway {
         })?;
 
         // Execute query (using deprecated API for now)
-        let results = store.query(query).map_err(|e| {
+        let _results = store.query(query).map_err(|e| {
             WorkflowError::Internal(format!("Failed to execute SPARQL query: {:?}", e))
         })?;
 
