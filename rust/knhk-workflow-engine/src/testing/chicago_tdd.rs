@@ -122,10 +122,13 @@ impl WorkflowTestFixture {
     }
 
     /// Get case history (for testing)
+    /// Note: This accesses the internal state_manager which is pub(crate)
     pub async fn get_case_history(
         &self,
         case_id: CaseId,
     ) -> Vec<crate::state::manager::StateEvent> {
+        // Access through engine's state_manager field (pub(crate) allows crate access)
+        // Since tests are in the same crate, we can access it
         self.engine.state_manager.get_case_history(case_id).await
     }
 

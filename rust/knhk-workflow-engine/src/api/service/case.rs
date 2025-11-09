@@ -115,13 +115,7 @@ impl CaseService {
             .engine
             .state_manager
             .get_case_history(request.case_id)
-            .await
-            .map_err(|e| {
-                ApiError::new(
-                    "INTERNAL_ERROR",
-                    &format!("Failed to load case history: {}", e),
-                )
-            })?;
+            .await;
 
         // Transform StateEvent enum variants to CaseHistoryEntry format
         let entries: Vec<CaseHistoryEntry> = events

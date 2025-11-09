@@ -44,16 +44,15 @@ impl WorkflowEngine {
         self.state_manager.save_case(&case_clone).await?;
 
         // Log CaseCreated event
+        let event = crate::state::manager::StateEvent::CaseCreated {
+            case_id,
+            spec_id,
+            timestamp: chrono::Utc::now(),
+        };
         {
-            let mut log = self.state_manager.event_log.write().await;
-            let event = crate::state::manager::StateEvent::CaseCreated {
-                case_id,
-                spec_id,
-                timestamp: chrono::Utc::now(),
-            };
-            log.push(event.clone());
-            drop(log);
-            // Persist event to store (for audit trail)
+            // Add to in-memory event log
+            // Note: StateManager doesn't have a public method to add events directly,
+            // so we'll persist it to store and it will be loaded by get_case_history
             let store_arc = self.state_store.read().await;
             (*store_arc).save_case_history_event(&case_id, &event)?;
         }

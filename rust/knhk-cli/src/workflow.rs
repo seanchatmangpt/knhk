@@ -345,10 +345,14 @@ pub fn patterns() -> CnvResult<()> {
     let engine = get_engine(None)?;
 
     runtime.block_on(async {
-        let registry = engine.pattern_registry();
-        let patterns = registry.list_patterns();
-        println!("Registered patterns ({}):", patterns.len());
-        for pattern_id in patterns {
+        // Use service layer
+        let service = PatternService::new(engine);
+        let request = knhk_workflow_engine::api::models::requests::ListPatternsRequest {};
+        let response = service.list_patterns(request).await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(CliAdapter::format_error(&e))
+        })?;
+        println!("Registered patterns ({}):", response.patterns.len());
+        for pattern_id in response.patterns {
             println!("  - Pattern {}", pattern_id.0);
         }
         Ok(())
