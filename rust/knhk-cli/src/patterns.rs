@@ -107,7 +107,7 @@ pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResu
     }
 
     let runtime = get_runtime();
-    let _engine = get_engine(state_store.as_deref())?;
+    let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
         let pattern_id_enum = PatternId(pattern_id);
@@ -182,7 +182,7 @@ pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResu
 #[verb]
 pub fn test_all(state_store: Option<String>, json: bool) -> CnvResult<()> {
     let runtime = get_runtime();
-    let _engine = get_engine(state_store.as_deref())?;
+    let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
         // Register all patterns
@@ -279,7 +279,7 @@ pub fn verify(
     }
 
     let runtime = get_runtime();
-    let _engine = get_engine(state_store.as_deref())?;
+    let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
         // Parse workflow
@@ -372,7 +372,7 @@ pub fn coverage(
     json: bool,
 ) -> CnvResult<()> {
     let runtime = get_runtime();
-    let _engine = get_engine(state_store.as_deref())?;
+    let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
         // Parse workflow

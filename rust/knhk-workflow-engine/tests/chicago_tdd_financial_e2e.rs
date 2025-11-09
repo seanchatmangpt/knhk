@@ -24,17 +24,22 @@ use serde_json::json;
 const ATM_WITHDRAWAL_TTL: &str =
     include_str!("../../../ontology/workflows/financial/atm_transaction.ttl");
 
-#[tokio::test]
-async fn test_atm_withdrawal_successful_flow() {
-    // Arrange: Real ATM withdrawal workflow
-    let mut harness = TestHarness::new();
+/// Helper: Setup ATM workflow test
+async fn setup_atm_workflow(harness: &mut TestHarness) -> parser::WorkflowSpec {
     let spec = harness.parse(ATM_WITHDRAWAL_TTL);
-
     harness
         .engine
         .register_workflow(spec.clone())
         .await
         .expect("Should register ATM workflow");
+    spec
+}
+
+#[tokio::test]
+async fn test_atm_withdrawal_successful_flow() {
+    // Arrange: Real ATM withdrawal workflow
+    let mut harness = TestHarness::new();
+    let spec = setup_atm_workflow(&mut harness).await;
 
     let transaction_data = json!({
         "cardNumber": "4532123456789012",
@@ -79,13 +84,7 @@ async fn test_atm_withdrawal_successful_flow() {
 async fn test_atm_withdrawal_insufficient_funds() {
     // Arrange: ATM withdrawal with insufficient balance
     let mut harness = TestHarness::new();
-    let spec = harness.parse(ATM_WITHDRAWAL_TTL);
-
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .expect("Should register");
+    let spec = setup_atm_workflow(&mut harness).await;
 
     let transaction_data = json!({
         "cardNumber": "4532123456789012",
@@ -127,13 +126,7 @@ async fn test_atm_withdrawal_insufficient_funds() {
 async fn test_atm_workflow_performance() {
     // Arrange: ATM workflow with performance constraints
     let mut harness = TestHarness::new();
-    let spec = harness.parse(ATM_WITHDRAWAL_TTL);
-
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_atm_workflow(&mut harness).await;
 
     let transaction_data = json!({
         "cardNumber": "4532123456789012",
@@ -166,17 +159,22 @@ async fn test_atm_workflow_performance() {
 const SWIFT_MT103_TTL: &str =
     include_str!("../../../ontology/workflows/financial/swift_payment.ttl");
 
-#[tokio::test]
-async fn test_swift_payment_successful_flow() {
-    // Arrange: Real SWIFT MT103 payment workflow
-    let mut harness = TestHarness::new();
+/// Helper: Setup SWIFT workflow test
+async fn setup_swift_workflow(harness: &mut TestHarness) -> parser::WorkflowSpec {
     let spec = harness.parse(SWIFT_MT103_TTL);
-
     harness
         .engine
         .register_workflow(spec.clone())
         .await
         .expect("Should register SWIFT workflow");
+    spec
+}
+
+#[tokio::test]
+async fn test_swift_payment_successful_flow() {
+    // Arrange: Real SWIFT MT103 payment workflow
+    let mut harness = TestHarness::new();
+    let spec = setup_swift_workflow(&mut harness).await;
 
     let payment_data = json!({
         "mt103Message": "{1:F01BANKGB2LAXXX0000000000}{2:I103BANKUS33XXXXN}{4:\\n:20:REF123456\\n:23B:CRED\\n:32A:240101USD1000000,00\\n:50K:SENDER NAME\\nADDRESS\\n:59:BENEFICIARY NAME\\nADDRESS\\n-}",
@@ -225,13 +223,7 @@ async fn test_swift_payment_successful_flow() {
 async fn test_swift_payment_sanctions_rejection() {
     // Arrange: Payment to sanctioned country
     let mut harness = TestHarness::new();
-    let spec = harness.parse(SWIFT_MT103_TTL);
-
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_swift_workflow(&mut harness).await;
 
     let payment_data = json!({
         "mt103Message": "MT103_MESSAGE_HERE",
@@ -267,13 +259,7 @@ async fn test_swift_payment_sanctions_rejection() {
 async fn test_swift_payment_parallel_compliance_checks() {
     // Arrange: Verify parallel execution of compliance checks
     let mut harness = TestHarness::new();
-    let spec = harness.parse(SWIFT_MT103_TTL);
-
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_swift_workflow(&mut harness).await;
 
     let payment_data = json!({
         "mt103Message": "MT103_MESSAGE",
@@ -319,17 +305,22 @@ async fn test_swift_payment_parallel_compliance_checks() {
 
 const PAYROLL_MONTHLY_TTL: &str = include_str!("../../../ontology/workflows/financial/payroll.ttl");
 
-#[tokio::test]
-async fn test_payroll_multi_instance_processing() {
-    // Arrange: Payroll for 100 employees (multi-instance pattern)
-    let mut harness = TestHarness::new();
+/// Helper: Setup Payroll workflow test
+async fn setup_payroll_workflow(harness: &mut TestHarness) -> parser::WorkflowSpec {
     let spec = harness.parse(PAYROLL_MONTHLY_TTL);
-
     harness
         .engine
         .register_workflow(spec.clone())
         .await
         .expect("Should register payroll workflow");
+    spec
+}
+
+#[tokio::test]
+async fn test_payroll_multi_instance_processing() {
+    // Arrange: Payroll for 100 employees (multi-instance pattern)
+    let mut harness = TestHarness::new();
+    let spec = setup_payroll_workflow(&mut harness).await;
 
     let payroll_data = json!({
         "payrollPeriod": "2024-01",
@@ -379,13 +370,7 @@ async fn test_payroll_multi_instance_processing() {
 async fn test_payroll_approval_milestone() {
     // Arrange: Payroll requires manager approval before payment
     let mut harness = TestHarness::new();
-    let spec = harness.parse(PAYROLL_MONTHLY_TTL);
-
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_payroll_workflow(&mut harness).await;
 
     let payroll_data = json!({
         "payrollPeriod": "2024-01",
@@ -417,13 +402,7 @@ async fn test_payroll_approval_milestone() {
 async fn test_payroll_performance_scalability() {
     // Arrange: Test performance with 1000 employees
     let mut harness = TestHarness::new();
-    let spec = harness.parse(PAYROLL_MONTHLY_TTL);
-
-    harness
-        .engine
-        .register_workflow(spec.clone())
-        .await
-        .unwrap();
+    let spec = setup_payroll_workflow(&mut harness).await;
 
     let mut employees = Vec::new();
     for i in 1..=1000 {

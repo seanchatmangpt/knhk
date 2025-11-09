@@ -382,9 +382,7 @@ pub fn precision(
                         .iter()
                         .find(|attr| attr.key == "concept:name")
                         .and_then(|attr| match &attr.value {
-                            process_mining::event_log::attribute::AttributeValue::String(s) => {
-                                Some(s.clone())
-                            }
+                            process_mining::event_log::AttributeValue::String(s) => Some(s.clone()),
                             _ => None,
                         })
                         .map(|s| s.to_string())
@@ -528,9 +526,7 @@ pub fn generalization(
                         .iter()
                         .find(|attr| attr.key == "concept:name")
                         .and_then(|attr| match &attr.value {
-                            process_mining::event_log::attribute::AttributeValue::String(s) => {
-                                Some(s.clone())
-                            }
+                            process_mining::event_log::AttributeValue::String(s) => Some(s.clone()),
                             _ => None,
                         })
                         .map(|s| s.to_string())

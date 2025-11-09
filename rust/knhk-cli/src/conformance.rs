@@ -128,47 +128,9 @@ pub fn check(
             None
         };
 
-        // Calculate precision and generalization (simplified inline calculation)
-        // Extract unique activity sequences from event log
-        let mut log_sequences = HashSet::new();
-        for trace in &event_log.traces {
-            let activities: Vec<String> = trace
-                .events
-                .iter()
-                .filter_map(|e| e.activity_name.clone())
-                .collect();
-            if !activities.is_empty() {
-                log_sequences.insert(activities);
-            }
-        }
-
-        // Calculate model's possible behaviors (simplified: count unique task sequences)
-        let model_task_count = spec.tasks.len();
-        let model_flow_count = spec.flows.len();
-        let estimated_model_behaviors = if model_task_count > 0 {
-            (model_task_count as f64).powi(2).min(1000.0)
-        } else {
-            0.0
-        };
-
-        // Calculate precision
-        let used_behaviors = log_sequences.len() as f64;
-        let precision = if estimated_model_behaviors > 0.0 {
-            (used_behaviors / estimated_model_behaviors).min(1.0)
-        } else {
-            0.0
-        };
-
-        // Calculate generalization
-        let model_complexity = (model_task_count + model_flow_count) as f64;
-        let log_complexity = log_sequences.len() as f64;
-        let generalization = if log_complexity > 0.0 {
-            (1.0 - (model_complexity / log_complexity))
-                .max(0.0)
-                .min(1.0)
-        } else {
-            0.0
-        };
+        // Calculate precision and generalization (simplified calculations)
+        let precision = calculate_precision_simple(&spec, &event_log);
+        let generalization = calculate_generalization_simple(&spec, &event_log);
 
         let report = ConformanceReport {
             fitness,
@@ -199,11 +161,11 @@ pub fn check(
             if let Some(fitness) = report.fitness {
                 println!("  Fitness: {:.2}%", fitness * 100.0);
             }
-            if report.precision.is_none() {
-                println!("  Precision: (requires advanced alignment analysis)");
+            if let Some(precision) = report.precision {
+                println!("  Precision: {:.2}%", precision * 100.0);
             }
-            if report.generalization.is_none() {
-                println!("  Generalization: (requires advanced model analysis)");
+            if let Some(generalization) = report.generalization {
+                println!("  Generalization: {:.2}%", generalization * 100.0);
             }
         }
 
@@ -313,11 +275,14 @@ pub fn alignment(
                     e.attributes
                         .iter()
                         .find(|attr| attr.key == "concept:name")
-                        .and_then(|attr| match &attr.value {
-                            process_mining::event_log::attribute::AttributeValue::String(s) => {
-                                Some(s.clone())
+                        .and_then(|attr| {
+                            // Handle AttributeValue enum
+                            match &attr.value {
+                                process_mining::event_log::AttributeValue::String(s) => {
+                                    Some(s.clone())
+                                }
+                                _ => None,
                             }
-                            _ => None,
                         })
                 })
                 .collect();
@@ -465,4 +430,97 @@ pub fn alignment(
 
         Ok(())
     })
+}
+
+/// Calculate precision between workflow specification and event log (simplified)
+fn calculate_precision_simple(
+    spec: &knhk_workflow_engine::parser::WorkflowSpec,
+    event_log: &process_mining::event_log::EventLog,
+) -> f64 {
+    // Extract unique activity sequences from event log
+    let mut log_sequences = HashSet::new();
+    for trace in &event_log.traces {
+        let activities: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                // Extract activity name from event attributes
+                e.attributes
+                    .iter()
+                    .find(|attr| attr.key == "concept:name")
+                    .and_then(|attr| {
+                        // Handle AttributeValue enum
+                        match &attr.value {
+                            process_mining::event_log::AttributeValue::String(s) => Some(s.clone()),
+                            _ => None,
+                        }
+                    })
+            })
+            .collect();
+        if !activities.is_empty() {
+            log_sequences.insert(activities);
+        }
+    }
+
+    // Calculate model's possible behaviors (simplified)
+    let model_task_count = spec.tasks.len();
+    let estimated_model_behaviors = if model_task_count > 0 {
+        (model_task_count as f64).powi(2).min(1000.0)
+    } else {
+        0.0
+    };
+
+    // Precision = used behaviors / total possible behaviors
+    let used_behaviors = log_sequences.len() as f64;
+    if estimated_model_behaviors > 0.0 {
+        (used_behaviors / estimated_model_behaviors).min(1.0)
+    } else {
+        0.0
+    }
+}
+
+/// Calculate generalization between workflow specification and event log (simplified)
+fn calculate_generalization_simple(
+    spec: &knhk_workflow_engine::parser::WorkflowSpec,
+    event_log: &process_mining::event_log::EventLog,
+) -> f64 {
+    // Calculate model complexity
+    let model_task_count = spec.tasks.len();
+    let model_flow_count = spec.flows.len();
+    let model_complexity = (model_task_count + model_flow_count) as f64;
+
+    // Calculate log complexity
+    let mut log_sequences = HashSet::new();
+    for trace in &event_log.traces {
+        let activities: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                // Extract activity name from event attributes
+                e.attributes
+                    .iter()
+                    .find(|attr| attr.key == "concept:name")
+                    .and_then(|attr| {
+                        // Handle AttributeValue enum
+                        match &attr.value {
+                            process_mining::event_log::AttributeValue::String(s) => Some(s.clone()),
+                            _ => None,
+                        }
+                    })
+            })
+            .collect();
+        if !activities.is_empty() {
+            log_sequences.insert(activities);
+        }
+    }
+    let log_complexity = log_sequences.len() as f64;
+
+    // Generalization = 1 - (model_complexity / log_complexity)
+    if log_complexity > 0.0 {
+        (1.0 - (model_complexity / log_complexity))
+            .max(0.0)
+            .min(1.0)
+    } else {
+        0.0
+    }
 }
