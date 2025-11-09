@@ -561,56 +561,38 @@ async fn test_difficult_patterns_integration() -> WorkflowResult<()> {
     // Arrange: Create workflow combining multiple difficult patterns
     let mut fixture = WorkflowTestFixture::new()?;
 
-    let spec = WorkflowSpec {
-        id: WorkflowSpecId("difficult-patterns-integration".to_string()),
-        name: "Difficult Patterns Integration".to_string(),
-        version: "1.0.0".to_string(),
-        tasks: vec![
-            Task {
-                id: "start".to_string(),
-                name: "Start".to_string(),
-                task_type: TaskType::Start,
-                ..Default::default()
-            },
-            Task {
-                id: "deferred_choice".to_string(),
-                name: "Deferred Choice".to_string(),
-                task_type: TaskType::Event,
-                event_type: Some("external_event".to_string()),
-                ..Default::default()
-            },
-            Task {
-                id: "mi_runtime".to_string(),
-                name: "MI with Runtime Knowledge".to_string(),
-                task_type: TaskType::MultipleInstance,
-                split_type: Some(SplitType::Parallel),
-                join_type: Some(JoinType::Partial),
-                instance_count: Some("case_data.count".to_string()),
-                join_threshold: Some("case_data.threshold".to_string()),
-                ..Default::default()
-            },
-            Task {
-                id: "milestone".to_string(),
-                name: "Milestone".to_string(),
-                task_type: TaskType::Milestone,
-                milestone_condition: Some("case_data.milestone_reached == true".to_string()),
-                ..Default::default()
-            },
-            Task {
-                id: "end".to_string(),
-                name: "End".to_string(),
-                task_type: TaskType::End,
-                ..Default::default()
-            },
-        ],
-        edges: vec![
-            ("start".to_string(), "deferred_choice".to_string()),
-            ("deferred_choice".to_string(), "mi_runtime".to_string()),
-            ("mi_runtime".to_string(), "milestone".to_string()),
-            ("milestone".to_string(), "end".to_string()),
-        ],
-        ..Default::default()
-    };
+    let start_task = TaskBuilder::new("start", "Start")
+        .with_type(TaskType::Atomic)
+        .add_outgoing_flow("deferred_choice")
+        .build();
+
+    let deferred_choice_task = TaskBuilder::new("deferred_choice", "Deferred Choice")
+        .with_type(TaskType::Atomic)
+        .add_outgoing_flow("mi_runtime")
+        .build();
+
+    let mi_runtime_task = TaskBuilder::new("mi_runtime", "MI with Runtime Knowledge")
+        .with_type(TaskType::MultipleInstance)
+        .with_join_type(JoinType::Or) // Partial join
+        .add_outgoing_flow("milestone")
+        .build();
+
+    let milestone_task = TaskBuilder::new("milestone", "Milestone")
+        .with_type(TaskType::Atomic)
+        .add_outgoing_flow("end")
+        .build();
+
+    let end_task = TaskBuilder::new("end", "End")
+        .with_type(TaskType::Atomic)
+        .build();
+
+    let spec = WorkflowSpecBuilder::new("Difficult Patterns Integration")
+        .add_task(start_task)
+        .add_task(deferred_choice_task)
+        .add_task(mi_runtime_task)
+        .add_task(milestone_task)
+        .add_task(end_task)
+        .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
 
@@ -627,16 +609,19 @@ async fn test_difficult_patterns_integration() -> WorkflowResult<()> {
     // Assert: All patterns executed correctly
     assert_eq!(case.state, CaseState::Completed);
 
-    let history = fixture.engine.get_case_history(case_id).await?;
-    let deferred_executed = history
-        .iter()
-        .any(|e| e.task_id == Some("deferred_choice".to_string()));
-    let mi_executed = history
-        .iter()
-        .any(|e| e.task_id == Some("mi_runtime".to_string()));
-    let milestone_executed = history
-        .iter()
-        .any(|e| e.task_id == Some("milestone".to_string()));
+    let history = fixture.get_case_history(case_id).await;
+    let deferred_executed = history.iter().any(|e| match e {
+        StateEvent::TaskCompleted { task_id, .. } => task_id == "deferred_choice",
+        _ => false,
+    });
+    let mi_executed = history.iter().any(|e| match e {
+        StateEvent::TaskCompleted { task_id, .. } => task_id == "mi_runtime",
+        _ => false,
+    });
+    let milestone_executed = history.iter().any(|e| match e {
+        StateEvent::TaskCompleted { task_id, .. } => task_id == "milestone",
+        _ => false,
+    });
 
     assert!(deferred_executed, "Deferred choice should have executed");
     assert!(
