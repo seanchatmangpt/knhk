@@ -8,9 +8,7 @@
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
-use knhk_workflow_engine::{
-    api::transport::CliAdapter, parser::WorkflowParser, state::StateStore, WorkflowEngine,
-};
+use knhk_workflow_engine::{parser::WorkflowParser, state::StateStore, WorkflowEngine};
 use process_mining::import_xes_file;
 use process_mining::XESImportOptions;
 use serde::{Deserialize, Serialize};
@@ -315,7 +313,7 @@ pub fn alignment(
 
             // Calculate alignment cost (simplified: count of non-synchronous moves)
             let alignment_cost = model_moves + log_moves;
-            let alignment_fitness = if trace_activities.len() > 0 {
+            let alignment_fitness = if !trace_activities.is_empty() {
                 1.0 - (alignment_cost as f64 / trace_activities.len() as f64)
             } else {
                 0.0
@@ -345,7 +343,7 @@ pub fn alignment(
             .iter()
             .map(|a| a["log_moves"].as_u64().unwrap_or(0))
             .sum::<u64>();
-        let avg_fitness = if alignments.len() > 0 {
+        let avg_fitness = if !alignments.is_empty() {
             alignments
                 .iter()
                 .map(|a| a["alignment_fitness"].as_f64().unwrap_or(0.0))

@@ -33,8 +33,7 @@ impl StateStore {
     /// Save a workflow specification (with cache)
     pub fn save_spec(&self, spec: &WorkflowSpec) -> WorkflowResult<()> {
         // Update cache first (hot path, lock-free DashMap operation)
-        self.cache
-            .insert_spec(spec.id.clone(), Arc::new(spec.clone()));
+        self.cache.insert_spec(spec.id, Arc::new(spec.clone()));
 
         // Persist to sled (async, can be batched)
         let key = format!("spec:{}", spec.id);
@@ -69,8 +68,7 @@ impl StateStore {
                 })?;
 
                 // Update cache (lock-free DashMap operation)
-                self.cache
-                    .insert_spec(spec.id.clone(), Arc::new(spec.clone()));
+                self.cache.insert_spec(spec.id, Arc::new(spec.clone()));
 
                 Ok(Some(spec))
             }
@@ -81,8 +79,7 @@ impl StateStore {
     /// Save a case (with cache)
     pub fn save_case(&self, case_id: crate::case::CaseId, case: &Case) -> WorkflowResult<()> {
         // Update cache first (hot path, lock-free DashMap operation)
-        self.cache
-            .insert_case(case_id.clone(), Arc::new(case.clone()));
+        self.cache.insert_case(case_id, Arc::new(case.clone()));
 
         // Persist to sled
         let key = format!("case:{}", case_id);
@@ -114,8 +111,7 @@ impl StateStore {
                 })?;
 
                 // Update cache (lock-free DashMap operation)
-                self.cache
-                    .insert_case(case.id.clone(), Arc::new(case.clone()));
+                self.cache.insert_case(case.id, Arc::new(case.clone()));
 
                 Ok(Some(case))
             }
@@ -237,7 +233,7 @@ impl StateStore {
         }
 
         // Sort by timestamp using StateEvent::timestamp() method
-        events.sort_by(|a, b| a.timestamp().cmp(&b.timestamp()));
+        events.sort_by_key(|a| a.timestamp());
 
         Ok(events)
     }

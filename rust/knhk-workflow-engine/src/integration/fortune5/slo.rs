@@ -66,8 +66,8 @@ impl SloMetrics {
     pub fn check_compliance(&self, slo_config: &SloConfig) -> bool {
         // Calculate P99 for each runtime class
         let r1_p99 = Self::calculate_p99(&self.r1_samples);
-        let w1_p99 = self.w1_samples.iter().max().copied().unwrap_or(0) as u64;
-        let c1_p99 = self.c1_samples.iter().max().copied().unwrap_or(0) as u64;
+        let w1_p99 = self.w1_samples.iter().max().copied().unwrap_or(0);
+        let c1_p99 = self.c1_samples.iter().max().copied().unwrap_or(0);
 
         let r1_compliant = r1_p99 <= slo_config.r1_p99_max_ns;
         let w1_compliant = w1_p99 <= slo_config.w1_p99_max_ms;

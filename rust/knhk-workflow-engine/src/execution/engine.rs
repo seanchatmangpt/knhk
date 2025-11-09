@@ -160,7 +160,7 @@ impl ExecutionPipeline {
         // Final execution
         let executor = registry
             .get(&pattern_id)
-            .ok_or_else(|| WorkflowError::PatternNotFound(pattern_id.0))?;
+            .ok_or(WorkflowError::PatternNotFound(pattern_id.0))?;
 
         Ok(executor.execute(&ctx))
     }

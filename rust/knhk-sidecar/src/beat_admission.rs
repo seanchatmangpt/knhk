@@ -168,6 +168,12 @@ pub struct LocalityPredictor {
     current_tick: u64,
 }
 
+impl Default for LocalityPredictor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LocalityPredictor {
     pub fn new() -> Self {
         Self { current_tick: 0 }

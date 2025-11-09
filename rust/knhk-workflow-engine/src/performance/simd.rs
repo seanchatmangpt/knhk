@@ -42,12 +42,7 @@ fn fallback_pattern_match(pattern: &[u8], data: &[u8]) -> Option<usize> {
         return None;
     }
 
-    for i in 0..=data.len() - pattern.len() {
-        if &data[i..i + pattern.len()] == pattern {
-            return Some(i);
-        }
-    }
-    None
+    (0..=data.len() - pattern.len()).find(|&i| &data[i..i + pattern.len()] == pattern)
 }
 
 /// SIMD-optimized hash computation

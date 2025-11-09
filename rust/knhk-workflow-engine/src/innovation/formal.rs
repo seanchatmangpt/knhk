@@ -122,14 +122,14 @@ impl FormalVerifier {
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
 
-        for (task_id, _task) in &spec.tasks {
-            if !visited.contains(task_id) {
-                if Self::has_cycle(spec, task_id, &mut visited, &mut rec_stack) {
-                    return Err(WorkflowError::Validation(format!(
-                        "Deadlock detected: cycle involving task {}",
-                        task_id
-                    )));
-                }
+        for task_id in spec.tasks.keys() {
+            if !visited.contains(task_id)
+                && Self::has_cycle(spec, task_id, &mut visited, &mut rec_stack)
+            {
+                return Err(WorkflowError::Validation(format!(
+                    "Deadlock detected: cycle involving task {}",
+                    task_id
+                )));
             }
         }
 
@@ -171,7 +171,7 @@ impl FormalVerifier {
         let mut reachable = HashSet::new();
         Self::dfs_reachability(spec, start, &mut reachable);
 
-        for (task_id, _task) in &spec.tasks {
+        for task_id in spec.tasks.keys() {
             if !reachable.contains(task_id) {
                 return Err(WorkflowError::Validation(format!(
                     "Task {} is not reachable from start",
@@ -232,7 +232,7 @@ impl FormalVerifier {
         let mut referenced = HashSet::new();
 
         // Collect all referenced nodes
-        for (_, task) in &spec.tasks {
+        for task in spec.tasks.values() {
             for flow in &task.outgoing_flows {
                 referenced.insert(flow.clone());
             }
@@ -241,7 +241,7 @@ impl FormalVerifier {
             }
         }
 
-        for (_, condition) in &spec.conditions {
+        for condition in spec.conditions.values() {
             for flow in &condition.outgoing_flows {
                 referenced.insert(flow.clone());
             }
@@ -251,7 +251,7 @@ impl FormalVerifier {
         }
 
         // Check for unreferenced tasks
-        for (task_id, _task) in &spec.tasks {
+        for task_id in spec.tasks.keys() {
             if !referenced.contains(task_id) && spec.start_condition.as_ref() != Some(task_id) {
                 return Err(WorkflowError::Validation(format!(
                     "Orphaned task: {}",

@@ -73,7 +73,7 @@ impl HardwareAccelerator {
         {
             // Check for Metal GPU (Apple Silicon or AMD GPU)
             if std::process::Command::new("system_profiler")
-                .args(&["SPDisplaysDataType"])
+                .args(["SPDisplaysDataType"])
                 .output()
                 .map(|output| {
                     let stdout = String::from_utf8_lossy(&output.stdout);

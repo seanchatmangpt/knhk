@@ -162,7 +162,7 @@ impl ValidationReport {
                 for (metric_name, value) in &phase_result.metrics {
                     md.push_str(&format!("- {}: {:.2}\n", metric_name, value));
                 }
-                md.push_str("\n");
+                md.push('\n');
             }
 
             // Details
@@ -174,7 +174,7 @@ impl ValidationReport {
                         detail.name, detail.status, detail.message, detail.duration_ms
                     ));
                 }
-                md.push_str("\n");
+                md.push('\n');
             }
         }
 

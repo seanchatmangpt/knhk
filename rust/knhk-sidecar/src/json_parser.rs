@@ -92,9 +92,8 @@ impl JsonDelta {
 
         // Try array format: [{"s": "...", "p": "...", "o": "..."}]
         if let Some(arr) = value.as_array() {
-            let additions = Self::parse_triple_array(&simd_json::OwnedValue::Array(
-                arr.iter().cloned().collect::<Vec<_>>().into(),
-            ))?;
+            let additions =
+                Self::parse_triple_array(&simd_json::OwnedValue::Array(arr.to_vec().into()))?;
             return Ok(JsonDelta {
                 additions,
                 removals: Vec::new(),
@@ -211,10 +210,8 @@ impl JsonDelta {
                     Some(n.to_string())
                 } else if let Some(n) = v.as_f64() {
                     Some(n.to_string())
-                } else if let Some(b) = v.as_bool() {
-                    Some(b.to_string())
                 } else {
-                    None
+                    v.as_bool().map(|b| b.to_string())
                 }
             })
             .ok_or_else(|| JsonParseError::MissingField("o/object".to_string()))?;

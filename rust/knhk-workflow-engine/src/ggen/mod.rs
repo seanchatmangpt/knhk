@@ -204,9 +204,7 @@ impl GgenGenerator {
                     }
                 }
                 json_results.push(Value::Object(
-                    row.into_iter()
-                        .map(|(k, v)| (k, v))
-                        .collect::<serde_json::Map<String, Value>>(),
+                    row.into_iter().collect::<serde_json::Map<String, Value>>(),
                 ));
             }
         }

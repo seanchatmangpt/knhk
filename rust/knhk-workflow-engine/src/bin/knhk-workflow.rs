@@ -10,7 +10,6 @@ use knhk_workflow_engine::{
     executor::WorkflowEngine, parser::WorkflowParser, state::StateStore, CaseId, WorkflowSpecId,
 };
 use std::path::PathBuf;
-use tokio;
 
 #[derive(Parser)]
 #[command(name = "knhk-workflow")]

@@ -105,7 +105,7 @@ impl AotKernel {
         let diff: u8 = input
             .iter()
             .zip(data.iter())
-            .map(|(a, b)| (a ^ b) as u8)
+            .map(|(a, b)| (a ^ b))
             .fold(0, |a, b| a | b);
         diff == 0
     }
@@ -128,6 +128,12 @@ pub struct PredictivePreloader {
     heatmap: Arc<RwLock<HashMap<String, u64>>>,
     /// Next delta hints
     next_delta_hints: Arc<RwLock<Vec<String>>>,
+}
+
+impl Default for PredictivePreloader {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PredictivePreloader {
@@ -289,6 +295,12 @@ pub enum BrownoutMode {
     W1Degraded,
     /// C1 paused
     C1Paused,
+}
+
+impl Default for BrownoutManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BrownoutManager {

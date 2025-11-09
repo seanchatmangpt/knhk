@@ -510,9 +510,9 @@ impl KgcSidecar for KgcSidecarService {
                 0 => {
                     // Parse query to extract pattern
                     // Execute via ReflexStage for ≤8 ticks
-                    let turtle_data = format!(
+                    let turtle_data =
                         "<http://example.org/s> <http://example.org/p> <http://example.org/o> ."
-                    );
+                            .to_string();
                     let triples = ingest
                         .parse_rdf_turtle(&turtle_data)
                         .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;

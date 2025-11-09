@@ -134,7 +134,7 @@ pub async fn health(State(engine): State<Arc<WorkflowEngine>>) -> impl IntoRespo
         HealthStatus::Degraded
     } else {
         // Check SLO compliance if Fortune 5 is enabled
-        let slo_compliant = if let Some(ref fortune5) = engine.fortune5_integration() {
+        let slo_compliant = if let Some(fortune5) = engine.fortune5_integration() {
             fortune5.check_slo_compliance().await.unwrap_or(false)
         } else {
             true

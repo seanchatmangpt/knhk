@@ -18,6 +18,12 @@ pub struct PropertyTestGenerator {
     seed: u64,
 }
 
+impl Default for PropertyTestGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PropertyTestGenerator {
     /// Create new property test generator
     pub fn new() -> Self {
@@ -61,14 +67,18 @@ impl PropertyTestGenerator {
                 output_parameters: Vec::new(),
                 id: task_id.clone(),
                 name: format!("Task {}", i),
-                task_type: if rng.next() % 2 == 0 {
+                task_type: if rng.next().is_multiple_of(2) {
                     TaskType::Atomic
                 } else {
                     TaskType::Composite
                 },
                 split_type: self.random_split_type(&mut rng),
                 join_type: self.random_join_type(&mut rng),
-                max_ticks: if rng.next() % 3 == 0 { Some(8) } else { None },
+                max_ticks: if rng.next().is_multiple_of(3) {
+                    Some(8)
+                } else {
+                    None
+                },
                 priority: None,
                 use_simd: false,
                 input_conditions: vec![],
@@ -122,7 +132,7 @@ impl PropertyTestGenerator {
 
         // Add random connections (avoid cycles for simplicity)
         for i in 0..task_ids.len() - 1 {
-            if rng.next() % 2 == 0 {
+            if rng.next().is_multiple_of(2) {
                 let from = &task_ids[i];
                 let to = &task_ids[i + 1];
                 if let Some(task) = tasks.get_mut(from) {

@@ -45,7 +45,7 @@ impl Default for ComplianceConfig {
 }
 
 /// Fortune 5 enterprise configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EnterpriseConfig {
     /// Observability configuration
     pub observability: ObservabilityConfig,
@@ -59,17 +59,4 @@ pub struct EnterpriseConfig {
     pub performance: PerformanceConfig,
     /// Compliance configuration
     pub compliance: ComplianceConfig,
-}
-
-impl Default for EnterpriseConfig {
-    fn default() -> Self {
-        Self {
-            observability: ObservabilityConfig::default(),
-            security: SecurityConfig::default(),
-            scalability: ScalabilityConfig::default(),
-            reliability: ReliabilityConfig::default(),
-            performance: PerformanceConfig::default(),
-            compliance: ComplianceConfig::default(),
-        }
-    }
 }

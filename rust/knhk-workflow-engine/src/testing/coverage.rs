@@ -54,7 +54,7 @@ impl CoverageAnalyzer {
         let mut patterns_uncovered = HashSet::new();
 
         // Analyze task coverage
-        for (task_id, _task) in &spec.tasks {
+        for task_id in spec.tasks.keys() {
             if self.is_task_covered(task_id, test_files) {
                 tasks_covered.insert(task_id.clone());
             } else {

@@ -10,7 +10,6 @@
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use knhk_workflow_engine::{
-    api::transport::CliAdapter,
     patterns::{PatternId, PatternRegistry, RegisterAllExt},
     state::StateStore,
     WorkflowEngine,
@@ -99,7 +98,7 @@ pub fn list(json: bool) -> CnvResult<()> {
 /// Test a specific pattern
 #[verb]
 pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResult<()> {
-    if pattern_id < 1 || pattern_id > 43 {
+    if !(1..=43).contains(&pattern_id) {
         return Err(clap_noun_verb::NounVerbError::execution_error(format!(
             "Pattern ID must be between 1 and 43, got: {}",
             pattern_id
@@ -271,7 +270,7 @@ pub fn verify(
     state_store: Option<String>,
     json: bool,
 ) -> CnvResult<()> {
-    if pattern_id < 1 || pattern_id > 43 {
+    if !(1..=43).contains(&pattern_id) {
         return Err(clap_noun_verb::NounVerbError::execution_error(format!(
             "Pattern ID must be between 1 and 43, got: {}",
             pattern_id

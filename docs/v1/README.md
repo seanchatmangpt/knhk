@@ -79,11 +79,32 @@ v1.0.0 release notes and changelog.
 ### [Implementation Guide](./IMPLEMENTATION_GUIDE.md)
 Step-by-step guide for implementing and deploying KNHK v1.0 in production environments.
 
+### [Deployment Guide](./DEPLOYMENT_GUIDE.md)
+Detailed deployment procedures for KNHK v1.0, including direct binary, container, and Kubernetes deployments.
+
+### [Architecture Guide](./ARCHITECTURE_GUIDE.md)
+Comprehensive overview of KNHK v1.0 architecture, including system design, component interactions, and patterns.
+
+### [Operations Guide](./OPERATIONS_GUIDE.md)
+Operational procedures for running and maintaining KNHK v1.0 in production, including monitoring, backups, and maintenance.
+
+### [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md)
+Troubleshooting procedures for common issues, including diagnosis, resolution, and emergency procedures.
+
 ---
 
 ## Quick Links
 
+### Getting Started
 - **Implementation Guide**: [v1.0 Implementation Guide](./IMPLEMENTATION_GUIDE.md) - **START HERE**
+- **Deployment Guide**: [v1.0 Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment procedures
+- **Architecture Guide**: [v1.0 Architecture Guide](./ARCHITECTURE_GUIDE.md) - System architecture overview
+
+### Operations
+- **Operations Guide**: [v1.0 Operations Guide](./OPERATIONS_GUIDE.md) - Daily operations and maintenance
+- **Troubleshooting Guide**: [v1.0 Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) - Common issues and solutions
+
+### Release Information
 - **Primary DoD**: [Fortune 5 Production Definition of Done](./definition-of-done/fortune5-production.md)
 - **Canonical DoD**: [12-Agent Synthesis DoD](./specs/V1_DEFINITION_OF_DONE.md)
 - **Current Gaps**: [Gaps and Priorities](./status/gaps-and-priorities.md)
@@ -97,6 +118,11 @@ Step-by-step guide for implementing and deploying KNHK v1.0 in production enviro
 
 | Category | Document | Status |
 |----------|----------|--------|
+| **Guides** | Implementation Guide | ✅ Active |
+| **Guides** | Deployment Guide | ✅ Active |
+| **Guides** | Architecture Guide | ✅ Active |
+| **Guides** | Operations Guide | ✅ Active |
+| **Guides** | Troubleshooting Guide | ✅ Active |
 | DoD | Fortune 5 Production | ✅ Primary |
 | DoD | Production | 📋 Alternative |
 | DoD | Infrastructure | 📋 Requirements |

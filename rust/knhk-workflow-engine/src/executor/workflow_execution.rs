@@ -316,7 +316,7 @@ pub(super) fn execute_workflow<'a>(
                         if matches!(target_task.join_type, crate::parser::JoinType::Or) {
                             let active = or_join_active_branches
                                 .entry(target_id.clone())
-                                .or_insert_with(HashSet::new);
+                                .or_default();
                             active.insert(node_id.clone()); // Mark this branch as active
 
                             // Update required count for OR join: need all active branches
@@ -377,7 +377,7 @@ pub(super) fn execute_workflow<'a>(
                             if matches!(target_task.join_type, crate::parser::JoinType::Or) {
                                 let active = or_join_active_branches
                                     .entry(target_id.clone())
-                                    .or_insert_with(HashSet::new);
+                                    .or_default();
                                 active.insert(node_id.clone()); // Mark this branch as active
 
                                 // Update required count for OR join: need all active branches

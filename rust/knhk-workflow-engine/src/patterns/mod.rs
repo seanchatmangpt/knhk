@@ -39,7 +39,7 @@ impl std::fmt::Display for PatternId {
 }
 
 /// Pattern execution context
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct PatternExecutionContext {
     /// Case ID
     pub case_id: crate::case::CaseId,
@@ -51,18 +51,6 @@ pub struct PatternExecutionContext {
     pub arrived_from: std::collections::HashSet<String>,
     /// Region/scope id (for cancel & MI)
     pub scope_id: String,
-}
-
-impl Default for PatternExecutionContext {
-    fn default() -> Self {
-        Self {
-            case_id: crate::case::CaseId::new(),
-            workflow_id: crate::parser::WorkflowSpecId::new(),
-            variables: HashMap::new(),
-            arrived_from: std::collections::HashSet::new(),
-            scope_id: String::new(),
-        }
-    }
 }
 
 /// Pattern execution result

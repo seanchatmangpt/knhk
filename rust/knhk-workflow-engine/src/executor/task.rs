@@ -278,7 +278,7 @@ pub(super) async fn execute_task_with_allocation(
                         .map(|n| n as usize)
                         .or_else(|| v.as_str().and_then(|s| s.parse::<usize>().ok()))
                 })
-                .or_else(|| {
+                .or({
                     // Try to extract from task metadata or default to 1
                     // For now, default to 1 instance if not specified
                     Some(1)
@@ -376,7 +376,7 @@ pub(super) async fn execute_task_with_allocation(
     if let Some(ref fortune5) = engine.fortune5_integration {
         let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
         // Determine runtime class based on task max_ticks or execution time
-        let runtime_class = if task.max_ticks.map_or(false, |ticks| ticks <= 8) {
+        let runtime_class = if task.max_ticks.is_some_and(|ticks| ticks <= 8) {
             RuntimeClass::R1 // Hot path task
         } else if elapsed_ns <= 1_000_000 {
             RuntimeClass::W1 // Warm path

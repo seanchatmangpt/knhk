@@ -33,7 +33,7 @@ pub fn sanitize_string(input: &str) -> String {
 
 /// Validate pattern ID range
 pub fn validate_pattern_id(id: u32) -> WorkflowResult<()> {
-    if id < 1 || id > 43 {
+    if !(1..=43).contains(&id) {
         return Err(WorkflowError::Validation(format!(
             "Pattern ID {} must be between 1 and 43",
             id

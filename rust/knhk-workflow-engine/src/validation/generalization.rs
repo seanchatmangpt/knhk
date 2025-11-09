@@ -107,9 +107,8 @@ impl GeneralizationValidator {
 
         let mut successful_cases = 0;
         for input in test_inputs {
-            match self.engine.create_case(spec_id, input).await {
-                Ok(_) => successful_cases += 1,
-                Err(_) => {}
+            if let Ok(_) = self.engine.create_case(spec_id, input).await {
+                successful_cases += 1
             }
         }
 

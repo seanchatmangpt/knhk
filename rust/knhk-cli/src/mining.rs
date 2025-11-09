@@ -8,16 +8,12 @@
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
-use knhk_workflow_engine::{
-    api::transport::CliAdapter, case::CaseId, parser::WorkflowSpecId, state::StateStore,
-    WorkflowEngine,
-};
+use knhk_workflow_engine::{case::CaseId, state::StateStore, WorkflowEngine};
 use process_mining::{
     alphappp::full::{alphappp_discover_petri_net, AlphaPPPConfig},
     event_log::activity_projection::EventLogActivityProjection,
     import_xes_file, XESImportOptions,
 };
-use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;

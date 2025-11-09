@@ -95,7 +95,7 @@ impl DeadlockDetector {
                 let condition_node = PetriNetNode::Condition(condition_id.clone());
                 graph
                     .entry(task_node.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(condition_node.clone());
             }
         }

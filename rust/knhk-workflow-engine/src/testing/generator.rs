@@ -149,9 +149,7 @@ async fn {}() {{
 /// Sanitize name for use in test function names
 fn sanitize_name(name: &str) -> String {
     name.to_lowercase()
-        .replace(' ', "_")
-        .replace('-', "_")
-        .replace('.', "_")
+        .replace([' ', '-', '.'], "_")
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_')
         .collect()

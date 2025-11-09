@@ -207,13 +207,7 @@ impl<T: Timebase + 'static> TimerService<T> {
     /// Cancel all timers for a case
     pub async fn cancel_case_timers(&self, case_id: &str) -> WorkflowResult<()> {
         let mut timers = self.timers.write().await;
-        timers.retain(|_id, entry| {
-            if entry.case_id == case_id {
-                false
-            } else {
-                true
-            }
-        });
+        timers.retain(|_id, entry| entry.case_id != case_id);
         Ok(())
     }
 
@@ -246,7 +240,7 @@ impl<T: Timebase + 'static> TimerService<T> {
                     if entry.due_at <= now {
                         // Timer fired
                         to_fire.push(TimerFired {
-                            pattern_id: entry.pattern_id.0 as u32,
+                            pattern_id: entry.pattern_id.0,
                             case_id: entry.case_id.clone(),
                             workflow_id: entry.workflow_id.clone(),
                             key: entry.key.clone(),

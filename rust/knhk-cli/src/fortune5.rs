@@ -7,7 +7,6 @@
 use crate::commands::fortune5 as fortune5_impl;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use serde::Serialize;
 
 // Re-export types from implementation
 // TestResult and TestSummary are defined in commands/fortune5.rs

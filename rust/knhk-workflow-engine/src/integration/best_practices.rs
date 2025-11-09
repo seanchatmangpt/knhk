@@ -162,10 +162,10 @@ impl BestPracticesIntegration {
             self.fortune5.clone(),
             self.lockchain
                 .as_ref()
-                .and_then(|_| Some("/tmp/lockchain".to_string())), // Placeholder path
+                .map(|_| "/tmp/lockchain".to_string()), // Placeholder path
             self.otel
                 .as_ref()
-                .and_then(|_| Some("http://localhost:4317".to_string())), // Placeholder endpoint
+                .map(|_| "http://localhost:4317".to_string()), // Placeholder endpoint
         );
 
         let results = checker.check_all().await?;

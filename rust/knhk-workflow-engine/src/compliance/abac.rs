@@ -247,7 +247,7 @@ impl AbacPolicyEngine {
 
         // Environment attributes
         for (key, value) in &context.environment_attributes {
-            rdf.push_str(&format!("abac:environment abac:hasAttribute [\n"));
+            rdf.push_str(&"abac:environment abac:hasAttribute [\n".to_string());
             rdf.push_str(&format!("    abac:attributeName \"{}\" ;\n", key));
             rdf.push_str(&format!("    abac:attributeValue \"{}\"\n", value));
             rdf.push_str("] .\n\n");

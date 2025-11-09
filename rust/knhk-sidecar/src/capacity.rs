@@ -83,10 +83,7 @@ impl CapacityManager {
 
     /// Record cache access for predicate
     pub fn record_access(&mut self, predicate: &str, hit: bool, l1: bool) {
-        let metrics = self
-            .heat_metrics
-            .entry(predicate.to_string())
-            .or_insert_with(CacheHeatMetrics::default);
+        let metrics = self.heat_metrics.entry(predicate.to_string()).or_default();
 
         if hit {
             metrics.record_hit(l1);

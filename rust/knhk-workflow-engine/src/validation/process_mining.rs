@@ -16,7 +16,6 @@ use process_mining::{
     event_log::activity_projection::EventLogActivityProjection,
     import_xes_file, XESImportOptions,
 };
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Process mining analyzer
@@ -175,13 +174,13 @@ impl ProcessMiningAnalyzer {
         let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
         // Calculate basic metrics (placeholder - full metrics calculation would be more complex)
-        let fitness = if petri_net.places.len() > 0 || petri_net.transitions.len() > 0 {
+        let fitness = if !petri_net.places.is_empty() || !petri_net.transitions.is_empty() {
             0.9 // Placeholder - actual fitness calculation would compare with specification
         } else {
             0.0
         };
 
-        let precision = if petri_net.transitions.len() > 0 {
+        let precision = if !petri_net.transitions.is_empty() {
             0.8 // Placeholder - actual precision calculation would compare with specification
         } else {
             0.0

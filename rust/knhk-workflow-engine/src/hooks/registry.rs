@@ -228,7 +228,7 @@ impl HookRegistry {
 
             let hook_context = HookContext {
                 hook_type: context.hook_type,
-                case_id: context.case_id.clone(),
+                case_id: context.case_id,
                 workflow_spec_id: context.workflow_spec_id.clone(),
                 task_id: context.task_id.clone(),
                 pattern_id: context.pattern_id,

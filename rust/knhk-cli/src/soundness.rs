@@ -7,9 +7,7 @@
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
-use knhk_workflow_engine::{
-    api::transport::CliAdapter, parser::WorkflowParser, validation::ShaclValidator,
-};
+use knhk_workflow_engine::validation::ShaclValidator;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -183,18 +181,18 @@ pub fn option_to_complete(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
                 ))
             })?
         );
+    } else if option_to_complete {
+        println!("✓ Option to Complete: SATISFIED");
+        println!("  Every case can reach completion (Van der Aalst Property 1)");
     } else {
-        if option_to_complete {
-            println!("✓ Option to Complete: SATISFIED");
-            println!("  Every case can reach completion (Van der Aalst Property 1)");
-        } else {
-            println!("✗ Option to Complete: VIOLATED");
-            println!("  Some cases cannot reach completion");
-            for violation in report.violations.iter().filter(|v| {
-                v.message.contains("option to complete") || v.message.contains("reachable")
-            }) {
-                println!("  - {:?}: {}", violation.severity, violation.message);
-            }
+        println!("✗ Option to Complete: VIOLATED");
+        println!("  Some cases cannot reach completion");
+        for violation in report
+            .violations
+            .iter()
+            .filter(|v| v.message.contains("option to complete") || v.message.contains("reachable"))
+        {
+            println!("  - {:?}: {}", violation.severity, violation.message);
         }
     }
 
@@ -250,22 +248,18 @@ pub fn proper_completion(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
                 ))
             })?
         );
+    } else if proper_completion {
+        println!("✓ Proper Completion: SATISFIED");
+        println!("  Only output condition marked when case completes (Van der Aalst Property 2)");
     } else {
-        if proper_completion {
-            println!("✓ Proper Completion: SATISFIED");
-            println!(
-                "  Only output condition marked when case completes (Van der Aalst Property 2)"
-            );
-        } else {
-            println!("✗ Proper Completion: VIOLATED");
-            println!("  Output condition not properly marked on completion");
-            for violation in report
-                .violations
-                .iter()
-                .filter(|v| v.message.contains("proper completion") || v.message.contains("output"))
-            {
-                println!("  - {:?}: {}", violation.severity, violation.message);
-            }
+        println!("✗ Proper Completion: VIOLATED");
+        println!("  Output condition not properly marked on completion");
+        for violation in report
+            .violations
+            .iter()
+            .filter(|v| v.message.contains("proper completion") || v.message.contains("output"))
+        {
+            println!("  - {:?}: {}", violation.severity, violation.message);
         }
     }
 
@@ -321,20 +315,18 @@ pub fn no_dead_tasks(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
                 ))
             })?
         );
+    } else if no_dead_tasks {
+        println!("✓ No Dead Tasks: SATISFIED");
+        println!("  Every task is reachable and executable (Van der Aalst Property 3)");
     } else {
-        if no_dead_tasks {
-            println!("✓ No Dead Tasks: SATISFIED");
-            println!("  Every task is reachable and executable (Van der Aalst Property 3)");
-        } else {
-            println!("✗ No Dead Tasks: VIOLATED");
-            println!("  Some tasks are unreachable or cannot be executed");
-            for violation in report
-                .violations
-                .iter()
-                .filter(|v| v.message.contains("dead task") || v.message.contains("unreachable"))
-            {
-                println!("  - {:?}: {}", violation.severity, violation.message);
-            }
+        println!("✗ No Dead Tasks: VIOLATED");
+        println!("  Some tasks are unreachable or cannot be executed");
+        for violation in report
+            .violations
+            .iter()
+            .filter(|v| v.message.contains("dead task") || v.message.contains("unreachable"))
+        {
+            println!("  - {:?}: {}", violation.severity, violation.message);
         }
     }
 

@@ -120,7 +120,7 @@ pub fn deserialize_metadata_from_rdf(
             get_all_pattern_metadata()
                 .into_iter()
                 .find(|m| m.pattern_id == pattern_id.0)
-                .ok_or_else(|| WorkflowError::PatternNotFound(pattern_id.0))
+                .ok_or(WorkflowError::PatternNotFound(pattern_id.0))
         }
     } else {
         Err(WorkflowError::Parse(
@@ -222,7 +222,7 @@ pub fn deserialize_context_from_rdf(
                         None
                     }
                 })
-                .unwrap_or_else(|| crate::case::CaseId::new());
+                .unwrap_or_else(crate::case::CaseId::new);
 
             let workflow_id = solution
                 .get("workflowId")
@@ -238,7 +238,7 @@ pub fn deserialize_context_from_rdf(
                         None
                     }
                 })
-                .unwrap_or_else(|| crate::parser::WorkflowSpecId::new());
+                .unwrap_or_else(crate::parser::WorkflowSpecId::new);
 
             let mut variables = HashMap::new();
 

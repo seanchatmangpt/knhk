@@ -62,7 +62,7 @@ impl PatternValidator {
         for i in 0..pattern_ids.len() {
             if i > 0 {
                 // Pattern i depends on pattern i-1
-                graph.entry(i).or_insert_with(Vec::new).push(i - 1);
+                graph.entry(i).or_default().push(i - 1);
             }
         }
 
@@ -96,13 +96,9 @@ impl PatternValidator {
         }
 
         for i in 0..pattern_ids.len() {
-            if !visited.contains(&i) {
-                if has_cycle(i, &graph, &mut visited, &mut rec_stack) {
-                    errors.push(format!(
-                        "Circular dependency detected in pattern composition"
-                    ));
-                    break;
-                }
+            if !visited.contains(&i) && has_cycle(i, &graph, &mut visited, &mut rec_stack) {
+                errors.push("Circular dependency detected in pattern composition".to_string());
+                break;
             }
         }
 

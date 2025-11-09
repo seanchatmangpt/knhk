@@ -32,7 +32,7 @@ pub fn bytes_to_hex(bytes: &[u8]) -> String {
 
 /// Convert hex string to bytes
 pub fn hex_to_bytes(hex: &str) -> WorkflowResult<Vec<u8>> {
-    if hex.len() % 2 != 0 {
+    if !hex.len().is_multiple_of(2) {
         return Err(WorkflowError::Validation(
             "Hex string length must be even".to_string(),
         ));

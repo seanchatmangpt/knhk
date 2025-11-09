@@ -30,7 +30,7 @@ impl ReceiptStore {
     /// Get receipt by ID
     pub fn get(&self, id: &str) -> Result<ReceiptEntry, String> {
         // Load receipt from Oxigraph using SPARQL query
-        use oxigraph::model::{GraphName, NamedNode};
+        use oxigraph::model::NamedNode;
 
         let store = self.store.store();
 

@@ -35,7 +35,7 @@ pub(crate) fn start_timer_loop(
                 scope_id: String::new(),
             };
             // Execute pattern 30 or 31 based on timer type
-            let _ = registry.execute(&PatternId(tf.pattern_id as u32), &ctx);
+            let _ = registry.execute(&PatternId(tf.pattern_id), &ctx);
         }
     });
 }
@@ -51,12 +51,12 @@ pub(crate) fn start_event_loop(
                 .get("case_id")
                 .and_then(|v| v.as_str())
                 .map(|s| CaseId::parse_str(s).unwrap_or_else(|_| CaseId::new()))
-                .unwrap_or_else(|| CaseId::new());
+                .unwrap_or_else(CaseId::new);
             let workflow_id = evt
                 .get("workflow_id")
                 .and_then(|v| v.as_str())
                 .map(|s| WorkflowSpecId::parse_str(s).unwrap_or_else(|_| WorkflowSpecId::new()))
-                .unwrap_or_else(|| WorkflowSpecId::new());
+                .unwrap_or_else(WorkflowSpecId::new);
 
             let ctx = PatternExecutionContext {
                 case_id,

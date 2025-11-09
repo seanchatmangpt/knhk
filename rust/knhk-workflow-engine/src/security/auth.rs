@@ -147,7 +147,7 @@ impl AuthManager {
         if !path.is_empty() {
             attributes.insert("spiffe_path".to_string(), path.to_string());
             // Extract service name from path (last component)
-            if let Some(service_name) = path.split('/').last() {
+            if let Some(service_name) = path.split('/').next_back() {
                 if !service_name.is_empty() {
                     attributes.insert("service".to_string(), service_name.to_string());
                 }

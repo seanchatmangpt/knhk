@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 /// TLS configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TlsConfig {
     /// TLS enabled
     pub enabled: bool,
@@ -21,18 +21,6 @@ pub struct TlsConfig {
 
     /// mTLS enabled
     pub mtls_enabled: bool,
-}
-
-impl Default for TlsConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            cert_file: None,
-            key_file: None,
-            ca_file: None,
-            mtls_enabled: false,
-        }
-    }
 }
 
 impl TlsConfig {
@@ -198,7 +186,7 @@ pub fn create_tls_client_config(
         let identity = tonic::transport::Identity::from_pem(cert, key);
         client_config = client_config.identity(identity);
 
-        if let Some(_) = config.ca_file {
+        if config.ca_file.is_some() {
             let ca_cert = config.load_ca()?;
             let ca = tonic::transport::Certificate::from_pem(ca_cert);
             client_config = client_config.ca_certificate(ca);

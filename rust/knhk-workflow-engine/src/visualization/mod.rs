@@ -83,9 +83,9 @@ impl WorkflowVisualizer {
 
         // Add start node
         if let Some(ref _start_id) = spec.start_condition {
-            dot.push_str(&format!(
-                "    start [shape=ellipse, fillcolor=\"#90EE90\", label=\"Start\"];\n"
-            ));
+            dot.push_str(
+                &"    start [shape=ellipse, fillcolor=\"#90EE90\", label=\"Start\"];\n".to_string(),
+            );
         }
 
         // Add tasks
@@ -107,12 +107,12 @@ impl WorkflowVisualizer {
 
         // Add end node
         if let Some(ref _end_id) = spec.end_condition {
-            dot.push_str(&format!(
-                "    end [shape=ellipse, fillcolor=\"#FFB6C1\", label=\"End\"];\n"
-            ));
+            dot.push_str(
+                &"    end [shape=ellipse, fillcolor=\"#FFB6C1\", label=\"End\"];\n".to_string(),
+            );
         }
 
-        dot.push_str("\n");
+        dot.push('\n');
 
         // Add edges from start
         if let Some(ref start_id) = spec.start_condition {

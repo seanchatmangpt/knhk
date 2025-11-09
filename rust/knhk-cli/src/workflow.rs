@@ -18,18 +18,14 @@
 //! - workflow validate: Run van der Aalst end-to-end validation framework
 //! - workflow discover: Run Alpha+++ process discovery algorithm
 
-use chrono::Utc;
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use knhk_workflow_engine::{
     api::{
-        models::{
-            errors::ApiError,
-            requests::{
-                CancelCaseRequest, CreateCaseRequest, ExecuteCaseRequest, GetCaseHistoryRequest,
-                GetCaseRequest, GetWorkflowRequest, ListCasesRequest, ListWorkflowsRequest,
-                RegisterWorkflowRequest, StartCaseRequest,
-            },
+        models::requests::{
+            CancelCaseRequest, CreateCaseRequest, ExecuteCaseRequest, GetCaseRequest,
+            GetWorkflowRequest, ListCasesRequest, ListWorkflowsRequest, RegisterWorkflowRequest,
+            StartCaseRequest,
         },
         service::{CaseService, PatternService, WorkflowService},
         transport::CliAdapter,
@@ -481,7 +477,7 @@ pub fn validate(
         let framework = ValidationFramework::new(engine);
 
         println!("=== van der Aalst End-to-End Validation Framework ===");
-        println!("");
+        println!();
 
         let report = if let Some(phase_name) = phase {
             // Run specific phase
@@ -541,9 +537,9 @@ pub fn validate(
             ))
         })?;
 
-        println!("");
+        println!();
         println!("=== Validation Complete ===");
-        println!("");
+        println!();
         println!("📋 Report: {}", report_file.display());
         println!("📊 Status: {:?}", report.summary.overall_status);
         println!(
@@ -555,7 +551,7 @@ pub fn validate(
             report.summary.failed_phases, report.summary.total_phases
         );
         println!("⚠️  Warnings: {}", report.summary.warnings);
-        println!("");
+        println!();
 
         Ok(())
     })
@@ -585,7 +581,7 @@ pub fn validate_xes(spec_id: Option<String>, output_dir: Option<PathBuf>) -> Cnv
         })?;
 
         println!("=== van der Aalst XES Validation Full Loop ===");
-        println!("");
+        println!();
 
         // Phase 1: Execute workflow and export to XES
         println!("Phase 1: Executing workflow and exporting to XES...");
@@ -685,7 +681,7 @@ pub fn validate_xes(spec_id: Option<String>, output_dir: Option<PathBuf>) -> Cnv
             ))
         })?;
 
-        if event_log.traces.len() > 0 {
+        if !event_log.traces.is_empty() {
             println!("  ✅ XES event log matches specification");
         } else {
             return Err(clap_noun_verb::NounVerbError::execution_error(
@@ -707,7 +703,7 @@ pub fn validate_xes(spec_id: Option<String>, output_dir: Option<PathBuf>) -> Cnv
         };
         let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
-        if petri_net.places.len() > 0 || petri_net.transitions.len() > 0 {
+        if !petri_net.places.is_empty() || !petri_net.transitions.is_empty() {
             println!("  ✅ Conformance validated");
             println!(
                 "    Discovered: {} places, {} transitions",
@@ -771,18 +767,18 @@ Automated validation loop: Execute → Export → Validate → Conformance Check
             ))
         })?;
 
-        println!("");
+        println!();
         println!("=== Full Loop Summary ===");
-        println!("");
+        println!();
         println!("✅ Phase 1: Workflow execution and XES export - COMPLETE");
         println!("✅ Phase 2: XES format validation - COMPLETE");
         println!("✅ Phase 3: Specification comparison - COMPLETE");
         println!("✅ Phase 4: Conformance checking - COMPLETE");
-        println!("");
+        println!();
         println!("📋 Output Directory: {}", output_path.display());
         println!("📋 XES File: {}", xes_file.display());
         println!("📋 Validation Report: {}", report_file.display());
-        println!("");
+        println!();
         println!("=== Full Loop Complete ===");
 
         Ok(())

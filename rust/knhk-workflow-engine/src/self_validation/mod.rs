@@ -106,7 +106,7 @@ impl SelfValidationManager {
 
         // Get case state
         let case = self.engine.get_case(case_id).await?;
-        let case_state = case.state.clone();
+        let case_state = case.state;
 
         // Validate engine capabilities
         let capability_report = validate_capabilities()?;

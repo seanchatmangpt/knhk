@@ -6,7 +6,6 @@
 //! - Precision: Does the process match the specification?
 //! - Generalization: Does the process work beyond the examples?
 
-use crate::case::CaseId;
 use crate::error::WorkflowResult;
 use crate::parser::WorkflowSpecId;
 use crate::WorkflowEngine;

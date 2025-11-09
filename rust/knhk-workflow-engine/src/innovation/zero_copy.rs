@@ -147,7 +147,7 @@ impl<'a> ZeroCopyTriple<'a> {
         self.subject.is_borrowed()
             && self.predicate.is_borrowed()
             && self.object.is_borrowed()
-            && self.graph.as_ref().map_or(true, |g| g.is_borrowed())
+            && self.graph.as_ref().is_none_or(|g| g.is_borrowed())
     }
 }
 

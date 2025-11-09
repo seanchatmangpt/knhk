@@ -48,7 +48,7 @@ impl ConfigLoader {
 }
 
 /// Application configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     /// Service configuration
     pub service: ServiceConfig,
@@ -68,17 +68,6 @@ impl AppConfig {
         self.performance.validate()?;
         self.security.validate()?;
         Ok(())
-    }
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            service: ServiceConfig::default(),
-            logging: LoggingConfig::default(),
-            performance: PerformanceConfig::default(),
-            security: SecurityConfig::default(),
-        }
     }
 }
 

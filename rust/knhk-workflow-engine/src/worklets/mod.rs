@@ -212,7 +212,7 @@ impl WorkletRepository {
             let left = left.trim();
             let right = right.trim().trim_matches('"').trim_matches('\'');
             if let Some(value) = context.variables.get(left) {
-                return Ok(value.to_string() == right);
+                return Ok(*value == right);
             }
             return Ok(false);
         }
@@ -221,7 +221,7 @@ impl WorkletRepository {
             let left = left.trim();
             let right = right.trim().trim_matches('"').trim_matches('\'');
             if let Some(value) = context.variables.get(left) {
-                return Ok(value.to_string() != right);
+                return Ok(*value != right);
             }
             return Ok(true); // Variable doesn't exist, so != is true
         }

@@ -144,7 +144,7 @@ impl StateManager {
         // Update cache if found
         if let Some(ref spec) = spec {
             let mut cache = self.spec_cache.write().await;
-            cache.insert(spec_id.clone(), spec.clone());
+            cache.insert(*spec_id, spec.clone());
         }
 
         Ok(spec)
@@ -205,7 +205,7 @@ impl StateManager {
         // Update cache if found
         if let Some(ref case) = case {
             let mut cache = self.case_cache.write().await;
-            cache.insert(case_id.clone(), case.clone());
+            cache.insert(*case_id, case.clone());
         }
 
         Ok(case)
@@ -224,7 +224,7 @@ impl StateManager {
     /// Get case history (all events for a specific case)
     pub async fn get_case_history(&self, case_id: CaseId) -> Vec<StateEvent> {
         // Try to load from store first (persistent history)
-        let mut events = match self.store.load_case_history(&case_id) {
+        let events = match self.store.load_case_history(&case_id) {
             Ok(loaded_events) if !loaded_events.is_empty() => loaded_events,
             _ => Vec::new(),
         };
@@ -264,7 +264,7 @@ impl StateManager {
 
         // Convert back to Vec and sort by timestamp
         let mut result: Vec<StateEvent> = dedup_map.into_values().collect();
-        result.sort_by(|a, b| a.timestamp().cmp(&b.timestamp()));
+        result.sort_by_key(|a| a.timestamp());
         result
     }
 

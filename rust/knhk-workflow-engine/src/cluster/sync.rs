@@ -145,17 +145,16 @@ impl StateSync {
                         region,
                         timestamp
                     );
-                } else {
-                    if let Some(existing_entry) = cache.get(&format!("case:{}:{}", case.id, region))
-                    {
-                        tracing::debug!(
-                            "Last-write-wins sync for case {} to region {} skipped (existing timestamp {} is newer than {})",
-                            case.id,
-                            region,
-                            existing_entry.timestamp,
-                            timestamp
-                        );
-                    }
+                } else if let Some(existing_entry) =
+                    cache.get(&format!("case:{}:{}", case.id, region))
+                {
+                    tracing::debug!(
+                        "Last-write-wins sync for case {} to region {} skipped (existing timestamp {} is newer than {})",
+                        case.id,
+                        region,
+                        existing_entry.timestamp,
+                        timestamp
+                    );
                 }
             }
         }
@@ -253,17 +252,16 @@ impl StateSync {
                         region,
                         timestamp
                     );
-                } else {
-                    if let Some(existing_entry) = cache.get(&format!("spec:{}:{}", spec.id, region))
-                    {
-                        tracing::debug!(
-                            "Last-write-wins sync for spec {} to region {} skipped (existing timestamp {} is newer than {})",
-                            spec.id,
-                            region,
-                            existing_entry.timestamp,
-                            timestamp
-                        );
-                    }
+                } else if let Some(existing_entry) =
+                    cache.get(&format!("spec:{}:{}", spec.id, region))
+                {
+                    tracing::debug!(
+                        "Last-write-wins sync for spec {} to region {} skipped (existing timestamp {} is newer than {})",
+                        spec.id,
+                        region,
+                        existing_entry.timestamp,
+                        timestamp
+                    );
                 }
             }
         }

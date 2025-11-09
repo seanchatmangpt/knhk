@@ -65,15 +65,15 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
     // Extract flows
     let flows = extract_flows(
         store,
-        &yawl_ns,
+        yawl_ns,
         spec_iri.as_deref(),
         &mut tasks,
         &mut conditions,
     )?;
 
     // Find start and end conditions
-    let start_condition = find_start_condition(store, &yawl_ns, spec_iri.as_deref())?;
-    let end_condition = find_end_condition(store, &yawl_ns, spec_iri.as_deref())?;
+    let start_condition = find_start_condition(store, yawl_ns, spec_iri.as_deref())?;
+    let end_condition = find_end_condition(store, yawl_ns, spec_iri.as_deref())?;
 
     Ok(WorkflowSpec {
         id: spec_id,
@@ -271,8 +271,8 @@ pub fn extract_tasks(
                 .unwrap_or(false);
 
             // Extract input and output parameters
-            let input_parameters = extract_task_parameters(store, &yawl_ns, &task_id, true)?;
-            let output_parameters = extract_task_parameters(store, &yawl_ns, &task_id, false)?;
+            let input_parameters = extract_task_parameters(store, yawl_ns, &task_id, true)?;
+            let output_parameters = extract_task_parameters(store, yawl_ns, &task_id, false)?;
 
             let task = Task {
                 id: task_id.clone(),

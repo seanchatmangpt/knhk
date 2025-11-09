@@ -65,7 +65,7 @@ impl PromotionConfig {
         }
 
         if let Environment::Canary { traffic_percent } = self.environment {
-            if traffic_percent < 0.0 || traffic_percent > 100.0 {
+            if !(0.0..=100.0).contains(&traffic_percent) {
                 return Err(SidecarError::config_error(format!(
                     "Canary traffic percent must be between 0.0 and 100.0, got {}",
                     traffic_percent

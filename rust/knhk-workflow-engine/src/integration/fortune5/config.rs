@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Fortune 5 configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Fortune5Config {
     /// SPIFFE configuration
     pub spiffe: Option<SpiffeConfig>,
@@ -20,18 +20,6 @@ pub struct Fortune5Config {
     pub slo: Option<SloConfig>,
     /// Promotion gate configuration
     pub promotion: Option<PromotionConfig>,
-}
-
-impl Default for Fortune5Config {
-    fn default() -> Self {
-        Self {
-            spiffe: None,
-            kms: None,
-            multi_region: None,
-            slo: None,
-            promotion: None,
-        }
-    }
 }
 
 /// SPIFFE/SPIRE configuration

@@ -16,21 +16,11 @@ pub struct RequestMetrics {
 }
 
 /// Latency metrics
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LatencyMetrics {
     pub p50_ms: u64,
     pub p95_ms: u64,
     pub p99_ms: u64,
-}
-
-impl Default for LatencyMetrics {
-    fn default() -> Self {
-        Self {
-            p50_ms: 0,
-            p95_ms: 0,
-            p99_ms: 0,
-        }
-    }
 }
 
 /// Batch metrics
@@ -68,25 +58,13 @@ pub struct RetryMetrics {
 }
 
 /// Complete metrics snapshot
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct MetricsSnapshot {
     pub requests: RequestMetrics,
     pub latency: LatencyMetrics,
     pub batch: BatchMetrics,
     pub circuit_breaker: CircuitBreakerMetrics,
     pub retry: RetryMetrics,
-}
-
-impl Default for MetricsSnapshot {
-    fn default() -> Self {
-        Self {
-            requests: RequestMetrics::default(),
-            latency: LatencyMetrics::default(),
-            batch: BatchMetrics::default(),
-            circuit_breaker: CircuitBreakerMetrics::default(),
-            retry: RetryMetrics::default(),
-        }
-    }
 }
 
 /// Metrics collector
@@ -186,7 +164,7 @@ impl MetricsCollector {
             .clone();
 
         // Calculate latency percentiles
-        let mut latencies = self
+        let latencies = self
             .latencies
             .lock()
             .expect("Latency metrics mutex poisoned - unrecoverable state")

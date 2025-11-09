@@ -1,0 +1,382 @@
+# KNHK v1.0 Architecture Guide
+
+**Version**: 1.0.0  
+**Status**: Production Architecture Guide  
+**Last Updated**: 2025-11-09
+
+---
+
+## Overview
+
+This guide provides a comprehensive overview of the KNHK v1.0 architecture, including system design, component interactions, and architectural patterns.
+
+**Critical Principle**: "Never trust the text, only trust test results" - All architectural claims must be verifiable through tests and OTEL validation.
+
+---
+
+## System Architecture
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    KNHK Workflow Engine                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │   Hot Path   │  │  Warm Path   │  │  Cold Path   │     │
+│  │  (≤8 ticks)  │  │  (≤100ms)    │  │  (async)     │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              State Manager (Event Sourcing)          │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Pattern Registry (43 Patterns)          │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              API Layer (REST, gRPC, CLI)            │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Architecture
+
+#### 1. Hot Path (≤8 ticks)
+
+**Purpose**: Ultra-low latency operations for critical path execution.
+
+**Components**:
+- **SoA Arrays**: 64-byte aligned Structure of Arrays for SIMD operations
+- **Hot Path Operations**: ASK_SP, COUNT_SP_GE, ASK_SPO, etc.
+- **Tick Budget**: ≤8 ticks (Chatman Constant: 2ns = 8 ticks)
+
+**Key Constraints**:
+- Zero-copy operations
+- Branchless execution
+- No bounds checks (validated at build/load time)
+- Guard constraints: max_run_len ≤ 8
+
+#### 2. Warm Path (≤100ms)
+
+**Purpose**: Fast operations that don't require hot path optimization.
+
+**Components**:
+- **Workflow Execution**: Case creation, task execution
+- **Pattern Execution**: 43 Van der Aalst patterns
+- **State Management**: Event sourcing and state persistence
+
+**Key Constraints**:
+- Async operations allowed
+- Database access permitted
+- Network calls allowed (with timeouts)
+
+#### 3. Cold Path (async)
+
+**Purpose**: Long-running operations and background tasks.
+
+**Components**:
+- **Process Mining**: XES export, Alpha+++ discovery
+- **Validation**: Van der Aalst validation, conformance checking
+- **Reporting**: Validation reports, performance analysis
+
+**Key Constraints**:
+- No time constraints
+- Can use external services
+- Can perform heavy computations
+
+---
+
+## Core Components
+
+### Workflow Engine
+
+**Purpose**: Central orchestrator for workflow execution.
+
+**Responsibilities**:
+- Case lifecycle management (create, start, execute, cancel)
+- Workflow specification registration
+- Task execution coordination
+- State event generation
+
+**Key Interfaces**:
+```rust
+pub struct WorkflowEngine {
+    state_manager: Arc<StateManager>,
+    pattern_registry: Arc<PatternRegistry>,
+    // ...
+}
+```
+
+### State Manager
+
+**Purpose**: Event sourcing and state persistence.
+
+**Responsibilities**:
+- Event storage and retrieval
+- Case history management
+- State reconstruction from events
+- Event replay
+
+**Key Interfaces**:
+```rust
+pub enum StateEvent {
+    WorkflowRegistered { spec_id: WorkflowSpecId, ... },
+    CaseCreated { case_id: CaseId, spec_id: WorkflowSpecId, ... },
+    CaseStateChanged { case_id: CaseId, old_state: String, new_state: String, ... },
+    TaskStarted { case_id: CaseId, task_id: String, ... },
+    TaskCompleted { case_id: CaseId, task_id: String, duration_ms: u64, ... },
+}
+```
+
+### Pattern Registry
+
+**Purpose**: Management and execution of 43 Van der Aalst workflow patterns.
+
+**Responsibilities**:
+- Pattern registration and lookup
+- Pattern execution
+- Pattern metadata management
+
+**Key Interfaces**:
+```rust
+pub trait PatternExecutor: Send + Sync {
+    fn execute(&self, context: &PatternExecutionContext) -> PatternExecutionResult;
+}
+
+pub struct PatternRegistry {
+    patterns: HashMap<PatternId, Box<dyn PatternExecutor>>,
+}
+```
+
+---
+
+## API Architecture
+
+### REST API
+
+**Endpoints**:
+- `POST /api/v1/workflows` - Register workflow
+- `GET /api/v1/workflows` - List workflows
+- `GET /api/v1/workflows/{id}` - Get workflow
+- `POST /api/v1/cases` - Create case
+- `GET /api/v1/cases` - List cases
+- `GET /api/v1/cases/{id}` - Get case
+- `POST /api/v1/cases/{id}/start` - Start case
+- `POST /api/v1/cases/{id}/execute` - Execute case
+- `POST /api/v1/cases/{id}/cancel` - Cancel case
+
+### gRPC API
+
+**Services**:
+- `WorkflowService` - Workflow management
+- `CaseService` - Case management
+- `PatternService` - Pattern execution
+
+### CLI API
+
+**Commands**:
+- `knhk workflow parse` - Parse workflow from Turtle
+- `knhk workflow register` - Register workflow
+- `knhk workflow create` - Create case
+- `knhk workflow start` - Start case
+- `knhk workflow execute` - Execute case
+- `knhk workflow list` - List workflows/cases
+
+---
+
+## Fortune 5 Enterprise Features
+
+### SPIFFE/SPIRE Integration
+
+**Purpose**: Zero-trust identity and authentication.
+
+**Architecture**:
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   SPIRE     │──────│   KNHK      │──────│   Service   │
+│   Agent     │      │   Engine    │      │   Mesh      │
+└─────────────┘      └─────────────┘      └─────────────┘
+```
+
+**Key Components**:
+- SPIFFE identity verification
+- mTLS certificate management
+- Service-to-service authentication
+
+### KMS Integration
+
+**Purpose**: Key management and encryption.
+
+**Architecture**:
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   KNHK      │──────│   KMS       │──────│   Key       │
+│   Engine    │      │   Client    │      │   Store     │
+└─────────────┘      └─────────────┘      └─────────────┘
+```
+
+**Key Components**:
+- Key rotation
+- Encryption/decryption
+- Key metadata management
+
+### Multi-Region Support
+
+**Purpose**: Geographic distribution and disaster recovery.
+
+**Architecture**:
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Region 1   │──────│   Region 2   │──────│   Region 3  │
+│  (Primary)  │      │  (Replica)   │      │  (Replica)  │
+└─────────────┘      └─────────────┘      └─────────────┘
+```
+
+**Key Components**:
+- Last-write-wins conflict resolution
+- Cross-region replication
+- Region health monitoring
+
+---
+
+## Data Flow
+
+### Workflow Execution Flow
+
+```
+1. Parse Workflow (Turtle → WorkflowSpec)
+   ↓
+2. Register Workflow (WorkflowSpec → StateManager)
+   ↓
+3. Create Case (WorkflowSpecId → CaseId)
+   ↓
+4. Start Case (CaseId → StateEvent::CaseStateChanged)
+   ↓
+5. Execute Tasks (Pattern Execution)
+   ↓
+6. Complete Case (StateEvent::CaseCompleted)
+```
+
+### Pattern Execution Flow
+
+```
+1. Pattern Lookup (PatternId → PatternExecutor)
+   ↓
+2. Create Execution Context (CaseId, TaskId, ...)
+   ↓
+3. Execute Pattern (PatternExecutor::execute)
+   ↓
+4. Process Result (PatternExecutionResult)
+   ↓
+5. Update State (StateEvent generation)
+```
+
+---
+
+## Performance Architecture
+
+### Hot Path Optimization
+
+**Techniques**:
+- **SoA Layout**: Structure of Arrays for SIMD operations
+- **64-byte Alignment**: Cache line alignment
+- **Branchless Operations**: Constant-time execution
+- **Zero-Copy**: References over clones
+
+**Constraints**:
+- ≤8 ticks per operation (Chatman Constant)
+- max_run_len ≤ 8 (guard constraint)
+- No heap allocations
+- No system calls
+
+### Warm Path Optimization
+
+**Techniques**:
+- **Async Operations**: Non-blocking I/O
+- **Connection Pooling**: Reuse database connections
+- **Caching**: In-memory state cache
+- **Batch Operations**: Group multiple operations
+
+**Constraints**:
+- ≤100ms per operation
+- Async operations allowed
+- Database access permitted
+
+---
+
+## Security Architecture
+
+### Authentication & Authorization
+
+**Components**:
+- SPIFFE identity verification
+- mTLS certificate validation
+- Role-based access control (RBAC)
+
+### Encryption
+
+**Components**:
+- KMS key management
+- Data encryption at rest
+- Data encryption in transit (TLS)
+
+### Audit & Compliance
+
+**Components**:
+- Event sourcing (immutable audit trail)
+- OTEL instrumentation (observability)
+- Provenance tracking (hash(A) = hash(μ(O)))
+
+---
+
+## Observability Architecture
+
+### OTEL Instrumentation
+
+**Spans**:
+- Workflow execution spans
+- Task execution spans
+- Pattern execution spans
+- API request spans
+
+**Metrics**:
+- Workflow execution rate
+- Task completion rate
+- Hot path tick distribution
+- Error rate
+
+**Logs**:
+- Structured logging (JSON)
+- Log levels (trace, debug, info, warn, error)
+- Context propagation
+
+### Monitoring Stack
+
+**Components**:
+- OTEL Collector
+- Prometheus (metrics)
+- Grafana (dashboards)
+- Jaeger (tracing)
+
+---
+
+## Related Documentation
+
+- [Implementation Guide](./IMPLEMENTATION_GUIDE.md)
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md)
+- [Operations Guide](./OPERATIONS_GUIDE.md)
+- [Definition of Done](./definition-of-done/fortune5-production.md)
+
+---
+
+## Notes
+
+- All architectural claims must be verifiable through tests
+- OTEL validation is the source of truth for telemetry
+- Performance constraints must be validated with benchmarks
+- Security architecture must pass security audits
+
