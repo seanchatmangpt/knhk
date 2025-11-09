@@ -33,6 +33,12 @@ pub(super) async fn execute_task_with_allocation(
     task: &Task,
 ) -> WorkflowResult<()> {
     let task_start_time = Instant::now();
+
+    // Log task started event for process mining
+    engine
+        .state_manager
+        .log_task_started(case_id, task.id.clone(), task.name.clone())
+        .await;
     // Allocate resources if allocation policy is specified
     if let Some(ref policy) = task.allocation_policy {
         let request = AllocationRequest {
@@ -285,6 +291,13 @@ pub(super) async fn execute_task_with_allocation(
         };
         fortune5.record_slo_metric(runtime_class, elapsed_ns).await;
     }
+
+    // Log task completed event for process mining
+    let duration_ms = task_start_time.elapsed().as_millis() as u64;
+    engine
+        .state_manager
+        .log_task_completed(case_id, task.id.clone(), task.name.clone(), duration_ms)
+        .await;
 
     Ok(())
 }

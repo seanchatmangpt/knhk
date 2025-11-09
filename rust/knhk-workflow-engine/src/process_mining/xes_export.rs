@@ -191,7 +191,7 @@ impl XesExporter {
     pub fn state_event_to_workflow_event(event: StateEvent) -> Option<WorkflowEvent> {
         match event {
             StateEvent::CaseCreated {
-                case_id,
+                case_id: _,
                 spec_id,
                 timestamp,
             } => Some(WorkflowEvent {
@@ -215,6 +215,31 @@ impl XesExporter {
                 } else {
                     "start".to_string()
                 },
+                timestamp,
+                resource: Some("System".to_string()),
+                pattern_id: None,
+            }),
+            StateEvent::TaskStarted {
+                task_name,
+                timestamp,
+                case_id: _,
+                task_id: _,
+            } => Some(WorkflowEvent {
+                activity_name: task_name,
+                lifecycle: "start".to_string(),
+                timestamp,
+                resource: Some("System".to_string()),
+                pattern_id: None,
+            }),
+            StateEvent::TaskCompleted {
+                task_name,
+                timestamp,
+                case_id: _,
+                task_id: _,
+                duration_ms: _,
+            } => Some(WorkflowEvent {
+                activity_name: task_name,
+                lifecycle: "complete".to_string(),
                 timestamp,
                 resource: Some("System".to_string()),
                 pattern_id: None,

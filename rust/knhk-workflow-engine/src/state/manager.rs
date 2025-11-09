@@ -47,6 +47,21 @@ pub enum StateEvent {
         new_state: String,
         timestamp: chrono::DateTime<chrono::Utc>,
     },
+    /// Task started execution
+    TaskStarted {
+        case_id: CaseId,
+        task_id: String,
+        task_name: String,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+    /// Task completed execution
+    TaskCompleted {
+        case_id: CaseId,
+        task_id: String,
+        task_name: String,
+        duration_ms: u64,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
 }
 
 impl StateManager {
@@ -182,10 +197,41 @@ impl StateManager {
             .filter(|event| match event {
                 StateEvent::CaseCreated { case_id: cid, .. } => cid == &case_id,
                 StateEvent::CaseStateChanged { case_id: cid, .. } => cid == &case_id,
+                StateEvent::TaskStarted { case_id: cid, .. } => cid == &case_id,
+                StateEvent::TaskCompleted { case_id: cid, .. } => cid == &case_id,
                 StateEvent::SpecRegistered { .. } => false,
             })
             .cloned()
             .collect()
+    }
+
+    /// Log task started event
+    pub async fn log_task_started(&self, case_id: CaseId, task_id: String, task_name: String) {
+        let mut log = self.event_log.write().await;
+        log.push(StateEvent::TaskStarted {
+            case_id,
+            task_id,
+            task_name,
+            timestamp: chrono::Utc::now(),
+        });
+    }
+
+    /// Log task completed event
+    pub async fn log_task_completed(
+        &self,
+        case_id: CaseId,
+        task_id: String,
+        task_name: String,
+        duration_ms: u64,
+    ) {
+        let mut log = self.event_log.write().await;
+        log.push(StateEvent::TaskCompleted {
+            case_id,
+            task_id,
+            task_name,
+            duration_ms,
+            timestamp: chrono::Utc::now(),
+        });
     }
 
     /// Clear cache (for testing/debugging)
