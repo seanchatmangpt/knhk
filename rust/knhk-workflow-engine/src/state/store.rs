@@ -196,4 +196,65 @@ impl StateStore {
             .map_err(|e| WorkflowError::StatePersistence(format!("Flush error: {:?}", e)))?;
         Ok(())
     }
+
+    /// Save case history event (append-only log)
+    pub fn save_case_history_event(
+        &self,
+        case_id: &crate::case::CaseId,
+        event: &crate::state::manager::StateEvent,
+    ) -> WorkflowResult<()> {
+        // Persist event to sled (append-only log)
+        let key = format!(
+            "case_history:{}:{}",
+            case_id,
+            chrono::Utc::now().timestamp_nanos()
+        );
+        let value = serde_json::to_vec(event)
+            .map_err(|e| WorkflowError::StatePersistence(format!("Serialization error: {}", e)))?;
+        self.db
+            .insert(key.as_bytes(), value)
+            .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
+        Ok(())
+    }
+
+    /// Load case history events
+    pub fn load_case_history(
+        &self,
+        case_id: &crate::case::CaseId,
+    ) -> WorkflowResult<Vec<crate::state::manager::StateEvent>> {
+        let prefix = format!("case_history:{}:", case_id);
+        let mut events = Vec::new();
+
+        // Scan all events for this case
+        for result in self.db.scan_prefix(prefix.as_bytes()) {
+            let (_key, value) = result
+                .map_err(|e| WorkflowError::StatePersistence(format!("Database error: {:?}", e)))?;
+            let event: crate::state::manager::StateEvent = serde_json::from_slice(value.as_ref())
+                .map_err(|e| {
+                WorkflowError::StatePersistence(format!("Deserialization error: {}", e))
+            })?;
+            events.push(event);
+        }
+
+        // Sort by timestamp (key contains timestamp)
+        events.sort_by(|a, b| {
+            let a_ts = match a {
+                crate::state::manager::StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::CaseCreated { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::TaskStarted { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
+            };
+            let b_ts = match b {
+                crate::state::manager::StateEvent::SpecRegistered { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::CaseCreated { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::CaseStateChanged { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::TaskStarted { timestamp, .. } => *timestamp,
+                crate::state::manager::StateEvent::TaskCompleted { timestamp, .. } => *timestamp,
+            };
+            a_ts.cmp(&b_ts)
+        });
+
+        Ok(events)
+    }
 }
