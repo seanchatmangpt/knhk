@@ -125,8 +125,8 @@ impl WorkflowTestFixture {
     pub async fn get_case_history(
         &self,
         case_id: CaseId,
-    ) -> WorkflowResult<Vec<crate::state::manager::StateEvent>> {
-        Ok(self.engine.state_manager.get_case_history(case_id).await)
+    ) -> Vec<crate::state::manager::StateEvent> {
+        self.engine.state_manager.get_case_history(case_id).await
     }
 
     /// Clean up test resources

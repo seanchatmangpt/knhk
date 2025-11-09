@@ -345,7 +345,7 @@ pub(super) async fn execute_task_with_allocation(
     engine
         .state_manager
         .log_task_completed(case_id, task.id.clone(), task.name.clone(), duration_ms)
-        .await;
+        .await?;
 
     Ok(())
 }
