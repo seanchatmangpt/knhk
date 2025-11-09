@@ -220,13 +220,18 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 
 | CTQ Metric | Implementation | Code Reference |
 |------------|----------------|----------------|
-| **Hot Path Operations** | AOT kernel | `rust/knhk-workflow-engine/src/performance/aot.rs` |
-| **RDTSC Measurement** | Cycle counting | `rust/knhk-hot/src/lib.rs` |
-| **Performance Benchmarks** | Benchmark tests | `rust/knhk-workflow-engine/tests/performance/` |
+| **Hot Path Operations** | Hot path engine | `rust/knhk-hot/src/lib.rs` |
+| **RDTSC Measurement** | Cycle counting | `c/tools/knhk_bench.c` |
+| **CONSTRUCT8 Implementation** | Warm path CONSTRUCT8 | `rust/knhk-warm/src/construct8.rs` |
+| **Performance Benchmarks** | Benchmark tests | `rust/knhk-hot/benches/cycle_bench.rs` |
+| **Tick Budget Validation** | Reflex stage | `rust/knhk-etl/src/reflex.rs` |
 
 **Key Files**:
-- ```1:100:rust/knhk-workflow-engine/src/performance/aot.rs```
-- ```1:50:rust/knhk-hot/src/lib.rs```
+- ```1:100:rust/knhk-hot/src/lib.rs```
+- ```1:220:c/tools/knhk_bench.c```
+- ```1:173:rust/knhk-warm/src/construct8.rs```
+- ```1:100:rust/knhk-hot/benches/cycle_bench.rs```
+- ```1:200:rust/knhk-etl/src/reflex.rs``` (tick_budget: u32 = 8)
 
 ### CTQ 3: DoD Compliance (≥85%)
 
@@ -284,12 +289,16 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 
 | Issue | Affected Code | Code Reference |
 |-------|---------------|----------------|
-| **Abort Trap: 6** | Test framework | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
+| **Test Framework** | Chicago TDD implementation | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
 | **Memory Safety** | Test execution | `rust/knhk-workflow-engine/tests/chicago_tdd_*.rs` |
+| **Test Tools** | Chicago TDD tools | `rust/chicago-tdd-tools/` |
+| **E2E Tests** | End-to-end validation | `rust/knhk-workflow-engine/tests/chicago_tdd_financial_e2e.rs` |
 
 **Key Files**:
-- ```1:100:rust/knhk-workflow-engine/src/testing/chicago_tdd.rs```
-- ```1:50:rust/knhk-workflow-engine/tests/chicago_tdd_difficult_patterns.rs```
+- ```1:1471:rust/knhk-workflow-engine/src/testing/chicago_tdd.rs```
+- ```1:100:rust/knhk-workflow-engine/tests/chicago_tdd_difficult_patterns.rs```
+- ```1:50:rust/chicago-tdd-tools/src/lib.rs```
+- ```1:100:rust/knhk-workflow-engine/tests/chicago_tdd_financial_e2e.rs```
 
 ### Blocker 3: Integration Tests
 
@@ -305,12 +314,16 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 
 | Issue | Affected Code | Code Reference |
 |-------|---------------|----------------|
-| **Unwrap Usage** | Hot path operations | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **Unwrap Usage** | Hot path operations | `rust/knhk-hot/src/lib.rs` |
 | **Error Handling** | Error management | `rust/knhk-workflow-engine/src/error/mod.rs` |
+| **Reflex Stage** | Tick budget validation | `rust/knhk-etl/src/reflex.rs` |
+| **Warm Path** | CONSTRUCT8 error handling | `rust/knhk-warm/src/construct8.rs` |
 
 **Key Files**:
-- ```1:100:rust/knhk-workflow-engine/src/performance/aot.rs```
+- ```1:100:rust/knhk-hot/src/lib.rs```
 - ```1:50:rust/knhk-workflow-engine/src/error/mod.rs```
+- ```1:200:rust/knhk-etl/src/reflex.rs```
+- ```1:173:rust/knhk-warm/src/construct8.rs```
 
 ---
 
@@ -336,9 +349,11 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 
 | Module | DFLSS Phase | Code Reference |
 |--------|-------------|----------------|
-| **AotKernel** | IMPROVE | `rust/knhk-workflow-engine/src/performance/aot.rs` |
 | **HotPath** | IMPROVE | `rust/knhk-hot/src/lib.rs` |
-| **Benchmarks** | MEASURE | `rust/knhk-workflow-engine/tests/performance/` |
+| **WarmPath** | IMPROVE | `rust/knhk-warm/src/warm_path.rs` |
+| **CONSTRUCT8** | IMPROVE | `rust/knhk-warm/src/construct8.rs` |
+| **Benchmarks** | MEASURE | `rust/knhk-hot/benches/cycle_bench.rs` |
+| **C Benchmarks** | MEASURE | `c/tools/knhk_bench.c` |
 
 ### Integration Module
 
@@ -412,8 +427,11 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 ### Performance & Optimization
 
 - **Hot Path**: `rust/knhk-hot/src/lib.rs`
-- **AOT Kernel**: `rust/knhk-workflow-engine/src/performance/aot.rs`
-- **Performance Metrics**: `rust/knhk-workflow-engine/src/performance/mod.rs`
+- **Warm Path**: `rust/knhk-warm/src/warm_path.rs`
+- **CONSTRUCT8**: `rust/knhk-warm/src/construct8.rs`
+- **C Benchmarks**: `c/tools/knhk_bench.c`
+- **Rust Benchmarks**: `rust/knhk-hot/benches/cycle_bench.rs`
+- **Tick Budget**: `rust/knhk-etl/src/reflex.rs` (tick_budget: u32 = 8)
 
 ### Integration & Control
 
@@ -424,11 +442,58 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 
 ---
 
+## Direct File Mappings
+
+### DFLSS Documents → Implementation Files
+
+| DFLSS Document | Key Implementation Files |
+|----------------|-------------------------|
+| **PROJECT_CHARTER.md** | `rust/knhk-workflow-engine/src/lib.rs`, `rust/knhk-cli/src/main.rs` |
+| **SIPOC.md** | `rust/knhk-workflow-engine/src/`, `c/src/` |
+| **SYNTHETIC_VOC.md** | `rust/knhk-cli/src/commands/`, `rust/knhk-workflow-engine/src/api/` |
+| **define/PHASE_SUMMARY.md** | `rust/knhk-workflow-engine/src/parser/`, `rust/knhk-workflow-engine/src/executor/` |
+| **measure/PHASE_SUMMARY.md** | `rust/knhk-hot/benches/`, `c/tools/knhk_bench.c`, `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **analyze/PHASE_SUMMARY.md** | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs`, `rust/knhk-workflow-engine/tests/` |
+| **improve/PHASE_SUMMARY.md** | `rust/knhk-hot/src/`, `rust/knhk-warm/src/`, `rust/knhk-etl/src/` |
+| **control/PHASE_SUMMARY.md** | `.github/workflows/`, `scripts/weaver-validate-all-43-patterns.sh` |
+
+### Weaver Validation Files
+
+| Validation Type | File Path |
+|----------------|-----------|
+| **Weaver Integration** | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **Weaver Examples** | `rust/knhk-workflow-engine/examples/weaver_real_jtbd_validation.rs` |
+| **OTEL Live Check** | `rust/knhk-otel/examples/weaver_live_check.rs` |
+| **Weaver Scripts** | `scripts/weaver-validate-all-43-patterns.sh` |
+| **Schema Registry** | `registry/knhk-attributes.yaml`, `registry/knhk-beat-v1.yaml` |
+
+### Chicago TDD Files
+
+| Test Type | File Path |
+|-----------|-----------|
+| **Test Framework** | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
+| **Test Tools** | `rust/chicago-tdd-tools/src/lib.rs` |
+| **E2E Tests** | `rust/knhk-workflow-engine/tests/chicago_tdd_financial_e2e.rs` |
+| **Pattern Tests** | `rust/knhk-workflow-engine/tests/chicago_tdd_difficult_patterns.rs` |
+| **Integration Tests** | `rust/knhk-cli/tests/chicago_tdd_otel_e2e.rs` |
+
+### Performance Files
+
+| Performance Component | File Path |
+|----------------------|-----------|
+| **Hot Path** | `rust/knhk-hot/src/lib.rs` |
+| **Warm Path** | `rust/knhk-warm/src/warm_path.rs` |
+| **CONSTRUCT8** | `rust/knhk-warm/src/construct8.rs` |
+| **C Benchmarks** | `c/tools/knhk_bench.c` |
+| **Rust Benchmarks** | `rust/knhk-hot/benches/cycle_bench.rs` |
+| **Tick Budget** | `rust/knhk-etl/src/reflex.rs` (line 22-23: `tick_budget: u32 = 8`) |
+
 ## Revision History
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-11-09 | Initial code mapping creation |
+| 1.1 | 2025-11-09 | Updated with verified file paths and code references |
 
 ---
 
