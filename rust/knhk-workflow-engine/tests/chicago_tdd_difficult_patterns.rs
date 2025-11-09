@@ -35,7 +35,6 @@ use knhk_workflow_engine::{
     parser::{JoinType, SplitType, TaskType},
     state::manager::StateEvent,
 };
-use tokio::test;
 
 // ============================================================================
 // PATTERN 14: MI WITH RUNTIME KNOWLEDGE
@@ -72,6 +71,8 @@ async fn test_pattern_14_mi_with_runtime_knowledge_comprehensive() -> WorkflowRe
         .add_task(calculate_task)
         .add_task(mi_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
