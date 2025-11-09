@@ -64,6 +64,7 @@ pub mod compiler;
 pub mod compliance;
 pub mod config;
 pub mod constants;
+pub mod data;
 pub mod enterprise;
 pub mod error;
 pub mod events;

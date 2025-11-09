@@ -141,6 +141,189 @@ impl ResourceAllocator {
 
         Ok(prebound)
     }
+
+    /// 3-phase resource allocation (offer, allocate, start)
+    ///
+    /// Phase 1: Offer - Propose resources to task
+    /// Phase 2: Allocate - Confirm resource allocation
+    /// Phase 3: Start - Activate resource allocation
+    pub async fn allocate_3phase(
+        &self,
+        request: AllocationRequest,
+    ) -> WorkflowResult<AllocationResult> {
+        // Phase 1: Offer - Find matching resources
+        let offer_result = self.allocate(request.clone()).await?;
+
+        // Phase 2: Allocate - Confirm allocation (same as offer for now)
+        // In production, would validate resource availability at this point
+        let allocate_result = offer_result.clone();
+
+        // Phase 3: Start - Activate allocation
+        // Update resource workload
+        for resource_id in &allocate_result.allocated_resources {
+            self.update_workload(*resource_id, 1).await?;
+        }
+
+        Ok(allocate_result)
+    }
+
+    /// Phase 1: Offer resources (proposal)
+    pub async fn offer_resources(
+        &self,
+        request: AllocationRequest,
+    ) -> WorkflowResult<AllocationResult> {
+        self.allocate(request).await
+    }
+
+    /// Phase 2: Allocate resources (confirmation)
+    pub async fn confirm_allocation(
+        &self,
+        request: AllocationRequest,
+    ) -> WorkflowResult<AllocationResult> {
+        // Validate resources are still available
+        let result = self.allocate(request.clone()).await?;
+
+        // Check resource availability
+        let resources = self.ctx.resources.read().await;
+        for resource_id in &result.allocated_resources {
+            if let Some(resource) = resources.get(resource_id) {
+                if !resource.available {
+                    return Err(crate::error::WorkflowError::ResourceUnavailable(format!(
+                        "Resource {} is not available",
+                        resource_id.0
+                    )));
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Phase 3: Start resource allocation (activation)
+    pub async fn start_allocation(&self, resource_ids: Vec<ResourceId>) -> WorkflowResult<()> {
+        // Update resource workload
+        for resource_id in resource_ids {
+            self.update_workload(resource_id, 1).await?;
+        }
+        Ok(())
+    }
+
+    /// Release resources (deallocation)
+    pub async fn release_resources(&self, resource_ids: Vec<ResourceId>) -> WorkflowResult<()> {
+        // Decrease resource workload
+        for resource_id in resource_ids {
+            self.update_workload(resource_id, -1).await?;
+        }
+        Ok(())
+    }
+
+    /// Get available resources with filters
+    pub async fn get_available_resources(
+        &self,
+        required_roles: Vec<String>,
+        required_capabilities: Vec<String>,
+        max_workload: Option<u32>,
+    ) -> WorkflowResult<Vec<Resource>> {
+        let resources = self.ctx.resources.read().await;
+        let mut available = Vec::new();
+
+        for resource in resources.values() {
+            if !resource.available {
+                continue;
+            }
+
+            // Check role requirements
+            if !required_roles.is_empty() {
+                let has_role = resource
+                    .roles
+                    .iter()
+                    .any(|role| required_roles.contains(&role.id));
+                if !has_role {
+                    continue;
+                }
+            }
+
+            // Check capability requirements
+            if !required_capabilities.is_empty() {
+                let has_capability = resource
+                    .capabilities
+                    .iter()
+                    .any(|cap| required_capabilities.contains(&cap.id));
+                if !has_capability {
+                    continue;
+                }
+            }
+
+            // Check workload constraint
+            if let Some(max) = max_workload {
+                if resource.workload >= max {
+                    continue;
+                }
+            }
+
+            available.push(resource.clone());
+        }
+
+        Ok(available)
+    }
+
+    /// Get resources by constraints
+    pub async fn get_resources_by_constraints(
+        &self,
+        constraints: serde_json::Value,
+    ) -> WorkflowResult<Vec<Resource>> {
+        let resources = self.ctx.resources.read().await;
+        let mut matching = Vec::new();
+
+        for resource in resources.values() {
+            let mut matches = true;
+
+            // Check constraints
+            if let Some(constraints_obj) = constraints.as_object() {
+                for (key, value) in constraints_obj {
+                    match key.as_str() {
+                        "available" => {
+                            if let Some(avail) = value.as_bool() {
+                                if resource.available != avail {
+                                    matches = false;
+                                    break;
+                                }
+                            }
+                        }
+                        "max_workload" => {
+                            if let Some(max) = value.as_u64() {
+                                if resource.workload >= max as u32 {
+                                    matches = false;
+                                    break;
+                                }
+                            }
+                        }
+                        "min_capability_level" => {
+                            if let Some(min_level) = value.as_u64() {
+                                let has_capability = resource
+                                    .capabilities
+                                    .iter()
+                                    .any(|cap| cap.level >= min_level as u8);
+                                if !has_capability {
+                                    matches = false;
+                                    break;
+                                }
+                            }
+                        }
+                        _ => {
+                            // Unknown constraint - skip
+                        }
+                    }
+                }
+            }
+
+            if matches {
+                matching.push(resource.clone());
+            }
+        }
+
+        Ok(matching)
+    }
 }
 
 impl Default for ResourceAllocator {
