@@ -37,7 +37,7 @@ pub fn deserialize_metadata_from_rdf(
     let query_results = SparqlEvaluator::new()
         .parse_query(&query)
         .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {:?}", e)))?
-        .on_store(store)
+        .on_store(&store)
         .execute()
         .map_err(|e| WorkflowError::Parse(format!("Failed to query pattern metadata: {}", e)))?;
 
@@ -191,7 +191,7 @@ pub fn deserialize_context_from_rdf(
     let query_results = SparqlEvaluator::new()
         .parse_query(&query)
         .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {:?}", e)))?
-        .on_store(store)
+        .on_store(&store)
         .execute()
         .map_err(|e| WorkflowError::Parse(format!("Failed to query execution context: {}", e)))?;
 
@@ -324,7 +324,7 @@ pub fn deserialize_result_from_rdf(turtle: &str) -> WorkflowResult<PatternExecut
     let query_results = SparqlEvaluator::new()
         .parse_query(&query)
         .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {:?}", e)))?
-        .on_store(store)
+        .on_store(&store)
         .execute()
         .map_err(|e| WorkflowError::Parse(format!("Failed to query execution result: {}", e)))?;
 

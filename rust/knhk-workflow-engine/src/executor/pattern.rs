@@ -45,8 +45,7 @@ impl WorkflowEngine {
                         span,
                         success: false,
                         start_time: start_time
-                    )
-                    .await?;
+                    )?;
                 }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),
