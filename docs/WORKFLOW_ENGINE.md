@@ -436,6 +436,13 @@ weaver registry live-check --registry registry/
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and hot/warm/cold paths
+- **[YAWL Integration Guide](YAWL_INTEGRATION.md)** - YAWL compatibility and integration
+- **[Testing Guide](TESTING.md)** - Chicago TDD methodology and test coverage
+- **[Production Guide](PRODUCTION.md)** - Production readiness and certification
+- **[Performance Guide](PERFORMANCE.md)** - Performance optimization and benchmarks
+
 ### Detailed Documentation
 - **Full Pattern Reference**: See `PatternRegistry` for all 43 patterns
 - **Architecture**: [RDF Workflow Architecture](architecture/README-RDF-WORKFLOW-ARCHITECTURE.md)

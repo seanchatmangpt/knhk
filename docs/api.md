@@ -265,6 +265,12 @@ match pipeline.run().await {
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and component design
+- **[Performance Guide](PERFORMANCE.md)** - Performance considerations and optimization
+- **[CLI Guide](CLI.md)** - CLI usage and command reference
+- **[Integration Guide](INTEGRATION.md)** - Integration patterns and connectors
+
 ### Detailed Documentation
 - **Complete API Reference**: [API Documentation](api.md) - Complete API reference with all functions
 - **C API Details**: `c/include/knhk/` - Header files with full documentation

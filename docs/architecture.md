@@ -306,6 +306,13 @@ rust/
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[Performance Guide](PERFORMANCE.md)** - Performance optimization and hot path details
+- **[API Guide](API.md)** - API interfaces and usage patterns
+- **[Integration Guide](INTEGRATION.md)** - Integration patterns and connectors
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
+- **[Production Guide](PRODUCTION.md)** - Production deployment and monitoring
+
 ### Detailed Documentation
 - **Formal Foundations**: [Formal Mathematical Foundations](formal-foundations.md)
 - **8-Beat System**: [8-Beat Integration Complete](8BEAT-INTEGRATION-COMPLETE.md)
