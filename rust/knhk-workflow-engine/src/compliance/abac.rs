@@ -264,7 +264,7 @@ impl AbacPolicyEngine {
         attrs.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
 
         // Add IP address if available
-        #[allow(unexpected_cfgs)]
+        #[cfg_attr(not(feature = "network"), allow(unexpected_cfgs))]
         #[cfg(feature = "network")]
         {
             use std::net::TcpListener;

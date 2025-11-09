@@ -446,7 +446,7 @@ pub(super) async fn execute_task_with_allocation(
         let elapsed_ns = task_start_time.elapsed().as_nanos() as u64;
         let elapsed_ticks = elapsed_ns / 2; // 2ns per tick
         if elapsed_ticks > max_ticks as u64 {
-            // End OTEL span with error
+            // End OTEL span with error and lifecycle transition
             if let (Some(ref otel), Some(ref span)) =
                 (engine.otel_integration.as_ref(), span_ctx.as_ref())
             {
@@ -460,7 +460,10 @@ pub(super) async fn execute_task_with_allocation(
                     "knhk.workflow_engine.latency_ms".to_string(),
                     task_start_time.elapsed().as_millis().to_string(),
                 );
-                let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                let _ = otel
+                    .add_lifecycle_transition((*span).clone(), "cancel")
+                    .await;
+                let _ = otel.end_span((*span).clone(), SpanStatus::Error).await;
             }
             return Err(WorkflowError::TaskExecutionFailed(format!(
                 "Task {} exceeded tick budget: {} ticks > {} ticks",
