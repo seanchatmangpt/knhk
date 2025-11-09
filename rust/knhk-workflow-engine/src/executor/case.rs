@@ -23,7 +23,7 @@ impl WorkflowEngine {
         let start_time = Instant::now();
 
         // Start OTEL span for case creation
-        let span_ctx = if let Some(ref otel) = self.otel_integration {
+        let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
             otel_span!(
                 otel,
                 "knhk.workflow_engine.create_case",

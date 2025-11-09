@@ -125,8 +125,7 @@ chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_comprehensive, {
     assert_ok!(&validate_result, "XES task count validation should succeed");
 });
 
-#[tokio::test]
-async fn test_pattern_14_mi_with_runtime_knowledge_variable_count() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_variable_count, {
     // Arrange: Test with different runtime counts
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -187,14 +186,12 @@ async fn test_pattern_14_mi_with_runtime_knowledge_variable_count() -> WorkflowR
         .await?;
 
     Ok(())
-}
-
+});
 // ============================================================================
 // PATTERN 15: MI WITHOUT RUNTIME KNOWLEDGE
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_15_mi_without_runtime_knowledge_unbounded() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_15_mi_without_runtime_knowledge_unbounded, {
     // Arrange: Create workflow with MI pattern where instance count is unknown
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -243,14 +240,12 @@ async fn test_pattern_15_mi_without_runtime_knowledge_unbounded() -> WorkflowRes
         .await?;
 
     Ok(())
-}
-
+});
 // ============================================================================
 // PATTERN 16: DEFERRED CHOICE
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_16_deferred_choice_event_driven() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_16_deferred_choice_event_driven, {
     // Arrange: Create workflow with deferred choice (event-driven decision)
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -331,14 +326,12 @@ async fn test_pattern_16_deferred_choice_event_driven() -> WorkflowResult<()> {
         .await?;
 
     Ok(())
-}
-
+});
 // ============================================================================
 // PATTERN 17: INTERLEAVED PARALLEL ROUTING
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_17_interleaved_parallel_routing() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_17_interleaved_parallel_routing, {
     // Arrange: Create workflow with interleaved parallel routing
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -431,14 +424,12 @@ async fn test_pattern_17_interleaved_parallel_routing() -> WorkflowResult<()> {
         .await?;
 
     Ok(())
-}
-
+});
 // ============================================================================
 // PATTERN 18: MILESTONE
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_18_milestone_state_based_gate() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_18_milestone_state_based_gate, {
     // Arrange: Create workflow with milestone (state-based gate)
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -506,14 +497,12 @@ async fn test_pattern_18_milestone_state_based_gate() -> WorkflowResult<()> {
         .await?;
 
     Ok(())
-}
-
+});
 // ============================================================================
 // PATTERN 19: CANCEL ACTIVITY
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_19_cancel_activity() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_19_cancel_activity, {
     // Arrange: Create workflow with cancel activity pattern
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -577,14 +566,12 @@ async fn test_pattern_19_cancel_activity() -> WorkflowResult<()> {
         .await?;
 
     Ok(())
-}
-
+});
 // ============================================================================
 // PATTERN 36: DYNAMIC PARTIAL JOIN MI
 // ============================================================================
 
-#[tokio::test]
-async fn test_pattern_36_dynamic_partial_join_mi() -> WorkflowResult<()> {
+chicago_async_test!(test_pattern_36_dynamic_partial_join_mi, {
     // Arrange: Create workflow with dynamic partial join MI
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -650,14 +637,12 @@ async fn test_pattern_36_dynamic_partial_join_mi() -> WorkflowResult<()> {
     );
 
     Ok(())
-}
-
+});
 // ============================================================================
 // INTEGRATION TEST: MULTIPLE DIFFICULT PATTERNS COMBINED
 // ============================================================================
 
-#[tokio::test]
-async fn test_difficult_patterns_integration() -> WorkflowResult<()> {
+chicago_async_test!(test_difficult_patterns_integration, {
     // Arrange: Create workflow combining multiple difficult patterns
     let mut fixture = WorkflowTestFixture::new()?;
 
@@ -741,4 +726,4 @@ async fn test_difficult_patterns_integration() -> WorkflowResult<()> {
         .await?;
 
     Ok(())
-}
+});

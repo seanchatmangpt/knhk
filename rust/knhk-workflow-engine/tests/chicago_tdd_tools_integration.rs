@@ -29,8 +29,7 @@ use knhk_workflow_engine::WorkflowEngine;
 use std::collections::HashMap;
 
 /// Test workflow registration and retrieval
-#[tokio::test]
-async fn test_workflow_registration_and_retrieval() -> WorkflowResult<()> {
+chicago_async_test!(test_workflow_registration_and_retrieval, {
     // Arrange: Create engine and test data
     let state_store = StateStore::new("./test_workflow_db_registration")?;
     let engine = WorkflowEngine::new(state_store);
@@ -102,11 +101,9 @@ async fn test_workflow_registration_and_retrieval() -> WorkflowResult<()> {
     );
 
     Ok(())
-}
-
+});
 /// Test case creation and state transitions
-#[tokio::test]
-async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
+chicago_async_test!(test_case_creation_and_state_transitions, {
     // Arrange: Create engine and workflow
     let db_path = format!("./test_workflow_db_case_states_{}", std::process::id());
     let state_store = StateStore::new(&db_path)?;
@@ -215,11 +212,9 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
     );
 
     Ok(())
-}
-
+});
 /// Test case execution with multiple tasks
-#[tokio::test]
-async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
+chicago_async_test!(test_case_execution_with_multiple_tasks, {
     // Arrange: Create engine with multi-task workflow
     let db_path = format!("./test_workflow_db_multi_task_{}", std::process::id());
     let state_store = StateStore::new(&db_path)?;
@@ -320,8 +315,7 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
     );
 
     Ok(())
-}
-
+});
 /// Test error handling for invalid workflow registration
 chicago_async_test!(test_error_handling_invalid_workflow, {
     // Arrange: Create engine
@@ -419,8 +413,7 @@ chicago_async_test!(test_error_handling_missing_case, {
 }
 
 /// Test case cancellation
-#[tokio::test]
-async fn test_case_cancellation() -> WorkflowResult<()> {
+chicago_async_test!(test_case_cancellation, {
     // Arrange: Create engine and workflow
     let state_store = StateStore::new("./test_workflow_db_cancellation")?;
     let engine = WorkflowEngine::new(state_store);
@@ -489,11 +482,9 @@ async fn test_case_cancellation() -> WorkflowResult<()> {
     );
 
     Ok(())
-}
-
+});
 /// Test multiple workflows and cases
-#[tokio::test]
-async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
+chicago_async_test!(test_multiple_workflows_and_cases, {
     // Arrange: Create engine
     let state_store = StateStore::new("./test_workflow_db_multiple")?;
     let engine = WorkflowEngine::new(state_store);
@@ -583,11 +574,9 @@ async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
     }
 
     Ok(())
-}
-
+});
 /// Test state persistence across engine instances
-#[tokio::test]
-async fn test_state_persistence() -> WorkflowResult<()> {
+chicago_async_test!(test_state_persistence, {
     // Arrange: Create first engine instance
     let db_path = format!("./test_workflow_db_persistence_{}", std::process::id());
     let state_store = StateStore::new(&db_path)?;
@@ -653,11 +642,9 @@ async fn test_state_persistence() -> WorkflowResult<()> {
     // This test verifies workflow persistence at minimum
 
     Ok(())
-}
-
+});
 /// Test admission gate integration
-#[tokio::test]
-async fn test_admission_gate_integration() -> WorkflowResult<()> {
+chicago_async_test!(test_admission_gate_integration, {
     // Arrange: Create engine
     let state_store = StateStore::new("./test_workflow_db_admission")?;
     let engine = WorkflowEngine::new(state_store);
@@ -715,8 +702,7 @@ async fn test_admission_gate_integration() -> WorkflowResult<()> {
     );
 
     Ok(())
-}
-
+});
 /// Test workflow engine services are accessible
 chicago_async_test!(test_engine_services_access, {
     // Arrange: Create engine
@@ -739,8 +725,7 @@ chicago_async_test!(test_engine_services_access, {
 }
 
 /// Test complete workflow lifecycle
-#[tokio::test]
-async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
+chicago_async_test!(test_complete_workflow_lifecycle, {
     // Arrange: Create engine
     let db_path = format!("./test_workflow_db_lifecycle_{}", std::process::id());
     let state_store = StateStore::new(&db_path)?;
@@ -860,4 +845,4 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
     assert!(case.data.is_object(), "Case data should be preserved");
 
     Ok(())
-}
+});

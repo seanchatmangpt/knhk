@@ -4,9 +4,9 @@
 //! The main binary is in `main.rs`.
 
 // Allow acceptable warnings for clean build
-#![allow(unused_imports)] // Some imports are conditional or reserved for planned use
-#![allow(unused_variables)] // Some variables are used in conditional compilation
-#![allow(dead_code)] // Some code is reserved for planned features
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 #![allow(deprecated)] // Some dependencies use deprecated APIs (will be updated)
 #![allow(unexpected_cfgs)] // Some cfg values are informational (policy-engine, network, tempfile)
 
