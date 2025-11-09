@@ -393,6 +393,7 @@ wf:Task a rdf:Class .
                 tasks
             },
             conditions: HashMap::new(),
+            flows: Vec::new(),
             start_condition: None,
             end_condition: None,
             source_turtle: None,

@@ -247,6 +247,7 @@ mod tests {
             name: "Test Workflow".to_string(),
             tasks: HashMap::new(),
             conditions: HashMap::new(),
+            flows: Vec::new(),
             start_condition: None,
             end_condition: None,
             source_turtle: None,

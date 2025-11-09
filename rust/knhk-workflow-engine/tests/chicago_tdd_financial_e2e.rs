@@ -66,7 +66,7 @@ async fn test_atm_withdrawal_successful_flow() {
 
     assert_eq!(
         case.state,
-        state::CaseState::Completed,
+        CaseState::Completed,
         "ATM withdrawal should complete successfully"
     );
 
@@ -118,7 +118,7 @@ async fn test_atm_withdrawal_insufficient_funds() {
     // Pattern 4 (XOR Choice): balance check should reject transaction
     // Pattern 19 (Cancellation): transaction cancelled due to insufficient funds
     assert!(
-        case.state == state::CaseState::Cancelled || case.state == state::CaseState::Completed,
+        case.state == CaseState::Cancelled || case.state == CaseState::Completed,
         "Insufficient funds should cancel or complete with rejection"
     );
 }
@@ -211,7 +211,7 @@ async fn test_swift_payment_successful_flow() {
 
     assert_eq!(
         case.state,
-        state::CaseState::Completed,
+        CaseState::Completed,
         "SWIFT payment should complete successfully"
     );
 
@@ -258,7 +258,7 @@ async fn test_swift_payment_sanctions_rejection() {
 
     // Pattern 16 (Deferred Choice): compliance check decides path at runtime
     assert!(
-        case.state == state::CaseState::Cancelled || case.state == state::CaseState::Completed,
+        case.state == CaseState::Cancelled || case.state == CaseState::Completed,
         "Sanctioned payment should be rejected"
     );
 }
@@ -309,7 +309,7 @@ async fn test_swift_payment_parallel_compliance_checks() {
 
     assert_eq!(
         harness.engine.get_case(case_id).await.unwrap().state,
-        state::CaseState::Completed
+        CaseState::Completed
     );
 }
 
@@ -364,7 +364,7 @@ async fn test_payroll_multi_instance_processing() {
 
     assert_eq!(
         case.state,
-        state::CaseState::Completed,
+        CaseState::Completed,
         "Payroll should complete for all employees"
     );
 
@@ -408,7 +408,7 @@ async fn test_payroll_approval_milestone() {
 
     // Workflow should wait at approval milestone
     assert!(
-        case.state == state::CaseState::Running || case.state == state::CaseState::Waiting,
+        case.state == CaseState::Running,
         "Payroll should wait for approval before payment"
     );
 }
@@ -463,7 +463,7 @@ async fn test_payroll_performance_scalability() {
 
     assert_eq!(
         harness.engine.get_case(case_id).await.unwrap().state,
-        state::CaseState::Completed
+        CaseState::Completed
     );
 
     // Should complete in reasonable time even with 1000 instances

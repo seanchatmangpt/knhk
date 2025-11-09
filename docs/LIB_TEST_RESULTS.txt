@@ -1,0 +1,1226 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sac/knhk/rust/knhk-hot/Cargo.toml
+workspace: /Users/sac/knhk/rust/Cargo.toml
+warning: variable does not need to be mutable
+  --> knhk-lockchain/src/storage.rs:93:17
+   |
+93 |             let mut repo = repo_mutex.lock().map_err(|e| {
+   |                 ----^^^^
+   |                 |
+   |                 help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: `knhk-lockchain` (lib) generated 1 warning (run `cargo fix --lib -p knhk-lockchain` to apply 1 suggestion)
+warning: field `hook_counter` is never read
+  --> knhk-etl/src/hook_registry.rs:55:5
+   |
+41 | pub struct HookRegistry {
+   |            ------------ field in this struct
+...
+55 |     hook_counter: AtomicU64,
+   |     ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `knhk-etl` (lib) generated 1 warning
+   Compiling knhk-workflow-engine v1.0.0 (/Users/sac/knhk/rust/knhk-workflow-engine)
+   Compiling knhk-json-bench v0.1.0 (/Users/sac/knhk/rust/knhk-json-bench)
+warning: unused variable: `receipt`
+   --> knhk-sidecar/src/multi_region.rs:202:34
+    |
+202 |     async fn send_receipt(&self, receipt: &Receipt) -> SidecarResult<()> {
+    |                                  ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_receipt`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `receipt_id`
+   --> knhk-sidecar/src/multi_region.rs:255:36
+    |
+255 |     async fn verify_receipt(&self, receipt_id: &str) -> SidecarResult<bool> {
+    |                                    ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_receipt_id`
+
+warning: unreachable expression
+   --> knhk-sidecar/src/kms.rs:247:9
+    |
+191 |           let client: Box<dyn KmsClient> = match &config.provider {
+    |  __________________________________________-
+192 | |             KmsProvider::Aws { region, key_id } => {
+193 | |                 #[cfg(feature = "fortune5")]
+...   |
+245 | |         };
+    | |_________- any code following this `match` expression is unreachable, as all arms diverge
+246 |
+247 | /         Ok(Self {
+248 | |             config,
+249 | |             client,
+250 | |             last_rotation: None,
+251 | |         })
+    | |__________^ unreachable expression
+    |
+    = note: `#[warn(unreachable_code)]` on by default
+
+warning: unused variable: `poisoned`
+   --> knhk-sidecar/src/beat_admission.rs:250:17
+    |
+250 |             Err(poisoned) => {
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_poisoned`
+
+warning: variable does not need to be mutable
+   --> knhk-sidecar/src/metrics.rs:189:13
+    |
+189 |         let mut latencies = self
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `emit_result`
+   --> knhk-sidecar/src/service.rs:327:17
+    |
+327 |             let emit_result = emit.emit(reflex_result).map_err(|e| {
+    |                 ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_emit_result`
+
+warning: unused variable: `results`
+   --> knhk-sidecar/src/service.rs:597:16
+    |
+597 |             Ok(results) => {
+    |                ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_results`
+
+warning: unused variable: `ca_file`
+   --> knhk-sidecar/src/tls.rs:199:25
+    |
+199 |         if let Some(ref ca_file) = config.ca_file {
+    |                         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ca_file`
+
+warning: unused variable: `rotation_interval`
+   --> knhk-sidecar/src/key_rotation.rs:110:13
+    |
+110 |         let rotation_interval = self.rotation_interval;
+    |             ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rotation_interval`
+
+warning: unused variable: `client`
+   --> knhk-sidecar/src/kms.rs:191:13
+    |
+191 |         let client: Box<dyn KmsClient> = match &config.provider {
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_client`
+
+warning: unused variable: `region`
+   --> knhk-sidecar/src/kms.rs:192:32
+    |
+192 |             KmsProvider::Aws { region, key_id } => {
+    |                                ^^^^^^ help: try ignoring the field: `region: _`
+
+warning: unused variable: `key_id`
+   --> knhk-sidecar/src/kms.rs:192:40
+    |
+192 |             KmsProvider::Aws { region, key_id } => {
+    |                                        ^^^^^^ help: try ignoring the field: `key_id: _`
+
+warning: unused variable: `vault_url`
+   --> knhk-sidecar/src/kms.rs:206:17
+    |
+206 |                 vault_url,
+    |                 ^^^^^^^^^ help: try ignoring the field: `vault_url: _`
+
+warning: unused variable: `key_name`
+   --> knhk-sidecar/src/kms.rs:207:17
+    |
+207 |                 key_name,
+    |                 ^^^^^^^^ help: try ignoring the field: `key_name: _`
+
+warning: unused variable: `addr`
+   --> knhk-sidecar/src/kms.rs:221:17
+    |
+221 |                 addr,
+    |                 ^^^^ help: try ignoring the field: `addr: _`
+
+warning: unused variable: `mount_path`
+   --> knhk-sidecar/src/kms.rs:222:17
+    |
+222 |                 mount_path,
+    |                 ^^^^^^^^^^ help: try ignoring the field: `mount_path: _`
+
+warning: unused variable: `key_name`
+   --> knhk-sidecar/src/kms.rs:223:17
+    |
+223 |                 key_name,
+    |                 ^^^^^^^^ help: try ignoring the field: `key_name: _`
+
+warning: field `config` is never read
+  --> knhk-sidecar/src/client.rs:52:5
+   |
+47 | pub struct SidecarClient {
+   |            ------------- field in this struct
+...
+52 |     config: ClientConfig,
+   |     ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: fields `config`, `circuit_breaker`, `retry_config`, and `beat_admission` are never read
+  --> knhk-sidecar/src/service.rs:29:5
+   |
+28 | pub struct KgcSidecarService {
+   |            ----------------- fields in this struct
+29 |     config: SidecarConfig,
+   |     ^^^^^^
+30 |     circuit_breaker: Arc<CircuitBreaker>,
+   |     ^^^^^^^^^^^^^^^
+31 |     health_checker: Arc<HealthChecker>,
+32 |     retry_config: RetryConfig,
+   |     ^^^^^^^^^^^^
+...
+37 |     beat_admission: Option<Arc<crate::beat_admission::BeatAdmission>>,
+   |     ^^^^^^^^^^^^^^
+
+warning: field `config` is never read
+   --> knhk-sidecar/src/multi_region.rs:320:5
+    |
+319 | pub struct LegalHoldManager {
+    |            ---------------- field in this struct
+320 |     config: RegionConfig,
+    |     ^^^^^^
+
+   Compiling knhk-warm v1.0.0 (/Users/sac/knhk/rust/knhk-warm)
+   Compiling knhk-etl v1.0.0 (/Users/sac/knhk/rust/knhk-etl)
+warning: `knhk-sidecar` (lib test) generated 20 warnings (run `cargo fix --lib -p knhk-sidecar --tests` to apply 1 suggestion)
+warning: `knhk-lockchain` (lib test) generated 1 warning (1 duplicate)
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:424:17
+    |
+421 |             .register_hook(
+    |              ------------- arguments to this method are incorrect
+...
+424 |                 guards::always_valid,
+    |                 ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+424 |                 Box::new(guards::always_valid),
+    |                 +++++++++                    +
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:439:52
+    |
+439 |             .register_hook(200, KernelType::AskSp, guards::always_valid, vec![])
+    |              -------------                         ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |              |
+    |              arguments to this method are incorrect
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+439 |             .register_hook(200, KernelType::AskSp, Box::new(guards::always_valid), vec![])
+    |                                                    +++++++++                    +
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:444:64
+    |
+444 |             registry.register_hook(200, KernelType::CountSpGe, guards::always_valid, vec![]);
+    |                      -------------                             ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |                      |
+    |                      arguments to this method are incorrect
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+444 |             registry.register_hook(200, KernelType::CountSpGe, Box::new(guards::always_valid), vec![]);
+    |                                                                +++++++++                    +
+
+warning: unexpected `cfg` condition value: `network`
+   --> knhk-workflow-engine/src/compliance/abac.rs:266:15
+    |
+266 |         #[cfg(feature = "network")]
+    |               ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `rdf`, and `unrdf`
+    = help: consider adding `network` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `super::task`
+ --> knhk-workflow-engine/src/executor/case.rs:9:5
+  |
+9 | use super::task;
+  |     ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `WorkflowError`
+ --> knhk-workflow-engine/src/executor/construction.rs:4:20
+  |
+4 | use crate::error::{WorkflowError, WorkflowResult};
+  |                    ^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> knhk-workflow-engine/src/executor/rdf_query.rs:10:5
+   |
+10 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `tokio::sync::RwLock`
+  --> knhk-workflow-engine/src/executor/rdf_query.rs:11:5
+   |
+11 | use tokio::sync::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `tracing::info`
+  --> knhk-workflow-engine/src/executor/simple_execution.rs:13:5
+   |
+13 | use tracing::info;
+   |     ^^^^^^^^^^^^^
+
+warning: unused import: `WorkflowError`
+ --> knhk-workflow-engine/src/executor/xes_export.rs:7:20
+  |
+7 | use crate::error::{WorkflowError, WorkflowResult};
+  |                    ^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> knhk-workflow-engine/src/executor/xes_export.rs:99:9
+   |
+99 |     use std::sync::Arc;
+   |         ^^^^^^^^^^^^^^
+
+warning: unused import: `Task`
+   --> knhk-workflow-engine/src/reflex.rs:224:25
+    |
+224 |     use crate::parser::{Task, WorkflowSpec, WorkflowSpecId};
+    |                         ^^^^
+
+warning: unused imports: `SplitType` and `TaskType`
+   --> knhk-workflow-engine/src/testing/mutation.rs:168:25
+    |
+168 |     use crate::parser::{SplitType, TaskType};
+    |                         ^^^^^^^^^  ^^^^^^^^
+
+warning: unused import: `oxigraph::model::*`
+  --> knhk-workflow-engine/src/validation/shacl.rs:33:5
+   |
+33 | use oxigraph::model::*;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `QueryOptions`
+  --> knhk-workflow-engine/src/validation/shacl.rs:34:24
+   |
+34 | use oxigraph::sparql::{QueryOptions, QueryResults};
+   |                        ^^^^^^^^^^^^
+
+warning: unused imports: `JoinType`, `SplitType`, `TaskType`, and `Task`
+   --> knhk-workflow-engine/src/visualization/mod.rs:238:25
+    |
+238 |     use crate::parser::{JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId};
+    |                         ^^^^^^^^  ^^^^^^^^^  ^^^^  ^^^^^^^^
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:460:17
+    |
+457 |             .register_hook(
+    |              ------------- arguments to this method are incorrect
+...
+460 |                 guards::check_subject_nonempty,
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {check_subject_nonempty}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+460 |                 Box::new(guards::check_subject_nonempty),
+    |                 +++++++++                              +
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:496:52
+    |
+496 |             .register_hook(200, KernelType::AskSp, guards::always_valid, vec![])
+    |              -------------                         ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |              |
+    |              arguments to this method are incorrect
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+496 |             .register_hook(200, KernelType::AskSp, Box::new(guards::always_valid), vec![])
+    |                                                    +++++++++                    +
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:514:17
+    |
+511 |             .register_hook(
+    |              ------------- arguments to this method are incorrect
+...
+514 |                 guards::always_valid,
+    |                 ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+514 |                 Box::new(guards::always_valid),
+    |                 +++++++++                    +
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:570:52
+    |
+570 |             .register_hook(200, KernelType::AskSp, guards::always_valid, vec![])
+    |              -------------                         ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |              |
+    |              arguments to this method are incorrect
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+570 |             .register_hook(200, KernelType::AskSp, Box::new(guards::always_valid), vec![])
+    |                                                    +++++++++                    +
+
+error[E0308]: mismatched types
+   --> knhk-etl/src/hook_registry.rs:573:56
+    |
+573 |             .register_hook(201, KernelType::CountSpGe, guards::always_valid, vec![])
+    |              -------------                             ^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Fn(&...) -> bool + Send + Sync>`, found fn item
+    |              |
+    |              arguments to this method are incorrect
+    |
+    = note: expected struct `Box<(dyn for<'a> Fn(&'a ingest::RawTriple) -> bool + Send + std::marker::Sync + 'static)>`
+              found fn item `for<'a> fn(&'a ingest::RawTriple) -> bool {always_valid}`
+    = note: for more on the distinction between the stack and the heap, read https://doc.rust-lang.org/book/ch15-01-box.html, https://doc.rust-lang.org/rust-by-example/std/box.html, and https://doc.rust-lang.org/std/boxed/index.html
+note: method defined here
+   --> knhk-etl/src/hook_registry.rs:183:12
+    |
+183 |     pub fn register_hook(
+    |            ^^^^^^^^^^^^^
+...
+187 |         guard: GuardFn,
+    |         --------------
+help: store this in the heap by calling `Box::new`
+    |
+573 |             .register_hook(201, KernelType::CountSpGe, Box::new(guards::always_valid), vec![])
+    |                                                        +++++++++                    +
+
+warning: use of deprecated struct `oxigraph::sparql::Query`: Use SparqlEvaluator instead to parse the query with options or directly the spargebra::Query type
+   --> knhk-workflow-engine/src/compliance/abac.rs:104:27
+    |
+104 |         oxigraph::sparql::Query::parse(&rule.evaluation_query, None)
+    |                           ^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated struct `oxigraph::sparql::Query`: Use SparqlEvaluator instead to parse the query with options or directly the spargebra::Query type
+   --> knhk-workflow-engine/src/compliance/abac.rs:156:35
+    |
+156 |                 oxigraph::sparql::Query::parse(&rule.evaluation_query, None).map_err(|e| {
+    |                                   ^^^^^
+
+warning: use of deprecated struct `oxigraph::sparql::Query`: Use SparqlEvaluator instead to parse the query with options or directly the spargebra::Query type
+   --> knhk-workflow-engine/src/ggen/mod.rs:176:39
+    |
+176 |         let query = oxigraph::sparql::Query::parse(query, None)
+    |                                       ^^^^^
+
+warning: use of deprecated type alias `oxigraph::sparql::QueryOptions`: Use SparqlEvaluator instead
+  --> knhk-workflow-engine/src/validation/shacl.rs:34:24
+   |
+34 | use oxigraph::sparql::{QueryOptions, QueryResults};
+   |                        ^^^^^^^^^^^^
+
+warning: unused variable: `receipts`
+   --> knhk-etl/src/beat_scheduler.rs:654:13
+    |
+654 |         let receipts = scheduler.get_cycle_receipts();
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_receipts`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `executor`
+   --> knhk-workflow-engine/src/api/rest/handlers.rs:445:9
+    |
+445 |     let executor = registry
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_executor`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+   --> knhk-workflow-engine/src/compliance/abac.rs:161:18
+    |
+161 |                 .query(query)
+    |                  ^^^^^
+
+warning: variable does not need to be mutable
+   --> knhk-workflow-engine/src/executor/rdf_query.rs:113:13
+    |
+113 |         let mut store = self.spec_rdf_store.write().await;
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> knhk-workflow-engine/src/executor/rdf_query.rs:138:13
+    |
+138 |         let mut store = self.pattern_metadata_store.write().await;
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+  --> knhk-workflow-engine/src/validation/sparql.rs:71:14
+   |
+71 |             .query(check_spec_query)
+   |              ^^^^^
+
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+   --> knhk-workflow-engine/src/validation/sparql.rs:105:14
+    |
+105 |             .query(query)
+    |              ^^^^^
+
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+   --> knhk-workflow-engine/src/validation/sparql.rs:169:14
+    |
+169 |             .query(query)
+    |              ^^^^^
+
+For more information about this error, try `rustc --explain E0308`.
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+  --> knhk-workflow-engine/src/executor/rdf_query.rs:21:10
+   |
+21 |         .query(sparql)
+   |          ^^^^^
+
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+   --> knhk-workflow-engine/src/ggen/mod.rs:180:14
+    |
+180 |             .query(query)
+    |              ^^^^^
+
+warning: use of deprecated method `oxigraph::store::Store::query`: Use `SparqlEvaluator` interface instead
+   --> knhk-workflow-engine/src/validation/shacl.rs:491:14
+    |
+491 |             .query(query)
+    |              ^^^^^
+
+warning: `knhk-etl` (lib test) generated 1 warning
+error: could not compile `knhk-etl` (lib test) due to 8 previous errors; 1 warning emitted
+warning: build failed, waiting for other jobs to finish...
+warning: unreachable pattern
+   --> knhk-workflow-engine/src/compiler/mod.rs:374:9
+    |
+374 |         _ => 1,
+    |         ^ no value can reach this
+    |
+note: multiple earlier patterns match some of the same values
+   --> knhk-workflow-engine/src/compiler/mod.rs:374:9
+    |
+364 |         (SplitType::And, JoinType::And) => 1,
+    |         ------------------------------- matches some of the same values
+365 |         (SplitType::Xor, JoinType::Xor) => 2,
+    |         ------------------------------- matches some of the same values
+366 |         (SplitType::Or, JoinType::Or) => 3,
+    |         ----------------------------- matches some of the same values
+367 |         (SplitType::And, JoinType::Xor) => 4,
+    |         ------------------------------- matches some of the same values
+...
+374 |         _ => 1,
+    |         ^ ...and 5 other patterns collectively make this unreachable
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unused variable: `case_id`
+   --> knhk-workflow-engine/src/process_mining/xes_export.rs:194:17
+    |
+194 |                 case_id,
+    |                 ^^^^^^^ help: try ignoring the field: `case_id: _`
+
+warning: field `enabled` is never read
+  --> knhk-workflow-engine/src/api/middleware.rs:26:5
+   |
+24 | pub struct Fortune5Middleware {
+   |            ------------------ field in this struct
+25 |     /// Enable Fortune 5 features
+26 |     enabled: bool,
+   |     ^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: fields `data` and `region` are never read
+  --> knhk-workflow-engine/src/cluster/sync.rs:24:5
+   |
+23 | struct CacheEntry {
+   |        ---------- fields in this struct
+24 |     data: Vec<u8>,
+   |     ^^^^
+25 |     timestamp: u64, // Unix timestamp in milliseconds
+26 |     region: String,
+   |     ^^^^^^
+   |
+   = note: `CacheEntry` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `enterprise_config`, `otel_integration`, `auth_manager`, `provenance_tracker`, and `connector_integration` are never read
+  --> knhk-workflow-engine/src/executor/engine.rs:54:16
+   |
+28 | pub struct WorkflowEngine {
+   |            -------------- fields in this struct
+...
+54 |     pub(crate) enterprise_config: Option<Arc<EnterpriseConfig>>,
+   |                ^^^^^^^^^^^^^^^^^
+...
+58 |     pub(crate) otel_integration: Option<Arc<OtelIntegration>>,
+   |                ^^^^^^^^^^^^^^^^
+...
+62 |     pub(crate) auth_manager: Option<Arc<RwLock<AuthManager>>>,
+   |                ^^^^^^^^^^^^
+63 |     /// Provenance tracker (if enabled)
+64 |     pub(crate) provenance_tracker: Option<Arc<ProvenanceTracker>>,
+   |                ^^^^^^^^^^^^^^^^^^
+...
+68 |     pub(crate) connector_integration: Option<Arc<tokio::sync::Mutex<ConnectorIntegration>>>,
+   |                ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `WorkflowEngine` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `load_pattern_metadata_rdf` is never used
+   --> knhk-workflow-engine/src/executor/rdf_query.rs:134:25
+    |
+ 68 | impl WorkflowEngine {
+    | ------------------- method in this implementation
+...
+134 |     pub(crate) async fn load_pattern_metadata_rdf(&self) -> Result<(), String> {
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `execute_workflow_tasks` is never used
+  --> knhk-workflow-engine/src/executor/task.rs:15:15
+   |
+15 | pub(super) fn execute_workflow_tasks<'a>(
+   |               ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `execute_task_with_allocation` is never used
+  --> knhk-workflow-engine/src/executor/task.rs:38:21
+   |
+38 | pub(super) async fn execute_task_with_allocation(
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `template_dir` is never read
+  --> knhk-workflow-engine/src/ggen/mod.rs:31:5
+   |
+25 | pub struct GgenGenerator {
+   |            ------------- field in this struct
+...
+31 |     template_dir: PathBuf,
+   |     ^^^^^^^^^^^^
+
+warning: method `execute_sparql` is never used
+   --> knhk-workflow-engine/src/ggen/mod.rs:169:8
+    |
+ 34 | impl GgenGenerator {
+    | ------------------ method in this implementation
+...
+169 |     fn execute_sparql(&self, query: &str) -> WorkflowResult<Value> {
+    |        ^^^^^^^^^^^^^^
+
+warning: field `state_store` is never read
+  --> knhk-workflow-engine/src/innovation/deterministic.rs:75:5
+   |
+69 | pub struct DeterministicExecutor {
+   |            --------------------- field in this struct
+...
+75 |     state_store: Option<Arc<RwLock<StateStore>>>,
+   |     ^^^^^^^^^^^
+
+warning: fields `connectors` and `health_checker` are never read
+  --> knhk-workflow-engine/src/integration/best_practices.rs:19:5
+   |
+15 | pub struct BestPracticesIntegration {
+   |            ------------------------ fields in this struct
+...
+19 |     connectors: Option<Arc<ConnectorIntegration>>,
+   |     ^^^^^^^^^^
+20 |     health_checker: IntegrationHealthChecker,
+   |     ^^^^^^^^^^^^^^
+
+warning: fields `op_type` and `constants` are never read
+  --> knhk-workflow-engine/src/performance/aot.rs:35:5
+   |
+33 | pub struct AotKernel {
+   |            --------- fields in this struct
+34 |     /// Operation type
+35 |     op_type: HotPathOp,
+   |     ^^^^^^^
+...
+39 |     constants: Vec<u64>,
+   |     ^^^^^^^^^
+
+warning: field `r1_cache_hit_threshold` is never read
+   --> knhk-workflow-engine/src/performance/aot.rs:232:5
+    |
+228 | pub struct AdmissionController {
+    |            ------------------- field in this struct
+...
+232 |     r1_cache_hit_threshold: f64,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `slo_threshold` is never read
+  --> knhk-workflow-engine/src/reflex.rs:27:5
+   |
+25 | pub struct ReflexBridge {
+   |            ------------ field in this struct
+26 |     /// Promotion policy: SLO compliance threshold
+27 |     slo_threshold: f64,
+   |     ^^^^^^^^^^^^^
+
+warning: associated function `parse_rrule_and_calculate_next` is never used
+   --> knhk-workflow-engine/src/services/timer.rs:353:8
+    |
+351 | impl<T: Timebase> TimerService<T> {
+    | --------------------------------- associated function in this implementation
+352 |     /// Parse RRULE and calculate next occurrence
+353 |     fn parse_rrule_and_calculate_next(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `test_files` is never read
+  --> knhk-workflow-engine/src/testing/coverage.rs:31:5
+   |
+29 | pub struct CoverageAnalyzer {
+   |            ---------------- field in this struct
+30 |     /// Test files analyzed
+31 |     test_files: Vec<String>,
+   |     ^^^^^^^^^^
+
+warning: field `tests` is never read
+  --> knhk-workflow-engine/src/testing/generator.rs:12:5
+   |
+10 | pub struct WorkflowTestGenerator {
+   |            --------------------- field in this struct
+11 |     /// Generated test code
+12 |     tests: Vec<String>,
+   |     ^^^^^
+
+warning: field `fixture` is never read
+  --> knhk-workflow-engine/src/testing/mutation.rs:35:5
+   |
+31 | pub struct MutationTester {
+   |            -------------- field in this struct
+...
+35 |     fixture: WorkflowTestFixture,
+   |     ^^^^^^^
+
+warning: fields `total` and `caught` are never read
+   --> knhk-workflow-engine/src/testing/mutation.rs:131:5
+    |
+129 | pub struct MutationScore {
+    |            ------------- fields in this struct
+130 |     /// Total mutations tested
+131 |     total: usize,
+    |     ^^^^^
+132 |     /// Mutations caught by tests
+133 |     caught: usize,
+    |     ^^^^^^
+
+warning: field `shapes_store` is never read
+   --> knhk-workflow-engine/src/validation/shacl.rs:113:5
+    |
+111 | pub struct ShaclValidator {
+    |            -------------- field in this struct
+112 |     /// Store containing SHACL shape definitions
+113 |     shapes_store: Store,
+    |     ^^^^^^^^^^^^
+
+warning: field `node_styles` is never read
+  --> knhk-workflow-engine/src/visualization/mod.rs:13:5
+   |
+11 | pub struct WorkflowVisualizer {
+   |            ------------------ field in this struct
+12 |     /// Node styling options
+13 |     node_styles: HashMap<String, NodeStyle>,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> knhk-workflow-engine/src/lib.rs:81:1
+   |
+81 | pub mod reflex;
+   | ^^^^^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> knhk-workflow-engine/src/lib.rs:56:9
+   |
+56 | #![warn(missing_docs)]
+   |         ^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> knhk-workflow-engine/src/api/grpc.rs:12:1
+   |
+12 | pub mod proto {
+   | ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+ --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:7:5
+  |
+7 |     pub spec: ::core::option::Option<WorkflowSpec>,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:14:5
+   |
+14 |     pub spec_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:21:5
+   |
+21 |     pub spec_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:28:5
+   |
+28 |     pub spec: ::core::option::Option<WorkflowSpec>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:35:5
+   |
+35 |     pub spec_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:45:5
+   |
+45 |     pub case_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:52:5
+   |
+52 |     pub case_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:59:5
+   |
+59 |     pub case: ::core::option::Option<Case>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:66:5
+   |
+66 |     pub case_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:73:5
+   |
+73 |     pub entries: ::prost::alloc::vec::Vec<CaseHistoryEntry>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:80:5
+   |
+80 |     pub case_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:87:5
+   |
+87 |     pub success: bool,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:94:5
+   |
+94 |     pub case_id: ::prost::alloc::string::String,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:101:5
+    |
+101 |     pub success: bool,
+    |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:108:5
+    |
+108 |     pub case_id: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:115:5
+    |
+115 |     pub success: bool,
+    |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:122:5
+    |
+122 |     pub id: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:124:5
+    |
+124 |     pub name: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:134:5
+    |
+134 |     pub id: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:136:5
+    |
+136 |     pub spec_id: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:138:5
+    |
+138 |     pub state: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:143:5
+    |
+143 |     pub created_at: i64,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:145:5
+    |
+145 |     pub updated_at: i64,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:152:5
+    |
+152 |     pub timestamp: i64,
+    |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> /Users/sac/knhk/rust/target/debug/build/knhk-workflow-engine-5ea350cf6c0676a1/out/knhk.workflow_engine.v1.rs:154:5
+    |
+154 |     pub event_type: ::prost::alloc::string::String,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/cache.rs:87:5
+   |
+87 |     pub spec_count: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/cache.rs:88:5
+   |
+88 |     pub case_count: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> knhk-workflow-engine/src/compliance/provenance_law.rs:98:5
+   |
+98 |     HashMismatch { a_hash: u64, mu_hash: u64 },
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/compliance/provenance_law.rs:98:20
+   |
+98 |     HashMismatch { a_hash: u64, mu_hash: u64 },
+   |                    ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/compliance/provenance_law.rs:98:33
+   |
+98 |     HashMismatch { a_hash: u64, mu_hash: u64 },
+   |                                 ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> knhk-workflow-engine/src/compliance/provenance_law.rs:100:5
+    |
+100 |     InvalidObservation,
+    |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> knhk-workflow-engine/src/compliance/provenance_law.rs:102:5
+    |
+102 |     InvalidAction,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> knhk-workflow-engine/src/events.rs:51:5
+   |
+51 |     ChannelClosed,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> knhk-workflow-engine/src/patterns/advanced_control/cancellation.rs:4:1
+  |
+4 | pub struct CancelActivityInstancePattern;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> knhk-workflow-engine/src/patterns/advanced_control/cancellation.rs:66:1
+   |
+66 | pub struct CancelProcessInstancePattern;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> knhk-workflow-engine/src/patterns/advanced_control/cancellation.rs:103:1
+    |
+103 | pub struct StopProcessInstancePattern;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> knhk-workflow-engine/src/patterns/advanced_control/cancellation.rs:131:1
+    |
+131 | pub struct AbortProcessInstancePattern;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> knhk-workflow-engine/src/patterns/advanced_control/control.rs:4:1
+  |
+4 | pub struct DisableActivityPattern;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> knhk-workflow-engine/src/patterns/advanced_control/control.rs:45:1
+   |
+45 | pub struct SkipActivityPattern;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> knhk-workflow-engine/src/patterns/advanced_control/control.rs:86:1
+   |
+86 | pub struct ActivityInstanceMultipleThreadsPattern;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> knhk-workflow-engine/src/patterns/advanced_control/control.rs:130:1
+    |
+130 | pub struct ThreadMergePattern;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> knhk-workflow-engine/src/patterns/advanced_control/discriminators.rs:4:1
+  |
+4 | pub struct BlockingDiscriminatorPattern;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> knhk-workflow-engine/src/patterns/advanced_control/discriminators.rs:53:1
+   |
+53 | pub struct CancellingDiscriminatorPattern;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> knhk-workflow-engine/src/patterns/advanced_control/loops.rs:4:1
+  |
+4 | pub struct StructuredLoopPattern;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> knhk-workflow-engine/src/patterns/advanced_control/loops.rs:63:1
+   |
+63 | pub struct RecursionPattern;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> knhk-workflow-engine/src/patterns/advanced_control/triggers.rs:4:1
+  |
+4 | pub struct TransientTriggerPattern;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> knhk-workflow-engine/src/patterns/advanced_control/triggers.rs:61:1
+   |
+61 | pub struct PersistentTriggerPattern;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> knhk-workflow-engine/src/reflex.rs:215:5
+    |
+215 |     pub hot_path_candidates: usize,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> knhk-workflow-engine/src/reflex.rs:216:5
+    |
+216 |     pub warm_path_candidates: usize,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> knhk-workflow-engine/src/reflex.rs:217:5
+    |
+217 |     pub cold_path_candidates: usize,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> knhk-workflow-engine/src/reflex.rs:218:5
+    |
+218 |     pub total_tasks: usize,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/resource/allocation/policies.rs:11:5
+   |
+11 |     pub resources: Arc<RwLock<HashMap<ResourceId, Resource>>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/resource/allocation/policies.rs:12:5
+   |
+12 |     pub round_robin_state: Arc<RwLock<HashMap<String, VecDeque<ResourceId>>>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/resource/allocation/policies.rs:13:5
+   |
+13 |     pub chained_state: Arc<RwLock<HashMap<String, VecDeque<ResourceId>>>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:34:9
+   |
+34 |         spec_id: WorkflowSpecId,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:35:9
+   |
+35 |         timestamp: chrono::DateTime<chrono::Utc>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:39:9
+   |
+39 |         case_id: CaseId,
+   |         ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:40:9
+   |
+40 |         spec_id: WorkflowSpecId,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:41:9
+   |
+41 |         timestamp: chrono::DateTime<chrono::Utc>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:45:9
+   |
+45 |         case_id: CaseId,
+   |         ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:46:9
+   |
+46 |         old_state: String,
+   |         ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:47:9
+   |
+47 |         new_state: String,
+   |         ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> knhk-workflow-engine/src/state/manager.rs:48:9
+   |
+48 |         timestamp: chrono::DateTime<chrono::Utc>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
+   --> knhk-workflow-engine/src/timebase/sim.rs:139:9
+    |
+139 |         drop(mono);
+    |         ^^^^^----^
+    |              |
+    |              argument has type `std::time::Instant`
+    |
+    = note: `#[warn(dropping_copy_types)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+    |
+139 -         drop(mono);
+139 +         let _ = mono;
+    |
+
+warning: `knhk-workflow-engine` (lib) generated 111 warnings (13 duplicates) (run `cargo fix --lib -p knhk-workflow-engine` to apply 2 suggestions)
+warning: variable does not need to be mutable
+   --> knhk-workflow-engine/src/visualization/mod.rs:245:13
+    |
+245 |         let mut spec = WorkflowSpec {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: `knhk-workflow-engine` (lib test) generated 115 warnings (97 duplicates) (run `cargo fix --lib -p knhk-workflow-engine --tests` to apply 13 suggestions)

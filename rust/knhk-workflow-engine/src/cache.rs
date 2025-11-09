@@ -102,6 +102,7 @@ mod tests {
             name: "Test".to_string(),
             tasks: std::collections::HashMap::new(),
             conditions: std::collections::HashMap::new(),
+            flows: Vec::new(),
             start_condition: None,
             end_condition: None,
             source_turtle: None,

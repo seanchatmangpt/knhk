@@ -1,0 +1,220 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - RDF Workflow Execution Architecture
+
+Container_Boundary(engine, "Workflow Engine") {
+    Component(rdf_loader, "RDF Workflow Loader", "Rust", "Load .ttl files, SHACL validate, extract WorkflowSpec")
+    Component(workflow_engine, "WorkflowEngine", "Rust", "register_workflow_from_rdf(), create_case(), execute_case()")
+    Component(pattern_executor, "Pattern Executor", "Rust", "Execute 43 Van der Aalst patterns")
+    Component(state_manager, "State Manager", "Rust", "Event sourcing + RDF state management")
+    Component(otel_integration, "OTEL Integration", "Rust", "Emit spans/metrics/logs (Weaver validated)")
+
+    ComponentDb(spec_rdf_store, "Spec RDF Store", "Oxigraph", "Workflow specifications (immutable)")
+    ComponentDb(pattern_metadata_store, "Pattern Metadata Store", "Oxigraph", "43 pattern metadata")
+    ComponentDb(case_rdf_stores, "Case RDF Stores", "Oxigraph HashMap", "Per-case runtime state (mutable)")
+    ComponentDb(sled_db, "Sled Database", "Sled", "Persistent state + event log")
+}
+
+Container_Ext(weaver, "OpenTelemetry Weaver", "Schema Validator")
+Container_Ext(otlp_collector, "OTLP Collector", "Telemetry")
+Container_Ext(rest_api, "REST API", "HTTP")
+Container_Ext(grpc_api, "gRPC API", "gRPC")
+
+' RDF Loading Flow
+Rel(rest_api, workflow_engine, "POST /workflow/register", "Turtle RDF")
+Rel(workflow_engine, rdf_loader, "load_from_string(turtle)")
+Rel(rdf_loader, spec_rdf_store, "Parse Turtle, SHACL validate")
+Rel(rdf_loader, workflow_engine, "WorkflowSpec")
+Rel(workflow_engine, state_manager, "save_spec(spec)")
+Rel(state_manager, sled_db, "Persist spec")
+
+' Case Execution Flow
+Rel(rest_api, workflow_engine, "POST /case/execute", "case_id")
+Rel(workflow_engine, spec_rdf_store, "SPARQL: Get tasks")
+Rel(workflow_engine, pattern_executor, "execute_task_with_pattern()")
+Rel(pattern_executor, case_rdf_stores, "Update runtime vars")
+Rel(pattern_executor, otel_integration, "Emit pattern span")
+Rel(workflow_engine, state_manager, "save_case_with_rdf()")
+Rel(state_manager, sled_db, "Persist case state")
+Rel(state_manager, case_rdf_stores, "Update case RDF store")
+
+' SPARQL Query Flow
+Rel(rest_api, workflow_engine, "POST /sparql", "SPARQL query")
+Rel(workflow_engine, spec_rdf_store, "query_rdf()")
+Rel(workflow_engine, case_rdf_stores, "query_case_rdf()")
+Rel(workflow_engine, pattern_metadata_store, "query_pattern_metadata()")
+Rel(workflow_engine, rest_api, "JSON results")
+
+' Telemetry Flow
+Rel(otel_integration, otlp_collector, "OTLP spans/metrics/logs")
+Rel(otlp_collector, weaver, "Telemetry data")
+Rel(weaver, otlp_collector, "Schema validation ✅/❌")
+
+note right of rdf_loader
+  **RDF Workflow Loader**
+
+  **Inputs:**
+  - .ttl files (Turtle RDF)
+  - YAWL ontology
+
+  **Processing:**
+  1. Parse Turtle → RDF graph
+  2. SHACL soundness validation
+  3. SPARQL queries to extract:
+     - Tasks, Conditions, Flows
+     - Parameters, Splits, Joins
+  4. Deadlock detection
+
+  **Output:**
+  - WorkflowSpec (internal format)
+  - source_turtle (for runtime queries)
+
+  **Performance:**
+  - Parsing: ~15ms (1000 tasks)
+  - SHACL: ~20ms
+  - Total: <100ms (registration SLO)
+end note
+
+note right of workflow_engine
+  **WorkflowEngine API**
+
+  **Registration:**
+  - register_workflow_from_rdf(turtle)
+    → Load into spec_rdf_store
+    → Persist to Sled
+    → Return spec_id
+
+  **Execution:**
+  - create_case(spec_id, data)
+    → Create case_rdf_store
+    → Initialize state
+  - execute_case(case_id)
+    → Loop: execute enabled tasks
+    → Update state
+    → Emit OTEL spans
+
+  **Queries:**
+  - query_rdf(spec_id, sparql)
+  - query_case_rdf(case_id, sparql)
+  - query_pattern_metadata(sparql)
+end note
+
+note right of pattern_executor
+  **Pattern Executor**
+
+  **Patterns:** All 43 Van der Aalst
+  - Control flow (1-20)
+  - Multiple instance (12-15, 34-36)
+  - State-based (16-18)
+  - Cancellation (19-20)
+  - Advanced (21-43)
+
+  **Execution:**
+  - PatternExecutionContext
+    → task_id, case_id, input_data
+  - Execute pattern logic
+  - PatternExecutionResult
+    → success, ticks_elapsed, output
+
+  **Performance:**
+  - Hot path: ≤8 ticks (Chatman)
+  - Emit OTEL span per pattern
+  - Validate with Weaver
+end note
+
+note right of otel_integration
+  **OTEL Integration**
+
+  **Spans:**
+  - workflow.execution
+  - pattern.execution
+  - rdf.query
+  - state.persistence
+
+  **Metrics:**
+  - workflow_registrations_total
+  - case_executions_total
+  - hot_path_ticks (histogram)
+  - chatman_violations_total
+  - sparql_query_latency_ms
+
+  **Logs:**
+  - Case state changes
+  - Pattern executions
+  - Error events
+
+  **Validation:**
+  - Weaver schema check (source of truth)
+  - All telemetry MUST conform
+end note
+
+note right of spec_rdf_store
+  **Spec RDF Store**
+
+  **Purpose:** Query workflow structure
+
+  **Contains:**
+  - All registered workflows
+  - Tasks, Conditions, Flows
+  - Immutable after registration
+
+  **Queries:**
+  - "Get all tasks in workflow X"
+  - "Get task by ID"
+  - "Get flows from task X"
+  - "Get task input parameters"
+
+  **Implementation:** Oxigraph
+  - In-memory SPARQL engine
+  - Fast queries (<10ms)
+end note
+
+note right of case_rdf_stores
+  **Case RDF Stores**
+
+  **Purpose:** Runtime state per case
+
+  **Structure:**
+  - HashMap<CaseId, Store>
+  - One Store per active case
+
+  **Contains:**
+  - Case variables
+  - Intermediate results
+  - Enabled tasks
+
+  **Lifecycle:**
+  - Created: case creation
+  - Updated: task execution
+  - Exported: case completion
+  - Cleaned: after persistence
+
+  **Mutable:** YES (during execution)
+end note
+
+note right of weaver
+  **OpenTelemetry Weaver**
+
+  **CRITICAL:** Source of Truth
+
+  **Validation:**
+  - weaver registry check
+    → Schema is valid
+  - weaver registry live-check
+    → Runtime telemetry conforms
+
+  **If Weaver Fails:**
+  - Feature DOES NOT WORK
+  - Regardless of test results
+  - Fix code, not schema
+
+  **Success Criteria:**
+  - All spans defined in schema
+  - All metrics defined in schema
+  - Telemetry matches exactly
+end note
+
+@enduml

@@ -1,0 +1,279 @@
+@startuml
+title Sequence Diagram - RDF Workflow End-to-End Execution (ATM Withdrawal)
+
+actor User
+participant "REST API" as API
+participant "WorkflowEngine" as Engine
+participant "RdfWorkflowLoader" as Loader
+participant "Oxigraph\n(spec_rdf_store)" as SpecRDF
+participant "PatternExecutor" as Pattern
+participant "StateManager" as State
+participant "Sled Database" as Sled
+participant "Oxigraph\n(case_rdf_store)" as CaseRDF
+participant "OTEL Integration" as OTEL
+participant "Weaver Validator" as Weaver
+
+== Phase 1: Workflow Registration ==
+
+User -> API: POST /workflow/register\n{turtle: "atm_transaction.ttl"}
+activate API
+
+API -> Engine: register_workflow_from_rdf(turtle)
+activate Engine
+
+Engine -> Loader: load_from_string(turtle)
+activate Loader
+
+Loader -> SpecRDF: parse Turtle RDF
+activate SpecRDF
+SpecRDF --> Loader: RDF graph
+deactivate SpecRDF
+
+Loader -> SpecRDF: SHACL validate
+activate SpecRDF
+SpecRDF --> Loader: ✅ Valid
+deactivate SpecRDF
+
+Loader -> SpecRDF: SPARQL query tasks
+activate SpecRDF
+note right of SpecRDF
+  SELECT ?task ?name ?join ?split
+  WHERE {
+    ?spec yawl:hasTask ?task .
+    ?task yawl:taskName ?name ;
+          yawl:join ?join ;
+          yawl:split ?split .
+  }
+end note
+SpecRDF --> Loader: Tasks data
+deactivate SpecRDF
+
+Loader -> SpecRDF: SPARQL query flows
+activate SpecRDF
+SpecRDF --> Loader: Flows data
+deactivate SpecRDF
+
+Loader --> Engine: WorkflowSpec\n{id, tasks, conditions, flows}
+deactivate Loader
+
+Engine -> SpecRDF: load_spec_rdf(turtle)
+activate SpecRDF
+note right: Store for runtime queries
+SpecRDF --> Engine: ✅ Loaded
+deactivate SpecRDF
+
+Engine -> State: save_spec(spec)
+activate State
+State -> Sled: persist spec
+activate Sled
+Sled --> State: ✅ Persisted
+deactivate Sled
+State --> Engine: ✅ Saved
+deactivate State
+
+Engine -> OTEL: record_workflow_registration(spec_id)
+activate OTEL
+OTEL -> Weaver: emit span\n{workflow.registration}
+activate Weaver
+Weaver --> OTEL: ✅ Schema valid
+deactivate Weaver
+deactivate OTEL
+
+Engine --> API: spec_id
+deactivate Engine
+
+API --> User: 200 OK\n{spec_id: "uuid"}
+deactivate API
+
+== Phase 2: Case Creation ==
+
+User -> API: POST /case/create\n{spec_id, data: {cardNumber, pin, ...}}
+activate API
+
+API -> Engine: create_case(spec_id, data)
+activate Engine
+
+Engine -> Engine: generate case_id
+Engine -> CaseRDF: create Store()
+activate CaseRDF
+CaseRDF --> Engine: new Store
+deactivate CaseRDF
+
+Engine -> CaseRDF: load initial data as RDF
+activate CaseRDF
+note right of CaseRDF
+  case:self yawl:cardNumber "1234..." ;
+            yawl:balance "1000.00" ;
+            yawl:withdrawalAmount "200.00" .
+end note
+CaseRDF --> Engine: ✅ Loaded
+deactivate CaseRDF
+
+Engine -> State: save_case(case)
+activate State
+State -> Sled: persist case
+activate Sled
+Sled --> State: ✅ Persisted
+deactivate Sled
+State --> Engine: ✅ Saved
+deactivate State
+
+Engine -> OTEL: record_case_creation(case_id)
+activate OTEL
+OTEL -> Weaver: emit span\n{case.creation}
+activate Weaver
+Weaver --> OTEL: ✅ Schema valid
+deactivate Weaver
+deactivate OTEL
+
+Engine --> API: case_id
+deactivate Engine
+
+API --> User: 200 OK\n{case_id: "uuid"}
+deactivate API
+
+== Phase 3: Case Execution ==
+
+User -> API: POST /case/execute\n{case_id}
+activate API
+
+API -> Engine: execute_case_with_telemetry(case_id)
+activate Engine
+
+Engine -> OTEL: start_span("workflow.execution")
+activate OTEL
+deactivate OTEL
+
+Engine -> State: load_case(case_id)
+activate State
+State -> Sled: get case
+activate Sled
+Sled --> State: Case
+deactivate Sled
+State --> Engine: Case
+deactivate State
+
+Engine -> SpecRDF: query workflow structure
+activate SpecRDF
+SpecRDF --> Engine: Tasks, Flows
+deactivate SpecRDF
+
+loop For each enabled task
+    Engine -> Pattern: execute_task_with_pattern(task)
+    activate Pattern
+
+    Pattern -> OTEL: start_span("pattern.execution")
+    activate OTEL
+    deactivate OTEL
+
+    Pattern -> CaseRDF: SPARQL get input data
+    activate CaseRDF
+    note right of CaseRDF
+      SELECT ?cardNumber ?balance
+      WHERE {
+        ?case yawl:cardNumber ?cardNumber ;
+              yawl:balance ?balance .
+      }
+    end note
+    CaseRDF --> Pattern: Input data
+    deactivate CaseRDF
+
+    Pattern -> Pattern: Execute pattern logic\n(e.g., Verify Card)
+    note right of Pattern
+      Pattern 4: XOR-split
+      - Check cardValid == true
+      - If true: enable verify_pin
+      - If false: enable cancel_transaction
+    end note
+
+    Pattern -> CaseRDF: Update runtime state
+    activate CaseRDF
+    note right of CaseRDF
+      INSERT {
+        ?case yawl:cardValid "true" .
+      }
+    end note
+    CaseRDF --> Pattern: ✅ Updated
+    deactivate CaseRDF
+
+    Pattern -> OTEL: end_span(result)\n{ticks: 5, success: true}
+    activate OTEL
+    OTEL -> Weaver: validate span
+    activate Weaver
+    Weaver --> OTEL: ✅ Valid
+    deactivate Weaver
+    deactivate OTEL
+
+    Pattern --> Engine: PatternExecutionResult
+    deactivate Pattern
+
+    Engine -> State: update_case_state(case_id, result)
+    activate State
+    State -> Sled: persist state change
+    activate Sled
+    Sled --> State: ✅ Persisted
+    deactivate Sled
+    State -> CaseRDF: update case RDF
+    activate CaseRDF
+    CaseRDF --> State: ✅ Updated
+    deactivate CaseRDF
+    State --> Engine: ✅ Updated
+    deactivate State
+end
+
+Engine -> OTEL: end_span("workflow.execution")
+activate OTEL
+OTEL -> Weaver: validate execution telemetry
+activate Weaver
+note right of Weaver
+  Validate:
+  - workflow.execution span exists
+  - pattern.execution spans (7 tasks)
+  - All attributes present
+  - Metrics emitted
+  - Ticks ≤ 8 for hot path
+end note
+Weaver --> OTEL: ✅ All telemetry valid
+deactivate Weaver
+deactivate OTEL
+
+Engine --> API: ExecutionResult\n{status: "completed", ticks: 35}
+deactivate Engine
+
+API --> User: 200 OK\n{status: "completed"}
+deactivate API
+
+== Phase 4: SPARQL Query (Verify Result) ==
+
+User -> API: POST /sparql\n{case_id, query: "SELECT ?balance ..."}
+activate API
+
+API -> Engine: query_case_rdf(case_id, sparql)
+activate Engine
+
+Engine -> CaseRDF: execute SPARQL query
+activate CaseRDF
+note right of CaseRDF
+  SELECT ?balance
+  WHERE {
+    ?case yawl:balance ?balance .
+  }
+end note
+CaseRDF --> Engine: Results\n[{balance: "800.00"}]
+deactivate CaseRDF
+
+Engine -> OTEL: record_query(latency_ms: 12)
+activate OTEL
+OTEL -> Weaver: validate query telemetry
+activate Weaver
+Weaver --> OTEL: ✅ Valid
+deactivate Weaver
+deactivate OTEL
+
+Engine --> API: QueryResults
+deactivate Engine
+
+API --> User: 200 OK\n{bindings: [{balance: "800.00"}]}
+deactivate API
+
+@enduml

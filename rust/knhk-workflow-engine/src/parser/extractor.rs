@@ -16,14 +16,17 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
     let rdfs = "http://www.w3.org/2000/01/rdf-schema#";
     let _rdf_type_iri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
-    // Find workflow specifications
+    // Find workflow specifications (try both Specification and WorkflowSpecification)
     let query = format!(
         "PREFIX yawl: <{}>\n\
          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
          PREFIX rdfs: <{}>\n\
          SELECT ?spec ?name WHERE {{\n\
-           ?spec rdf:type yawl:WorkflowSpecification .\n\
+           {{ ?spec rdf:type yawl:Specification . }}\n\
+           UNION\n\
+           {{ ?spec rdf:type yawl:WorkflowSpecification . }}\n\
            OPTIONAL {{ ?spec rdfs:label ?name }}\n\
+           OPTIONAL {{ ?spec yawl:specName ?name }}\n\
          }} LIMIT 1",
         yawl_ns, rdfs
     );
@@ -60,7 +63,7 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
     let mut conditions = extract_conditions(store, yawl_ns, spec_iri.as_deref())?;
 
     // Extract flows
-    extract_flows(
+    let flows = extract_flows(
         store,
         &yawl_ns,
         spec_iri.as_deref(),
@@ -77,6 +80,7 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
         name: spec_name,
         tasks,
         conditions,
+        flows,
         start_condition,
         end_condition,
         source_turtle: None,
@@ -97,9 +101,10 @@ pub fn extract_tasks(
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\
              SELECT ?task ?name ?type ?split ?join ?maxTicks ?priority ?simd WHERE {{\n\
-               <{}> yawl:hasTask ?task .\n\
+               {} yawl:hasTask ?task .\n\
                ?task rdf:type ?type .\n\
                OPTIONAL {{ ?task rdfs:label ?name }}\n\
+               OPTIONAL {{ ?task yawl:taskName ?name }}\n\
                OPTIONAL {{ ?task yawl:splitType ?split }}\n\
                OPTIONAL {{ ?task yawl:joinType ?join }}\n\
                OPTIONAL {{ ?task yawl:maxTicks ?maxTicks }}\n\
@@ -112,15 +117,11 @@ pub fn extract_tasks(
         format!(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
-             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\
-             SELECT ?task ?name ?type ?split ?join ?maxTicks ?priority ?simd WHERE {{\n\
-               ?task rdf:type yawl:Task .\n\
-               OPTIONAL {{ ?task rdfs:label ?name }}\n\
-               OPTIONAL {{ ?task yawl:splitType ?split }}\n\
-               OPTIONAL {{ ?task yawl:joinType ?join }}\n\
-               OPTIONAL {{ ?task yawl:maxTicks ?maxTicks }}\n\
-               OPTIONAL {{ ?task yawl:priority ?priority }}\n\
-               OPTIONAL {{ ?task yawl:useSimd ?simd }}\n\
+             SELECT ?task ?name ?split ?join WHERE {{\n\
+               ?task rdf:type yawl:AtomicTask .\n\
+               OPTIONAL {{ ?task yawl:taskName ?name }}\n\
+               OPTIONAL {{ ?task yawl:split ?split }}\n\
+               OPTIONAL {{ ?task yawl:join ?join }}\n\
              }}",
             yawl_ns
         )
@@ -272,10 +273,15 @@ pub fn extract_conditions(
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\
              SELECT ?condition ?name WHERE {{\n\
-               <{}> yawl:hasCondition ?condition .\n\
+               {{ {} yawl:hasCondition ?condition . }}\n\
+               UNION\n\
+               {{ {} yawl:hasInputCondition ?condition . }}\n\
+               UNION\n\
+               {{ {} yawl:hasOutputCondition ?condition . }}\n\
                OPTIONAL {{ ?condition rdfs:label ?name }}\n\
+               OPTIONAL {{ ?condition yawl:conditionName ?name }}\n\
              }}",
-            yawl_ns, spec
+            yawl_ns, spec, spec, spec
         )
     } else {
         format!(
@@ -283,7 +289,11 @@ pub fn extract_conditions(
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n\
              SELECT ?condition ?name WHERE {{\n\
-               ?condition rdf:type yawl:Condition .\n\
+               {{ ?condition rdf:type yawl:Condition . }}\n\
+               UNION\n\
+               {{ ?condition rdf:type yawl:InputCondition . }}\n\
+               UNION\n\
+               {{ ?condition rdf:type yawl:OutputCondition . }}\n\
                OPTIONAL {{ ?condition rdfs:label ?name }}\n\
              }}",
             yawl_ns
@@ -338,12 +348,16 @@ pub fn extract_flows(
     _spec_iri: Option<&str>,
     tasks: &mut HashMap<String, Task>,
     conditions: &mut HashMap<String, Condition>,
-) -> WorkflowResult<()> {
+) -> WorkflowResult<Vec<crate::parser::types::Flow>> {
+    // Query for flows using yawl:flowsFrom, yawl:flowsInto, and optional yawl:predicate
     let query = format!(
         "PREFIX yawl: <{}>\n\
          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
-         SELECT ?from ?to WHERE {{\n\
-           ?from yawl:hasOutgoingFlow ?to .\n\
+         SELECT ?flow ?from ?to ?predicate WHERE {{\n\
+           ?flow rdf:type yawl:Flow .\n\
+           ?flow yawl:flowsFrom ?from .\n\
+           ?flow yawl:flowsInto ?to .\n\
+           OPTIONAL {{ ?flow yawl:predicate ?predicate . }}\n\
          }}",
         yawl_ns
     );
@@ -353,17 +367,39 @@ pub fn extract_flows(
         .query(&query)
         .map_err(|e| WorkflowError::Parse(format!("Failed to query flows: {:?}", e)))?;
 
+    let mut flows = Vec::new();
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
         for solution in solutions {
             let solution = solution.map_err(|e| {
                 WorkflowError::Parse(format!("Failed to process flow solution: {:?}", e))
             })?;
 
-            if let (Some(from_term), Some(to_term)) = (solution.get("from"), solution.get("to")) {
+            if let (Some(flow_term), Some(from_term), Some(to_term)) = (
+                solution.get("flow"),
+                solution.get("from"),
+                solution.get("to"),
+            ) {
+                let flow_id = flow_term.to_string();
                 let from_id = from_term.to_string();
                 let to_id = to_term.to_string();
 
-                // Add to task or condition based on what exists
+                // Extract predicate if present
+                let predicate = solution.get("predicate").map(|p| {
+                    let pred_str = p.to_string();
+                    // Remove quotes if present
+                    pred_str.trim_matches('"').to_string()
+                });
+
+                // Create Flow object
+                flows.push(crate::parser::types::Flow {
+                    id: flow_id,
+                    from: from_id.clone(),
+                    to: to_id.clone(),
+                    predicate,
+                });
+
+                // Add to task or condition based on what exists (for backward compatibility)
                 if let Some(task) = tasks.get_mut(&from_id) {
                     task.outgoing_flows.push(to_id.clone());
                 }
@@ -381,7 +417,7 @@ pub fn extract_flows(
         }
     }
 
-    Ok(())
+    Ok(flows)
 }
 
 /// Find start condition
@@ -395,16 +431,20 @@ pub fn find_start_condition(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              SELECT ?condition WHERE {{\n\
-               <{}> yawl:hasStartCondition ?condition .\n\
+               {{ {} yawl:hasStartCondition ?condition . }}\n\
+               UNION\n\
+               {{ {} yawl:hasInputCondition ?condition . }}\n\
              }} LIMIT 1",
-            yawl_ns, spec
+            yawl_ns, spec, spec
         )
     } else {
         format!(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              SELECT ?condition WHERE {{\n\
-               ?condition rdf:type yawl:StartCondition .\n\
+               {{ ?condition rdf:type yawl:StartCondition . }}\n\
+               UNION\n\
+               {{ ?condition rdf:type yawl:InputCondition . }}\n\
              }} LIMIT 1",
             yawl_ns
         )
@@ -444,16 +484,20 @@ pub fn find_end_condition(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              SELECT ?condition WHERE {{\n\
-               <{}> yawl:hasEndCondition ?condition .\n\
+               {{ {} yawl:hasEndCondition ?condition . }}\n\
+               UNION\n\
+               {{ {} yawl:hasOutputCondition ?condition . }}\n\
              }} LIMIT 1",
-            yawl_ns, spec
+            yawl_ns, spec, spec
         )
     } else {
         format!(
             "PREFIX yawl: <{}>\n\
              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
              SELECT ?condition WHERE {{\n\
-               ?condition rdf:type yawl:EndCondition .\n\
+               {{ ?condition rdf:type yawl:EndCondition . }}\n\
+               UNION\n\
+               {{ ?condition rdf:type yawl:OutputCondition . }}\n\
              }} LIMIT 1",
             yawl_ns
         )

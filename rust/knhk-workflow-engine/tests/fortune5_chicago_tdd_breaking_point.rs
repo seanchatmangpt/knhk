@@ -20,6 +20,7 @@ use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::{PatternExecutionContext, PatternId};
 use knhk_workflow_engine::state::StateStore;
 use knhk_workflow_engine::WorkflowEngine;
+use serial_test::serial;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tempfile::TempDir;
@@ -76,14 +77,20 @@ fn create_relaxed_slo_config() -> Fortune5Config {
 
 /// Create test engine with Fortune 5
 fn create_fortune5_engine(config: Fortune5Config) -> WorkflowEngine {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-
     // Create unique lockchain path for each test to avoid conflicts
     // Use a UUID-based path to ensure uniqueness even with parallel test execution
+    let test_id = Uuid::new_v4();
     let lockchain_path = format!(
         "{}/knhk-lockchain-{}",
         std::env::temp_dir().to_str().unwrap(),
-        Uuid::new_v4()
+        test_id
+    );
+
+    // Create unique state store path (also UUID-based to avoid conflicts)
+    let state_store_path = format!(
+        "{}/knhk-state-{}",
+        std::env::temp_dir().to_str().unwrap(),
+        test_id
     );
 
     // Set environment variable for this test
@@ -93,8 +100,8 @@ fn create_fortune5_engine(config: Fortune5Config) -> WorkflowEngine {
     // Add small retry logic for lockchain initialization
     let mut last_error = None;
     for attempt in 0..3 {
-        // Recreate state store for each attempt (since it doesn't implement Clone)
-        let state_store = StateStore::new(temp_dir.path()).expect("Failed to create state store");
+        // Recreate state store for each attempt with unique path
+        let state_store = StateStore::new(&state_store_path).expect("Failed to create state store");
 
         match WorkflowEngine::with_fortune5(state_store, config.clone()) {
             Ok(e) => {
@@ -133,6 +140,7 @@ fn create_test_context(workflow_id: WorkflowSpecId) -> PatternExecutionContext {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_slo_compliance_under_extreme_load() {
     // JTBD: Validate SLO compliance when system is under extreme concurrent load
     // Breaking Point: System must maintain SLO compliance even with 1000+ concurrent executions
@@ -215,6 +223,7 @@ async fn test_slo_compliance_under_extreme_load() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_promotion_gate_failure_and_recovery() {
     // JTBD: Validate promotion gates block execution when SLO is violated
     // Breaking Point: System must detect SLO violations and block execution
@@ -271,6 +280,7 @@ async fn test_promotion_gate_failure_and_recovery() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_concurrent_slo_metric_recording() {
     // JTBD: Validate SLO metrics are recorded correctly under concurrent load
     // Breaking Point: 10,000 concurrent metric recordings must not corrupt data
@@ -316,6 +326,7 @@ async fn test_concurrent_slo_metric_recording() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_memory_exhaustion_scenario() {
     // JTBD: Validate system handles memory pressure gracefully
     // Breaking Point: System must not crash when memory is constrained
@@ -351,6 +362,7 @@ async fn test_memory_exhaustion_scenario() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_rapid_promotion_gate_toggles() {
     // JTBD: Validate promotion gates handle rapid state changes
     // Breaking Point: System must handle rapid gate open/close cycles
@@ -380,6 +392,7 @@ async fn test_rapid_promotion_gate_toggles() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_slo_window_boundary_conditions() {
     // JTBD: Validate SLO metrics handle window boundary conditions correctly
     // Breaking Point: Metrics at window boundaries must not cause data loss
@@ -428,6 +441,7 @@ async fn test_slo_window_boundary_conditions() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_feature_flag_toggles_under_load() {
     // JTBD: Validate feature flags work correctly under concurrent load
     // Breaking Point: Feature flag checks must be thread-safe
@@ -475,6 +489,7 @@ async fn test_feature_flag_toggles_under_load() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_pattern_execution_timeout_scenarios() {
     // JTBD: Validate system handles timeouts correctly with SLO tracking
     // Breaking Point: Timeouts must not corrupt SLO metrics
@@ -519,6 +534,7 @@ async fn test_pattern_execution_timeout_scenarios() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_concurrent_slo_compliance_checks() {
     // JTBD: Validate SLO compliance checks are thread-safe
     // Breaking Point: 1000 concurrent compliance checks must not deadlock
@@ -564,6 +580,7 @@ async fn test_concurrent_slo_compliance_checks() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_mixed_pattern_execution_under_load() {
     // JTBD: Validate system handles mixed pattern types under load
     // Breaking Point: All 43 patterns must work correctly under concurrent load
@@ -607,6 +624,7 @@ async fn test_mixed_pattern_execution_under_load() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_rapid_engine_creation_and_destruction() {
     // JTBD: Validate system handles rapid engine lifecycle changes
     // Breaking Point: Creating/destroying 100 engines should not leak resources
@@ -638,6 +656,7 @@ async fn test_rapid_engine_creation_and_destruction() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_slo_metrics_accuracy_under_stress() {
     // JTBD: Validate SLO metrics remain accurate under extreme stress
     // Breaking Point: Metrics must not be corrupted or lost under load

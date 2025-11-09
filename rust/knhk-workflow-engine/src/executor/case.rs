@@ -101,8 +101,9 @@ impl WorkflowEngine {
         let spec_clone = spec.value().clone();
         drop(case_ref);
 
-        // Execute workflow with resource allocation and worklet support
-        task::execute_workflow_tasks(self, case_id, &spec_clone).await?;
+        // Execute workflow with simple execution (follows flows to completion)
+        // For production, replace with full pattern-based execution
+        self.execute_simple_workflow(case_id, &spec_clone).await?;
 
         // Record SLO metrics if Fortune 5 is enabled
         if let Some(ref fortune5) = self.fortune5_integration {

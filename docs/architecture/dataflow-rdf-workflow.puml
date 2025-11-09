@@ -1,0 +1,321 @@
+@startuml
+title Data Flow Diagram - RDF Workflow Execution
+
+skinparam componentStyle rectangle
+
+package "Input Layer" {
+    [ATM.ttl\nWorkflow File] as TTL
+    [YAWL.ttl\nOntology] as YAWL_ONT
+    [Initial Case Data\n(JSON)] as CASE_DATA
+}
+
+package "Parsing Layer" {
+    [Oxigraph Parser] as PARSER
+    [SHACL Validator] as SHACL
+    [SPARQL Extractor] as SPARQL_EXT
+    [Deadlock Detector] as DEADLOCK
+}
+
+package "Internal Representation" {
+    [WorkflowSpec] as SPEC
+    database "spec_rdf_store\n(Oxigraph)" as SPEC_RDF
+    database "pattern_metadata_store\n(Oxigraph)" as PATTERN_RDF
+}
+
+package "Execution Layer" {
+    [WorkflowEngine] as ENGINE
+    [PatternExecutor] as PATTERN_EXEC
+    [StateManager] as STATE_MGR
+    database "case_rdf_stores\n(HashMap<CaseId, Store>)" as CASE_RDF
+}
+
+package "Persistence Layer" {
+    database "Sled Database\n(Event Log)" as SLED
+}
+
+package "Observability Layer" {
+    [OTEL Integration] as OTEL
+    [OTLP Collector] as OTLP
+    [Weaver Validator] as WEAVER
+}
+
+package "Output Layer" {
+    [REST API\nResponses] as REST
+    [SPARQL Query\nResults] as SPARQL_RESULTS
+    [Grafana\nDashboards] as GRAFANA
+}
+
+' Data Flow: Workflow Registration
+TTL --> PARSER : "Read .ttl file"
+YAWL_ONT --> PARSER : "Load ontology"
+PARSER --> SHACL : "RDF graph"
+SHACL --> SPARQL_EXT : "✅ Valid RDF"
+SPARQL_EXT --> DEADLOCK : "Extracted data\n(tasks, flows, conditions)"
+DEADLOCK --> SPEC : "✅ No deadlocks"
+SPEC --> SPEC_RDF : "Store Turtle\n(for runtime queries)"
+SPEC --> SLED : "Persist WorkflowSpec"
+SPEC --> ENGINE : "Register spec"
+
+' Data Flow: Case Creation
+CASE_DATA --> ENGINE : "create_case(spec_id, data)"
+ENGINE --> CASE_RDF : "Create Store\nfor case_id"
+CASE_DATA --> CASE_RDF : "Load as RDF triples"
+ENGINE --> SLED : "Persist case state"
+ENGINE --> OTEL : "emit case.creation span"
+
+' Data Flow: Case Execution
+ENGINE --> SPEC_RDF : "SPARQL: Get tasks"
+SPEC_RDF --> ENGINE : "Tasks, Flows"
+ENGINE --> PATTERN_EXEC : "execute_task_with_pattern()"
+PATTERN_EXEC --> CASE_RDF : "SPARQL: Get input data"
+CASE_RDF --> PATTERN_EXEC : "Input variables"
+PATTERN_EXEC --> PATTERN_EXEC : "Execute pattern logic"
+PATTERN_EXEC --> CASE_RDF : "Update runtime vars"
+PATTERN_EXEC --> OTEL : "emit pattern.execution span"
+PATTERN_EXEC --> ENGINE : "PatternExecutionResult"
+ENGINE --> STATE_MGR : "update_case_state()"
+STATE_MGR --> SLED : "Persist state change"
+STATE_MGR --> CASE_RDF : "Update case RDF"
+
+' Data Flow: SPARQL Queries
+ENGINE --> SPEC_RDF : "query_rdf(sparql)"
+ENGINE --> CASE_RDF : "query_case_rdf(sparql)"
+ENGINE --> PATTERN_RDF : "query_pattern_metadata(sparql)"
+SPEC_RDF --> SPARQL_RESULTS : "Workflow structure"
+CASE_RDF --> SPARQL_RESULTS : "Runtime variables"
+PATTERN_RDF --> SPARQL_RESULTS : "Pattern metadata"
+SPARQL_RESULTS --> REST : "JSON response"
+
+' Data Flow: Telemetry
+OTEL --> OTLP : "OTLP spans/metrics/logs"
+OTLP --> WEAVER : "Telemetry stream"
+WEAVER --> WEAVER : "Validate against schema"
+WEAVER --> REST : "Validation result ✅/❌"
+OTLP --> GRAFANA : "Metrics & traces"
+
+note right of PARSER
+  **Parsing Layer**
+
+  Input: Turtle RDF
+  Output: RDF graph
+
+  Steps:
+  1. Parse Turtle syntax
+  2. Build RDF triples
+  3. Load into Oxigraph Store
+
+  Libraries:
+  - oxigraph::io::RdfFormat
+  - rio_turtle
+
+  Performance: ~15ms (1000 tasks)
+end note
+
+note right of SHACL
+  **SHACL Validation**
+
+  Purpose: Ensure workflow soundness
+
+  Checks:
+  - All tasks have valid splits/joins
+  - Flows connect valid tasks
+  - No missing conditions
+  - Correct data types
+
+  Schema: ontology/shacl/soundness.ttl
+
+  Performance: ~20ms
+end note
+
+note right of SPARQL_EXT
+  **SPARQL Extractor**
+
+  Queries to extract:
+
+  1. Specification:
+     SELECT ?spec ?name ?version
+
+  2. Tasks:
+     SELECT ?task ?name ?join ?split
+
+  3. Conditions:
+     SELECT ?cond ?name ?type
+
+  4. Flows:
+     SELECT ?flow ?from ?to ?predicate
+
+  5. Parameters:
+     SELECT ?param ?name ?type
+
+  Output: Structured data for WorkflowSpec
+end note
+
+note right of SPEC
+  **WorkflowSpec**
+
+  Internal representation:
+  - id: WorkflowSpecId
+  - name: String
+  - tasks: HashMap<String, Task>
+  - conditions: HashMap<String, Condition>
+  - start_condition: Option<String>
+  - end_condition: Option<String>
+  - source_turtle: Option<String>
+
+  Immutable after registration
+end note
+
+note right of SPEC_RDF
+  **Spec RDF Store**
+
+  Purpose: Runtime workflow structure queries
+
+  Contains:
+  - All registered workflows
+  - Full Turtle representation
+  - Indexed for fast SPARQL
+
+  Queries:
+  - "Get all tasks in workflow X"
+  - "Get flows from task Y"
+  - "Get task parameters"
+
+  Shared across all workflows
+  Immutable after registration
+end note
+
+note right of PATTERN_RDF
+  **Pattern Metadata Store**
+
+  Purpose: Pattern discovery & metadata
+
+  Contains:
+  - All 43 Van der Aalst patterns
+  - Pattern dependencies
+  - Pattern categories
+  - Pattern descriptions
+
+  Queries:
+  - "Get pattern by name"
+  - "List control flow patterns"
+  - "Get patterns in category X"
+
+  Loaded once at engine startup
+end note
+
+note right of CASE_RDF
+  **Case RDF Stores**
+
+  Purpose: Runtime case state
+
+  Structure:
+  - HashMap<CaseId, Store>
+  - One Store per active case
+
+  Contains:
+  - Case variables (balance, amount, etc.)
+  - Intermediate results
+  - Enabled tasks
+  - Execution history
+
+  Lifecycle:
+  - Create: case creation
+  - Update: task execution
+  - Export: case completion
+  - Cleanup: after persistence
+
+  Mutable during execution
+end note
+
+note right of PATTERN_EXEC
+  **Pattern Executor**
+
+  Input:
+  - PatternExecutionContext
+    (task_id, case_id, input_data)
+
+  Processing:
+  1. Identify pattern (1-43)
+  2. Execute pattern logic
+  3. Track ticks (≤8 for hot path)
+  4. Emit OTEL span
+
+  Output:
+  - PatternExecutionResult
+    (success, ticks_elapsed, output_data)
+
+  Performance:
+  - Hot path: 3-5 ticks
+  - Total: ≤8 ticks (Chatman Constant)
+end note
+
+note right of SLED
+  **Sled Database**
+
+  Purpose: Durable persistence
+
+  Stores:
+  - WorkflowSpec (serialized)
+  - Case state (event sourced)
+  - State transitions (log)
+  - Case RDF snapshots (Turtle)
+
+  Benefits:
+  - Crash recovery
+  - Audit trail
+  - Time travel queries
+  - Compliance
+
+  Format: Bincode (compact)
+end note
+
+note right of OTEL
+  **OTEL Integration**
+
+  Spans:
+  - workflow.registration
+  - case.creation
+  - workflow.execution
+  - pattern.execution
+  - rdf.query
+  - state.persistence
+
+  Metrics:
+  - workflow_registrations_total
+  - case_executions_total
+  - hot_path_ticks (histogram)
+  - chatman_violations_total
+  - sparql_query_latency_ms
+
+  Logs:
+  - State changes
+  - Errors
+  - Performance warnings
+
+  Destination: OTLP Collector
+end note
+
+note right of WEAVER
+  **Weaver Validator**
+
+  Purpose: Source of truth for validation
+
+  Validation:
+  1. Schema check
+     weaver registry check -r registry/
+
+  2. Live telemetry check
+     weaver registry live-check --registry registry/
+
+  Validates:
+  - All spans defined in schema
+  - All metrics defined in schema
+  - Attributes match schema
+  - Telemetry conforms exactly
+
+  ✅ Pass = Feature works
+  ❌ Fail = Feature DOES NOT WORK
+           (regardless of test results)
+end note
+
+@enduml

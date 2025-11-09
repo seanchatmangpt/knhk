@@ -11,7 +11,7 @@ use knhk_workflow_engine::*;
 #[tokio::test]
 async fn test_single_case_xes_export() {
     // Arrange: 1 line setup
-    let harness = TestHarness::new();
+    let mut harness = TestHarness::new();
 
     let workflow = r#"
         @prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
@@ -46,7 +46,7 @@ async fn test_single_case_xes_export() {
 
 #[tokio::test]
 async fn test_xes_xml_structure() {
-    let harness = TestHarness::new();
+    let mut harness = TestHarness::new();
 
     let workflow = r#"
         @prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
@@ -78,7 +78,7 @@ async fn test_xes_xml_structure() {
 
 #[tokio::test]
 async fn test_lifecycle_transitions_in_xes() {
-    let harness = TestHarness::new();
+    let mut harness = TestHarness::new();
 
     let workflow = r#"
         @prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
@@ -111,7 +111,7 @@ async fn test_lifecycle_transitions_in_xes() {
 
 #[tokio::test]
 async fn test_multiple_cases_export() {
-    let harness = TestHarness::new();
+    let mut harness = TestHarness::new();
 
     let workflow = r#"
         @prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .

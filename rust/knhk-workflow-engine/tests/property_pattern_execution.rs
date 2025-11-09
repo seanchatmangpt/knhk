@@ -19,7 +19,9 @@ fn property_all_patterns_execute_without_panic() {
         let ctx = PatternExecutionContext::default();
         let pattern = PatternId(pattern_id);
 
-        let result = std::panic::catch_unwind(|| registry.execute(&pattern, &ctx));
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            registry.execute(&pattern, &ctx)
+        }));
 
         assert!(
             result.is_ok(),
@@ -162,7 +164,9 @@ fn property_advanced_control_patterns_execute() {
     for pattern_id in 26..=39 {
         let pattern = PatternId(pattern_id);
 
-        let result = std::panic::catch_unwind(|| registry.execute(&pattern, &ctx));
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            registry.execute(&pattern, &ctx)
+        }));
 
         assert!(
             result.is_ok(),

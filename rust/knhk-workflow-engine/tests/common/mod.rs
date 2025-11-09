@@ -14,7 +14,6 @@ use serde_json::json;
 /// 80/20: Single fixture that eliminates 90+ lines of duplicated setup
 pub struct TestHarness {
     pub _temp_dir: tempfile::TempDir,
-    pub state_store: state::StateStore,
     pub engine: executor::WorkflowEngine,
     pub parser: parser::WorkflowParser,
 }
@@ -34,14 +33,11 @@ impl TestHarness {
         let _temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let state_store =
             state::StateStore::new(_temp_dir.path()).expect("Failed to create state store");
-        let engine = executor::WorkflowEngine::new(
-            state::StateStore::new(_temp_dir.path()).expect("State store"),
-        );
+        let engine = executor::WorkflowEngine::new(state_store);
         let parser = parser::WorkflowParser::new().expect("Failed to create parser");
 
         Self {
             _temp_dir,
-            state_store,
             engine,
             parser,
         }
@@ -146,7 +142,8 @@ impl Default for WorkflowBuilder {
 
 /// 80/20: Common assertion helpers
 pub mod assertions {
-    use knhk_workflow_engine::{state::CaseState, *};
+    use knhk_workflow_engine::case::CaseState;
+    use knhk_workflow_engine::*;
 
     /// Assert workflow is sound using SHACL validation
     /// Note: Engine doesn't have validate_soundness, use ShaclValidator directly

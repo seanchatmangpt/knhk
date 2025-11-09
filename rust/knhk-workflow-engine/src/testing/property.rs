@@ -89,6 +89,7 @@ impl PropertyTestGenerator {
             name: format!("Generated Workflow {}", self.seed),
             tasks,
             conditions: HashMap::new(),
+            flows: Vec::new(),
             start_condition: Some("condition:start".to_string()),
             end_condition: Some("condition:end".to_string()),
             source_turtle: None,

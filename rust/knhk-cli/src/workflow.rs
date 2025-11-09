@@ -332,17 +332,24 @@ pub fn serve(
 
     runtime.block_on(async {
         let app = knhk_workflow_engine::api::rest::RestApiServer::new(engine.clone()).router();
-        let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
-            .await
-            .map_err(|e| {
-                clap_noun_verb::NounVerbError::execution_error(format!(
-                    "Failed to bind to {}:{}: {}",
-                    host, port, e
-                ))
-            })?;
+        // Use std::net::TcpListener directly for axum 0.6 Server compatibility
+        use std::net::TcpListener as StdTcpListener;
+        let std_listener = StdTcpListener::bind(format!("{}:{}", host, port)).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to bind to {}:{}: {}",
+                host, port, e
+            ))
+        })?;
+        std_listener.set_nonblocking(true).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Failed to set non-blocking: {}", e))
+        })?;
+
         println!("Server listening on http://{}:{}", host, port);
-        axum::serve(listener, app).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!("Server error: {}", e))
-        })
+
+        // Temporarily disabled: axum version mismatch (workflow engine uses 0.6, CLI uses 0.7)
+        // Fix by updating workflow engine to axum 0.7 or creating compatibility layer
+        Err(clap_noun_verb::NounVerbError::execution_error(
+            "Serve command temporarily disabled due to axum version mismatch. Use workflow engine REST API directly."
+        ))
     })
 }

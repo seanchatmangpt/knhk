@@ -31,7 +31,11 @@
     yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_6> ;
     yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_7> ;
     yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_8> ;
-    yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_9> .
+    yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_9> ;
+    yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_10> ;
+    yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_11> ;
+    yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_12> ;
+    yawl:hasFlow <http://bitflow.ai/workflows/swift/mt103/flow_13> .
 
 # Input Condition
 <http://bitflow.ai/workflows/swift/mt103/start> a yawl:InputCondition ;
@@ -107,11 +111,11 @@
         yawl:paramType "boolean"
     ] .
 
-# Task 6: Debit Sender Account
+# Task 6: Debit Sender Account (Pattern 2: Parallel Split to credit + MT202)
 <http://bitflow.ai/workflows/swift/mt103/debit_sender> a yawl:AtomicTask ;
     yawl:taskName "Debit Sender Account" ;
     yawl:join yawl:ControlTypeXor ;
-    yawl:split yawl:ControlTypeAnd ;
+    yawl:split yawl:ControlTypeAnd ;  # Pattern 2: Parallel Split
     yawl:hasInputParameter [
         yawl:paramName "senderAccount" ;
         yawl:paramType "string"
@@ -141,10 +145,10 @@
     yawl:join yawl:ControlTypeXor ;
     yawl:split yawl:ControlTypeXor .
 
-# Task 9: Send Confirmation
+# Task 9: Send Confirmation (Pattern 3: Synchronization - waits for both branches)
 <http://bitflow.ai/workflows/swift/mt103/send_confirmation> a yawl:AtomicTask ;
     yawl:taskName "Send Payment Confirmation" ;
-    yawl:join yawl:ControlTypeAnd ;
+    yawl:join yawl:ControlTypeAnd ;  # Pattern 3: Synchronization
     yawl:split yawl:ControlTypeXor .
 
 # Flows
@@ -186,3 +190,22 @@
 <http://bitflow.ai/workflows/swift/mt103/flow_9> a yawl:Flow ;
     yawl:flowsFrom <http://bitflow.ai/workflows/swift/mt103/debit_sender> ;
     yawl:flowsInto <http://bitflow.ai/workflows/swift/mt103/credit_beneficiary> .
+
+# Parallel MT202 cover payment (Pattern 2: Parallel Split from debit_sender)
+<http://bitflow.ai/workflows/swift/mt103/flow_10> a yawl:Flow ;
+    yawl:flowsFrom <http://bitflow.ai/workflows/swift/mt103/debit_sender> ;
+    yawl:flowsInto <http://bitflow.ai/workflows/swift/mt103/send_mt202> .
+
+# Synchronization flows to confirmation (Pattern 3: Synchronization)
+<http://bitflow.ai/workflows/swift/mt103/flow_11> a yawl:Flow ;
+    yawl:flowsFrom <http://bitflow.ai/workflows/swift/mt103/credit_beneficiary> ;
+    yawl:flowsInto <http://bitflow.ai/workflows/swift/mt103/send_confirmation> .
+
+<http://bitflow.ai/workflows/swift/mt103/flow_12> a yawl:Flow ;
+    yawl:flowsFrom <http://bitflow.ai/workflows/swift/mt103/send_mt202> ;
+    yawl:flowsInto <http://bitflow.ai/workflows/swift/mt103/send_confirmation> .
+
+# Final flow to end condition
+<http://bitflow.ai/workflows/swift/mt103/flow_13> a yawl:Flow ;
+    yawl:flowsFrom <http://bitflow.ai/workflows/swift/mt103/send_confirmation> ;
+    yawl:flowsInto <http://bitflow.ai/workflows/swift/mt103/end> .

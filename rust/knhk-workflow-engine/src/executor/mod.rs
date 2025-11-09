@@ -22,6 +22,7 @@ mod fortune5;
 mod pattern;
 mod provenance;
 mod rdf_query;
+mod simple_execution;
 mod task;
 mod workflow_query;
 mod workflow_registration;

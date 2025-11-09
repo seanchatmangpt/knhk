@@ -107,6 +107,19 @@ pub struct Task {
     pub exception_worklet: Option<crate::worklets::WorkletId>,
 }
 
+/// Flow with optional predicate
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Flow {
+    /// Flow identifier (IRI)
+    pub id: String,
+    /// Source node (task or condition ID)
+    pub from: String,
+    /// Target node (task or condition ID)
+    pub to: String,
+    /// Optional predicate (e.g., "approved == true")
+    pub predicate: Option<String>,
+}
+
 /// Workflow condition
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Condition {
@@ -131,6 +144,8 @@ pub struct WorkflowSpec {
     pub tasks: std::collections::HashMap<String, Task>,
     /// Conditions in the workflow
     pub conditions: std::collections::HashMap<String, Condition>,
+    /// Flows with predicates
+    pub flows: Vec<Flow>,
     /// Start condition ID
     pub start_condition: Option<String>,
     /// End condition ID

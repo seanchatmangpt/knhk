@@ -110,10 +110,11 @@ mod tests {
         let spec = crate::parser::WorkflowSpec {
             id: crate::parser::WorkflowSpecId::new(),
             name: "test_workflow".to_string(),
-            start_condition: None,
-            end_condition: None,
             tasks: std::collections::HashMap::new(),
             conditions: std::collections::HashMap::new(),
+            flows: Vec::new(),
+            start_condition: None,
+            end_condition: None,
             source_turtle: None,
         };
 
@@ -146,10 +147,11 @@ mod tests {
         let spec = crate::parser::WorkflowSpec {
             id: crate::parser::WorkflowSpecId::new(),
             name: "test_workflow".to_string(),
-            start_condition: None,
-            end_condition: None,
             tasks: std::collections::HashMap::new(),
             conditions: std::collections::HashMap::new(),
+            flows: Vec::new(),
+            start_condition: None,
+            end_condition: None,
             source_turtle: None,
         };
 

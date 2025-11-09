@@ -20,6 +20,7 @@ fn create_test_workflow() -> WorkflowSpec {
         end_condition: None,
         tasks: std::collections::HashMap::new(),
         conditions: std::collections::HashMap::new(),
+        flows: Vec::new(),
         source_turtle: None,
     }
 }
