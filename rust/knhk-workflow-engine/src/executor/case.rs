@@ -3,8 +3,6 @@
 use crate::case::{Case, CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
-use crate::otel_span;
-use crate::otel_span_end;
 use crate::parser::WorkflowSpecId;
 use knhk_otel::{SpanContext, SpanStatus};
 use std::time::Instant;
@@ -124,14 +122,14 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            otel_attr!(
+            crate::otel_attr!(
                 otel,
-                span,
+                span_ctx,
                 "knhk.workflow_engine.case_state" => "Created"
             )?;
-            otel_span_end!(
+            crate::otel_span_end!(
                 otel,
-                span,
+                span_ctx,
                 success: success,
                 latency_ms: latency_ms
             )?;
@@ -172,11 +170,12 @@ impl WorkflowEngine {
 
         // Start OTEL span for case execution
         let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
-            otel_span!(
+            crate::otel_span!(
                 otel,
                 "knhk.workflow_engine.execute_case",
                 case_id: Some(&case_id),
-            )?
+            )
+            .await?
         } else {
             None
         };
@@ -267,15 +266,15 @@ impl WorkflowEngine {
         {
             // Get final case state
             if let Ok(case) = self.get_case(case_id).await {
-                otel_attr!(
+                crate::otel_attr!(
                     otel,
-                    span,
+                    span_ctx,
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
                 )?;
             }
-            otel_span_end!(
+            crate::otel_span_end!(
                 otel,
-                span,
+                span_ctx,
                 success: success,
                 latency_ms: latency_ms
             )?;

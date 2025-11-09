@@ -2,12 +2,8 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
-use crate::otel_bottleneck;
-use crate::otel_conformance;
-use crate::otel_span;
-use crate::otel_span_end;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
-use knhk_otel::{SpanContext, SpanStatus};
+use knhk_otel::SpanContext;
 use std::time::Instant;
 
 use super::WorkflowEngine;
