@@ -67,6 +67,10 @@
     yawl:hasInputParameter [
         yawl:paramName "pin" ;
         yawl:paramType "string"
+    ] ;
+    yawl:hasOutputParameter [
+        yawl:paramName "pinValid" ;
+        yawl:paramType "boolean"
     ] .
 
 # Task 3: Check Balance
@@ -80,6 +84,10 @@
     ] ;
     yawl:hasInputParameter [
         yawl:paramName "withdrawalAmount" ;
+        yawl:paramType "decimal"
+    ] ;
+    yawl:hasOutputParameter [
+        yawl:paramName "balance" ;
         yawl:paramType "decimal"
     ] .
 

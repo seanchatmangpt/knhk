@@ -262,6 +262,8 @@ mod tests {
             allocation_policy: None,
             required_roles: Vec::new(),
             required_capabilities: Vec::new(),
+            input_parameters: Vec::new(),
+            output_parameters: Vec::new(),
             exception_worklet: None,
         };
 
@@ -307,6 +309,8 @@ mod tests {
             allocation_policy: None,
             required_roles: Vec::new(),
             required_capabilities: Vec::new(),
+            input_parameters: Vec::new(),
+            output_parameters: Vec::new(),
             exception_worklet: None,
         };
 
@@ -326,6 +330,8 @@ mod tests {
             allocation_policy: None,
             required_roles: Vec::new(),
             required_capabilities: Vec::new(),
+            input_parameters: Vec::new(),
+            output_parameters: Vec::new(),
             exception_worklet: None,
         };
 

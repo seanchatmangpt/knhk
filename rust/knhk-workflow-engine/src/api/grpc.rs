@@ -2,8 +2,18 @@
 //!
 //! Provides gRPC interface for workflow management operations.
 
-use crate::error::WorkflowResult;
+use crate::api::models::{
+    errors::ApiError,
+    requests::{
+        CancelCaseRequest, CreateCaseRequest, ExecuteCaseRequest, GetCaseHistoryRequest,
+        GetCaseRequest, GetWorkflowRequest, ListWorkflowsRequest, RegisterWorkflowRequest,
+        StartCaseRequest,
+    },
+};
+use crate::api::service::{CaseService, WorkflowService};
+use crate::api::transport::GrpcAdapter;
 use crate::executor::WorkflowEngine;
+use crate::parser::WorkflowSpec;
 use crate::{CaseId, WorkflowSpecId};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -28,51 +38,70 @@ impl GrpcService {
         Self { engine }
     }
 
-    /// Register a workflow (gRPC method)
+    /// Register a workflow (gRPC method) - uses service layer
     pub async fn register_workflow(
         &self,
         spec: crate::parser::WorkflowSpec,
-    ) -> WorkflowResult<WorkflowSpecId> {
-        let spec_id = spec.id;
-        self.engine.register_workflow(spec).await?;
-        Ok(spec_id)
+    ) -> Result<WorkflowSpecId, ApiError> {
+        let service = WorkflowService::new(self.engine.clone());
+        let request = RegisterWorkflowRequest { spec };
+        let response = service.register_workflow(request).await?;
+        Ok(response.spec_id)
     }
 
-    /// Get workflow specification (gRPC method)
+    /// Get workflow specification (gRPC method) - uses service layer
     pub async fn get_workflow(
         &self,
         spec_id: WorkflowSpecId,
-    ) -> WorkflowResult<crate::parser::WorkflowSpec> {
-        self.engine.get_workflow(spec_id).await
+    ) -> Result<crate::parser::WorkflowSpec, ApiError> {
+        let service = WorkflowService::new(self.engine.clone());
+        let request = GetWorkflowRequest { spec_id };
+        let response = service.get_workflow(request).await?;
+        Ok(response.spec)
     }
 
-    /// Create a case (gRPC method)
+    /// Create a case (gRPC method) - uses service layer
     pub async fn create_case(
         &self,
         spec_id: WorkflowSpecId,
         data: serde_json::Value,
-    ) -> WorkflowResult<CaseId> {
-        self.engine.create_case(spec_id, data).await
+    ) -> Result<CaseId, ApiError> {
+        let service = CaseService::new(self.engine.clone());
+        let request = CreateCaseRequest { spec_id, data };
+        let response = service.create_case(request).await?;
+        Ok(response.case_id)
     }
 
-    /// Get case status (gRPC method)
-    pub async fn get_case(&self, case_id: CaseId) -> WorkflowResult<crate::case::Case> {
-        self.engine.get_case(case_id).await
+    /// Get case status (gRPC method) - uses service layer
+    pub async fn get_case(&self, case_id: CaseId) -> Result<crate::case::Case, ApiError> {
+        let service = CaseService::new(self.engine.clone());
+        let request = GetCaseRequest { case_id };
+        let response = service.get_case(request).await?;
+        Ok(response.case)
     }
 
-    /// Cancel a case (gRPC method)
-    pub async fn cancel_case(&self, case_id: CaseId) -> WorkflowResult<()> {
-        self.engine.cancel_case(case_id).await
+    /// Cancel a case (gRPC method) - uses service layer
+    pub async fn cancel_case(&self, case_id: CaseId) -> Result<(), ApiError> {
+        let service = CaseService::new(self.engine.clone());
+        let request = CancelCaseRequest { case_id };
+        service.cancel_case(request).await?;
+        Ok(())
     }
 
-    /// Execute a case (gRPC method)
-    pub async fn execute_case(&self, case_id: CaseId) -> WorkflowResult<()> {
-        self.engine.execute_case(case_id).await
+    /// Execute a case (gRPC method) - uses service layer
+    pub async fn execute_case(&self, case_id: CaseId) -> Result<(), ApiError> {
+        let service = CaseService::new(self.engine.clone());
+        let request = ExecuteCaseRequest { case_id };
+        service.execute_case(request).await?;
+        Ok(())
     }
 
-    /// Start a case (gRPC method)
-    pub async fn start_case(&self, case_id: CaseId) -> WorkflowResult<()> {
-        self.engine.start_case(case_id).await
+    /// Start a case (gRPC method) - uses service layer
+    pub async fn start_case(&self, case_id: CaseId) -> Result<(), ApiError> {
+        let service = CaseService::new(self.engine.clone());
+        let request = StartCaseRequest { case_id };
+        service.start_case(request).await?;
+        Ok(())
     }
 }
 
@@ -112,11 +141,11 @@ impl WorkflowEngineService for GrpcService {
             }
         };
 
-        match self.engine.register_workflow(workflow_spec).await {
-            Ok(_) => Ok(Response::new(proto::RegisterWorkflowResponse {
-                spec_id: spec_id_str,
+        match self.register_workflow(workflow_spec).await {
+            Ok(spec_id) => Ok(Response::new(proto::RegisterWorkflowResponse {
+                spec_id: spec_id.to_string(),
             })),
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 
@@ -128,7 +157,7 @@ impl WorkflowEngineService for GrpcService {
         let spec_id = WorkflowSpecId::parse_str(&req.spec_id)
             .map_err(|_| Status::invalid_argument("Invalid spec_id format"))?;
 
-        match self.engine.get_workflow(spec_id).await {
+        match self.get_workflow(spec_id).await {
             Ok(spec) => {
                 let spec_id = spec.id.to_string();
                 let spec_name = spec.name.clone();
@@ -141,7 +170,7 @@ impl WorkflowEngineService for GrpcService {
                     }),
                 }))
             }
-            Err(e) => Err(Status::not_found(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 
@@ -156,11 +185,11 @@ impl WorkflowEngineService for GrpcService {
         let data: serde_json::Value = serde_json::from_str(&req.data)
             .map_err(|e| Status::invalid_argument(format!("Invalid JSON data: {}", e)))?;
 
-        match self.engine.create_case(spec_id, data).await {
+        match self.create_case(spec_id, data).await {
             Ok(case_id) => Ok(Response::new(proto::CreateCaseResponse {
                 case_id: case_id.to_string(),
             })),
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 
@@ -172,7 +201,7 @@ impl WorkflowEngineService for GrpcService {
         let case_id = CaseId::parse_str(&req.case_id)
             .map_err(|_| Status::invalid_argument("Invalid case_id format"))?;
 
-        match self.engine.get_case(case_id).await {
+        match self.get_case(case_id).await {
             Ok(case) => Ok(Response::new(proto::GetCaseResponse {
                 case: Some(proto::Case {
                     id: case.id.to_string(),
@@ -183,7 +212,7 @@ impl WorkflowEngineService for GrpcService {
                     updated_at: case.created_at.timestamp(), // Use created_at as updated_at fallback
                 }),
             })),
-            Err(e) => Err(Status::not_found(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 
@@ -195,51 +224,22 @@ impl WorkflowEngineService for GrpcService {
         let case_id = CaseId::parse_str(&req.case_id)
             .map_err(|_| Status::invalid_argument("Invalid case_id format"))?;
 
-        // Get case history from StateManager
-        let events = self.engine.state_manager.get_case_history(case_id).await;
+        // Use service layer
+        let service = CaseService::new(self.engine.clone());
+        let request = GetCaseHistoryRequest { case_id };
+        let response = match service.get_case_history(request).await {
+            Ok(response) => response,
+            Err(e) => return Err(GrpcAdapter::error_to_status(e)),
+        };
 
-        // Transform StateEvent to proto CaseHistoryEntry
-        use crate::state::manager::StateEvent;
-        let entries: Vec<proto::CaseHistoryEntry> = events
+        // Transform to proto CaseHistoryEntry
+        let entries: Vec<proto::CaseHistoryEntry> = response
+            .entries
             .into_iter()
-            .filter_map(|event| match event {
-                StateEvent::TaskStarted { .. } | StateEvent::TaskCompleted { .. } => {
-                    // Task events are logged but not returned in case history
-                    None
-                }
-                StateEvent::CaseCreated {
-                    case_id,
-                    spec_id,
-                    timestamp,
-                } => Some(proto::CaseHistoryEntry {
-                    timestamp: timestamp.timestamp(),
-                    event_type: "case_created".to_string(),
-                    data: serde_json::json!({
-                        "case_id": case_id.to_string(),
-                        "spec_id": spec_id.to_string(),
-                    })
-                    .to_string(),
-                }),
-                StateEvent::CaseStateChanged {
-                    case_id,
-                    old_state,
-                    new_state,
-                    timestamp,
-                } => Some(proto::CaseHistoryEntry {
-                    timestamp: timestamp.timestamp(),
-                    event_type: "state_changed".to_string(),
-                    data: serde_json::json!({
-                        "case_id": case_id.to_string(),
-                        "from": old_state,
-                        "to": new_state,
-                    })
-                    .to_string(),
-                }),
-                StateEvent::SpecRegistered { .. } => Some(proto::CaseHistoryEntry {
-                    timestamp: chrono::Utc::now().timestamp(),
-                    event_type: "unknown".to_string(),
-                    data: "{}".to_string(),
-                }),
+            .map(|entry| proto::CaseHistoryEntry {
+                timestamp: entry.timestamp.timestamp(),
+                event_type: entry.event_type,
+                data: entry.data.to_string(),
             })
             .collect();
 
@@ -254,9 +254,9 @@ impl WorkflowEngineService for GrpcService {
         let case_id = CaseId::parse_str(&req.case_id)
             .map_err(|_| Status::invalid_argument("Invalid case_id format"))?;
 
-        match self.engine.start_case(case_id).await {
+        match self.start_case(case_id).await {
             Ok(_) => Ok(Response::new(proto::StartCaseResponse { success: true })),
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 
@@ -268,9 +268,9 @@ impl WorkflowEngineService for GrpcService {
         let case_id = CaseId::parse_str(&req.case_id)
             .map_err(|_| Status::invalid_argument("Invalid case_id format"))?;
 
-        match self.engine.execute_case(case_id).await {
+        match self.execute_case(case_id).await {
             Ok(_) => Ok(Response::new(proto::ExecuteCaseResponse { success: true })),
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 
@@ -282,9 +282,9 @@ impl WorkflowEngineService for GrpcService {
         let case_id = CaseId::parse_str(&req.case_id)
             .map_err(|_| Status::invalid_argument("Invalid case_id format"))?;
 
-        match self.engine.cancel_case(case_id).await {
+        match self.cancel_case(case_id).await {
             Ok(_) => Ok(Response::new(proto::CancelCaseResponse { success: true })),
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => Err(GrpcAdapter::error_to_status(e)),
         }
     }
 }

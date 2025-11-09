@@ -1,6 +1,12 @@
 //! REST API route handlers
 
-use crate::api::models::*;
+use crate::api::models::requests::{
+    CancelCaseRequest, CreateCaseRequest, ExecuteCaseRequest, ExecutePatternRequest,
+    GetCaseHistoryRequest, GetCaseRequest, GetPatternRequest, GetWorkflowRequest, ListCasesRequest,
+    ListPatternsRequest, ListWorkflowsRequest, RegisterWorkflowRequest, StartCaseRequest,
+};
+use crate::api::service::{CaseService, PatternService, WorkflowService};
+use crate::api::transport::RestAdapter;
 use crate::case::CaseId;
 use crate::executor::WorkflowEngine;
 use crate::observability::HealthStatus;
@@ -18,135 +24,107 @@ use std::sync::Arc;
 pub async fn register_workflow(
     State(engine): State<Arc<WorkflowEngine>>,
     Json(request): Json<RegisterWorkflowRequest>,
-) -> Result<Json<RegisterWorkflowResponse>, StatusCode> {
-    let spec_id = request.spec.id;
-    let spec = request.spec;
-    engine
-        .register_workflow(spec)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(RegisterWorkflowResponse { spec_id }))
+) -> axum::response::Response {
+    let service = WorkflowService::new(engine);
+    let result = service.register_workflow(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Get workflow specification
 pub async fn get_workflow(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<Json<crate::parser::WorkflowSpec>, StatusCode> {
-    let spec_id = WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let spec_id = match WorkflowSpecId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid spec_id format",
+            ));
+        }
+    };
 
-    let spec = engine
-        .get_workflow(spec_id)
-        .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
-
-    Ok(Json(spec))
+    let service = WorkflowService::new(engine);
+    let request = GetWorkflowRequest { spec_id };
+    let result = service.get_workflow(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Create a case
 pub async fn create_case(
     State(engine): State<Arc<WorkflowEngine>>,
     Json(request): Json<CreateCaseRequest>,
-) -> Result<Json<CreateCaseResponse>, StatusCode> {
-    let case_id = engine
-        .create_case(request.spec_id, request.data)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(CreateCaseResponse { case_id }))
+) -> axum::response::Response {
+    let service = CaseService::new(engine);
+    let result = service.create_case(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Get case status
 pub async fn get_case(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<Json<CaseStatusResponse>, StatusCode> {
-    let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let case_id = match CaseId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid case_id format",
+            ));
+        }
+    };
 
-    let case = engine
-        .get_case(case_id)
-        .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
-
-    Ok(Json(CaseStatusResponse { case }))
+    let service = CaseService::new(engine);
+    let request = GetCaseRequest { case_id };
+    let result = service.get_case(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Cancel a case
 pub async fn cancel_case(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<StatusCode, StatusCode> {
-    let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let case_id = match CaseId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid case_id format",
+            ));
+        }
+    };
 
-    engine
-        .cancel_case(case_id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(StatusCode::OK)
+    let service = CaseService::new(engine);
+    let request = CancelCaseRequest { case_id };
+    let result = service.cancel_case(request).await;
+    match result {
+        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "success": true }))).into_response(),
+        Err(error) => RestAdapter::error_to_response(error),
+    }
 }
 
 /// Get case history
 pub async fn get_case_history(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<Json<CaseHistoryResponse>, StatusCode> {
-    use crate::state::manager::StateEvent;
+) -> axum::response::Response {
+    let case_id = match CaseId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid case_id format",
+            ));
+        }
+    };
 
-    let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
-
-    // Get case history from StateManager
-    let events = engine.state_manager.get_case_history(case_id).await;
-
-    // Transform StateEvent enum variants to CaseHistoryEntry format
-    let entries: Vec<crate::api::models::CaseHistoryEntry> = events
-        .into_iter()
-        .filter_map(|event| {
-            match event {
-                StateEvent::TaskStarted { .. } | StateEvent::TaskCompleted { .. } => {
-                    // Task events are logged but not returned in case history
-                    return None;
-                }
-                StateEvent::CaseCreated {
-                    case_id,
-                    spec_id,
-                    timestamp,
-                } => Some(crate::api::models::CaseHistoryEntry {
-                    timestamp,
-                    event_type: "case_created".to_string(),
-                    data: serde_json::json!({
-                        "case_id": case_id.to_string(),
-                        "spec_id": spec_id.to_string(),
-                    }),
-                }),
-                StateEvent::CaseStateChanged {
-                    case_id,
-                    old_state,
-                    new_state,
-                    timestamp,
-                } => Some(crate::api::models::CaseHistoryEntry {
-                    timestamp,
-                    event_type: "state_changed".to_string(),
-                    data: serde_json::json!({
-                        "case_id": case_id.to_string(),
-                        "from": old_state,
-                        "to": new_state,
-                    }),
-                }),
-                StateEvent::SpecRegistered { .. } => {
-                    // This shouldn't appear in case history, but handle it gracefully
-                    Some(crate::api::models::CaseHistoryEntry {
-                        timestamp: chrono::Utc::now(),
-                        event_type: "unknown".to_string(),
-                        data: serde_json::json!({}),
-                    })
-                }
-            }
-        })
-        .collect();
-
-    Ok(Json(CaseHistoryResponse { entries }))
+    let service = CaseService::new(engine);
+    let request = GetCaseHistoryRequest { case_id };
+    let result = service.get_case_history(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Health check endpoint
@@ -299,162 +277,128 @@ pub async fn swagger() -> impl IntoResponse {
 pub async fn delete_workflow(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<StatusCode, StatusCode> {
-    let spec_id = WorkflowSpecId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let spec_id = match WorkflowSpecId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid spec_id format",
+            ));
+        }
+    };
 
-    // Verify workflow exists
-    engine
-        .get_workflow(spec_id)
-        .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
-
-    // Remove from in-memory specs
-    engine.specs().remove(&spec_id);
-
-    // Remove from state store
-    let store = engine.state_store().write().await;
-    store
-        .delete_spec(&spec_id)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(StatusCode::NO_CONTENT)
+    let service = WorkflowService::new(engine);
+    let request = crate::api::models::requests::DeleteWorkflowRequest { spec_id };
+    let result = service.delete_workflow(request).await;
+    match result {
+        Ok(_) => (
+            StatusCode::NO_CONTENT,
+            Json(serde_json::json!({ "success": true })),
+        )
+            .into_response(),
+        Err(error) => RestAdapter::error_to_response(error),
+    }
 }
 
 /// List workflows
-pub async fn list_workflows(
-    State(engine): State<Arc<WorkflowEngine>>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    let workflow_ids = engine
-        .list_workflows()
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let workflows: Vec<serde_json::Value> = workflow_ids
-        .iter()
-        .map(|id| {
-            serde_json::json!({
-                "id": id.to_string(),
-                "name": format!("{}", id)
-            })
-        })
-        .collect();
-
-    Ok(Json(serde_json::json!({ "workflows": workflows })))
+pub async fn list_workflows(State(engine): State<Arc<WorkflowEngine>>) -> axum::response::Response {
+    let service = WorkflowService::new(engine);
+    let request = ListWorkflowsRequest {};
+    let result = service.list_workflows(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Start case
 pub async fn start_case(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<StatusCode, StatusCode> {
-    let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let case_id = match CaseId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid case_id format",
+            ));
+        }
+    };
 
-    engine
-        .start_case(case_id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(StatusCode::OK)
+    let service = CaseService::new(engine);
+    let request = StartCaseRequest { case_id };
+    let result = service.start_case(request).await;
+    match result {
+        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "success": true }))).into_response(),
+        Err(error) => RestAdapter::error_to_response(error),
+    }
 }
 
 /// Execute case
 pub async fn execute_case(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<String>,
-) -> Result<StatusCode, StatusCode> {
-    let case_id = CaseId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let case_id = match CaseId::parse_str(&id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid case_id format",
+            ));
+        }
+    };
 
-    engine
-        .execute_case(case_id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(StatusCode::OK)
+    let service = CaseService::new(engine);
+    let request = ExecuteCaseRequest { case_id };
+    let result = service.execute_case(request).await;
+    match result {
+        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "success": true }))).into_response(),
+        Err(error) => RestAdapter::error_to_response(error),
+    }
 }
 
 /// List cases
 pub async fn list_cases(
     State(engine): State<Arc<WorkflowEngine>>,
     Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    // If workflow_id is provided, list cases for that workflow
-    if let Some(workflow_id_str) = params.get("workflow_id") {
-        let spec_id =
-            WorkflowSpecId::parse_str(workflow_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let spec_id = params
+        .get("workflow_id")
+        .and_then(|s| WorkflowSpecId::parse_str(s).ok());
 
-        let case_ids = engine
-            .list_cases(spec_id)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        let cases: Vec<serde_json::Value> = case_ids
-            .iter()
-            .map(|id| {
-                serde_json::json!({
-                    "id": id.to_string(),
-                    "workflow_id": spec_id.to_string()
-                })
-            })
-            .collect();
-
-        Ok(Json(serde_json::json!({ "cases": cases })))
-    } else {
-        // List all cases (from in-memory cache)
-        let cases_map = engine.cases();
-        let cases: Vec<serde_json::Value> = cases_map
-            .iter()
-            .map(|entry| {
-                let id = entry.key();
-                let case = entry.value();
-                serde_json::json!({
-                    "id": id.to_string(),
-                    "workflow_id": case.spec_id.to_string(),
-                    "state": format!("{:?}", case.state)
-                })
-            })
-            .collect();
-
-        Ok(Json(serde_json::json!({ "cases": cases })))
-    }
+    let service = CaseService::new(engine);
+    let request = ListCasesRequest { spec_id };
+    let result = service.list_cases(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// List patterns
-pub async fn list_patterns(
-    State(engine): State<Arc<WorkflowEngine>>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    let registry = engine.pattern_registry();
-    let pattern_ids = registry.list();
-
-    let patterns: Vec<serde_json::Value> = pattern_ids
-        .iter()
-        .map(|id| {
-            serde_json::json!({
-                "id": id.0,
-                "name": format!("{}", id)
-            })
-        })
-        .collect();
-
-    Ok(Json(serde_json::json!({ "patterns": patterns })))
+pub async fn list_patterns(State(engine): State<Arc<WorkflowEngine>>) -> axum::response::Response {
+    let service = PatternService::new(engine);
+    let request = ListPatternsRequest {};
+    let result = service.list_patterns(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Get pattern
 pub async fn get_pattern(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<u32>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    let pattern_id = PatternId::new(id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let pattern_id = match PatternId::new(id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid pattern_id format",
+            ));
+        }
+    };
 
-    let registry = engine.pattern_registry();
-    let executor = registry
-        .get(&pattern_id)
-        .ok_or_else(|| StatusCode::NOT_FOUND)?;
-
-    Ok(Json(serde_json::json!({
-        "id": pattern_id.0,
-        "name": format!("{}", pattern_id),
-        "executor": "available"
-    })))
+    let service = PatternService::new(engine);
+    let request = GetPatternRequest { pattern_id };
+    let result = service.get_pattern(request).await;
+    RestAdapter::result_to_response(result)
 }
 
 /// Execute pattern
@@ -462,39 +406,30 @@ pub async fn execute_pattern(
     State(engine): State<Arc<WorkflowEngine>>,
     Path(id): Path<u32>,
     Json(request): Json<serde_json::Value>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    let pattern_id = PatternId::new(id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> axum::response::Response {
+    let pattern_id = match PatternId::new(id) {
+        Ok(id) => id,
+        Err(_) => {
+            return RestAdapter::error_to_response(crate::api::models::errors::ApiError::new(
+                "BAD_REQUEST",
+                "Invalid pattern_id format",
+            ));
+        }
+    };
 
-    let registry = engine.pattern_registry();
-    let executor = registry
-        .get(&pattern_id)
-        .ok_or_else(|| StatusCode::NOT_FOUND)?;
-
-    // Extract context from request
-    let case_id = CaseId::new();
-    let spec_id = WorkflowSpecId::new();
+    // Extract variables from request
     let mut variables = std::collections::HashMap::new();
-
     if let Some(obj) = request.as_object() {
         for (key, value) in obj {
             variables.insert(key.clone(), value.to_string());
         }
     }
 
-    let context = crate::patterns::PatternExecutionContext {
-        case_id,
-        workflow_id: spec_id,
+    let service = PatternService::new(engine);
+    let request = ExecutePatternRequest {
+        pattern_id,
         variables,
-        arrived_from: std::collections::HashSet::new(),
-        scope_id: String::new(),
     };
-
-    let result = executor.execute(&context);
-
-    Ok(Json(serde_json::json!({
-        "pattern_id": pattern_id.0,
-        "success": result.success,
-        "next_state": result.next_state,
-        "variables": result.variables
-    })))
+    let result = service.execute_pattern(request).await;
+    RestAdapter::result_to_response(result)
 }
