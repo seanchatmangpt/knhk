@@ -43,6 +43,7 @@ serde_json = { workspace = true }
 simd-json = { version = "0.14", features = ["known-key"] }
 thiserror = { workspace = true }
 linkme = "0.3"
+chrono = { workspace = true, features = ["serde"] }
 
 # OpenTelemetry dependencies - all optional with std feature
 opentelemetry = { workspace = true, optional = true, default-features = false }

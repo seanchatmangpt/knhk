@@ -1,0 +1,217 @@
+@startuml Release Certification Workflow
+!theme plain
+title KNHK v1.0 Release Certification\n**7-Stage Production Deployment Pipeline**
+
+skinparam activity {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontSize 11
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57C00
+}
+
+start
+
+partition "**STAGE 1: Validate Schema**" #FFCDD2 {
+    :weaver registry check -r registry/;
+
+    if (Schema valid?) then (yes)
+        :✅ Schema definitions correct;
+    else (no)
+        :❌ BLOCKER: Fix schema errors;
+        :Rollback to previous version;
+        stop
+    endif
+
+    :weaver registry live-check --registry registry/;
+
+    if (Telemetry conforms?) then (yes)
+        :✅ Runtime behavior matches schema;
+    else (no)
+        :❌ BLOCKER: Features BROKEN;
+        :Rollback to previous version;
+        stop
+    endif
+}
+
+partition "**STAGE 2: Validate Build**" #E1F5FE {
+    fork
+        :cargo build --workspace --release;
+    fork again
+        :cargo clippy --workspace -- -D warnings;
+    fork again
+        :make build;
+    end fork
+
+    if (All builds succeed with zero warnings?) then (yes)
+        :✅ Compilation baseline passed;
+    else (no)
+        :❌ BLOCKER: Fix build errors;
+        stop
+    endif
+}
+
+partition "**STAGE 3: Validate Tests**" #F3E5F5 {
+    fork
+        :cargo test --workspace;
+    fork again
+        :make test-chicago-v04;
+    fork again
+        :make test-performance-v04;
+    fork again
+        :make test-integration-v2;
+    end fork
+
+    if (Performance tests pass?) then (yes)
+        :✅ ≤8 ticks validated;
+    else (no)
+        :❌ BLOCKER: Performance regression;
+        stop
+    endif
+
+    if (Other tests provide evidence?) then (yes)
+        :✅ Supporting evidence collected;
+    else (no)
+        :⚠️ Warning logged;
+        note right: Tests can have false positives\nWeaver is source of truth
+    endif
+}
+
+partition "**STAGE 4: Production Readiness**" #FFF9C4 {
+    :Execute make validate-production-ready;
+
+    if (All 33 DoD criteria met?) then (yes)
+        :✅ Production-ready certified;
+    else (no)
+        :List unmet criteria;
+        :❌ BLOCKER: Complete DoD;
+        stop
+    endif
+
+    :Archive evidence artifacts;
+
+    note right
+        **Required Evidence**:
+        • Weaver validation reports
+        • Performance test results
+        • Test coverage reports
+        • Build logs (zero warnings)
+        • Security scan results
+    end note
+}
+
+partition "**STAGE 5: Build Release Artifacts**" #C8E6C9 {
+    fork
+        :Build Linux x86_64 release;
+        :cargo build --release --target x86_64-unknown-linux-gnu;
+    fork again
+        :Build macOS Intel release;
+        :cargo build --release --target x86_64-apple-darwin;
+    fork again
+        :Build macOS ARM release;
+        :cargo build --release --target aarch64-apple-darwin;
+    end fork
+
+    :Generate SHA256 checksums;
+    :Create release tarball;
+
+    if (All artifacts built successfully?) then (yes)
+        :✅ Multi-platform artifacts ready;
+    else (no)
+        :❌ BLOCKER: Build failure;
+        stop
+    endif
+}
+
+partition "**STAGE 6: Publish Crates**" #BBDEFB {
+    :cargo publish --dry-run;
+
+    if (Dry-run successful?) then (yes)
+        :cargo publish;
+
+        if (Published to crates.io?) then (yes)
+            :✅ Crates published;
+        else (no)
+            :❌ Publication failed;
+            note right: Manual intervention required
+            stop
+        endif
+    else (no)
+        :❌ BLOCKER: Fix publish errors;
+        stop
+    endif
+}
+
+partition "**STAGE 7: Create GitHub Release**" #E1BEE7 {
+    :Tag release version;
+    :git tag -a v1.0.0 -m "KNHK v1.0.0 Release";
+
+    :Upload release artifacts;
+    :Upload checksums;
+    :Upload evidence archive;
+
+    :Create release notes;
+    note right
+        **Release Notes Include**:
+        • Feature highlights
+        • Breaking changes
+        • Migration guide
+        • Known limitations
+        • Performance benchmarks
+    end note
+
+    :Publish GitHub release;
+
+    if (Release published?) then (yes)
+        :✅ v1.0.0 RELEASED;
+    else (no)
+        :❌ Release failed;
+        stop
+    endif
+}
+
+partition "**POST-RELEASE: Monitoring**" #FFE0B2 {
+    :Enable production monitoring;
+    :Start Weaver live validation (continuous);
+    :Monitor performance metrics;
+    :Track error rates;
+
+    note right
+        **30-Day Monitoring**:
+        • Performance regressions
+        • Error rate spikes
+        • Telemetry drift
+        • User reports
+    end note
+}
+
+:🎉 v1.0.0 Certified and Deployed;
+
+stop
+
+note bottom
+**Rollback Procedure** (if any stage fails):
+1. Stop release process immediately
+2. Document failure reason and evidence
+3. Revert to last known good version
+4. Fix identified issues
+5. Restart certification from Stage 1
+
+**Certification Authority**:
+• Technical Lead signature required
+• QA Lead signature required
+• Product Owner signature required
+end note
+
+legend right
+  |<back:#FFCDD2>   </back>| Stage 1: Schema validation (BLOCKING) |
+  |<back:#E1F5FE>   </back>| Stage 2: Build validation |
+  |<back:#F3E5F5>   </back>| Stage 3: Test validation |
+  |<back:#FFF9C4>   </back>| Stage 4: DoD certification |
+  |<back:#C8E6C9>   </back>| Stage 5: Artifact creation |
+  |<back:#BBDEFB>   </back>| Stage 6: Crate publication |
+  |<back:#E1BEE7>   </back>| Stage 7: GitHub release |
+  |<back:#FFE0B2>   </back>| Post-release monitoring |
+endlegend
+
+@enduml

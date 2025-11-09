@@ -9,11 +9,34 @@ Automated validation loop that executes the complete van der Aalst validation pr
 4. Compare with specification
 5. Check conformance
 
-## Automation Scripts
+## Automation Methods
 
-### Shell Script: `scripts/automate_xes_validation_loop.sh`
+### CLI Command: `knhk workflow validate-xes` (Recommended)
 
-Automates the full validation loop:
+Automates the full validation loop using clap-noun-verb v3.4.0:
+- Executes workflow
+- Exports to XES
+- Validates XES format
+- Compares with specification
+- Checks conformance
+
+**Usage**:
+```bash
+knhk workflow validate-xes --spec-id <spec_id> [--output-dir <dir>]
+```
+
+**Output**:
+- `<output-dir>/workflow_execution.xes` - XES event log
+- `<output-dir>/validation_report.md` - Validation report
+
+**Example**:
+```bash
+knhk workflow validate-xes --spec-id abc-123-def --output-dir ./validation_results
+```
+
+### Shell Script: `scripts/automate_xes_validation_loop.sh` (Legacy)
+
+Legacy shell script for automated validation:
 - Executes workflow tests
 - Extracts XES files
 - Validates XES format
@@ -123,7 +146,7 @@ Add to CI/CD pipeline:
 ```yaml
 - name: XES Validation Full Loop
   run: |
-    ./scripts/automate_xes_validation_loop.sh
+    knhk workflow validate-xes --spec-id $WORKFLOW_SPEC_ID --output-dir ./validation_results
     cargo test --test automated_xes_validation_loop
 ```
 

@@ -169,3 +169,4 @@ pub struct SoAArrays {
 - Review [case studies](part6/case-study-memory-reuse.md)
 
 
+

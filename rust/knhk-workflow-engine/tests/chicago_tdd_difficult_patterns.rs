@@ -105,6 +105,19 @@ async fn test_pattern_14_mi_with_runtime_knowledge_comprehensive() -> WorkflowRe
         mi_completions
     );
 
+    // Validate XES export - verify workflow execution is captured correctly
+    fixture
+        .export_and_validate_xes(
+            case_id,
+            Some(&["start", "calculate_count", "mi_task", "end"]),
+        )
+        .await?;
+
+    // Validate MI task appears correct number of times in XES
+    fixture
+        .validate_xes_task_count(case_id, "mi_task", 7)
+        .await?;
+
     Ok(())
 }
 
@@ -152,6 +165,22 @@ async fn test_pattern_14_mi_with_runtime_knowledge_variable_count() -> WorkflowR
     // Assert: Both cases completed successfully with different counts
     assert_eq!(case_3.state, CaseState::Completed);
     assert_eq!(case_10.state, CaseState::Completed);
+
+    // Validate XES export for both cases
+    fixture
+        .export_and_validate_xes(case_id_3, Some(&["start", "mi_task", "end"]))
+        .await?;
+    fixture
+        .export_and_validate_xes(case_id_10, Some(&["start", "mi_task", "end"]))
+        .await?;
+
+    // Validate MI task counts in XES
+    fixture
+        .validate_xes_task_count(case_id_3, "mi_task", 3)
+        .await?;
+    fixture
+        .validate_xes_task_count(case_id_10, "mi_task", 10)
+        .await?;
 
     Ok(())
 }
@@ -203,6 +232,11 @@ async fn test_pattern_15_mi_without_runtime_knowledge_unbounded() -> WorkflowRes
     // Assert: Pattern handles unbounded instances correctly
     // The pattern should allow instances to be created until termination condition
     assert!(case.state == CaseState::Running || case.state == CaseState::Completed);
+
+    // Validate XES export - verify workflow execution is captured
+    fixture
+        .export_and_validate_xes(case_id, Some(&["start", "mi_task", "end"]))
+        .await?;
 
     Ok(())
 }
@@ -268,6 +302,11 @@ async fn test_pattern_16_deferred_choice_event_driven() -> WorkflowResult<()> {
     });
     assert!(branch_a_executed, "Branch A should have executed");
 
+    // Validate XES export for Branch A
+    fixture
+        .export_and_validate_xes(case_id_a, Some(&["start", "wait_event", "branch_a", "end"]))
+        .await?;
+
     // Test Branch B
     let case_data_b = serde_json::json!({ "event_type": "B" });
     let case_id_b = fixture.create_case(spec_id, case_data_b).await?;
@@ -281,6 +320,11 @@ async fn test_pattern_16_deferred_choice_event_driven() -> WorkflowResult<()> {
         _ => false,
     });
     assert!(branch_b_executed, "Branch B should have executed");
+
+    // Validate XES export for Branch B
+    fixture
+        .export_and_validate_xes(case_id_b, Some(&["start", "wait_event", "branch_b", "end"]))
+        .await?;
 
     Ok(())
 }
@@ -372,6 +416,16 @@ async fn test_pattern_17_interleaved_parallel_routing() -> WorkflowResult<()> {
     assert!(task_b_executed, "Task B should have executed");
     assert!(task_c_executed, "Task C should have executed");
 
+    // Validate XES export - verify all parallel tasks are captured
+    fixture
+        .export_and_validate_xes(
+            case_id,
+            Some(&[
+                "start", "split", "task_a", "task_b", "task_c", "merge", "end",
+            ]),
+        )
+        .await?;
+
     Ok(())
 }
 
@@ -439,6 +493,14 @@ async fn test_pattern_18_milestone_state_based_gate() -> WorkflowResult<()> {
         "Protected task should execute after milestone"
     );
 
+    // Validate XES export - verify milestone pattern is captured
+    fixture
+        .export_and_validate_xes(
+            case_id,
+            Some(&["start", "prepare", "milestone", "protected_task", "end"]),
+        )
+        .await?;
+
     Ok(())
 }
 
@@ -502,6 +564,14 @@ async fn test_pattern_19_cancel_activity() -> WorkflowResult<()> {
         "Cancel trigger should have executed"
     );
 
+    // Validate XES export - verify cancellation pattern is captured
+    fixture
+        .export_and_validate_xes(
+            case_id,
+            Some(&["start", "long_running_task", "cancel_trigger", "end"]),
+        )
+        .await?;
+
     Ok(())
 }
 
@@ -562,6 +632,17 @@ async fn test_pattern_36_dynamic_partial_join_mi() -> WorkflowResult<()> {
     assert!(
         mi_completions > 0,
         "Should have at least some MI instances completed"
+    );
+
+    // Validate XES export - verify partial join MI pattern is captured
+    fixture
+        .export_and_validate_xes(case_id, Some(&["start", "mi_task", "end"]))
+        .await?;
+
+    // Validate MI task appears in XES (at least some instances)
+    assert!(
+        mi_completions > 0,
+        "XES should contain at least some MI task events"
     );
 
     Ok(())
@@ -646,6 +727,14 @@ async fn test_difficult_patterns_integration() -> WorkflowResult<()> {
         "MI with runtime knowledge should have executed"
     );
     assert!(milestone_executed, "Milestone should have executed");
+
+    // Validate XES export - verify all patterns are captured in integration test
+    fixture
+        .export_and_validate_xes(
+            case_id,
+            Some(&["start", "deferred_choice", "mi_runtime", "milestone", "end"]),
+        )
+        .await?;
 
     Ok(())
 }

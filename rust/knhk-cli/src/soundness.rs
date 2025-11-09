@@ -68,7 +68,7 @@ pub fn verify(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
     let violations: Vec<String> = report
         .violations
         .iter()
-        .map(|v| format!("{}: {}", v.severity, v.message))
+        .map(|v| format!("{:?}: {}", v.severity, v.message))
         .collect();
 
     let soundness_report = SoundnessReport {
@@ -172,7 +172,7 @@ pub fn option_to_complete(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
         let result = serde_json::json!({
             "property": "option_to_complete",
             "satisfied": option_to_complete,
-            "violations": report.violations.iter().filter(|v| v.message.contains("option to complete") || v.message.contains("reachable")).map(|v| format!("{}: {}", v.severity, v.message)).collect::<Vec<_>>()
+            "violations": report.violations.iter().filter(|v| v.message.contains("option to complete") || v.message.contains("reachable")).map(|v| format!("{:?}: {}", v.severity, v.message)).collect::<Vec<_>>()
         });
         println!(
             "{}",
@@ -193,7 +193,7 @@ pub fn option_to_complete(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
             for violation in report.violations.iter().filter(|v| {
                 v.message.contains("option to complete") || v.message.contains("reachable")
             }) {
-                println!("  - {}: {}", violation.severity, violation.message);
+                println!("  - {:?}: {}", violation.severity, violation.message);
             }
         }
     }
@@ -239,7 +239,7 @@ pub fn proper_completion(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
         let result = serde_json::json!({
             "property": "proper_completion",
             "satisfied": proper_completion,
-            "violations": report.violations.iter().filter(|v| v.message.contains("proper completion") || v.message.contains("output")).map(|v| format!("{}: {}", v.severity, v.message)).collect::<Vec<_>>()
+            "violations": report.violations.iter().filter(|v| v.message.contains("proper completion") || v.message.contains("output")).map(|v| format!("{:?}: {}", v.severity, v.message)).collect::<Vec<_>>()
         });
         println!(
             "{}",
@@ -264,7 +264,7 @@ pub fn proper_completion(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
                 .iter()
                 .filter(|v| v.message.contains("proper completion") || v.message.contains("output"))
             {
-                println!("  - {}: {}", violation.severity, violation.message);
+                println!("  - {:?}: {}", violation.severity, violation.message);
             }
         }
     }
@@ -310,7 +310,7 @@ pub fn no_dead_tasks(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
         let result = serde_json::json!({
             "property": "no_dead_tasks",
             "satisfied": no_dead_tasks,
-            "violations": report.violations.iter().filter(|v| v.message.contains("dead task") || v.message.contains("unreachable")).map(|v| format!("{}: {}", v.severity, v.message)).collect::<Vec<_>>()
+            "violations": report.violations.iter().filter(|v| v.message.contains("dead task") || v.message.contains("unreachable")).map(|v| format!("{:?}: {}", v.severity, v.message)).collect::<Vec<_>>()
         });
         println!(
             "{}",
@@ -333,7 +333,7 @@ pub fn no_dead_tasks(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
                 .iter()
                 .filter(|v| v.message.contains("dead task") || v.message.contains("unreachable"))
             {
-                println!("  - {}: {}", violation.severity, violation.message);
+                println!("  - {:?}: {}", violation.severity, violation.message);
             }
         }
     }
@@ -387,7 +387,7 @@ pub fn report(workflow_file: PathBuf, output: Option<PathBuf>, json: bool) -> Cn
     let violations: Vec<String> = report
         .violations
         .iter()
-        .map(|v| format!("{}: {}", v.severity, v.message))
+        .map(|v| format!("{:?}: {}", v.severity, v.message))
         .collect();
 
     let soundness_report = SoundnessReport {

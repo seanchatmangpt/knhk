@@ -1,0 +1,159 @@
+@startuml Testing Strategy Hierarchy
+!theme plain
+title KNHK v1.0 Testing Strategy\n**Chicago TDD + Weaver Validation**
+
+skinparam package {
+    BackgroundColor<<weaver>> #FF6B6B
+    BackgroundColor<<chicago>> #4ECDC4
+    BackgroundColor<<performance>> #FFA07A
+    BackgroundColor<<integration>> #95E1D3
+    BackgroundColor<<unit>> #DDA0DD
+    BorderColor Black
+    FontSize 11
+}
+
+package "**TIER 1: SOURCE OF TRUTH**\n(External Validation - No False Positives)" <<weaver>> {
+    [weaver registry check] as schema_check
+    [weaver registry live-check] as live_check
+
+    note right of schema_check
+        **Schema Definition Validation**
+        • All spans/metrics/logs defined
+        • Semantic conventions followed
+        • Schema compiles correctly
+    end note
+
+    note right of live_check
+        **Runtime Telemetry Validation**
+        • Actual telemetry matches schema
+        • Cannot pass if behavior wrong
+        • **ONLY proof feature works**
+    end note
+
+    schema_check -down-> live_check : Must pass both
+}
+
+package "**TIER 2: CHICAGO TDD**\n(Behavior-Focused Testing)" <<chicago>> {
+    [Test WHAT code does] as what
+    [NOT HOW it does it] as not_how
+    [Real collaborators] as real
+    [No mocks (unless I/O)] as no_mocks
+
+    what -right-> not_how
+    real -right-> no_mocks
+
+    note right of what
+        **Chicago TDD Principles**:
+        • Focus on observable behavior
+        • Test through public APIs
+        • Use real collaborators
+        • Mock only I/O boundaries
+
+        **Example**:
+        ✅ "Sequence executes branches in order"
+        ❌ "Sequence calls execute() on each branch"
+    end note
+
+    card "Coverage Requirements" {
+        **knhk-cli**: 100% commands
+        **knhk-etl**: 100% critical paths
+        **knhk-workflow**: 100% patterns
+        **knhk-warm**: 100% hooks
+        **knhk-hot**: 100% operations
+    }
+}
+
+package "**TIER 3: PERFORMANCE TESTS**\n(Chatman Constant Enforcement)" <<performance>> {
+    [RDTSC instruction] as rdtsc
+    [Median of 100 runs] as median
+    [≤8 ticks requirement] as eight_ticks
+    [Zero allocations] as zero_alloc
+
+    rdtsc -right-> median
+    median -right-> eight_ticks
+    eight_ticks -right-> zero_alloc
+
+    note right of rdtsc
+        **Performance Validation**:
+        • Cycle-accurate timing
+        • Warm-up phase (eliminate cold start)
+        • Statistical validation
+        • Regression detection
+
+        **Current Status**:
+        • 18/19 operations ≤8 ticks (94.7%)
+        • CONSTRUCT8 outlier: 41-83 ticks
+        • Target: 100% compliance for v1.0
+    end note
+}
+
+package "**TIER 4: INTEGRATION TESTS**\n(End-to-End Workflows)" <<integration>> {
+    [make test-integration-v2] as int_tests
+    [Docker + Testcontainers] as docker
+    [OTEL pipeline] as otel
+    [Full workflows] as workflows
+
+    int_tests -right-> docker
+    docker -right-> otel
+    otel -right-> workflows
+
+    note right of int_tests
+        **Integration Scope**:
+        • C + Rust FFI boundaries
+        • Docker container lifecycle
+        • OTLP telemetry pipeline
+        • Weaver + OTEL Collector
+        • Full XES export workflows
+    end note
+}
+
+package "**TIER 5: UNIT TESTS**\n(Supporting Evidence)" <<unit>> {
+    [cargo test --workspace] as unit_tests
+    [AAA pattern] as aaa
+    [Descriptive names] as names
+    [85%+ coverage] as coverage
+
+    unit_tests -right-> aaa
+    aaa -right-> names
+    names -right-> coverage
+
+    note right of unit_tests
+        **Unit Test Standards**:
+        • Arrange, Act, Assert pattern
+        • Self-documenting test names
+        • Fast execution (<100ms each)
+        • Independent (no shared state)
+
+        **Can have false positives**:
+        Tests can pass when features broken
+        Use as supporting evidence only
+    end note
+}
+
+live_check -down-> what : Weaver proves\nbehavior
+what -down-> rdtsc : Chicago validates\nfunctionality
+rdtsc -down-> int_tests : Performance\nverified
+int_tests -down-> unit_tests : E2E validated
+
+note bottom
+**Testing Hierarchy Critical Principle**:
+
+Traditional Testing Problem:
+  assert(result == expected) ✅ ← Can pass when feature is broken
+
+KNHK Solution:
+  Weaver validates runtime telemetry against schema ✅
+  ← Can ONLY pass when behavior matches specification
+
+**This is why Weaver is the source of truth, not tests.**
+end note
+
+legend right
+  |<back:#FF6B6B>   </back>| Tier 1: Source of truth (external validation) |
+  |<back:#4ECDC4>   </back>| Tier 2: Chicago TDD (behavior-focused) |
+  |<back:#FFA07A>   </back>| Tier 3: Performance (≤8 ticks) |
+  |<back:#95E1D3>   </back>| Tier 4: Integration (E2E workflows) |
+  |<back:#DDA0DD>   </back>| Tier 5: Unit tests (supporting evidence) |
+endlegend
+
+@enduml

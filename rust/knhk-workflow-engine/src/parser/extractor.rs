@@ -315,15 +315,21 @@ fn extract_task_parameters(
         "hasOutputParameter"
     };
 
+    // Ensure task_id is properly formatted as an IRI (trim any whitespace)
+    let task_id_iri = task_id.trim();
+
+    // Construct full IRI for the parameter property
+    let param_property_iri = format!("{}{}", yawl_ns, param_type);
+
     let query = format!(
         "PREFIX yawl: <{}>\n\
          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
          SELECT ?paramName ?paramType WHERE {{\n\
-           <{}> yawl:{} ?param .\n\
+           <{}> <{}> ?param .\n\
            ?param yawl:paramName ?paramName .\n\
            OPTIONAL {{ ?param yawl:paramType ?paramType }}\n\
          }}",
-        yawl_ns, task_id, param_type
+        yawl_ns, task_id_iri, param_property_iri
     );
 
     #[allow(deprecated)]

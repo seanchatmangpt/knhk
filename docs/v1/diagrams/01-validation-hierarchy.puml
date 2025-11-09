@@ -1,0 +1,101 @@
+@startuml Validation Hierarchy
+!theme plain
+title KNHK v1.0 Validation Hierarchy\n**Source of Truth: OpenTelemetry Weaver Schema Validation**
+
+skinparam rectangle {
+    BackgroundColor<<level1>> #FF6B6B
+    BackgroundColor<<level2>> #4ECDC4
+    BackgroundColor<<level3>> #95E1D3
+    BorderColor Black
+    FontSize 12
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57C00
+}
+
+rectangle "**LEVEL 1: WEAVER VALIDATION**\n(MANDATORY - Source of Truth)" <<level1>> {
+    rectangle "Schema Validation" as schema {
+        :weaver registry check -r registry/;
+        note right: Validates schema definition\n✅ MUST PASS
+    }
+
+    rectangle "Live Telemetry Validation" as live {
+        :weaver registry live-check --registry registry/;
+        note right: Validates runtime telemetry\n✅ MUST PASS\n**If this fails, feature DOES NOT WORK**
+    }
+
+    schema -down-> live
+}
+
+rectangle "**LEVEL 2: COMPILATION & CODE QUALITY**\n(Baseline)" <<level2>> {
+    rectangle "Build" as build {
+        :cargo build --workspace --release;
+        note right: Zero warnings required
+    }
+
+    rectangle "Linting" as clippy {
+        :cargo clippy --workspace -- -D warnings;
+        note right: Zero issues required
+    }
+
+    rectangle "C Library" as cmake {
+        :make build;
+        note right: C library compiles
+    }
+
+    rectangle "Code Standards" as standards {
+        :No .unwrap()/.expect() in production;
+        :Proper Result<T, E> error handling;
+        :No println! (use tracing);
+        :No async trait methods;
+    }
+
+    build -right-> clippy
+    clippy -right-> cmake
+    cmake -down-> standards
+}
+
+rectangle "**LEVEL 3: TRADITIONAL TESTS**\n(Supporting Evidence - Can Have False Positives)" <<level3>> {
+    rectangle "Chicago TDD" as chicago {
+        :make test-chicago-v04;
+        note right: 100% critical paths\nBehavior-focused testing
+    }
+
+    rectangle "Performance" as perf {
+        :make test-performance-v04;
+        note right: ≤8 ticks MANDATORY\nChatman Constant
+    }
+
+    rectangle "Integration" as integration {
+        :make test-integration-v2;
+        note right: End-to-end workflows
+    }
+
+    rectangle "Unit Tests" as unit {
+        :cargo test --workspace;
+        note right: 85%+ coverage\nSupporting evidence
+    }
+
+    chicago -right-> perf
+    perf -right-> integration
+    integration -down-> unit
+}
+
+live -down-> build : **If Weaver fails,\nSTOP HERE**
+standards -down-> chicago : **Only proceed if\nbaseline passes**
+
+note bottom
+**Critical Principle**: Tests can pass when features are broken (false positives).
+Weaver validation can ONLY pass if runtime telemetry matches declared schemas.
+**This is why Weaver is the ONLY source of truth for KNHK.**
+end note
+
+legend right
+  |<back:#FF6B6B>   </back>| Level 1: Source of Truth (External validation, no false positives) |
+  |<back:#4ECDC4>   </back>| Level 2: Quality Baseline (Compilation + standards) |
+  |<back:#95E1D3>   </back>| Level 3: Supporting Evidence (Can have false positives) |
+endlegend
+
+@enduml

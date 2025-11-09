@@ -67,6 +67,8 @@ async fn test_workflow_registration_and_retrieval() -> WorkflowResult<()> {
         required_roles: vec![],
         required_capabilities: vec![],
         exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
     };
     spec.tasks.insert("task:1".to_string(), task);
 
@@ -160,6 +162,8 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
         required_roles: vec!["test_role".to_string()],
         required_capabilities: vec![],
         exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
     };
     spec.tasks.insert("task:1".to_string(), task);
 
@@ -280,6 +284,8 @@ async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
             required_roles: vec!["test_role".to_string()],
             required_capabilities: vec![],
             exception_worklet: None,
+            input_parameters: vec![],
+            output_parameters: vec![],
         };
         spec.tasks.insert(format!("task:{}", i), task);
     }
@@ -447,6 +453,8 @@ async fn test_case_cancellation() -> WorkflowResult<()> {
         required_roles: vec![],
         required_capabilities: vec![],
         exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
     };
     spec.tasks.insert("task:1".to_string(), task);
 
@@ -521,6 +529,8 @@ async fn test_multiple_workflows_and_cases() -> WorkflowResult<()> {
             required_roles: vec![],
             required_capabilities: vec![],
             exception_worklet: None,
+            input_parameters: vec![],
+            output_parameters: vec![],
         };
         spec.tasks.insert(format!("task:{}", i), task);
 
@@ -612,6 +622,8 @@ async fn test_state_persistence() -> WorkflowResult<()> {
         required_roles: vec![],
         required_capabilities: vec![],
         exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
     };
     spec.tasks.insert("task:1".to_string(), task);
 
@@ -679,6 +691,8 @@ async fn test_admission_gate_integration() -> WorkflowResult<()> {
         required_roles: vec![],
         required_capabilities: vec![],
         exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
     };
     spec.tasks.insert("task:1".to_string(), task);
 
@@ -794,6 +808,8 @@ async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
             required_roles: vec!["test_role".to_string()],
             required_capabilities: vec![],
             exception_worklet: None,
+            input_parameters: vec![],
+            output_parameters: vec![],
         };
         spec.tasks.insert(format!("task:{}", i), task);
     }

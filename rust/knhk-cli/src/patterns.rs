@@ -61,17 +61,16 @@ pub fn list(json: bool) -> CnvResult<()> {
         let mut registry = PatternRegistry::new();
         registry.register_all_patterns();
 
-        let patterns: Vec<PatternInfo> = (1..=43)
-            .filter_map(|id| {
-                let pattern_id = PatternId::from(id);
-                registry
-                    .get_pattern(&pattern_id)
-                    .map(|pattern| PatternInfo {
-                        id,
-                        name: pattern.name().to_string(),
-                        category: pattern.category().to_string(),
-                        description: pattern.description().to_string(),
-                    })
+        // Use pattern metadata instead of executor methods
+        use knhk_workflow_engine::patterns::rdf::metadata::get_all_pattern_metadata;
+        let metadata = get_all_pattern_metadata();
+        let patterns: Vec<PatternInfo> = metadata
+            .iter()
+            .map(|m| PatternInfo {
+                id: m.pattern_id,
+                name: m.name.clone(),
+                category: m.category.clone(),
+                description: m.description.clone(),
             })
             .collect();
 
@@ -111,35 +110,37 @@ pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResu
     let engine = get_engine(state_store.as_deref())?;
 
     runtime.block_on(async {
-        let pattern_id_enum = PatternId::from(pattern_id);
+        let pattern_id_enum = PatternId(pattern_id);
 
         // Register all patterns
         let mut registry = PatternRegistry::new();
         registry.register_all_patterns();
 
-        let pattern = registry.get_pattern(&pattern_id_enum).ok_or_else(|| {
+        let pattern = registry.get(&pattern_id_enum).ok_or_else(|| {
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Pattern {} not found",
                 pattern_id
             ))
         })?;
 
-        // Create execution context
-        let context = knhk_workflow_engine::patterns::PatternExecutionContext::new();
+        // Get pattern metadata
+        use knhk_workflow_engine::patterns::rdf::metadata::get_all_pattern_metadata;
+        let metadata = get_all_pattern_metadata();
+        let pattern_meta = metadata.iter().find(|m| m.pattern_id == pattern_id);
 
-        // Execute pattern
-        let result = pattern.execute(&context).await;
+        // Create execution context
+        let context = knhk_workflow_engine::patterns::PatternExecutionContext::default();
+
+        // Execute pattern (not async)
+        let result = pattern.execute(&context);
 
         if json {
             let result_json = serde_json::json!({
                 "pattern_id": pattern_id,
-                "pattern_name": pattern.name(),
-                "category": pattern.category(),
-                "execution_result": match result {
-                    Ok(_) => "success",
-                    Err(e) => "error"
-                },
-                "error": result.as_ref().err().map(|e| e.to_string())
+                "category": pattern_meta.map(|m| m.category.clone()).unwrap_or_else(|| "Unknown".to_string()),
+                "execution_result": if result.success { "success" } else { "error" },
+                "next_activities": result.next_activities,
+                "terminates": result.terminates
             });
             println!(
                 "{}",
@@ -151,23 +152,27 @@ pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResu
                 })?
             );
         } else {
-            println!("Pattern Test: {}", pattern.name());
+            println!("Pattern Test: Pattern {}", pattern_id);
             println!("==============");
             println!("ID: {}", pattern_id);
-            println!("Category: {}", pattern.category());
-            println!("Description: {}", pattern.description());
-            match result {
-                Ok(_) => println!("Execution: ✓ SUCCESS"),
-                Err(e) => println!("Execution: ✗ ERROR - {}", e),
+            if result.success {
+                println!("Execution: ✓ SUCCESS");
+                if !result.next_activities.is_empty() {
+                    println!("Next activities: {:?}", result.next_activities);
+                }
+                if result.terminates {
+                    println!("Workflow terminates");
+                }
+            } else {
+                println!("Execution: ✗ ERROR");
             }
         }
 
-        result.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!(
-                "Pattern execution failed: {}",
-                e
-            ))
-        })?;
+        if !result.success {
+            return Err(clap_noun_verb::NounVerbError::execution_error(
+                "Pattern execution failed".to_string(),
+            ));
+        }
 
         Ok(())
     })
@@ -187,12 +192,14 @@ pub fn test_all(state_store: Option<String>, json: bool) -> CnvResult<()> {
         let mut results: Vec<(u32, bool, Option<String>)> = Vec::new();
 
         for id in 1..=43 {
-            let pattern_id = PatternId::from(id);
-            if let Some(pattern) = registry.get_pattern(&pattern_id) {
-                let context = knhk_workflow_engine::patterns::PatternExecutionContext::new();
-                match pattern.execute(&context).await {
-                    Ok(_) => results.push((id, true, None)),
-                    Err(e) => results.push((id, false, Some(e.to_string()))),
+            let pattern_id = PatternId(id);
+            if let Some(pattern) = registry.get(&pattern_id) {
+                let context = knhk_workflow_engine::patterns::PatternExecutionContext::default();
+                let result = pattern.execute(&context);
+                if result.success {
+                    results.push((id, true, None));
+                } else {
+                    results.push((id, false, Some("Pattern execution failed".to_string())));
                 }
             } else {
                 results.push((id, false, Some("Pattern not found".to_string())));
@@ -299,11 +306,11 @@ pub fn verify(
         })?;
 
         // Get pattern
-        let pattern_id_enum = PatternId::from(pattern_id);
+        let pattern_id_enum = PatternId(pattern_id);
         let mut registry = PatternRegistry::new();
         registry.register_all_patterns();
 
-        let pattern = registry.get_pattern(&pattern_id_enum).ok_or_else(|| {
+        let pattern = registry.get(&pattern_id_enum).ok_or_else(|| {
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Pattern {} not found",
                 pattern_id
@@ -312,16 +319,16 @@ pub fn verify(
 
         // For now, just verify that the pattern exists and can be executed
         // In a full implementation, we would analyze the workflow structure to detect pattern usage
-        let context = knhk_workflow_engine::patterns::PatternExecutionContext::new();
-        let result = pattern.execute(&context).await;
+        let context = knhk_workflow_engine::patterns::PatternExecutionContext::default();
+        let result = pattern.execute(&context);
 
         if json {
             let result_json = serde_json::json!({
                 "pattern_id": pattern_id,
-                "pattern_name": pattern.name(),
                 "workflow": workflow_file.display().to_string(),
-                "pattern_executable": result.is_ok(),
-                "error": result.as_ref().err().map(|e| e.to_string())
+                "pattern_executable": result.success,
+                "next_activities": result.next_activities,
+                "terminates": result.terminates
             });
             println!(
                 "{}",
@@ -335,20 +342,23 @@ pub fn verify(
         } else {
             println!("Pattern Verification");
             println!("===================");
-            println!("Pattern: {} ({})", pattern_id, pattern.name());
+            println!("Pattern: {}", pattern_id);
             println!("Workflow: {}", workflow_file.display());
-            match result {
-                Ok(_) => println!("Pattern Status: ✓ Executable"),
-                Err(e) => println!("Pattern Status: ✗ Error - {}", e),
+            if result.success {
+                println!("Pattern Status: ✓ Executable");
+                if !result.next_activities.is_empty() {
+                    println!("Next activities: {:?}", result.next_activities);
+                }
+            } else {
+                println!("Pattern Status: ✗ Error");
             }
         }
 
-        result.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!(
-                "Pattern verification failed: {}",
-                e
-            ))
-        })?;
+        if !result.success {
+            return Err(clap_noun_verb::NounVerbError::execution_error(
+                "Pattern verification failed".to_string(),
+            ));
+        }
 
         Ok(())
     })

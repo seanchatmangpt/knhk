@@ -1,0 +1,123 @@
+@startuml Gap Analysis and Priorities
+!theme plain
+title KNHK v1.0 Gap Analysis\n**26 Gaps → 4 Critical Blockers → 4-Week Timeline**
+
+skinparam rectangle {
+    BackgroundColor<<critical>> #FF5252
+    BackgroundColor<<high>> #FF9800
+    BackgroundColor<<medium>> #FFC107
+    BorderColor Black
+    FontSize 11
+}
+
+skinparam card {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+
+rectangle "**CRITICAL BLOCKERS (P0)**\n❌ Block ALL Progress" <<critical>> {
+    card "GAP-001: Clippy Errors" as gap1 {
+        **Issue**: 15+ compilation errors
+        **Impact**: Cannot build production
+        **Effort**: 2-4 hours
+        **Owner**: Backend Developer
+    }
+
+    card "GAP-002: Chicago TDD Crash" as gap2 {
+        **Issue**: Abort trap: 6 (memory safety)
+        **Impact**: Cannot validate core functionality
+        **Effort**: 4-8 hours
+        **Owner**: Code Analyzer + Backend Dev
+    }
+
+    card "GAP-003: Integration Tests" as gap3 {
+        **Issue**: Won't compile
+        **Impact**: Cannot validate E2E
+        **Effort**: 1-2 hours
+        **Owner**: Code Analyzer
+    }
+
+    card "GAP-004: .unwrap() in Hot Path" as gap4 {
+        **Issue**: 71 files, production can panic
+        **Impact**: Violates performance + safety
+        **Effort**: 16-20 hours
+        **Owner**: Backend Developer + Team
+    }
+}
+
+rectangle "**HIGH PRIORITY (P1)**\n⚠️ Mandatory for v1.0" <<high>> {
+    card "GAP-005: Weaver Live Validation" as gap5 {
+        **Issue**: NOT RUN (critical gap)
+        **Impact**: Cannot prove features work
+        **Effort**: 2-4 hours
+        **Owner**: Production Validator
+    }
+
+    card "GAP-006: Functional Validation" as gap6 {
+        **Issue**: Commands not executed
+        **Impact**: Help text ≠ working feature
+        **Effort**: 4-6 hours
+        **Owner**: QA + Developer
+    }
+
+    card "GAP-007: Performance Tests" as gap7 {
+        **Issue**: Not run in CI
+        **Impact**: Cannot verify ≤8 ticks
+        **Effort**: 2-3 hours
+        **Owner**: Performance Benchmarker
+    }
+}
+
+rectangle "**MEDIUM PRIORITY (P2)**\n🔄 Complete DoD Compliance" <<medium>> {
+    card "GAP-008 to GAP-026" as gap8 {
+        **Categories**:
+        • DFLSS metrics (5 gaps)
+        • Documentation (4 gaps)
+        • CI/CD automation (3 gaps)
+        • Security audits (3 gaps)
+        • Architecture ADRs (3 gaps)
+
+        **Total Effort**: 24-36 hours
+        **Timeline**: Weeks 3-4
+    }
+}
+
+gap1 -down-> gap2 : Week 1
+gap2 -down-> gap3 : Week 1
+gap3 -down-> gap4 : Week 1-2
+
+gap4 -down-> gap5 : Week 2
+gap5 -down-> gap6 : Week 2
+gap6 -down-> gap7 : Week 2
+
+gap7 -down-> gap8 : Weeks 3-4
+
+note right of gap1
+  **Week 1 Focus**:
+  Fix all 4 critical blockers
+  Total: 23-34 hours
+end note
+
+note right of gap5
+  **Week 2 Focus**:
+  Mandatory validation gates
+  Total: 8-13 hours
+end note
+
+note right of gap8
+  **Weeks 3-4 Focus**:
+  Complete DoD compliance
+  Total: 24-36 hours
+end note
+
+legend bottom
+  |<back:#FF5252>   </back>| P0 CRITICAL: Blocks all progress |
+  |<back:#FF9800>   </back>| P1 HIGH: Mandatory for v1.0 |
+  |<back:#FFC107>   </back>| P2 MEDIUM: Complete DoD |
+
+  **Total Effort**: 55-87 hours
+  **Timeline**: 4-5 weeks (realistic)
+  **Current Status**: 24.2% compliant (8/33 criteria)
+endlegend
+
+@enduml

@@ -14,8 +14,10 @@
 //! - workflow serve: Start REST API server
 //! - workflow import-xes: Import XES event log
 //! - workflow export-xes: Export workflow execution to XES format
+//! - workflow validate-xes: Run automated XES validation full loop
 //! - workflow discover: Run Alpha+++ process discovery algorithm
 
+use chrono::Utc;
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use knhk_workflow_engine::{
@@ -480,29 +482,37 @@ pub fn validate_xes(spec_id: Option<String>, output_dir: Option<PathBuf>) -> Cnv
             clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
         })?;
 
-        // Get workflow
-        let spec = engine.get_workflow(spec_id_parsed).await.map_err(|e| {
-            clap_noun_verb::NounVerbError::execution_error(format!(
-                "Failed to get workflow: {}",
-                CliAdapter::format_error(&e)
-            ))
-        })?;
+        // Verify workflow exists by trying to get it via service
+        let workflow_service = WorkflowService::new(engine.clone());
+        let _spec = workflow_service
+            .get_workflow(GetWorkflowRequest {
+                spec_id: spec_id_parsed,
+            })
+            .await
+            .map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to get workflow: {}",
+                    CliAdapter::format_error(&e)
+                ))
+            })?;
 
         // Create and execute case
         let case_id = engine
             .create_case(spec_id_parsed, serde_json::json!({"validation": true}))
             .await
             .map_err(|e| {
+                let api_error = knhk_workflow_engine::api::models::errors::ApiError::from(e);
                 clap_noun_verb::NounVerbError::execution_error(format!(
                     "Failed to create case: {}",
-                    CliAdapter::format_error(&e)
+                    CliAdapter::format_error(&api_error)
                 ))
             })?;
 
         engine.start_case(case_id).await.map_err(|e| {
+            let api_error = knhk_workflow_engine::api::models::errors::ApiError::from(e);
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to start case: {}",
-                CliAdapter::format_error(&e)
+                CliAdapter::format_error(&api_error)
             ))
         })?;
 
@@ -514,9 +524,10 @@ pub fn validate_xes(spec_id: Option<String>, output_dir: Option<PathBuf>) -> Cnv
         // Phase 2: Export to XES
         println!("Phase 2: Exporting to XES...");
         let xes_content = engine.export_case_to_xes(case_id).await.map_err(|e| {
+            let api_error = knhk_workflow_engine::api::models::errors::ApiError::from(e);
             clap_noun_verb::NounVerbError::execution_error(format!(
                 "Failed to export to XES: {}",
-                CliAdapter::format_error(&e)
+                CliAdapter::format_error(&api_error)
             ))
         })?;
 

@@ -146,7 +146,7 @@ pub fn discover(
                     "places": petri_net.places.len(),
                     "transitions": petri_net.transitions.len(),
                     "arcs": petri_net.arcs.len(),
-                    "discovery_time_ms": duration.as_millis()
+                    "discovery_time": format!("{:?}", duration)
                 });
                 println!(
                     "{}",
@@ -170,8 +170,14 @@ pub fn discover(
             if let Some(output_path) = output {
                 // Export Petri net to PNML format
                 use process_mining::export_petri_net_to_pnml;
-                let pnml = export_petri_net_to_pnml(&petri_net);
-                std::fs::write(&output_path, pnml).map_err(|e| {
+                let mut pnml_writer = Vec::new();
+                export_petri_net_to_pnml(&petri_net, &mut pnml_writer).map_err(|e| {
+                    clap_noun_verb::NounVerbError::execution_error(format!(
+                        "Failed to export PNML: {:?}",
+                        e
+                    ))
+                })?;
+                std::fs::write(&output_path, pnml_writer).map_err(|e| {
                     clap_noun_verb::NounVerbError::execution_error(format!(
                         "Failed to write PNML file: {}",
                         e

@@ -9,7 +9,8 @@
 
 - **[README](../README.md)** - Project overview and quick start
 - **[QUICK_START.md](QUICK_START.md)** - Getting started guide
-- **[v1.0 Definition of Done](v1.0-definition-of-done.md)** - Complete acceptance criteria
+- **[v1.0 Documentation](v1/README.md)** - 🆕 Organized v1.0 release documentation
+- **[v1.0 Definition of Done](v1/definition-of-done/fortune5-production.md)** - Complete acceptance criteria
 
 ---
 
@@ -33,8 +34,9 @@
 ## Core Documentation (20% - 80% Value)
 
 ### Requirements & Definition of Done
+- **[v1.0 Documentation](v1/README.md)** - 🆕 Organized v1.0 release documentation
+- **[v1.0 Definition of Done](v1/definition-of-done/fortune5-production.md)** - Primary DoD (Fortune 5 Production)
 - **[v1.0 Requirements](v1-requirements.md)** - Complete v1.0 requirements specification
-- **[v1.0 Definition of Done](v1.0-definition-of-done.md)** - Acceptance criteria and validation process
 - **[Validation Script](../scripts/validate-v1-dod.sh)** - Automated DoD validation
 
 ### Architecture
@@ -91,25 +93,33 @@
 
 All validation reports, test results, and evidence are in:
 - **[docs/evidence/](evidence/)** - Test results, validation reports, benchmarks
+- **[docs/v1/](v1/)** - 🆕 Organized v1.0 release documentation
 
 Key evidence files:
 - `evidence/8BEAT_INTEGRATION_SYNTHESIS.md` - Integration analysis
 - `evidence/architect_8beat_gaps.md` - Gap analysis
-- `evidence/V1_*` - Various v1.0 validation reports
+- `v1/validation/` - 🆕 v1.0 validation reports
+- `v1/certification/` - 🆕 v1.0 certification reports
+- `v1/performance/` - 🆕 v1.0 performance benchmarks
+- `v1/status/` - 🆕 v1.0 status and gap analysis
 
 ---
 
 ## Status & Current State
 
 - **[Production Guide](PRODUCTION.md)** - 🆕 Consolidated 80/20 guide (Status, Deployment, Troubleshooting)
+- **[v1.0 Status](v1/status/README.md)** - 🆕 Current v1.0 status, gaps, and priorities
+- **[v1.0 Gaps & Priorities](v1/status/gaps-and-priorities.md)** - 🆕 Comprehensive gap analysis
 - **[V1 Release Status](V1-RELEASE-STATUS.md)** - Current v1.0 release status and validation progress
 - **[V1 Status](V1-STATUS.md)** - Historical v1.0 development status
 - **[DFLSS Definition of Done](DFLSS_DEFINITION_OF_DONE.spr.md)** - DFLSS DoD specification
 
 ## Release Documentation
 
+- **[v1.0 Documentation](v1/README.md)** - 🆕 Organized v1.0 release documentation
 - **[Release Notes v1.0.0](RELEASE_NOTES_v1.0.0.md)** - Comprehensive v1.0.0 release notes
-- **[Release Checklist](V1-RELEASE-CHECKLIST.md)** - Pre-release validation checklist
+- **[v1.0 Release Checklist](v1/certification/release-checklist.md)** - 🆕 Pre-release validation checklist
+- **[v1.0 Certification](v1/certification/README.md)** - 🆕 Release certification reports
 - **[Release Status](V1-RELEASE-STATUS.md)** - Current release readiness status
 - **[Changelog](CHANGELOG.md)** - Complete version history
 
@@ -153,7 +163,10 @@ docs/
 ## Finding Documentation
 
 - **Getting Started**: See [QUICK_START.md](QUICK_START.md)
-- **v1.0 Release**: See [v1.0-definition-of-done.md](v1.0-definition-of-done.md)
+- **v1.0 Release**: See [v1/README.md](v1/README.md) - 🆕 Organized v1.0 documentation
+- **v1.0 Definition of Done**: See [v1/definition-of-done/fortune5-production.md](v1/definition-of-done/fortune5-production.md)
+- **v1.0 Certification**: See [v1/certification/README.md](v1/certification/README.md)
+- **v1.0 Validation**: See [v1/validation/README.md](v1/validation/README.md)
 - **Architecture**: See [architecture.md](archived/reference-docs/architecture.md) (archived - consolidated) and [8BEAT-PRD.txt](8BEAT-PRD.txt)
 - **Integration**: See [integration-guide.md](archived/reference-docs/integration-guide.md) (archived - consolidated)
 - **Validation**: Run `./scripts/validate-v1-dod.sh`

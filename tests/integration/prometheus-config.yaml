@@ -12,3 +12,4 @@ scrape_configs:
       - targets: ['otel-collector:8888']
 
 
+

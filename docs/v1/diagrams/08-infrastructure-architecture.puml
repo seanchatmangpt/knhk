@@ -1,0 +1,174 @@
+@startuml Infrastructure Architecture
+!theme plain
+title KNHK v1.0 Infrastructure Architecture\n**Docker + OTLP + Weaver Validation**
+
+skinparam component {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    FontSize 11
+}
+
+skinparam database {
+    BackgroundColor #FFF3E0
+    BorderColor #E65100
+}
+
+skinparam cloud {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+
+package "KNHK Application" {
+    [knhk-cli] as cli
+    [knhk-etl] as etl
+    [knhk-workflow-engine] as workflow
+    [knhk-warm] as warm
+    [knhk-hot] as hot
+    [knhk-sidecar] as sidecar
+}
+
+package "Telemetry Instrumentation" {
+    [knhk-otel] as otel_lib
+    [Tracing Spans] as spans
+    [Metrics] as metrics
+    [Logs] as logs
+}
+
+cloud "Docker Infrastructure" {
+    component "OTEL Collector" as collector {
+        [Receivers\nHTTP: 4318\ngRPC: 4317] as receivers
+        [Processors\nBatch\nMemory Limit] as processors
+        [Exporters\nJaeger\nPrometheus\nLogging] as exporters
+    }
+
+    component "Jaeger" as jaeger {
+        [UI: 16686]
+        [Collector: 14250]
+        [HTTP: 14268]
+    }
+
+    component "Prometheus" as prometheus {
+        [Metrics: 9090]
+        [Alerts: 9093]
+    }
+
+    component "Grafana" as grafana {
+        [Dashboard: 3000]
+        [Visualizations]
+    }
+}
+
+database "OTel Schema Registry" as registry {
+    file "registry/knhk-cli.yaml"
+    file "registry/knhk-etl.yaml"
+    file "registry/knhk-workflow.yaml"
+    file "registry/knhk-warm.yaml"
+    file "registry/knhk-hot.yaml"
+}
+
+component "Weaver Tooling" as weaver {
+    [weaver registry check]
+    [weaver registry live-check]
+    [Schema Validation]
+    [Telemetry Conformance]
+}
+
+package "Testing Infrastructure" {
+    [Testcontainers\nKafka\nPostgres] as testcontainers
+    [Docker Compose\ntest-stack] as compose
+    [Integration Tests] as int_tests
+}
+
+' Application → Telemetry
+cli -down-> otel_lib
+etl -down-> otel_lib
+workflow -down-> otel_lib
+warm -down-> otel_lib
+hot -down-> otel_lib
+sidecar -down-> otel_lib
+
+' Telemetry → Instrumentation
+otel_lib -down-> spans
+otel_lib -down-> metrics
+otel_lib -down-> logs
+
+' Instrumentation → OTLP
+spans -right-> receivers : OTLP/gRPC\n(4317)
+metrics -right-> receivers : OTLP/HTTP\n(4318)
+logs -right-> receivers
+
+' OTEL Collector Pipeline
+receivers -down-> processors
+processors -down-> exporters
+
+' Exporters → Backends
+exporters -right-> jaeger : Traces
+exporters -right-> prometheus : Metrics
+exporters -down-> grafana : Logs
+
+' Weaver Validation
+registry -down-> weaver : Schema\nDefinitions
+spans -down-> weaver : Runtime\nTelemetry
+metrics -down-> weaver
+logs -down-> weaver
+
+' Testing
+testcontainers -up-> collector : Test\nTelemetry
+int_tests -up-> testcontainers
+compose -up-> collector
+
+note right of collector
+  **OTEL Collector Config**:
+  • Batch timeout: ≤1s
+  • Memory limit: 512MiB
+  • Health check: 30s
+  • Auto-cleanup enabled
+end note
+
+note right of weaver
+  **Validation Gates**:
+  1. Schema check (static)
+  2. Live check (runtime)
+
+  **If validation fails**:
+  Feature DOES NOT WORK
+  (regardless of test results)
+end note
+
+note bottom of registry
+  **Schema-First Design**:
+  Every feature MUST have:
+  • OTel schema definition
+  • Semantic conventions
+  • Span/metric/log specs
+
+  **Source of Truth**:
+  Runtime telemetry must
+  match schema declarations
+end note
+
+note left of testcontainers
+  **Test Requirements**:
+  • testcontainers 0.25
+  • testcontainers-modules 0.13
+  • Blocking feature enabled
+  • ≤5s spawn time
+  • Dynamic ports
+  • Auto-cleanup
+end note
+
+legend right
+  **Port Mapping**:
+  • 4317: OTLP gRPC
+  • 4318: OTLP HTTP
+  • 16686: Jaeger UI
+  • 9090: Prometheus
+  • 3000: Grafana
+
+  **Health Checks**:
+  • OTEL: ≤10s
+  • Jaeger: ≤10s
+  • Total: ≤30s
+endlegend
+
+@enduml

@@ -132,6 +132,155 @@ impl WorkflowTestFixture {
         self.engine.state_manager.get_case_history(case_id).await
     }
 
+    /// Export case to XES and validate format
+    /// Validates that XES is properly formatted and can be imported back
+    pub async fn export_and_validate_xes(
+        &self,
+        case_id: CaseId,
+        expected_activities: Option<&[&str]>,
+    ) -> WorkflowResult<String> {
+        // Export case to XES
+        let xes_content = self.engine.export_case_to_xes(case_id).await?;
+
+        // Validate XES format structure
+        assert!(
+            xes_content.contains("<?xml version"),
+            "XES should contain XML declaration"
+        );
+        assert!(
+            xes_content.contains("<log xes.version=\"2.0\""),
+            "XES should contain log element with version 2.0"
+        );
+        assert!(
+            xes_content.contains("<trace>"),
+            "XES should contain trace element"
+        );
+        assert!(
+            xes_content.contains("<event>"),
+            "XES should contain event elements"
+        );
+        assert!(
+            xes_content.contains("concept:name"),
+            "XES should contain concept:name attributes"
+        );
+        assert!(
+            xes_content.contains("time:timestamp"),
+            "XES should contain time:timestamp attributes"
+        );
+        assert!(
+            xes_content.contains("lifecycle:transition"),
+            "XES should contain lifecycle:transition attributes"
+        );
+
+        // Import XES back to validate it can be parsed
+        let temp_dir = tempfile::tempdir().map_err(|e| {
+            WorkflowError::Internal(format!("Failed to create temp directory: {}", e))
+        })?;
+        let temp_file = temp_dir.path().join("validate.xes");
+        std::fs::write(&temp_file, &xes_content).map_err(|e| {
+            WorkflowError::Internal(format!("Failed to write temp XES file: {}", e))
+        })?;
+
+        // Import XES using process_mining crate
+        use process_mining::{import_xes_file, XESImportOptions};
+        let event_log = import_xes_file(&temp_file, XESImportOptions::default()).map_err(|e| {
+            WorkflowError::Internal(format!("Failed to import XES for validation: {:?}", e))
+        })?;
+
+        // Validate event log structure
+        assert!(
+            !event_log.traces.is_empty(),
+            "XES event log should contain at least one trace"
+        );
+
+        // Validate expected activities if provided
+        if let Some(expected) = expected_activities {
+            let activities: Vec<String> = event_log
+                .traces
+                .iter()
+                .flat_map(|trace| {
+                    trace
+                        .events
+                        .iter()
+                        .filter_map(|event| {
+                            event
+                                .attributes
+                                .iter()
+                                .find(|attr| attr.key == "concept:name")
+                                .and_then(|attr| match &attr.value {
+                                    process_mining::event_log::AttributeValue::String(s) => {
+                                        Some(s.clone())
+                                    }
+                                    _ => None,
+                                })
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+
+            for expected_activity in expected {
+                assert!(
+                    activities.contains(&expected_activity.to_string()),
+                    "XES should contain activity '{}', found: {:?}",
+                    expected_activity,
+                    activities
+                );
+            }
+        }
+
+        Ok(xes_content)
+    }
+
+    /// Validate XES contains expected number of events for a task
+    pub async fn validate_xes_task_count(
+        &self,
+        case_id: CaseId,
+        task_id: &str,
+        expected_count: usize,
+    ) -> WorkflowResult<()> {
+        let xes_content = self.engine.export_case_to_xes(case_id).await?;
+
+        // Import XES
+        let temp_dir = tempfile::tempdir().map_err(|e| {
+            WorkflowError::Internal(format!("Failed to create temp directory: {}", e))
+        })?;
+        let temp_file = temp_dir.path().join("count.xes");
+        std::fs::write(&temp_file, &xes_content).map_err(|e| {
+            WorkflowError::Internal(format!("Failed to write temp XES file: {}", e))
+        })?;
+
+        use process_mining::{import_xes_file, XESImportOptions};
+        let event_log = import_xes_file(&temp_file, XESImportOptions::default()).map_err(|e| {
+            WorkflowError::Internal(format!("Failed to import XES for validation: {:?}", e))
+        })?;
+
+        // Count events for the task
+        let task_count = event_log
+            .traces
+            .iter()
+            .flat_map(|trace| &trace.events)
+            .filter(|event| {
+                event
+                    .attributes
+                    .iter()
+                    .find(|attr| attr.key == "concept:name")
+                    .and_then(|attr| match &attr.value {
+                        process_mining::event_log::AttributeValue::String(s) => Some(s == task_id),
+                        _ => None,
+                    })
+                    .unwrap_or(false)
+            })
+            .count();
+
+        assert_eq!(
+            task_count, expected_count,
+            "Expected {} events for task '{}', found {}",
+            expected_count, task_id, task_count
+        );
+
+        Ok(())
+    }
+
     /// Clean up test resources
     pub fn cleanup(&self) -> WorkflowResult<()> {
         // Clean up state store by removing test database

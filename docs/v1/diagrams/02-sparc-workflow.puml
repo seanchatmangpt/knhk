@@ -1,0 +1,150 @@
+@startuml SPARC Workflow with Quality Gates
+!theme plain
+title KNHK v1.0 SPARC Development Workflow\n**Schema-First Development with Quality Gates**
+
+skinparam activity {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontSize 12
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57C00
+}
+
+start
+
+:User defines feature requirements;
+
+partition "**PHASE 1: SPECIFICATION**" {
+    :Create OpenTelemetry Weaver schema;
+    :Define telemetry behavior in registry/*.yaml;
+
+    if (weaver registry check passes?) then (yes)
+        :✅ Schema compiles;
+    else (no)
+        :❌ Fix schema errors;
+        stop
+    endif
+
+    note right
+        **Deliverable**: OTel schema
+        **Quality Gate**: Schema validation
+        **Transition**: Behavior documented
+    end note
+}
+
+partition "**PHASE 2: PSEUDOCODE**" {
+    :Design algorithm with telemetry markers;
+    :Map algorithm flow to schema spans;
+
+    if (Performance ≤8 ticks achievable?) then (yes)
+        :✅ Algorithm feasible;
+    else (no)
+        :❌ Redesign algorithm;
+        stop
+    endif
+
+    note right
+        **Deliverable**: Algorithm design
+        **Quality Gate**: Performance feasibility
+        **Transition**: Emits declared telemetry
+    end note
+}
+
+partition "**PHASE 3: ARCHITECTURE**" {
+    :Design system components;
+    :Ensure span context propagation;
+    :Verify no async trait methods;
+
+    if (Architecture supports schema?) then (yes)
+        :✅ Design validated;
+    else (no)
+        :❌ Refactor architecture;
+        stop
+    endif
+
+    note right
+        **Deliverable**: System design
+        **Quality Gate**: Telemetry integration
+        **Transition**: Supports schema emissions
+    end note
+}
+
+partition "**PHASE 4: REFINEMENT (CRITICAL GATES)**" #FFE0B2 {
+    :Implement feature with TDD;
+
+    if (cargo clippy -D warnings?) then (pass)
+        :✅ Gate 4A: Zero warnings;
+    else (fail)
+        :❌ BLOCKER: Fix clippy errors;
+        stop
+    endif
+
+    if (weaver registry live-check?) then (pass)
+        :✅ **Gate 4B: SOURCE OF TRUTH**;
+        note right
+            **Runtime telemetry matches schema**
+            This is the ONLY proof feature works
+        end note
+    else (fail)
+        :❌ BLOCKER: Feature DOES NOT WORK;
+        stop
+    endif
+
+    if (make test-performance-v04?) then (pass)
+        :✅ Gate 4C: ≤8 ticks;
+    else (fail)
+        :❌ BLOCKER: Optimize hot path;
+        stop
+    endif
+
+    if (No Ok(()) from unimplemented?) then (yes)
+        :✅ Gate 4D: Complete implementation;
+    else (no)
+        :❌ BLOCKER: Complete feature;
+        stop
+    endif
+}
+
+partition "**PHASE 5: COMPLETION (PRODUCTION CERTIFICATION)**" #C8E6C9 {
+    :Execute commands with REAL arguments;
+
+    if (Command produces expected output?) then (yes)
+        :✅ Gate 5A: Functional;
+    else (no)
+        :❌ BLOCKER: Fix implementation;
+        stop
+    endif
+
+    if (All 33 DoD criteria met?) then (yes)
+        :✅ Gate 5B: Production-ready;
+    else (no)
+        :❌ Complete remaining criteria;
+        stop
+    endif
+
+    :Archive evidence artifacts;
+    :Obtain certification signatures;
+}
+
+:🚀 Deploy to production;
+
+stop
+
+legend right
+  |<back:#FFE0B2>   </back>| Phase 4: Critical validation gates |
+  |<back:#C8E6C9>   </back>| Phase 5: Production certification |
+  |= Symbol |= Meaning |
+  | ✅ | Gate passed |
+  | ❌ | BLOCKER - must fix |
+endlegend
+
+note bottom
+**Phase Transition Protocol**:
+Spec → Pseudo: Schema validation passes
+Pseudo → Arch: Algorithm maps to schema
+Arch → Refine: Design supports telemetry
+Refine → Complete: **Weaver live-check passes** (PROVES behavior)
+Complete → Deploy: Full DoD + functional validation
+end note
+
+@enduml

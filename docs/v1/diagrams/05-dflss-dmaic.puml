@@ -1,0 +1,169 @@
+@startuml DFLSS DMAIC Framework
+!theme plain
+title KNHK v1.0 Design For Lean Six Sigma\n**DMAIC Framework for Quality Excellence**
+
+skinparam activity {
+    BackgroundColor #FFF3E0
+    BorderColor #E65100
+    FontSize 12
+}
+
+skinparam rectangle {
+    BackgroundColor<<define>> #BBDEFB
+    BackgroundColor<<measure>> #C5E1A5
+    BackgroundColor<<analyze>> #FFF59D
+    BackgroundColor<<improve>> #FFCCBC
+    BackgroundColor<<control>> #CE93D8
+    BorderColor Black
+}
+
+start
+
+rectangle "**D - DEFINE**\nCritical-to-Quality Requirements" <<define>> {
+    :Identify CTQ metrics;
+
+    card "Performance CTQ" {
+        • Hot path: ≤8 ticks (Chatman Constant)
+        • Warm path: ≤500ms
+        • W1 operations: <1ms typical
+    }
+
+    card "Quality CTQ" {
+        • Zero compilation warnings
+        • 100% Weaver validation pass rate
+        • Zero branch mispredicts in hot path
+    }
+
+    card "Process CTQ" {
+        • Build success: ≥95%
+        • Test coverage: Chicago TDD 100%
+        • Performance compliance: ≥95%
+    }
+}
+
+down
+
+rectangle "**M - MEASURE**\nBaseline Metrics Collection" <<measure>> {
+    :Collect current performance data;
+
+    card "Current Metrics" {
+        **Performance**: 18/19 ops ≤8 ticks (94.7%)
+        **Quality**: 6 errors, 133 warnings
+        **Process Capability (Cp)**: 4.44 (Target: ≥2.0) ✅
+        **Process Centering (Cpk)**: 1.22 (Target: ≥1.67) ⚠️
+        **Sigma Level**: 3.8σ (Target: 6σ)
+    }
+
+    card "Defects Identified" {
+        • CONSTRUCT8: 41-83 ticks (outlier)
+        • 71 files with .unwrap()/.expect()
+        • 15+ clippy errors
+        • 133 unused code warnings
+    }
+}
+
+down
+
+rectangle "**A - ANALYZE**\nRoot Cause Analysis" <<analyze>> {
+    :Identify root causes of defects;
+
+    card "Performance Root Causes" {
+        • CONSTRUCT8: Complex graph traversal
+        • Structural changes in hot path
+        • Memory allocation patterns
+    }
+
+    card "Quality Root Causes" {
+        • Legacy debt accumulation
+        • Incomplete error handling refactor
+        • Test-first discipline gaps
+    }
+
+    card "False Positive Risk" {
+        **Problem**: Tests can pass when features broken
+        **Solution**: Weaver schema validation (source of truth)
+        **Impact**: Eliminates circular testing paradox
+    }
+}
+
+down
+
+rectangle "**I - IMPROVE**\nDefect Prevention & Optimization" <<improve>> {
+    :Implement improvements;
+
+    card "Schema-First Development" {
+        ✅ Define behavior in OTel schema FIRST
+        ✅ Weaver validates runtime telemetry
+        ✅ Cannot produce false positives
+    }
+
+    card "Compilation Gates" {
+        ✅ cargo clippy -D warnings
+        ✅ No .unwrap() in production
+        ✅ Zero tolerance for warnings
+    }
+
+    card "Performance Budgets" {
+        ✅ ≤8 tick requirement enforced
+        ✅ make test-performance-v04 in CI
+        ✅ Regression detection automated
+    }
+
+    card "Chicago TDD" {
+        ✅ Real collaborators, no mocks
+        ✅ Test WHAT code does, not HOW
+        ✅ Behavior-focused validation
+    }
+}
+
+down
+
+rectangle "**C - CONTROL**\nStatistical Process Control" <<control>> {
+    :Establish control mechanisms;
+
+    card "Control Charts" {
+        • Track performance metrics over time
+        • Detect regressions ≥1 tick
+        • Alert on out-of-control conditions
+    }
+
+    card "Quality Gates" {
+        **Gate 0**: Build + Quality (37.5% current)
+        **Gate 1**: Weaver Validation (100% static)
+        **Gate 2**: Functional (0% current)
+        **Gate 3**: Traditional Tests (0% current)
+        **Gate 4**: DFLSS (0% current)
+    }
+
+    card "Continuous Monitoring" {
+        • CI/CD pipeline validation
+        • Performance benchmarking (daily)
+        • Weaver validation (every commit)
+        • SPC charts updated automatically
+    }
+}
+
+:Achieve Six Sigma Quality (99.99966% defect-free);
+
+stop
+
+legend right
+  |<back:#BBDEFB>   </back>| Define: CTQ requirements |
+  |<back:#C5E1A5>   </back>| Measure: Baseline metrics |
+  |<back:#FFF59D>   </back>| Analyze: Root causes |
+  |<back:#FFCCBC>   </back>| Improve: Prevention |
+  |<back:#CE93D8>   </back>| Control: SPC mechanisms |
+
+  **Current Sigma**: 3.8σ
+  **Target Sigma**: 6σ (3.4 DPMO)
+  **Cp**: 4.44 ✅ | **Cpk**: 1.22 ⚠️
+endlegend
+
+note bottom
+**KNHK's DFLSS Innovation**:
+Schema-first development with Weaver validation eliminates
+the false positive paradox in traditional testing.
+**Result**: Statistical process control based on provable behavior.
+end note
+
+@enduml

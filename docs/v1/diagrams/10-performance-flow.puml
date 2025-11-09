@@ -1,0 +1,164 @@
+@startuml Performance Benchmarking Flow
+!theme plain
+title KNHK v1.0 Performance Validation\n**8-Tick Rule (Chatman Constant) Enforcement**
+
+skinparam activity {
+    BackgroundColor #FFF3E0
+    BorderColor #E65100
+    FontSize 11
+}
+
+start
+
+:Identify hot path operation;
+
+note right
+  **Hot Path Operations**:
+  • Span creation/destruction
+  • Attribute setting
+  • Event recording
+  • Context propagation
+end note
+
+partition "**Measurement Setup**" {
+    :Warm-up phase (100 iterations);
+    note right: Eliminates cold start effects\nStabilizes cache/branch prediction
+
+    :Set up RDTSC timing;
+    note right: Cycle-accurate CPU timing\nMore precise than wall-clock
+
+    :Prepare test data;
+}
+
+partition "**Execution**" {
+    repeat
+        :Start RDTSC timer;
+        :Execute operation;
+        :Stop RDTSC timer;
+        :Record tick count;
+    repeat while (< 100 runs?) is (yes)
+    ->no;
+}
+
+partition "**Statistical Analysis**" {
+    :Calculate median (not mean);
+    note right: Median handles outliers better\nMean can be skewed by anomalies
+
+    :Calculate 95th percentile;
+    :Calculate min/max;
+    :Detect outliers;
+}
+
+partition "**Validation**" {
+    if (Median ≤ 8 ticks?) then (yes)
+        :✅ Performance compliant;
+
+        if (Regression vs baseline?) then (>1 tick)
+            :⚠️ Performance regression detected;
+            :Log regression details;
+            :Update baseline (if justified);
+        else (≤1 tick)
+            :✅ No regression;
+        endif
+    else (no)
+        :❌ Performance violation;
+        :Log violation details;
+
+        partition "**Optimization Required**" #FFCDD2 {
+            :Profile with perf stat;
+            :Identify bottlenecks;
+
+            fork
+                :Check heap allocations;
+                note right: Use heaptrack\nZero allocations in hot path
+            fork again
+                :Check cache behavior;
+                note right: Use cachegrind\nOptimize cache locality
+            fork again
+                :Check branch prediction;
+                note right: Minimize branches\nMake branches predictable
+            end fork
+
+            :Implement optimizations;
+            :Re-measure performance;
+
+            if (Now ≤ 8 ticks?) then (yes)
+                :✅ Optimization successful;
+            else (no)
+                :❌ BLOCKER: Cannot optimize;
+                :Escalate to architecture team;
+                stop
+            endif
+        }
+    endif
+}
+
+partition "**Baseline Management**" {
+    :Store measurement in baseline;
+    :Update control chart;
+    :Set regression thresholds;
+
+    note right
+        **Baseline Storage**:
+        hive/performance-benchmarker/baselines/{operation}
+
+        **Regression Criteria**:
+        New measurement > baseline + 1 tick → FAIL
+    end note
+}
+
+partition "**Reporting**" {
+    :Generate performance report;
+
+    card "Report Contents" {
+        • Operation name
+        • Median tick count
+        • 95th percentile
+        • Min/max values
+        • Baseline comparison
+        • Pass/fail status
+        • Optimization notes
+    }
+
+    :Publish to CI/CD dashboard;
+    :Store in memory for Hive Mind;
+}
+
+if (All hot path ops ≤ 8 ticks?) then (yes)
+    :✅ 100% Performance compliance;
+    :Ready for production;
+else (no)
+    :❌ Performance gate FAILED;
+    :Block PR merge;
+    :Require optimization;
+    stop
+endif
+
+stop
+
+note bottom
+**Current KNHK Status**:
+• 18/19 operations ≤8 ticks (94.7% compliance)
+• CONSTRUCT8 outlier: 41-83 ticks (needs optimization)
+• Target for v1.0: 100% compliance (19/19 operations)
+
+**Why 8 Ticks?**:
+• Zero-overhead principle for telemetry
+• Industry standard for instrumentation
+• Provably achievable with proper optimization
+• Named after Chatman Constant research
+end note
+
+legend right
+  |<back:#FFF3E0>   </back>| Normal flow |
+  |<back:#FFCDD2>   </back>| Optimization required |
+
+  **Tools Used**:
+  • RDTSC: Cycle-accurate timing
+  • perf stat: CPU profiling
+  • heaptrack: Allocation tracking
+  • cachegrind: Cache analysis
+  • cargo-flamegraph: Hot spots
+endlegend
+
+@enduml

@@ -1,0 +1,141 @@
+@startuml CI/CD Pipeline
+!theme plain
+title KNHK v1.0 CI/CD Pipeline\n**5-Phase Validation with Fast Feedback**
+
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    FontSize 11
+}
+
+start
+
+partition "**PHASE 1: Fast Feedback Loop**\n⏱ 30-45s" #FFECB3 {
+    fork
+        :cargo fmt --check;
+        note right: 10s\nAuto-recovery available
+    fork again
+        :cargo clippy -- -D warnings;
+        note right: 30s\nZERO tolerance
+    fork again
+        :cargo build --workspace;
+        note right: 45s\nMust compile
+    end fork
+
+    if (All pass?) then (yes)
+        :✅ Proceed to Phase 2;
+    else (no)
+        :❌ STOP - Fix before proceeding;
+        stop
+    endif
+}
+
+partition "**PHASE 2: Weaver Validation**\n⏱ 15-30s\n**SOURCE OF TRUTH**" #FFCDD2 {
+    :weaver registry check -r registry/;
+    note right: 15s\nSchema validity
+
+    if (Schema valid?) then (yes)
+        :weaver registry live-check;
+        note right: 30s\nRuntime telemetry
+
+        if (Telemetry conforms?) then (yes)
+            :✅ Feature WORKS;
+        else (no)
+            :❌ Feature DOES NOT WORK;
+            stop
+        endif
+    else (no)
+        :❌ STOP - Schema invalid;
+        stop
+    endif
+}
+
+partition "**PHASE 3: Functional Validation**\n⏱ 1-2min" #C8E6C9 {
+    fork
+        :knhk --help;
+        note right: 5s\nCLI registration
+    fork again
+        :knhk record --output /tmp/test.knhk;
+        note right: 30s\nACTUAL execution
+    fork again
+        :knhk play /tmp/test.knhk;
+        note right: 30s\nACTUAL execution
+    fork again
+        :Check telemetry instrumentation;
+        note right: 10s\nSpan validation
+    end fork
+
+    if (Commands execute correctly?) then (yes)
+        :✅ Functional validation passed;
+    else (no)
+        :⚠️ May call unimplemented!();
+        note right: Investigate implementation
+    endif
+}
+
+partition "**PHASE 4: Performance & Tests**\n⏱ 1-2min\n(PARALLEL)" #E1BEE7 {
+    fork
+        :cargo test --workspace;
+        note right: 60s\nSupporting evidence
+    fork again
+        :make test-chicago-v04;
+        note right: 45s\nC library TDD
+    fork again
+        :make test-performance-v04;
+        note right: 45s\n**CRITICAL: ≤8 ticks**
+    fork again
+        :make test-integration-v2;
+        note right: 60s\nEnd-to-end
+    end fork
+
+    if (Performance tests pass?) then (yes)
+        :✅ Performance compliant;
+    else (no)
+        :❌ BLOCKER - Optimize;
+        stop
+    endif
+
+    if (Other tests provide evidence?) then (yes)
+        :✅ Supporting evidence collected;
+    else (no)
+        :⚠️ Tests may have false positives;
+        note right: Weaver is source of truth
+    endif
+}
+
+partition "**PHASE 5: Final Certification**\n⏱ 30s" #B2DFDB {
+    :make build;
+    note right: 30s\nC library builds
+
+    :weaver registry live-check;
+    note right: 30s\nFINAL validation
+
+    if (Both pass?) then (yes)
+        :✅ Definition of Done MET;
+    else (no)
+        :❌ STOP - DoD NOT met;
+        stop
+    endif
+}
+
+:Archive evidence artifacts;
+:🚀 Ready for production deployment;
+
+stop
+
+legend right
+  |<back:#FFECB3>   </back>| Phase 1: Fast feedback (97.5% defect detection) |
+  |<back:#FFCDD2>   </back>| Phase 2: Source of truth (Weaver validation) |
+  |<back:#C8E6C9>   </back>| Phase 3: Functional validation (real execution) |
+  |<back:#E1BEE7>   </back>| Phase 4: Performance + tests (parallel) |
+  |<back:#B2DFDB>   </back>| Phase 5: Final certification |
+endlegend
+
+note bottom
+**Total Time**: 3-5 minutes for full validation
+**Critical Path**: Phase 1 → 2 → 3 → 5 (~2-3 min)
+**Parallel Opportunity**: Phase 3 & 4 run simultaneously
+**Blocking Gates**: Weaver validation + Performance tests
+end note
+
+@enduml
