@@ -1,270 +1,177 @@
-# KNHK Workflow Engine Semantic Conventions
-# OpenTelemetry semantic conventions for workflow engine operations
+# KNHK Workflow Engine Telemetry Schema
+# Defines spans, metrics, and attributes for the workflow engine service
 
 groups:
-  - id: knhk.workflow.attributes
+  # Workflow engine-specific attributes
+  - id: knhk.workflow_engine.attributes
     type: attribute_group
-    brief: KNHK workflow engine attributes
+    brief: "Workflow engine-specific attributes"
     stability: experimental
     attributes:
-      - id: knhk.workflow.id
-        type: string
-        stability: experimental
-        brief: Workflow specification identifier
-        examples: ["workflow-123", "swift-payment-v1"]
-      
-      - id: knhk.workflow.name
-        type: string
-        stability: experimental
-        brief: Human-readable workflow name
-        examples: ["SWIFT Payment Processing", "FIBO Compliance Check"]
-      
-      - id: knhk.workflow.version
-        type: string
-        stability: experimental
-        brief: Workflow specification version
-        examples: ["1.0.0", "2.1.3"]
-      
-      - id: knhk.workflow.pattern_count
-        type: int
-        stability: experimental
-        brief: Number of workflow patterns in specification
-        examples: [5, 43]
-      
-      - id: knhk.workflow.deadlock_validated
+      - id: knhk.workflow_engine.success
         type: boolean
         stability: experimental
-        brief: Whether workflow passed deadlock detection
-        examples: [true, false]
-
-  - id: knhk.case.attributes
-    type: attribute_group
-    brief: KNHK workflow case attributes
-    stability: experimental
-    attributes:
-      - id: knhk.case.id
-        type: string
-        stability: experimental
-        brief: Case identifier
-        examples: ["case-456", "payment-789"]
-      
-      - id: knhk.case.workflow_id
-        type: string
-        stability: experimental
-        brief: Associated workflow specification ID
-        examples: ["workflow-123"]
-      
-      - id: knhk.case.state
-        type: string
-        stability: experimental
-        brief: Current case state
-        examples: ["created", "running", "completed", "cancelled"]
-      
-      - id: knhk.case.priority
+        brief: "Whether the workflow operation succeeded"
+      - id: knhk.workflow_engine.latency_ms
         type: int
         stability: experimental
-        brief: Case priority (0-255)
-        examples: [100, 200]
-
-  - id: knhk.pattern.attributes
-    type: attribute_group
-    brief: KNHK workflow pattern attributes
-    stability: experimental
-    attributes:
-      - id: knhk.pattern.id
+        brief: "Operation latency in milliseconds"
+      - id: knhk.workflow_engine.operation
+        type: string
+        stability: experimental
+        brief: "Workflow operation name"
+        examples: ["register_workflow", "create_case", "execute_case", "get_case_history"]
+      - id: knhk.workflow_engine.spec_id
+        type: string
+        stability: experimental
+        brief: "Workflow specification identifier (UUID)"
+        examples: ["550e8400-e29b-41d4-a716-446655440000"]
+      - id: knhk.workflow_engine.case_id
+        type: string
+        stability: experimental
+        brief: "Case identifier (UUID)"
+        examples: ["550e8400-e29b-41d4-a716-446655440000"]
+      - id: knhk.workflow_engine.pattern_id
         type: int
         stability: experimental
-        brief: Pattern identifier (1-43, Van der Aalst patterns)
-        examples: [1, 5, 12, 43]
-      
-      - id: knhk.pattern.name
+        brief: "Van der Aalst workflow pattern ID (1-43)"
+        examples: [1, 2, 3, 12, 15, 26, 43]
+      - id: knhk.workflow_engine.task_id
         type: string
         stability: experimental
-        brief: Pattern name
-        examples: ["Sequence", "Parallel Split", "Multiple Instance"]
-      
-      - id: knhk.pattern.case_id
+        brief: "Task identifier"
+        examples: ["task_1", "task_approve"]
+      - id: knhk.workflow_engine.case_state
         type: string
         stability: experimental
-        brief: Associated case ID
-        examples: ["case-456"]
-      
-      - id: knhk.pattern.ticks
-        type: int
-        stability: experimental
-        brief: Execution ticks (should be ≤8 for hot path)
-        examples: [2, 5, 8]
-      
-      - id: knhk.pattern.success
-        type: boolean
-        stability: experimental
-        brief: Whether pattern execution succeeded
+        brief: "Case state"
+        examples: ["Created", "Running", "Completed", "Cancelled"]
 
-  - id: knhk.resource.attributes
-    type: attribute_group
-    brief: KNHK resource allocation attributes
-    stability: experimental
-    attributes:
-      - id: knhk.resource.allocation_policy
-        type: string
-        stability: experimental
-        brief: Resource allocation policy used
-        examples: ["four_eyes", "chained", "round_robin", "shortest_queue"]
-      
-      - id: knhk.resource.allocated_count
-        type: int
-        stability: experimental
-        brief: Number of resources allocated
-        examples: [1, 2, 3]
-      
-      - id: knhk.resource.allocation_duration_ms
-        type: int
-        stability: experimental
-        brief: Time taken to allocate resources in milliseconds
-        examples: [5, 10, 50]
-
-  - id: knhk.worklet.attributes
-    type: attribute_group
-    brief: KNHK worklet attributes
-    stability: experimental
-    attributes:
-      - id: knhk.worklet.id
-        type: string
-        stability: experimental
-        brief: Worklet identifier
-        examples: ["worklet-123"]
-      
-      - id: knhk.worklet.exception_type
-        type: string
-        stability: experimental
-        brief: Exception type that triggered worklet
-        examples: ["resource_unavailable", "timeout", "validation_error"]
-      
-      - id: knhk.worklet.success
-        type: boolean
-        stability: experimental
-        brief: Whether worklet execution succeeded
-
-  # Workflow execution span
-  - id: knhk.workflow.execute
+  # Workflow registration span
+  - id: knhk.workflow_engine.register_workflow
     type: span
     span_kind: internal
     stability: experimental
-    brief: Workflow execution span
+    brief: "Register a workflow specification"
+    note: |
+      Registers a workflow specification (YAWL/Turtle format) with the engine.
+      Validates the specification and stores it for execution.
     attributes:
-      - ref: knhk.workflow.id
-      - ref: knhk.workflow.name
-      - ref: knhk.workflow.version
-      - ref: knhk.workflow.pattern_count
-      - ref: knhk.workflow.deadlock_validated
-  
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.operation
+      - ref: knhk.workflow_engine.spec_id
+
+  # Case creation span
+  - id: knhk.workflow_engine.create_case
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Create a new workflow case"
+    note: |
+      Creates a new case instance for a workflow specification.
+      Initializes case data and state.
+    attributes:
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.operation
+      - ref: knhk.workflow_engine.spec_id
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.case_state
+
   # Case execution span
-  - id: knhk.case.execute
+  - id: knhk.workflow_engine.execute_case
     type: span
     span_kind: internal
     stability: experimental
-    brief: Case execution span
+    brief: "Execute a workflow case"
+    note: |
+      Executes a workflow case, running tasks and handling patterns.
+      Follows workflow flows from start condition to end condition.
     attributes:
-      - ref: knhk.case.id
-      - ref: knhk.case.workflow_id
-      - ref: knhk.case.state
-      - ref: knhk.case.priority
-  
-  # Pattern execution span
-  - id: knhk.pattern.execute
-    type: span
-    span_kind: internal
-    stability: experimental
-    brief: Pattern execution span
-    attributes:
-      - ref: knhk.pattern.id
-      - ref: knhk.pattern.name
-      - ref: knhk.pattern.case_id
-      - ref: knhk.pattern.ticks
-      - ref: knhk.pattern.success
-  
-  # Resource allocation span
-  - id: knhk.resource.allocate
-    type: span
-    span_kind: internal
-    stability: experimental
-    brief: Resource allocation span
-    attributes:
-      - ref: knhk.resource.allocation_policy
-      - ref: knhk.resource.allocated_count
-      - ref: knhk.resource.allocation_duration_ms
-  
-  # Worklet execution span
-  - id: knhk.worklet.execute
-    type: span
-    span_kind: internal
-    stability: experimental
-    brief: Worklet execution span
-    attributes:
-      - ref: knhk.worklet.id
-      - ref: knhk.worklet.exception_type
-      - ref: knhk.worklet.success
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.operation
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.case_state
 
-  # Workflow execution duration metric
-  - id: metric.knhk.workflow.execution.duration
-    type: metric
-    metric_name: knhk.workflow.execution.duration
-    brief: Workflow execution duration
-    unit: ms
-    instrument: histogram
+  # Task execution span
+  - id: knhk.workflow_engine.execute_task
+    type: span
+    span_kind: internal
     stability: experimental
+    brief: "Execute a workflow task"
+    note: |
+      Executes a single task within a workflow case.
+      Handles resource allocation, connector execution, and output production.
     attributes:
-      - ref: knhk.workflow.id
-  
-  # Case execution duration metric
-  - id: metric.knhk.case.execution.duration
-    type: metric
-    metric_name: knhk.case.execution.duration
-    brief: Case execution duration
-    unit: ms
-    instrument: histogram
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.task_id
+      - ref: knhk.workflow_engine.pattern_id
+
+  # Pattern execution span
+  - id: knhk.workflow_engine.execute_pattern
+    type: span
+    span_kind: internal
     stability: experimental
+    brief: "Execute a Van der Aalst workflow pattern"
+    note: |
+      Executes a workflow pattern (1-43) following Van der Aalst's pattern-based execution methodology.
+      Patterns include basic control flow, advanced branching, multiple instance, state-based, cancellation, etc.
     attributes:
-      - ref: knhk.case.id
-  
-  # Pattern execution duration metric
-  - id: metric.knhk.pattern.execution.duration
-    type: metric
-    metric_name: knhk.pattern.execution.duration
-    brief: Pattern execution duration
-    unit: ms
-    instrument: histogram
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.pattern_id
+      - ref: knhk.workflow_engine.case_id
+
+  # Case history query span
+  - id: knhk.workflow_engine.get_case_history
+    type: span
+    span_kind: internal
     stability: experimental
+    brief: "Get case history (audit trail)"
+    note: |
+      Retrieves the complete history of events for a case.
+      Includes case creation, state changes, task starts/completions.
     attributes:
-      - ref: knhk.pattern.id
-  
-  # Deadlock detections metric
-  - id: metric.knhk.workflow.deadlock.detections
-    type: metric
-    metric_name: knhk.workflow.deadlock.detections
-    brief: Number of deadlock detections
-    unit: "1"
-    instrument: counter
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.operation
+      - ref: knhk.workflow_engine.case_id
+
+  # Multiple instance execution span
+  - id: knhk.workflow_engine.execute_mi_task
+    type: span
+    span_kind: internal
     stability: experimental
-  
-  # Resource allocation count metric
-  - id: metric.knhk.resource.allocation.count
-    type: metric
-    metric_name: knhk.resource.allocation.count
-    brief: Number of resource allocations
-    unit: "1"
-    instrument: counter
-    stability: experimental
+    brief: "Execute multiple instance task"
+    note: |
+      Executes a multiple instance task (Patterns 12-15).
+      Spawns parallel instances and waits for all to complete.
     attributes:
-      - ref: knhk.resource.allocation_policy
-  
-  # Worklet execution count metric
-  - id: metric.knhk.worklet.execution.count
-    type: metric
-    metric_name: knhk.worklet.execution.count
-    brief: Number of worklet executions
-    unit: "1"
-    instrument: counter
-    stability: experimental
-    attributes:
-      - ref: knhk.worklet.exception_type
+      - ref: knhk.operation.name
+      - ref: knhk.operation.type
+      - ref: knhk.workflow_engine.success
+      - ref: knhk.workflow_engine.latency_ms
+      - ref: knhk.workflow_engine.case_id
+      - ref: knhk.workflow_engine.task_id
+      - ref: knhk.workflow_engine.pattern_id
+      - id: knhk.workflow_engine.instance_count
+        type: int
+        stability: experimental
+        brief: "Number of instances to execute"
+        examples: [1, 5, 10]
