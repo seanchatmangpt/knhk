@@ -228,6 +228,12 @@ SELECT ?task ?condition WHERE {
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[YAWL Integration Guide](YAWL_INTEGRATION.md)** - YAWL compatibility and integration
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and component design
+- **[Integration Guide](INTEGRATION.md)** - Integration patterns and connectors
+
 ### Detailed Documentation
 - **Master Guide**: [Ontology Integration Master Guide](ontology-integration/ONTOLOGY_INTEGRATION_MASTER_GUIDE.md)
 - **Architecture**: [YAWL Ontology Architecture](ontology-integration/yawl-ontology-architecture.md)

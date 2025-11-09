@@ -118,3 +118,4 @@ tempfile = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 futures = { workspace = true }
 serial_test = "3.0"
+process_mining = "0.3"
