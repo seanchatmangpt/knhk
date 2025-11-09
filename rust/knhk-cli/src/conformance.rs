@@ -128,9 +128,47 @@ pub fn check(
             None
         };
 
-        // Calculate precision and generalization
-        let precision = calculate_precision(&spec, &event_log);
-        let generalization = calculate_generalization(&spec, &event_log);
+        // Calculate precision and generalization (simplified inline calculation)
+        // Extract unique activity sequences from event log
+        let mut log_sequences = HashSet::new();
+        for trace in &event_log.traces {
+            let activities: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| e.activity_name.clone())
+                .collect();
+            if !activities.is_empty() {
+                log_sequences.insert(activities);
+            }
+        }
+
+        // Calculate model's possible behaviors (simplified: count unique task sequences)
+        let model_task_count = spec.tasks.len();
+        let model_flow_count = spec.flows.len();
+        let estimated_model_behaviors = if model_task_count > 0 {
+            (model_task_count as f64).powi(2).min(1000.0)
+        } else {
+            0.0
+        };
+
+        // Calculate precision
+        let used_behaviors = log_sequences.len() as f64;
+        let precision = if estimated_model_behaviors > 0.0 {
+            (used_behaviors / estimated_model_behaviors).min(1.0)
+        } else {
+            0.0
+        };
+
+        // Calculate generalization
+        let model_complexity = (model_task_count + model_flow_count) as f64;
+        let log_complexity = log_sequences.len() as f64;
+        let generalization = if log_complexity > 0.0 {
+            (1.0 - (model_complexity / log_complexity))
+                .max(0.0)
+                .min(1.0)
+        } else {
+            0.0
+        };
 
         let report = ConformanceReport {
             fitness,
@@ -197,7 +235,7 @@ pub fn precision(
     json: bool,
 ) -> CnvResult<()> {
     // Reuse mining precision calculation
-    knhk_cli::mining::precision(workflow_file, xes_file, state_store, json)
+    crate::mining::precision(workflow_file, xes_file, state_store, json)
 }
 
 /// Calculate generalization between workflow and XES event log
@@ -212,7 +250,7 @@ pub fn generalization(
     json: bool,
 ) -> CnvResult<()> {
     // Reuse mining generalization calculation
-    knhk_cli::mining::generalization(workflow_file, xes_file, state_store, json)
+    crate::mining::generalization(workflow_file, xes_file, state_store, json)
 }
 
 /// Generate alignment between workflow design and execution
@@ -270,7 +308,18 @@ pub fn alignment(
             let trace_activities: Vec<String> = trace
                 .events
                 .iter()
-                .filter_map(|e| e.activity_name.clone())
+                .filter_map(|e| {
+                    // Extract activity name from event attributes
+                    e.attributes
+                        .iter()
+                        .find(|attr| attr.key == "concept:name")
+                        .and_then(|attr| match &attr.value {
+                            process_mining::event_log::attribute::AttributeValue::String(s) => {
+                                Some(s.clone())
+                            }
+                            _ => None,
+                        })
+                })
                 .collect();
 
             // Extract model activities (task names)

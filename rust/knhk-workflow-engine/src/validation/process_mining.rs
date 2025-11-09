@@ -95,16 +95,25 @@ impl ProcessMiningAnalyzer {
 
         // Write to temporary file
         let temp_dir = TempDir::new().map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to create temp dir: {}", e))
+            crate::error::WorkflowError::InvalidSpecification(format!(
+                "Failed to create temp dir: {}",
+                e
+            ))
         })?;
         let xes_file = temp_dir.path().join("workflow.xes");
         std::fs::write(&xes_file, xes_content).map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to write XES file: {}", e))
+            crate::error::WorkflowError::InvalidSpecification(format!(
+                "Failed to write XES file: {}",
+                e
+            ))
         })?;
 
         // Import XES
         let event_log = import_xes_file(&xes_file, XESImportOptions::default()).map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to import XES file: {}", e))
+            crate::error::WorkflowError::InvalidSpecification(format!(
+                "Failed to import XES file: {}",
+                e
+            ))
         })?;
 
         let duration_ms = start.elapsed().as_millis() as u64;
@@ -129,16 +138,25 @@ impl ProcessMiningAnalyzer {
 
         // Write to temporary file
         let temp_dir = TempDir::new().map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to create temp dir: {}", e))
+            crate::error::WorkflowError::InvalidSpecification(format!(
+                "Failed to create temp dir: {}",
+                e
+            ))
         })?;
         let xes_file = temp_dir.path().join("workflow.xes");
         std::fs::write(&xes_file, xes_content).map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to write XES file: {}", e))
+            crate::error::WorkflowError::InvalidSpecification(format!(
+                "Failed to write XES file: {}",
+                e
+            ))
         })?;
 
         // Import XES
         let event_log = import_xes_file(&xes_file, XESImportOptions::default()).map_err(|e| {
-            crate::error::WorkflowError::Internal(format!("Failed to import XES file: {}", e))
+            crate::error::WorkflowError::InvalidSpecification(format!(
+                "Failed to import XES file: {}",
+                e
+            ))
         })?;
 
         // Create activity projection

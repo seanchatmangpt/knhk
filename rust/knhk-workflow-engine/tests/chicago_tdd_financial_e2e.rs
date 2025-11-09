@@ -13,7 +13,7 @@
 
 mod common;
 
-use common::{assertions::*, data::*, timing::*, TestHarness};
+use common::{timing::TimedOperation, TestHarness};
 use knhk_workflow_engine::*;
 use serde_json::json;
 

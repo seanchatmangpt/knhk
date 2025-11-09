@@ -107,7 +107,8 @@ async fn test_workflow_registration_and_retrieval() -> WorkflowResult<()> {
 #[tokio::test]
 async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
     // Arrange: Create engine and workflow
-    let state_store = StateStore::new("./test_workflow_db_case_states")?;
+    let db_path = format!("./test_workflow_db_case_states_{}", std::process::id());
+    let state_store = StateStore::new(&db_path)?;
     let engine = WorkflowEngine::new(state_store);
 
     let mut spec = WorkflowSpec {
@@ -219,7 +220,8 @@ async fn test_case_creation_and_state_transitions() -> WorkflowResult<()> {
 #[tokio::test]
 async fn test_case_execution_with_multiple_tasks() -> WorkflowResult<()> {
     // Arrange: Create engine with multi-task workflow
-    let state_store = StateStore::new("./test_workflow_db_multi_task")?;
+    let db_path = format!("./test_workflow_db_multi_task_{}", std::process::id());
+    let state_store = StateStore::new(&db_path)?;
     let engine = WorkflowEngine::new(state_store);
 
     let mut spec = WorkflowSpec {
@@ -743,7 +745,8 @@ async fn test_engine_services_access() {
 #[tokio::test]
 async fn test_complete_workflow_lifecycle() -> WorkflowResult<()> {
     // Arrange: Create engine
-    let state_store = StateStore::new("./test_workflow_db_lifecycle")?;
+    let db_path = format!("./test_workflow_db_lifecycle_{}", std::process::id());
+    let state_store = StateStore::new(&db_path)?;
     let engine = WorkflowEngine::new(state_store);
 
     // Arrange: Create workflow with multiple tasks

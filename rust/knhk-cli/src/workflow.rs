@@ -15,6 +15,7 @@
 //! - workflow import-xes: Import XES event log
 //! - workflow export-xes: Export workflow execution to XES format
 //! - workflow validate-xes: Run automated XES validation full loop
+//! - workflow validate: Run van der Aalst end-to-end validation framework
 //! - workflow discover: Run Alpha+++ process discovery algorithm
 
 use chrono::Utc;
@@ -36,6 +37,7 @@ use knhk_workflow_engine::{
     case::CaseId,
     parser::{WorkflowParser, WorkflowSpecId},
     state::StateStore,
+    validation::ValidationFramework,
     WorkflowEngine,
 };
 use process_mining::{
@@ -441,6 +443,122 @@ pub fn import_xes(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
     }
 
     Ok(())
+}
+
+/// Run van der Aalst end-to-end validation framework
+///
+/// Executes complete validation framework:
+/// 1. Fitness validation (can the process execute?)
+/// 2. Precision validation (does it match specification?)
+/// 3. Generalization validation (works beyond examples?)
+/// 4. Process mining analysis (XES, conformance)
+/// 5. Formal verification (state transitions, deadlock freedom)
+#[verb]
+pub fn validate(
+    spec_id: String,
+    phase: Option<String>,
+    output_dir: Option<PathBuf>,
+    format: Option<String>,
+) -> CnvResult<()> {
+    let runtime = get_runtime();
+    runtime.block_on(async {
+        let engine = get_engine(None)?;
+        let output_path = output_dir.unwrap_or_else(|| PathBuf::from("./tmp/validation"));
+        let report_format = format.as_deref().unwrap_or("markdown");
+
+        // Create output directory
+        std::fs::create_dir_all(&output_path).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to create output directory: {}",
+                e
+            ))
+        })?;
+
+        let spec_id_parsed = WorkflowSpecId::parse_str(&spec_id).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
+        })?;
+
+        let framework = ValidationFramework::new(engine);
+
+        println!("=== van der Aalst End-to-End Validation Framework ===");
+        println!("");
+
+        let report = if let Some(phase_name) = phase {
+            // Run specific phase
+            println!("Running validation phase: {}", phase_name);
+            let phase_result = framework
+                .run_phase(&phase_name, spec_id_parsed)
+                .await
+                .map_err(|e| {
+                    clap_noun_verb::NounVerbError::execution_error(format!(
+                        "Validation phase failed: {}",
+                        e
+                    ))
+                })?;
+
+            // Create minimal report for single phase
+            let mut report =
+                knhk_workflow_engine::validation::ValidationReport::new(spec_id_parsed);
+            report.add_phase_result(&phase_name, phase_result);
+            report
+        } else {
+            // Run complete validation
+            println!("Running complete validation framework...");
+            framework
+                .run_complete_validation(spec_id_parsed)
+                .await
+                .map_err(|e| {
+                    clap_noun_verb::NounVerbError::execution_error(format!(
+                        "Validation framework failed: {}",
+                        e
+                    ))
+                })?
+        };
+
+        // Generate report
+        let report_content = match report_format {
+            "json" => report.to_json().map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to generate JSON report: {}",
+                    e
+                ))
+            })?,
+            "html" => report.to_html(),
+            _ => report.to_markdown(),
+        };
+
+        let extension = match report_format {
+            "json" => "json",
+            "html" => "html",
+            _ => "md",
+        };
+
+        let report_file = output_path.join(format!("validation_report.{}", extension));
+        std::fs::write(&report_file, report_content).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to write validation report: {}",
+                e
+            ))
+        })?;
+
+        println!("");
+        println!("=== Validation Complete ===");
+        println!("");
+        println!("📋 Report: {}", report_file.display());
+        println!("📊 Status: {:?}", report.summary.overall_status);
+        println!(
+            "✅ Passed: {} / {} phases",
+            report.summary.passed_phases, report.summary.total_phases
+        );
+        println!(
+            "❌ Failed: {} / {} phases",
+            report.summary.failed_phases, report.summary.total_phases
+        );
+        println!("⚠️  Warnings: {}", report.summary.warnings);
+        println!("");
+
+        Ok(())
+    })
 }
 
 /// Run automated XES validation full loop

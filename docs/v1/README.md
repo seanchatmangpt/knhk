@@ -40,8 +40,14 @@ Validation reports, test execution results, and conformance validation.
 
 - [Final Validation Report](./validation/final-report.md)
 - [Test Execution Report](./validation/test-execution.md)
-- [Van der Aalst Validation](./validation/van-der-aalst.md)
 - [XES Conformance](./validation/xes-conformance.md)
+
+**Van der Aalst Process Mining Validation:**
+- [Van der Aalst Validation Report](./validation/van-der-aalst.md) - **PRIMARY** - Comprehensive validation report
+- [Van der Aalst Validation Status](./validation/van-der-aalst-status.md) - Current validation status
+- [Van der Aalst Execution Summary](./validation/van-der-aalst-execution-summary.md) - Execution results
+- [Van der Aalst Test Plan](./validation/van-der-aalst-test-plan.md) - Test execution plan
+- [Van der Aalst Validation Perspective](./validation/van-der-aalst-perspective.md) - Validation perspective
 
 ### [Performance](./performance/)
 Performance baselines, benchmarks, and PMU analysis.

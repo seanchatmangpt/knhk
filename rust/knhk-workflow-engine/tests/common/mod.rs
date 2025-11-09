@@ -9,7 +9,6 @@
 #![allow(dead_code)]
 
 use knhk_workflow_engine::*;
-use serde_json::json;
 
 /// 80/20: Single fixture that eliminates 90+ lines of duplicated setup
 pub struct TestHarness {
@@ -145,20 +144,6 @@ pub mod assertions {
     use knhk_workflow_engine::case::CaseState;
     use knhk_workflow_engine::*;
 
-    /// Assert workflow is sound using SHACL validation
-    /// Note: Engine doesn't have validate_soundness, use ShaclValidator directly
-    pub fn assert_workflow_sound_turtle(turtle: &str) {
-        let validator = validation::ShaclValidator::new().expect("Should create validator");
-        let result = validator
-            .validate_soundness(turtle)
-            .expect("Soundness validation should succeed");
-        assert!(
-            result.conforms,
-            "Workflow should be sound, violations: {:?}",
-            result.violations
-        );
-    }
-
     /// Assert case completed successfully
     pub async fn assert_case_completed(engine: &executor::WorkflowEngine, case_id: CaseId) {
         let case = engine.get_case(case_id).await.expect("Should get case");
@@ -167,52 +152,6 @@ pub mod assertions {
             CaseState::Completed,
             "Case should complete successfully"
         );
-    }
-
-    /// Assert XES export is valid XML
-    pub fn assert_valid_xes(xes: &str) {
-        assert!(
-            xes.contains("<?xml version"),
-            "XES should have XML declaration"
-        );
-        assert!(
-            xes.contains("<log xes.version="),
-            "XES should have log element"
-        );
-        assert!(xes.contains("</log>"), "XES should close log element");
-    }
-
-    /// Assert SPARQL validation passed
-    pub fn assert_validation_passed(result: &validation::SparqlValidationResult) {
-        assert!(
-            result.is_valid,
-            "Validation rule {} should pass, violations: {:?}",
-            result.rule_id, result.violations
-        );
-    }
-}
-
-/// 80/20: Test data constants
-pub mod data {
-    use serde_json::json;
-
-    pub fn simple_case_data() -> serde_json::Value {
-        json!({
-            "orderAmount": 100.0,
-            "customerId": "TEST-001"
-        })
-    }
-
-    pub fn multi_approver_data() -> serde_json::Value {
-        json!({
-            "approvers": ["Alice", "Bob", "Carol"]
-        })
-    }
-
-    pub fn or_join_data() -> serde_json::Value {
-        json!({
-            "pathChoice": "A"
-        })
     }
 }
 

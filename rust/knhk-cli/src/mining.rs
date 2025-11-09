@@ -376,7 +376,19 @@ pub fn precision(
             let activities: Vec<String> = trace
                 .events
                 .iter()
-                .filter_map(|e| e.activity_name.clone())
+                .filter_map(|e| {
+                    // Extract activity name from event attributes
+                    e.attributes
+                        .iter()
+                        .find(|attr| attr.key == "concept:name")
+                        .and_then(|attr| match &attr.value {
+                            process_mining::event_log::attribute::AttributeValue::String(s) => {
+                                Some(s.clone())
+                            }
+                            _ => None,
+                        })
+                        .map(|s| s.to_string())
+                })
                 .collect();
             if !activities.is_empty() {
                 log_sequences.insert(activities);
@@ -510,7 +522,19 @@ pub fn generalization(
             let activities: Vec<String> = trace
                 .events
                 .iter()
-                .filter_map(|e| e.activity_name.clone())
+                .filter_map(|e| {
+                    // Extract activity name from event attributes
+                    e.attributes
+                        .iter()
+                        .find(|attr| attr.key == "concept:name")
+                        .and_then(|attr| match &attr.value {
+                            process_mining::event_log::attribute::AttributeValue::String(s) => {
+                                Some(s.clone())
+                            }
+                            _ => None,
+                        })
+                        .map(|s| s.to_string())
+                })
                 .collect();
             if !activities.is_empty() {
                 log_sequences.insert(activities);
