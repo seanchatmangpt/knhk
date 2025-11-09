@@ -22,8 +22,7 @@ impl WorkflowEngine {
 
         // Start OTEL span for case creation
         let span_ctx = if let Some(ref otel) = self.otel_integration {
-            otel.start_create_case_span(&spec_id, &CaseId::new())
-                .await?
+            otel.start_create_case_span(&spec_id, &CaseId::new())?
         } else {
             None
         };
@@ -176,8 +175,7 @@ impl WorkflowEngine {
                 otel,
                 "knhk.workflow_engine.execute_case",
                 case_id: Some(&case_id),
-            )
-            .await?
+            )?
         } else {
             None
         };

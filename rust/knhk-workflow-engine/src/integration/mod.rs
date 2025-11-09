@@ -6,7 +6,7 @@ mod connectors;
 pub mod fortune5;
 mod lockchain;
 pub mod otel;
-mod otel_helpers;
+pub mod otel_helpers;
 #[macro_use]
 mod otel_macros;
 mod pattern_otel;

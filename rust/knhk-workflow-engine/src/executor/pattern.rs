@@ -28,8 +28,7 @@ impl WorkflowEngine {
                 "knhk.workflow_engine.execute_pattern",
                 case_id: Some(&context.case_id),
                 pattern_id: Some(&pattern_id),
-            )
-            .await?
+            )?
         } else {
             None
         };
@@ -71,8 +70,7 @@ impl WorkflowEngine {
                 span,
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
-            )
-            .await?;
+            )?;
         }
 
         // Execute pattern
@@ -172,8 +170,7 @@ impl WorkflowEngine {
                 span,
                 latency_ms: latency_ms,
                 threshold_ms: 1000
-            )
-            .await?;
+            )?;
         }
 
         // End OTEL span
@@ -185,8 +182,7 @@ impl WorkflowEngine {
                 span,
                 success: result.success,
                 start_time: start_time
-            )
-            .await?;
+            )?;
         }
 
         Ok(result)
