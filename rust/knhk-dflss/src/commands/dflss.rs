@@ -10,11 +10,11 @@ fn to_cnv_error(e: anyhow::Error) -> clap_noun_verb::NounVerbError {
 }
 // DOE, Monte Carlo, Taguchi, FMEA, QFD
 
+use crate::internal::statistics::*;
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
 use tracing::info;
-use crate::internal::statistics::*;
 
 #[derive(Debug, Serialize)]
 pub struct DoeDesign {
@@ -32,8 +32,11 @@ pub fn design_of_experiments(
     levels: String,
     design_type: String,
 ) -> CnvResult<DoeDesign> {
-    info!("Designing experiment with factors: {}, levels: {}, type: {}", factors, levels, design_type);
-    
+    info!(
+        "Designing experiment with factors: {}, levels: {}, type: {}",
+        factors, levels, design_type
+    );
+
     // Parse factors and levels from comma-separated strings
     let factors_vec: Vec<String> = factors.split(',').map(|s| s.trim().to_string()).collect();
     let levels_vec: Vec<u32> = levels
@@ -92,11 +95,14 @@ pub fn design_of_experiments(
 /// Monte Carlo simulation
 #[verb("dflss monte-carlo")]
 pub fn monte_carlo(iterations: u32, distribution: String) -> CnvResult<serde_json::Value> {
-    info!("Running Monte Carlo simulation: {} iterations, distribution: {}", iterations, distribution);
-    
+    info!(
+        "Running Monte Carlo simulation: {} iterations, distribution: {}",
+        iterations, distribution
+    );
+
     // Generate random samples based on distribution
     let mut samples = Vec::new();
-    
+
     match distribution.as_str() {
         "normal" | "gaussian" => {
             // Normal distribution: mean=0, std_dev=1
@@ -128,13 +134,13 @@ pub fn monte_carlo(iterations: u32, distribution: String) -> CnvResult<serde_jso
             }
         }
     }
-    
+
     // Calculate statistics
     let mean_val = mean(&samples);
     let std_dev_val = std_dev(&samples);
     let min_val = min(&samples);
     let max_val = max(&samples);
-    
+
     let result = serde_json::json!({
         "distribution": distribution,
         "iterations": iterations,
@@ -147,15 +153,18 @@ pub fn monte_carlo(iterations: u32, distribution: String) -> CnvResult<serde_jso
         "samples": samples[..samples.len().min(100)].to_vec(), // First 100 samples
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
 /// Statistical Tolerance Design
 #[verb("dflss tolerance-design")]
 pub fn tolerance_design(spec: String, confidence: f64) -> CnvResult<serde_json::Value> {
-    info!("Calculating tolerance design: spec={}, confidence={:.2}", spec, confidence);
-    
+    info!(
+        "Calculating tolerance design: spec={}, confidence={:.2}",
+        spec, confidence
+    );
+
     // Parse specification limits from comma-separated string
     let spec_vec: Vec<f64> = spec
         .split(',')
@@ -173,19 +182,19 @@ pub fn tolerance_design(spec: String, confidence: f64) -> CnvResult<serde_json::
     // Calculate tolerance stack-up using RSS (Root Sum Square) method
     let mean_spec = mean(&spec_vec);
     let std_dev_spec = std_dev(&spec_vec);
-    
+
     // RSS tolerance: sqrt(sum of squares of individual tolerances)
     let rss_tolerance = (spec_vec.iter().map(|&x| x.powi(2)).sum::<f64>()).sqrt();
-    
+
     // Worst-case tolerance: sum of absolute values
     let worst_case_tolerance = spec_vec.iter().map(|&x| x.abs()).sum::<f64>();
-    
+
     // Calculate confidence interval
     use statrs::distribution::{ContinuousCDF, Normal};
     let normal = Normal::new(0.0, 1.0).unwrap();
     let z_score = normal.inverse_cdf((1.0 + confidence) / 2.0);
     let confidence_interval = z_score * std_dev_spec;
-    
+
     let result = serde_json::json!({
         "specification_limits": spec_vec,
         "mean": mean_spec,
@@ -196,20 +205,24 @@ pub fn tolerance_design(spec: String, confidence: f64) -> CnvResult<serde_json::
         "confidence_interval": confidence_interval,
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
 /// Taguchi robust design analysis
 #[verb("dflss taguchi")]
 pub fn taguchi_analysis(data: PathBuf, sn_ratio: String) -> CnvResult<serde_json::Value> {
-    info!("Performing Taguchi analysis: data={}, sn_ratio={}", data.display(), sn_ratio);
-    
+    info!(
+        "Performing Taguchi analysis: data={}, sn_ratio={}",
+        data.display(),
+        sn_ratio
+    );
+
     // Load data
     let content = fs::read_to_string(&data)
         .context("Failed to read data file")
         .map_err(to_cnv_error)?;
-    
+
     // Parse data (CSV format: factor1,factor2,...,response)
     let mut values = Vec::new();
     for line in content.lines() {
@@ -219,15 +232,15 @@ pub fn taguchi_analysis(data: PathBuf, sn_ratio: String) -> CnvResult<serde_json
             }
         }
     }
-    
+
     if values.is_empty() {
         return Err(to_cnv_error(anyhow::anyhow!("No data values found")));
     }
-    
+
     // Calculate Signal-to-Noise ratio
     let mean_val = mean(&values);
     let std_dev_val = std_dev(&values);
-    
+
     let sn_ratio_value = match sn_ratio.as_str() {
         "larger-is-better" => {
             // S/N = -10 * log10(mean(1/y^2))
@@ -256,7 +269,7 @@ pub fn taguchi_analysis(data: PathBuf, sn_ratio: String) -> CnvResult<serde_json
             }
         }
     };
-    
+
     let result = serde_json::json!({
         "sn_ratio_type": sn_ratio,
         "sn_ratio": sn_ratio_value,
@@ -265,7 +278,7 @@ pub fn taguchi_analysis(data: PathBuf, sn_ratio: String) -> CnvResult<serde_json
         "optimal_setting": if sn_ratio_value > 0.0 { "maximize" } else { "minimize" },
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
@@ -273,20 +286,20 @@ pub fn taguchi_analysis(data: PathBuf, sn_ratio: String) -> CnvResult<serde_json
 #[verb("dflss fmea")]
 pub fn fmea_analysis(fmea_type: String) -> CnvResult<serde_json::Value> {
     info!("Performing FMEA analysis: type={}", fmea_type);
-    
+
     // FMEA Risk Priority Number (RPN) = Severity × Occurrence × Detection
     // In production, this would load actual FMEA data from a file
     // For now, generate example FMEA entries
-    
+
     let mut fmea_entries = Vec::new();
-    
+
     // Example failure modes
     let failure_modes = vec![
         ("System crash", 9, 3, 2), // High severity, low occurrence, good detection
         ("Data corruption", 8, 2, 3), // High severity, very low occurrence, moderate detection
         ("Performance degradation", 5, 5, 4), // Medium severity, medium occurrence, poor detection
     ];
-    
+
     for (mode, severity, occurrence, detection) in failure_modes {
         let rpn = severity * occurrence * detection;
         fmea_entries.push(serde_json::json!({
@@ -298,14 +311,14 @@ pub fn fmea_analysis(fmea_type: String) -> CnvResult<serde_json::Value> {
             "risk_level": if rpn >= 100 { "high" } else if rpn >= 50 { "medium" } else { "low" },
         }));
     }
-    
+
     // Sort by RPN (highest first)
     fmea_entries.sort_by(|a, b| {
         let a_rpn = a.get("rpn").and_then(|v| v.as_u64()).unwrap_or(0);
         let b_rpn = b.get("rpn").and_then(|v| v.as_u64()).unwrap_or(0);
         b_rpn.cmp(&a_rpn)
     });
-    
+
     let result = serde_json::json!({
         "fmea_type": fmea_type,
         "entries": fmea_entries,
@@ -313,34 +326,39 @@ pub fn fmea_analysis(fmea_type: String) -> CnvResult<serde_json::Value> {
         "high_risk_count": fmea_entries.iter().filter(|e| e.get("risk_level").and_then(|v| v.as_str()) == Some("high")).count(),
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
 /// QFD House of Quality
 #[verb("dflss qfd")]
 pub fn qfd_analysis(voc: PathBuf) -> CnvResult<serde_json::Value> {
-    info!("Performing QFD House of Quality analysis: voc={}", voc.display());
-    
+    info!(
+        "Performing QFD House of Quality analysis: voc={}",
+        voc.display()
+    );
+
     // Load Voice of Customer (VOC) data
     let content = fs::read_to_string(&voc)
         .context("Failed to read VOC file")
         .map_err(to_cnv_error)?;
-    
+
     // Parse VOC requirements (JSON format)
     let voc_json: serde_json::Value = serde_json::from_str(&content)
         .context("Failed to parse VOC JSON")
         .map_err(to_cnv_error)?;
-    
+
     // Extract customer requirements and technical requirements
-    let customer_requirements = voc_json.get("customer_requirements")
+    let customer_requirements = voc_json
+        .get("customer_requirements")
         .and_then(|v| v.as_array())
         .unwrap_or(&vec![]);
-    
-    let technical_requirements = voc_json.get("technical_requirements")
+
+    let technical_requirements = voc_json
+        .get("technical_requirements")
         .and_then(|v| v.as_array())
         .unwrap_or(&vec![]);
-    
+
     // Generate relationship matrix (customer requirements × technical requirements)
     let mut relationship_matrix = Vec::new();
     for cr in customer_requirements {
@@ -363,7 +381,7 @@ pub fn qfd_analysis(voc: PathBuf) -> CnvResult<serde_json::Value> {
         }
         relationship_matrix.push(row);
     }
-    
+
     // Calculate importance scores
     let mut importance_scores = Vec::new();
     for (i, cr) in customer_requirements.iter().enumerate() {
@@ -371,7 +389,7 @@ pub fn qfd_analysis(voc: PathBuf) -> CnvResult<serde_json::Value> {
         let weighted_score = relationship_matrix[i].iter().sum::<u32>() * importance;
         importance_scores.push(weighted_score);
     }
-    
+
     let result = serde_json::json!({
         "customer_requirements_count": customer_requirements.len(),
         "technical_requirements_count": technical_requirements.len(),
@@ -382,6 +400,6 @@ pub fn qfd_analysis(voc: PathBuf) -> CnvResult<serde_json::Value> {
             .map(|(i, _)| i),
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }

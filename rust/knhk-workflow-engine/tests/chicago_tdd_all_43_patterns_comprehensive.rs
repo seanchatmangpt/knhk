@@ -1238,13 +1238,13 @@ chicago_test!(performance_basic_patterns_within_8_ticks, {
     let counter = Arc::new(AtomicUsize::new(0));
     for _ in 0..3 {
         counter.fetch_add(1, Ordering::SeqCst);
-    });
+    }
     let elapsed = start.elapsed();
     assert!(
         elapsed.as_micros() < 100,
         "Synchronization pattern too slow"
     );
-}
+});
 
 chicago_test!(performance_advanced_patterns_within_8_ticks, {
     // Performance: Advanced patterns execute within reasonable time

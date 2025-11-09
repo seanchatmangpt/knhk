@@ -25,32 +25,38 @@ pub struct AutonomicsHealth {
 /// Monitor autonomic system health
 #[verb("autonomics monitor")]
 pub fn monitor(duration: u64) -> CnvResult<AutonomicsHealth> {
-    info!("Monitoring autonomic system health for {} seconds", duration);
-    
+    info!(
+        "Monitoring autonomic system health for {} seconds",
+        duration
+    );
+
     // Load autonomics data
     let data_path = PathBuf::from("docs/evidence/autonomics.json");
     let mut reflex_map_efficiency = 0.95;
     let mut invariant_violations = 0u32;
     let mut self_healing_actions = 0u32;
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read autonomics data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            reflex_map_efficiency = json.get("reflex_map_efficiency")
+            reflex_map_efficiency = json
+                .get("reflex_map_efficiency")
                 .and_then(|v| v.as_f64())
                 .unwrap_or(0.95);
-            invariant_violations = json.get("invariant_violations")
+            invariant_violations = json
+                .get("invariant_violations")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0) as u32;
-            self_healing_actions = json.get("self_healing_actions")
+            self_healing_actions = json
+                .get("self_healing_actions")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0) as u32;
         }
     }
-    
+
     Ok(AutonomicsHealth {
         reflex_map_efficiency,
         invariant_violations,
@@ -64,22 +70,25 @@ pub fn analyze_reflex_map(
     from: Option<String>,
     to: Option<String>,
 ) -> CnvResult<serde_json::Value> {
-    info!("Analyzing reflex map efficiency from: {:?} to: {:?}", from, to);
-    
+    info!(
+        "Analyzing reflex map efficiency from: {:?} to: {:?}",
+        from, to
+    );
+
     // Load reflex map data
     let data_path = PathBuf::from("docs/evidence/reflex_map.json");
     let mut efficiency_data = Vec::new();
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read reflex map data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(entries_array) = json.get("entries").and_then(|v| v.as_array()) {
                 for entry in entries_array {
                     let date = entry.get("date").and_then(|v| v.as_str()).unwrap_or("");
-                    
+
                     // Filter by date range if specified
                     if let (Some(from_date), Some(to_date)) = (&from, &to) {
                         if date >= from_date && date <= to_date {
@@ -92,7 +101,7 @@ pub fn analyze_reflex_map(
             }
         }
     }
-    
+
     // Calculate efficiency metrics
     let mut efficiencies = Vec::new();
     for entry in &efficiency_data {
@@ -100,13 +109,13 @@ pub fn analyze_reflex_map(
             efficiencies.push(efficiency);
         }
     }
-    
+
     let mean_efficiency = if !efficiencies.is_empty() {
         efficiencies.iter().sum::<f64>() / efficiencies.len() as f64
     } else {
         0.95 // Default
     };
-    
+
     let result = serde_json::json!({
         "mean_efficiency": mean_efficiency,
         "data_points": efficiency_data.len(),
@@ -118,7 +127,7 @@ pub fn analyze_reflex_map(
         "compliance": if mean_efficiency >= 0.95 { "compliant" } else { "non-compliant" },
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
@@ -126,21 +135,24 @@ pub fn analyze_reflex_map(
 #[verb("autonomics track-invariants")]
 pub fn track_invariants(severity: Option<String>) -> CnvResult<serde_json::Value> {
     info!("Tracking invariant violations: severity={:?}", severity);
-    
+
     // Load invariant violation data
     let data_path = PathBuf::from("docs/evidence/invariant_violations.json");
     let mut violations = Vec::new();
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read invariant violation data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(violations_array) = json.get("violations").and_then(|v| v.as_array()) {
                 for violation in violations_array {
-                    let violation_severity = violation.get("severity").and_then(|v| v.as_str()).unwrap_or("");
-                    
+                    let violation_severity = violation
+                        .get("severity")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+
                     // Filter by severity if specified
                     if severity.is_none() || severity.as_ref().unwrap() == violation_severity {
                         violations.push(violation.clone());
@@ -149,19 +161,22 @@ pub fn track_invariants(severity: Option<String>) -> CnvResult<serde_json::Value
             }
         }
     }
-    
+
     // Calculate statistics
     let total = violations.len();
-    let high_severity = violations.iter()
+    let high_severity = violations
+        .iter()
         .filter(|v| v.get("severity").and_then(|v| v.as_str()) == Some("high"))
         .count();
-    let medium_severity = violations.iter()
+    let medium_severity = violations
+        .iter()
         .filter(|v| v.get("severity").and_then(|v| v.as_str()) == Some("medium"))
         .count();
-    let low_severity = violations.iter()
+    let low_severity = violations
+        .iter()
         .filter(|v| v.get("severity").and_then(|v| v.as_str()) == Some("low"))
         .count();
-    
+
     let result = serde_json::json!({
         "total_violations": total,
         "high_severity": high_severity,
@@ -170,7 +185,7 @@ pub fn track_invariants(severity: Option<String>) -> CnvResult<serde_json::Value
         "violations": violations,
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
@@ -178,16 +193,16 @@ pub fn track_invariants(severity: Option<String>) -> CnvResult<serde_json::Value
 #[verb("autonomics self-healing")]
 pub fn monitor_self_healing(count: u32) -> CnvResult<serde_json::Value> {
     info!("Monitoring self-healing actions: count={}", count);
-    
+
     // Load self-healing data
     let data_path = PathBuf::from("docs/evidence/self_healing.json");
     let mut healing_actions = Vec::new();
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read self-healing data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(actions_array) = json.get("actions").and_then(|v| v.as_array()) {
                 for action in actions_array.iter().take(count as usize) {
@@ -196,10 +211,11 @@ pub fn monitor_self_healing(count: u32) -> CnvResult<serde_json::Value> {
             }
         }
     }
-    
+
     // Calculate success rate
     let total = healing_actions.len();
-    let successful = healing_actions.iter()
+    let successful = healing_actions
+        .iter()
         .filter(|a| a.get("status").and_then(|v| v.as_str()) == Some("success"))
         .count();
     let success_rate = if total > 0 {
@@ -207,7 +223,7 @@ pub fn monitor_self_healing(count: u32) -> CnvResult<serde_json::Value> {
     } else {
         0.0
     };
-    
+
     let result = serde_json::json!({
         "total_actions": total,
         "successful": successful,
@@ -216,25 +232,28 @@ pub fn monitor_self_healing(count: u32) -> CnvResult<serde_json::Value> {
         "actions": healing_actions,
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
 /// Verify A = μ(O) compliance
 #[verb("autonomics verify-formula")]
 pub fn verify_formula(sample_size: u32) -> CnvResult<serde_json::Value> {
-    info!("Verifying A = μ(O) formula compliance: sample_size={}", sample_size);
-    
+    info!(
+        "Verifying A = μ(O) formula compliance: sample_size={}",
+        sample_size
+    );
+
     // Load formula verification data
     let data_path = PathBuf::from("docs/evidence/formula_verification.json");
     let mut actual_outputs = Vec::new();
     let mut expected_outputs = Vec::new();
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read formula verification data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(samples_array) = json.get("samples").and_then(|v| v.as_array()) {
                 for sample in samples_array.iter().take(sample_size as usize) {
@@ -249,7 +268,7 @@ pub fn verify_formula(sample_size: u32) -> CnvResult<serde_json::Value> {
             }
         }
     }
-    
+
     // Calculate compliance: A = μ(O)
     let mut compliance_scores = Vec::new();
     for (actual, expected) in actual_outputs.iter().zip(expected_outputs.iter()) {
@@ -257,17 +276,21 @@ pub fn verify_formula(sample_size: u32) -> CnvResult<serde_json::Value> {
         let compliance = if expected.abs() > 0.0 {
             1.0 - (error / expected.abs()).min(1.0)
         } else {
-            if error < 0.01 { 1.0 } else { 0.0 }
+            if error < 0.01 {
+                1.0
+            } else {
+                0.0
+            }
         };
         compliance_scores.push(compliance);
     }
-    
+
     let mean_compliance = if !compliance_scores.is_empty() {
         compliance_scores.iter().sum::<f64>() / compliance_scores.len() as f64
     } else {
         0.95 // Default
     };
-    
+
     let result = serde_json::json!({
         "sample_size": sample_size,
         "mean_compliance": mean_compliance,
@@ -276,6 +299,6 @@ pub fn verify_formula(sample_size: u32) -> CnvResult<serde_json::Value> {
         "samples_verified": compliance_scores.len(),
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }

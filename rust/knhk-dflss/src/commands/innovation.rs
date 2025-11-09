@@ -28,20 +28,29 @@ pub struct IdealityScore {
 #[verb("innovation ideality")]
 pub fn calculate_ideality(version: String) -> CnvResult<IdealityScore> {
     info!("Calculating TRIZ ideality score for version: {}", version);
-    
+
     // Load innovation data (JSON format)
     let data_path = PathBuf::from("docs/evidence/innovation.json");
     let (benefits, costs, harms) = if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read innovation data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
             let version_data = json.get(&version).or_else(|| json.get("latest"));
             (
-                version_data.and_then(|v| v.get("benefits")).and_then(|v| v.as_u64()).unwrap_or(10) as u32,
-                version_data.and_then(|v| v.get("costs")).and_then(|v| v.as_u64()).unwrap_or(5) as u32,
-                version_data.and_then(|v| v.get("harms")).and_then(|v| v.as_u64()).unwrap_or(2) as u32,
+                version_data
+                    .and_then(|v| v.get("benefits"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(10) as u32,
+                version_data
+                    .and_then(|v| v.get("costs"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(5) as u32,
+                version_data
+                    .and_then(|v| v.get("harms"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(2) as u32,
             )
         } else {
             (10, 5, 2) // Default values
@@ -49,14 +58,14 @@ pub fn calculate_ideality(version: String) -> CnvResult<IdealityScore> {
     } else {
         (10, 5, 2) // Default values
     };
-    
+
     // TRIZ Ideality = Benefits / (Costs + Harms)
     let score = if (costs + harms) > 0 {
         benefits as f64 / (costs + harms) as f64
     } else {
         f64::INFINITY
     };
-    
+
     Ok(IdealityScore {
         version,
         score,
@@ -73,22 +82,30 @@ pub fn track_contradictions(
     to: Option<String>,
 ) -> CnvResult<serde_json::Value> {
     info!("Tracking TRIZ contradictions from: {:?} to: {:?}", from, to);
-    
+
     // Load contradictions data
     let data_path = PathBuf::from("docs/evidence/contradictions.json");
     let mut contradictions = Vec::new();
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read contradictions data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            if let Some(contradictions_array) = json.get("contradictions").and_then(|v| v.as_array()) {
+            if let Some(contradictions_array) =
+                json.get("contradictions").and_then(|v| v.as_array())
+            {
                 for contradiction in contradictions_array {
-                    let resolved = contradiction.get("resolved").and_then(|v| v.as_bool()).unwrap_or(false);
-                    let date = contradiction.get("date").and_then(|v| v.as_str()).unwrap_or("");
-                    
+                    let resolved = contradiction
+                        .get("resolved")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false);
+                    let date = contradiction
+                        .get("date")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+
                     // Filter by date range if specified
                     if let (Some(from_date), Some(to_date)) = (&from, &to) {
                         if date >= from_date && date <= to_date {
@@ -101,10 +118,11 @@ pub fn track_contradictions(
             }
         }
     }
-    
+
     // Calculate statistics
     let total = contradictions.len();
-    let resolved = contradictions.iter()
+    let resolved = contradictions
+        .iter()
         .filter(|c| c.get("resolved").and_then(|v| v.as_bool()).unwrap_or(false))
         .count();
     let resolution_rate = if total > 0 {
@@ -112,7 +130,7 @@ pub fn track_contradictions(
     } else {
         0.0
     };
-    
+
     let result = serde_json::json!({
         "total_contradictions": total,
         "resolved": resolved,
@@ -121,7 +139,7 @@ pub fn track_contradictions(
         "contradictions": contradictions,
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
@@ -129,38 +147,39 @@ pub fn track_contradictions(
 #[verb("innovation analyze-level")]
 pub fn analyze_level() -> CnvResult<serde_json::Value> {
     info!("Analyzing innovation level");
-    
+
     // Calculate innovation level based on ideality, contradictions, and patents
     let ideality_result = calculate_ideality("latest".to_string())?;
     let contradictions_result = track_contradictions(None, None)?;
-    
+
     let ideality_score = ideality_result.score;
-    let resolution_rate = contradictions_result.get("resolution_rate")
+    let resolution_rate = contradictions_result
+        .get("resolution_rate")
         .and_then(|v| v.as_f64())
         .unwrap_or(0.0);
-    
+
     // Innovation level scoring (1-5)
     let mut level = 1;
     let mut score = 0.0;
-    
+
     // Ideality contribution (0-2 points)
     if ideality_score >= 2.0 {
         score += 2.0;
     } else if ideality_score >= 1.0 {
         score += 1.0;
     }
-    
+
     // Contradiction resolution contribution (0-2 points)
     if resolution_rate >= 80.0 {
         score += 2.0;
     } else if resolution_rate >= 50.0 {
         score += 1.0;
     }
-    
+
     // Patents/innovations contribution (0-1 point)
     // In production, this would load actual patent data
     score += 0.5; // Placeholder
-    
+
     // Map score to level (1-5)
     level = if score >= 4.5 {
         5
@@ -173,7 +192,7 @@ pub fn analyze_level() -> CnvResult<serde_json::Value> {
     } else {
         1
     };
-    
+
     let result = serde_json::json!({
         "level": level,
         "score": score,
@@ -188,25 +207,28 @@ pub fn analyze_level() -> CnvResult<serde_json::Value> {
         },
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
 /// Generate innovation roadmap
 #[verb("innovation roadmap")]
 pub fn generate_roadmap(target_ideality: f64) -> CnvResult<serde_json::Value> {
-    info!("Generating innovation roadmap with target ideality: {:.2}", target_ideality);
-    
+    info!(
+        "Generating innovation roadmap with target ideality: {:.2}",
+        target_ideality
+    );
+
     // Get current ideality
     let current = calculate_ideality("latest".to_string())?;
     let current_ideality = current.score;
-    
+
     // Calculate gap
     let gap = target_ideality - current_ideality;
-    
+
     // Generate roadmap phases
     let mut phases = Vec::new();
-    
+
     if gap > 0.0 {
         // Phase 1: Reduce costs
         phases.push(serde_json::json!({
@@ -216,7 +238,7 @@ pub fn generate_roadmap(target_ideality: f64) -> CnvResult<serde_json::Value> {
             "expected_ideality": current_ideality + gap * 0.3,
             "duration_months": 3,
         }));
-        
+
         // Phase 2: Increase benefits
         phases.push(serde_json::json!({
             "phase": 2,
@@ -225,7 +247,7 @@ pub fn generate_roadmap(target_ideality: f64) -> CnvResult<serde_json::Value> {
             "expected_ideality": current_ideality + gap * 0.6,
             "duration_months": 6,
         }));
-        
+
         // Phase 3: Eliminate harms
         phases.push(serde_json::json!({
             "phase": 3,
@@ -235,7 +257,7 @@ pub fn generate_roadmap(target_ideality: f64) -> CnvResult<serde_json::Value> {
             "duration_months": 9,
         }));
     }
-    
+
     let result = serde_json::json!({
         "current_ideality": current_ideality,
         "target_ideality": target_ideality,
@@ -246,7 +268,7 @@ pub fn generate_roadmap(target_ideality: f64) -> CnvResult<serde_json::Value> {
             .sum::<u64>(),
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
 
@@ -254,16 +276,16 @@ pub fn generate_roadmap(target_ideality: f64) -> CnvResult<serde_json::Value> {
 #[verb("innovation mgpp")]
 pub fn track_mgpp(generation: Option<String>) -> CnvResult<serde_json::Value> {
     info!("Tracking MGPP progress for generation: {:?}", generation);
-    
+
     // Load MGPP data
     let data_path = PathBuf::from("docs/evidence/mgpp.json");
     let mut generations = Vec::new();
-    
+
     if data_path.exists() {
         let content = fs::read_to_string(&data_path)
             .context("Failed to read MGPP data")
             .map_err(to_cnv_error)?;
-        
+
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
             if let Some(generations_array) = json.get("generations").and_then(|v| v.as_array()) {
                 for gen in generations_array {
@@ -298,18 +320,20 @@ pub fn track_mgpp(generation: Option<String>) -> CnvResult<serde_json::Value> {
             }),
         ];
     }
-    
+
     // Calculate overall progress
-    let total_progress = generations.iter()
+    let total_progress = generations
+        .iter()
         .map(|g| g.get("progress").and_then(|v| v.as_u64()).unwrap_or(0))
-        .sum::<u64>() as f64 / generations.len() as f64;
-    
+        .sum::<u64>() as f64
+        / generations.len() as f64;
+
     let result = serde_json::json!({
         "generations": generations,
         "total_generations": generations.len(),
         "overall_progress": total_progress,
         "timestamp": Utc::now().to_rfc3339(),
     });
-    
+
     Ok(result)
 }
