@@ -1,12 +1,12 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-09T05:56:40Z",
+  "timestamp": "2025-11-09T05:57:50Z",
   "summary": {
     "total_criteria": 19,
-    "passed": 12,
+    "passed": 11,
     "failed": 1,
-    "warnings": 3,
-    "completion_percentage": 63.16
+    "warnings": 4,
+    "completion_percentage": 57.89
   },
   "criteria": {
     "core_compilation": {
@@ -90,8 +90,8 @@
     }
 ,
     "ext_testing": {
-      "status": "passed",
-      "message": "Test infrastructure present"
+      "status": "warning",
+      "message": "No test files found"
     }
 ,
     "ext_build_system": {

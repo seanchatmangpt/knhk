@@ -131,6 +131,8 @@ async fn test_pattern_14_mi_with_runtime_knowledge_variable_count() -> WorkflowR
         .add_task(start_task)
         .add_task(mi_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -181,6 +183,8 @@ async fn test_pattern_15_mi_without_runtime_knowledge_unbounded() -> WorkflowRes
         .add_task(start_task)
         .add_task(mi_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -244,6 +248,8 @@ async fn test_pattern_16_deferred_choice_event_driven() -> WorkflowResult<()> {
         .add_task(branch_a_task)
         .add_task(branch_b_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -334,6 +340,8 @@ async fn test_pattern_17_interleaved_parallel_routing() -> WorkflowResult<()> {
         .add_task(task_c)
         .add_task(merge_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -406,6 +414,8 @@ async fn test_pattern_18_milestone_state_based_gate() -> WorkflowResult<()> {
         .add_task(milestone_task)
         .add_task(protected_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -465,6 +475,8 @@ async fn test_pattern_19_cancel_activity() -> WorkflowResult<()> {
         .add_task(long_running_task)
         .add_task(cancel_trigger_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -521,6 +533,8 @@ async fn test_pattern_36_dynamic_partial_join_mi() -> WorkflowResult<()> {
         .add_task(start_task)
         .add_task(mi_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
@@ -593,6 +607,8 @@ async fn test_difficult_patterns_integration() -> WorkflowResult<()> {
         .add_task(mi_runtime_task)
         .add_task(milestone_task)
         .add_task(end_task)
+        .with_start_condition("start")
+        .with_end_condition("end")
         .build();
 
     let spec_id = fixture.register_workflow(spec).await?;
