@@ -1,5 +1,13 @@
 # YAWL to knhk Implementation Priorities
 
+**⚠️ This document has been consolidated. See the [80/20 YAWL Integration Guide](YAWL_INTEGRATION.md) for the single source of truth.**
+
+This file is kept for backward compatibility. All new documentation should reference the consolidated guide.
+
+---
+
+# YAWL to knhk Implementation Priorities
+
 **Quick Reference Guide for Swarm Coordination**
 
 ---

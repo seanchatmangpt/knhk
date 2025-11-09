@@ -1,18 +1,30 @@
 # Documentation Organization
 
-**Last Updated**: December 2024
+**Last Updated**: January 2025  
+**Status**: Updated for 80/20 Consolidation
 
 ## Overview
 
-This document describes the organization of KNHK documentation files and helps maintain consistency.
+This document describes the organization of KNHK documentation files following the 80/20 principle. Documentation has been consolidated into 80/20 guides covering 80% of use cases, with detailed reference docs available for edge cases.
 
 ## Active Documentation
+
+### Consolidated Guides (80/20) - Primary Documentation
+**These guides cover 80% of use cases and are the primary entry points:**
+
+- **[WORKFLOW_ENGINE.md](WORKFLOW_ENGINE.md)** - Workflow engine guide
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture guide
+- **[YAWL_INTEGRATION.md](YAWL_INTEGRATION.md)** - YAWL integration guide
+- **[ONTOLOGY.md](ONTOLOGY.md)** - Ontology integration guide
+- **[PERFORMANCE.md](PERFORMANCE.md)** - Performance guide
+- **[PRODUCTION.md](PRODUCTION.md)** - Production readiness guide
+- **[TESTING.md](TESTING.md)** - Testing guide
 
 ### Essential (Indexed in INDEX.md)
 - Core documentation for users and developers
 - Getting started guides
 - API references
-- Architecture documentation
+- Architecture documentation (detailed reference)
 - Integration guides
 
 ### Reference (Indexed in INDEX.md)
@@ -20,6 +32,7 @@ This document describes the organization of KNHK documentation files and helps m
 - Data flow diagrams
 - Documentation gaps
 - v1.0 planning documents
+- Detailed implementation guides (for edge cases)
 
 ### Archived (Not in INDEX.md)
 - Historical version docs
@@ -27,6 +40,8 @@ This document describes the organization of KNHK documentation files and helps m
 - Implementation details
 - Status reports
 - Project planning documents (LSS, Jira, DoD, Autonomic Implementation)
+- Detailed YAWL docs (archived to `docs/archived/yawl/`)
+- Redundant ontology docs (archived to `docs/archived/ontology-integration/`)
 
 ## File Organization
 

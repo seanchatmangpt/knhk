@@ -58,6 +58,10 @@ axum = "0.8.6"
 tower = "0.5.2"
 tower-http = "0.6.6"
 
+# TLS
+rustls = "0.23.35"
+rustls-pemfile = "2.2.0"
+
 # OpenTelemetry (0.31 for CLI, 0.21 for ETL - keep separate)
 opentelemetry = { version = "0.31", default-features = false }
 opentelemetry_sdk = { version = "0.31", default-features = false }

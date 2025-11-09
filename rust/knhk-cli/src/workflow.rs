@@ -12,6 +12,9 @@
 //! - workflow list: List all workflow cases
 //! - workflow patterns: List all 43 patterns
 //! - workflow serve: Start REST API server
+//! - workflow import-xes: Import XES event log
+//! - workflow export-xes: Export workflow execution to XES format
+//! - workflow discover: Run Alpha+++ process discovery algorithm
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
@@ -22,6 +25,7 @@ use knhk_workflow_engine::{
     state::StateStore,
     WorkflowEngine,
 };
+use process_mining::{alphappp_discover_petri_net, import_xes_file, XESImportOptions};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
@@ -352,4 +356,156 @@ pub fn serve(
             "Serve command temporarily disabled due to axum version mismatch. Use workflow engine REST API directly."
         ))
     })
+}
+
+/// Import XES event log
+#[verb]
+pub fn import_xes(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
+    let log = import_xes_file(&file, XESImportOptions::default()).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!("Failed to import XES file: {}", e))
+    })?;
+
+    let json = serde_json::to_string_pretty(&log).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!(
+            "Failed to serialize event log: {}",
+            e
+        ))
+    })?;
+
+    if let Some(output_path) = output {
+        std::fs::write(&output_path, json).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to write output file: {}",
+                e
+            ))
+        })?;
+        println!(
+            "XES event log imported: {} traces, saved to {}",
+            log.traces.len(),
+            output_path.display()
+        );
+    } else {
+        println!("XES event log imported: {} traces", log.traces.len());
+        println!("{}", json);
+    }
+
+    Ok(())
+}
+
+/// Export workflow execution to XES format
+#[verb]
+pub fn export_xes(
+    case_id: Option<String>,
+    spec_id: Option<String>,
+    output: PathBuf,
+    state_store: Option<String>,
+) -> CnvResult<()> {
+    let runtime = get_runtime();
+    let engine = get_engine(state_store.as_deref())?;
+
+    runtime.block_on(async {
+        let xes_xml = if let Some(case_id_str) = case_id {
+            // Export single case
+            let case_id_uuid = CaseId::parse_str(&case_id_str).map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!("Invalid case ID: {}", e))
+            })?;
+            engine.export_case_to_xes(case_id_uuid).await.map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to export case to XES: {}",
+                    e
+                ))
+            })?
+        } else if let Some(spec_id_str) = spec_id {
+            // Export all cases for workflow
+            let spec_id_uuid = WorkflowSpecId::parse_str(&spec_id_str).map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!("Invalid spec ID: {}", e))
+            })?;
+            engine
+                .export_workflow_to_xes(spec_id_uuid)
+                .await
+                .map_err(|e| {
+                    clap_noun_verb::NounVerbError::execution_error(format!(
+                        "Failed to export workflow to XES: {}",
+                        e
+                    ))
+                })?
+        } else {
+            // Export all cases
+            engine.export_all_cases_to_xes().await.map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to export all cases to XES: {}",
+                    e
+                ))
+            })?
+        };
+
+        std::fs::write(&output, xes_xml).map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to write XES file: {}",
+                e
+            ))
+        })?;
+
+        println!("XES export completed: {}", output.display());
+        Ok(())
+    })
+}
+
+/// Run Alpha+++ process discovery algorithm
+#[verb]
+pub fn discover(
+    xes_file: PathBuf,
+    output: PathBuf,
+    alpha: Option<f64>,
+    beta: Option<f64>,
+    theta: Option<f64>,
+    rho: Option<f64>,
+) -> CnvResult<()> {
+    // Import XES event log
+    let log = import_xes_file(&xes_file, XESImportOptions::default()).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!("Failed to import XES file: {}", e))
+    })?;
+
+    // Create activity projection (required for Alpha+++)
+    let projection = log.activity_projection();
+
+    // Run Alpha+++ discovery with default or provided parameters
+    let alpha_param = alpha.unwrap_or(2.0);
+    let beta_param = beta.unwrap_or(0.5);
+    let theta_param = theta.unwrap_or(0.5);
+    let rho_param = rho.unwrap_or(0.5);
+
+    let petri_net =
+        alphappp_discover_petri_net(&projection, alpha_param, beta_param, theta_param, rho_param)
+            .map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to discover Petri net: {}",
+                e
+            ))
+        })?;
+
+    // Export Petri net to PNML
+    let pnml = process_mining::export_petri_net_to_pnml(&petri_net).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!(
+            "Failed to export Petri net to PNML: {}",
+            e
+        ))
+    })?;
+
+    std::fs::write(&output, pnml).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!("Failed to write PNML file: {}", e))
+    })?;
+
+    println!(
+        "Alpha+++ discovery completed: {} places, {} transitions, saved to {}",
+        petri_net.places.len(),
+        petri_net.transitions.len(),
+        output.display()
+    );
+    println!(
+        "Parameters: α={}, β={}, θ={}, ρ={}",
+        alpha_param, beta_param, theta_param, rho_param
+    );
+
+    Ok(())
 }

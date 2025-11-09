@@ -1,5 +1,13 @@
 # Chicago TDD Methodology and Test Coverage
 
+**⚠️ This document has been consolidated. See the [80/20 Testing Guide](TESTING.md) for the single source of truth.**
+
+This file is kept for backward compatibility. All new documentation should reference the consolidated guide.
+
+---
+
+# Chicago TDD Methodology and Test Coverage
+
 **Last Updated**: January 2025  
 **Status**: Implementation Complete (Test Integration Pending)
 

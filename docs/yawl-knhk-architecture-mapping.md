@@ -1,5 +1,13 @@
 # YAWL to knhk-workflow-engine Architecture Mapping
 
+**⚠️ This document has been consolidated. See the [80/20 YAWL Integration Guide](YAWL_INTEGRATION.md) for the single source of truth.**
+
+This file is kept for backward compatibility. All new documentation should reference the consolidated guide.
+
+---
+
+# YAWL to knhk-workflow-engine Architecture Mapping
+
 **Document Version**: 1.0
 **Date**: 2025-11-08
 **Author**: System Architect (Hive Mind Swarm)

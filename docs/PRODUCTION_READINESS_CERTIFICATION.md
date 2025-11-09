@@ -1,4 +1,12 @@
 # KNHK Workflow Engine - Production Readiness Certification
+
+**⚠️ This document has been consolidated. See the [80/20 Production Guide](PRODUCTION.md) for the single source of truth.**
+
+This file is kept for backward compatibility. All new documentation should reference the consolidated guide.
+
+---
+
+# KNHK Workflow Engine - Production Readiness Certification
 ## Final Validation Report
 
 **Date**: 2025-11-08

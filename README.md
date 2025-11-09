@@ -253,6 +253,23 @@ gRPC proxy service with 8-beat admission control:
 - **Circuit Breaker**: Prevents cascading failures
 - **Retry Logic**: Exponential backoff with idempotence support
 
+## Quick Start
+
+**New to KNHK?** Start with these consolidated guides:
+
+1. **[Architecture Guide](docs/ARCHITECTURE.md)** - Understand the system design (Hot/Warm/Cold paths)
+2. **[Quick Start](docs/QUICK_START.md)** - Get up and running in 5 minutes
+3. **[API Documentation](docs/api.md)** - Learn the APIs (C, Rust, Erlang)
+
+**For workflow engine users:**
+- **[Workflow Engine Guide](docs/WORKFLOW_ENGINE.md)** - Complete workflow engine guide
+- **[YAWL Integration Guide](docs/YAWL_INTEGRATION.md)** - YAWL compatibility and status
+
+**For developers:**
+- **[Testing Guide](docs/TESTING.md)** - Chicago TDD methodology
+- **[Performance Guide](docs/PERFORMANCE.md)** - Hot path optimization
+- **[Production Guide](docs/PRODUCTION.md)** - Deployment and troubleshooting
+
 ## Getting Started
 
 ### Prerequisites
@@ -335,11 +352,26 @@ make test-integration-v2     # Integration tests
 
 ## Documentation
 
+### Core Documentation (80/20 Guides)
+
+**📖 Consolidated guides covering 80% of use cases:**
+
+- **[WORKFLOW_ENGINE.md](docs/WORKFLOW_ENGINE.md)** - Workflow engine guide (Quick Start, Core API, Critical Patterns)
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture guide (Hot/Warm/Cold paths, Core Components)
+- **[YAWL_INTEGRATION.md](docs/YAWL_INTEGRATION.md)** - YAWL integration guide (Status, Critical Gaps, Quick Reference)
+- **[ONTOLOGY.md](docs/ONTOLOGY.md)** - Ontology integration guide (Integration Patterns, Common Operations)
+- **[PERFORMANCE.md](docs/PERFORMANCE.md)** - Performance guide (Hot Path ≤8 ticks, Benchmarks, Optimization)
+- **[PRODUCTION.md](docs/PRODUCTION.md)** - Production readiness guide (Status, Deployment, Troubleshooting)
+- **[TESTING.md](docs/TESTING.md)** - Testing guide (Chicago TDD, Validation, Test Coverage)
+
+Each consolidated guide is self-contained for 80% of use cases, with links to detailed reference documentation for edge cases.
+
 ### Current Status & Planning
 
 - **[V1 Status](docs/V1-STATUS.md)** - **Single source of truth** for v1.0 status (replaces 160+ archived status docs)
 - **[Documentation Policy](docs/DOCUMENTATION_POLICY.md)** - LEAN pull-based documentation policy
 - **[Evidence Index](docs/EVIDENCE_INDEX.md)** - Deduplication index for all validation evidence
+- **[Documentation Index](docs/INDEX.md)** - Complete documentation index with consolidated guides
 
 ### Documentation Workflow (Pull System)
 
@@ -361,6 +393,7 @@ See [Documentation Policy](docs/DOCUMENTATION_POLICY.md) for complete workflow d
 ### Core Architecture
 
 - **[Repository Overview](REPOSITORY_OVERVIEW.md)** - Complete system overview with formal insights
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - 🆕 Consolidated 80/20 guide (Hot/Warm/Cold paths, Core Components)
 - **[8-Beat System](docs/8BEAT-SYSTEM.md)** - Fixed-cadence reconciliation epoch system
 - **[Weaver Integration](docs/WEAVER.md)** - OpenTelemetry live-check validation (consolidated)
 - **[Formal Mathematical Foundations](docs/formal-foundations.md)** - Deep formal insights and emergent properties
@@ -393,6 +426,9 @@ See [Documentation Policy](docs/DOCUMENTATION_POLICY.md) for complete workflow d
 
 ### Development Guides
 
+- **[Testing Guide](docs/TESTING.md)** - 🆕 Consolidated 80/20 guide (Chicago TDD, Validation, Test Coverage)
+- **[Performance Guide](docs/PERFORMANCE.md)** - 🆕 Consolidated 80/20 guide (Hot Path ≤8 ticks, Benchmarks)
+- **[Production Guide](docs/PRODUCTION.md)** - 🆕 Consolidated 80/20 guide (Status, Deployment, Troubleshooting)
 - **[KANBAN Board](docs/KANBAN.md)** - Single-piece flow task board
 - **[Agent Selection Guide](docs/AGENT_SELECTION_GUIDE.md)** - When to use which specialized agent
 - **[Agent Selection Matrix](docs/AGENT_SELECTION_MATRIX.md)** - Agent capability matrix

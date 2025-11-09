@@ -42,7 +42,16 @@ engine.execute_case(case_id).await?;
 
 ## Documentation
 
-This book provides comprehensive documentation for the KNHK Workflow Engine:
+**📖 [80/20 Consolidated Guide](../../docs/WORKFLOW_ENGINE.md)** - Single source of truth for workflow engine documentation
+
+This guide covers:
+- Quick start (80% use cases)
+- Core API reference
+- Critical patterns (5 most important)
+- Production readiness status
+- Troubleshooting
+
+### Additional Resources
 
 - **[Getting Started](getting-started/introduction.md)** - Learn the basics
 - **[Core Features](core/patterns.md)** - Understand workflow patterns and execution

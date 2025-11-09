@@ -1,8 +1,8 @@
 # KNHK Workflow Engine - Quick Start Guide
 
-**Version**: 1.0  
-**Status**: Production-Ready  
-**Last Updated**: 2025-01-XX
+**⚠️ This document has been consolidated. See the [80/20 Consolidated Guide](../../../docs/WORKFLOW_ENGINE.md) for the single source of truth.**
+
+This file is kept for backward compatibility. All new documentation should reference the consolidated guide.
 
 ---
 
@@ -17,6 +17,8 @@ Enterprise-grade workflow execution engine with YAWL compatibility, OTEL observa
 - ✅ OTEL integration
 - ✅ Deadlock detection
 - ✅ Resource allocation policies
+
+**📖 [Go to Consolidated Guide](../../../docs/WORKFLOW_ENGINE.md)**
 
 ---
 

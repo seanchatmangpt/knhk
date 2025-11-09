@@ -13,6 +13,20 @@
 
 ---
 
+## Core Documentation (80/20 Guides)
+
+**📖 Consolidated guides covering 80% of use cases:**
+
+- **[WORKFLOW_ENGINE.md](WORKFLOW_ENGINE.md)** - Workflow engine guide (Quick Start, Core API, Critical Patterns)
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture guide (Hot/Warm/Cold paths, Core Components)
+- **[YAWL_INTEGRATION.md](YAWL_INTEGRATION.md)** - YAWL integration guide (Status, Critical Gaps, Quick Reference)
+- **[ONTOLOGY.md](ONTOLOGY.md)** - Ontology integration guide (Integration Patterns, Common Operations)
+- **[PERFORMANCE.md](PERFORMANCE.md)** - Performance guide (Hot Path ≤8 ticks, Benchmarks, Optimization)
+- **[PRODUCTION.md](PRODUCTION.md)** - Production readiness guide (Status, Deployment, Troubleshooting)
+- **[TESTING.md](TESTING.md)** - Testing guide (Chicago TDD, Validation, Test Coverage)
+
+---
+
 ## Core Documentation (20% - 80% Value)
 
 ### Requirements & Definition of Done
@@ -21,7 +35,8 @@
 - **[Validation Script](../scripts/validate-v1-dod.sh)** - Automated DoD validation
 
 ### Architecture
-- **[Architecture Overview](architecture.md)** - System architecture
+- **[Architecture Guide](ARCHITECTURE.md)** - 🆕 Consolidated 80/20 guide (Hot/Warm/Cold paths, Core Components)
+- **[Architecture Overview](architecture.md)** - Detailed architecture reference
 - **[8-Beat PRD](8BEAT-PRD.txt)** - 8-beat epoch system requirements
 - **[8-Beat Integration Complete](8BEAT-INTEGRATION-COMPLETE.md)** - C/Rust integration status
 - **[Branchless C Engine](BRANCHLESS_C_ENGINE_IMPLEMENTATION.md)** - Hot path implementation
@@ -32,10 +47,14 @@
 - **[unrdf Integration](v1.0-unrdf-integration-plan.md)** - Cold path integration
 
 ### Implementation
-- **[Chicago TDD](CHICAGO_TDD.md)** - Testing methodology
+- **[Testing Guide](TESTING.md)** - 🆕 Consolidated 80/20 guide (Chicago TDD, Validation, Test Coverage)
+- **[Chicago TDD](CHICAGO_TDD.md)** - Detailed testing methodology
 - **[Lockchain Implementation](LOCKCHAIN_INTEGRATION_COMPLETE.md)** - Provenance system
 - **[OTEL Instrumentation](OTEL_INSTRUMENTATION_SUMMARY.md)** - Observability
 - **[PMU Implementation](PMU_IMPLEMENTATION_SUMMARY.md)** - Performance measurement
+- **[Performance Guide](PERFORMANCE.md)** - 🆕 Consolidated 80/20 guide (Hot Path ≤8 ticks, Benchmarks)
+- **[YAWL Integration Guide](YAWL_INTEGRATION.md)** - 🆕 Consolidated 80/20 guide (Status, Critical Gaps)
+- **[Ontology Guide](ONTOLOGY.md)** - 🆕 Consolidated 80/20 guide (Integration Patterns, Common Operations)
 
 ### Product
 - **[Reflex Enterprise Blueprint](REFLEX_ENTERPRISE_BLUEPRINT.md)** - Product architecture (canonical)
@@ -76,6 +95,7 @@ Key evidence files:
 
 ## Status & Current State
 
+- **[Production Guide](PRODUCTION.md)** - 🆕 Consolidated 80/20 guide (Status, Deployment, Troubleshooting)
 - **[V1 Release Status](V1-RELEASE-STATUS.md)** - Current v1.0 release status and validation progress
 - **[V1 Status](V1-STATUS.md)** - Historical v1.0 development status
 - **[DFLSS Definition of Done](DFLSS_DEFINITION_OF_DONE.spr.md)** - DFLSS DoD specification
