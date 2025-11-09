@@ -169,11 +169,8 @@ pub(super) fn execute_workflow<'a>(
                 completed_tasks.insert(node_id.clone());
 
                 // Find outgoing flows from this task
-                let outgoing_flows: Vec<&Flow> = spec
-                    .flows
-                    .iter()
-                    .filter(|f| f.from == node_id)
-                    .collect();
+                let outgoing_flows: Vec<&Flow> =
+                    spec.flows.iter().filter(|f| f.from == node_id).collect();
 
                 // Evaluate predicates and add enabled flows to queue
                 let case = engine.get_case(case_id).await?;
@@ -191,7 +188,8 @@ pub(super) fn execute_workflow<'a>(
 
                         // If target is a task, increment received count
                         if let Some(_target_task) = spec.tasks.get(target_id) {
-                            let received = task_received_count.entry(target_id.clone()).or_insert(0);
+                            let received =
+                                task_received_count.entry(target_id.clone()).or_insert(0);
                             *received += 1;
 
                             let required = task_incoming_count.get(target_id).copied().unwrap_or(0);
@@ -211,14 +209,10 @@ pub(super) fn execute_workflow<'a>(
                     // For AND split, we already added all enabled flows above
                     // Continue processing
                 }
-
             } else if let Some(_condition) = spec.conditions.get(&node_id) {
                 // Condition - find outgoing flows
-                let outgoing_flows: Vec<&Flow> = spec
-                    .flows
-                    .iter()
-                    .filter(|f| f.from == node_id)
-                    .collect();
+                let outgoing_flows: Vec<&Flow> =
+                    spec.flows.iter().filter(|f| f.from == node_id).collect();
 
                 // Get case data for predicate evaluation
                 let case = engine.get_case(case_id).await?;
@@ -236,7 +230,8 @@ pub(super) fn execute_workflow<'a>(
 
                         // If target is a task, increment received count
                         if let Some(_target_task) = spec.tasks.get(target_id) {
-                            let received = task_received_count.entry(target_id.clone()).or_insert(0);
+                            let received =
+                                task_received_count.entry(target_id.clone()).or_insert(0);
                             *received += 1;
 
                             let required = task_incoming_count.get(target_id).copied().unwrap_or(0);
