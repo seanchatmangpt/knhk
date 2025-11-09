@@ -17,3 +17,4 @@ pub mod pipeline;
 pub mod receipt;
 pub mod reflex;
 pub mod route;
+pub mod validate;

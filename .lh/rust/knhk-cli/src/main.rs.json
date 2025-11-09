@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 5,
             "patches": [
                 {
                     "date": 1762387020592,
@@ -20,6 +20,14 @@
                 {
                     "date": 1762672290827,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,18 +20,22 @@\n // Import all noun modules so their verbs are auto-discovered\n mod admit;\n mod boot;\n mod config;\n+mod conformance;\n mod connect;\n mod context;\n mod cover;\n mod coverage;\n mod epoch;\n mod fortune5;\n mod metrics;\n+mod mining;\n+mod patterns;\n mod pipeline;\n mod reflex;\n mod route;\n+mod soundness;\n mod workflow;\n \n use clap_noun_verb::Result as CnvResult;\n use knhk_config::{load_config, Config};\n"
+                },
+                {
+                    "date": 1762673472480,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -34,8 +34,9 @@\n mod pipeline;\n mod reflex;\n mod route;\n mod soundness;\n+mod validate;\n mod workflow;\n \n use clap_noun_verb::Result as CnvResult;\n use knhk_config::{load_config, Config};\n"
+                },
+                {
+                    "date": 1762673486513,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -34,9 +34,8 @@\n mod pipeline;\n mod reflex;\n mod route;\n mod soundness;\n-mod validate;\n mod workflow;\n \n use clap_noun_verb::Result as CnvResult;\n use knhk_config::{load_config, Config};\n"
                 }
             ],
             "date": 1762387020592,

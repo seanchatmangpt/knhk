@@ -25,6 +25,10 @@ knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = [
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0", features = [
   "std",
 ] }
+knhk-validation = { path = "../knhk-validation", version = "1.0.0", features = [
+  "std",
+  "policy-engine",
+] }
 knhk-workflow-engine = { path = "../knhk-workflow-engine", version = "1.0.0" }
 knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, features = [
   "fortune5",

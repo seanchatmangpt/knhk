@@ -8,6 +8,7 @@ mod lockchain;
 mod otel;
 mod registry;
 mod sidecar;
+mod weaver;
 
 // Re-export integration types
 pub use best_practices::BestPracticesIntegration;
@@ -18,3 +19,4 @@ pub use lockchain::LockchainIntegration;
 pub use otel::OtelIntegration;
 pub use registry::{IntegrationMetadata, IntegrationRegistry, IntegrationStatus};
 pub use sidecar::SidecarIntegration;
+pub use weaver::WeaverIntegration;

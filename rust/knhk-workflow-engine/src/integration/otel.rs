@@ -36,19 +36,24 @@ impl OtelIntegration {
         Ok(())
     }
 
-    /// Start a span for workflow execution
-    pub async fn start_workflow_span(
+    /// Start a span for workflow registration (matches Weaver schema: knhk.workflow_engine.register_workflow)
+    pub async fn start_register_workflow_span(
         &self,
-        workflow_id: &WorkflowSpecId,
+        spec_id: &WorkflowSpecId,
     ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
             let span_ctx =
-                tracer.start_span(format!("knhk.workflow.execute.{}", workflow_id), None);
+                tracer.start_span("knhk.workflow_engine.register_workflow".to_string(), None);
             tracer.add_attribute(
                 span_ctx.clone(),
-                "knhk.workflow.id".to_string(),
-                workflow_id.to_string(),
+                "knhk.workflow_engine.spec_id".to_string(),
+                spec_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.operation".to_string(),
+                "register_workflow".to_string(),
             );
             Ok(Some(span_ctx))
         } else {
@@ -56,14 +61,121 @@ impl OtelIntegration {
         }
     }
 
-    /// Start a span for case execution
-    pub async fn start_case_span(&self, case_id: &CaseId) -> WorkflowResult<Option<SpanContext>> {
+    /// Start a span for case creation (matches Weaver schema: knhk.workflow_engine.create_case)
+    pub async fn start_create_case_span(
+        &self,
+        spec_id: &WorkflowSpecId,
+        case_id: &CaseId,
+    ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
-            let span_ctx = tracer.start_span(format!("knhk.case.execute.{}", case_id), None);
+            let span_ctx = tracer.start_span("knhk.workflow_engine.create_case".to_string(), None);
             tracer.add_attribute(
                 span_ctx.clone(),
-                "knhk.case.id".to_string(),
+                "knhk.workflow_engine.spec_id".to_string(),
+                spec_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_id".to_string(),
+                case_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.operation".to_string(),
+                "create_case".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_state".to_string(),
+                "Created".to_string(),
+            );
+            Ok(Some(span_ctx))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Start a span for case execution (matches Weaver schema: knhk.workflow_engine.execute_case)
+    pub async fn start_execute_case_span(
+        &self,
+        case_id: &CaseId,
+    ) -> WorkflowResult<Option<SpanContext>> {
+        let mut guard = self.tracer.write().await;
+        if let Some(ref mut tracer) = *guard {
+            let span_ctx = tracer.start_span("knhk.workflow_engine.execute_case".to_string(), None);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_id".to_string(),
+                case_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.operation".to_string(),
+                "execute_case".to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_state".to_string(),
+                "Running".to_string(),
+            );
+            Ok(Some(span_ctx))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Start a span for task execution (matches Weaver schema: knhk.workflow_engine.execute_task)
+    pub async fn start_execute_task_span(
+        &self,
+        case_id: &CaseId,
+        task_id: &str,
+        pattern_id: Option<&PatternId>,
+    ) -> WorkflowResult<Option<SpanContext>> {
+        let mut guard = self.tracer.write().await;
+        if let Some(ref mut tracer) = *guard {
+            let span_ctx = tracer.start_span("knhk.workflow_engine.execute_task".to_string(), None);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_id".to_string(),
+                case_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.task_id".to_string(),
+                task_id.to_string(),
+            );
+            if let Some(pid) = pattern_id {
+                tracer.add_attribute(
+                    span_ctx.clone(),
+                    "knhk.workflow_engine.pattern_id".to_string(),
+                    pid.0.to_string(),
+                );
+            }
+            Ok(Some(span_ctx))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Start a span for pattern execution (matches Weaver schema: knhk.workflow_engine.execute_pattern)
+    pub async fn start_execute_pattern_span(
+        &self,
+        pattern_id: &PatternId,
+        case_id: &CaseId,
+    ) -> WorkflowResult<Option<SpanContext>> {
+        let mut guard = self.tracer.write().await;
+        if let Some(ref mut tracer) = *guard {
+            let span_ctx =
+                tracer.start_span("knhk.workflow_engine.execute_pattern".to_string(), None);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.pattern_id".to_string(),
+                pattern_id.0.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_id".to_string(),
                 case_id.to_string(),
             );
             Ok(Some(span_ctx))
@@ -72,23 +184,95 @@ impl OtelIntegration {
         }
     }
 
-    /// Start a span for pattern execution
-    pub async fn start_pattern_span(
+    /// Start a span for case history query (matches Weaver schema: knhk.workflow_engine.get_case_history)
+    pub async fn start_get_case_history_span(
         &self,
-        pattern_id: &PatternId,
+        case_id: &CaseId,
     ) -> WorkflowResult<Option<SpanContext>> {
         let mut guard = self.tracer.write().await;
         if let Some(ref mut tracer) = *guard {
-            let span_ctx = tracer.start_span(format!("knhk.pattern.execute.{}", pattern_id), None);
+            let span_ctx =
+                tracer.start_span("knhk.workflow_engine.get_case_history".to_string(), None);
             tracer.add_attribute(
                 span_ctx.clone(),
-                "knhk.pattern.id".to_string(),
-                pattern_id.to_string(),
+                "knhk.workflow_engine.case_id".to_string(),
+                case_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.operation".to_string(),
+                "get_case_history".to_string(),
             );
             Ok(Some(span_ctx))
         } else {
             Ok(None)
         }
+    }
+
+    /// Start a span for multiple instance task execution (matches Weaver schema: knhk.workflow_engine.execute_mi_task)
+    pub async fn start_execute_mi_task_span(
+        &self,
+        case_id: &CaseId,
+        task_id: &str,
+        pattern_id: &PatternId,
+        instance_count: u32,
+    ) -> WorkflowResult<Option<SpanContext>> {
+        let mut guard = self.tracer.write().await;
+        if let Some(ref mut tracer) = *guard {
+            let span_ctx =
+                tracer.start_span("knhk.workflow_engine.execute_mi_task".to_string(), None);
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.case_id".to_string(),
+                case_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.task_id".to_string(),
+                task_id.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.pattern_id".to_string(),
+                pattern_id.0.to_string(),
+            );
+            tracer.add_attribute(
+                span_ctx.clone(),
+                "knhk.workflow_engine.instance_count".to_string(),
+                instance_count.to_string(),
+            );
+            Ok(Some(span_ctx))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Legacy method for backward compatibility
+    #[deprecated(note = "Use start_execute_case_span instead")]
+    pub async fn start_workflow_span(
+        &self,
+        workflow_id: &WorkflowSpecId,
+    ) -> WorkflowResult<Option<SpanContext>> {
+        self.start_register_workflow_span(workflow_id).await
+    }
+
+    /// Legacy method for backward compatibility
+    #[deprecated(note = "Use start_execute_case_span instead")]
+    pub async fn start_case_span(&self, case_id: &CaseId) -> WorkflowResult<Option<SpanContext>> {
+        self.start_execute_case_span(case_id).await
+    }
+
+    /// Legacy method for backward compatibility
+    #[deprecated(note = "Use start_execute_pattern_span instead")]
+    pub async fn start_pattern_span(
+        &self,
+        pattern_id: &PatternId,
+    ) -> WorkflowResult<Option<SpanContext>> {
+        // Legacy method doesn't have case_id, so we create a dummy one
+        // This is for backward compatibility only
+        let dummy_case_id = CaseId::new();
+        self.start_execute_pattern_span(pattern_id, &dummy_case_id)
+            .await
     }
 
     /// End a span with status

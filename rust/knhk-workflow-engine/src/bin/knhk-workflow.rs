@@ -7,9 +7,14 @@
 
 use clap::{Parser, Subcommand};
 use knhk_workflow_engine::{
-    executor::WorkflowEngine, parser::WorkflowParser, state::StateStore, CaseId, WorkflowSpecId,
+    executor::WorkflowEngine,
+    integration::{OtelIntegration, WeaverIntegration},
+    parser::WorkflowParser,
+    state::StateStore,
+    CaseId, WorkflowSpecId,
 };
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Parser)]
 #[command(name = "knhk-workflow")]
@@ -128,6 +133,22 @@ enum Commands {
         #[arg(short, long)]
         output: PathBuf,
     },
+
+    /// Run Weaver live-check validation
+    WeaverCheck {
+        /// Registry path for Weaver
+        #[arg(long, default_value = "./registry")]
+        registry: PathBuf,
+        /// OTLP gRPC port for Weaver
+        #[arg(long, default_value = "4317")]
+        otlp_port: u16,
+        /// Admin HTTP port for Weaver
+        #[arg(long, default_value = "8080")]
+        admin_port: u16,
+        /// Enable Weaver live-check
+        #[arg(long)]
+        enable: bool,
+    },
 }
 
 #[tokio::main]
@@ -137,12 +158,79 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cli = Cli::parse();
 
+    // Handle Weaver check command separately
+    if let Commands::WeaverCheck {
+        registry,
+        otlp_port,
+        admin_port,
+        enable,
+    } = &cli.command
+    {
+        if *enable {
+            println!("🔍 Starting Weaver live-check validation...");
+            let mut weaver =
+                WeaverIntegration::with_config(registry.clone(), *otlp_port, *admin_port);
+            weaver.enable();
+
+            // Check Weaver availability
+            match WeaverIntegration::check_weaver_available() {
+                Ok(_) => {
+                    println!("✅ Weaver binary found");
+                }
+                Err(e) => {
+                    eprintln!("❌ Weaver binary not found: {}", e);
+                    eprintln!(
+                        "   Install with: cargo install weaver or ./scripts/install-weaver.sh"
+                    );
+                    return Err(e.into());
+                }
+            }
+
+            // Start Weaver
+            weaver
+                .start()
+                .await
+                .map_err(|e| format!("Failed to start Weaver live-check: {}", e))?;
+
+            println!("✅ Weaver live-check started");
+            println!("   Registry: {}", registry.display());
+            println!("   OTLP gRPC port: {}", otlp_port);
+            println!("   Admin port: {}", admin_port);
+            println!("\n📡 Export telemetry to: {}", weaver.otlp_endpoint());
+            println!("\n💡 Run workflow operations to generate telemetry");
+            println!("   Press Ctrl+C to stop Weaver and view validation report");
+
+            // Wait for user interrupt
+            tokio::signal::ctrl_c().await?;
+            println!("\n🛑 Stopping Weaver live-check...");
+            weaver
+                .stop()
+                .await
+                .map_err(|e| format!("Failed to stop Weaver: {}", e))?;
+            println!("✅ Weaver stopped. Check ./weaver-reports for validation results");
+        } else {
+            println!("Weaver live-check is disabled. Use --enable to start it.");
+        }
+        return Ok(());
+    }
+
     // Create state store
     let state_store = StateStore::new(&cli.state_store)
         .map_err(|e| format!("Failed to create state store: {}", e))?;
 
     // Create workflow engine
     let engine = std::sync::Arc::new(WorkflowEngine::new(state_store));
+
+    // Initialize OTEL integration if OTLP endpoint is set
+    let otel_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT").ok();
+    if let Some(ref endpoint) = otel_endpoint {
+        let otel = Arc::new(OtelIntegration::new(Some(endpoint.clone())));
+        otel.initialize()
+            .await
+            .map_err(|e| format!("Failed to initialize OTEL: {}", e))?;
+        // Note: OTEL integration would need to be set on the engine
+        // For now, we just initialize it for telemetry export
+    }
 
     match cli.command {
         Commands::Parse { file, output } => {
