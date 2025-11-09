@@ -125,7 +125,12 @@ async fn test_process_discovery_from_workflow_execution() {
     let projection: EventLogActivityProjection = (&event_log).into();
 
     // Run Alpha+++ process discovery
-    let config = AlphaPPPConfig::default();
+    let config = AlphaPPPConfig {
+        log_repair_skip_df_thresh_rel: 2.0,
+        log_repair_loop_df_thresh_rel: 2.0,
+        absolute_df_clean_thresh: 1,
+        relative_df_clean_thresh: 0.01,
+    };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
 
     // Assert: Discovered Petri net should have structure

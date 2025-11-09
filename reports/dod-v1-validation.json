@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-09T05:06:47Z",
+  "timestamp": "2025-11-09T05:07:28Z",
   "summary": {
     "total_criteria": 19,
     "passed": 12,
@@ -71,7 +71,7 @@
 ,
     "ext_documentation": {
       "status": "warning",
-      "message": "Found 2371 public items without documentation"
+      "message": "Found 2370 public items without documentation"
     }
 ,
     "ext_performance": {

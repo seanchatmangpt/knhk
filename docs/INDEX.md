@@ -52,7 +52,7 @@
 
 ### Implementation
 - **[Testing Guide](TESTING.md)** - 🆕 Consolidated 80/20 guide (Chicago TDD, Validation, Test Coverage)
-- **[Chicago TDD](CHICAGO_TDD.md)** - Detailed testing methodology
+- **[Chicago TDD](archived/consolidation/CHICAGO_TDD.md)** - Detailed testing methodology (archived - consolidated)
 - **[Lockchain Implementation](LOCKCHAIN_INTEGRATION_COMPLETE.md)** - Provenance system
 - **[OTEL Instrumentation](OTEL_INSTRUMENTATION_SUMMARY.md)** - Observability
 - **[PMU Implementation](PMU_IMPLEMENTATION_SUMMARY.md)** - Performance measurement
