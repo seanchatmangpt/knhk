@@ -6,6 +6,7 @@
 // Allow acceptable warnings for clean build
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+#![allow(unused_mut)]
 #![allow(dead_code)]
 #![allow(deprecated)] // Some dependencies use deprecated APIs (will be updated)
 #![allow(unexpected_cfgs)] // Some cfg values are informational (policy-engine, network, tempfile)

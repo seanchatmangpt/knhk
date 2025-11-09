@@ -210,10 +210,11 @@ macro_rules! otel_attr {
         $($key:expr => $value:expr),+ $(,)?
     ) => {{
         async {
-            if let Some(ref span) = $span_ctx {
+            if let Some(span) = $span_ctx.as_ref() {
+                let span_clone = (*span).clone();
                 $(
                     $otel.add_attribute(
-                        span.clone(),
+                        span_clone.clone(),
                         $key.to_string(),
                         $value.to_string(),
                     )

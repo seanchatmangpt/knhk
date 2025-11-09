@@ -134,16 +134,15 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            let span_ctx_clone = Some(span.clone());
             otel_attr!(
                 otel,
-                span_ctx_clone,
+                span_ctx,
                 "knhk.workflow_engine.case_state" => "Created"
             )
             .await?;
             otel_span_end!(
                 otel,
-                Some(span.clone()),
+                span_ctx,
                 success: success,
                 latency_ms: latency_ms
             )

@@ -22,10 +22,11 @@ impl WorkflowEngine {
         {
             otel_span!(
                 otel,
-                "knhk.workflow_engine.register_workflow"
-                , spec_id: Some(&spec.id)
+                "knhk.workflow_engine.register_workflow",
+                spec_id: Some(&spec.id)
             )
-            .await?
+            .await
+            .map_err(|e: crate::error::WorkflowError| e)?
         } else {
             None
         };
