@@ -9,9 +9,9 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"] }
 tokio = { workspace = true, features = ["full"] }
-tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-prost = "0.12"
-prost-types = "0.12"
+tonic = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
@@ -41,7 +41,7 @@ serde_json = ["dep:serde_json"]
 fortune5 = ["aws-sdk-kms", "aws-config", "reqwest"]
 
 [build-dependencies]
-tonic-build = "0.10"
+tonic-build = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.11", features = ["blocking"] }

@@ -32,32 +32,32 @@ knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, f
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "net", "fs"] }
 axum = { version = "0.8", features = ["json"] }
 tower = "0.5"
-oxigraph = { version = "0.5" }
-sha2 = "0.10"
+oxigraph = { workspace = true }
+sha2 = { workspace = true }
 knhk-otel = { path = "../knhk-otel", version = "1.0.0", optional = true, features = [
   "std",
 ] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 simd-json = { version = "0.14", features = ["known-key"] }
-thiserror = "2.0"
+thiserror = { workspace = true }
 linkme = "0.3"
 
 # OpenTelemetry dependencies - all optional with std feature
-opentelemetry = { version = "0.31", optional = true, default-features = false }
-opentelemetry_sdk = { version = "0.31", optional = true, default-features = false }
-opentelemetry-otlp = { version = "0.31", optional = true, default-features = false }
-opentelemetry-http = { version = "0.31", optional = true, default-features = false }
-tracing = { version = "0.1", optional = true }
-tracing-opentelemetry = { version = "0.32", optional = true }
-tracing-subscriber = { version = "0.3", features = [
+opentelemetry = { workspace = true, optional = true, default-features = false }
+opentelemetry_sdk = { workspace = true, optional = true, default-features = false }
+opentelemetry-otlp = { workspace = true, optional = true, default-features = false }
+opentelemetry-http = { workspace = true, optional = true, default-features = false }
+tracing = { workspace = true, optional = true }
+tracing-opentelemetry = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "fmt",
   "json",
   "ansi",
 ], optional = true }
-opentelemetry-semantic-conventions = { version = "0.15", optional = true }
-reqwest = { version = "0.11", optional = true, features = ["json", "blocking"] }
+opentelemetry-semantic-conventions = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true, features = ["json", "blocking"] }
 
 [features]
 default = ["std", "otel"]
@@ -81,5 +81,5 @@ name = "knhk"
 path = "src/main.rs"
 
 [dev-dependencies]
-reqwest = { version = "0.11", features = ["blocking"] }
+reqwest = { workspace = true, features = ["blocking"] }
 tempfile = { workspace = true }

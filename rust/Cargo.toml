@@ -46,16 +46,21 @@ tokio-stream = "0.1"
 tokio-test = "0.4"
 
 # gRPC/Protobuf
-tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-tonic-build = "0.10"
-prost = "0.12"
-prost-types = "0.12"
+tonic = "0.14.2"
+tonic-build = "0.14.2"
+prost = "0.14.1"
+prost-types = "0.14.1"
+
+# HTTP framework
+axum = "0.8.6"
+tower = "0.5.2"
+tower-http = "0.6.6"
 
 # OpenTelemetry (0.31 for CLI, 0.21 for ETL - keep separate)
-opentelemetry = "0.31"
-opentelemetry_sdk = "0.31"
-opentelemetry-otlp = "0.31"
-opentelemetry-http = "0.31"
+opentelemetry = { version = "0.31", default-features = false }
+opentelemetry_sdk = { version = "0.31", default-features = false }
+opentelemetry-otlp = { version = "0.31", default-features = false }
+opentelemetry-http = { version = "0.31", default-features = false }
 opentelemetry-semantic-conventions = "0.15"
 tracing = "0.1"
 tracing-opentelemetry = "0.32"
