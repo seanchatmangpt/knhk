@@ -26,7 +26,8 @@ pub fn define(select: String, shard: String) -> Result<(), String> {
     println!("  Select: {}", select);
     println!("  Shard: {}", shard);
 
-    // Validate shard spec (max_run_len ≤ 8)
+    // Note: Guard validation happens at execution boundaries (hot path), not at CLI ingress
+    // Agents are trusted to follow MAX_RUN_LEN ≤ 8 constraint
     if shard.contains("max_run_len") {
         // Extract max_run_len value (simplified parsing)
         if let Some(len_str) = shard.split("max_run_len").nth(1) {
@@ -38,7 +39,7 @@ pub fn define(select: String, shard: String) -> Result<(), String> {
                     .parse::<u64>()
                     .map_err(|e| format!("Invalid shard length '{}': {}", len_val, e))?;
 
-                // Validate guard: len ≤ 8 (Chatman Constant)
+                // Basic check: len ≤ 8 (Chatman Constant)
                 if len > 8 {
                     return Err(format!(
                         "Shard max_run_len {} exceeds Chatman Constant (8)",

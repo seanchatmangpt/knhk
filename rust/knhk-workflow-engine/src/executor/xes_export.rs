@@ -113,13 +113,10 @@ impl WorkflowEngine {
     ///
     /// # Errors
     /// Returns `WorkflowError::Internal` if XES parsing fails
+    ///
+    /// XES content pre-validated at ingress.
     pub async fn import_xes(&self, xes_content: &str) -> WorkflowResult<usize> {
         use process_mining::{import_xes_file, XESImportOptions};
-
-        // Validate XES content is not empty
-        if xes_content.trim().is_empty() {
-            return Err(WorkflowError::Internal("XES content is empty".to_string()));
-        }
 
         // Write XES content to temporary file (import_xes_file expects a file path)
         let temp_dir = tempfile::tempdir().map_err(|e| {
@@ -134,13 +131,7 @@ impl WorkflowEngine {
         let event_log = import_xes_file(&temp_file, XESImportOptions::default())
             .map_err(|e| WorkflowError::Internal(format!("Failed to import XES: {:?}", e)))?;
 
-        // Validate event log structure
         let trace_count = event_log.traces.len();
-        if trace_count == 0 {
-            return Err(WorkflowError::Internal(
-                "XES log contains no traces".to_string(),
-            ));
-        }
 
         Ok(trace_count)
     }

@@ -12,6 +12,8 @@
 
 #![cfg(feature = "std")]
 
+#[cfg(feature = "std")]
+use knhk_otel::validation::{validate_metric_structure, validate_span_structure};
 use knhk_otel::{init_tracer, MetricsHelper, SpanStatus, Tracer, WeaverLiveCheck};
 
 /// Test: OpenTelemetry initialization with OTLP endpoint (sidecar pattern)
@@ -97,6 +99,14 @@ fn test_otel_export_to_sidecar() {
     // Assert: Telemetry was created
     assert_eq!(tracer.spans().len(), 1, "Should have one span");
     assert_eq!(tracer.metrics().len(), 1, "Should have one metric");
+
+    // Validate telemetry structure using validation helpers
+    if let Some(span) = tracer.spans().first() {
+        validate_span_structure(span).expect("Span should be valid");
+    }
+    if let Some(metric) = tracer.metrics().first() {
+        validate_metric_structure(metric).expect("Metric should be valid");
+    }
 
     // Assert: Span has correct attributes
     let span = tracer.spans().first().expect("Expected at least one span");

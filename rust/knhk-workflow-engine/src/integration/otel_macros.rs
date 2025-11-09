@@ -156,7 +156,7 @@ macro_rules! otel_span_end {
                 let span_clone = span.clone();
                 $otel
                     .add_attribute(
-                        span.clone(),
+                        span_clone.clone(),
                         "knhk.workflow_engine.success".to_string(),
                         $success.to_string(),
                     )
@@ -164,7 +164,7 @@ macro_rules! otel_span_end {
 
                 $otel
                     .add_attribute(
-                        span.clone(),
+                        span_clone.clone(),
                         "knhk.workflow_engine.latency_ms".to_string(),
                         $latency_ms.to_string(),
                     )
@@ -177,7 +177,7 @@ macro_rules! otel_span_end {
 
                 $otel
                     .end_span(
-                        &span_clone,
+                        span_clone.clone(),
                         if $success {
                             SpanStatus::Ok
                         } else {
@@ -211,7 +211,7 @@ macro_rules! otel_attr {
     ) => {{
         async {
             if let Some(ref span) = $span_ctx {
-                let span_clone = (*span).clone();
+                let span_clone = span.clone();
                 $(
                     $otel.add_attribute(
                         span_clone.clone(),

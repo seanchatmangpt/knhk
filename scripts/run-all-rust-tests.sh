@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # KNHK Rust Test Runner
-# Executes all Rust crate tests independently (no workspace)
+# Executes all Rust crate tests concurrently (no workspace)
 
 set -euo pipefail
 
@@ -16,8 +16,12 @@ TOTAL_CRATES=0
 PASSED_CRATES=0
 FAILED_CRATES=()
 
+# Temporary directory for test results
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🧪 KNHK Rust Test Suite Runner${NC}"
+echo -e "${BLUE}🧪 KNHK Rust Test Suite Runner (Concurrent)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo
 
@@ -54,42 +58,70 @@ CRATES=(
   "rust/knhk-integration-tests"
 )
 
-# Test a single crate
+# Test a single crate (runs in background)
 test_crate() {
   local crate_path="$1"
   local crate_name=$(basename "$crate_path")
+  local result_file="$TMPDIR/${crate_name}.result"
+  local output_file="$TMPDIR/${crate_name}.out"
 
-  TOTAL_CRATES=$((TOTAL_CRATES + 1))
+  (
+    echo -e "${BLUE}┌─ Testing ${crate_name}...${NC}" > "$output_file"
 
-  echo -e "${BLUE}┌─ Testing ${crate_name}...${NC}"
-
-  if [ ! -d "$crate_path" ]; then
-    echo -e "${YELLOW}└─ ⚠️  Crate not found, skipping${NC}"
-    echo
-    return
-  fi
-
-  if [ ! -f "$crate_path/Cargo.toml" ]; then
-    echo -e "${YELLOW}└─ ⚠️  No Cargo.toml, skipping${NC}"
-    echo
-    return
-  fi
-
-  # Run tests
-  if (cd "$crate_path" && cargo test --quiet 2>&1); then
-    echo -e "${GREEN}└─ ✅ PASSED${NC}"
-    PASSED_CRATES=$((PASSED_CRATES + 1))
-  else
-    echo -e "${RED}└─ ❌ FAILED${NC}"
-    FAILED_CRATES+=("$crate_name")
-  fi
-
-  echo
+    if [ ! -d "$crate_path" ]; then
+      echo -e "${YELLOW}└─ ⚠️  Crate not found, skipping${NC}" >> "$output_file"
+      echo "SKIP" > "$result_file"
+    elif [ ! -f "$crate_path/Cargo.toml" ]; then
+      echo -e "${YELLOW}└─ ⚠️  No Cargo.toml, skipping${NC}" >> "$output_file"
+      echo "SKIP" > "$result_file"
+    else
+      # Run tests
+      if (cd "$crate_path" && cargo test --quiet 2>&1 >> "$output_file"); then
+        echo -e "${GREEN}└─ ✅ PASSED${NC}" >> "$output_file"
+        echo "PASS" > "$result_file"
+      else
+        echo -e "${RED}└─ ❌ FAILED${NC}" >> "$output_file"
+        echo "FAIL" > "$result_file"
+      fi
+    fi
+    echo >> "$output_file"
+  ) &
 }
 
-# Run tests for all crates
+# Run tests for all crates concurrently
+echo -e "${BLUE}Starting concurrent test execution...${NC}"
+TOTAL_CRATES=${#CRATES[@]}
 for crate in "${CRATES[@]}"; do
   test_crate "$crate"
+done
+
+# Wait for all background jobs to complete
+wait
+
+# Collect results and display output
+for crate in "${CRATES[@]}"; do
+  crate_name=$(basename "$crate")
+  result_file="$TMPDIR/${crate_name}.result"
+  output_file="$TMPDIR/${crate_name}.out"
+
+  if [ -f "$output_file" ]; then
+    cat "$output_file"
+  fi
+
+  if [ -f "$result_file" ]; then
+    result=$(cat "$result_file")
+    case "$result" in
+      "PASS")
+        PASSED_CRATES=$((PASSED_CRATES + 1))
+        ;;
+      "FAIL")
+        FAILED_CRATES+=("$crate_name")
+        ;;
+      "SKIP")
+        # Already counted in TOTAL_CRATES, but not in passed/failed
+        ;;
+    esac
+  fi
 done
 
 # Summary

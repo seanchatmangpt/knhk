@@ -6,7 +6,7 @@
 //! **Architecture**: Uses chicago-tdd-tools for fixtures and builders, extends with workflow-specific testing.
 
 use chicago_tdd_tools::builders::TestDataBuilder;
-use chicago_tdd_tools::{assert_ok, chicago_async_test};
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::CaseState;
 use knhk_workflow_engine::parser::{JoinType, SplitType, TaskType};
 use knhk_workflow_engine::testing::chicago_tdd::*;
@@ -20,8 +20,16 @@ chicago_async_test!(test_workflow_fixture_creation, {
     let fixture = WorkflowTestFixture::new().unwrap();
 
     // Assert: Fixture created successfully
-    assert_eq!(fixture.specs.len(), 0);
-    assert_eq!(fixture.cases.len(), 0);
+    assert_eq_msg!(
+        fixture.specs.len(),
+        0,
+        "Initial fixture should have no specs"
+    );
+    assert_eq_msg!(
+        fixture.cases.len(),
+        0,
+        "Initial fixture should have no cases"
+    );
 });
 
 chicago_async_test!(test_workflow_fixture_isolation, {
@@ -38,9 +46,9 @@ chicago_async_test!(test_workflow_fixture_isolation, {
 
     // Assert: Each fixture is isolated (unique test databases)
     // fixture1 should have the workflow, others should not
-    assert_eq!(fixture1.specs.len(), 1);
-    assert_eq!(fixture2.specs.len(), 0);
-    assert_eq!(fixture3.specs.len(), 0);
+    assert_eq_msg!(fixture1.specs.len(), 1, "Fixture1 should have 1 workflow");
+    assert_eq_msg!(fixture2.specs.len(), 0, "Fixture2 should have no workflows");
+    assert_eq_msg!(fixture3.specs.len(), 0, "Fixture3 should have no workflows");
     assert!(fixture1.specs.contains_key(&spec_id1));
     assert!(!fixture2.specs.contains_key(&spec_id1));
     assert!(!fixture3.specs.contains_key(&spec_id1));
@@ -68,7 +76,11 @@ chicago_async_test!(test_register_workflow_with_builder, {
 
     // Assert: Workflow registered
     assert!(fixture.specs.contains_key(&spec_id));
-    assert_eq!(fixture.specs.get(&spec_id).unwrap().name, "Test Workflow");
+    assert_eq_msg!(
+        &fixture.specs.get(&spec_id).unwrap().name,
+        "Test Workflow",
+        "Registered workflow should have correct name"
+    );
 });
 
 chicago_async_test!(test_register_multiple_workflows, {
@@ -93,7 +105,7 @@ chicago_async_test!(test_register_multiple_workflows, {
     let spec_id3 = result3.unwrap();
 
     // Assert: All workflows registered
-    assert_eq!(fixture.specs.len(), 3);
+    assert_eq_msg!(fixture.specs.len(), 3, "Should have 3 registered workflows");
     assert!(fixture.specs.contains_key(&spec_id1));
     assert!(fixture.specs.contains_key(&spec_id2));
     assert!(fixture.specs.contains_key(&spec_id3));
@@ -124,10 +136,26 @@ chicago_async_test!(test_create_case_with_test_data_builder, {
     // Assert: Case created and tracked, and data is stored correctly
     assert!(fixture.cases.contains(&case_id));
     let case = fixture.engine.get_case(case_id).await.unwrap();
-    assert_eq!(case.data["key1"], "value1");
-    assert_eq!(case.data["order_id"], "ORD-001");
-    assert_eq!(case.data["total_amount"], "100.00");
-    assert_eq!(case.data["customer_id"], "CUST-001");
+    assert_eq_msg!(
+        &case.data["key1"],
+        "value1",
+        "Case data should contain key1"
+    );
+    assert_eq_msg!(
+        &case.data["order_id"],
+        "ORD-001",
+        "Case data should contain order_id"
+    );
+    assert_eq_msg!(
+        &case.data["total_amount"],
+        "100.00",
+        "Case data should contain total_amount"
+    );
+    assert_eq_msg!(
+        &case.data["customer_id"],
+        "CUST-001",
+        "Case data should contain customer_id"
+    );
 });
 
 chicago_async_test!(test_create_case_with_empty_data, {
@@ -176,7 +204,7 @@ chicago_async_test!(test_create_multiple_cases, {
         .unwrap();
 
     // Assert: All cases created
-    assert_eq!(fixture.cases.len(), 3);
+    assert_eq_msg!(fixture.cases.len(), 3, "Should have 3 created cases");
     assert!(fixture.cases.contains(&case_id1));
     assert!(fixture.cases.contains(&case_id2));
     assert!(fixture.cases.contains(&case_id3));
@@ -263,8 +291,16 @@ chicago_async_test!(test_execute_case_with_data, {
         case.state
     );
     // Verify test data is preserved
-    assert_eq!(case.data["order_id"], "ORD-001");
-    assert_eq!(case.data["customer_id"], "CUST-001");
+    assert_eq_msg!(
+        &case.data["order_id"],
+        "ORD-001",
+        "Order ID should be preserved"
+    );
+    assert_eq_msg!(
+        &case.data["customer_id"],
+        "CUST-001",
+        "Customer ID should be preserved"
+    );
 });
 
 // ============================================================================
@@ -336,8 +372,12 @@ chicago_async_test!(test_workflow_spec_builder_with_tasks, {
         .build();
 
     // Assert: Workflow spec created with tasks
-    assert_eq!(spec.name, "Complex Workflow");
-    assert_eq!(spec.tasks.len(), 3);
+    assert_eq_msg!(
+        &spec.name,
+        "Complex Workflow",
+        "Workflow should have correct name"
+    );
+    assert_eq_msg!(spec.tasks.len(), 3, "Workflow should have 3 tasks");
     assert!(spec.tasks.contains_key("task1"));
     assert!(spec.tasks.contains_key("task2"));
     assert!(spec.tasks.contains_key("task3"));
@@ -355,13 +395,33 @@ chicago_async_test!(test_task_builder_with_all_options, {
         .build();
 
     // Assert: Task created with all options
-    assert_eq!(task.id, "task1");
-    assert_eq!(task.name, "Task 1");
-    assert_eq!(task.task_type, TaskType::MultipleInstance);
-    assert_eq!(task.split_type, SplitType::Xor);
-    assert_eq!(task.join_type, JoinType::Xor);
-    assert_eq!(task.max_ticks, Some(100));
-    assert_eq!(task.outgoing_flows.len(), 2);
+    assert_eq_msg!(&task.id, "task1", "Task should have correct ID");
+    assert_eq_msg!(&task.name, "Task 1", "Task should have correct name");
+    assert_eq_msg!(
+        &task.task_type,
+        &TaskType::MultipleInstance,
+        "Task should have correct type"
+    );
+    assert_eq_msg!(
+        &task.split_type,
+        &SplitType::Xor,
+        "Task should have correct split type"
+    );
+    assert_eq_msg!(
+        &task.join_type,
+        &JoinType::Xor,
+        "Task should have correct join type"
+    );
+    assert_eq_msg!(
+        &task.max_ticks,
+        &Some(100),
+        "Task should have correct max_ticks"
+    );
+    assert_eq_msg!(
+        task.outgoing_flows.len(),
+        2,
+        "Task should have 2 outgoing flows"
+    );
 });
 
 // ============================================================================
@@ -392,7 +452,11 @@ chicago_async_test!(test_full_workflow_lifecycle, {
 
     // Verify initial state
     let initial_case = fixture.engine.get_case(case_id).await.unwrap();
-    assert_eq!(initial_case.state, CaseState::Created);
+    assert_eq_msg!(
+        &initial_case.state,
+        &CaseState::Created,
+        "Initial case should be in Created state"
+    );
 
     // Act: Execute full lifecycle
     let case = fixture.execute_case(case_id).await.unwrap();
@@ -412,8 +476,16 @@ chicago_async_test!(test_full_workflow_lifecycle, {
         case.state
     );
     // Verify data is preserved through lifecycle
-    assert_eq!(case.data["order_id"], "ORD-001");
-    assert_eq!(case.data["customer_id"], "CUST-001");
+    assert_eq_msg!(
+        &case.data["order_id"],
+        "ORD-001",
+        "Order ID should be preserved"
+    );
+    assert_eq_msg!(
+        &case.data["customer_id"],
+        "CUST-001",
+        "Customer ID should be preserved"
+    );
 });
 
 chicago_async_test!(test_multiple_workflows_and_cases, {
@@ -443,8 +515,8 @@ chicago_async_test!(test_multiple_workflows_and_cases, {
         .unwrap();
 
     // Assert: All workflows and cases created
-    assert_eq!(fixture.specs.len(), 2);
-    assert_eq!(fixture.cases.len(), 2);
+    assert_eq_msg!(fixture.specs.len(), 2, "Should have 2 workflows");
+    assert_eq_msg!(fixture.cases.len(), 2, "Should have 2 cases");
     assert!(fixture.cases.contains(&case_id1));
     assert!(fixture.cases.contains(&case_id2));
 });
@@ -465,12 +537,36 @@ chicago_async_test!(test_test_data_builder_integration, {
 
     // Assert: Test data created correctly
     assert!(test_data.is_object());
-    assert_eq!(test_data["key1"], "value1");
-    assert_eq!(test_data["key2"], "value2");
-    assert_eq!(test_data["order_id"], "ORD-001");
-    assert_eq!(test_data["total_amount"], "100.00");
-    assert_eq!(test_data["customer_id"], "CUST-001");
-    assert_eq!(test_data["request_id"], "REQ-001");
+    assert_eq_msg!(
+        &test_data["key1"],
+        "value1",
+        "Test data should contain key1"
+    );
+    assert_eq_msg!(
+        &test_data["key2"],
+        "value2",
+        "Test data should contain key2"
+    );
+    assert_eq_msg!(
+        &test_data["order_id"],
+        "ORD-001",
+        "Test data should contain order_id"
+    );
+    assert_eq_msg!(
+        &test_data["total_amount"],
+        "100.00",
+        "Test data should contain total_amount"
+    );
+    assert_eq_msg!(
+        &test_data["customer_id"],
+        "CUST-001",
+        "Test data should contain customer_id"
+    );
+    assert_eq_msg!(
+        &test_data["request_id"],
+        "REQ-001",
+        "Test data should contain request_id"
+    );
 });
 
 chicago_async_test!(test_test_data_builder_with_workflow, {
@@ -490,8 +586,16 @@ chicago_async_test!(test_test_data_builder_with_workflow, {
     // Assert: Case created with test data
     assert!(fixture.cases.contains(&case_id));
     let case = fixture.engine.get_case(case_id).await.unwrap();
-    assert_eq!(case.data["order_id"], "ORD-001");
-    assert_eq!(case.data["customer_id"], "CUST-001");
+    assert_eq_msg!(
+        &case.data["order_id"],
+        "ORD-001",
+        "Order ID should be preserved"
+    );
+    assert_eq_msg!(
+        &case.data["customer_id"],
+        "CUST-001",
+        "Customer ID should be preserved"
+    );
 });
 
 // ============================================================================
@@ -513,7 +617,11 @@ chicago_async_test!(test_register_workflow_with_invalid_spec, {
         Ok(spec_id) => {
             // If registration succeeds, verify it was actually registered
             assert!(fixture.specs.contains_key(&spec_id));
-            assert_eq!(fixture.specs.get(&spec_id).unwrap().name, "");
+            assert_eq_msg!(
+                &fixture.specs.get(&spec_id).unwrap().name,
+                "",
+                "Empty name workflow should be registered with empty name"
+            );
         }
         Err(e) => {
             // If registration fails, verify it's a proper error
@@ -534,7 +642,7 @@ chicago_async_test!(test_create_case_with_invalid_spec_id, {
         .await;
 
     // Assert: Creation should fail
-    assert!(result.is_err());
+    assert_err!(result, "Case creation should fail with invalid spec ID");
 });
 
 // ============================================================================
@@ -551,7 +659,11 @@ chicago_async_test!(test_fixture_cleanup, {
     let result = fixture.cleanup();
 
     // Assert: Cleanup succeeds and doesn't panic
-    assert!(result.is_ok());
+    assert_ok!(&result, "Cleanup should succeed");
     // Verify fixture still exists after cleanup (cleanup doesn't destroy fixture)
-    assert_eq!(fixture.specs.len(), 1);
+    assert_eq_msg!(
+        fixture.specs.len(),
+        1,
+        "Fixture should still have 1 workflow after cleanup"
+    );
 });

@@ -1,4 +1,6 @@
 //! Task execution methods
+//!
+//! Inputs pre-validated at ingress.
 
 use crate::case::CaseId;
 use crate::error::{WorkflowError, WorkflowResult};

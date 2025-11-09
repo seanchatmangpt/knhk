@@ -47,7 +47,7 @@ chicago_async_test!(test_pattern_26_breaking_point_max_branches, {
         result.next_state.as_ref().unwrap().contains("waiting"),
         "BREAKING POINT: Should be waiting when branches < expected"
     );
-}
+});
 
 chicago_async_test!(test_pattern_26_breaking_point_invalid_expected_branches, {
     // BREAKING POINT: Invalid expected_branches value
@@ -70,7 +70,7 @@ chicago_async_test!(test_pattern_26_breaking_point_invalid_expected_branches, {
     // Should either fail gracefully or default to 1
     // Current implementation defaults to arrived_from.len().max(1)
     assert!(result.success, "Should handle negative expected_branches");
-}
+});
 
 chicago_async_test!(test_pattern_26_breaking_point_empty_arrived_from, {
     // BREAKING POINT: Empty arrived_from with expected_branches > 0
@@ -95,7 +95,7 @@ chicago_async_test!(test_pattern_26_breaking_point_empty_arrived_from, {
         0,
         "BREAKING POINT: Should not schedule activities when no branches arrived"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 27: CANCELLING DISCRIMINATOR - BREAKING POINTS
@@ -135,7 +135,7 @@ chicago_async_test!(test_pattern_27_breaking_point_malformed_all_branches, {
 
     let result2 = executor.execute(&context2);
     assert!(result2.success, "Should handle malformed all_branches");
-}
+});
 
 chicago_async_test!(test_pattern_27_breaking_point_mismatched_branches, {
     // BREAKING POINT: arrived_from contains branches not in all_branches
@@ -162,7 +162,7 @@ chicago_async_test!(test_pattern_27_breaking_point_mismatched_branches, {
         !result.cancel_activities.is_empty(),
         "BREAKING POINT: Should still cancel branches even with mismatch"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 28: STRUCTURED LOOP - BREAKING POINTS
@@ -193,7 +193,7 @@ chicago_async_test!(test_pattern_28_breaking_point_max_iterations_overflow, {
         result.next_state.as_ref().unwrap().contains("exited"),
         "BREAKING POINT: Should exit when iteration exceeds max"
     );
-}
+});
 
 chicago_async_test!(test_pattern_28_breaking_point_invalid_iteration_value, {
     // BREAKING POINT: Invalid iteration value
@@ -235,7 +235,7 @@ chicago_async_test!(test_pattern_28_breaking_point_invalid_iteration_value, {
         Some(&"1".to_string()),
         "BREAKING POINT: Should default to 0 and increment to 1"
     );
-}
+});
 
 chicago_async_test!(test_pattern_28_breaking_point_max_iterations_zero, {
     // BREAKING POINT: max_iterations = 0
@@ -262,7 +262,7 @@ chicago_async_test!(test_pattern_28_breaking_point_max_iterations_zero, {
         result.next_state.as_ref().unwrap().contains("exited"),
         "BREAKING POINT: Should exit immediately when max_iterations = 0"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 29: RECURSION - BREAKING POINTS
@@ -293,7 +293,7 @@ chicago_async_test!(test_pattern_29_breaking_point_max_depth_overflow, {
         result.next_state.as_ref().unwrap().contains("completed"),
         "BREAKING POINT: Should complete when depth exceeds max"
     );
-}
+});
 
 chicago_async_test!(test_pattern_29_breaking_point_max_depth_zero, {
     // BREAKING POINT: max_depth = 0
@@ -320,7 +320,7 @@ chicago_async_test!(test_pattern_29_breaking_point_max_depth_zero, {
         result.next_state.as_ref().unwrap().contains("completed"),
         "BREAKING POINT: Should complete immediately when max_depth = 0"
     );
-}
+});
 
 chicago_async_test!(test_pattern_29_breaking_point_invalid_depth_value, {
     // BREAKING POINT: Invalid depth value
@@ -348,7 +348,7 @@ chicago_async_test!(test_pattern_29_breaking_point_invalid_depth_value, {
         Some(&"1".to_string()),
         "BREAKING POINT: Should default to 0 and increment to 1"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 33: CANCEL PROCESS INSTANCE - BREAKING POINTS
@@ -406,7 +406,7 @@ chicago_async_test!(test_pattern_33_breaking_point_always_terminates, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // PATTERN 38: MULTIPLE THREADS - BREAKING POINTS
@@ -436,7 +436,7 @@ chicago_async_test!(test_pattern_38_breaking_point_max_threads, {
         1000,
         "BREAKING POINT: Should cap thread count at 1000"
     );
-}
+});
 
 chicago_async_test!(test_pattern_38_breaking_point_zero_threads, {
     // BREAKING POINT: thread_count = 0 (should default to 1)
@@ -461,7 +461,7 @@ chicago_async_test!(test_pattern_38_breaking_point_zero_threads, {
         1,
         "BREAKING POINT: Should default to minimum 1 thread"
     );
-}
+});
 
 chicago_async_test!(test_pattern_38_breaking_point_invalid_thread_count, {
     // BREAKING POINT: Invalid thread_count value
@@ -506,7 +506,7 @@ chicago_async_test!(test_pattern_38_breaking_point_invalid_thread_count, {
         2,
         "BREAKING POINT: Should default to 2 threads"
     );
-}
+});
 
 chicago_async_test!(test_pattern_38_breaking_point_memory_pressure, {
     // BREAKING POINT: Memory pressure with many threads
@@ -542,7 +542,7 @@ chicago_async_test!(test_pattern_38_breaking_point_memory_pressure, {
             thread
         );
     }
-}
+});
 
 // ============================================================================
 // PATTERN 39: THREAD MERGE - BREAKING POINTS
@@ -575,7 +575,7 @@ chicago_async_test!(test_pattern_39_breaking_point_mismatched_threads, {
         result.next_state.as_ref().unwrap().contains("merged"),
         "BREAKING POINT: Should merge when arrived count >= expected"
     );
-}
+});
 
 chicago_async_test!(test_pattern_39_breaking_point_zero_expected_threads, {
     // BREAKING POINT: expected_threads = 0
@@ -600,7 +600,7 @@ chicago_async_test!(test_pattern_39_breaking_point_zero_expected_threads, {
         result.next_state.as_ref().unwrap().contains("merged"),
         "BREAKING POINT: Should merge when expected_threads = 0 (defaults to 1)"
     );
-}
+});
 
 chicago_async_test!(test_pattern_39_breaking_point_more_arrived_than_expected, {
     // BREAKING POINT: More threads arrived than expected
@@ -629,7 +629,7 @@ chicago_async_test!(test_pattern_39_breaking_point_more_arrived_than_expected, {
         result.next_state.as_ref().unwrap().contains("merged"),
         "BREAKING POINT: Should merge when arrived >= expected"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 30 & 31: TRIGGERS - BREAKING POINTS
@@ -659,7 +659,7 @@ chicago_async_test!(test_pattern_30_breaking_point_missing_trigger_fired, {
         0,
         "BREAKING POINT: Should not schedule activities when waiting"
     );
-}
+});
 
 chicago_async_test!(test_pattern_30_breaking_point_trigger_fired, {
     // BREAKING POINT: Trigger fired should schedule activities
@@ -688,7 +688,7 @@ chicago_async_test!(test_pattern_30_breaking_point_trigger_fired, {
         result.next_activities.contains(&"continue".to_string()),
         "BREAKING POINT: Should schedule continue when fired"
     );
-}
+});
 
 chicago_async_test!(test_pattern_30_breaking_point_extreme_trigger_source, {
     // BREAKING POINT: Extreme trigger_source length
@@ -711,7 +711,7 @@ chicago_async_test!(test_pattern_30_breaking_point_extreme_trigger_source, {
         result.success,
         "Should handle extreme trigger_source length"
     );
-}
+});
 
 chicago_async_test!(test_pattern_31_breaking_point_trigger_count_zero, {
     // BREAKING POINT: trigger_count = 0
@@ -736,7 +736,7 @@ chicago_async_test!(test_pattern_31_breaking_point_trigger_count_zero, {
         result.next_state.as_ref().unwrap().contains("completed"),
         "BREAKING POINT: Should complete immediately when trigger_count = 0"
     );
-}
+});
 
 chicago_async_test!(test_pattern_31_breaking_point_fired_exceeds_count, {
     // BREAKING POINT: fired_count >= trigger_count
@@ -766,7 +766,7 @@ chicago_async_test!(test_pattern_31_breaking_point_fired_exceeds_count, {
         0,
         "BREAKING POINT: Should not schedule activities when completed"
     );
-}
+});
 
 chicago_async_test!(test_pattern_31_breaking_point_invalid_trigger_count, {
     // BREAKING POINT: Invalid trigger_count value
@@ -808,7 +808,7 @@ chicago_async_test!(test_pattern_31_breaking_point_invalid_trigger_count, {
         result2.next_state.as_ref().unwrap().contains("fired"),
         "BREAKING POINT: Should fire when trigger_count defaults to 1"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 32: CANCEL ACTIVITY INSTANCE - BREAKING POINTS
@@ -837,7 +837,7 @@ chicago_async_test!(test_pattern_32_breaking_point_empty_activity_ids, {
         !result.cancel_activities.is_empty(),
         "BREAKING POINT: Should cancel default activity when activity_ids empty"
     );
-}
+});
 
 chicago_async_test!(test_pattern_32_breaking_point_malformed_activity_ids, {
     // BREAKING POINT: Malformed activity_ids
@@ -886,7 +886,7 @@ chicago_async_test!(test_pattern_32_breaking_point_malformed_activity_ids, {
         2,
         "BREAKING POINT: Should cancel only valid activity IDs"
     );
-}
+});
 
 chicago_async_test!(test_pattern_32_breaking_point_extreme_activity_ids, {
     // BREAKING POINT: Extreme number of activity_ids
@@ -919,7 +919,7 @@ chicago_async_test!(test_pattern_32_breaking_point_extreme_activity_ids, {
         10000,
         "BREAKING POINT: Should cancel all 10000 activities"
     );
-}
+});
 
 chicago_async_test!(test_pattern_32_breaking_point_missing_all_parameters, {
     // BREAKING POINT: Missing both activity_ids and instance_id
@@ -956,7 +956,7 @@ chicago_async_test!(test_pattern_32_breaking_point_missing_all_parameters, {
         result2.cancel_activities[0].contains("test_scope"),
         "BREAKING POINT: Should use scope_id when provided"
     );
-}
+});
 
 chicago_async_test!(test_pattern_32_breaking_point_never_terminates, {
     // BREAKING POINT: Pattern 32 must NEVER terminate (unlike Pattern 33)
@@ -995,7 +995,7 @@ chicago_async_test!(test_pattern_32_breaking_point_never_terminates, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // PATTERN 34: STOP PROCESS INSTANCE - BREAKING POINTS
@@ -1048,7 +1048,7 @@ chicago_async_test!(test_pattern_34_breaking_point_always_terminates, {
             "BREAKING POINT: Pattern 34 should NOT cancel (unlike Pattern 33)"
         );
     }
-}
+});
 
 chicago_async_test!(test_pattern_34_breaking_point_vs_pattern_33, {
     // BREAKING POINT: Pattern 34 vs 33 difference
@@ -1080,7 +1080,7 @@ chicago_async_test!(test_pattern_34_breaking_point_vs_pattern_33, {
         result_34.cancel_activities.is_empty(),
         "BREAKING POINT: Pattern 34 should NOT cancel"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 35: ABORT PROCESS INSTANCE - BREAKING POINTS
@@ -1124,7 +1124,7 @@ chicago_async_test!(test_pattern_35_breaking_point_always_terminates, {
             "BREAKING POINT: Pattern 35 should NOT cancel"
         );
     }
-}
+});
 
 chicago_async_test!(test_pattern_35_breaking_point_missing_abort_reason, {
     // BREAKING POINT: Missing abort_reason (should default)
@@ -1153,8 +1153,8 @@ chicago_async_test!(test_pattern_35_breaking_point_missing_abort_reason, {
             .contains("Aborted by pattern 35"),
         "BREAKING POINT: Should use default abort reason"
     );
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
-}
+    use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
+});
 
 chicago_async_test!(test_pattern_35_breaking_point_extreme_abort_reason, {
     // BREAKING POINT: Extreme abort_reason length
@@ -1179,7 +1179,7 @@ chicago_async_test!(test_pattern_35_breaking_point_extreme_abort_reason, {
         100000,
         "BREAKING POINT: Should preserve extreme abort_reason length"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 36: DISABLE ACTIVITY - BREAKING POINTS
@@ -1212,7 +1212,7 @@ chicago_async_test!(test_pattern_36_breaking_point_empty_activity_ids, {
         !result.terminates,
         "BREAKING POINT: Disable should NOT terminate"
     );
-}
+});
 
 chicago_async_test!(test_pattern_36_breaking_point_extreme_activity_ids, {
     // BREAKING POINT: Extreme number of activity_ids
@@ -1242,7 +1242,7 @@ chicago_async_test!(test_pattern_36_breaking_point_extreme_activity_ids, {
         &"10000",
         "BREAKING POINT: Should track all disabled activities"
     );
-}
+});
 
 chicago_async_test!(test_pattern_36_breaking_point_never_terminates, {
     // BREAKING POINT: Pattern 36 must NEVER terminate
@@ -1286,7 +1286,7 @@ chicago_async_test!(test_pattern_36_breaking_point_never_terminates, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // PATTERN 37: SKIP ACTIVITY - BREAKING POINTS
@@ -1324,7 +1324,7 @@ chicago_async_test!(test_pattern_37_breaking_point_empty_activity_ids, {
         !result.terminates,
         "BREAKING POINT: Skip should NOT terminate"
     );
-}
+});
 
 chicago_async_test!(test_pattern_37_breaking_point_extreme_activity_ids, {
     // BREAKING POINT: Extreme number of activity_ids
@@ -1359,7 +1359,7 @@ chicago_async_test!(test_pattern_37_breaking_point_extreme_activity_ids, {
         0,
         "BREAKING POINT: Skip should never schedule activities"
     );
-}
+});
 
 chicago_async_test!(test_pattern_37_breaking_point_never_schedules, {
     // BREAKING POINT: Pattern 37 must NEVER schedule activities
@@ -1404,7 +1404,7 @@ chicago_async_test!(test_pattern_37_breaking_point_never_schedules, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // PATTERNS 40-43: TRIGGER PATTERNS - BREAKING POINTS
@@ -1430,7 +1430,7 @@ chicago_async_test!(test_pattern_40_breaking_point_missing_trigger_source, {
         &"external",
         "BREAKING POINT: Should default trigger_source to 'external'"
     );
-}
+});
 
 chicago_async_test!(test_pattern_40_breaking_point_extreme_trigger_source, {
     // BREAKING POINT: Extreme trigger_source length
@@ -1457,7 +1457,7 @@ chicago_async_test!(test_pattern_40_breaking_point_extreme_trigger_source, {
         result.next_state.as_ref().unwrap().contains("received"),
         "BREAKING POINT: Should indicate received"
     );
-}
+});
 
 chicago_async_test!(test_pattern_41_breaking_point_missing_event_type, {
     // BREAKING POINT: Missing event_type (should default)
@@ -1479,7 +1479,7 @@ chicago_async_test!(test_pattern_41_breaking_point_missing_event_type, {
         &"unknown",
         "BREAKING POINT: Should default event_type to 'unknown'"
     );
-}
+});
 
 chicago_async_test!(test_pattern_41_breaking_point_extreme_event_type, {
     // BREAKING POINT: Extreme event_type length
@@ -1499,7 +1499,7 @@ chicago_async_test!(test_pattern_41_breaking_point_extreme_event_type, {
 
     let result = executor.execute(&context);
     assert!(result.success, "Should handle extreme event_type length");
-}
+});
 
 chicago_async_test!(test_pattern_42_breaking_point_trigger_count_zero, {
     // BREAKING POINT: trigger_count = 0
@@ -1525,7 +1525,7 @@ chicago_async_test!(test_pattern_42_breaking_point_trigger_count_zero, {
         &"0",
         "BREAKING POINT: Should preserve trigger_count = 0"
     );
-}
+});
 
 chicago_async_test!(test_pattern_42_breaking_point_invalid_trigger_count, {
     // BREAKING POINT: Invalid trigger_count
@@ -1572,7 +1572,7 @@ chicago_async_test!(test_pattern_42_breaking_point_invalid_trigger_count, {
         &"1",
         "BREAKING POINT: Should default to 1 when non-numeric"
     );
-}
+});
 
 chicago_async_test!(test_pattern_43_breaking_point_missing_trigger_id, {
     // BREAKING POINT: Missing trigger_id (should default)
@@ -1594,7 +1594,7 @@ chicago_async_test!(test_pattern_43_breaking_point_missing_trigger_id, {
         &"unknown",
         "BREAKING POINT: Should default trigger_id to 'unknown'"
     );
-}
+});
 
 chicago_async_test!(test_pattern_43_breaking_point_extreme_trigger_id, {
     // BREAKING POINT: Extreme trigger_id length
@@ -1618,7 +1618,7 @@ chicago_async_test!(test_pattern_43_breaking_point_extreme_trigger_id, {
         result.next_state.as_ref().unwrap().contains("cancelled"),
         "BREAKING POINT: Should indicate cancelled"
     );
-}
+});
 
 chicago_async_test!(test_patterns_40_43_breaking_point_never_terminate, {
     // BREAKING POINT: Trigger patterns must NEVER terminate
@@ -1646,7 +1646,7 @@ chicago_async_test!(test_patterns_40_43_breaking_point_never_terminate, {
             name
         );
     }
-}
+});
 
 // ============================================================================
 // COMPREHENSIVE: ALL REMAINING PATTERNS BREAKING POINTS
@@ -1700,51 +1700,54 @@ chicago_async_test!(test_all_remaining_patterns_breaking_point_empty_context, {
             );
         }
     }
-}
+});
 
-chicago_async_test!(test_all_remaining_patterns_breaking_point_state_consistency, {
-    // BREAKING POINT: State consistency under rapid execution
+chicago_async_test!(
+    test_all_remaining_patterns_breaking_point_state_consistency,
+    {
+        // BREAKING POINT: State consistency under rapid execution
 
-    let patterns = vec![
-        ("30", advanced_control::create_pattern_30().1),
-        ("31", advanced_control::create_pattern_31().1),
-        ("32", advanced_control::create_pattern_32().1),
-        ("34", advanced_control::create_pattern_34().1),
-        ("35", advanced_control::create_pattern_35().1),
-        ("36", advanced_control::create_pattern_36().1),
-        ("37", advanced_control::create_pattern_37().1),
-        ("40", trigger::create_pattern_40().1),
-        ("41", trigger::create_pattern_41().1),
-        ("42", trigger::create_pattern_42().1),
-        ("43", trigger::create_pattern_43().1),
-    ];
+        let patterns = vec![
+            ("30", advanced_control::create_pattern_30().1),
+            ("31", advanced_control::create_pattern_31().1),
+            ("32", advanced_control::create_pattern_32().1),
+            ("34", advanced_control::create_pattern_34().1),
+            ("35", advanced_control::create_pattern_35().1),
+            ("36", advanced_control::create_pattern_36().1),
+            ("37", advanced_control::create_pattern_37().1),
+            ("40", trigger::create_pattern_40().1),
+            ("41", trigger::create_pattern_41().1),
+            ("42", trigger::create_pattern_42().1),
+            ("43", trigger::create_pattern_43().1),
+        ];
 
-    for (name, executor) in patterns {
-        let context = PatternExecutionContext {
-            case_id: CaseId::new(),
-            workflow_id: WorkflowSpecId::new(),
-            variables: HashMap::new(),
-            arrived_from: HashSet::new(),
-            scope_id: String::new(),
-        };
+        for (name, executor) in patterns {
+            let context = PatternExecutionContext {
+                case_id: CaseId::new(),
+                workflow_id: WorkflowSpecId::new(),
+                variables: HashMap::new(),
+                arrived_from: HashSet::new(),
+                scope_id: String::new(),
+            };
 
-        // Execute 1000 times rapidly
-        for i in 0..1000 {
-            let result = executor.execute(&context);
-            assert!(
-                result.success,
-                "BREAKING POINT: Pattern {} should succeed on iteration {}",
-                name, i
-            );
-
-            // Patterns 34-35 must always terminate
-            if name == "34" || name == "35" {
+            // Execute 1000 times rapidly
+            for i in 0..1000 {
+                let result = executor.execute(&context);
                 assert!(
-                    result.terminates,
-                    "BREAKING POINT: Pattern {} MUST terminate on iteration {}",
+                    result.success,
+                    "BREAKING POINT: Pattern {} should succeed on iteration {}",
                     name, i
                 );
+
+                // Patterns 34-35 must always terminate
+                if name == "34" || name == "35" {
+                    assert!(
+                        result.terminates,
+                        "BREAKING POINT: Pattern {} MUST terminate on iteration {}",
+                        name, i
+                    );
+                }
             }
         }
     }
-}
+);

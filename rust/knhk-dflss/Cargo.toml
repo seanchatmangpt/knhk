@@ -1,0 +1,55 @@
+[package]
+name = "knhk-dflss"
+version = "1.0.0"
+edition = "2021"
+authors = ["KNHK Team"]
+description = "Design for Lean Six Sigma metrics collection and SPC chart management"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/knhk/knhk"
+
+[[bin]]
+name = "knhk-dflss"
+path = "src/main.rs"
+
+[lib]
+name = "knhk_dflss"
+path = "src/lib.rs"
+
+[dependencies]
+# CLI Framework
+clap-noun-verb = "3.4.0"
+clap-noun-verb-macros = "3.4.0"
+linkme = "0.3"
+
+# Data Processing
+csv = "1.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Statistics & ML
+statrs = "0.16"
+ndarray = "0.16"
+
+# Time & Date
+chrono = { version = "0.4", features = ["serde"] }
+
+# Regex & String Processing
+regex = "1.10"
+
+# Async & Process Execution
+tokio = { version = "1.0", features = ["process", "macros", "rt-multi-thread"] }
+
+# Error Handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# File System
+walkdir = "2.4"
+
+[dev-dependencies]
+tempfile = "3.8"

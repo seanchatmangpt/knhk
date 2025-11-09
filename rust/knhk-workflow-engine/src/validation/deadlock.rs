@@ -5,6 +5,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
+use crate::patterns::RegisterAllExt;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Deadlock detection result

@@ -25,6 +25,12 @@ chrono = "0.4"
 # Error handling
 thiserror = "2.0"
 
+# Procedural macros (internal)
+chicago-tdd-tools-proc-macros = { path = "proc_macros", version = "1.0.0" }
+
+# OTEL integration (optional, enabled with "otel" feature)
+knhk-otel = { workspace = true, optional = true }
+
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = { workspace = true }
@@ -34,6 +40,9 @@ default = []
 workflow-engine = []  # Enable workflow-specific features
 property-testing = []  # Enable property-based testing
 mutation-testing = []  # Enable mutation testing
+otel = ["knhk-otel"]  # Enable OTEL validation features
+weaver = ["otel"]  # Enable Weaver live validation (requires otel)
+async = []  # Enable async performance measurement utilities
 
 [lib]
 name = "chicago_tdd_tools"

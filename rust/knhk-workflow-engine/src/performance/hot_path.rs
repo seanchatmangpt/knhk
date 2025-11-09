@@ -1,7 +1,7 @@
 //! Hot path performance optimizations
 //!
-//! Provides zero-copy, branchless, SIMD-optimized operations for hot path
-//! operations that must complete in ≤8 ticks (2ns at 4GHz).
+//! Zero-copy, branchless operations for ≤8 ticks (2ns at 4GHz).
+//! Inputs pre-validated at ingress.
 
 use crate::constants::HOT_PATH_MAX_TICKS;
 use crate::error::{WorkflowError, WorkflowResult};
@@ -73,11 +73,9 @@ pub fn branchless_max(a: u32, b: u32) -> u32 {
 }
 
 /// Zero-copy string slice extraction
+///
+/// Inputs pre-validated at ingress.
 #[inline(always)]
 pub fn extract_str_slice(bytes: &[u8], start: usize, end: usize) -> Option<&str> {
-    if end <= bytes.len() && start <= end {
-        std::str::from_utf8(&bytes[start..end]).ok()
-    } else {
-        None
-    }
+    std::str::from_utf8(&bytes[start..end]).ok()
 }

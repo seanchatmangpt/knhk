@@ -11,6 +11,7 @@
 
 #![cfg(feature = "std")]
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_test};
 use knhk_cli::commands::boot;
 use knhk_cli::commands::connect;
 use knhk_cli::commands::pipeline;
@@ -19,8 +20,7 @@ use tempfile::TempDir;
 
 /// Test: pipeline::run executes ETL pipeline
 /// Chicago TDD: Test behavior (pipeline execution) not implementation (ETL stages)
-#[test]
-fn test_pipeline_run_executes_etl() {
+chicago_test!(test_pipeline_run_executes_etl, {
     // Arrange: Initialize system and register connector
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let sigma_file = temp_dir.path().join("test_sigma.ttl");
@@ -34,7 +34,7 @@ fn test_pipeline_run_executes_etl() {
         sigma_file.to_string_lossy().to_string(),
         q_file.to_string_lossy().to_string(),
     );
-    assert!(boot_result.is_ok(), "boot::init should succeed");
+    assert_ok!(boot_result, "boot::init should succeed");
 
     // Register a connector
     let connector_name = "test-connector".to_string();
@@ -70,12 +70,11 @@ fn test_pipeline_run_executes_etl() {
         }
     }
     // Behavior verification: ETL pipeline executes with connectors
-}
+});
 
 /// Test: pipeline::run with multiple connectors
 /// Chicago TDD: Test behavior (multi-connector execution) not implementation (connector coordination)
-#[test]
-fn test_pipeline_run_with_multiple_connectors() {
+chicago_test!(test_pipeline_run_with_multiple_connectors, {
     // Arrange: Initialize system and register multiple connectors
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let sigma_file = temp_dir.path().join("test_sigma.ttl");
@@ -89,7 +88,7 @@ fn test_pipeline_run_with_multiple_connectors() {
         sigma_file.to_string_lossy().to_string(),
         q_file.to_string_lossy().to_string(),
     );
-    assert!(boot_result.is_ok(), "boot::init should succeed");
+    assert_ok!(boot_result, "boot::init should succeed");
 
     // Register multiple connectors
     let connector1 = "connector1".to_string();
@@ -125,12 +124,11 @@ fn test_pipeline_run_with_multiple_connectors() {
             assert!(!e.is_empty(), "Error message should not be empty");
         }
     }
-}
+});
 
 /// Test: pipeline::run requires system initialization
 /// Chicago TDD: Test behavior (dependency checking) not implementation (state checking)
-#[test]
-fn test_pipeline_run_requires_initialization() {
+chicago_test!(test_pipeline_run_requires_initialization, {
     // Arrange: Don't initialize system
     let connector_name = "test-connector".to_string();
     let schema_iri = "http://example.org/schema".to_string();
@@ -139,8 +137,8 @@ fn test_pipeline_run_requires_initialization() {
     let result = pipeline::run(Some(connector_name), Some(schema_iri));
 
     // Assert: Returns error (system not initialized)
-    assert!(
-        result.is_err(),
+    assert_err!(
+        result,
         "pipeline::run should fail when system not initialized"
     );
     let error_msg = result.unwrap_err();
@@ -148,12 +146,11 @@ fn test_pipeline_run_requires_initialization() {
         error_msg.contains("initialized") || error_msg.contains("boot"),
         "Error should mention initialization requirement"
     );
-}
+});
 
 /// Test: pipeline::run with non-existent connector returns error
 /// Chicago TDD: Test behavior (error handling) not implementation (connector lookup)
-#[test]
-fn test_pipeline_run_nonexistent_connector_returns_error() {
+chicago_test!(test_pipeline_run_nonexistent_connector_returns_error, {
     // Arrange: Initialize system but don't register connector
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let sigma_file = temp_dir.path().join("test_sigma.ttl");
@@ -167,7 +164,7 @@ fn test_pipeline_run_nonexistent_connector_returns_error() {
         sigma_file.to_string_lossy().to_string(),
         q_file.to_string_lossy().to_string(),
     );
-    assert!(boot_result.is_ok(), "boot::init should succeed");
+    assert_ok!(boot_result, "boot::init should succeed");
 
     // Act: Run pipeline with non-existent connector
     let result = pipeline::run(
@@ -176,16 +173,15 @@ fn test_pipeline_run_nonexistent_connector_returns_error() {
     );
 
     // Assert: Returns error
-    assert!(
-        result.is_err(),
+    assert_err!(
+        result,
         "pipeline::run should fail with non-existent connector"
     );
-}
+});
 
 /// Test: pipeline::run generates receipts
 /// Chicago TDD: Test behavior (receipt generation) not implementation (receipt creation)
-#[test]
-fn test_pipeline_run_generates_receipts() {
+chicago_test!(test_pipeline_run_generates_receipts, {
     // Arrange: Initialize system and register connector
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let sigma_file = temp_dir.path().join("test_sigma.ttl");
@@ -199,7 +195,7 @@ fn test_pipeline_run_generates_receipts() {
         sigma_file.to_string_lossy().to_string(),
         q_file.to_string_lossy().to_string(),
     );
-    assert!(boot_result.is_ok(), "boot::init should succeed");
+    assert_ok!(boot_result, "boot::init should succeed");
 
     // Register connector
     let connector_name = "test-connector".to_string();
@@ -230,12 +226,11 @@ fn test_pipeline_run_generates_receipts() {
             assert!(!e.is_empty(), "Error message should not be empty");
         }
     }
-}
+});
 
 /// Test: pipeline::run with empty connector list returns error
 /// Chicago TDD: Test behavior (validation) not implementation (input checking)
-#[test]
-fn test_pipeline_run_empty_connector_list_returns_error() {
+chicago_test!(test_pipeline_run_empty_connector_list_returns_error, {
     // Arrange: Initialize system
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let sigma_file = temp_dir.path().join("test_sigma.ttl");
@@ -249,14 +244,14 @@ fn test_pipeline_run_empty_connector_list_returns_error() {
         sigma_file.to_string_lossy().to_string(),
         q_file.to_string_lossy().to_string(),
     );
-    assert!(boot_result.is_ok(), "boot::init should succeed");
+    assert_ok!(boot_result, "boot::init should succeed");
 
     // Act: Run pipeline with empty connector list
     let result = pipeline::run(None, Some("http://example.org/schema".to_string()));
 
     // Assert: Returns error (no connectors)
-    assert!(
-        result.is_err(),
+    assert_err!(
+        result,
         "pipeline::run should fail with empty connector list"
     );
-}
+});

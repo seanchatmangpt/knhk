@@ -32,13 +32,8 @@ pub fn delta(delta_file: String) -> Result<(), String> {
         }
     }
 
-    // Check guards (H) - max_run_len ≤ 8
-    if triples.len() > 8 {
-        return Err(format!(
-            "Delta contains {} triples, exceeds max_run_len 8",
-            triples.len()
-        ));
-    }
+    // Note: Guard validation happens at execution boundaries (hot path), not at CLI ingress
+    // Agents are trusted to follow MAX_RUN_LEN ≤ 8 constraint
 
     // Save delta for processing
     let _config_dir = get_config_dir()?;

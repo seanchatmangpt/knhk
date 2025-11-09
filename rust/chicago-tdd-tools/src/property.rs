@@ -1,39 +1,26 @@
 //! Property-Based Testing Framework
 //!
 //! Provides QuickCheck-style property-based testing for validating invariants.
+//! Uses const generics for compile-time test configuration.
 
 use std::collections::HashMap;
 
-/// Property test generator
-pub struct PropertyTestGenerator {
-    /// Maximum number of items to generate
-    max_items: usize,
-    /// Maximum depth
-    max_depth: usize,
+/// Property test generator with const generics for compile-time configuration
+///
+/// `MAX_ITEMS` and `MAX_DEPTH` are validated at compile time, providing
+/// zero runtime overhead for configuration.
+pub struct PropertyTestGenerator<const MAX_ITEMS: usize = 10, const MAX_DEPTH: usize = 3> {
     /// Random seed for reproducibility
     seed: u64,
 }
 
-impl PropertyTestGenerator {
+impl<const MAX_ITEMS: usize, const MAX_DEPTH: usize> PropertyTestGenerator<MAX_ITEMS, MAX_DEPTH> {
     /// Create new property test generator
+    ///
+    /// MAX_ITEMS and MAX_DEPTH are compile-time constants, ensuring
+    /// type-safe configuration.
     pub fn new() -> Self {
-        Self {
-            max_items: 10,
-            max_depth: 3,
-            seed: 0,
-        }
-    }
-
-    /// Set maximum items
-    pub fn with_max_items(mut self, max_items: usize) -> Self {
-        self.max_items = max_items;
-        self
-    }
-
-    /// Set maximum depth
-    pub fn with_max_depth(mut self, max_depth: usize) -> Self {
-        self.max_depth = max_depth;
-        self
+        Self { seed: 0 }
     }
 
     /// Set random seed
@@ -43,12 +30,15 @@ impl PropertyTestGenerator {
     }
 
     /// Generate random test data
+    ///
+    /// Uses compile-time MAX_ITEMS constant for bounds checking.
     pub fn generate_test_data(&mut self) -> HashMap<String, String> {
         let mut rng = SimpleRng::new(self.seed);
         self.seed = self.seed.wrapping_add(1);
 
         let mut data = HashMap::new();
-        let num_items = (rng.next() as usize % self.max_items) + 1;
+        // Use compile-time constant MAX_ITEMS
+        let num_items = (rng.next() as usize % MAX_ITEMS) + 1;
 
         for i in 0..num_items {
             let key = format!("key_{}", i);
@@ -58,9 +48,21 @@ impl PropertyTestGenerator {
 
         data
     }
+
+    /// Get compile-time MAX_ITEMS constant
+    pub const fn max_items() -> usize {
+        MAX_ITEMS
+    }
+
+    /// Get compile-time MAX_DEPTH constant
+    pub const fn max_depth() -> usize {
+        MAX_DEPTH
+    }
 }
 
-impl Default for PropertyTestGenerator {
+impl<const MAX_ITEMS: usize, const MAX_DEPTH: usize> Default
+    for PropertyTestGenerator<MAX_ITEMS, MAX_DEPTH>
+{
     fn default() -> Self {
         Self::new()
     }
@@ -84,7 +86,10 @@ impl SimpleRng {
 }
 
 /// Property: All generated data is valid
-pub fn property_all_data_valid(generator: &mut PropertyTestGenerator, num_tests: usize) -> bool {
+pub fn property_all_data_valid<const MAX_ITEMS: usize, const MAX_DEPTH: usize>(
+    generator: &mut PropertyTestGenerator<MAX_ITEMS, MAX_DEPTH>,
+    num_tests: usize,
+) -> bool {
     for _ in 0..num_tests {
         let data = generator.generate_test_data();
         if data.is_empty() {

@@ -14,21 +14,24 @@ All code must be production-ready with proper error handling. Focus on critical 
 4. **Stubs** - No functions that always succeed without implementation
 5. **Simulated behavior** - Use real libraries when available (rdkafka, reqwest, etc.)
 6. **Claims without verification** - Never claim code works without test/OTEL validation
+7. **Defensive programming** - No validation checks in execution paths (hot path, executor, state). Validation happens at ingress only via guards.
 
 ## Required Patterns ✅
 
 1. **Real library integrations** - Use actual dependencies when available
 2. **Error handling** - `Result<T, E>` for all fallible operations
 3. **Feature gating** - `#[cfg(feature = "...")]` for optional dependencies
-4. **Input validation** - Validate all inputs, enforce guard constraints (max_run_len ≤ 8)
+4. **Input validation at ingress** - Validate all inputs at ingress points via guards, enforce guard constraints (max_run_len ≤ 8)
 5. **Test verification** - All code must be testable and tested (OTEL validation preferred)
+6. **Execution paths assume pre-validated inputs** - Hot path, executor, state management assume inputs validated at ingress
 
 ## Critical Best Practices
 
 ### Security
-- Validate all inputs before processing
+- Validate all inputs at ingress (guards, admission gates)
 - Never hardcode credentials or secrets
-- Enforce guard constraints (max_run_len ≤ 8, max_batch_size, etc.)
+- Enforce guard constraints at ingress (max_run_len ≤ 8, max_batch_size, etc.)
+- No defensive checks in execution paths - assume pre-validated inputs
 
 ### Performance (80/20 Hot Path Focus)
 - Zero-copy when possible (references over clones)
@@ -42,7 +45,8 @@ All code must be production-ready with proper error handling. Focus on critical 
 - Use `Result<T, E>` for all fallible operations
 - Never use `unwrap()` or `expect()` in production code paths
 - Provide context in error messages
-- Validate early, fail fast
+- Validate at ingress: guards (`security/guards.rs`), admission gates (`services/admission.rs`)
+- Execution paths assume pre-validated inputs: no defensive checks in hot path, executor, state
 
 ### Resource Management
 - Clean up resources in error paths
@@ -74,12 +78,13 @@ All code must be production-ready with proper error handling. Focus on critical 
 
 ### C
 - Return error codes: `int process(...)` with `-1` on error
-- Validate inputs early: check NULL pointers, bounds
+- Validate inputs at ingress: check NULL pointers, bounds
 - Generate real span IDs: `knhks_generate_span_id()` not `0`
 - Cleanup resources in error paths
 - Branchless hot path: use SIMD intrinsics (NEON/AVX2)
 - Constant-time operations: no branches in hot path
 - 64-byte alignment for SoA arrays
+- No defensive checks in hot path - assume pre-validated inputs
 
 ### Erlang
 - Proper gen_server error handling
@@ -89,12 +94,13 @@ All code must be production-ready with proper error handling. Focus on critical 
 ## Code Review Checklist
 
 - [ ] All functions have proper error handling
-- [ ] All inputs are validated
+- [ ] All inputs validated at ingress (guards, admission gates)
+- [ ] No defensive checks in execution paths (hot path, executor, state)
 - [ ] No `unwrap()` or `panic!()` in production paths
 - [ ] Real implementations, not placeholders
 - [ ] Feature-gated when dependencies are optional
 - [ ] Tests cover critical paths
-- [ ] Guard constraints enforced (max_run_len ≤ 8)
+- [ ] Guard constraints enforced at ingress (max_run_len ≤ 8)
 - [ ] Resources are properly cleaned up
 - [ ] No secrets or credentials in code
 - [ ] Hot path operations are branchless/constant-time

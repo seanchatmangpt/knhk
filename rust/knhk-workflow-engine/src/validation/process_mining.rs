@@ -10,6 +10,7 @@ use crate::error::WorkflowResult;
 use crate::parser::WorkflowSpecId;
 use crate::WorkflowEngine;
 
+use super::capability::ProcessCapability;
 use super::report::{ValidationDetail, ValidationResult, ValidationStatus};
 use process_mining::{
     alphappp::full::{alphappp_discover_petri_net, AlphaPPPConfig},
@@ -83,6 +84,41 @@ impl ProcessMiningAnalyzer {
         }
 
         Ok(result)
+    }
+
+    /// Calculate process capability from performance data
+    ///
+    /// # Arguments
+    /// * `operation_ticks` - Map of operation names to tick counts
+    /// * `usl` - Upper specification limit (default: 8 ticks for hot path)
+    ///
+    /// # Returns
+    /// * `ProcessCapability` with Cp, Cpk, DPMO, and Sigma level
+    pub fn calculate_process_capability(
+        &self,
+        operation_ticks: &std::collections::HashMap<String, Vec<f64>>,
+        usl: f64,
+    ) -> WorkflowResult<ProcessCapability> {
+        // Flatten all operation ticks into single vector for overall capability
+        let all_ticks: Vec<f64> = operation_ticks.values().flatten().copied().collect();
+
+        ProcessCapability::calculate(&all_ticks, usl, 0.0)
+    }
+
+    /// Calculate process capability per operation
+    ///
+    /// # Arguments
+    /// * `operation_ticks` - Map of operation names to tick counts
+    /// * `usl` - Upper specification limit (default: 8 ticks for hot path)
+    ///
+    /// # Returns
+    /// * `HashMap` of operation names to `ProcessCapability`
+    pub fn calculate_per_operation_capability(
+        &self,
+        operation_ticks: &std::collections::HashMap<String, Vec<f64>>,
+        usl: f64,
+    ) -> WorkflowResult<std::collections::HashMap<String, ProcessCapability>> {
+        ProcessCapability::calculate_from_benchmarks(operation_ticks, usl)
     }
 
     /// Test XES import

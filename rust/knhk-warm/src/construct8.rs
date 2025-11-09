@@ -3,7 +3,7 @@
 // AOT precomputation: pattern detection, constant pre-broadcast, length specialization
 // Production-ready implementation with proper error handling
 
-use crate::error::WarmPathError;
+use crate::WarmPathError;
 use crate::WarmPathResult;
 use knhk_hot::{Ctx, Ir, Op, Receipt};
 

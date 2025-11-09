@@ -15,7 +15,104 @@ alwaysApply: false
 - **Verify Outputs**: Test results and invariants, not implementation details
 - **OTEL Validation**: Test results are truth source, not code comments
 
-## Test Structure
+## Using chicago-tdd-tools
+
+**Required**: Use `chicago-tdd-tools` macros and utilities for all Rust tests.
+
+### Test Macros
+
+Use macros to enforce AAA pattern and reduce boilerplate:
+
+```rust
+use chicago_tdd_tools::prelude::*;
+
+// Synchronous test with AAA pattern
+chicago_test!(test_basic_feature, {
+    // Arrange: Set up test data
+    let input = 5;
+    
+    // Act: Execute feature
+    let result = input * 2;
+    
+    // Assert: Verify behavior
+    assert_eq!(result, 10);
+});
+
+// Async test with AAA pattern
+chicago_async_test!(test_async_feature, {
+    // Arrange: Set up test data
+    let fixture = TestFixture::new().unwrap();
+    
+    // Act: Execute async operation
+    let result = async_function().await;
+    
+    // Assert: Verify behavior
+    assert_ok!(&result, "Operation should succeed");
+});
+
+// Test with automatic fixture setup
+chicago_fixture_test!(test_with_fixture, fixture, {
+    // Arrange: Use provided fixture
+    let counter = fixture.test_counter();
+    
+    // Act: Execute test
+    let result = counter + 1;
+    
+    // Assert: Verify behavior
+    assert!(result > 0);
+});
+
+// Performance test with tick budget validation
+chicago_performance_test!(test_hot_path_performance, {
+    // Arrange: Set up test data
+    let input = create_test_input();
+    
+    // Act: Execute hot path operation and measure ticks
+    let (result, ticks) = measure_ticks(|| hot_path_operation(&input));
+    
+    // Assert: Verify performance constraint
+    assert_within_tick_budget!(ticks, "Hot path operation");
+    assert_ok!(&result, "Operation should succeed");
+});
+```
+
+### Assertion Macros
+
+Use assertion macros for better error messages:
+
+```rust
+use chicago_tdd_tools::prelude::*;
+
+// Assert Result is Ok
+assert_ok!(result);
+assert_ok!(result, "Operation should succeed");
+
+// Assert Result is Err
+assert_err!(result);
+assert_err!(result, "Expected error case");
+
+// Assert tick budget compliance (≤8 ticks)
+assert_within_tick_budget!(ticks);
+assert_within_tick_budget!(ticks, "Hot path operation");
+
+// Assert value is in range
+assert_in_range!(value, 0, 10);
+assert_in_range!(value, 0, 10, "Value should be valid");
+
+// Assert guard constraint
+assert_guard_constraint!(max_run_len <= 8, "max_run_len");
+```
+
+### Validation Utilities
+
+Use chicago-tdd-tools validation utilities:
+
+- **OTEL validation**: `OtelTestHelper` for span/metric validation
+- **Performance validation**: `measure_ticks()`, `benchmark()` for RDTSC measurement
+- **Guard constraint enforcement**: `GuardValidator` for MAX_RUN_LEN ≤ 8 validation
+- **Weaver live validation**: `WeaverValidator` for runtime telemetry validation
+
+## Test Structure (C)
 
 ```c
 // Test: Descriptive name
@@ -31,41 +128,111 @@ static int test_feature_name(void) {
 }
 ```
 
-## Test Organization
-
-- Group related tests in test suites
-- Use helper functions for common setup
-- Verify both success and error paths
-- Test guard constraint violations
-
 ## Performance Testing
 
-- Measure hot path operations
-- Exclude routing/dispatch overhead
-- Verify ≤8 ticks compliance
-- Use statistical measures (p50, p95, p99)
+- Verify ≤8 ticks compliance (Chatman Constant)
+- **Use `chicago_performance_test!` macro** with `measure_ticks()` and `assert_within_tick_budget!`
 
-## Examples
+## Behavior Verification Requirements
 
-### BAD: Testing Implementation Details
-```c
-// Tests internal function calls
-assert(function_called == true);
+**CRITICAL**: All tests must verify **actual behavior**, not just function existence.
+
+### Prohibited Patterns ❌
+
+1. **Meaningless tests** - No tests that only verify `assert_ok!()` or `assert_err!()` without checking observable outputs
+2. **Tests without behavior verification** - All tests must verify state changes, outputs, execution order, or actual effects
+3. **Tests that don't match JTBD** - Test names/comments must match what the test actually verifies
+
+### Required Patterns ✅
+
+1. **Observable output verification** - Tests must check:
+   - State changes (e.g., after `register()`, verify connector appears in `list()`)
+   - Output values (e.g., verify execution order, timing, data flow)
+   - Actual effects (e.g., verify tasks execute sequentially, branches run in parallel)
+2. **JTBD alignment** - Test what the comment/name claims to test
+3. **Behavior over existence** - Test what code does, not just that functions return Ok/Err
+
+### Examples
+
+#### ❌ BAD: Meaningless Test (Only checks function exists)
+
+```rust
+chicago_test!(test_pattern_1_sequence_jtbd, {
+    // JTBD: Execute tasks sequentially
+    let result = registry.execute(&PatternId(1), &ctx).expect("...");
+    assert_ok!(&result); // ❌ Only checks Ok, doesn't verify sequential execution
+    assert_eq!(result.next_state, Some("pattern:1:completed".to_string()));
+});
 ```
 
-### GOOD: Testing Behavior
-```c
-// Tests actual behavior and results
-knhks_receipt_t rcpt = {0};
-int result = knhks_eval_bool(&ctx, &ir, &rcpt);
-assert(result == 1);
-assert(rcpt.ticks <= 8);
+#### ✅ GOOD: Behavior Verification Test
+
+```rust
+chicago_test!(test_pattern_1_sequence_jtbd, {
+    // JTBD: Execute tasks sequentially, passing data through each step
+    // Arrange: Create workflow with 3 sequential tasks
+    let workflow = create_sequential_workflow(["task1", "task2", "task3"]);
+    let case = create_case(workflow);
+    
+    // Act: Execute pattern
+    let result = execute_pattern(&case);
+    
+    // Assert: Verify sequential execution (observable behavior)
+    assert_ok!(&result);
+    let execution_log = get_execution_log(&case);
+    assert_eq!(execution_log.task_order, ["task1", "task2", "task3"]);
+    assert!(execution_log.task1_end_time < execution_log.task2_start_time);
+    assert!(execution_log.task2_end_time < execution_log.task3_start_time);
+});
 ```
 
-## Best Practices
+#### ❌ BAD: Meaningless Test (Only checks Result type)
 
-- Test critical paths first (80/20)
-- Verify error handling
-- Test edge cases
-- Use real data when possible
-- Measure performance accurately
+```rust
+#[test]
+fn test_connect_register_returns_result() {
+    let result = connect::register(name, schema, source);
+    match result {
+        Ok(_) => {}, // ❌ Doesn't verify registration actually happened
+        Err(e) => assert!(!e.is_empty()),
+    }
+}
+```
+
+#### ✅ GOOD: Behavior Verification Test
+
+```rust
+#[test]
+fn test_connect_register_then_list() {
+    // Arrange
+    let name = "test-connector";
+    let schema = "http://example.org/schema";
+    let source = "file:///tmp/test.nt";
+    
+    // Act: Register connector
+    let register_result = connect::register(name, schema, source);
+    assert_ok!(&register_result, "Registration should succeed");
+    
+    // Act: List connectors
+    let list_result = connect::list();
+    assert_ok!(&list_result, "List should succeed");
+    let connectors = list_result.unwrap();
+    
+    // Assert: Verify registration actually happened (observable state)
+    assert!(
+        connectors.iter().any(|c| c.name == name),
+        "Registered connector should appear in list"
+    );
+    let registered = connectors.iter().find(|c| c.name == name).unwrap();
+    assert_eq!(registered.schema, schema);
+    assert_eq!(registered.source, source);
+}
+```
+
+### Validation Checklist
+
+Before submitting tests, verify:
+- [ ] Test verifies observable outputs/state changes, not just function existence
+- [ ] Test matches its JTBD comment (tests what it claims to test)
+- [ ] Test has assertions beyond `assert_ok!()` or `assert_err!()` alone
+- [ ] Test verifies actual behavior (execution order, state changes, outputs)

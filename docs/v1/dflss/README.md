@@ -172,6 +172,32 @@ docs/v1/dflss/
 
 ---
 
+## 🏗️ Architectural Innovation
+
+### Centralized Validation Architecture
+
+**Key Innovation**: All validation and domain logic centralized in `knhk-workflow-engine`. Pure execution in `knhk-hot`.
+
+**Architecture Principle**:
+- **knhk-workflow-engine**: ALL data ingress point. Domain logic, validation, guards.
+- **knhk-hot**: Pure execution. NO checks. Assumes pre-validated inputs.
+
+**Validation Flow**:
+1. Data enters via `knhk-workflow-engine` (API, CLI, `create_case`, `register_workflow`)
+2. Guards validate at ingress (`security/guards.rs`)
+3. Pre-validated data passed to `knhk-hot` for pure execution
+4. `knhk-hot` has ZERO checks - pure execution only
+
+**Benefits**:
+- Single source of truth for validation (no scattered checks)
+- Hot path performance (no validation overhead)
+- Clear separation: ingress validation vs execution
+- Domain logic centralized in workflow engine
+
+**Prohibited**: Defensive programming in execution paths (hot path, executor, state). All validation at ingress only.
+
+---
+
 ## 🔬 Key DFLSS Tools Applied
 
 ### ✅ Completed Analysis

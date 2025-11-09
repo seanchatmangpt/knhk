@@ -13,7 +13,8 @@
 
 mod common;
 
-use chicago_tdd_tools::{assert_ok, assert_eq_msg, chicago_async_test};
+use chicago_tdd_tools::assertions::{assert_that, assert_that_with_msg};
+use chicago_tdd_tools::{assert_eq_msg, assert_ok, chicago_async_test, chicago_test};
 use common::{timing::TimedOperation, TestHarness};
 use knhk_workflow_engine::*;
 use serde_json::json;
@@ -50,24 +51,15 @@ chicago_async_test!(test_atm_withdrawal_successful_flow, {
     });
 
     // Act: Execute ATM withdrawal
-    let result = harness
-        .engine
-        .create_case(spec.id, transaction_data)
-        .await;
+    let result = harness.engine.create_case(spec.id, transaction_data).await;
     assert_ok!(&result, "Should create ATM case");
     let case_id = result.unwrap();
 
-    let exec_result = harness
-        .engine
-        .execute_case(case_id)
-        .await;
+    let exec_result = harness.engine.execute_case(case_id).await;
     assert_ok!(&exec_result, "Should execute withdrawal");
 
     // Assert: Chicago TDD - verify state
-    let case_result = harness
-        .engine
-        .get_case(case_id)
-        .await;
+    let case_result = harness.engine.get_case(case_id).await;
     assert_ok!(&case_result, "Should get case");
     let case = case_result.unwrap();
 
@@ -121,7 +113,7 @@ chicago_async_test!(test_atm_withdrawal_insufficient_funds, {
         case.state == CaseState::Cancelled || case.state == CaseState::Completed,
         "Insufficient funds should cancel or complete with rejection"
     );
-}
+});
 
 chicago_async_test!(test_atm_workflow_performance, {
     // Arrange: ATM workflow with performance constraints
@@ -150,7 +142,7 @@ chicago_async_test!(test_atm_workflow_performance, {
     // Assert: Chatman Constant - ATM transactions should be fast
     // Real ATM systems require <3 second response time
     timer.assert_under_ms(3000);
-}
+});
 
 // ============================================================================
 // SWIFT MT103 International Payment - End-to-End Flow
@@ -216,7 +208,7 @@ chicago_async_test!(test_swift_payment_successful_flow, {
     // Pattern 2 (Parallel Split): sanctions_screening || aml_check || fraud_detection
     // Pattern 3 (Synchronization): compliance_review waits for all 3 checks
     // Real collaborators executed full compliance pipeline
-}
+});
 
 chicago_async_test!(test_swift_payment_sanctions_rejection, {
     // Arrange: Payment to sanctioned country
@@ -251,7 +243,7 @@ chicago_async_test!(test_swift_payment_sanctions_rejection, {
         case.state == CaseState::Cancelled || case.state == CaseState::Completed,
         "Sanctioned payment should be rejected"
     );
-}
+});
 
 chicago_async_test!(test_swift_payment_parallel_compliance_checks, {
     // Arrange: Verify parallel execution of compliance checks
@@ -294,7 +286,7 @@ chicago_async_test!(test_swift_payment_parallel_compliance_checks, {
         harness.engine.get_case(case_id).await.unwrap().state,
         CaseState::Completed
     );
-}
+});
 
 // ============================================================================
 // Payroll Processing - Multi-Instance Pattern
@@ -360,7 +352,7 @@ chicago_async_test!(test_payroll_multi_instance_processing, {
     // Pattern 13: Multiple Instances With A Priori Knowledge (process_payment)
     // Pattern 14: Multiple Instances With Runtime Knowledge (calculate_taxes)
     // Real collaborators created 100 parallel instances
-}
+});
 
 chicago_async_test!(test_payroll_approval_milestone, {
     // Arrange: Payroll requires manager approval before payment
@@ -391,7 +383,7 @@ chicago_async_test!(test_payroll_approval_milestone, {
         case.state == CaseState::Running,
         "Payroll should wait for approval before payment"
     );
-}
+});
 
 chicago_async_test!(test_payroll_performance_scalability, {
     // Arrange: Test performance with 1000 employees
@@ -444,7 +436,7 @@ chicago_async_test!(test_payroll_performance_scalability, {
         elapsed.as_secs() < 60,
         "1000 employee payroll should complete in <60s"
     );
-}
+});
 
 // ============================================================================
 // Pattern Coverage Summary
@@ -475,4 +467,4 @@ chicago_test!(test_financial_workflow_pattern_coverage, {
 
     // These 10 patterns cover ~85% of real-world financial workflows
     // according to Van der Aalst's research on banking systems
-}
+});

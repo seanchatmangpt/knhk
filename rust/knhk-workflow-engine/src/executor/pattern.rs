@@ -1,4 +1,6 @@
 //! Pattern execution methods
+//!
+//! Inputs pre-validated at ingress.
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;

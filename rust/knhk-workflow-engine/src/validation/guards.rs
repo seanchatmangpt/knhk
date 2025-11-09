@@ -42,4 +42,3 @@ pub fn validate_pattern_id(id: u32) -> WorkflowResult<()> {
     }
     Ok(())
 }
-

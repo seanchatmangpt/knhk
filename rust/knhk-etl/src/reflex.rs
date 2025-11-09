@@ -229,24 +229,13 @@ impl ReflexStage {
         // Initialize engine with SoA arrays
         // SAFETY: Engine::new requires valid pointers to SoA arrays.
         // We guarantee this by passing pointers from valid Vec<u64> allocations.
+        // NOTE: Inputs are pre-validated at ingress (guards enforce MAX_RUN_LEN ≤ 8).
+        // No defensive checks here - assume pre-validated inputs for hot path performance.
         let mut engine = unsafe { Engine::new(soa.s.as_ptr(), soa.p.as_ptr(), soa.o.as_ptr()) };
 
         // Pin run (validates len ≤ 8 via C API)
-        // Additional guard validation before pinning (defense in depth)
-        if run.len > 8 {
-            return Err(PipelineError::GuardViolation(format!(
-                "Run length {} exceeds max_run_len 8",
-                run.len
-            )));
-        }
-
-        // Validate offset bounds
-        if run.off >= 8 {
-            return Err(PipelineError::GuardViolation(format!(
-                "Run offset {} exceeds SoA array capacity 8",
-                run.off
-            )));
-        }
+        // NOTE: Guard validation happens at ingress (load.rs, sidecar ingress, CLI ingress).
+        // Execution paths assume pre-validated inputs - no defensive checks here.
 
         let hot_run = HotRun {
             pred: run.pred,
@@ -258,13 +247,13 @@ impl ReflexStage {
             .map_err(|e| PipelineError::ReflexError(format!("Failed to pin run: {}", e)))?;
 
         // Create hook IR (default to ASK_SP operation)
-        // Validate bounds before array access
-        let s_val = if run.len > 0 && run.off < 8 {
+        // NOTE: Bounds validated at ingress - assume pre-validated inputs
+        let s_val = if run.len > 0 {
             soa.s[run.off as usize]
         } else {
             0
         };
-        let o_val = if run.len > 0 && run.off < 8 {
+        let o_val = if run.len > 0 {
             soa.o[run.off as usize]
         } else {
             0

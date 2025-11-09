@@ -3,6 +3,9 @@
 //! This library exposes the CLI modules for testing purposes.
 //! The main binary is in `main.rs`.
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 // Allow acceptable warnings for clean build
 #![allow(unused_imports)]
 #![allow(unused_variables)]

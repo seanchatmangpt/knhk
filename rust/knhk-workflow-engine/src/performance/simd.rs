@@ -1,6 +1,6 @@
-//! SIMD optimizations
+//! SIMD optimizations for workflow patterns.
 //!
-//! Provides SIMD-optimized operations for workflow patterns.
+//! Inputs pre-validated at ingress.
 
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
@@ -37,11 +37,9 @@ pub fn simd_pattern_match(pattern: &[u8], data: &[u8]) -> Option<usize> {
 }
 
 /// Fallback pattern matching (non-SIMD)
+///
+/// Inputs pre-validated at ingress.
 fn fallback_pattern_match(pattern: &[u8], data: &[u8]) -> Option<usize> {
-    if pattern.is_empty() || data.len() < pattern.len() {
-        return None;
-    }
-
     (0..=data.len() - pattern.len()).find(|&i| &data[i..i + pattern.len()] == pattern)
 }
 

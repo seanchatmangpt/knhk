@@ -9,10 +9,10 @@
 //!
 //! **UPGRADED**: Now uses Chicago TDD framework helpers and property-based testing
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test, chicago_test};
 use knhk_workflow_engine::patterns::{PatternId, PatternRegistry};
 use knhk_workflow_engine::testing::chicago_tdd::*;
 use std::collections::HashMap;
-use chicago_tdd_tools::{chicago_async_test, chicago_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // Basic Control Flow Patterns (1-5) - UPGRADED
@@ -35,24 +35,27 @@ chicago_test!(test_pattern_1_sequence_executes_branches_sequentially, {
     assert_pattern_has_next_state(&result);
     assert_pattern_has_variable(&result, "value");
     assert_pattern_variable_equals(&result, "value", "5");
-}
+});
 
-chicago_test!(test_pattern_2_parallel_split_executes_branches_in_parallel, {
-    // Arrange: Use Chicago TDD helper
-    let registry = create_test_registry();
-    let mut vars = HashMap::new();
-    vars.insert("value".to_string(), "10".to_string());
-    let ctx = create_test_context_with_vars(vars);
+chicago_test!(
+    test_pattern_2_parallel_split_executes_branches_in_parallel,
+    {
+        // Arrange: Use Chicago TDD helper
+        let registry = create_test_registry();
+        let mut vars = HashMap::new();
+        vars.insert("value".to_string(), "10".to_string());
+        let ctx = create_test_context_with_vars(vars);
 
-    // Act: Execute pattern 2 (Parallel Split)
-    let result = registry
-        .execute(&PatternId(2), &ctx)
-        .expect("Pattern 2 should be registered");
+        // Act: Execute pattern 2 (Parallel Split)
+        let result = registry
+            .execute(&PatternId(2), &ctx)
+            .expect("Pattern 2 should be registered");
 
-    // Assert: Use Chicago TDD assertion helpers
-    assert_pattern_success(&result);
-    assert_pattern_has_next_state(&result);
-}
+        // Assert: Use Chicago TDD assertion helpers
+        assert_pattern_success(&result);
+        assert_pattern_has_next_state(&result);
+    }
+);
 
 chicago_test!(test_pattern_3_synchronization_waits_for_all_branches, {
     // Arrange: Use Chicago TDD helper
@@ -67,7 +70,7 @@ chicago_test!(test_pattern_3_synchronization_waits_for_all_branches, {
     // Assert: Use Chicago TDD assertion helpers
     assert_pattern_success(&result);
     assert_pattern_has_next_state(&result);
-}
+});
 
 chicago_test!(test_pattern_4_exclusive_choice_routes_based_on_condition, {
     // Arrange: Use Chicago TDD helper
@@ -84,7 +87,7 @@ chicago_test!(test_pattern_4_exclusive_choice_routes_based_on_condition, {
     // Assert: Use Chicago TDD assertion helpers
     assert_pattern_success(&result);
     assert_pattern_has_next_state(&result);
-}
+});
 
 chicago_test!(test_pattern_5_simple_merge_combines_branches, {
     // Arrange: Use Chicago TDD helper
@@ -99,7 +102,7 @@ chicago_test!(test_pattern_5_simple_merge_combines_branches, {
     // Assert: Use Chicago TDD assertion helpers
     assert_pattern_success(&result);
     assert_pattern_has_next_state(&result);
-}
+});
 
 // ============================================================================
 // Property-Based Testing for Patterns
@@ -130,7 +133,7 @@ chicago_async_test!(test_property_all_patterns_executable, {
             );
         }
     }
-}
+});
 
 chicago_async_test!(test_property_patterns_preserve_variables, {
     // Property: Patterns preserve input variables
@@ -152,7 +155,7 @@ chicago_async_test!(test_property_patterns_preserve_variables, {
             );
         }
     }
-}
+});
 
 // ============================================================================
 // Pattern Execution Helpers Usage Examples
@@ -174,7 +177,7 @@ chicago_test!(test_pattern_execution_with_context_for_workflow, {
     // Assert: Use Chicago TDD assertion helpers
     assert_pattern_success(&result);
     assert_eq!(ctx.workflow_id, workflow_id);
-}
+});
 
 chicago_test!(test_pattern_execution_with_empty_context, {
     // Demonstrate using empty context helper
@@ -191,7 +194,7 @@ chicago_test!(test_pattern_execution_with_empty_context, {
     // Assert: Use Chicago TDD assertion helpers
     assert_pattern_success(&result);
     assert_eq!(ctx.variables.len(), 0);
-}
+});
 
 // Note: The rest of the pattern tests (6-43) follow the same pattern
 // and can be upgraded similarly using Chicago TDD helpers

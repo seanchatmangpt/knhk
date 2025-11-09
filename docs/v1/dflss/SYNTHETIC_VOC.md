@@ -389,6 +389,14 @@ Low Impact  │ SPC monitoring        │ Documentation updates │
 
 ---
 
+## Prohibited Anti-Patterns
+
+**Defensive Programming**: Validation checks in execution paths (hot path, executor, state) are prohibited. Validation happens at ingress only via guards. Execution paths assume pre-validated inputs.
+
+**Rationale**: Defensive checks add overhead, branches, and complexity. Ingress validation via guards ensures correctness without performance penalties.
+
+---
+
 ## Conclusion
 
 **Primary Customer Need**: **Zero false positives through schema-first validation**

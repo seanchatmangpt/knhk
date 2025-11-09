@@ -7,13 +7,13 @@
 //! - Resource exhaustion
 //! - Invalid transitions
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::{
     advanced_control, PatternExecutionContext, PatternExecutionResult,
 };
 use std::collections::{HashMap, HashSet};
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // AGGRESSIVE STRESS: PATTERN 26 & 27 (DISCRIMINATORS)
@@ -65,7 +65,7 @@ chicago_async_test!(test_pattern_26_27_extreme_stress, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // AGGRESSIVE STRESS: PATTERN 28 & 29 (LOOPS/RECURSION)
@@ -106,7 +106,7 @@ chicago_async_test!(test_pattern_28_29_infinite_loop_protection, {
         "BREAK: Patterns took too long: {:?}",
         duration
     );
-}
+});
 
 chicago_async_test!(test_pattern_28_29_memory_pressure, {
     // Test with memory pressure (large contexts)
@@ -144,7 +144,7 @@ chicago_async_test!(test_pattern_28_29_memory_pressure, {
             var_count
         );
     }
-}
+});
 
 // ============================================================================
 // AGGRESSIVE STRESS: PATTERN 33 (CANCEL PROCESS)
@@ -195,7 +195,7 @@ chicago_async_test!(test_pattern_33_termination_guarantee, {
             i
         );
     }
-}
+});
 
 chicago_async_test!(test_pattern_33_vs_others_termination_isolation, {
     // CRITICAL: Verify pattern 33 termination doesn't affect other patterns
@@ -234,7 +234,7 @@ chicago_async_test!(test_pattern_33_vs_others_termination_isolation, {
         !result_38.terminates,
         "BREAK: Pattern 38 affected by pattern 33"
     );
-}
+});
 
 // ============================================================================
 // AGGRESSIVE STRESS: PATTERN 38 & 39 (THREADING)
@@ -296,7 +296,7 @@ chicago_async_test!(test_pattern_38_thread_scheduling_consistency, {
         first_set.contains(&"thread_2".to_string()),
         "BREAK: Should schedule thread_2"
     );
-}
+});
 
 chicago_async_test!(test_pattern_38_39_threading_sequence_stress, {
     // Stress test threading sequence
@@ -353,7 +353,7 @@ chicago_async_test!(test_pattern_38_39_threading_sequence_stress, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // COMPREHENSIVE BREAK-FINDING: ALL CRITICAL PATTERNS
@@ -466,7 +466,7 @@ chicago_async_test!(test_all_critical_patterns_concurrent_execution, {
             }
         }
     }
-}
+});
 
 chicago_async_test!(test_critical_patterns_state_corruption_detection, {
     // Test for state corruption across pattern executions
@@ -518,7 +518,7 @@ chicago_async_test!(test_critical_patterns_state_corruption_detection, {
             }
         }
     }
-}
+});
 
 chicago_async_test!(test_critical_patterns_edge_case_combinations, {
     // Test edge case combinations
@@ -596,4 +596,4 @@ chicago_async_test!(test_critical_patterns_edge_case_combinations, {
         result_33.terminates,
         "CRITICAL BREAK: Pattern 33 did not terminate with large scope_id"
     );
-}
+});

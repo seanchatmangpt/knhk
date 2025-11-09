@@ -102,7 +102,7 @@ chicago_async_test!(test_pattern_26_blocking_discriminator_edge_cases, {
         result1.next_state, result2.next_state,
         "Same context should produce same state"
     );
-}
+});
 
 chicago_async_test!(test_pattern_27_cancelling_discriminator_break_finding, {
     // Break-finding: Test cancelling discriminator for breaks
@@ -175,7 +175,7 @@ chicago_async_test!(test_pattern_27_cancelling_discriminator_break_finding, {
         !result2.cancel_activities.is_empty(),
         "BREAK: Should cancel branches even when none arrived"
     );
-}
+});
 
 chicago_async_test!(test_pattern_26_27_discriminator_state_corruption, {
     // Break-finding: Test for state corruption between discriminator patterns
@@ -243,7 +243,7 @@ chicago_async_test!(test_pattern_26_27_discriminator_state_corruption, {
         0,
         "BREAK: Pattern 26 should not be affected by pattern 27"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 28 & 29: LOOPS/RECURSION (Critical 20% - Iteration)
@@ -342,7 +342,7 @@ chicago_async_test!(test_pattern_28_structured_loop_break_finding, {
         !result.terminates,
         "BREAK: Structured loop should not terminate"
     );
-}
+});
 
 chicago_async_test!(test_pattern_29_recursion_break_finding, {
     // Break-finding: Test recursion for breaks
@@ -414,7 +414,7 @@ chicago_async_test!(test_pattern_29_recursion_break_finding, {
         Some(&"1".to_string()),
         "BREAK: Should increment depth"
     );
-}
+});
 
 chicago_async_test!(test_pattern_28_29_loop_recursion_infinite_break, {
     // Break-finding: Test for infinite loop/recursion breaks
@@ -495,7 +495,7 @@ chicago_async_test!(test_pattern_28_29_loop_recursion_infinite_break, {
             );
         }
     }
-}
+});
 
 // ============================================================================
 // PATTERN 33: CANCEL PROCESS INSTANCE (Critical 20% - Critical Cancellation)
@@ -556,8 +556,8 @@ chicago_async_test!(test_pattern_33_cancel_process_break_finding, {
         result2.cancel_activities[0].contains("process:scope_123"),
         "BREAK: Should use scope_id when provided"
     );
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
-}
+    use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
+});
 
 chicago_async_test!(test_pattern_33_cancel_process_state_consistency, {
     // Break-finding: Test state consistency for cancel process
@@ -591,7 +591,7 @@ chicago_async_test!(test_pattern_33_cancel_process_state_consistency, {
             i
         );
     }
-}
+});
 
 chicago_async_test!(test_pattern_33_vs_32_cancel_difference, {
     // Break-finding: Verify pattern 33 (cancel process) vs 32 (cancel activity) difference
@@ -662,7 +662,7 @@ chicago_async_test!(test_pattern_33_vs_32_cancel_difference, {
         result_33.cancel_activities[0].contains("process:"),
         "BREAK: Pattern 33 should cancel process"
     );
-}
+});
 
 // ============================================================================
 // PATTERN 38 & 39: THREADING (Critical 20% - Parallelism)
@@ -733,7 +733,7 @@ chicago_async_test!(test_pattern_38_multiple_threads_break_finding, {
         !result.terminates,
         "BREAK: Multiple threads should not terminate"
     );
-}
+});
 
 chicago_async_test!(test_pattern_39_thread_merge_break_finding, {
     // Break-finding: Test thread merge pattern for breaks
@@ -801,7 +801,7 @@ chicago_async_test!(test_pattern_39_thread_merge_break_finding, {
         0,
         "BREAK: Thread merge should not cancel activities"
     );
-}
+});
 
 chicago_async_test!(test_pattern_38_39_threading_sequence_break, {
     // Break-finding: Test threading sequence for breaks
@@ -865,7 +865,7 @@ chicago_async_test!(test_pattern_38_39_threading_sequence_break, {
         result_39.next_state.as_ref().unwrap().contains("merged"),
         "BREAK: Pattern 39 state should indicate merge"
     );
-}
+});
 
 chicago_async_test!(test_pattern_38_thread_count_consistency, {
     // Break-finding: Test thread count consistency
@@ -902,7 +902,7 @@ chicago_async_test!(test_pattern_38_thread_count_consistency, {
             i
         );
     }
-}
+});
 
 // ============================================================================
 // COMPREHENSIVE BREAK-FINDING: ALL CRITICAL PATTERNS
@@ -974,7 +974,7 @@ chicago_async_test!(test_critical_patterns_state_isolation, {
             _ => {}
         }
     }
-}
+});
 
 chicago_async_test!(test_critical_patterns_boundary_conditions, {
     // Break-finding: Test boundary conditions for all critical patterns
@@ -1034,7 +1034,7 @@ chicago_async_test!(test_critical_patterns_boundary_conditions, {
             pattern_id_num
         );
     }
-}
+});
 
 chicago_async_test!(test_critical_patterns_termination_consistency, {
     // Break-finding: Test termination consistency - CRITICAL BREAK CHECK
@@ -1094,4 +1094,4 @@ chicago_async_test!(test_critical_patterns_termination_consistency, {
             pattern_id_num
         );
     }
-}
+});

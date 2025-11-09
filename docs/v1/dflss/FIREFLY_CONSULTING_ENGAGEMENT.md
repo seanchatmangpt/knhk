@@ -14,6 +14,9 @@
 ### Engagement Objective
 Conduct comprehensive Design for Lean Six Sigma assessment of KNHK v1.0, a revolutionary schema-first testing framework that eliminates false positives through OpenTelemetry Weaver validation.
 
+### Architectural Innovation
+**Centralized Validation Architecture**: All validation and domain logic centralized in `knhk-workflow-engine` (ingress). Pure execution in `knhk-hot` (NO checks). This innovation ensures single source of truth for validation and maximum hot path performance.
+
 ### Overall Assessment: ✅ **STRONG EXECUTION, ON TRACK**
 
 **Key Findings**:

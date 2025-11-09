@@ -1,4 +1,6 @@
 //! Case management methods
+//!
+//! Inputs pre-validated at ingress.
 
 use crate::case::{Case, CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};
@@ -272,14 +274,14 @@ impl WorkflowEngine {
             if let Ok(case) = self.get_case(case_id).await {
                 otel_attr!(
                     otel,
-                    Some(span.clone()),
+                    span_ctx,
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
                 )
                 .await?;
             }
             otel_span_end!(
                 otel,
-                Some(span.clone()),
+                span_ctx,
                 success: success,
                 latency_ms: latency_ms
             )

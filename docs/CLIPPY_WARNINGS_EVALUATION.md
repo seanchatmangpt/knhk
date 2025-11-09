@@ -123,3 +123,5 @@ cargo clippy --package knhk-cli --lib --fix
 
 The codebase is clean and ready for use. All functional warnings have been resolved, and informational warnings are documented and acceptable.
 
+
+

@@ -18,6 +18,7 @@ rustls-pemfile = { workspace = true }
 knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-otel = { path = "../knhk-otel", features = ["std"] }
 knhk-config = { path = "../knhk-config" }
+chicago-tdd-tools = { path = "../chicago-tdd-tools" }
 # knhk-workflow-engine dependency (optional, for REST API serving)
 knhk-workflow-engine = { path = "../knhk-workflow-engine", version = "1.0.0", optional = true }
 axum = { workspace = true, optional = true }

@@ -10,10 +10,8 @@ async fn main() {
     println!("Property-Based Testing Example");
     println!("==============================");
 
-    // Arrange: Create generator
-    let mut generator = PropertyTestGenerator::new()
-        .with_max_items(10)
-        .with_seed(42);
+    // Arrange: Create generator with const generics (MAX_ITEMS=10, MAX_DEPTH=3)
+    let mut generator = PropertyTestGenerator::<10, 3>::new().with_seed(42);
 
     // Act & Assert: Test property
     let property_valid = property_all_data_valid(&mut generator, 100);

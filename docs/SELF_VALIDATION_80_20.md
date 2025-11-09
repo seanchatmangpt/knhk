@@ -114,3 +114,5 @@ knhk validate self-validate --output report.json
 
 **Recommendation**: Use the critical 20% for production. Defer advanced features to v1.1.
 
+
+

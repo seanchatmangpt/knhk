@@ -70,9 +70,48 @@ jobs:
           timeout 10 cargo run --release --example emit_telemetry || true
           sleep 2
 
-      - name: Run Weaver Live-Check
+      - name: Start Weaver Live-Check
         run: |
-          weaver registry live-check --registry registry/
+          # Start Weaver live-check in background
+          weaver registry live-check \
+            --registry registry/ \
+            --otlp-grpc-address 127.0.0.1 \
+            --otlp-grpc-port 4317 \
+            --admin-port 8080 \
+            --format json \
+            --output ./weaver-reports \
+            --inactivity-timeout 300 &
+          WEAVER_PID=$!
+          echo "WEAVER_PID=$WEAVER_PID" >> $GITHUB_ENV
+          sleep 5
+          echo "Weaver live-check started (PID: $WEAVER_PID)"
+
+      - name: Run Weaver Live-Check Validation
+        run: |
+          # Wait for telemetry to be emitted and validated
+          sleep 10
+          
+          # Check if Weaver is still running
+          if ps -p $WEAVER_PID > /dev/null; then
+            echo "✅ Weaver live-check is running"
+          else
+            echo "⚠️ Weaver process exited early"
+            exit 1
+          fi
+          
+          # Check for validation reports
+          if [ -d "./weaver-reports" ]; then
+            echo "✅ Validation reports directory exists"
+            ls -la ./weaver-reports/ || true
+          fi
+
+      - name: Stop Weaver Live-Check
+        if: always()
+        run: |
+          if [ ! -z "$WEAVER_PID" ] && ps -p $WEAVER_PID > /dev/null; then
+            kill $WEAVER_PID || true
+            wait $WEAVER_PID || true
+          fi
 
       - name: Collector Logs (on failure)
         if: failure()

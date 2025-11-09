@@ -28,10 +28,37 @@ impl WorkflowService {
     }
 
     /// Register a workflow specification
+    /// Enforces guard constraints at ingress:
+    /// - MAX_RUN_LEN validation for workflow spec tasks/flows
     pub async fn register_workflow(
         &self,
         request: RegisterWorkflowRequest,
     ) -> ApiResult<RegisterWorkflowResponse> {
+        // Guard constraint: Validate run length at ingress
+        use crate::validation::guards::{validate_run_len, MAX_RUN_LEN};
+
+        // Check task count (each task is part of a run)
+        if request.spec.tasks.len() > MAX_RUN_LEN {
+            return Err(ApiError::from(crate::error::WorkflowError::Validation(
+                format!(
+                    "Workflow task count {} exceeds max_run_len {}",
+                    request.spec.tasks.len(),
+                    MAX_RUN_LEN
+                ),
+            )));
+        }
+
+        // Check flow count (flows represent predicate runs)
+        if request.spec.flows.len() > MAX_RUN_LEN {
+            return Err(ApiError::from(crate::error::WorkflowError::Validation(
+                format!(
+                    "Workflow flow count {} exceeds max_run_len {}",
+                    request.spec.flows.len(),
+                    MAX_RUN_LEN
+                ),
+            )));
+        }
+
         let spec_id = request.spec.id;
         self.engine
             .register_workflow(request.spec)

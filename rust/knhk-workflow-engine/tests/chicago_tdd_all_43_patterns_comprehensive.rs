@@ -97,7 +97,7 @@ chicago_test!(test_pattern_01_sequence, {
     // Assert: Verify sequential execution order
     assert_eq!(context.state, "step3");
     assert_eq!(context.counter, 3);
-}
+});
 
 chicago_test!(test_pattern_02_parallel_split, {
     // Arrange: Create parallel workflow context
@@ -172,7 +172,7 @@ chicago_test!(test_pattern_05_simple_merge, {
     // Assert: Merge passes through first arrival (XOR-join semantics)
     assert_eq!(merged.state, "from_branch_a");
     assert_eq!(merged.id, "merge-1");
-}
+});
 
 // ============================================================================
 // ADVANCED BRANCHING PATTERNS (6-11)
@@ -975,7 +975,7 @@ chicago_test!(test_pattern_43_fire_and_forget, {
     assert!(task_initiated.load(Ordering::SeqCst));
     assert_eq!(context.state, "initiated");
     // No assertion on task completion - fire-and-forget semantics
-}
+});
 
 // ============================================================================
 // INTEGRATION TESTS (Pattern Combinations)
@@ -1238,7 +1238,7 @@ chicago_test!(performance_basic_patterns_within_8_ticks, {
     let counter = Arc::new(AtomicUsize::new(0));
     for _ in 0..3 {
         counter.fetch_add(1, Ordering::SeqCst);
-    }
+    });
     let elapsed = start.elapsed();
     assert!(
         elapsed.as_micros() < 100,
@@ -1396,4 +1396,4 @@ chicago_test!(test_suite_completeness, {
     assert!(complexities.contains(&"Simple"));
     assert!(complexities.contains(&"Medium"));
     assert!(complexities.contains(&"Complex"));
-}
+});

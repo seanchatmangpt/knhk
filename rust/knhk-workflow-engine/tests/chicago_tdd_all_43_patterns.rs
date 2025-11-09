@@ -104,7 +104,7 @@ chicago_test!(test_pattern_3_synchronization_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:3:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_4_exclusive_choice_jtbd, {
     // JTBD: Choose exactly one branch based on condition
@@ -122,7 +122,7 @@ chicago_test!(test_pattern_4_exclusive_choice_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:4:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_5_simple_merge_jtbd, {
     // JTBD: Merge multiple branches into single flow
@@ -138,7 +138,7 @@ chicago_test!(test_pattern_5_simple_merge_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:5:completed".to_string()));
-}
+});
 
 // ============================================================================
 // Advanced Branching Patterns (6-11)
@@ -161,7 +161,7 @@ chicago_test!(test_pattern_6_multi_choice_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:6:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_7_structured_synchronizing_merge_jtbd, {
     // JTBD: Synchronize multiple branches that were split by same split
@@ -177,7 +177,7 @@ chicago_test!(test_pattern_7_structured_synchronizing_merge_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:7:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_8_multi_merge_jtbd, {
     // JTBD: Merge multiple branches without synchronization
@@ -193,7 +193,7 @@ chicago_test!(test_pattern_8_multi_merge_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:8:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_9_discriminator_jtbd, {
     // JTBD: Continue after first branch completes, cancel others
@@ -209,7 +209,7 @@ chicago_test!(test_pattern_9_discriminator_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:9:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_10_arbitrary_cycles_jtbd, {
     // JTBD: Support arbitrary cycles in workflow
@@ -225,7 +225,7 @@ chicago_test!(test_pattern_10_arbitrary_cycles_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:10:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_11_implicit_termination_jtbd, {
     // JTBD: Terminate when no active tasks remain
@@ -241,7 +241,7 @@ chicago_test!(test_pattern_11_implicit_termination_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:11:completed".to_string()));
-}
+});
 
 // ============================================================================
 // Multiple Instance Patterns (12-15)
@@ -263,7 +263,7 @@ chicago_test!(test_pattern_12_mi_without_sync_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:12:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_13_mi_with_design_time_knowledge_jtbd, {
     // JTBD: Create multiple instances with known count at design time
@@ -281,7 +281,7 @@ chicago_test!(test_pattern_13_mi_with_design_time_knowledge_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:13:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_14_mi_with_runtime_knowledge_jtbd, {
     // JTBD: Create multiple instances with count known at runtime
@@ -299,7 +299,7 @@ chicago_test!(test_pattern_14_mi_with_runtime_knowledge_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:14:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_15_mi_without_runtime_knowledge_jtbd, {
     // JTBD: Create multiple instances with unknown count
@@ -315,7 +315,7 @@ chicago_test!(test_pattern_15_mi_without_runtime_knowledge_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:15:completed".to_string()));
-}
+});
 
 // ============================================================================
 // State-Based Patterns (16-18)
@@ -335,7 +335,7 @@ chicago_test!(test_pattern_16_deferred_choice_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:16:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_17_interleaved_parallel_routing_jtbd, {
     // JTBD: Execute tasks in parallel but interleaved order
@@ -351,7 +351,7 @@ chicago_test!(test_pattern_17_interleaved_parallel_routing_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:17:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_18_milestone_jtbd, {
     // JTBD: Enable task only when milestone is reached
@@ -369,7 +369,7 @@ chicago_test!(test_pattern_18_milestone_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:18:completed".to_string()));
-}
+});
 
 // ============================================================================
 // Cancellation Patterns (19-25)
@@ -391,7 +391,7 @@ chicago_test!(test_pattern_19_cancel_activity_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:19:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_20_cancel_case_jtbd, {
     // JTBD: Cancel entire workflow case
@@ -407,7 +407,7 @@ chicago_test!(test_pattern_20_cancel_case_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:20:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_21_cancel_region_jtbd, {
     // JTBD: Cancel a region of workflow
@@ -425,7 +425,7 @@ chicago_test!(test_pattern_21_cancel_region_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:21:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_22_cancel_mi_activity_jtbd, {
     // JTBD: Cancel multiple instance activity
@@ -443,7 +443,7 @@ chicago_test!(test_pattern_22_cancel_mi_activity_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:22:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_23_complete_mi_activity_jtbd, {
     // JTBD: Complete multiple instance activity
@@ -461,7 +461,7 @@ chicago_test!(test_pattern_23_complete_mi_activity_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:23:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_24_blocking_discriminator_jtbd, {
     // JTBD: Block until first branch completes
@@ -477,7 +477,7 @@ chicago_test!(test_pattern_24_blocking_discriminator_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:24:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_25_cancelling_discriminator_jtbd, {
     // JTBD: Cancel other branches when first completes
@@ -493,7 +493,7 @@ chicago_test!(test_pattern_25_cancelling_discriminator_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:25:completed".to_string()));
-}
+});
 
 // ============================================================================
 // Advanced Patterns (26-39)
@@ -513,7 +513,7 @@ chicago_test!(test_pattern_26_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:26:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_27_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 27
@@ -529,7 +529,7 @@ chicago_test!(test_pattern_27_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:27:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_28_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 28
@@ -545,7 +545,7 @@ chicago_test!(test_pattern_28_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:28:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_29_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 29
@@ -561,7 +561,7 @@ chicago_test!(test_pattern_29_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:29:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_30_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 30
@@ -577,7 +577,7 @@ chicago_test!(test_pattern_30_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:30:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_31_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 31
@@ -593,7 +593,7 @@ chicago_test!(test_pattern_31_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:31:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_32_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 32
@@ -609,7 +609,7 @@ chicago_test!(test_pattern_32_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:32:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_33_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 33
@@ -625,7 +625,7 @@ chicago_test!(test_pattern_33_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:33:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_34_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 34
@@ -641,7 +641,7 @@ chicago_test!(test_pattern_34_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:34:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_35_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 35
@@ -657,7 +657,7 @@ chicago_test!(test_pattern_35_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:35:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_36_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 36
@@ -673,7 +673,7 @@ chicago_test!(test_pattern_36_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:36:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_37_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 37
@@ -689,7 +689,7 @@ chicago_test!(test_pattern_37_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:37:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_38_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 38
@@ -705,7 +705,7 @@ chicago_test!(test_pattern_38_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:38:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_39_advanced_pattern_jtbd, {
     // JTBD: Advanced workflow pattern 39
@@ -721,7 +721,7 @@ chicago_test!(test_pattern_39_advanced_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:39:completed".to_string()));
-}
+});
 
 // ============================================================================
 // Trigger Patterns (40-43)
@@ -741,7 +741,7 @@ chicago_test!(test_pattern_40_trigger_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:40:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_41_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 41
@@ -757,7 +757,7 @@ chicago_test!(test_pattern_41_trigger_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:41:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_42_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 42
@@ -773,7 +773,7 @@ chicago_test!(test_pattern_42_trigger_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:42:completed".to_string()));
-}
+});
 
 chicago_test!(test_pattern_43_trigger_pattern_jtbd, {
     // JTBD: Trigger workflow pattern 43
@@ -789,7 +789,7 @@ chicago_test!(test_pattern_43_trigger_pattern_jtbd, {
     // Assert
     assert_pattern_success(&result);
     assert_eq!(result.next_state, Some("pattern:43:completed".to_string()));
-}
+});
 
 // ============================================================================
 // Comprehensive Test Suite
@@ -866,4 +866,4 @@ chicago_test!(test_pattern_execution_output_variables, {
     assert_pattern_success(&result);
     // Output variables may be empty for some patterns, but structure should exist
     assert!(result.variables.is_empty() || !result.variables.is_empty());
-}
+});

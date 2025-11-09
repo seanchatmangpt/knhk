@@ -1,6 +1,9 @@
 // knhk-hot v1.0 Rust wrapper
 // Safe wrappers around C FFI for hot path execution
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 // Allow acceptable warnings for clean build
 #![allow(unused_imports)] // Some imports are conditional or reserved for planned use
 #![allow(unused_variables)] // Some variables are used in conditional compilation

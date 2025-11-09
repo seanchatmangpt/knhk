@@ -39,13 +39,15 @@ Where:
 
 ### 1.2 Architecture Placement
 
+**Architecture Innovation**: Knowledge hooks are implemented as guards in `knhk-workflow-engine` at ingress. Pure execution in `knhk-hot` has NO hooks or checks.
+
 Knowledge hooks are placed at three critical points:
 
-1. **Ingress**: First contact with Δ; hooks validate structure, type, and cardinality
-2. **Intermediate (warm)**: More complex derived predicates or joins
-3. **Egress**: Hooks sign receipts and assert `hash(A) = hash(μ(O))`
+1. **Ingress**: First contact with Δ; hooks validate structure, type, and cardinality (in `knhk-workflow-engine`)
+2. **Intermediate (warm)**: More complex derived predicates or joins (in `knhk-workflow-engine`)
+3. **Egress**: Hooks sign receipts and assert `hash(A) = hash(μ(O))` (in `knhk-workflow-engine`)
 
-**Key Principle**: Hooks never depend on external scheduling or procedural code; they are triggered rhythmically with μ's beat.
+**Key Principle**: Hooks never depend on external scheduling or procedural code; they are triggered rhythmically with μ's beat. All hooks execute in `knhk-workflow-engine` at ingress before calling `knhk-hot` for pure execution.
 
 ### 1.3 Eight-Beat Regime Operation
 
@@ -490,4 +492,6 @@ if autonomic.detect_violation() {
 
 **Research Complete** ✅  
 **All three concepts mapped and integrated**
+
+
 

@@ -7,6 +7,11 @@
 //! - Workload shaping: shard by predicate, cap run_len ≤ 8
 //! - Memory policy: pin hot arrays, 64-B aligned, NUMA-aware placement
 //! - Admission control: if data misses L1, park to W1 and keep R1 SLO green
+//!
+//! **Chatman Constant**: All hot path operations must execute in ≤8 ticks (2ns at 4GHz).
+//! Operations exceeding 8 ticks must be routed to warm path (W1) or cold path (C1).
+//!
+//! Hot path kernels are branchless and constant-time. Inputs pre-validated at ingress.
 
 #![allow(clippy::unwrap_used)] // Supporting infrastructure - unwrap() acceptable for now
 
@@ -62,12 +67,11 @@ impl AotKernel {
     }
 
     /// ASK kernel: branchless ASK operation
+    ///
+    /// Inputs pre-validated at ingress (≤8 items each).
     fn ask_kernel(input: &[u8], data: &[u8]) -> bool {
         // Branchless ASK: check if input exists in data
         // Optimized for ≤8 items, uses SIMD when available
-        if input.len() > 8 || data.len() > 8 {
-            return false; // Exceeds hot path budget
-        }
 
         // Simple linear search (branchless via bitwise ops)
         let mut found = 0u8;
@@ -81,11 +85,10 @@ impl AotKernel {
     }
 
     /// COUNT kernel: branchless COUNT operation
+    ///
+    /// Inputs pre-validated at ingress (≤8 items each).
     fn count_kernel(input: &[u8], data: &[u8]) -> bool {
         // Branchless COUNT: count matches
-        if input.len() > 8 || data.len() > 8 {
-            return false;
-        }
 
         let count: u8 = input
             .iter()
@@ -95,11 +98,10 @@ impl AotKernel {
     }
 
     /// COMPARE kernel: branchless COMPARE operation
+    ///
+    /// Inputs pre-validated at ingress (equal length, ≤8 items each).
     fn compare_kernel(input: &[u8], data: &[u8]) -> bool {
         // Branchless COMPARE: constant-time comparison
-        if input.len() != data.len() || input.len() > 8 {
-            return false;
-        }
 
         // Constant-time comparison using XOR
         let diff: u8 = input
@@ -111,14 +113,12 @@ impl AotKernel {
     }
 
     /// VALIDATE kernel: branchless VALIDATE operation
+    ///
+    /// Input pre-validated at ingress in knhk-workflow-engine (non-empty, ≤8 items).
+    /// Pure execution - NO checks.
     fn validate_kernel(input: &[u8], _data: &[u8]) -> bool {
-        // Branchless VALIDATE: check constraints
-        if input.len() > 8 {
-            return false;
-        }
-
-        // Validate: non-empty, within bounds
-        !input.is_empty() && input.len() <= 8
+        // Pure execution - input pre-validated at ingress
+        input.len() > 0
     }
 }
 

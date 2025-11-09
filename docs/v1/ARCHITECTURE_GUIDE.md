@@ -16,6 +16,30 @@ This guide provides a comprehensive overview of the KNHK v1.0 architecture, incl
 
 ## System Architecture
 
+### Centralized Validation Architecture
+
+**Key Innovation**: All validation and domain logic centralized in `knhk-workflow-engine`. Pure execution in `knhk-hot`.
+
+**Architecture Principle**:
+- **knhk-workflow-engine**: ALL data ingress point. Domain logic, validation, guards.
+- **knhk-hot**: Pure execution. NO checks. Assumes pre-validated inputs.
+
+**Validation Flow**:
+1. Data enters via `knhk-workflow-engine` (API, CLI, `create_case`, `register_workflow`)
+2. Guards validate at ingress (`security/guards.rs`)
+3. Pre-validated data passed to `knhk-hot` for pure execution
+4. `knhk-hot` has ZERO checks - pure execution only
+
+**Benefits**:
+- Single source of truth for validation (no scattered checks)
+- Hot path performance (no validation overhead)
+- Clear separation: ingress validation vs execution
+- Domain logic centralized in workflow engine
+
+**Prohibited**: Defensive programming in execution paths (hot path, executor, state). All validation at ingress only.
+
+---
+
 ### High-Level Architecture
 
 ```
@@ -57,8 +81,9 @@ This guide provides a comprehensive overview of the KNHK v1.0 architecture, incl
 **Key Constraints**:
 - Zero-copy operations
 - Branchless execution
-- No bounds checks (validated at build/load time)
-- Guard constraints: max_run_len ≤ 8
+- NO checks (all validation at ingress in knhk-workflow-engine)
+- Guard constraints: max_run_len ≤ 8 (enforced at ingress)
+- Pure execution - assumes pre-validated inputs
 
 #### 2. Warm Path (≤100ms)
 

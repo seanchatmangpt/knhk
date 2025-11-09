@@ -6,6 +6,7 @@
 //! - resource/allocation: Allocation policies
 //! - api/rest: Handler functions
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::rdf::{
@@ -18,7 +19,6 @@ use knhk_workflow_engine::patterns::{
 use knhk_workflow_engine::resource::allocation::{
     AllocationPolicy, AllocationRequest, Resource, ResourceAllocator, ResourceId, Role,
 };
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 chicago_async_test!(test_rdf_metadata_serialization, {
     // Arrange: Create pattern metadata
@@ -44,7 +44,7 @@ chicago_async_test!(test_rdf_metadata_serialization, {
         rdf.contains("Basic Control Flow"),
         "RDF should contain category"
     );
-}
+});
 
 chicago_async_test!(test_rdf_context_serialization, {
     // Arrange: Create pattern execution context
@@ -73,7 +73,7 @@ chicago_async_test!(test_rdf_context_serialization, {
         rdf.contains("pattern:PatternExecution"),
         "RDF should contain execution type"
     );
-}
+});
 
 chicago_async_test!(test_rdf_result_serialization, {
     // Arrange: Create pattern execution result
@@ -108,7 +108,7 @@ chicago_async_test!(test_rdf_result_serialization, {
         rdf.contains("pattern:success true"),
         "RDF should contain success flag"
     );
-}
+});
 
 chicago_async_test!(test_rdf_get_all_metadata, {
     // Arrange: Get all pattern metadata
@@ -119,7 +119,7 @@ chicago_async_test!(test_rdf_get_all_metadata, {
     assert_eq!(metadata.len(), 43, "Should have 43 patterns");
     assert_eq!(metadata[0].pattern_id, 1, "First pattern should be ID 1");
     assert_eq!(metadata[42].pattern_id, 43, "Last pattern should be ID 43");
-}
+});
 
 chicago_async_test!(test_advanced_control_pattern_26, {
     // Arrange: Create blocking discriminator pattern
@@ -139,7 +139,7 @@ chicago_async_test!(test_advanced_control_pattern_26, {
     assert!(result.success, "Pattern should execute successfully");
     assert_eq!(pattern_id.0, 26, "Pattern ID should be 26");
     assert!(result.next_state.is_some(), "Pattern should set next state");
-}
+});
 
 chicago_async_test!(test_advanced_control_pattern_27, {
     // Arrange: Create cancelling discriminator pattern
@@ -162,7 +162,7 @@ chicago_async_test!(test_advanced_control_pattern_27, {
         !result.cancel_activities.is_empty(),
         "Pattern should cancel activities"
     );
-}
+});
 
 chicago_async_test!(test_advanced_control_patterns_28_39, {
     // Arrange: Create all advanced control patterns
@@ -210,7 +210,7 @@ chicago_async_test!(test_advanced_control_patterns_28_39, {
             expected_id
         );
     }
-}
+});
 
 chicago_async_test!(test_resource_allocation_four_eyes, {
     // Arrange: Create allocator and resources
@@ -279,7 +279,7 @@ chicago_async_test!(test_resource_allocation_four_eyes, {
         AllocationPolicy::FourEyes,
         "Policy should be FourEyes"
     );
-}
+});
 
 chicago_async_test!(test_resource_allocation_round_robin, {
     // Arrange: Create allocator and resources
@@ -349,7 +349,7 @@ chicago_async_test!(test_resource_allocation_round_robin, {
         AllocationPolicy::RoundRobin,
         "Policy should be RoundRobin"
     );
-}
+});
 
 chicago_async_test!(test_resource_allocation_shortest_queue, {
     // Arrange: Create allocator and resources with different queue lengths
@@ -410,7 +410,7 @@ chicago_async_test!(test_resource_allocation_shortest_queue, {
         AllocationPolicy::ShortestQueue,
         "Policy should be ShortestQueue"
     );
-}
+});
 
 chicago_async_test!(test_resource_allocation_role_based, {
     // Arrange: Create allocator and resources with roles
@@ -461,7 +461,7 @@ chicago_async_test!(test_resource_allocation_role_based, {
         AllocationPolicy::RoleBased,
         "Policy should be RoleBased"
     );
-}
+});
 
 chicago_async_test!(test_resource_allocation_chained, {
     // Arrange: Create allocator and resources
@@ -517,7 +517,7 @@ chicago_async_test!(test_resource_allocation_chained, {
         AllocationPolicy::Chained,
         "Policy should be Chained"
     );
-}
+});
 
 chicago_async_test!(test_rdf_namespace_constants, {
     // Arrange & Act: Check namespace constants
@@ -535,4 +535,4 @@ chicago_async_test!(test_rdf_namespace_constants, {
         YAWL_NS.starts_with("http://"),
         "YAWL namespace should be a valid URI"
     );
-}
+});

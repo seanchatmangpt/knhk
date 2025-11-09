@@ -330,9 +330,7 @@ impl TapeBuilder {
         self.arena.clear();
         self.shape.present_mask = 0;
 
-        if json.is_empty() || index.structural_chars.is_empty() {
-            return;
-        }
+        // Inputs pre-validated at ingress in knhk-workflow-engine. NO checks.
 
         let mut pos = 0usize;
         let mut struct_idx = 0usize;
@@ -610,11 +608,9 @@ impl TapeBuilder {
     }
 
     /// Fast path integer parser (table-based, no FP parse)
+    ///
+    /// Inputs pre-validated at ingress in knhk-workflow-engine. NO checks.
     fn parse_integer_fast(&self, bytes: &[u8]) -> Result<i64, ()> {
-        if bytes.is_empty() {
-            return Err(());
-        }
-
         let mut result = 0i64;
         let mut is_negative = false;
         let mut start = 0;
@@ -1074,11 +1070,9 @@ impl ATMShapeKernel {
     /// This function uses unsafe SIMD operations. The caller must ensure:
     /// - `json` is a valid UTF-8 byte slice
     /// - `runs` is a valid mutable vector
+    ///
+    /// Inputs pre-validated at ingress in knhk-workflow-engine. NO checks.
     pub unsafe fn parse_shape_locked(&self, json: &[u8], runs: &mut Vec<SoARun>) -> bool {
-        if json.is_empty() || json.len() > 512 {
-            return false; // Too small or too large for shape-locked path
-        }
-
         // Fast path: skip whitespace and check for opening brace
         let mut pos = 0usize;
         while pos < json.len() && json[pos].is_ascii_whitespace() {
@@ -1345,12 +1339,10 @@ impl ATMShapeKernel {
     }
 
     /// Parse integer using table-based approach (no FP parse)
+    ///
+    /// Inputs pre-validated at ingress in knhk-workflow-engine. NO checks.
     #[inline(always)]
     fn parse_integer_table(bytes: &[u8]) -> u64 {
-        if bytes.is_empty() {
-            return 0;
-        }
-
         let mut result = 0u64;
         let mut is_negative = false;
         let mut start = 0;

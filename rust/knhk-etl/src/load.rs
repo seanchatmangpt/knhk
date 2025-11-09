@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 use crate::error::PipelineError;
 use crate::transform::{TransformResult, TypedTriple};
+use chicago_tdd_tools::guards::GuardValidator;
 
 /// Stage 3: Load
 /// SoA-aligned arrays in L1 cache
@@ -44,16 +45,17 @@ impl LoadStage {
     /// 3. Align to 64-byte boundaries
     /// 4. Prepare SoA arrays
     pub fn load(&self, input: TransformResult) -> Result<LoadResult, PipelineError> {
-        // Validate guard: total triples must not exceed max_run_len
-        // Current implementation enforces single run constraint (run.len ≤ 8)
-        // Multiple runs support planned for v1.0
-        if input.typed_triples.len() > self.max_run_len {
-            return Err(PipelineError::GuardViolation(format!(
-                "Triple count {} exceeds max_run_len {}",
-                input.typed_triples.len(),
-                self.max_run_len
-            )));
-        }
+        // Guard validation at ingress: MAX_RUN_LEN ≤ 8
+        // Validate before passing to execution paths (defensive checks removed from hot path)
+        let guard_validator = GuardValidator::new();
+        guard_validator
+            .validate_run(&input.typed_triples)
+            .map_err(|e| {
+                PipelineError::GuardViolation(format!(
+                    "Guard constraint violation at Load stage ingress: {}",
+                    e
+                ))
+            })?;
 
         if input.typed_triples.is_empty() {
             return Ok(LoadResult {
@@ -77,14 +79,12 @@ impl LoadStage {
         let mut offset = 0u64;
 
         for (predicate, triples) in grouped_by_predicate {
-            // Validate run length ≤ 8
-            if triples.len() > self.max_run_len {
-                return Err(PipelineError::GuardViolation(format!(
-                    "Predicate run length {} exceeds max_run_len {}",
-                    triples.len(),
-                    self.max_run_len
-                )));
-            }
+            // Guard validation: run length ≤ 8 (validated at ingress, but double-check here for safety)
+            guard_validator
+                .validate_run_len(triples.len())
+                .map_err(|e| {
+                    PipelineError::GuardViolation(format!("Predicate run guard violation: {}", e))
+                })?;
 
             // Ensure we don't exceed SoA array capacity
             if offset as usize + triples.len() > 8 {

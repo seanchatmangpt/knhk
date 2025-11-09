@@ -8,66 +8,153 @@ alwaysApply: false
 
 # C Hot Path Performance Requirements
 
+## Architecture Principle
+
+**C code is pure execution only**:
+- **NO measurement** (PMU, timing, ticks) - all measurement belongs in Rust
+- **NO domain logic** (estimated_ticks, hash computation) - all domain logic belongs in Rust
+- **NO meta logic** (validation, guards) - all validation belongs in Rust
+- **Pure execution**: Branchless dispatch → SIMD operations → return results
+
+All measurement/domain/meta belongs in Rust (knhk-workflow-engine).
+
 ## Performance Budget
 
 - All hot path operations: ≤8 ticks (Chatman Constant)
 - Target: ≤2 nanoseconds per operation
-- Measurement: Use `rd_ticks()` for accurate timing
+- **Measurement done in Rust**, not in C code
 
-## Optimization Techniques
+## Pure Execution Patterns
 
-1. **SIMD Operations**
-   - Use NEON intrinsics on ARM64
-   - Use AVX2 intrinsics on x86_64
-   - Fully unroll loops for NROWS=8
+### 1. Branchless Dispatch Tables
 
-2. **Branchless Code**
-   - Avoid conditional branches in hot path
-   - Use conditional moves when possible
-   - Reorder conditions for branch prediction
+Use function pointer dispatch tables instead of if-else chains:
 
-3. **Memory Layout**
-   - Structure-of-Arrays (SoA) layout
-   - 64-byte alignment for SIMD operations
-   - Cache-friendly access patterns
+```c
+// Branchless dispatch: table lookup (no branches, no mispredicts)
+const knhk_eval_fn_t* dispatch_table = knhk_get_eval_dispatch_table();
+knhk_eval_fn_t fn = dispatch_table[op_idx];
+int result = fn(ctx, ir, rcpt);
+```
 
-4. **Function Inlining**
-   - Use `static inline` for hot path functions
-   - Reduce function call overhead
-   - Enable compiler optimizations
+- Zero branch mispredicts
+- Function pointer lookup: `knhk_get_eval_dispatch_table()` in `c/include/knhk/eval_dispatch.h`
+- Dispatch table implementation: `c/src/eval_dispatch.c`
+
+### 2. Mask Arithmetic
+
+Use mask arithmetic for branchless operations:
+
+```c
+// Branchless predicate check: use mask instead of if
+uint64_t pred_match = (ir->p == ctx->run.pred) ? UINT64_MAX : 0;
+result = (int)((uint64_t)result & pred_match);
+```
+
+- `UINT64_MAX` masks for true, `0` for false
+- Bitwise operations (`&`, `|`, `^`) for branchless logic
+- Conditional moves via mask selection
+
+### 3. SIMD Operations
+
+Specialized SIMD headers in `c/src/simd/*.h`:
+
+- **Existence**: `existence.h` - `knhk_eq64_exists_8`, `knhk_eq64_spo_exists_8`
+- **Count**: `count.h` - `knhk_eq64_count_8`
+- **Compare**: `compare.h` - `knhk_compare_o_8`
+- **Construct**: `construct.h` - `knhk_construct8_emit_8`
+- **Validate**: `validate.h` - `knhk_validate_datatype_sp_8`
+
+Platform-specific:
+- ARM64: NEON intrinsics (`uint64x2_t`, `vceqq_u64`, etc.)
+- x86_64: AVX2 intrinsics (`__m256i`, `_mm256_cmpeq_epi64`, etc.)
+- Fully unrolled for NROWS=8
+
+### 4. CONSTRUCT8 Pattern Hints
+
+Branchless routing to specialized functions:
+
+```c
+// Pattern hint set by warm path (all-nonzero, len1-len8)
+uint8_t pattern_idx = ir->construct8_pattern_hint;
+const knhk_construct8_fn_t* dispatch_table = knhk_get_construct8_dispatch_table();
+knhk_construct8_fn_t fn = dispatch_table[pattern_idx];
+size_t written = fn(ctx->S, ctx->run.off, ctx->run.len, ...);
+```
+
+- Pattern types: `GENERIC`, `ALL_NONZERO`, `LEN1-LEN8`
+- Defined in `c/include/knhk/types.h` as `knhk_construct8_pattern_t`
+- Dispatch table in `c/include/knhk/eval.h`
+
+### 5. Memory Layout
+
+- **Structure-of-Arrays (SoA)**: Separate S, P, O arrays
+- **64-byte alignment**: `__attribute__((aligned(64)))` for SIMD operations
+- **NROWS=8**: Compile-time constant, fully unrolled
+
+### 6. Function Inlining
+
+- Use `static inline __attribute__((always_inline))` for hot path functions
+- All evaluation functions are inline in headers
+- Zero function call overhead
 
 ## Guard Constraints
 
-- `max_run_len ≤ 8` - Enforced at compile time
-- Validate at build/load time, not runtime
-- No bounds checks in hot path
+- `max_run_len ≤ 8` - **Validated in Rust at ingress**, not in C
+- **Prohibited**: Defensive programming (bounds checks, validation) in C hot path
+- C hot path assumes pre-validated inputs from Rust guards
+- **NO validation in C code** - all validation belongs in Rust
 
 ## Examples
 
 ### BAD: Bounds Check in Hot Path
 ```c
 for (int i = 0; i < run.len; i++) {
-    if (i >= NROWS) return -1;  // Bounds check in hot path
+    if (i >= NROWS) return -1;  // Bounds check in hot path - PROHIBITED
     result += S[i];
 }
 ```
 
-### GOOD: Branchless Hot Path
+### BAD: Measurement in C Code
 ```c
-// Validate run.len ≤ 8 at build time
-static inline uint64_t sum_run(const uint64_t *S, uint32_t len) {
-    uint64_t sum = 0;
-    // Fully unrolled for len ≤ 8
-    if (len > 0) sum += S[0];
-    if (len > 1) sum += S[1];
-    // ... etc
-    return sum;
-}
+knhk_pmu_measurement_t pmu = knhk_pmu_start();  // PROHIBITED - belongs in Rust
+// ... execution ...
+knhk_pmu_end(&pmu);
+receipt->actual_ticks = knhk_pmu_get_ticks(&pmu);  // PROHIBITED
 ```
 
-## Measurement
+### GOOD: Pure Execution (Branchless Dispatch)
+```c
+// Branchless dispatch: table lookup
+const knhk_eval_fn_t* dispatch_table = knhk_get_eval_dispatch_table();
+knhk_eval_fn_t fn = dispatch_table[op_idx];
+int result = fn(ctx, ir, rcpt);  // Pure execution, no measurement
+return result;
+```
 
-- Use `rd_ticks()` for timing
-- Measure p50, p95, p99 latencies
-- Exclude warmup/cold path from measurements
-- Verify with OTEL spans/metrics
+### GOOD: Pure Execution (SIMD Operations)
+```c
+// Pure SIMD execution, no measurement
+#if NROWS == 8
+int result = knhk_eq64_exists_8(ctx->S, ctx->run.off, ir->s);
+#else
+int result = knhk_eq64_exists_run(ctx->S, ctx->run.off, ctx->run.len, ir->s);
+#endif
+return result;
+```
+
+## What NOT to Include in C Code
+
+- **NO PMU/timing/measurement** - all measurement belongs in Rust
+- **NO estimated_ticks computation** - all domain logic belongs in Rust
+- **NO hash computation** - all domain logic belongs in Rust
+- **NO validation/guards** - all validation belongs in Rust
+- **NO domain logic** - all domain logic belongs in Rust
+
+## File Structure
+
+- `c/include/knhk/eval.h` - Branchless dispatch (`knhk_eval_bool`, `knhk_eval_construct8`)
+- `c/include/knhk/eval_dispatch.h` - Dispatch table declarations
+- `c/src/eval_dispatch.c` - Dispatch table implementation
+- `c/src/simd/*.h` - SIMD operation headers (existence, count, compare, construct, validate)
+- `c/include/knhk/types.h` - Type definitions (CONSTRUCT8 pattern hints, NROWS=8)

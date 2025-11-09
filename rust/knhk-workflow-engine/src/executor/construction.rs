@@ -203,6 +203,15 @@ impl WorkflowEngine {
         Ok(engine)
     }
 
+    /// Set OTEL integration on the engine
+    ///
+    /// This method creates a new engine instance with OTEL integration set.
+    /// Since WorkflowEngine is Clone, this is efficient due to Arc sharing.
+    pub fn with_otel(mut self, otel_integration: Arc<OtelIntegration>) -> Self {
+        self.otel_integration = Some(otel_integration);
+        self
+    }
+
     /// Dual-clock projection loop (warm persistence replay)
     ///
     /// Projects nanosecond commits to millisecond legacy time.

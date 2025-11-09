@@ -422,7 +422,7 @@ mod tests {
             .register_hook(
                 200, // predicate
                 KernelType::AskSp,
-                guards::always_valid,
+                Box::new(guards::always_valid),
                 vec!["cardinality >= 1".to_string()],
             )
             .expect("Hook registration should succeed");
@@ -437,12 +437,21 @@ mod tests {
         let mut registry = HookRegistry::new();
 
         registry
-            .register_hook(200, KernelType::AskSp, guards::always_valid, vec![])
+            .register_hook(
+                200,
+                KernelType::AskSp,
+                Box::new(guards::always_valid),
+                vec![],
+            )
             .expect("Hook registration should succeed");
 
         // Try to register again
-        let result =
-            registry.register_hook(200, KernelType::CountSpGe, guards::always_valid, vec![]);
+        let result = registry.register_hook(
+            200,
+            KernelType::CountSpGe,
+            Box::new(guards::always_valid),
+            vec![],
+        );
 
         assert!(matches!(
             result,
@@ -458,7 +467,7 @@ mod tests {
             .register_hook(
                 200,
                 KernelType::ValidateSp,
-                guards::check_subject_nonempty,
+                Box::new(guards::check_subject_nonempty),
                 vec![],
             )
             .expect("Hook registration should succeed");
@@ -494,7 +503,12 @@ mod tests {
         let mut registry = HookRegistry::new();
 
         registry
-            .register_hook(200, KernelType::AskSp, guards::always_valid, vec![])
+            .register_hook(
+                200,
+                KernelType::AskSp,
+                Box::new(guards::always_valid),
+                vec![],
+            )
             .expect("Hook registration should succeed");
         assert!(registry.has_hook(200));
 
@@ -512,7 +526,7 @@ mod tests {
             .register_hook(
                 200,
                 KernelType::AskSp,
-                guards::always_valid,
+                Box::new(guards::always_valid),
                 vec!["test invariant".to_string()],
             )
             .expect("Hook registration should succeed");
@@ -568,10 +582,20 @@ mod tests {
         let mut registry = HookRegistry::new();
 
         registry
-            .register_hook(200, KernelType::AskSp, guards::always_valid, vec![])
+            .register_hook(
+                200,
+                KernelType::AskSp,
+                Box::new(guards::always_valid),
+                vec![],
+            )
             .expect("Hook registration should succeed");
         registry
-            .register_hook(201, KernelType::CountSpGe, guards::always_valid, vec![])
+            .register_hook(
+                201,
+                KernelType::CountSpGe,
+                Box::new(guards::always_valid),
+                vec![],
+            )
             .expect("Hook registration should succeed");
 
         let hooks = registry.list_hooks();

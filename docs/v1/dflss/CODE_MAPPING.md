@@ -104,6 +104,16 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | **Hot Path ≤8 ticks** | SIMD operations | `rust/knhk-hot/src/lib.rs` |
 | **Zero-Copy Operations** | Reference usage | `rust/knhk-workflow-engine/src/executor/` |
 | **Branchless Operations** | Constant-time execution | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **Ingress Validation** | Guard constraints at data entry | `rust/knhk-workflow-engine/src/security/guards.rs`, `rust/knhk-workflow-engine/src/services/admission.rs` |
+
+**Architecture**: Centralized validation at ingress. Pure execution in hot path:
+- **Ingress**: `knhk-workflow-engine` - ALL data enters here, domain logic and validation
+  - `create_case` (admission_gate), `register_workflow` (deadlock detector), API/CLI
+  - Guards: `security/guards.rs` - ONLY place for input validation
+- **Execution**: `knhk-hot` - Pure execution, NO checks, assumes pre-validated inputs
+  - Hot path operations, ring buffers, kernels
+  - All validation happens in knhk-workflow-engine before calling knhk-hot
+- **Principle**: knhk-workflow-engine = ingress validation, knhk-hot = pure execution
 
 ---
 
@@ -116,7 +126,10 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | **CI/CD Gates** | GitHub Actions | `.github/workflows/` |
 | **Pre-commit Hooks** | Validation | `.git/hooks/pre-commit` |
 | **Pre-push Hooks** | Validation | `.git/hooks/pre-push` |
-| **SPC Charts** | Metrics collection | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+| **SPC Charts** | DFLSS CLI | `rust/knhk-dflss/src/commands/charts.rs` |
+| **Metrics Collection** | DFLSS CLI | `rust/knhk-dflss/src/commands/metrics.rs` |
+| **Process Capability** | DFLSS CLI | `rust/knhk-dflss/src/commands/capability.rs` |
+| **CTQ Validation** | DFLSS CLI | `rust/knhk-dflss/src/commands/validation.rs` |
 | **Automated Testing** | Test suite | `rust/knhk-workflow-engine/tests/` |
 
 ---
@@ -424,6 +437,15 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 - **Test Suite**: `rust/knhk-workflow-engine/tests/`
 - **Performance Tests**: `rust/knhk-workflow-engine/tests/performance/`
 
+### DFLSS Tools
+
+- **DFLSS CLI**: `rust/knhk-dflss/src/main.rs`
+- **Metrics Collection**: `rust/knhk-dflss/src/commands/metrics.rs`
+- **SPC Charts**: `rust/knhk-dflss/src/commands/charts.rs`
+- **Process Capability**: `rust/knhk-dflss/src/commands/capability.rs`
+- **CTQ Validation**: `rust/knhk-dflss/src/commands/validation.rs`
+- **Internal Modules**: `rust/knhk-dflss/src/internal/` (chart, capability, quality, statistics, rules)
+
 ### Performance & Optimization
 
 - **Hot Path**: `rust/knhk-hot/src/lib.rs`
@@ -560,11 +582,12 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | **DFLSS Documentation** | 7 | 2,574 | All DFLSS documentation |
 | **Rust Workflow Engine** | 197 | 35,286 | Core workflow engine |
 | **Rust CLI** | 70 | 10,626 | Command-line interface |
+| **Rust DFLSS CLI** | 23 | 2,760 | DFLSS metrics and SPC charts |
 | **Rust Hot Path** | 1 | 33 | Performance-critical operations |
 | **C Library** | 25 | 3,959 | C implementation |
 | **Erlang** | 15 | 1,037 | Erlang implementation |
-| **Total Code** | 308 | 50,941 | All implementation files |
-| **Grand Total** | 315 | 53,515 | Documentation + Code |
+| **Total Code** | 331 | 53,701 | All implementation files |
+| **Grand Total** | 338 | 56,275 | Documentation + Code |
 
 ## Direct DFLSS Document → Code File Mapping
 
@@ -609,7 +632,13 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | **control/PHASE_SUMMARY.md** | CI/CD Gates | `.github/workflows/ci.yml` | 1-50 | CI pipeline |
 | **control/PHASE_SUMMARY.md** | Pre-commit Hooks | `.git/hooks/pre-commit` | 1-50 | Pre-commit validation |
 | **control/PHASE_SUMMARY.md** | Pre-push Hooks | `.git/hooks/pre-push` | 1-50 | Pre-push validation |
-| **control/PHASE_SUMMARY.md** | SPC Charts | `rust/knhk-workflow-engine/src/validation/process_mining.rs` | 1-206 | Process control |
+| **control/PHASE_SUMMARY.md** | SPC Charts | `rust/knhk-dflss/src/commands/charts.rs` | 1-420 | X-bar/R, p, c charts |
+| **control/PHASE_SUMMARY.md** | SPC Scripts | `rust/knhk-dflss/src/commands/` | All | Rust CLI implementation |
+| **control/PHASE_SUMMARY.md** | Metrics Collection | `rust/knhk-dflss/src/commands/metrics.rs` | 1-343 | Quality, performance, Weaver |
+| **control/PHASE_SUMMARY.md** | Process Capability | `rust/knhk-dflss/src/commands/capability.rs` | 1-265 | Cp, Cpk, Sigma calculation |
+| **control/PHASE_SUMMARY.md** | CTQ Validation | `rust/knhk-dflss/src/commands/validation.rs` | 1-332 | Weaver, performance, quality, DoD |
+| **measure/PHASE_SUMMARY.md** | Process Capability | `rust/knhk-dflss/src/internal/capability.rs` | 1-150 | ProcessCapability implementation |
+| **measure/PHASE_SUMMARY.md** | Metrics Collection | `rust/knhk-dflss/src/internal/quality.rs` | 1-200 | QualityCollector implementation |
 
 ## Revision History
 
@@ -619,6 +648,7 @@ This document maps the DFLSS (Design For Lean Six Sigma) documentation directly 
 | 1.1 | 2025-11-09 | Updated with verified file paths and code references |
 | 1.2 | 2025-01-27 | Added direct file-to-LOC mapping with complete statistics (315 files, 53,515 LOC) |
 | 1.3 | 2025-01-27 | Added comprehensive DFLSS document → code file mapping with line references |
+| 1.4 | 2025-01-27 | Added knhk-dflss Rust CLI crate (23 files, 2,760 LOC) replacing Python SPC scripts |
 
 ---
 

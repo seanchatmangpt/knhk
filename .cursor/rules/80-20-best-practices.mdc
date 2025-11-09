@@ -23,41 +23,56 @@ All code must be production-ready with proper error handling. Focus on critical 
 4. **Stubs** - No functions that always succeed without implementation
 5. **Simulated behavior** - Use real libraries when available (rdkafka, reqwest, etc.)
 6. **Claims without verification** - Never claim code works without test/OTEL validation
+7. **Defensive programming** - No validation checks in execution paths (hot path, executor, state). Validation happens at ingress only via guards.
 
 ## Required Patterns ✅
 
-1. **Real library integrations** - Use actual dependencies when available
-2. **Error handling** - `Result<T, E>` for all fallible operations (Rust)
-3. **Feature gating** - `#[cfg(feature = "...")]` for optional dependencies
-4. **Input validation** - Validate all inputs, enforce guard constraints (max_run_len ≤ 8)
-5. **Test verification** - All code must be testable and tested (OTEL validation preferred)
+1. **Input validation at ingress** - Validate all inputs at ingress points via guards, enforce guard constraints (max_run_len ≤ 8)
+2. **Test verification** - All code must be testable and tested (OTEL validation preferred)
+3. **Execution paths assume pre-validated inputs** - Hot path, executor, state management assume inputs validated at ingress
 
 ## Performance Requirements
 
 - Hot path operations: ≤8 ticks (Chatman Constant)
-- Zero-copy when possible (references over clones)
 - Branchless operations for hot path (constant-time execution)
-- Focus on 20% of features that provide 80% of value
 
 ## Error Handling Requirements
 
-- Use `Result<T, E>` for all fallible operations (Rust)
-- Return error codes: `int process(...)` with `-1` on error (C)
-- Validate inputs early: check NULL pointers, bounds
 - Never use `unwrap()` or `expect()` in production code paths
-- Provide context in error messages
+- Validate inputs at ingress: guards (`security/guards.rs`), admission gates (`services/admission.rs`)
+- Execution paths assume pre-validated inputs: no defensive checks in hot path, executor, state
 
 ## Testing Requirements
 
-- Test all public APIs
-- Test error paths and guard violations
-- Test critical paths (aim for 80%+ coverage)
+- Test guard violations
 - **OTEL validation is ultimate truth source** - verify with real spans/metrics
 - Never trust claims without test/OTEL verification
 - **Test behaviors, not implementation details** - Focus on what code does, not how
-- Use AAA pattern (Arrange, Act, Assert) for clarity
-- Use descriptive test names that explain what is being tested
-- Prefer real collaborators over mocks when possible
+
+### Using chicago-tdd-tools
+
+**Required**: Use `chicago-tdd-tools` macros and utilities for all Rust tests.
+
+- **Test macros**: `chicago_test!`, `chicago_async_test!`, `chicago_fixture_test!`, `chicago_performance_test!` - enforce AAA pattern and reduce boilerplate
+- **Assertion macros**: `assert_ok!`, `assert_err!`, `assert_within_tick_budget!`, `assert_guard_constraint!` - provide better error messages
+- **Validation utilities**: Use OTEL validation, performance validation (RDTSC), guard constraint enforcement, Weaver live validation from `chicago-tdd-tools`
+
+Example:
+```rust
+use chicago_tdd_tools::prelude::*;
+
+chicago_performance_test!(test_hot_path, {
+    // Arrange
+    let input = create_test_input();
+    
+    // Act
+    let (result, ticks) = measure_ticks(|| hot_path(&input));
+    
+    // Assert
+    assert_within_tick_budget!(ticks, "Hot path operation");
+    assert_ok!(&result);
+});
+```
 
 ## Guard Constraints
 
@@ -82,8 +97,6 @@ pub trait ServicePlugin: Send + Sync {
 ```
 
 ### ✅ Use async for I/O and long-running operations
-- Use `async` for file operations, network, containers, database queries
-- Use `sync` for pure computation and simple operations
 - Never block async contexts with `std::thread::sleep` - use `tokio::time::sleep` instead
 
 ## Anti-False-Positive Rules - CRITICAL
@@ -120,22 +133,19 @@ pub fn execute_test(&self) -> Result<()> {
 
 ## Code Review Checklist
 
-- [ ] All functions have proper error handling
-- [ ] All inputs are validated
+- [ ] All inputs validated at ingress (guards, admission gates)
+- [ ] No defensive checks in execution paths (hot path, executor, state)
 - [ ] No `unwrap()` or `panic!()` in production paths
 - [ ] Real implementations, not placeholders
-- [ ] Feature-gated when dependencies are optional
-- [ ] Tests cover critical paths
-- [ ] Guard constraints enforced (max_run_len ≤ 8)
-- [ ] Resources are properly cleaned up
-- [ ] No secrets or credentials in code
+- [ ] Guard constraints enforced at ingress (max_run_len ≤ 8)
 - [ ] Hot path operations are branchless/constant-time
 - [ ] Performance constraints met (≤8 ticks for hot path)
 - [ ] Code verified with tests/OTEL validation
 - [ ] No fake implementations - incomplete features call `unimplemented!()`
 - [ ] All traits are `dyn` compatible (no async trait methods)
 - [ ] Tests verify behavior, not implementation details
-- [ ] Proper async/sync patterns (async for I/O, sync for computation)
+- [ ] Use chicago-tdd-tools macros for tests (reduces boilerplate, enforces AAA pattern)
+- [ ] Use chicago-tdd-tools validation utilities (OTEL, performance, guards, Weaver)
 
 ## Definition of Done - Core Team Standards
 
@@ -154,15 +164,12 @@ pub fn execute_test(&self) -> Result<()> {
 11. **✅ OTEL Validation**: Behavior verified with real spans/metrics
 
 ### Validation Checklist:
-- [ ] `cargo test` passes completely (or `make test-*` for C tests)
-- [ ] `cargo clippy` shows no warnings
 - [ ] No `unwrap()` or `expect()` in production code
 - [ ] All traits are `dyn` compatible
-- [ ] No breaking changes to public APIs
-- [ ] All error paths use proper Result types
-- [ ] Async operations use proper async/await patterns
 - [ ] No fake implementations - incomplete features call `unimplemented!()`
 - [ ] Tests verify behavior, not implementation details
 - [ ] Performance constraints met (≤8 ticks for hot path)
+- [ ] Use chicago-tdd-tools macros for tests (reduces boilerplate, enforces AAA pattern)
+- [ ] Use chicago-tdd-tools validation utilities (OTEL, performance, guards, Weaver)
 
 ### If ANY of these fail, the code is NOT ready for production.

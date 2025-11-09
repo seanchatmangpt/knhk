@@ -11,6 +11,8 @@
 **Scope**: From project initiation to production deployment
 **Level**: High-level (30,000-foot view)
 
+**Architecture Innovation**: All validation and domain logic centralized in `knhk-workflow-engine` (ingress). Pure execution in `knhk-hot` (NO checks).
+
 ---
 
 ## SIPOC Diagram

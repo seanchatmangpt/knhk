@@ -17,6 +17,7 @@
 //! - workflow validate-xes: Run automated XES validation full loop
 //! - workflow validate: Run van der Aalst end-to-end validation framework
 //! - workflow discover: Run Alpha+++ process discovery algorithm
+//! - workflow weaver-live-check: Run Weaver live-check validation (source of truth for telemetry)
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
@@ -31,6 +32,7 @@ use knhk_workflow_engine::{
         transport::CliAdapter,
     },
     case::CaseId,
+    integration::WeaverIntegration,
     parser::{WorkflowParser, WorkflowSpecId},
     state::StateStore,
     validation::ValidationFramework,
@@ -840,6 +842,135 @@ pub fn export_xes(
         })?;
 
         println!("XES export completed: {}", output.display());
+        Ok(())
+    })
+}
+
+/// Run Weaver live-check validation
+///
+/// Starts Weaver live-check process and validates runtime telemetry against schema.
+/// This is the source of truth for telemetry validation - proves features work.
+#[verb]
+pub fn weaver_live_check(
+    registry: Option<PathBuf>,
+    otlp_port: Option<u16>,
+    admin_port: Option<u16>,
+    timeout: Option<u64>,
+) -> CnvResult<()> {
+    let runtime = get_runtime();
+    runtime.block_on(async {
+        // Determine registry path (default to ./registry)
+        let registry_path = registry.unwrap_or_else(|| PathBuf::from("./registry"));
+
+        // Verify registry path exists
+        if !registry_path.exists() {
+            return Err(clap_noun_verb::NounVerbError::execution_error(format!(
+                "Registry path does not exist: {}",
+                registry_path.display()
+            )));
+        }
+
+        // Check if Weaver binary is available
+        WeaverIntegration::check_weaver_available().map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Weaver binary not available: {}",
+                e
+            ))
+        })?;
+
+        println!("=== Weaver Live-Check Validation ===");
+        println!();
+        println!("Registry: {}", registry_path.display());
+        println!("OTLP Port: {}", otlp_port.unwrap_or(4317));
+        println!("Admin Port: {}", admin_port.unwrap_or(8080));
+        println!();
+
+        // Create Weaver integration
+        let mut weaver = if let (Some(otlp), Some(admin)) = (otlp_port, admin_port) {
+            WeaverIntegration::with_config(registry_path.clone(), otlp, admin)
+        } else {
+            WeaverIntegration::new(registry_path.clone())
+        };
+
+        // Enable Weaver
+        weaver.enable();
+
+        // Start Weaver live-check
+        println!("Starting Weaver live-check process...");
+        weaver.start().await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to start Weaver live-check: {}",
+                e
+            ))
+        })?;
+
+        println!("✅ Weaver live-check started successfully");
+        println!();
+        println!("OTLP Endpoint: {}", weaver.otlp_endpoint());
+        println!();
+        println!("Weaver is now validating telemetry against schema.");
+        println!("Run your application with telemetry enabled:");
+        println!(
+            "  export OTEL_EXPORTER_OTLP_ENDPOINT=\"{}\"",
+            weaver.otlp_endpoint()
+        );
+        println!("  export RUST_LOG=trace");
+        println!("  # ... run your application ...");
+        println!();
+
+        // Wait for validation (or timeout)
+        let timeout_duration = timeout.unwrap_or(300); // Default 5 minutes
+        println!(
+            "Waiting up to {} seconds for telemetry validation...",
+            timeout_duration
+        );
+        println!("(Press Ctrl+C to stop early)");
+        println!();
+
+        // Wait for the specified timeout or until interrupted
+        let start_time = std::time::Instant::now();
+        let check_interval = tokio::time::Duration::from_secs(5);
+
+        loop {
+            tokio::time::sleep(check_interval).await;
+
+            // Check health
+            match weaver.health_check().await {
+                Ok(true) => {
+                    println!("✅ Weaver is healthy and validating telemetry");
+                }
+                Ok(false) => {
+                    println!("⚠️  Weaver health check returned false");
+                }
+                Err(e) => {
+                    println!("⚠️  Weaver health check error: {}", e);
+                }
+            }
+
+            // Check if timeout reached
+            if start_time.elapsed().as_secs() >= timeout_duration {
+                println!();
+                println!("⏱️  Timeout reached ({} seconds)", timeout_duration);
+                break;
+            }
+        }
+
+        // Stop Weaver
+        println!();
+        println!("Stopping Weaver live-check...");
+        weaver.stop().await.map_err(|e| {
+            clap_noun_verb::NounVerbError::execution_error(format!(
+                "Failed to stop Weaver live-check: {}",
+                e
+            ))
+        })?;
+
+        println!("✅ Weaver live-check stopped");
+        println!();
+        println!("=== Validation Complete ===");
+        println!();
+        println!("Check weaver-reports/ directory for validation results.");
+
         Ok(())
     })
 }

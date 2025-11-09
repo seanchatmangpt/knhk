@@ -17,6 +17,7 @@
 #[cfg(not(feature = "std"))]
 compile_error!("knhk-warm requires std feature for oxigraph integration");
 
+pub mod error;
 pub mod executor;
 pub mod ffi;
 pub mod graph;

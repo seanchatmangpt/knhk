@@ -16,6 +16,11 @@
 
 #![cfg(feature = "std")]
 
+#[cfg(feature = "std")]
+use knhk_otel::validation::{
+    validate_metric_structure, validate_span_structure, validate_telemetry_against_schema,
+    validate_weaver_live_check, Telemetry,
+};
 use knhk_otel::{init_tracer, MetricsHelper, SpanStatus, Tracer, WeaverLiveCheck};
 use std::process::Command;
 use std::thread;
@@ -58,6 +63,16 @@ fn test_telemetry_reaches_otlp_collector() {
     assert_eq!(tracer.spans().len(), 1, "Should have one span");
     assert_eq!(tracer.metrics().len(), 1, "Should have one metric");
 
+    // Validate span structure using validation helpers
+    if let Some(span) = tracer.spans().first() {
+        validate_span_structure(span).expect("Span should be valid");
+    }
+
+    // Validate metric structure using validation helpers
+    if let Some(metric) = tracer.metrics().first() {
+        validate_metric_structure(metric).expect("Metric should be valid");
+    }
+
     // Act: Export telemetry
     let export_result = tracer.export();
 
@@ -75,6 +90,14 @@ fn test_telemetry_reaches_otlp_collector() {
     // Note: In production, we would query collector API or check logs
     // For now, we verify export succeeded (which means HTTP request was sent)
     // Full validation requires collector API access or log checking
+
+    // Validate telemetry structure using validation helpers
+    let telemetry = Telemetry {
+        spans: tracer.spans().to_vec(),
+        metrics: tracer.metrics().to_vec(),
+    };
+    // Note: This validates structure, not schema conformance (requires registry path)
+    // Full schema validation would use: validate_telemetry_against_schema(&telemetry, registry_path)
 }
 
 /// Test: Verify Weaver live-check validates telemetry correctly
@@ -97,6 +120,20 @@ fn test_weaver_validates_telemetry() {
 
     // Wait for Weaver to start
     thread::sleep(Duration::from_secs(2));
+
+    // Validate Weaver live-check using validation helpers
+    if let Some(registry_path) = std::env::var("WEAVER_REGISTRY_PATH")
+        .ok()
+        .map(std::path::PathBuf::from)
+    {
+        if registry_path.exists() {
+            let validation_result = validate_weaver_live_check(&registry_path);
+            if let Err(e) = validation_result {
+                eprintln!("Weaver validation warning: {}", e);
+                // Continue test even if validation fails (Weaver might not be fully started)
+            }
+        }
+    }
 
     // Verify Weaver is running
     assert!(

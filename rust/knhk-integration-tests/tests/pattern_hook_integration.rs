@@ -3,14 +3,14 @@
 
 use knhk_etl::{
     hook_orchestration::{HookExecutionContext, HookExecutionPattern},
-    hook_registry::HookRegistry,
+    hook_registry::{HookRegistry, SharedHookRegistry},
     load::{PredRun, SoAArrays},
     Pipeline,
 };
 use knhk_patterns::{
     hook_patterns::{
-        create_hook_context_from_components, HookChoicePattern, HookParallelPattern,
-        HookRetryPattern, HookSequencePattern,
+        create_hook_context_from_components, HookChoicePattern, HookCondition, HookParallelPattern,
+        HookRetryCondition, HookRetryPattern, HookSequencePattern,
     },
     PipelinePatternExt,
 };
@@ -30,7 +30,7 @@ fn test_pipeline_with_parallel_hook_execution() {
         vec![],
     );
 
-    let registry = HookRegistry::new();
+    let registry: SharedHookRegistry = Arc::new(HookRegistry::new());
     let predicates = vec![100u64, 200u64];
 
     // Act
@@ -53,7 +53,7 @@ fn test_pipeline_with_conditional_hook_routing() {
         vec![],
     );
 
-    let registry = HookRegistry::new();
+    let registry: SharedHookRegistry = Arc::new(HookRegistry::new());
     let choices = vec![
         (
             Arc::new(|ctx: &knhk_etl::hook_orchestration::HookExecutionContext| {
@@ -85,7 +85,7 @@ fn test_pipeline_with_retry_hook_execution() {
         vec![],
     );
 
-    let registry = HookRegistry::new();
+    let registry: SharedHookRegistry = Arc::new(HookRegistry::new());
     let should_retry =
         Arc::new(|receipt: &knhk_etl::Receipt| receipt.ticks == 0) as HookRetryCondition;
 
@@ -133,7 +133,7 @@ fn test_hook_pattern_composition() {
     use knhk_etl::load::{PredRun, SoAArrays};
 
     // Arrange
-    let registry = HookRegistry::new();
+    let registry: SharedHookRegistry = Arc::new(HookRegistry::new());
     let runs = vec![
         PredRun {
             pred: 100,
@@ -147,7 +147,7 @@ fn test_hook_pattern_composition() {
         },
     ];
     let soa = SoAArrays::new();
-    let context = HookExecutionContext::new(registry, runs, soa, 8);
+    let context = HookExecutionContext::new(Arc::clone(&registry), runs, soa, 8);
 
     // Execute parallel pattern first
     let parallel_pattern = HookParallelPattern::new(vec![100, 200]).unwrap();
@@ -182,7 +182,7 @@ fn test_pattern_hook_execution_respects_tick_budget() {
     use knhk_etl::load::{PredRun, SoAArrays};
 
     // Arrange
-    let registry = HookRegistry::new();
+    let registry: SharedHookRegistry = Arc::new(HookRegistry::new());
     let runs = vec![PredRun {
         pred: 100,
         off: 0,

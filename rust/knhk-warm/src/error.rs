@@ -1,24 +1,8 @@
 // knhk-warm error types
 // Production-ready error handling with proper error messages
 
-use alloc::string::String;
+// Note: This module is deprecated. Use WarmPathError from warm_path module instead.
+// Keeping for backward compatibility during migration.
 
-#[derive(Debug, Clone)]
-pub enum WarmPathError {
-    InvalidInput(String),
-    GuardViolation(String),
-    ExecutionFailed(String),
-    TimeoutExceeded(String),
-}
-
-impl WarmPathError {
-    pub fn message(&self) -> &str {
-        match self {
-            WarmPathError::InvalidInput(msg) => msg,
-            WarmPathError::GuardViolation(msg) => msg,
-            WarmPathError::ExecutionFailed(msg) => msg,
-            WarmPathError::TimeoutExceeded(msg) => msg,
-        }
-    }
-}
-
+// Re-export WarmPathError from warm_path module for backward compatibility
+pub use crate::warm_path::WarmPathError;

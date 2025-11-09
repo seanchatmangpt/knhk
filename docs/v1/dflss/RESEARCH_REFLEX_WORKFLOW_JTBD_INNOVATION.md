@@ -39,6 +39,8 @@ Where:
 
 ### 1.2 Architecture
 
+**Architecture Innovation**: Reflex workflows execute in `knhk-hot` (pure execution, NO checks). All validation happens at ingress in `knhk-workflow-engine` before calling hot path.
+
 Reflex workflows operate in the **reflex stage** of the ETL pipeline:
 
 ```
@@ -596,4 +598,6 @@ let telemetry_valid = verify_otel_telemetry(&reflex_result)?;
 
 **Research Complete** ✅  
 **All three concepts mapped and integrated**
+
+
 

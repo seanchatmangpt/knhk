@@ -4,6 +4,8 @@
 //! Ensures all OTEL spans and metrics conform to semantic conventions.
 
 use crate::error::WorkflowResult;
+#[cfg(feature = "std")]
+use knhk_otel::validation::{validate_weaver_live_check, ValidationError};
 use knhk_otel::WeaverLiveCheck;
 use std::path::PathBuf;
 use std::process::Child;
@@ -121,6 +123,14 @@ impl WeaverIntegration {
                     match lc.check_health() {
                         Ok(true) => {
                             info!("Weaver live-check is healthy and ready");
+
+                            // Use validation helper to verify Weaver setup
+                            #[cfg(feature = "std")]
+                            {
+                                if let Err(e) = validate_weaver_live_check(&self.registry_path) {
+                                    warn!("Weaver validation check failed: {}", e);
+                                }
+                            }
                         }
                         Ok(false) => {
                             warn!("Weaver live-check started but health check failed");
@@ -200,6 +210,18 @@ impl WeaverIntegration {
         } else {
             Ok(false)
         }
+    }
+
+    /// Get validation results from Weaver reports directory
+    /// Returns the path to the reports directory if available
+    pub fn reports_directory(&self) -> PathBuf {
+        PathBuf::from("./weaver-reports")
+    }
+
+    /// Check if validation reports exist
+    pub async fn has_reports(&self) -> bool {
+        let reports_dir = self.reports_directory();
+        reports_dir.exists() && reports_dir.is_dir()
     }
 }
 

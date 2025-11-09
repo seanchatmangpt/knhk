@@ -218,19 +218,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state_store = StateStore::new(&cli.state_store)
         .map_err(|e| format!("Failed to create state store: {}", e))?;
 
-    // Create workflow engine
-    let engine = std::sync::Arc::new(WorkflowEngine::new(state_store));
-
     // Initialize OTEL integration if OTLP endpoint is set
     let otel_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT").ok();
-    if let Some(ref endpoint) = otel_endpoint {
+    let engine = if let Some(ref endpoint) = otel_endpoint {
         let otel = Arc::new(OtelIntegration::new(Some(endpoint.clone())));
         otel.initialize()
             .await
             .map_err(|e| format!("Failed to initialize OTEL: {}", e))?;
-        // Note: OTEL integration would need to be set on the engine
-        // For now, we just initialize it for telemetry export
-    }
+        // Set OTEL integration on the engine
+        std::sync::Arc::new(WorkflowEngine::new(state_store).with_otel(otel))
+    } else {
+        std::sync::Arc::new(WorkflowEngine::new(state_store))
+    };
 
     match cli.command {
         Commands::Parse { file, output } => {

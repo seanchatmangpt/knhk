@@ -112,6 +112,13 @@ Achieve ≥85% DoD compliance through schema-first validation, proving KNHK work
 - Advanced features
 - Full Six Sigma (6σ) certification
 
+### Coding Standards
+
+**Architecture Innovation**: All validation and domain logic centralized in `knhk-workflow-engine` (ingress). Pure execution in `knhk-hot` (NO checks).
+
+**Prohibited**: Defensive programming in execution paths. Validation at ingress only.
+**Required**: Guards at ingress in `knhk-workflow-engine`, execution paths in `knhk-hot` assume pre-validated inputs.
+
 ---
 
 ### 7. Baseline Metrics ✅

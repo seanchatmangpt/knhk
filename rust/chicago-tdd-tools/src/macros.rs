@@ -41,6 +41,8 @@ macro_rules! chicago_test {
 /// Macro for async tests with AAA pattern enforcement
 ///
 /// Wraps async test functions and ensures AAA pattern is followed.
+/// Supports `?` operator for error propagation - errors are converted to panics.
+/// Handles both Result and non-Result returns.
 ///
 /// # Example
 ///
@@ -51,11 +53,12 @@ macro_rules! chicago_test {
 ///     // Arrange: Set up test data
 ///     let fixture = TestFixture::new().unwrap();
 ///
-///     // Act: Execute async feature
-///     let result = async_function().await;
+///     // Act: Execute async feature (use ? for error propagation)
+///     let result = async_function().await?;
 ///
 ///     // Assert: Verify behavior
 ///     assert_success(&result);
+///     Ok::<(), MyError>(()) // Return Result - will be unwrapped automatically
 /// });
 /// ```
 #[macro_export]
@@ -63,7 +66,26 @@ macro_rules! chicago_async_test {
     ($name:ident, $body:block) => {
         #[tokio::test]
         async fn $name() {
-            $body
+            // Helper trait to handle both Result and non-Result returns
+            trait TestOutput {
+                fn handle(self);
+            }
+
+            impl TestOutput for () {
+                fn handle(self) {}
+            }
+
+            impl<E: std::fmt::Debug> TestOutput for Result<(), E> {
+                fn handle(self) {
+                    if let Err(e) = self {
+                        panic!("Test failed: {:?}", e);
+                    }
+                }
+            }
+
+            // Execute body and handle output
+            let output = async { $body }.await;
+            TestOutput::handle(output);
         }
     };
 }
@@ -271,9 +293,9 @@ macro_rules! assert_in_range {
     };
 }
 
-/// Assert equality with detailed error message
+/// Assert equality with detailed error message and diff output
 ///
-/// Provides better error messages for equality assertions.
+/// Provides better error messages for equality assertions with automatic diff generation.
 ///
 /// # Example
 ///
@@ -281,17 +303,52 @@ macro_rules! assert_in_range {
 /// use chicago_tdd_tools::assert_eq_msg;
 ///
 /// let actual = 42;
-/// let expected = 42;
+/// let expected = 43;
 /// assert_eq_msg!(actual, expected, "Values should match");
+/// // Panics with: "Values should match: expected 43, got 42"
 /// ```
 #[macro_export]
 macro_rules! assert_eq_msg {
-    ($actual:expr, $expected:expr, $msg:expr) => {
-        assert_eq!(
-            $actual, $expected,
-            "{}: expected {:?}, got {:?}",
-            $msg, $expected, $actual
-        );
+    ($actual:expr, $expected:expr, $msg:expr) => {{
+        let actual_val = &$actual;
+        let expected_val = &$expected;
+        if actual_val != expected_val {
+            panic!(
+                "{}: expected {:?}, got {:?}",
+                $msg, expected_val, actual_val
+            );
+        }
+    }};
+}
+
+/// Assert equality with automatic type inference and diff output
+///
+/// Enhanced version that provides better error messages with context.
+#[macro_export]
+macro_rules! assert_eq_enhanced {
+    ($actual:expr, $expected:expr $(,)?) => {
+        {
+            let actual_val = &$actual;
+            let expected_val = &$expected;
+            if actual_val != expected_val {
+                panic!(
+                    "assertion failed: `(left == right)`\n  left: `{:?}`\n right: `{:?}`",
+                    actual_val, expected_val
+                );
+            }
+        }
+    };
+    ($actual:expr, $expected:expr, $($arg:tt)+) => {
+        {
+            let actual_val = &$actual;
+            let expected_val = &$expected;
+            if actual_val != expected_val {
+                panic!(
+                    "assertion failed: `(left == right)`\n  left: `{:?}`\n right: `{:?}`\n{}",
+                    actual_val, expected_val, format!($($arg)+)
+                );
+            }
+        }
     };
 }
 

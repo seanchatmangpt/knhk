@@ -1,9 +1,6 @@
-//! State Manager - Improved state management with event sourcing
+//! State Manager - Event sourcing, caching, snapshots
 //!
-//! Provides:
-//! - Event sourcing for auditability
-//! - State caching for performance
-//! - State snapshots for recovery
+//! Inputs pre-validated at ingress.
 
 use crate::case::{Case, CaseId};
 use crate::error::WorkflowResult;

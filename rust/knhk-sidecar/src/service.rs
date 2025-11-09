@@ -8,6 +8,9 @@ use crate::config::SidecarConfig;
 use crate::error::{SidecarError, SidecarResult};
 use crate::health::HealthChecker;
 use crate::retry::RetryConfig;
+use chicago_tdd_tools::guards::GuardValidator;
+#[cfg(feature = "otel")]
+use knhk_otel::validation::{validate_span_structure, ValidationError as OtelValidationError};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
@@ -266,6 +269,13 @@ impl KgcSidecar for KgcSidecarService {
 
         let triple_count = raw_triples.len();
 
+        // Guard validation at ingress: MAX_RUN_LEN ≤ 8
+        // Validate before passing to pipeline (defensive checks removed from execution paths)
+        let guard_validator = GuardValidator::new();
+        guard_validator.validate_run(&raw_triples).map_err(|e| {
+            tonic::Status::invalid_argument(format!("Guard constraint violation: {}", e))
+        })?;
+
         // Start OTEL span for transaction
         #[cfg(feature = "otel")]
         let mut span_tracer: Option<(knhk_otel::Tracer, knhk_otel::SpanContext)> =
@@ -390,6 +400,14 @@ impl KgcSidecar for KgcSidecarService {
                         receipt.ticks.to_string(),
                     );
                     tracer.end_span(span_ctx.clone(), SpanStatus::Ok);
+
+                    // Validate span structure before export
+                    if let Some(span) = tracer.spans().last() {
+                        if let Err(e) = validate_span_structure(span) {
+                            warn!("Span validation failed before export: {}", e);
+                        }
+                    }
+
                     if let Err(e) = tracer.export() {
                         warn!(error = %e, "Failed to export success telemetry");
                     }
@@ -503,6 +521,9 @@ impl KgcSidecar for KgcSidecarService {
                     }
                 };
 
+            // Guard validation at ingress: MAX_RUN_LEN ≤ 8 for query data
+            let guard_validator = GuardValidator::new();
+
             // For ASK queries, use hot path (≤8 ticks)
             // For SELECT queries, use warm path
             match req.query_type {
@@ -516,6 +537,11 @@ impl KgcSidecar for KgcSidecarService {
                     let triples = ingest
                         .parse_rdf_turtle(&turtle_data)
                         .map_err(|e| SidecarError::query_failed(e.message().to_string()))?;
+
+                    // Guard validation at ingress
+                    guard_validator.validate_run(&triples).map_err(|e| {
+                        SidecarError::query_failed(format!("Guard constraint violation: {}", e))
+                    })?;
 
                     let ingest_result = knhk_etl::IngestResult {
                         triples,
@@ -548,6 +574,11 @@ impl KgcSidecar for KgcSidecarService {
                     // Parse query data if provided (support JSON and Turtle)
                     let triples = parse_query_data(&req.data, &req.data_format)?;
 
+                    // Guard validation at ingress
+                    guard_validator.validate_run(&triples).map_err(|e| {
+                        SidecarError::query_failed(format!("Guard constraint violation: {}", e))
+                    })?;
+
                     // Return triple subjects as results
                     Ok(triples.iter().map(|t| t.subject.clone()).collect())
                 }
@@ -555,6 +586,11 @@ impl KgcSidecar for KgcSidecarService {
                 2 => {
                     // Parse query data if provided (support JSON and Turtle)
                     let triples = parse_query_data(&req.data, &req.data_format)?;
+
+                    // Guard validation at ingress
+                    guard_validator.validate_run(&triples).map_err(|e| {
+                        SidecarError::query_failed(format!("Guard constraint violation: {}", e))
+                    })?;
 
                     // Return constructed triples as N-Triples format
                     Ok(triples
@@ -674,6 +710,13 @@ impl KgcSidecar for KgcSidecarService {
                     }
                 }
             };
+
+            // Guard validation at ingress: MAX_RUN_LEN ≤ 8
+            // Validate before passing to pipeline (defensive checks removed from execution paths)
+            let guard_validator = GuardValidator::new();
+            guard_validator.validate_run(&triples).map_err(|e| {
+                SidecarError::validation_failed(format!("Guard constraint violation: {}", e))
+            })?;
 
             let ingest_result = knhk_etl::IngestResult {
                 triples,
@@ -801,6 +844,13 @@ impl KgcSidecar for KgcSidecarService {
                     }
                 }
             };
+
+            // Guard validation at ingress: MAX_RUN_LEN ≤ 8
+            // Validate before passing to pipeline (defensive checks removed from execution paths)
+            let guard_validator = GuardValidator::new();
+            guard_validator.validate_run(&triples).map_err(|e| {
+                SidecarError::hook_evaluation_failed(format!("Guard constraint violation: {}", e))
+            })?;
 
             let ingest_result = knhk_etl::IngestResult {
                 triples,

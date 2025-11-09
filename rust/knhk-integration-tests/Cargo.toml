@@ -18,6 +18,7 @@ knhk-connectors = { path = "../knhk-connectors", features = ["std"] }
 knhk-etl = { path = "../knhk-etl", features = ["std"] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
 knhk-otel = { path = "../knhk-otel" }
+knhk-patterns = { path = "../knhk-patterns" }
 knhk-sidecar = { path = "../knhk-sidecar", optional = true }
 
 # Utilities

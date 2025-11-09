@@ -70,7 +70,7 @@ chicago_async_test!(test_fortune5_integration_creation, {
         matches!(environment, Environment::Production),
         "Integration should be in production environment"
     );
-}
+});
 
 chicago_async_test!(test_slo_metric_recording, {
     // Arrange: Create fixture
@@ -97,7 +97,7 @@ chicago_async_test!(test_slo_metric_recording, {
         .await
         .expect("SLO compliance check should succeed");
     assert!(compliant, "SLO metrics should be compliant");
-}
+});
 
 chicago_async_test!(test_slo_compliance_failure, {
     // Arrange: Create fixture
@@ -129,7 +129,7 @@ chicago_async_test!(test_slo_compliance_failure, {
         !compliant || true, // Allow for implementation gaps
         "SLO compliance should fail when limits exceeded"
     );
-}
+});
 
 chicago_async_test!(test_promotion_gate_allows_execution, {
     // Arrange: Create fixture
@@ -147,7 +147,7 @@ chicago_async_test!(test_promotion_gate_allows_execution, {
         allowed || true, // Allow for implementation gaps
         "Promotion gate should allow execution when SLO compliant"
     );
-}
+});
 
 chicago_async_test!(test_promotion_gate_blocks_on_slo_violation, {
     // Arrange: Create fixture
@@ -172,7 +172,7 @@ chicago_async_test!(test_promotion_gate_blocks_on_slo_violation, {
         !allowed || true, // Allow for implementation gaps
         "Promotion gate should block execution when SLO violated in production"
     );
-}
+});
 
 chicago_async_test!(test_feature_flag_enabled, {
     // Arrange: Create fixture
@@ -183,7 +183,7 @@ chicago_async_test!(test_feature_flag_enabled, {
 
     // Assert: Feature flag should be enabled
     assert!(enabled, "Feature flag 'fortune5' should be enabled");
-}
+});
 
 chicago_async_test!(test_feature_flag_disabled, {
     // Arrange: Create fixture
@@ -194,7 +194,7 @@ chicago_async_test!(test_feature_flag_disabled, {
 
     // Assert: Non-existent feature flag should be disabled
     assert!(!enabled, "Non-existent feature flag should be disabled");
-}
+});
 
 chicago_async_test!(test_environment_detection, {
     // Arrange: Create fixture
@@ -208,7 +208,7 @@ chicago_async_test!(test_environment_detection, {
         matches!(environment, Environment::Production),
         "Environment should be Production"
     );
-}
+});
 
 chicago_async_test!(test_slo_config_validation, {
     // Arrange: Create SLO config with invalid values
@@ -305,7 +305,7 @@ chicago_async_test!(test_promotion_gate_with_auto_rollback, {
         !allowed || true, // Allow for implementation gaps
         "Auto-rollback should block execution when SLO violated"
     );
-}
+});
 
 chicago_async_test!(test_stress_slo_metric_recording, {
     // Arrange: Create fixture
@@ -363,4 +363,4 @@ chicago_async_test!(test_multiple_runtime_classes, {
         compliant || true, // Allow for implementation gaps
         "All runtime classes should be tracked correctly"
     );
-}
+});

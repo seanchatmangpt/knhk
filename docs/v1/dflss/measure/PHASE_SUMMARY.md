@@ -12,7 +12,7 @@
 4. **Count and categorize defects**
 5. **Establish measurement system** for ongoing tracking
 
-**Status**: 🔄 IN PROGRESS (Week 1)
+**Status**: ✅ COMPLETE (Implementation Phase)
 
 ---
 
@@ -94,6 +94,10 @@ Error categories:
 - Compilation errors: **15+** ❌
 - Clippy warnings: **133** ❌
 - Production anti-patterns: **High** ❌
+  - Defensive programming in execution paths (prohibited)
+  - unwrap()/expect() in production code (prohibited)
+  - Placeholder implementations (prohibited)
+  - **Architecture**: All validation in `knhk-workflow-engine` (ingress), pure execution in `knhk-hot` (NO checks)
 - Code quality: **37.5% compliant (3/8 criteria)** ⚠️
 
 ---
@@ -169,10 +173,17 @@ $ cargo test --workspace
 
 ### 6. Process Capability Analysis ✅
 
+**Implementation**: `rust/knhk-dflss/src/commands/capability.rs`
+
 **Data Collection**:
 - Population: 19 hot path operations
 - Sample size: 100 runs per operation
 - Measurement method: RDTSC (cycle-accurate)
+
+**CLI Commands**:
+- `knhk-dflss capability calculate` - Calculate overall process capability
+- `knhk-dflss capability calculate-per-operation` - Calculate per-operation capability
+- `knhk-dflss capability report` - Generate capability report (markdown/json/text)
 - Specification: ≤8 ticks (Upper Spec Limit)
 
 **Statistical Analysis**:

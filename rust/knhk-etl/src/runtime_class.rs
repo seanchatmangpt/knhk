@@ -73,6 +73,12 @@ impl RuntimeClass {
             return Ok(RuntimeClass::R1);
         }
 
+        // R1 operations with data_size > 8 route to W1 (warm path)
+        // This enforces guard constraint: MAX_RUN_LEN ≤ 8 for hot path
+        if Self::is_r1_operation(operation_type) && data_size > 8 {
+            return Ok(RuntimeClass::W1);
+        }
+
         // W1 Warm: CONSTRUCT8, prebind, AOT transforms
         if Self::is_w1_operation(operation_type) {
             return Ok(RuntimeClass::W1);

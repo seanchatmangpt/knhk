@@ -4,6 +4,7 @@
 //! - Permutation tests: Different orderings and combinations of operations
 //! - Stress tests: High load, boundary conditions, concurrent operations
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::CaseId;
 use knhk_workflow_engine::parser::WorkflowSpecId;
 use knhk_workflow_engine::patterns::rdf::{
@@ -15,7 +16,6 @@ use knhk_workflow_engine::resource::allocation::{
     AllocationPolicy, AllocationRequest, Resource, ResourceAllocator, ResourceId, Role,
 };
 use std::collections::HashMap;
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // PERMUTATION TESTS
@@ -44,7 +44,7 @@ chicago_async_test!(test_rdf_serialization_permutations, {
             pattern_id
         );
     }
-}
+});
 
 chicago_async_test!(test_pattern_execution_permutations, {
     // Test all advanced control patterns in different orders
@@ -86,7 +86,7 @@ chicago_async_test!(test_pattern_execution_permutations, {
         let result = executor.execute(&context);
         assert!(result.success, "Pattern should execute successfully");
     }
-}
+});
 
 chicago_async_test!(test_resource_allocation_policy_permutations, {
     let allocator = ResourceAllocator::new();
@@ -148,7 +148,7 @@ chicago_async_test!(test_resource_allocation_policy_permutations, {
             assert!(result.is_ok(), "Allocation should succeed");
         }
     }
-}
+});
 
 // ============================================================================
 // STRESS TESTS
@@ -177,7 +177,7 @@ chicago_async_test!(test_rdf_serialization_stress, {
             "RDF should contain RDF type declaration"
         );
     }
-}
+});
 
 chicago_async_test!(test_pattern_execution_stress, {
     // Stress test: Execute patterns many times
@@ -196,7 +196,7 @@ chicago_async_test!(test_pattern_execution_stress, {
         assert!(result.success, "Pattern should execute successfully");
         assert_eq!(pattern_id.0, 26, "Pattern ID should remain 26");
     }
-}
+});
 
 chicago_async_test!(test_resource_allocation_stress, {
     // Stress test: Many concurrent allocations
@@ -238,7 +238,7 @@ chicago_async_test!(test_resource_allocation_stress, {
         let result = allocator.allocate(request).await;
         assert!(result.is_ok(), "Allocation {} should succeed", i);
     }
-}
+});
 
 chicago_async_test!(test_resource_allocation_boundary_conditions, {
     // Stress test: Boundary conditions
@@ -306,7 +306,7 @@ chicago_async_test!(test_resource_allocation_boundary_conditions, {
         result.is_err(),
         "Four-eyes should fail with only one resource"
     );
-}
+});
 
 chicago_async_test!(test_pattern_context_variable_stress, {
     // Stress test: Many variables in context
@@ -333,7 +333,7 @@ chicago_async_test!(test_pattern_context_variable_stress, {
         rdf.contains("pattern:hasVariables"),
         "RDF should contain variables"
     );
-}
+});
 
 chicago_async_test!(test_resource_workload_updates_stress, {
     // Stress test: Many workload updates
@@ -367,7 +367,7 @@ chicago_async_test!(test_resource_workload_updates_stress, {
     // Verify resource still exists and is accessible
     let retrieved = allocator.get_resource(resource_id).await;
     assert!(retrieved.is_ok(), "Resource should still be accessible");
-}
+});
 
 chicago_async_test!(test_all_patterns_metadata_stress, {
     // Stress test: Get and serialize all pattern metadata
@@ -386,7 +386,7 @@ chicago_async_test!(test_all_patterns_metadata_stress, {
             "RDF should contain pattern IRI"
         );
     }
-}
+});
 
 chicago_async_test!(test_concurrent_pattern_execution, {
     // Stress test: Simulate concurrent pattern execution
@@ -413,7 +413,7 @@ chicago_async_test!(test_concurrent_pattern_execution, {
         assert!(result.success, "Pattern should execute successfully");
         assert_eq!(pattern_id.0, 26, "Pattern ID should remain 26");
     }
-}
+});
 
 chicago_async_test!(test_resource_availability_toggle_stress, {
     // Stress test: Toggle resource availability many times
@@ -450,7 +450,7 @@ chicago_async_test!(test_resource_availability_toggle_stress, {
             "Availability should match toggle state"
         );
     }
-}
+});
 
 chicago_async_test!(test_mixed_allocation_policies_stress, {
     // Stress test: Mix different allocation policies
@@ -505,4 +505,4 @@ chicago_async_test!(test_mixed_allocation_policies_stress, {
             assert!(result.is_ok(), "Allocation should succeed");
         }
     }
-}
+});

@@ -43,7 +43,8 @@ pub fn create(
     println!("  Operation: {}", op);
     println!("  Run: pred={}, off={}, len={}", pred, off, len);
 
-    // Validate run length ≤ 8
+    // Note: Guard validation happens at execution boundaries (hot path), not at CLI ingress
+    // Agents are trusted to follow MAX_RUN_LEN ≤ 8 constraint
     if len > 8 {
         return Err(format!("Run length {} exceeds max_run_len 8", len));
     }

@@ -39,6 +39,14 @@ pub mod metrics;
 #[cfg(feature = "std")]
 pub mod types;
 
+#[cfg(feature = "std")]
+pub mod validation;
+
+// Advanced Rust features for zero-overhead hot path telemetry
+pub mod const_validation;
+pub mod hot_path;
+pub mod simd;
+
 /// Trace ID (128-bit)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TraceId(pub u128);

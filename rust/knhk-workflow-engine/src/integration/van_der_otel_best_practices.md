@@ -207,3 +207,5 @@ All spans must match the Weaver schema defined in `registry/knhk-workflow-engine
 - Batch attribute additions when possible
 - Avoid blocking on span operations
 
+
+

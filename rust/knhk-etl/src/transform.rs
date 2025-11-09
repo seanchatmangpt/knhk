@@ -9,6 +9,7 @@ use alloc::vec::Vec;
 
 use crate::error::PipelineError;
 use crate::ingest::IngestResult;
+use chicago_tdd_tools::guards::GuardValidator;
 
 /// Stage 2: Transform
 /// Typed by Σ, constrained by Q
@@ -39,6 +40,17 @@ impl TransformStage {
     /// 3. Hash IRIs to u64 IDs (consistent hashing)
     /// 4. Map to typed triples
     pub fn transform(&self, input: IngestResult) -> Result<TransformResult, PipelineError> {
+        // Guard validation at ingress: MAX_BATCH_SIZE ≤ 1000
+        // Validate before passing to execution paths (defensive checks removed from hot path)
+        let guard_validator = GuardValidator::new();
+        guard_validator
+            .validate_batch(&input.triples)
+            .map_err(|e| {
+                PipelineError::GuardViolation(format!(
+                    "Guard constraint violation at Transform stage ingress: {}",
+                    e
+                ))
+            })?;
         let mut typed_triples = Vec::new();
         let mut validation_errors = Vec::new();
 

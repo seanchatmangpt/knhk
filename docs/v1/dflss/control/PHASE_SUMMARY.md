@@ -103,7 +103,7 @@ LCL = 0 defects
 
 **Critical Threshold**: 0 critical defects (zero-tolerance)
 
-**Data Collection**: Automated scan (clippy, unwraps, printlns), every commit
+**Data Collection**: Automated scan (clippy, unwraps, printlns, defensive checks in execution paths), every commit
 
 ---
 
@@ -132,7 +132,8 @@ Merge Allowed ✅
 
 **Blocking Criteria**:
 - Gate 0: Compilation errors, clippy warnings
-- Gate 1: unwrap(), unimplemented!(), println! in production
+- Gate 1: unwrap(), unimplemented!(), println! in production, defensive programming in execution paths
+  - **Architecture Check**: Validation must be in `knhk-workflow-engine` (ingress), `knhk-hot` must have NO checks
 - Gate 2: Weaver validation failures
 - Gate 3: Operations >8 ticks, >5% regression
 - Gate 4: Any test failures
@@ -148,12 +149,14 @@ Merge Allowed ✅
 
 **Key Steps**:
 1. Automated data collection (GitHub Actions)
-2. Chart update (Python scripts)
-3. Special cause detection (Western Electric Rules)
+2. Chart update (Rust CLI: `knhk-dflss charts update-*`)
+3. Special cause detection (Western Electric Rules: `knhk-dflss charts check-special-causes`)
 4. Daily review (QA Lead)
 5. Monthly control limit recalculation
 
 **Success Criteria**: 100% data coverage, <1 hour special cause detection
+
+**Implementation**: `rust/knhk-dflss/src/commands/charts.rs`
 
 ---
 
@@ -206,23 +209,35 @@ Merge Allowed ✅
 
 ---
 
-### 5. Python SPC Scripts (5 Scripts) ✅
+### 5. DFLSS CLI (Rust Implementation) ✅
 
-**Location**: `scripts/spc/`
+**Location**: `rust/knhk-dflss/`
 
-| Script | Purpose | Usage |
+**Replaces Python SPC Scripts** with production-ready Rust implementation.
+
+| Command | Purpose | Usage |
 |--------|---------|-------|
-| `update_xbar_r_chart.py` | Update performance charts | `--results perf_results.txt` |
-| `update_p_chart.py` | Update Weaver validation chart | `--result PASS --validations 75` |
-| `collect_code_quality.py` | Collect defect metrics | Outputs JSON to stdout |
-| `update_c_chart.py` | Update code quality chart | `--data quality.json` |
-| `check_special_causes.py` | Check all charts for alerts | `--xbar-chart ... --r-chart ...` |
+| `charts update-xbar-r` | Update performance charts | `--results perf_results.txt --output-dir docs/evidence/spc/performance` |
+| `charts update-p` | Update Weaver validation chart | `--result PASS --validations 75 --failures 0 --output-dir docs/evidence/spc/weaver` |
+| `metrics collect-quality` | Collect defect metrics | `--rust-dir rust --output quality_metrics.json` |
+| `charts update-c` | Update code quality chart | `--data quality_metrics.json --output-dir docs/evidence/spc/code_quality` |
+| `charts check-special-causes` | Check all charts for alerts | `--xbar-chart ... --r-chart ... --p-chart ... --c-chart ...` |
+| `capability calculate` | Calculate process capability | `--data data.csv --usl 8.0 --lsl 0.0` |
+| `capability calculate-per-operation` | Per-operation capability | `--data perf_results.txt --usl 8.0` |
+| `validation check-weaver` | Validate Weaver compliance | `--registry registry/` |
+| `validation check-performance` | Validate performance (≤8 ticks) | `--data perf_results.txt --threshold 8.0` |
+| `validation check-quality` | Validate code quality | `--data quality_metrics.json` |
+| `validation check-dod` | Validate DoD compliance (≥85%) | `--metrics dflss_metrics.json` |
+| `validation check-all` | Run all validations | `--output validation_results.json` |
 
 **Features**:
-- Control limit calculation
-- Western Electric rule checking
-- Alert generation
-- Historical tracking
+- Control limit calculation (X-bar/R, p, c charts)
+- Western Electric rule checking (automated)
+- Alert generation (JSON output)
+- Historical tracking (CSV charts)
+- Process capability (Cp, Cpk, Sigma, DPMO)
+- CTQ validation (Weaver, performance, quality, DoD)
+- Real implementations (no placeholders)
 
 ---
 
@@ -422,9 +437,12 @@ docs/evidence/spc/
 
 1. ✅ `PHASE_SUMMARY.md` (this document)
 2. ✅ `../SPC_CONTROL_PLAN.md` (47-page comprehensive plan)
-3. ✅ `../../../scripts/spc/*.py` (5 Python scripts)
-4. 🔄 `.github/workflows/spc-*.yml` (GitHub Actions - to be created)
-5. 🔄 `grafana-dashboards/` (Dashboard JSON - to be created)
+3. ✅ `rust/knhk-dflss/` (Rust CLI implementation - replaces Python scripts)
+4. ✅ `.github/workflows/spc-charts.yml` (GitHub Actions - automated SPC chart updates)
+5. ✅ `.github/workflows/performance-validation.yml` (GitHub Actions - performance validation)
+6. 🔄 `grafana-dashboards/` (Dashboard JSON - to be created)
+
+**Note**: Python scripts in `scripts/spc/` are deprecated in favor of Rust CLI implementation.
 
 ---
 

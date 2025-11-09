@@ -1,12 +1,7 @@
-//! Real workflow execution engine
+//! Workflow execution engine
 //!
-//! Follows workflow flows from start condition to end condition,
-//! executing tasks and handling patterns (parallel split, synchronization, XOR choice, etc.)
-//!
-//! Implements Van der Aalst's pattern-based execution methodology:
-//! - Pattern Recognition: Identifies patterns from task split/join types
-//! - Pattern-Based Execution: Executes workflows via pattern executors
-//! - Composition: Workflows are compositions of patterns
+//! Van der Aalst pattern-based execution: pattern recognition → execution → composition.
+//! Inputs pre-validated at ingress.
 
 use crate::case::{CaseId, CaseState};
 use crate::error::{WorkflowError, WorkflowResult};

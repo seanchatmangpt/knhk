@@ -1,7 +1,7 @@
 # KNHK Root Makefile
 # Provides convenient targets for project-wide operations
 
-.PHONY: validate-v1.0 validate-production-ready help test test-rust test-c test-chicago-v04 test-performance-v04 test-integration-v2 test-all build-rust build-c lint-rust lint-c
+.PHONY: validate-v1.0 validate-production-ready validate-dod-v1 help test test-rust test-c test-chicago-v04 test-performance-v04 test-integration-v2 test-all build build-rust build-rust-debug build-c lint-rust lint-c clean check fmt clippy quick-test all
 
 help:
 	@echo "KNHK Makefile Targets:"
@@ -9,24 +9,34 @@ help:
 	@echo "Validation:"
 	@echo "  validate-v1.0              - Run v1.0 Definition of Done validation"
 	@echo "  validate-production-ready  - Run production readiness validation"
+	@echo "  validate-dod-v1            - Validate Definition of Done v1.0"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test                       - Run all tests (Rust + C)"
-	@echo "  test-rust                  - Run all Rust crate tests"
+	@echo "  test-rust                  - Run all Rust crate tests (concurrent)"
 	@echo "  test-c                     - Run C library tests"
-	@echo "  test-chicago-v04           - Run Chicago TDD tests (Rust + C)"
-	@echo "  test-performance-v04       - Run performance tests (τ ≤ 8 validation)"
-	@echo "  test-integration-v2        - Run integration tests (C + Rust)"
+	@echo "  test-chicago-v04           - Run Chicago TDD tests (Rust + C, concurrent)"
+	@echo "  test-performance-v04       - Run performance tests (τ ≤ 8 validation, concurrent)"
+	@echo "  test-integration-v2        - Run integration tests (C + Rust, concurrent)"
 	@echo "  test-all                   - Run test + test-chicago-v04 + test-performance-v04"
+	@echo "  quick-test                 - Run fast subset of tests"
 	@echo ""
 	@echo "Building:"
-	@echo "  build                      - Build all (Rust + C)"
-	@echo "  build-rust                 - Build all Rust crates"
+	@echo "  build                      - Build all (Rust + C, parallel)"
+	@echo "  build-rust                 - Build all Rust crates (release, parallel)"
+	@echo "  build-rust-debug           - Build all Rust crates (debug, parallel)"
 	@echo "  build-c                    - Build C library"
 	@echo ""
-	@echo "Linting:"
-	@echo "  lint-rust                  - Run cargo clippy on all crates"
+	@echo "Development:"
+	@echo "  check                      - Check compilation without building (fast)"
+	@echo "  fmt                        - Format all Rust code"
+	@echo "  clippy                     - Alias for lint-rust"
+	@echo "  lint-rust                  - Run cargo clippy on all crates (concurrent)"
 	@echo "  lint-c                     - Lint C code (future)"
+	@echo "  clean                      - Remove build artifacts"
+	@echo ""
+	@echo "Workflow:"
+	@echo "  all                        - Build + test + lint (full validation)"
 	@echo ""
 	@echo "See c/Makefile for C-specific targets"
 
@@ -65,37 +75,57 @@ test-all: test test-chicago-v04 test-performance-v04 test-integration-v2
 	@echo "✅ Complete test suite passed"
 
 # Build targets
-build: build-rust build-c
+# Ensure C library builds first (required for knhk-hot)
+build: build-c build-rust
 	@echo "✅ Build complete"
 
-build-rust:
-	@echo "🔨 Building Rust crates..."
-	@for crate in rust/*/Cargo.toml; do \
-		if [ -f "$$crate" ]; then \
-			dir=$$(dirname "$$crate"); \
-			echo "Building $$dir..."; \
-			(cd "$$dir" && cargo build --release) || exit 1; \
-		fi \
-	done
+build-rust: build-c
+	@echo "🔨 Building Rust crates (parallel workspace build)..."
+	@cd rust && cargo build --workspace --release
+
+build-rust-debug: build-c
+	@echo "🔨 Building Rust crates (debug, parallel workspace build)..."
+	@cd rust && cargo build --workspace
 
 build-c:
 	@echo "🔨 Building C library..."
 	@cd c && $(MAKE) lib
 
-# Lint targets
+# Development targets
+check:
+	@echo "🔍 Checking Rust code compilation (fast, no build)..."
+	@cd rust && cargo check --workspace
+
+fmt:
+	@echo "📝 Formatting Rust code..."
+	@cd rust && cargo fmt --all
+
+clippy: lint-rust
+
+# Lint targets (concurrent execution)
 lint-rust:
-	@echo "🔍 Linting Rust crates..."
-	@for crate in rust/*/Cargo.toml; do \
-		if [ -f "$$crate" ]; then \
-			dir=$$(dirname "$$crate"); \
-			echo "Linting $$dir..."; \
-			(cd "$$dir" && cargo clippy --all-targets --all-features -- -D warnings) || exit 1; \
-		fi \
-	done
+	@echo "🔍 Linting Rust crates (concurrent)..."
+	@bash scripts/run-lint-rust.sh
 
 lint-c:
 	@echo "🔍 Linting C code..."
 	@echo "TODO: Implement C linting"
+
+# Clean targets
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	@cd rust && cargo clean
+	@cd c && $(MAKE) clean || true
+	@echo "✅ Clean complete"
+
+# Quick test target (fast feedback)
+quick-test: check
+	@echo "⚡ Running quick tests (fast subset)..."
+	@cd rust && cargo test --workspace --lib --quiet || true
+
+# Full workflow target
+all: clean build test lint-rust
+	@echo "✅ Full validation complete: build + test + lint"
 
 
 

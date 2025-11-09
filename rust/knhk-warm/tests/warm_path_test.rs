@@ -18,7 +18,7 @@ fn test_construct8_warm_path_execution() {
     let p = [0xC0FFEEu64; 8];
     let o = [0xB0Bu64; 8];
 
-    let mut engine = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    let mut engine = unsafe { Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr()) };
     engine
         .pin_run(Run {
             pred: 0xC0FFEE,
@@ -81,7 +81,7 @@ fn test_construct8_warm_path_timing() {
     let p = [0xC0FFEEu64; 8];
     let o = [0xB0Bu64; 8];
 
-    let mut engine = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    let mut engine = unsafe { Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr()) };
     engine
         .pin_run(Run {
             pred: 0xC0FFEE,
@@ -143,7 +143,7 @@ fn test_hot_path_no_regression() {
     let p = [0xC0FFEEu64; 8];
     let o = [0xB0Bu64; 8];
 
-    let mut engine = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    let mut engine = unsafe { Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr()) };
     engine
         .pin_run(Run {
             pred: 0xC0FFEE,
@@ -186,7 +186,7 @@ fn test_warm_path_error_handling() {
     let p = [0xC0FFEEu64; 8];
     let o = [0xB0Bu64; 8];
 
-    let mut engine = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    let mut engine = unsafe { Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr()) };
     engine
         .pin_run(Run {
             pred: 0xC0FFEE,
@@ -228,7 +228,7 @@ fn test_warm_path_error_handling() {
     // Test guard violation (run.len > 8)
     // Note: Engine::pin_run already guards this, so we test with valid run.len
     // but check that the warm path validates it too
-    let mut engine2 = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    let mut engine2 = unsafe { Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr()) };
     // Create a context with run.len > 8 directly (bypassing engine guard)
     // This tests the warm path guard validation
     let ctx2 = engine2.ctx();
@@ -249,7 +249,7 @@ fn test_warm_path_guard_validation() {
     let p = [0xC0FFEEu64; 8];
     let o = [0xB0Bu64; 8];
 
-    let mut engine = Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr());
+    let mut engine = unsafe { Engine::new(s.as_ptr(), p.as_ptr(), o.as_ptr()) };
     engine
         .pin_run(Run {
             pred: 0xC0FFEE,

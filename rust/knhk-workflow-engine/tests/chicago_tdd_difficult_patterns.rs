@@ -127,7 +127,7 @@ chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_comprehensive, {
 
 chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_variable_count, {
     // Arrange: Test with different runtime counts
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -151,18 +151,18 @@ chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_variable_count, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Test with count = 3
     let case_data_3 = serde_json::json!({ "count": 3 });
-    let case_id_3 = fixture.create_case(spec_id, case_data_3).await?;
-    let case_3 = fixture.execute_case(case_id_3).await?;
+    let case_id_3 = fixture.create_case(spec_id, case_data_3).await.unwrap();
+    let case_3 = fixture.execute_case(case_id_3).await.unwrap();
     assert_eq!(case_3.state, CaseState::Completed);
 
     // Test with count = 10
     let case_data_10 = serde_json::json!({ "count": 10 });
-    let case_id_10 = fixture.create_case(spec_id, case_data_10).await?;
-    let case_10 = fixture.execute_case(case_id_10).await?;
+    let case_id_10 = fixture.create_case(spec_id, case_data_10).await.unwrap();
+    let case_10 = fixture.execute_case(case_id_10).await.unwrap();
     assert_eq!(case_10.state, CaseState::Completed);
 
     // Assert: Both cases completed successfully with different counts
@@ -172,20 +172,22 @@ chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_variable_count, {
     // Validate XES export for both cases
     fixture
         .export_and_validate_xes(case_id_3, Some(&["start", "mi_task", "end"]))
-        .await?;
+        .await
+        .unwrap();
     fixture
         .export_and_validate_xes(case_id_10, Some(&["start", "mi_task", "end"]))
-        .await?;
+        .await
+        .unwrap();
 
     // Validate MI task counts in XES
     fixture
         .validate_xes_task_count(case_id_3, "mi_task", 3)
-        .await?;
+        .await
+        .unwrap();
     fixture
         .validate_xes_task_count(case_id_10, "mi_task", 10)
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });
 // ============================================================================
 // PATTERN 15: MI WITHOUT RUNTIME KNOWLEDGE
@@ -193,7 +195,7 @@ chicago_async_test!(test_pattern_14_mi_with_runtime_knowledge_variable_count, {
 
 chicago_async_test!(test_pattern_15_mi_without_runtime_knowledge_unbounded, {
     // Arrange: Create workflow with MI pattern where instance count is unknown
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -217,18 +219,18 @@ chicago_async_test!(test_pattern_15_mi_without_runtime_knowledge_unbounded, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Create case that will terminate after some instances
     let case_data = serde_json::json!({
         "terminate": false,
         "instance_count": 0
     });
-    let case_id = fixture.create_case(spec_id, case_data).await?;
+    let case_id = fixture.create_case(spec_id, case_data).await.unwrap();
 
     // Act: Start case and execute
-    fixture.engine.start_case(case_id).await?;
-    let case = fixture.engine.get_case(case_id).await?;
+    fixture.engine.start_case(case_id).await.unwrap();
+    let case = fixture.engine.get_case(case_id).await.unwrap();
 
     // Assert: Pattern handles unbounded instances correctly
     // The pattern should allow instances to be created until termination condition
@@ -237,9 +239,8 @@ chicago_async_test!(test_pattern_15_mi_without_runtime_knowledge_unbounded, {
     // Validate XES export - verify workflow execution is captured
     fixture
         .export_and_validate_xes(case_id, Some(&["start", "mi_task", "end"]))
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });
 // ============================================================================
 // PATTERN 16: DEFERRED CHOICE
@@ -247,7 +248,7 @@ chicago_async_test!(test_pattern_15_mi_without_runtime_knowledge_unbounded, {
 
 chicago_async_test!(test_pattern_16_deferred_choice_event_driven, {
     // Arrange: Create workflow with deferred choice (event-driven decision)
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     // Create workflow with conditional branches based on case data
     let start_task = TaskBuilder::new("start", "Start")
@@ -285,12 +286,12 @@ chicago_async_test!(test_pattern_16_deferred_choice_event_driven, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Test Branch A (simulated by case data)
     let case_data_a = serde_json::json!({ "event_type": "A" });
-    let case_id_a = fixture.create_case(spec_id, case_data_a).await?;
-    let case_a = fixture.execute_case(case_id_a).await?;
+    let case_id_a = fixture.create_case(spec_id, case_data_a).await.unwrap();
+    let case_a = fixture.execute_case(case_id_a).await.unwrap();
 
     // Assert: Branch A executed (verify through case completion)
     assert_eq!(case_a.state, CaseState::Completed);
@@ -304,12 +305,13 @@ chicago_async_test!(test_pattern_16_deferred_choice_event_driven, {
     // Validate XES export for Branch A
     fixture
         .export_and_validate_xes(case_id_a, Some(&["start", "wait_event", "branch_a", "end"]))
-        .await?;
+        .await
+        .unwrap();
 
     // Test Branch B
     let case_data_b = serde_json::json!({ "event_type": "B" });
-    let case_id_b = fixture.create_case(spec_id, case_data_b).await?;
-    let case_b = fixture.execute_case(case_id_b).await?;
+    let case_id_b = fixture.create_case(spec_id, case_data_b).await.unwrap();
+    let case_b = fixture.execute_case(case_id_b).await.unwrap();
 
     // Assert: Branch B executed
     assert_eq!(case_b.state, CaseState::Completed);
@@ -323,9 +325,8 @@ chicago_async_test!(test_pattern_16_deferred_choice_event_driven, {
     // Validate XES export for Branch B
     fixture
         .export_and_validate_xes(case_id_b, Some(&["start", "wait_event", "branch_b", "end"]))
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });
 // ============================================================================
 // PATTERN 17: INTERLEAVED PARALLEL ROUTING
@@ -333,7 +334,7 @@ chicago_async_test!(test_pattern_16_deferred_choice_event_driven, {
 
 chicago_async_test!(test_pattern_17_interleaved_parallel_routing, {
     // Arrange: Create workflow with interleaved parallel routing
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -385,12 +386,12 @@ chicago_async_test!(test_pattern_17_interleaved_parallel_routing, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Act: Execute workflow
     let case_data = serde_json::json!({});
-    let case_id = fixture.create_case(spec_id, case_data).await?;
-    let case = fixture.execute_case(case_id).await?;
+    let case_id = fixture.create_case(spec_id, case_data).await.unwrap();
+    let case = fixture.execute_case(case_id).await.unwrap();
 
     // Assert: All tasks executed in interleaved order
     assert_eq!(case.state, CaseState::Completed);
@@ -421,9 +422,8 @@ chicago_async_test!(test_pattern_17_interleaved_parallel_routing, {
                 "start", "split", "task_a", "task_b", "task_c", "merge", "end",
             ]),
         )
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });
 // ============================================================================
 // PATTERN 18: MILESTONE
@@ -431,7 +431,7 @@ chicago_async_test!(test_pattern_17_interleaved_parallel_routing, {
 
 chicago_async_test!(test_pattern_18_milestone_state_based_gate, {
     // Arrange: Create workflow with milestone (state-based gate)
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -467,14 +467,14 @@ chicago_async_test!(test_pattern_18_milestone_state_based_gate, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Test: Milestone reached
     let case_data = serde_json::json!({
         "milestone_reached": true
     });
-    let case_id = fixture.create_case(spec_id, case_data).await?;
-    let case = fixture.execute_case(case_id).await?;
+    let case_id = fixture.create_case(spec_id, case_data).await.unwrap();
+    let case = fixture.execute_case(case_id).await.unwrap();
 
     // Assert: Protected task executed after milestone
     assert_eq!(case.state, CaseState::Completed);
@@ -494,9 +494,8 @@ chicago_async_test!(test_pattern_18_milestone_state_based_gate, {
             case_id,
             Some(&["start", "prepare", "milestone", "protected_task", "end"]),
         )
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });
 // ============================================================================
 // PATTERN 19: CANCEL ACTIVITY
@@ -504,7 +503,7 @@ chicago_async_test!(test_pattern_18_milestone_state_based_gate, {
 
 chicago_async_test!(test_pattern_19_cancel_activity, {
     // Arrange: Create workflow with cancel activity pattern
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -534,14 +533,14 @@ chicago_async_test!(test_pattern_19_cancel_activity, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Test: Cancel activity
     let case_data = serde_json::json!({
         "cancel": true
     });
-    let case_id = fixture.create_case(spec_id, case_data).await?;
-    let case = fixture.execute_case(case_id).await?;
+    let case_id = fixture.create_case(spec_id, case_data).await.unwrap();
+    let case = fixture.execute_case(case_id).await.unwrap();
 
     // Assert: Activity was cancelled (verify through case completion or cancellation state)
     // For cancellation patterns, we verify the workflow completed successfully
@@ -563,9 +562,8 @@ chicago_async_test!(test_pattern_19_cancel_activity, {
             case_id,
             Some(&["start", "long_running_task", "cancel_trigger", "end"]),
         )
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });
 // ============================================================================
 // PATTERN 36: DYNAMIC PARTIAL JOIN MI
@@ -573,7 +571,7 @@ chicago_async_test!(test_pattern_19_cancel_activity, {
 
 chicago_async_test!(test_pattern_36_dynamic_partial_join_mi, {
     // Arrange: Create workflow with dynamic partial join MI
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -598,15 +596,15 @@ chicago_async_test!(test_pattern_36_dynamic_partial_join_mi, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Test: Dynamic threshold (7 out of 10 instances)
     let case_data = serde_json::json!({
         "total_instances": 10,
         "join_threshold": 7
     });
-    let case_id = fixture.create_case(spec_id, case_data).await?;
-    let case = fixture.execute_case(case_id).await?;
+    let case_id = fixture.create_case(spec_id, case_data).await.unwrap();
+    let case = fixture.execute_case(case_id).await.unwrap();
 
     // Assert: Join occurred when threshold reached
     assert_eq!(case.state, CaseState::Completed);
@@ -628,15 +626,14 @@ chicago_async_test!(test_pattern_36_dynamic_partial_join_mi, {
     // Validate XES export - verify partial join MI pattern is captured
     fixture
         .export_and_validate_xes(case_id, Some(&["start", "mi_task", "end"]))
-        .await?;
+        .await
+        .unwrap();
 
     // Validate MI task appears in XES (at least some instances)
     assert!(
         mi_completions > 0,
         "XES should contain at least some MI task events"
     );
-
-    Ok(())
 });
 // ============================================================================
 // INTEGRATION TEST: MULTIPLE DIFFICULT PATTERNS COMBINED
@@ -644,7 +641,7 @@ chicago_async_test!(test_pattern_36_dynamic_partial_join_mi, {
 
 chicago_async_test!(test_difficult_patterns_integration, {
     // Arrange: Create workflow combining multiple difficult patterns
-    let mut fixture = WorkflowTestFixture::new()?;
+    let mut fixture = WorkflowTestFixture::new().unwrap();
 
     let start_task = TaskBuilder::new("start", "Start")
         .with_type(TaskType::Atomic)
@@ -681,7 +678,7 @@ chicago_async_test!(test_difficult_patterns_integration, {
         .with_end_condition("end")
         .build();
 
-    let spec_id = fixture.register_workflow(spec).await?;
+    let spec_id = fixture.register_workflow(spec).await.unwrap();
 
     // Act: Execute complex workflow
     let case_data = serde_json::json!({
@@ -690,8 +687,8 @@ chicago_async_test!(test_difficult_patterns_integration, {
         "threshold": 3,
         "milestone_reached": true
     });
-    let case_id = fixture.create_case(spec_id, case_data).await?;
-    let case = fixture.execute_case(case_id).await?;
+    let case_id = fixture.create_case(spec_id, case_data).await.unwrap();
+    let case = fixture.execute_case(case_id).await.unwrap();
 
     // Assert: All patterns executed correctly
     assert_eq!(case.state, CaseState::Completed);
@@ -723,7 +720,6 @@ chicago_async_test!(test_difficult_patterns_integration, {
             case_id,
             Some(&["start", "deferred_choice", "mi_runtime", "milestone", "end"]),
         )
-        .await?;
-
-    Ok(())
+        .await
+        .unwrap();
 });

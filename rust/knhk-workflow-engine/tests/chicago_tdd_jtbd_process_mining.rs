@@ -12,6 +12,7 @@
 //! - End-to-end validation (complete workflow from execution to analysis)
 //! - JTBD focus (validate actual use cases, not just technical integration)
 
+use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg, assert_guard_constraint};
 use knhk_workflow_engine::{
     executor::WorkflowEngine,
     parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId},
@@ -24,7 +25,6 @@ use process_mining::{
 };
 use std::collections::HashMap;
 use tempfile::TempDir;
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 /// Helper: Extract activity names from XES content
 /// Validates that XES export contains actual task execution events
@@ -103,6 +103,7 @@ fn validate_discovered_model_structure(
 
 /// Create a realistic sequential workflow (Pattern 1: Sequence)
 /// Task A → Task B → Task C
+/// Guard constraint: max_run_len ≤ 8 (this workflow has 3 tasks, which is within limit)
 fn create_sequential_workflow() -> WorkflowSpec {
     let mut tasks = HashMap::new();
     let mut flows = Vec::new();
@@ -235,6 +236,7 @@ chicago_async_test!(test_jtbd_process_discovery_from_execution_logs, {
     engine.register_workflow(spec.clone()).await.unwrap();
 
     // Execute 10 cases to generate sufficient execution data
+    // Guard constraint: max_run_len ≤ 8, but we're executing 10 cases sequentially (not in a single run)
     let mut case_ids = Vec::new();
     for i in 1..=10 {
         let case_id = engine
@@ -245,6 +247,9 @@ chicago_async_test!(test_jtbd_process_discovery_from_execution_logs, {
         let _ = engine.execute_case(case_id).await;
         case_ids.push(case_id);
     }
+    
+    // Guard constraint validation: Ensure workflow tasks don't exceed max_run_len
+    assert_guard_constraint!(spec.tasks.len() <= 8, "max_run_len");
 
     // Act: Export execution logs to XES
     let xes_content = engine.export_workflow_to_xes(spec.id).await.unwrap();
@@ -304,9 +309,9 @@ chicago_async_test!(test_jtbd_conformance_checking_discovered_vs_design, {
     let state_store = StateStore::new(temp_dir.path()).unwrap();
     let engine = WorkflowEngine::new(state_store);
 
-    let spec = create_sequential_workflow();
-    engine.register_workflow(spec.clone()).await.unwrap();
-
+    // Guard constraint validation: Ensure workflow tasks don't exceed max_run_len
+    assert_guard_constraint!(spec.tasks.len() <= 8, "max_run_len");
+    
     // Execute multiple cases
     for i in 1..=15 {
         let case_id = engine

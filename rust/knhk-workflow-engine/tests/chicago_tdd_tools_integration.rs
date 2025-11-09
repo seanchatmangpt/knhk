@@ -17,7 +17,9 @@
 //! - Multiple workflows and cases
 //! - Workflow listing and case listing
 
+use chicago_tdd_tools::assertions::{assert_that, assert_that_with_msg};
 use chicago_tdd_tools::prelude::*;
+use chicago_tdd_tools::{assert_eq_enhanced, assert_within_tick_budget};
 use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::case::{Case, CaseId, CaseState};
 use knhk_workflow_engine::error::{WorkflowError, WorkflowResult};
@@ -77,30 +79,22 @@ chicago_async_test!(test_workflow_registration_and_retrieval, {
 
     // Assert: Verify workflow can be retrieved
     let retrieved_spec = engine.get_workflow(spec.id).await?;
-    assert_eq_msg!(
-        &retrieved_spec.id,
-        &spec.id,
-        "Retrieved workflow should have same ID"
-    );
-    assert_eq_msg!(
-        &retrieved_spec.name,
-        &spec.name,
-        "Retrieved workflow should have same name"
-    );
-    assert_eq_msg!(
-        &retrieved_spec.tasks.len(),
-        &spec.tasks.len(),
-        "Retrieved workflow should have same number of tasks"
-    );
+    // Use enhanced assertion for better error messages
+    assert_eq_enhanced!(&retrieved_spec.id, &spec.id);
+    assert_eq_enhanced!(&retrieved_spec.name, &spec.name);
+    // Use assert_that for predicate-based assertions
+    assert_that(&retrieved_spec.tasks.len(), |len| *len == spec.tasks.len());
 
     // Assert: Verify workflow appears in list
     let workflows = engine.list_workflows().await?;
-    assert!(
-        workflows.contains(&spec.id),
-        "Workflow should appear in list of workflows"
+    // Use assert_that_with_msg for predicate-based assertions with custom message
+    assert_that_with_msg(
+        &workflows,
+        |w| w.contains(&spec.id),
+        "Workflow should appear in list",
     );
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test case creation and state transitions
 chicago_async_test!(test_case_creation_and_state_transitions, {
@@ -179,39 +173,29 @@ chicago_async_test!(test_case_creation_and_state_transitions, {
 
     // Assert: Case is created with Created state
     let case = engine.get_case(case_id).await?;
-    assert_eq_msg!(
-        &case.state,
-        &CaseState::Created,
-        "New case should be in Created state"
-    );
-    assert_eq_msg!(
-        &case.spec_id,
-        &spec.id,
-        "Case should reference correct workflow spec"
-    );
+    assert_eq_enhanced!(&case.state, &CaseState::Created);
+    assert_eq_enhanced!(&case.spec_id, &spec.id);
 
     // Act: Start case
     engine.start_case(case_id).await?;
 
     // Assert: Case transitions to Running state
     let case = engine.get_case(case_id).await?;
-    assert_eq_msg!(
-        &case.state,
-        &CaseState::Running,
-        "Case should transition to Running state after start"
-    );
+    assert_eq_enhanced!(&case.state, &CaseState::Running);
 
     // Act: Execute case
     engine.execute_case(case_id).await?;
 
     // Assert: Case completes (may be Completed or still Running depending on implementation)
     let case = engine.get_case(case_id).await?;
-    assert!(
-        case.state == CaseState::Completed || case.state == CaseState::Running,
-        "Case should be in a valid final state after execution"
+    // Use assert_that for predicate-based assertion
+    assert_that_with_msg(
+        &case.state,
+        |state| *state == CaseState::Completed || *state == CaseState::Running,
+        "Case should be in a valid final state after execution",
     );
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test case execution with multiple tasks
 chicago_async_test!(test_case_execution_with_multiple_tasks, {
@@ -311,10 +295,10 @@ chicago_async_test!(test_case_execution_with_multiple_tasks, {
     assert_eq_msg!(
         &case.spec_id,
         &spec.id,
-        "Case should reference correct workflow spec",
+        "Case should reference correct workflow spec"
     );
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test error handling for invalid workflow registration
 chicago_async_test!(test_error_handling_invalid_workflow, {
@@ -358,7 +342,7 @@ chicago_async_test!(test_error_handling_invalid_workflow, {
             );
         }
     }
-}
+});
 
 /// Test error handling for missing workflow
 chicago_async_test!(test_error_handling_missing_workflow, {
@@ -384,7 +368,7 @@ chicago_async_test!(test_error_handling_missing_workflow, {
             panic!("Should not find non-existent workflow");
         }
     }
-}
+});
 
 /// Test error handling for missing case
 chicago_async_test!(test_error_handling_missing_case, {
@@ -410,7 +394,7 @@ chicago_async_test!(test_error_handling_missing_case, {
             panic!("Should not find non-existent case");
         }
     }
-}
+});
 
 /// Test case cancellation
 chicago_async_test!(test_case_cancellation, {
@@ -467,7 +451,7 @@ chicago_async_test!(test_case_cancellation, {
     assert_eq_msg!(
         &case.state,
         &CaseState::Running,
-        "Case should be running after start",
+        "Case should be running after start"
     );
 
     // Act: Cancel case
@@ -478,10 +462,10 @@ chicago_async_test!(test_case_cancellation, {
     assert_eq_msg!(
         &case.state,
         &CaseState::Cancelled,
-        "Case should be cancelled after cancel",
+        "Case should be cancelled after cancel"
     );
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test multiple workflows and cases
 chicago_async_test!(test_multiple_workflows_and_cases, {
@@ -560,7 +544,7 @@ chicago_async_test!(test_multiple_workflows_and_cases, {
         assert_eq_msg!(
             &case.state,
             &CaseState::Created,
-            "Case should be in Created state",
+            "Case should be in Created state"
         );
     }
 
@@ -573,7 +557,7 @@ chicago_async_test!(test_multiple_workflows_and_cases, {
         );
     }
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test state persistence across engine instances
 chicago_async_test!(test_state_persistence, {
@@ -635,13 +619,13 @@ chicago_async_test!(test_state_persistence, {
     assert_eq_msg!(
         &retrieved_spec.id,
         &spec.id,
-        "Second engine should retrieve persisted workflow",
+        "Second engine should retrieve persisted workflow"
     );
 
     // Note: Cases may not persist across instances depending on implementation
     // This test verifies workflow persistence at minimum
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test admission gate integration
 chicago_async_test!(test_admission_gate_integration, {
@@ -698,10 +682,10 @@ chicago_async_test!(test_admission_gate_integration, {
     assert_eq_msg!(
         &case.state,
         &CaseState::Created,
-        "Case should be created when data passes admission gate",
+        "Case should be created when data passes admission gate"
     );
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
 });
 /// Test workflow engine services are accessible
 chicago_async_test!(test_engine_services_access, {
@@ -722,7 +706,7 @@ chicago_async_test!(test_engine_services_access, {
     let _work_items = engine.work_item_service();
     let _admission = engine.admission_gate();
     let _sidecar = engine.event_sidecar();
-}
+});
 
 /// Test complete workflow lifecycle
 chicago_async_test!(test_complete_workflow_lifecycle, {
@@ -807,7 +791,7 @@ chicago_async_test!(test_complete_workflow_lifecycle, {
     assert_eq_msg!(
         &retrieved_spec.id,
         &spec.id,
-        "Workflow should be registered",
+        "Workflow should be registered"
     );
 
     // Arrange: Create test data
@@ -844,5 +828,150 @@ chicago_async_test!(test_complete_workflow_lifecycle, {
     // Assert: Case data is preserved
     assert!(case.data.is_object(), "Case data should be preserved");
 
-    Ok(())
+    Ok::<(), WorkflowError>(())
+});
+
+/// Test that create_case rejects data exceeding MAX_RUN_LEN at ingress
+chicago_async_test!(test_create_case_rejects_max_run_len_violation, {
+    // Arrange: Create engine and workflow
+    let db_path = format!("./test_workflow_db_max_run_len_{}", std::process::id());
+    let state_store = StateStore::new(&db_path)?;
+    let engine = WorkflowEngine::new(state_store);
+
+    let mut spec = WorkflowSpec {
+        id: WorkflowSpecId::new(),
+        name: "MAX_RUN_LEN Test".to_string(),
+        tasks: HashMap::new(),
+        conditions: HashMap::new(),
+        flows: Vec::new(),
+        start_condition: None,
+        end_condition: None,
+        source_turtle: None,
+    };
+
+    let task = Task {
+        id: "task:1".to_string(),
+        name: "Task 1".to_string(),
+        task_type: TaskType::Atomic,
+        split_type: SplitType::And,
+        join_type: JoinType::And,
+        max_ticks: None,
+        priority: None,
+        use_simd: false,
+        input_conditions: vec![],
+        output_conditions: vec![],
+        outgoing_flows: vec![],
+        incoming_flows: vec![],
+        allocation_policy: None,
+        required_roles: vec![],
+        required_capabilities: vec![],
+        exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
+    };
+    spec.tasks.insert("task:1".to_string(), task);
+    engine.register_workflow(spec.clone()).await?;
+
+    // Arrange: Create test data with >8 triples (exceeds MAX_RUN_LEN=8)
+    // Simulate case data that would result in >8 triples in a run
+    let mut invalid_data = serde_json::json!({});
+    // Create array with 9 items to simulate MAX_RUN_LEN violation
+    let mut triples_array = Vec::new();
+    for i in 0..9 {
+        triples_array.push(serde_json::json!({
+            "subject": format!("s{}", i),
+            "predicate": format!("p{}", i),
+            "object": format!("o{}", i)
+        }));
+    }
+    invalid_data["triples"] = serde_json::json!(triples_array);
+
+    // Act: Attempt to create case with data exceeding MAX_RUN_LEN
+    let result = engine.create_case(spec.id, invalid_data).await;
+
+    // Assert: Should reject at ingress with guard constraint violation
+    assert_err!(
+        &result,
+        "create_case should reject data exceeding MAX_RUN_LEN"
+    );
+
+    if let Err(WorkflowError::Validation(msg)) = result {
+        // Verify error message mentions guard constraint or MAX_RUN_LEN
+        assert_that_with_msg(
+            &msg,
+            |m| {
+                m.contains("max_run_len")
+                    || m.contains("MAX_RUN_LEN")
+                    || m.contains("exceeds")
+                    || m.contains("8")
+            },
+            "Error message should mention MAX_RUN_LEN constraint violation",
+        );
+    } else {
+        panic!("Expected Validation error, got: {:?}", result);
+    }
+
+    Ok::<(), WorkflowError>(())
+});
+
+/// Test that create_case accepts data within MAX_RUN_LEN at ingress
+chicago_async_test!(test_create_case_accepts_valid_max_run_len, {
+    // Arrange: Create engine and workflow
+    let db_path = format!("./test_workflow_db_valid_run_len_{}", std::process::id());
+    let state_store = StateStore::new(&db_path)?;
+    let engine = WorkflowEngine::new(state_store);
+
+    let mut spec = WorkflowSpec {
+        id: WorkflowSpecId::new(),
+        name: "Valid MAX_RUN_LEN Test".to_string(),
+        tasks: HashMap::new(),
+        conditions: HashMap::new(),
+        flows: Vec::new(),
+        start_condition: None,
+        end_condition: None,
+        source_turtle: None,
+    };
+
+    let task = Task {
+        id: "task:1".to_string(),
+        name: "Task 1".to_string(),
+        task_type: TaskType::Atomic,
+        split_type: SplitType::And,
+        join_type: JoinType::And,
+        max_ticks: None,
+        priority: None,
+        use_simd: false,
+        input_conditions: vec![],
+        output_conditions: vec![],
+        outgoing_flows: vec![],
+        incoming_flows: vec![],
+        allocation_policy: None,
+        required_roles: vec![],
+        required_capabilities: vec![],
+        exception_worklet: None,
+        input_parameters: vec![],
+        output_parameters: vec![],
+    };
+    spec.tasks.insert("task:1".to_string(), task);
+    engine.register_workflow(spec.clone()).await?;
+
+    // Arrange: Create test data with exactly 8 triples (MAX_RUN_LEN boundary)
+    let mut valid_data = serde_json::json!({});
+    let mut triples_array = Vec::new();
+    for i in 0..8 {
+        triples_array.push(serde_json::json!({
+            "subject": format!("s{}", i),
+            "predicate": format!("p{}", i),
+            "object": format!("o{}", i)
+        }));
+    }
+    valid_data["triples"] = serde_json::json!(triples_array);
+
+    // Act: Create case with valid data (≤8 triples)
+    let result = engine.create_case(spec.id, valid_data).await;
+
+    // Assert: Should succeed (guard constraint satisfied)
+    assert_ok!(&result, "create_case should accept data within MAX_RUN_LEN");
+
+    Ok::<(), WorkflowError>(())
 });

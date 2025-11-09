@@ -11,12 +11,13 @@ from pathlib import Path
 
 def count_clippy_errors():
     """Count clippy errors."""
+    import sys
     try:
         result = subprocess.run(
             ['cargo', 'clippy', '--workspace', '--', '-D', 'warnings'],
             capture_output=True,
             text=True,
-            cwd='/Users/sac/knhk'
+            cwd='rust'
         )
 
         # Count errors
@@ -28,12 +29,13 @@ def count_clippy_errors():
 
 def count_clippy_warnings():
     """Count clippy warnings."""
+    import sys
     try:
         result = subprocess.run(
             ['cargo', 'clippy', '--workspace'],
             capture_output=True,
             text=True,
-            cwd='/Users/sac/knhk'
+            cwd='rust'
         )
 
         # Count warnings (excluding errors)
@@ -45,17 +47,17 @@ def count_clippy_warnings():
 
 def count_unwrap_in_production():
     """Count .unwrap() and .expect() in production code."""
+    import sys
     try:
         result = subprocess.run(
             ['bash', '-c',
              'grep -r "\\.unwrap()\\|\\.expect(" rust/*/src --include="*.rs" | '
              'grep -v test | grep -v cli | grep -v examples | grep -v build.rs | wc -l'],
             capture_output=True,
-            text=True,
-            cwd='/Users/sac/knhk'
+            text=True
         )
 
-        count = int(result.stdout.strip())
+        count = int(result.stdout.strip()) if result.stdout.strip() else 0
         return count
     except Exception as e:
         print(f"Warning: Could not count unwraps: {e}", file=sys.stderr)
@@ -63,17 +65,17 @@ def count_unwrap_in_production():
 
 def count_println_in_production():
     """Count println! in production code."""
+    import sys
     try:
         result = subprocess.run(
             ['bash', '-c',
              'grep -r "println!" rust/*/src --include="*.rs" | '
              'grep -v test | grep -v cli | grep -v examples | wc -l'],
             capture_output=True,
-            text=True,
-            cwd='/Users/sac/knhk'
+            text=True
         )
 
-        count = int(result.stdout.strip())
+        count = int(result.stdout.strip()) if result.stdout.strip() else 0
         return count
     except Exception as e:
         print(f"Warning: Could not count printlns: {e}", file=sys.stderr)
@@ -81,16 +83,16 @@ def count_println_in_production():
 
 def count_unimplemented():
     """Count unimplemented!() calls."""
+    import sys
     try:
         result = subprocess.run(
             ['bash', '-c',
              'grep -r "unimplemented!" rust/*/src --include="*.rs" | wc -l'],
             capture_output=True,
-            text=True,
-            cwd='/Users/sac/knhk'
+            text=True
         )
 
-        count = int(result.stdout.strip())
+        count = int(result.stdout.strip()) if result.stdout.strip() else 0
         return count
     except Exception as e:
         print(f"Warning: Could not count unimplemented: {e}", file=sys.stderr)

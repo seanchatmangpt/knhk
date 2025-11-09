@@ -8,11 +8,13 @@
 
 use crate::error::WorkflowResult;
 use crate::parser::WorkflowSpecId;
+use crate::patterns::RegisterAllExt;
 use crate::WorkflowEngine;
 
 use super::fitness::FitnessValidator;
 use super::formal::FormalVerifier;
 use super::generalization::GeneralizationValidator;
+use super::jtbd::{create_default_workflow_pattern_jtbd_scenarios, WorkflowPatternJtbdValidator};
 use super::precision::PrecisionValidator;
 use super::process_mining::ProcessMiningAnalyzer;
 use super::report::{ValidationReport, ValidationResult};
@@ -36,6 +38,7 @@ impl ValidationFramework {
     /// 3. Generalization validation
     /// 4. Process mining analysis
     /// 5. Formal verification
+    /// 6. JTBD validation (validates patterns accomplish intended purpose)
     pub async fn run_complete_validation(
         &self,
         spec_id: WorkflowSpecId,
@@ -67,6 +70,58 @@ impl ValidationFramework {
         let formal_result = formal_verifier.verify(spec_id).await?;
         report.add_phase_result("formal", formal_result);
 
+        // Phase 6: JTBD Validation (validates patterns accomplish intended purpose)
+        // Create a new registry with all patterns registered
+        let mut registry = crate::patterns::PatternRegistry::new();
+        registry.register_all_patterns();
+        let mut jtbd_validator = create_default_workflow_pattern_jtbd_scenarios(registry);
+        let jtbd_results = jtbd_validator.validate_all();
+        let jtbd_summary = jtbd_validator.get_summary(&jtbd_results);
+
+        let mut jtbd_details = Vec::new();
+        for result in &jtbd_results {
+            jtbd_details.push(crate::validation::report::ValidationDetail {
+                name: result.pattern_name.clone(),
+                status: if result.jtbd_success {
+                    crate::validation::report::ValidationStatus::Pass
+                } else {
+                    crate::validation::report::ValidationStatus::Fail
+                },
+                message: format!(
+                    "Execution: {}, JTBD: {}, Expected: {}, Actual: {}",
+                    result.execution_success,
+                    result.jtbd_success,
+                    result.expected_behavior,
+                    result.actual_behavior
+                ),
+                duration_ms: result.latency_ms,
+            });
+        }
+
+        let jtbd_result = ValidationResult {
+            phase: "jtbd".to_string(),
+            status: if jtbd_summary.all_passed() {
+                crate::validation::report::ValidationStatus::Pass
+            } else {
+                crate::validation::report::ValidationStatus::Fail
+            },
+            passed: jtbd_summary.jtbd_passed,
+            failed: jtbd_summary.jtbd_failed + jtbd_summary.execution_failed,
+            warnings: 0,
+            skipped: 0,
+            details: jtbd_details,
+            metrics: {
+                let mut m = std::collections::HashMap::new();
+                m.insert("pass_rate".to_string(), jtbd_summary.pass_rate());
+                m.insert(
+                    "avg_latency_ms".to_string(),
+                    jtbd_summary.avg_latency_ms as f64,
+                );
+                m
+            },
+        };
+        report.add_phase_result("jtbd", jtbd_result);
+
         Ok(report)
     }
 
@@ -96,6 +151,57 @@ impl ValidationFramework {
             "formal" => {
                 let verifier = FormalVerifier::new(self.engine.clone());
                 verifier.verify(spec_id).await
+            }
+            "jtbd" => {
+                // Create a new registry with all patterns registered
+                let mut registry = crate::patterns::PatternRegistry::new();
+                registry.register_all_patterns();
+                let mut jtbd_validator = create_default_workflow_pattern_jtbd_scenarios(registry);
+                let jtbd_results = jtbd_validator.validate_all();
+                let jtbd_summary = jtbd_validator.get_summary(&jtbd_results);
+
+                let mut jtbd_details = Vec::new();
+                for result in &jtbd_results {
+                    jtbd_details.push(crate::validation::report::ValidationDetail {
+                        name: result.pattern_name.clone(),
+                        status: if result.jtbd_success {
+                            crate::validation::report::ValidationStatus::Pass
+                        } else {
+                            crate::validation::report::ValidationStatus::Fail
+                        },
+                        message: format!(
+                            "Execution: {}, JTBD: {}, Expected: {}, Actual: {}",
+                            result.execution_success,
+                            result.jtbd_success,
+                            result.expected_behavior,
+                            result.actual_behavior
+                        ),
+                        duration_ms: result.latency_ms,
+                    });
+                }
+
+                Ok(ValidationResult {
+                    phase: "jtbd".to_string(),
+                    status: if jtbd_summary.all_passed() {
+                        crate::validation::report::ValidationStatus::Pass
+                    } else {
+                        crate::validation::report::ValidationStatus::Fail
+                    },
+                    passed: jtbd_summary.jtbd_passed,
+                    failed: jtbd_summary.jtbd_failed + jtbd_summary.execution_failed,
+                    warnings: 0,
+                    skipped: 0,
+                    details: jtbd_details,
+                    metrics: {
+                        let mut m = std::collections::HashMap::new();
+                        m.insert("pass_rate".to_string(), jtbd_summary.pass_rate());
+                        m.insert(
+                            "avg_latency_ms".to_string(),
+                            jtbd_summary.avg_latency_ms as f64,
+                        );
+                        m
+                    },
+                })
             }
             _ => Err(crate::error::WorkflowError::InvalidSpecification(format!(
                 "Unknown validation phase: {}",

@@ -1,6 +1,9 @@
 // knhk-config v0.1.0 - Configuration Management
 // TOML-based configuration with environment variable overrides
 
+// CRITICAL: Enforce proper error handling - no unwrap/expect in production code
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 

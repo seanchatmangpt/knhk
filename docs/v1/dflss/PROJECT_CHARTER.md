@@ -206,6 +206,18 @@ By achieving Six Sigma quality (6σ), KNHK will:
 4. **Scope**: v1.0 minimum viable release (not full Six Sigma)
 5. **Dependencies**: Weaver validation as source of truth
 
+### Coding Standards
+
+**Prohibited Anti-Patterns**:
+- **Defensive programming**: Validation checks in execution paths (hot path, executor, state). Validation happens at ingress only via guards.
+- **unwrap()/expect()**: In production code paths (hot path, executor, state).
+- **Placeholder implementations**: Code that claims success without doing work.
+
+**Required Patterns**:
+- Validation at ingress: Guards (`security/guards.rs`), admission gates (`services/admission.rs`).
+- Execution paths assume pre-validated inputs: Hot path, executor, state management.
+- Error handling: `Result<T, E>` for failures, not input validation.
+
 ---
 
 ## 8. Risks and Mitigation

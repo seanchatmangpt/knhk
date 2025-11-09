@@ -5,6 +5,7 @@
 
 mod analyzer;
 pub mod aot;
+pub mod benchmark;
 mod hot_path;
 mod metrics;
 pub mod simd;

@@ -137,6 +137,8 @@ impl DeltaRing {
     }
 
     /// Enqueue delta to ring at tick slot
+    ///
+    /// Inputs pre-validated at ingress in knhk-workflow-engine. NO checks.
     #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     pub fn enqueue(
         &self,
@@ -146,13 +148,6 @@ impl DeltaRing {
         O: &[u64],
         cycle_id: u64,
     ) -> Result<(), String> {
-        if S.len() != P.len() || P.len() != O.len() {
-            return Err("S, P, O arrays must have same length".to_string());
-        }
-        if S.is_empty() || S.len() > 8 {
-            return Err("Count must be between 1 and 8".to_string());
-        }
-
         let result = unsafe {
             knhk_ring_enqueue_delta(
                 &self.inner as *const _ as *mut _,
@@ -252,6 +247,8 @@ impl AssertionRing {
     }
 
     /// Enqueue assertion + receipt to ring at tick slot
+    ///
+    /// Inputs pre-validated at ingress in knhk-workflow-engine. NO checks.
     #[allow(non_snake_case)] // RDF naming convention: S(ubject), P(redicate), O(bject)
     pub fn enqueue(
         &self,
@@ -261,13 +258,6 @@ impl AssertionRing {
         O: &[u64],
         receipt: &Receipt,
     ) -> Result<(), String> {
-        if S.len() != P.len() || P.len() != O.len() {
-            return Err("S, P, O arrays must have same length".to_string());
-        }
-        if S.is_empty() || S.len() > 8 {
-            return Err("Count must be between 1 and 8".to_string());
-        }
-
         let result = unsafe {
             knhk_ring_enqueue_assertion(
                 &self.inner as *const _ as *mut _,

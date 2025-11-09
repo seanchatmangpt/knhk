@@ -98,7 +98,7 @@ chicago_async_test!(test_fixture_assert_case_completed, {
     // Note: This will panic if case is not completed, which is expected behavior
     if case.state == CaseState::Completed {
         fixture.assert_case_completed(&case);
-    }
+    });
 }
 
 // ============================================================================
@@ -128,7 +128,7 @@ chicago_test!(test_create_test_context_creates_empty_context, {
     // Assert: Context has empty variables
     assert_eq!(ctx.variables.len(), 0);
     assert!(ctx.case_id != knhk_workflow_engine::case::CaseId::new()); // Should be unique
-}
+});
 
 chicago_test!(test_create_test_context_with_vars_includes_variables, {
     // Arrange: Create variables
@@ -143,7 +143,7 @@ chicago_test!(test_create_test_context_with_vars_includes_variables, {
     assert_eq!(ctx.variables.len(), 2);
     assert_eq!(ctx.variables.get("key1"), Some(&"value1".to_string()));
     assert_eq!(ctx.variables.get("key2"), Some(&"value2".to_string()));
-}
+});
 
 chicago_test!(test_create_test_context_for_workflow_sets_workflow_id, {
     // Arrange: Create workflow ID
@@ -154,7 +154,7 @@ chicago_test!(test_create_test_context_for_workflow_sets_workflow_id, {
 
     // Assert: Workflow ID set
     assert_eq!(ctx.workflow_id, workflow_id);
-}
+});
 
 chicago_test!(test_assert_pattern_success_passes_for_successful_result, {
     // Arrange: Create successful result
@@ -325,7 +325,7 @@ chicago_test!(test_workflow_spec_builder_creates_workflow, {
     // Assert: Workflow created with correct name
     assert_eq!(spec.name, "Test Workflow");
     assert!(!spec.id.to_string().is_empty());
-}
+});
 
 chicago_test!(test_workflow_spec_builder_sets_start_condition, {
     // Arrange & Act: Build workflow with start condition
@@ -335,7 +335,7 @@ chicago_test!(test_workflow_spec_builder_sets_start_condition, {
 
     // Assert: Start condition set
     assert_eq!(spec.start_condition, Some("condition:start".to_string()));
-}
+});
 
 chicago_test!(test_workflow_spec_builder_sets_end_condition, {
     // Arrange & Act: Build workflow with end condition
@@ -345,7 +345,7 @@ chicago_test!(test_workflow_spec_builder_sets_end_condition, {
 
     // Assert: End condition set
     assert_eq!(spec.end_condition, Some("condition:end".to_string()));
-}
+});
 
 chicago_test!(test_workflow_spec_builder_adds_tasks, {
     // Arrange: Create task
@@ -360,7 +360,7 @@ chicago_test!(test_workflow_spec_builder_adds_tasks, {
     assert_eq!(spec.tasks.len(), 1);
     assert!(spec.tasks.contains_key("task:1"));
     assert_eq!(spec.tasks.get("task:1").unwrap().name, "Task 1");
-}
+});
 
 chicago_test!(test_task_builder_creates_task, {
     // Arrange & Act: Build task
@@ -372,7 +372,7 @@ chicago_test!(test_task_builder_creates_task, {
     assert_eq!(task.task_type, TaskType::Atomic);
     assert_eq!(task.split_type, SplitType::And);
     assert_eq!(task.join_type, JoinType::And);
-}
+});
 
 chicago_test!(test_task_builder_sets_task_type, {
     // Arrange & Act: Build task with type
@@ -382,7 +382,7 @@ chicago_test!(test_task_builder_sets_task_type, {
 
     // Assert: Task type set
     assert_eq!(task.task_type, TaskType::Composite);
-}
+});
 
 chicago_test!(test_task_builder_sets_split_type, {
     // Arrange & Act: Build task with split type
@@ -392,7 +392,7 @@ chicago_test!(test_task_builder_sets_split_type, {
 
     // Assert: Split type set
     assert_eq!(task.split_type, SplitType::Xor);
-}
+});
 
 chicago_test!(test_task_builder_sets_join_type, {
     // Arrange & Act: Build task with join type
@@ -402,7 +402,7 @@ chicago_test!(test_task_builder_sets_join_type, {
 
     // Assert: Join type set
     assert_eq!(task.join_type, JoinType::Or);
-}
+});
 
 chicago_test!(test_task_builder_sets_max_ticks, {
     // Arrange & Act: Build task with max ticks
@@ -412,7 +412,7 @@ chicago_test!(test_task_builder_sets_max_ticks, {
 
     // Assert: Max ticks set
     assert_eq!(task.max_ticks, Some(8));
-}
+});
 
 chicago_test!(test_task_builder_adds_outgoing_flow, {
     // Arrange & Act: Build task with outgoing flow
@@ -423,7 +423,7 @@ chicago_test!(test_task_builder_adds_outgoing_flow, {
     // Assert: Outgoing flow added
     assert_eq!(task.outgoing_flows.len(), 1);
     assert!(task.outgoing_flows.contains(&"task:2".to_string()));
-}
+});
 
 // ============================================================================
 // Test Data Builder Tests
@@ -436,7 +436,7 @@ chicago_test!(test_test_data_builder_creates_empty_data, {
     // Assert: Empty JSON object
     assert!(data.is_object());
     assert_eq!(data.as_object().unwrap().len(), 0);
-}
+});
 
 chicago_test!(test_test_data_builder_adds_variable, {
     // Arrange & Act: Build data with variable
@@ -446,7 +446,7 @@ chicago_test!(test_test_data_builder_adds_variable, {
 
     // Assert: Variable added
     assert_eq!(data["key1"], "value1");
-}
+});
 
 chicago_test!(test_test_data_builder_adds_multiple_variables, {
     // Arrange & Act: Build data with multiple variables
@@ -460,7 +460,7 @@ chicago_test!(test_test_data_builder_adds_multiple_variables, {
     assert_eq!(data["key1"], "value1");
     assert_eq!(data["key2"], "value2");
     assert_eq!(data["key3"], "value3");
-}
+});
 
 chicago_test!(test_test_data_builder_with_order_data, {
     // Arrange & Act: Build order data
@@ -473,7 +473,7 @@ chicago_test!(test_test_data_builder_with_order_data, {
     assert_eq!(data["total_amount"], "100.00");
     assert_eq!(data["currency"], "USD");
     assert_eq!(data["order_status"], "pending");
-}
+});
 
 chicago_test!(test_test_data_builder_with_customer_data, {
     // Arrange & Act: Build customer data
@@ -484,7 +484,7 @@ chicago_test!(test_test_data_builder_with_customer_data, {
     // Assert: Customer data fields set
     assert_eq!(data["customer_id"], "CUST-001");
     assert_eq!(data["customer_email"], "customer@example.com");
-}
+});
 
 chicago_test!(test_test_data_builder_with_approval_data, {
     // Arrange & Act: Build approval data
@@ -496,7 +496,7 @@ chicago_test!(test_test_data_builder_with_approval_data, {
     assert_eq!(data["request_id"], "REQ-001");
     assert_eq!(data["amount"], "5000.00");
     assert_eq!(data["condition"], "true");
-}
+});
 
 chicago_test!(test_test_data_builder_combines_scenarios, {
     // Arrange & Act: Build combined data
@@ -510,7 +510,7 @@ chicago_test!(test_test_data_builder_combines_scenarios, {
     assert_eq!(data["order_id"], "ORD-001");
     assert_eq!(data["customer_id"], "CUST-001");
     assert_eq!(data["payment_method"], "credit_card");
-}
+});
 
 // ============================================================================
 // Resource Helper Tests
@@ -524,7 +524,7 @@ chicago_test!(test_create_test_role_creates_role, {
     assert_eq!(role.id, "approver");
     assert_eq!(role.name, "Approver");
     assert_eq!(role.capabilities.len(), 0);
-}
+});
 
 chicago_test!(test_create_test_capability_creates_capability, {
     // Arrange & Act: Create capability
@@ -534,7 +534,7 @@ chicago_test!(test_create_test_capability_creates_capability, {
     assert_eq!(capability.id, "approval");
     assert_eq!(capability.name, "Approval");
     assert_eq!(capability.level, 100);
-}
+});
 
 chicago_test!(test_create_test_resource_creates_resource, {
     // Arrange: Create role and capability
@@ -551,7 +551,7 @@ chicago_test!(test_create_test_resource_creates_resource, {
     assert_eq!(resource.workload, 0);
     assert_eq!(resource.queue_length, 0);
     assert!(resource.available);
-}
+});
 
 // ============================================================================
 // Worklet Helper Tests
@@ -572,7 +572,7 @@ chicago_test!(test_create_test_worklet_creates_worklet, {
         .exception_types
         .contains(&"resource_unavailable".to_string()));
     assert!(worklet.metadata.tags.contains(&"test".to_string()));
-}
+});
 
 // ============================================================================
 // Performance Helper Tests
@@ -589,7 +589,7 @@ chicago_test!(test_performance_helper_verifies_tick_budget, {
 
     // Assert: Should not panic (within budget)
     perf.verify_tick_budget();
-}
+});
 
 chicago_test!(test_performance_helper_elapsed_ticks, {
     // Arrange: Create performance helper
@@ -601,7 +601,7 @@ chicago_test!(test_performance_helper_elapsed_ticks, {
     // Assert: Elapsed ticks calculated
     let ticks = perf.elapsed_ticks();
     assert!(ticks > 0);
-}
+});
 
 // ============================================================================
 // Integration Helper Tests
@@ -626,7 +626,7 @@ chicago_async_test!(test_integration_helper_executes_complete_workflow, {
         ),
         "Case should be in a valid execution state"
     );
-}
+});
 
 chicago_async_test!(test_integration_helper_provides_fixture_access, {
     // Arrange: Create integration helper
@@ -638,7 +638,7 @@ chicago_async_test!(test_integration_helper_provides_fixture_access, {
     // Assert: Fixture accessible
     assert!(fixture.specs.is_empty());
     assert!(fixture.cases.is_empty());
-}
+});
 
 // ============================================================================
 // Property Tester Tests
@@ -650,7 +650,7 @@ chicago_async_test!(test_property_tester_creates_tester, {
 
     // Assert: Tester created successfully
     // Note: num_cases is private, but creation succeeds which validates the struct
-}
+});
 
 chicago_async_test!(test_property_tester_tests_completion_property, {
     // Arrange: Create property tester and workflow
@@ -667,7 +667,7 @@ chicago_async_test!(test_property_tester_tests_completion_property, {
 
     // Assert: Should return error for unregistered workflow
     assert!(result.is_err());
-}
+});
 
 // ============================================================================
 // End-to-End Framework Validation
@@ -713,7 +713,7 @@ chicago_async_test!(test_complete_workflow_test_using_all_framework_features, {
     );
     // Note: Performance monitoring removed - workflow execution takes longer than 8 ticks
     // Performance testing should be done with micro-benchmarks, not integration tests
-}
+});
 
 chicago_async_test!(test_pattern_execution_using_framework_helpers, {
     // Arrange: Use pattern helpers
@@ -730,7 +730,7 @@ chicago_async_test!(test_pattern_execution_using_framework_helpers, {
     // Assert: Use assertion helpers
     assert_pattern_success(&result);
     assert_pattern_has_next_state(&result);
-}
+});
 
 chicago_async_test!(test_resource_allocation_using_framework_helpers, {
     // Arrange: Create resources using helpers
@@ -749,7 +749,7 @@ chicago_async_test!(test_resource_allocation_using_framework_helpers, {
 
     // Assert: Resource registered (indirectly verified by no error)
     // In production, would verify resource is available
-}
+});
 
 chicago_async_test!(test_worklet_exception_handling_using_framework_helpers, {
     // Arrange: Create worklet using helper
@@ -769,7 +769,7 @@ chicago_async_test!(test_worklet_exception_handling_using_framework_helpers, {
 
     // Assert: Worklet registered (indirectly verified by no error)
     // In production, would verify worklet is available
-}
+});
 
 // ============================================================================
 // Framework Meta-Tests: Testing the Test Framework
@@ -793,7 +793,7 @@ chicago_test!(test_framework_helpers_follow_chicago_tdd_principles, {
     assert!(result.is_some(), "Pattern execution should return result");
     let result = result.unwrap();
     assert_pattern_success(&result); // Verify output, not implementation
-}
+});
 
 chicago_test!(test_framework_builders_create_valid_workflows, {
     // Arrange & Act: Build workflow using builders
@@ -808,7 +808,7 @@ chicago_test!(test_framework_builders_create_valid_workflows, {
     assert_eq!(spec.tasks.len(), 1);
     assert!(spec.start_condition.is_some());
     assert!(spec.end_condition.is_some());
-}
+});
 
 chicago_test!(test_framework_data_builders_create_valid_json, {
     // Arrange & Act: Build test data
@@ -822,7 +822,7 @@ chicago_test!(test_framework_data_builders_create_valid_json, {
     assert_eq!(data["order_id"], "ORD-001");
     assert_eq!(data["total_amount"], "100.00");
     assert_eq!(data["customer_id"], "CUST-001");
-}
+});
 
 chicago_test!(test_framework_assertion_helpers_provide_clear_messages, {
     // Arrange: Create result with variable
@@ -906,4 +906,4 @@ chicago_async_test!(test_all_framework_features_together, {
     assert_eq!(worklet.metadata.name, "Test Worklet");
 
     // All framework features validated!
-}
+});

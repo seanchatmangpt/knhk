@@ -11,18 +11,24 @@
 //! - `precision`: Precision validation (does it match specification?)
 //! - `generalization`: Generalization validation (works beyond examples?)
 //! - `process_mining`: Process mining analysis (XES, conformance)
+//! - `capability`: Process capability calculations (Cp, Cpk, Sigma level)
 //! - `formal`: Formal verification (state transitions, deadlock freedom)
 //! - `report`: Validation report generation
 
 pub mod deadlock;
+pub mod guards;
 pub mod shacl;
 pub mod sparql;
+pub mod validated;
 
 // Van der Aalst validation framework
+pub mod capability;
+pub mod dflss_metrics;
 pub mod fitness;
 pub mod formal;
 pub mod framework;
 pub mod generalization;
+pub mod jtbd;
 pub mod precision;
 pub mod process_mining;
 pub mod report;
@@ -32,10 +38,15 @@ pub use shacl::{ShaclValidationReport, ShaclValidator, ShaclViolation, Validatio
 pub use sparql::{SparqlValidationResult, SparqlValidator, ValidationViolation};
 
 // Van der Aalst framework exports
+pub use capability::ProcessCapability;
+pub use dflss_metrics::DflssMetricsCollector;
 pub use fitness::FitnessValidator;
 pub use formal::FormalVerifier;
 pub use framework::ValidationFramework;
 pub use generalization::GeneralizationValidator;
+pub use jtbd::{
+    WorkflowPatternJtbdResult, WorkflowPatternJtbdSummary, WorkflowPatternJtbdValidator,
+};
 pub use precision::PrecisionValidator;
 pub use process_mining::ProcessMiningAnalyzer;
 pub use report::{ValidationDetail, ValidationReport, ValidationResult, ValidationStatus};

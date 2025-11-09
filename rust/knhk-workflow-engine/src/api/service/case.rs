@@ -30,7 +30,17 @@ impl CaseService {
     }
 
     /// Create a new case
+    /// Enforces guard constraints at ingress:
+    /// - MAX_BATCH_SIZE validation for batch operations in case data
     pub async fn create_case(&self, request: CreateCaseRequest) -> ApiResult<CreateCaseResponse> {
+        // Guard constraint: Validate batch size at ingress
+        use crate::validation::guards::validate_batch_size;
+        if let Some(batch) = request.data.get("batch") {
+            if let Some(batch_size) = batch.as_array().map(|a| a.len()) {
+                validate_batch_size(batch_size).map_err(ApiError::from)?;
+            }
+        }
+
         let case_id = self
             .engine
             .create_case(request.spec_id, request.data)
