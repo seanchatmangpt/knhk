@@ -66,6 +66,9 @@ journalctl -u knhk -n 100
 
 # Logs since today
 journalctl -u knhk --since today
+
+# Docker logs (if using containers)
+docker logs knhk -f
 ```
 
 #### Key Log Patterns

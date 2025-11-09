@@ -28,6 +28,14 @@ curl http://localhost:8080/health
 # Workflow list
 knhk workflow list
 
+# REST API endpoints
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/workflows -H "Content-Type: application/json" -d '{"spec": {...}}'
+curl -X POST http://localhost:8080/cases -H "Content-Type: application/json" -d '{"spec_id": "...", "data": {...}}'
+curl http://localhost:8080/cases/{id}
+curl -X POST http://localhost:8080/cases/{id}/execute
+curl http://localhost:8080/cases/{id}/history
+
 # Performance benchmark
 knhk performance benchmark
 

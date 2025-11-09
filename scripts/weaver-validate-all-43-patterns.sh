@@ -85,14 +85,14 @@ export OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:$OTLP_PORT"
 export OTEL_SERVICE_NAME="knhk-workflow-engine"
 export OTEL_SERVICE_VERSION="1.0.0"
 
-# Run the all-43-patterns example
-echo -e "${BLUE}📊 Running all 43 Van der Aalst patterns...${NC}"
-echo -e "${BLUE}   This will test each pattern and emit OTEL telemetry${NC}\n"
+# Run the real JTBD validation example
+echo -e "${BLUE}📊 Running real JTBD validation for all 43 Van der Aalst patterns...${NC}"
+echo -e "${BLUE}   This will test each pattern in real workflow scenarios and validate JTBD${NC}\n"
 
-if cargo run --example weaver_all_43_patterns --manifest-path rust/knhk-workflow-engine/Cargo.toml; then
-    echo -e "\n${GREEN}✅ All 43 patterns executed successfully${NC}"
+if cargo run --example weaver_real_jtbd_validation --manifest-path rust/knhk-workflow-engine/Cargo.toml; then
+    echo -e "\n${GREEN}✅ All 43 patterns validated with real JTBD${NC}"
 else
-    echo -e "\n${RED}❌ Pattern execution failed${NC}"
+    echo -e "\n${RED}❌ JTBD validation failed${NC}"
     kill $WEAVER_PID 2>/dev/null || true
     exit 1
 fi

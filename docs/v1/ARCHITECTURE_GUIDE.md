@@ -176,12 +176,21 @@ pub struct PatternRegistry {
 ### CLI API
 
 **Commands**:
-- `knhk workflow parse` - Parse workflow from Turtle
-- `knhk workflow register` - Register workflow
-- `knhk workflow create` - Create case
-- `knhk workflow start` - Start case
-- `knhk workflow execute` - Execute case
-- `knhk workflow list` - List workflows/cases
+- `knhk workflow parse` - Parse workflow from Turtle file
+- `knhk workflow register` - Register a workflow specification
+- `knhk workflow create` - Create a new workflow case
+- `knhk workflow start` - Start a workflow case
+- `knhk workflow execute` - Execute a workflow case
+- `knhk workflow cancel` - Cancel a workflow case
+- `knhk workflow get` - Get case status
+- `knhk workflow list` - List all workflow cases
+- `knhk workflow patterns` - List all 43 patterns
+- `knhk workflow serve` - Start REST API server
+- `knhk workflow import-xes` - Import XES event log
+- `knhk workflow export-xes` - Export workflow execution to XES format
+- `knhk workflow validate-xes` - Run automated XES validation full loop
+- `knhk workflow validate` - Run van der Aalst end-to-end validation framework
+- `knhk workflow discover` - Run Alpha+++ process discovery algorithm
 
 ---
 

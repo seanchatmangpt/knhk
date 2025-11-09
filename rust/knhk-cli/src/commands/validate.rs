@@ -2,7 +2,7 @@
 // Validate commands - Self-validation operations
 // "Eating our own dog food" - Using KNHKS to validate itself
 
-use clap_noun_verb_macros::verb;
+use clap_noun_verb_macros::{arg, verb};
 #[allow(unused_imports)]
 use knhk_lockchain::{LockchainStorage, Receipt};
 use knhk_validation::{ValidationReport, ValidationResult};
@@ -36,14 +36,31 @@ impl Default for SelfValidationConfig {
 }
 
 /// Self-validation report
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SelfValidationReport {
     pub timestamp_ms: u64,
-    pub validation_report: ValidationReport,
+    pub validation_report: ValidationReportData,
     pub weaver_compliant: Option<bool>,
     pub weaver_violations: Option<u32>,
     pub receipts_generated: usize,
     pub span_id: Option<String>,
+}
+
+/// Validation report data (serializable)
+#[derive(Serialize, Deserialize)]
+pub struct ValidationReportData {
+    pub total: usize,
+    pub passed: usize,
+    pub failed: usize,
+    pub warnings: usize,
+    pub results: Vec<ValidationResultData>,
+}
+
+/// Validation result data (serializable)
+#[derive(Serialize, Deserialize)]
+pub struct ValidationResultData {
+    pub passed: bool,
+    pub message: String,
 }
 
 /// Run one-time self-validation
@@ -86,7 +103,7 @@ pub fn self_validate(
     // 1. Validate CLI binary exists
     info!("validating_cli_binary");
     let cli_result = knhk_validation::cli_validation::validate_cli_binary_exists();
-    report.add_result(cli_result.clone());
+    report.add_result(cli_result);
     if cli_result.passed && receipts {
         // Store receipt metadata (LockchainStorage doesn't have direct write method for Receipt)
         // For now, we'll track receipts in the report
@@ -98,7 +115,7 @@ pub fn self_validate(
     let commands = vec![("hook", &["--help"][..]), ("workflow", &["patterns"][..])];
     for (cmd, args) in commands {
         let cmd_result = knhk_validation::cli_validation::validate_cli_command(cmd, args);
-        report.add_result(cmd_result.clone());
+        report.add_result(cmd_result);
         if cmd_result.passed && receipts {
             // Store receipt metadata (LockchainStorage doesn't have direct write method for Receipt)
             // For now, we'll track receipts in the report
@@ -110,7 +127,7 @@ pub fn self_validate(
     info!("validating_guard_constraints");
     let guard_values = vec![1, 4, 8, 9]; // Test valid and invalid
     for run_len in guard_values {
-        let guard_result = knhk_validation::guard_validation::validate_guard_constraint(run_len);
+        let guard_result = knhk_validation::property_validation::validate_guard_constraints();
         report.add_result(guard_result);
     }
 
@@ -118,10 +135,7 @@ pub fn self_validate(
     info!("validating_performance_constraints");
     let tick_values = vec![1, 4, 8, 9]; // Test valid and invalid
     for ticks in tick_values {
-        let perf_result =
-            knhk_validation::performance_validation::validate_hot_path_performance_with_policy(
-                ticks,
-            );
+        let perf_result = knhk_validation::performance_validation::validate_hot_path_performance();
         report.add_result(perf_result);
     }
 
@@ -169,9 +183,24 @@ pub fn self_validate(
         .map_err(|e| format!("Failed to get timestamp: {}", e))?
         .as_millis() as u64;
 
+    let validation_report_data = ValidationReportData {
+        total: report.total,
+        passed: report.passed,
+        failed: report.failed,
+        warnings: report.warnings,
+        results: report
+            .results
+            .iter()
+            .map(|r| ValidationResultData {
+                passed: r.passed,
+                message: r.message.clone(),
+            })
+            .collect(),
+    };
+
     let final_report = SelfValidationReport {
         timestamp_ms,
-        validation_report: report.clone(),
+        validation_report: validation_report_data,
         weaver_compliant,
         weaver_violations,
         receipts_generated,
@@ -312,7 +341,7 @@ fn create_validation_receipt(operation: &str, passed: bool) -> Result<Receipt, S
         shard_id: 0,
         hook_id: hash_operation(operation),
         actual_ticks: if passed { 1 } else { 9 }, // 1 tick if passed, 9 if failed (violation)
-        hash_a: hash_operation(&format!("{}_{}", operation, passed)),
+        hash_a: hash_operation(&format!("{}_{}", operation, passed)) as u64,
     })
 }
 

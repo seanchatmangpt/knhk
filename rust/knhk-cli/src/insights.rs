@@ -10,8 +10,6 @@
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Process mining insights report

@@ -56,6 +56,11 @@ groups:
         stability: experimental
         brief: "Case state"
         examples: ["Created", "Running", "Completed", "Cancelled"]
+      - id: knhk.workflow_engine.jtbd_valid
+        type: boolean
+        stability: experimental
+        brief: "Whether the pattern accomplished its intended purpose (JTBD)"
+        note: "True if pattern executed and accomplished its intended job-to-be-done"
 
   # Workflow registration span
   - id: knhk.workflow_engine.register_workflow

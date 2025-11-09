@@ -141,6 +141,7 @@ docker run -d \
 ```bash
 docker logs knhk
 docker exec knhk knhk workflow list
+curl http://localhost:8080/health
 ```
 
 ### Method 3: Kubernetes Deployment
@@ -290,7 +291,19 @@ spec:
    knhk workflow list
    ```
 
-3. **OTEL Instrumentation**
+3. **REST API Endpoints**
+   ```bash
+   # Health check
+   curl http://localhost:8080/health
+   
+   # Register workflow
+   curl -X POST http://localhost:8080/workflows -H "Content-Type: application/json" -d '{"spec": {...}}'
+   
+   # Create case
+   curl -X POST http://localhost:8080/cases -H "Content-Type: application/json" -d '{"spec_id": "...", "data": {...}}'
+   ```
+
+4. **OTEL Instrumentation**
    ```bash
    # Check OTEL collector logs
    tail -f /var/log/otel-collector.log
