@@ -330,7 +330,15 @@ pub fn precision(
             "precision": null,
             "note": "Precision calculation requires advanced alignment analysis (not yet implemented)"
         });
-        println!("{}", serde_json::to_string_pretty(&result).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&result).map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to serialize result: {}",
+                    e
+                ))
+            })?
+        );
     } else {
         println!("Precision calculation requires advanced alignment analysis");
         println!("This feature is planned but not yet fully implemented");
@@ -354,7 +362,15 @@ pub fn generalization(
             "generalization": null,
             "note": "Generalization calculation requires advanced model analysis (not yet implemented)"
         });
-        println!("{}", serde_json::to_string_pretty(&result).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&result).map_err(|e| {
+                clap_noun_verb::NounVerbError::execution_error(format!(
+                    "Failed to serialize result: {}",
+                    e
+                ))
+            })?
+        );
     } else {
         println!("Generalization calculation requires advanced model analysis");
         println!("This feature is planned but not yet fully implemented");
