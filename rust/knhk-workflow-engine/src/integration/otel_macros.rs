@@ -152,8 +152,8 @@ macro_rules! otel_span_end {
         async {
             use knhk_otel::SpanStatus;
 
-            if let Some(span) = $span_ctx.as_ref() {
-                let span_clone = (*span).clone();
+            if let Some(ref span) = $span_ctx {
+                let span_clone = span.clone();
                 $otel
                     .add_attribute(
                         span_clone.clone(),
@@ -333,7 +333,7 @@ macro_rules! otel_bottleneck {
             if let Some(ref span) = $span_ctx {
                 add_bottleneck_if_detected(
                     $otel,
-                    span.clone(),
+                    (*span).clone(),
                     $latency_ms as u128,
                     $threshold_ms as u128,
                 )
