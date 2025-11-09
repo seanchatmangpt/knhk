@@ -175,7 +175,7 @@ impl WorkflowEngine {
             otel_span!(
                 otel,
                 "knhk.workflow_engine.execute_case",
-                case_id: Some(&case_id)
+                case_id: Some(&case_id),
             )
             .await?
         } else {
