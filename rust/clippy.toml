@@ -1,52 +1,26 @@
 # Clippy configuration for KNHK workspace
 # Evaluates all warnings and configures appropriate behavior
 
-# Allow some warnings that are acceptable for CLI tools
-# These are informational or acceptable patterns
-
-# Allow dead code for infrastructure that's reserved for future use
-# This is acceptable for receipt tracking and other future features
-# Set via #[allow(dead_code)] on specific items
-
-# Allow unwrap/expect in CLI tools (user-facing errors)
-# CLI tools can use unwrap/expect for user-facing errors
-# This is already handled per-crate with #![allow(clippy::unwrap_used)]
+# Note: Clippy doesn't support grouped sections like [performance], [correctness], etc.
+# Individual lint names must be specified directly.
 
 # Performance lints (important for hot path)
 # These are critical for performance-sensitive code
-# Enable all performance-related lints
-[performance]
-# Warn about unnecessary clones
 unnecessary-clone = "warn"
-# Warn about inefficient string operations
 inefficient-string-operation = "warn"
-# Warn about large enum variants
 large-enum-variant = "warn"
 
 # Correctness lints (critical for correctness)
-[correctness]
-# Warn about potential panics
 panic = "warn"
-# Warn about incorrect implementations
 incorrect-impl = "warn"
-# Warn about integer arithmetic issues
 integer-arithmetic = "warn"
 
 # Style lints (code quality)
-[style]
-# Warn about unnecessary parentheses
 unnecessary-parens = "warn"
-# Warn about unnecessary casts
 unnecessary-cast = "warn"
-# Warn about redundant closures
 redundant-closure = "warn"
 
 # Complexity lints (code maintainability)
-[complexity]
-# Warn about overly complex functions
 cognitive-complexity = "warn"
-# Warn about too many parameters
 too-many-arguments = "warn"
-# Warn about too many lines
 too-many-lines = "warn"
-

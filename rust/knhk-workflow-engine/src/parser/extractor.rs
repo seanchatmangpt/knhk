@@ -6,6 +6,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::types::{
     Condition, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
 };
+use oxigraph::sparql::SparqlEvaluator;
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
@@ -31,9 +32,12 @@ pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
         yawl_ns, rdfs
     );
 
-    #[allow(deprecated)]
-    let query_results = store
-        .query(&query)
+    // Use SparqlEvaluator (oxigraph 0.5 best practices)
+    let query_results = SparqlEvaluator::new()
+        .parse_query(&query)
+        .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {}", e)))?
+        .on_store(store)
+        .execute()
         .map_err(|e| WorkflowError::Parse(format!("SPARQL query failed: {}", e)))?;
 
     let spec_id = WorkflowSpecId::new();

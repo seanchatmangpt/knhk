@@ -5,6 +5,7 @@ use super::{WORKFLOW_PATTERN_NS, YAWL_NS};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
 use oxigraph::model::Term;
+use oxigraph::sparql::SparqlEvaluator;
 use oxigraph::store::Store;
 use std::collections::HashMap;
 

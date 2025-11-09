@@ -8,6 +8,7 @@ use crate::parser::{Task, TaskType, WorkflowSpec, WorkflowSpecId};
 use crate::patterns::PatternId;
 use oxigraph::io::RdfFormat;
 use oxigraph::model::{NamedNode, Quad, Term};
+use oxigraph::sparql::SparqlEvaluator;
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
@@ -56,9 +57,12 @@ impl RdfWorkflowParser {
             workflow_type.as_str()
         );
 
-        let query_results = self
-            .store
-            .query(&query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let query_results = SparqlEvaluator::new()
+            .parse_query(&query)
+            .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {}", e)))?
+            .on_store(&self.store)
+            .execute()
             .map_err(|e| WorkflowError::Parse(format!("SPARQL query failed: {}", e)))?;
 
         // Get first workflow spec
@@ -119,9 +123,12 @@ impl RdfWorkflowParser {
             YAWL_NS
         );
 
-        let query_results = self
-            .store
-            .query(&query)
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        let query_results = SparqlEvaluator::new()
+            .parse_query(&query)
+            .map_err(|e| WorkflowError::Parse(format!("Failed to parse SPARQL query: {}", e)))?
+            .on_store(&self.store)
+            .execute()
             .map_err(|e| WorkflowError::Parse(format!("SPARQL query failed: {}", e)))?;
 
         for binding in query_results {
@@ -192,7 +199,11 @@ impl RdfWorkflowParser {
             task_id, YAWL_NS
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             if let Some(binding) = results.iter().next() {
                 if let Some(type_term) = binding.get("type") {
                     if let Term::Literal(lit) = type_term {
@@ -219,7 +230,11 @@ impl RdfWorkflowParser {
             task_id, YAWL_NS
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             if let Some(binding) = results.iter().next() {
                 if let Some(type_term) = binding.get("type") {
                     if let Term::Literal(lit) = type_term {
@@ -246,7 +261,11 @@ impl RdfWorkflowParser {
             task_id, KNHK_PATTERN_NS
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             if let Some(binding) = results.iter().next() {
                 if let Some(ticks_term) = binding.get("ticks") {
                     if let Term::Literal(lit) = ticks_term {
@@ -270,7 +289,11 @@ impl RdfWorkflowParser {
             task_id, KNHK_PATTERN_NS
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             if let Some(binding) = results.iter().next() {
                 if let Some(priority_term) = binding.get("priority") {
                     if let Term::Literal(lit) = priority_term {
@@ -294,7 +317,11 @@ impl RdfWorkflowParser {
             task_id, KNHK_PATTERN_NS
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             if let Some(binding) = results.iter().next() {
                 if let Some(simd_term) = binding.get("simd") {
                     if let Term::Literal(lit) = simd_term {
@@ -337,7 +364,11 @@ impl RdfWorkflowParser {
         );
 
         let mut values = Vec::new();
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             for binding in results {
                 if let Some(value_term) = binding.get("value") {
                     if let Term::NamedNode(node) = value_term {
@@ -361,7 +392,11 @@ impl RdfWorkflowParser {
             subject, predicate
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             if let Some(binding) = results.iter().next() {
                 if let Some(value_term) = binding.get("value") {
                     if let Term::Literal(lit) = value_term {
@@ -402,7 +437,11 @@ impl RdfWorkflowParser {
             workflow_id, YAWL_NS, RDFS_NS
         );
 
-        if let Ok(results) = self.store.query(&query) {
+        // Use SparqlEvaluator (oxigraph 0.5 best practices)
+        if let Ok(results) = SparqlEvaluator::new()
+            .parse_query(&query)
+            .and_then(|q| q.on_store(&self.store).execute())
+        {
             for binding in results {
                 if let (Some(cond_term), Some(name_term)) = (binding.get("condition"), binding.get("name")) {
                     if let (Term::NamedNode(cond_node), Term::Literal(name_lit)) = (cond_term, name_term) {

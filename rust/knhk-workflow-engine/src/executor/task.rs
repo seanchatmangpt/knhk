@@ -40,7 +40,7 @@ pub(super) async fn execute_task_with_allocation(
             "knhk.workflow_engine.execute_task",
             case_id: Some(&case_id),
             task_id: Some(&task.id),
-            pattern_id: Some(&pattern_id),
+            pattern_id: Some(&pattern_id)
         )
         .await?
     } else {
