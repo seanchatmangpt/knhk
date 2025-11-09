@@ -41,8 +41,7 @@ impl WorkflowEngine {
                         span_ctx,
                         success: false,
                         start_time: start_time
-                    )
-                    .await?;
+                    )?;
                 }
                 return Err(WorkflowError::Validation(
                     "Promotion gate blocked execution".to_string(),
@@ -68,8 +67,7 @@ impl WorkflowEngine {
                 span_ctx,
                 expected_pattern: expected_pattern,
                 actual_pattern: pattern_id.0
-            )
-            .await?;
+            )?;
         }
 
         // Execute pattern
@@ -169,8 +167,7 @@ impl WorkflowEngine {
                 span_ctx,
                 latency_ms: latency_ms,
                 threshold_ms: 1000
-            )
-            .await?;
+            )?;
         }
 
         // End OTEL span
@@ -182,8 +179,7 @@ impl WorkflowEngine {
                 span_ctx,
                 success: result.success,
                 start_time: start_time
-            )
-            .await?;
+            )?;
         }
 
         Ok(result)

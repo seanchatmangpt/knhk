@@ -472,8 +472,7 @@ pub(super) async fn execute_task_with_allocation(
                     span_ctx,
                     success: false,
                     start_time: task_start_time
-                )
-                .await?;
+                )?;
             }
             return Err(WorkflowError::TaskExecutionFailed(format!(
                 "Task {} exceeded tick budget: {} ticks > {} ticks",
@@ -511,8 +510,7 @@ pub(super) async fn execute_task_with_allocation(
             span_ctx,
             latency_ms: duration_ms,
             threshold_ms: 1000
-        )
-        .await?;
+        )?;
     }
 
     // End OTEL span with lifecycle transition
@@ -523,8 +521,7 @@ pub(super) async fn execute_task_with_allocation(
             span_ctx,
             success: true,
             start_time: task_start_time
-        )
-        .await?;
+        )?;
     }
 
     Ok(())

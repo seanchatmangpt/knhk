@@ -129,15 +129,13 @@ impl WorkflowEngine {
                 otel,
                 span_ctx,
                 "knhk.workflow_engine.case_state" => "Created"
-            )
-            .await?;
+            )?;
             otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )
-            .await?;
+            )?;
         }
 
         // Return first error if any
@@ -206,20 +204,26 @@ impl WorkflowEngine {
         }
 
         // Get case (DashMap is thread-safe, no lock needed)
-        let mut case_ref = self.cases.get_mut(&case_id).ok_or_else(|| {
+        let mut case_ref = self
+            .cases
+            .get_mut(&case_id)
+            .ok_or_else(|| WorkflowError::CaseNotFound(case_id.to_string()))?;
+
+        // Handle error case for OTEL span
+        if case_ref.is_none() {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                otel_span_end!(
+                let _ = otel_span_end!(
                     otel,
                     span_ctx,
                     success: false,
                     start_time: start_time
                 )
-                .await?;
+                .await;
             }
-            WorkflowError::CaseNotFound(case_id.to_string())
-        })?;
+            return Err(WorkflowError::CaseNotFound(case_id.to_string()));
+        }
 
         // Start if not already started
         if case_ref.value().state == CaseState::Created {
@@ -229,19 +233,27 @@ impl WorkflowEngine {
         // Get workflow specification (DashMap is thread-safe)
         let spec_id = case_ref.value().spec_id;
         let spec = self.specs.get(&spec_id).ok_or_else(|| {
+            WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
+        })?;
+
+        // Handle error case for OTEL span
+        if spec.is_none() {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())
             {
-                otel_span_end!(
+                let _ = otel_span_end!(
                     otel,
                     span_ctx,
                     success: false,
                     start_time: start_time
                 )
-                .await?;
+                .await;
             }
-            WorkflowError::InvalidSpecification(format!("Workflow {} not found", spec_id))
-        })?;
+            return Err(WorkflowError::InvalidSpecification(format!(
+                "Workflow {} not found",
+                spec_id
+            )));
+        }
         let spec_clone = spec.value().clone();
         drop(case_ref);
 
@@ -277,16 +289,14 @@ impl WorkflowEngine {
                     otel,
                     span_ctx,
                     "knhk.workflow_engine.case_state" => format!("{:?}", case.state)
-                )
-                .await?;
+                )?;
             }
             otel_span_end!(
                 otel,
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )
-            .await?;
+            )?;
         }
 
         execution_result

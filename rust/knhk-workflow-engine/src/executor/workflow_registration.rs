@@ -18,7 +18,7 @@ impl WorkflowEngine {
         // Start OTEL span for workflow registration
         let span_ctx: Option<knhk_otel::SpanContext> = if let Some(ref otel) = self.otel_integration
         {
-            crate::otel_span!(
+            otel_span!(
                 otel,
                 "knhk.workflow_engine.register_workflow",
                 spec_id: Some(&spec.id),
@@ -100,8 +100,7 @@ impl WorkflowEngine {
                 span_ctx,
                 success: success,
                 latency_ms: latency_ms
-            )
-            .await?;
+            )?;
         }
 
         persist_result
