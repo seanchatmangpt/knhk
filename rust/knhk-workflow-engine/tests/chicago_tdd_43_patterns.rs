@@ -19,7 +19,7 @@ fn create_test_registry() -> PatternRegistry {
     let mut registry = PatternRegistry::new();
     register_all_patterns(&mut registry);
     registry
-}
+    registry
 
 /// Create a test execution context
 fn create_test_context() -> PatternExecutionContext {
@@ -30,7 +30,7 @@ fn create_test_context() -> PatternExecutionContext {
         arrived_from: std::collections::HashSet::new(),
         scope_id: String::new(),
     }
-}
+    }
 
 // ============================================================================
 // Basic Control Flow Patterns (1-5)
@@ -122,7 +122,7 @@ chicago_test!(test_pattern_4_exclusive_choice_selects_one_branch, {
         result.next_state.is_some(),
         "Exclusive Choice pattern should set next state"
     );
-}
+});
 
 chicago_test!(test_pattern_5_simple_merge_merges_alternative_branches, {
     // Arrange: Create registry and context
@@ -143,7 +143,7 @@ chicago_test!(test_pattern_5_simple_merge_merges_alternative_branches, {
         result.next_state.is_some(),
         "Simple Merge pattern should set next state"
     );
-}
+});
 
 // ============================================================================
 // Advanced Branching Patterns (6-11)
@@ -168,7 +168,7 @@ chicago_test!(test_pattern_6_multi_choice_selects_one_or_more_branches, {
         result.success,
         "Multi-Choice pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_7_structured_synchronizing_merge_synchronizes_or_join, {
     // Arrange: Create registry and context
@@ -185,7 +185,7 @@ chicago_test!(test_pattern_7_structured_synchronizing_merge_synchronizes_or_join
         result.success,
         "Structured Synchronizing Merge pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_8_multi_merge_merges_all_incoming_branches, {
     // Arrange: Create registry and context
@@ -202,7 +202,7 @@ chicago_test!(test_pattern_8_multi_merge_merges_all_incoming_branches, {
         result.success,
         "Multi-Merge pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_9_discriminator_first_wins, {
     // Arrange: Create registry and context
@@ -219,7 +219,7 @@ chicago_test!(test_pattern_9_discriminator_first_wins, {
         result.success,
         "Discriminator pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_10_arbitrary_cycles_supports_loops, {
     // Arrange: Create registry and context
@@ -238,7 +238,7 @@ chicago_test!(test_pattern_10_arbitrary_cycles_supports_loops, {
         result.success,
         "Arbitrary Cycles pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_11_implicit_termination_detects_completion, {
     // Arrange: Create registry and context
@@ -255,7 +255,7 @@ chicago_test!(test_pattern_11_implicit_termination_detects_completion, {
         result.success,
         "Implicit Termination pattern should execute successfully"
     );
-}
+});
 
 // ============================================================================
 // Multiple Instance Patterns (12-15)
@@ -282,7 +282,7 @@ chicago_test!(test_pattern_12_multiple_instance_without_sync_executes_instances,
         result.variables.contains_key("instances_executed"),
         "Pattern should record instances executed"
     );
-}
+});
 
 chicago_test!(test_pattern_13_multiple_instance_design_time_executes_known_count, {
     // Arrange: Create registry and context
@@ -305,7 +305,7 @@ chicago_test!(test_pattern_13_multiple_instance_design_time_executes_known_count
         result.variables.contains_key("all_completed"),
         "Pattern should indicate all instances completed"
     );
-}
+});
 
 chicago_test!(test_pattern_14_multiple_instance_runtime_executes_runtime_count, {
     // Arrange: Create registry and context
@@ -328,7 +328,7 @@ chicago_test!(test_pattern_14_multiple_instance_runtime_executes_runtime_count, 
         result.variables.contains_key("runtime_determined"),
         "Pattern should indicate runtime determination"
     );
-}
+});
 
 chicago_test!(test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically, {
     // Arrange: Create registry and context
@@ -349,7 +349,7 @@ chicago_test!(test_pattern_15_multiple_instance_dynamic_creates_instances_dynami
         result.variables.contains_key("dynamic_instances"),
         "Pattern should indicate dynamic instance creation"
     );
-}
+});
 
 // ============================================================================
 // State-Based Patterns (16-18)
@@ -370,7 +370,7 @@ chicago_test!(test_pattern_16_deferred_choice_waits_for_external_event, {
         result.success,
         "Deferred Choice pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_17_interleaved_parallel_routing_executes_interleaved, {
     // Arrange: Create registry and context
@@ -391,7 +391,7 @@ chicago_test!(test_pattern_17_interleaved_parallel_routing_executes_interleaved,
         result.variables.contains_key("interleaved"),
         "Pattern should indicate interleaved execution"
     );
-}
+});
 
 chicago_test!(test_pattern_18_milestone_enables_activity_when_reached, {
     // Arrange: Create registry and context
@@ -414,7 +414,7 @@ chicago_test!(test_pattern_18_milestone_enables_activity_when_reached, {
         result.variables.contains_key("activity_enabled"),
         "Pattern should indicate activity enabled status"
     );
-}
+});
 
 chicago_test!(test_pattern_18_milestone_blocks_activity_when_not_reached, {
     // Arrange: Create registry and context
@@ -438,7 +438,7 @@ chicago_test!(test_pattern_18_milestone_blocks_activity_when_not_reached, {
         Some(&"false".to_string()),
         "Activity should be disabled when milestone not reached"
     );
-}
+});
 
 // ============================================================================
 // Cancellation Patterns (19-25)
@@ -465,7 +465,7 @@ chicago_test!(test_pattern_19_cancel_activity_cancels_specific_activity, {
         result.variables.contains_key("activity_cancelled"),
         "Pattern should record cancelled activity"
     );
-}
+});
 
 chicago_test!(test_pattern_20_timeout_executes_with_timeout, {
     // Arrange: Create registry and context
@@ -482,7 +482,7 @@ chicago_test!(test_pattern_20_timeout_executes_with_timeout, {
         result.success,
         "Timeout pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_21_cancellation_cancels_execution, {
     // Arrange: Create registry and context
@@ -499,7 +499,7 @@ chicago_test!(test_pattern_21_cancellation_cancels_execution, {
         result.success,
         "Cancellation pattern should execute successfully"
     );
-}
+});
 
 chicago_test!(test_pattern_22_cancel_case_cancels_entire_case, {
     // Arrange: Create registry and context
@@ -522,7 +522,7 @@ chicago_test!(test_pattern_22_cancel_case_cancels_entire_case, {
         result.variables.contains_key("case_cancelled"),
         "Pattern should indicate case cancellation"
     );
-}
+});
 
 chicago_test!(test_pattern_23_cancel_region_cancels_region, {
     // Arrange: Create registry and context
@@ -545,7 +545,7 @@ chicago_test!(test_pattern_23_cancel_region_cancels_region, {
         result.variables.contains_key("region_cancelled"),
         "Pattern should record cancelled region"
     );
-}
+});
 
 chicago_test!(test_pattern_24_cancel_multiple_instance_activity_cancels_instances, {
     // Arrange: Create registry and context
@@ -570,7 +570,7 @@ chicago_test!(test_pattern_24_cancel_multiple_instance_activity_cancels_instance
         result.variables.contains_key("multiple_instance_cancelled"),
         "Pattern should record cancelled multiple instance activity"
     );
-}
+});
 
 chicago_test!(test_pattern_25_complete_multiple_instance_activity_completes_instances, {
     // Arrange: Create registry and context
@@ -593,7 +593,7 @@ chicago_test!(test_pattern_25_complete_multiple_instance_activity_completes_inst
         result.variables.contains_key("multiple_instance_completed"),
         "Pattern should record completed multiple instance activity"
     );
-}
+});
 
 // ============================================================================
 // Advanced Control Patterns (26-39)
@@ -618,7 +618,7 @@ chicago_test!(test_pattern_26_blocking_discriminator_blocks_after_first, {
         result.variables.contains_key("blocking_discriminator"),
         "Pattern should indicate blocking discriminator behavior"
     );
-}
+});
 
 chicago_test!(test_pattern_27_cancelling_discriminator_cancels_others, {
     // Arrange: Create registry and context
@@ -639,7 +639,7 @@ chicago_test!(test_pattern_27_cancelling_discriminator_cancels_others, {
         result.variables.contains_key("cancelling_discriminator"),
         "Pattern should indicate cancelling discriminator behavior"
     );
-}
+});
 
 chicago_test!(test_pattern_28_structured_loop_executes_with_exit_condition, {
     // Arrange: Create registry and context
@@ -662,7 +662,7 @@ chicago_test!(test_pattern_28_structured_loop_executes_with_exit_condition, {
         result.variables.contains_key("loop_completed"),
         "Pattern should indicate loop completion"
     );
-}
+});
 
 chicago_test!(test_pattern_29_recursion_executes_recursively, {
     // Arrange: Create registry and context
@@ -684,7 +684,7 @@ chicago_test!(test_pattern_29_recursion_executes_recursively, {
         result.variables.contains_key("recursion_completed"),
         "Pattern should indicate recursion completion"
     );
-}
+});
 
 chicago_test!(test_pattern_30_transient_trigger_handles_transient_event, {
     // Arrange: Create registry and context
@@ -705,7 +705,7 @@ chicago_test!(test_pattern_30_transient_trigger_handles_transient_event, {
         result.variables.contains_key("trigger_received"),
         "Pattern should indicate trigger received"
     );
-}
+});
 
 chicago_test!(test_pattern_31_persistent_trigger_handles_persistent_event, {
     // Arrange: Create registry and context
@@ -726,7 +726,7 @@ chicago_test!(test_pattern_31_persistent_trigger_handles_persistent_event, {
         result.variables.contains_key("trigger_received"),
         "Pattern should indicate trigger received"
     );
-}
+});
 
 chicago_test!(test_pattern_32_cancel_activity_instance_cancels_specific_instance, {
     // Arrange: Create registry and context
@@ -749,7 +749,7 @@ chicago_test!(test_pattern_32_cancel_activity_instance_cancels_specific_instance
         result.variables.contains_key("instance_cancelled"),
         "Pattern should record cancelled instance"
     );
-}
+});
 
 chicago_test!(test_pattern_33_cancel_process_instance_cancels_process, {
     // Arrange: Create registry and context
@@ -772,7 +772,7 @@ chicago_test!(test_pattern_33_cancel_process_instance_cancels_process, {
         result.variables.contains_key("process_cancelled"),
         "Pattern should record cancelled process"
     );
-}
+});
 
 chicago_test!(test_pattern_34_stop_process_instance_stops_process, {
     // Arrange: Create registry and context
@@ -793,7 +793,7 @@ chicago_test!(test_pattern_34_stop_process_instance_stops_process, {
         result.variables.contains_key("process_stopped"),
         "Pattern should indicate process stopped"
     );
-}
+});
 
 chicago_test!(test_pattern_35_abort_process_instance_aborts_process, {
     // Arrange: Create registry and context
@@ -814,7 +814,7 @@ chicago_test!(test_pattern_35_abort_process_instance_aborts_process, {
         result.variables.contains_key("process_aborted"),
         "Pattern should indicate process aborted"
     );
-}
+});
 
 chicago_test!(test_pattern_36_disable_activity_disables_activity, {
     // Arrange: Create registry and context
@@ -837,7 +837,7 @@ chicago_test!(test_pattern_36_disable_activity_disables_activity, {
         result.variables.contains_key("activity_disabled"),
         "Pattern should record disabled activity"
     );
-}
+});
 
 chicago_test!(test_pattern_37_skip_activity_skips_activity, {
     // Arrange: Create registry and context
@@ -860,7 +860,7 @@ chicago_test!(test_pattern_37_skip_activity_skips_activity, {
         result.variables.contains_key("activity_skipped"),
         "Pattern should record skipped activity"
     );
-}
+});
 
 chicago_test!(test_pattern_38_activity_instance_multiple_threads_executes_in_threads, {
     // Arrange: Create registry and context
@@ -883,7 +883,7 @@ chicago_test!(test_pattern_38_activity_instance_multiple_threads_executes_in_thr
         result.variables.contains_key("threads_used"),
         "Pattern should record threads used"
     );
-}
+});
 
 chicago_test!(test_pattern_39_thread_merge_merges_threads, {
     // Arrange: Create registry and context
@@ -904,7 +904,7 @@ chicago_test!(test_pattern_39_thread_merge_merges_threads, {
         result.variables.contains_key("threads_merged"),
         "Pattern should indicate threads merged"
     );
-}
+});
 
 // ============================================================================
 // Trigger Patterns (40-43)
@@ -936,7 +936,7 @@ chicago_test!(test_pattern_40_external_trigger_handles_external_event, {
         Some(&"external".to_string()),
         "Pattern should indicate external trigger type"
     );
-}
+});
 
 chicago_test!(test_pattern_41_event_based_trigger_handles_event, {
     // Arrange: Create registry and context
@@ -959,7 +959,7 @@ chicago_test!(test_pattern_41_event_based_trigger_handles_event, {
         result.variables.contains_key("event_triggered"),
         "Pattern should indicate event triggered"
     );
-}
+});
 
 chicago_test!(test_pattern_42_multiple_trigger_waits_for_all_triggers, {
     // Arrange: Create registry and context
@@ -982,7 +982,7 @@ chicago_test!(test_pattern_42_multiple_trigger_waits_for_all_triggers, {
         result.variables.contains_key("all_triggers_received"),
         "Pattern should indicate all triggers received"
     );
-}
+});
 
 chicago_test!(test_pattern_43_cancel_trigger_cancels_trigger_based_activity, {
     // Arrange: Create registry and context
@@ -1005,7 +1005,7 @@ chicago_test!(test_pattern_43_cancel_trigger_cancels_trigger_based_activity, {
         result.variables.contains_key("trigger_cancelled"),
         "Pattern should indicate trigger cancelled"
     );
-}
+});
 
 // ============================================================================
 // Integration Tests - Pattern Registry
@@ -1030,7 +1030,7 @@ chicago_test!(test_all_43_patterns_are_registered, {
             id
         );
     }
-}
+});
 
 chicago_test!(test_pattern_registry_executes_registered_pattern, {
     // Arrange: Create registry and context
@@ -1044,7 +1044,7 @@ chicago_test!(test_pattern_registry_executes_registered_pattern, {
     assert!(result.is_some(), "Pattern execution should return a result");
     let result = result.unwrap();
     assert!(result.success, "Pattern execution should succeed");
-}
+});
 
 chicago_test!(test_pattern_registry_returns_none_for_unregistered_pattern, {
     // Arrange: Create registry
@@ -1056,7 +1056,7 @@ chicago_test!(test_pattern_registry_returns_none_for_unregistered_pattern, {
 
     // Assert: No result for unregistered pattern
     assert!(result.is_none(), "Unregistered pattern should return None");
-}
+});
 
 chicago_test!(test_pattern_execution_preserves_variables, {
     // Arrange: Create registry and context with variables
@@ -1076,7 +1076,7 @@ chicago_test!(test_pattern_execution_preserves_variables, {
         !result.variables.is_empty() || ctx.variables.is_empty(),
         "Pattern execution should handle variables"
     );
-}
+});
 
 chicago_test!(test_pattern_execution_sets_next_state, {
     // Arrange: Create registry and context
@@ -1098,7 +1098,7 @@ chicago_test!(test_pattern_execution_sets_next_state, {
         next_state.contains("pattern:1"),
         "Next state should reference pattern ID"
     );
-}
+});
 
 // ============================================================================
 // Edge Cases and Error Handling
@@ -1125,7 +1125,7 @@ chicago_test!(test_pattern_execution_handles_empty_context, {
         result.success || !result.success,
         "Pattern should handle empty context"
     );
-}
+});
 
 chicago_test!(test_pattern_execution_handles_missing_variables, {
     // Arrange: Create registry and context without required variables
@@ -1142,7 +1142,7 @@ chicago_test!(test_pattern_execution_handles_missing_variables, {
         result.success || !result.success,
         "Pattern should handle missing variables"
     );
-}
+});
 
 chicago_test!(test_pattern_id_validation, {
     // Arrange: Test valid and invalid pattern IDs
@@ -1156,7 +1156,7 @@ chicago_test!(test_pattern_id_validation, {
     // Assert: Invalid IDs fail
     assert!(invalid_id_low.is_err(), "Pattern ID 0 should be invalid");
     assert!(invalid_id_high.is_err(), "Pattern ID 44 should be invalid");
-}
+});
 
 chicago_test!(test_pattern_registry_list_patterns_returns_all_ids, {
     // Arrange: Create registry
@@ -1175,7 +1175,7 @@ chicago_test!(test_pattern_registry_list_patterns_returns_all_ids, {
             "Pattern ID should be between 1 and 43"
         );
     }
-}
+});
 
 chicago_test!(test_pattern_registry_has_pattern_checks_registration, {
     // Arrange: Create registry
@@ -1197,4 +1197,4 @@ chicago_test!(test_pattern_registry_has_pattern_checks_registration, {
         !registry.has_pattern(&unregistered),
         "Unregistered pattern should return false"
     );
-}
+});

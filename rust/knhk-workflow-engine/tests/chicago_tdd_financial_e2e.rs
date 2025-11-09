@@ -82,8 +82,7 @@ chicago_async_test!(test_atm_withdrawal_successful_flow, {
     // Real collaborators (actual engine) executed the full flow
 });
 
-chicago_async_test!
-test_atm_withdrawal_insufficient_funds, {
+chicago_async_test!(test_atm_withdrawal_insufficient_funds, {
     // Arrange: ATM withdrawal with insufficient balance
     let mut harness = TestHarness::new();
     let spec = setup_atm_workflow(&mut harness).await;
@@ -124,8 +123,7 @@ test_atm_withdrawal_insufficient_funds, {
     );
 }
 
-chicago_async_test!
-test_atm_workflow_performance, {
+chicago_async_test!(test_atm_workflow_performance, {
     // Arrange: ATM workflow with performance constraints
     let mut harness = TestHarness::new();
     let spec = setup_atm_workflow(&mut harness).await;
@@ -172,8 +170,7 @@ async fn setup_swift_workflow(harness: &mut TestHarness) -> parser::WorkflowSpec
     spec
 }
 
-chicago_async_test!
-test_swift_payment_successful_flow, {
+chicago_async_test!(test_swift_payment_successful_flow, {
     // Arrange: Real SWIFT MT103 payment workflow
     let mut harness = TestHarness::new();
     let spec = setup_swift_workflow(&mut harness).await;
@@ -221,8 +218,7 @@ test_swift_payment_successful_flow, {
     // Real collaborators executed full compliance pipeline
 }
 
-chicago_async_test!
-test_swift_payment_sanctions_rejection, {
+chicago_async_test!(test_swift_payment_sanctions_rejection, {
     // Arrange: Payment to sanctioned country
     let mut harness = TestHarness::new();
     let spec = setup_swift_workflow(&mut harness).await;
@@ -257,8 +253,7 @@ test_swift_payment_sanctions_rejection, {
     );
 }
 
-chicago_async_test!
-test_swift_payment_parallel_compliance_checks, {
+chicago_async_test!(test_swift_payment_parallel_compliance_checks, {
     // Arrange: Verify parallel execution of compliance checks
     let mut harness = TestHarness::new();
     let spec = setup_swift_workflow(&mut harness).await;
@@ -318,8 +313,7 @@ async fn setup_payroll_workflow(harness: &mut TestHarness) -> parser::WorkflowSp
     spec
 }
 
-chicago_async_test!
-test_payroll_multi_instance_processing, {
+chicago_async_test!(test_payroll_multi_instance_processing, {
     // Arrange: Payroll for 100 employees (multi-instance pattern)
     let mut harness = TestHarness::new();
     let spec = setup_payroll_workflow(&mut harness).await;
@@ -368,8 +362,7 @@ test_payroll_multi_instance_processing, {
     // Real collaborators created 100 parallel instances
 }
 
-chicago_async_test!
-test_payroll_approval_milestone, {
+chicago_async_test!(test_payroll_approval_milestone, {
     // Arrange: Payroll requires manager approval before payment
     let mut harness = TestHarness::new();
     let spec = setup_payroll_workflow(&mut harness).await;
@@ -400,8 +393,7 @@ test_payroll_approval_milestone, {
     );
 }
 
-chicago_async_test!
-test_payroll_performance_scalability, {
+chicago_async_test!(test_payroll_performance_scalability, {
     // Arrange: Test performance with 1000 employees
     let mut harness = TestHarness::new();
     let spec = setup_payroll_workflow(&mut harness).await;

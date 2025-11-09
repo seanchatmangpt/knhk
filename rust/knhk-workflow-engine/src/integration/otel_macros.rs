@@ -136,7 +136,7 @@ macro_rules! otel_span_end {
         async {
             use $crate::integration::otel_helpers::end_span_with_result;
 
-            if let Some(span) = $span_ctx.as_ref() {
+            if let Some(ref span) = $span_ctx {
                 end_span_with_result($otel, (*span).clone(), $success, $start_time).await?;
             }
             Ok::<(), $crate::error::WorkflowError>(())
@@ -152,7 +152,7 @@ macro_rules! otel_span_end {
         async {
             use knhk_otel::SpanStatus;
 
-            if let Some(span) = $span_ctx.as_ref() {
+            if let Some(ref span) = $span_ctx {
                 $otel
                     .add_attribute(
                         (*span).clone(),
@@ -171,12 +171,12 @@ macro_rules! otel_span_end {
 
                 let transition = if $success { "complete" } else { "cancel" };
                 $otel
-                    .add_lifecycle_transition((*span).clone(), transition)
+                    .add_lifecycle_transition(span.clone(), transition)
                     .await?;
 
                 $otel
                     .end_span(
-                        (*span).clone(),
+                        span.clone(),
                         if $success {
                             SpanStatus::Ok
                         } else {
@@ -209,7 +209,7 @@ macro_rules! otel_attr {
         $($key:expr => $value:expr),+ $(,)?
     ) => {{
         async {
-            if let Some(span) = $span_ctx.as_ref() {
+            if let Some(ref span) = $span_ctx {
                 $(
                     $otel.add_attribute(
                         (*span).clone(),
@@ -298,7 +298,7 @@ macro_rules! otel_resource {
         role: $role:expr
     ) => {{
         async {
-            if let Some(span) = $span_ctx.as_ref() {
+            if let Some(ref span) = $span_ctx {
                 $otel
                     .add_resource((*span).clone(), $resource, $role)
                     .await?;
@@ -330,7 +330,7 @@ macro_rules! otel_bottleneck {
         async {
             use $crate::integration::otel_helpers::add_bottleneck_if_detected;
 
-            if let Some(span) = $span_ctx.as_ref() {
+            if let Some(ref span) = $span_ctx {
                 add_bottleneck_if_detected(
                     $otel,
                     (*span).clone(),
@@ -366,7 +366,7 @@ macro_rules! otel_conformance {
         async {
             use $crate::integration::otel_helpers::add_conformance_attributes;
 
-            if let Some(span) = $span_ctx.as_ref() {
+            if let Some(ref span) = $span_ctx {
                 add_conformance_attributes($otel, (*span).clone(), $expected, $actual).await?;
             }
             Ok::<(), $crate::error::WorkflowError>(())
