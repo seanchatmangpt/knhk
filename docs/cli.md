@@ -299,6 +299,12 @@ knhk reflex list
 
 ## Additional Resources
 
+### Related Consolidated Guides
+- **[API Guide](API.md)** - API interfaces and programmatic access
+- **[Integration Guide](INTEGRATION.md)** - Integration patterns and workflows
+- **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture and components
+
 ### Detailed Documentation
 - **Complete CLI Reference**: [CLI Documentation](cli.md) - Complete command reference with all options
 - **Command Examples**: `examples/cli-usage/` - Comprehensive CLI examples
