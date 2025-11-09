@@ -349,15 +349,16 @@ pub fn qfd_analysis(voc: PathBuf) -> CnvResult<serde_json::Value> {
         .map_err(to_cnv_error)?;
 
     // Extract customer requirements and technical requirements
+    let empty_vec = vec![];
     let customer_requirements = voc_json
         .get("customer_requirements")
         .and_then(|v| v.as_array())
-        .unwrap_or(&vec![]);
+        .unwrap_or(&empty_vec);
 
     let technical_requirements = voc_json
         .get("technical_requirements")
         .and_then(|v| v.as_array())
-        .unwrap_or(&vec![]);
+        .unwrap_or(&empty_vec);
 
     // Generate relationship matrix (customer requirements × technical requirements)
     let mut relationship_matrix = Vec::new();
@@ -386,7 +387,7 @@ pub fn qfd_analysis(voc: PathBuf) -> CnvResult<serde_json::Value> {
     let mut importance_scores = Vec::new();
     for (i, cr) in customer_requirements.iter().enumerate() {
         let importance = cr.get("importance").and_then(|v| v.as_u64()).unwrap_or(5);
-        let weighted_score = relationship_matrix[i].iter().sum::<u32>() * importance;
+        let weighted_score = (relationship_matrix[i].iter().sum::<u32>() as u64) * importance;
         importance_scores.push(weighted_score);
     }
 

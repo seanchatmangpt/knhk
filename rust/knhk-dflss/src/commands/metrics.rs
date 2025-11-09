@@ -123,7 +123,7 @@ pub fn collect_performance(
     };
 
     info!("Performance Metrics: Operations={}, Under 8 ticks={} ({:.1}%), Median={:.2}, P95={:.2}, P99={:.2}", 
-          total_operations, operations_under_8_ticks, 
+          total_operations, operations_under_8_ticks,
           (operations_under_8_ticks as f64 / total_operations as f64) * 100.0,
           median_ticks, p95_ticks, p99_ticks);
 

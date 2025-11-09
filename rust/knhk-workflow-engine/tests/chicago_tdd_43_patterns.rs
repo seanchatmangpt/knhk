@@ -19,7 +19,7 @@ fn create_test_registry() -> PatternRegistry {
     let mut registry = PatternRegistry::new();
     register_all_patterns(&mut registry);
     registry
-    registry
+}
 
 /// Create a test execution context
 fn create_test_context() -> PatternExecutionContext {
@@ -30,7 +30,7 @@ fn create_test_context() -> PatternExecutionContext {
         arrived_from: std::collections::HashSet::new(),
         scope_id: String::new(),
     }
-    }
+}
 
 // ============================================================================
 // Basic Control Flow Patterns (1-5)
@@ -58,27 +58,30 @@ chicago_test!(test_pattern_1_sequence_executes_branches_sequentially, {
     );
 });
 
-chicago_test!(test_pattern_2_parallel_split_executes_branches_in_parallel, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables.insert("value".to_string(), "10".to_string());
+chicago_test!(
+    test_pattern_2_parallel_split_executes_branches_in_parallel,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables.insert("value".to_string(), "10".to_string());
 
-    // Act: Execute pattern 2 (Parallel Split)
-    let result = registry
-        .execute(&PatternId(2), &ctx)
-        .expect("Pattern 2 should be registered");
+        // Act: Execute pattern 2 (Parallel Split)
+        let result = registry
+            .execute(&PatternId(2), &ctx)
+            .expect("Pattern 2 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Parallel Split pattern should execute successfully"
-    );
-    assert!(
-        result.next_state.is_some(),
-        "Parallel Split pattern should set next state"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Parallel Split pattern should execute successfully"
+        );
+        assert!(
+            result.next_state.is_some(),
+            "Parallel Split pattern should set next state"
+        );
+    }
+);
 
 chicago_test!(test_pattern_3_synchronization_waits_for_all_branches, {
     // Arrange: Create registry and context
@@ -170,22 +173,25 @@ chicago_test!(test_pattern_6_multi_choice_selects_one_or_more_branches, {
     );
 });
 
-chicago_test!(test_pattern_7_structured_synchronizing_merge_synchronizes_or_join, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let ctx = create_test_context();
+chicago_test!(
+    test_pattern_7_structured_synchronizing_merge_synchronizes_or_join,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let ctx = create_test_context();
 
-    // Act: Execute pattern 7 (Structured Synchronizing Merge)
-    let result = registry
-        .execute(&PatternId(7), &ctx)
-        .expect("Pattern 7 should be registered");
+        // Act: Execute pattern 7 (Structured Synchronizing Merge)
+        let result = registry
+            .execute(&PatternId(7), &ctx)
+            .expect("Pattern 7 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Structured Synchronizing Merge pattern should execute successfully"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Structured Synchronizing Merge pattern should execute successfully"
+        );
+    }
+);
 
 chicago_test!(test_pattern_8_multi_merge_merges_all_incoming_branches, {
     // Arrange: Create registry and context
@@ -261,95 +267,107 @@ chicago_test!(test_pattern_11_implicit_termination_detects_completion, {
 // Multiple Instance Patterns (12-15)
 // ============================================================================
 
-chicago_test!(test_pattern_12_multiple_instance_without_sync_executes_instances, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("instance_count".to_string(), "3".to_string());
+chicago_test!(
+    test_pattern_12_multiple_instance_without_sync_executes_instances,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("instance_count".to_string(), "3".to_string());
 
-    // Act: Execute pattern 12 (Multiple Instance Without Synchronization)
-    let result = registry
-        .execute(&PatternId(12), &ctx)
-        .expect("Pattern 12 should be registered");
+        // Act: Execute pattern 12 (Multiple Instance Without Synchronization)
+        let result = registry
+            .execute(&PatternId(12), &ctx)
+            .expect("Pattern 12 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Multiple Instance Without Sync pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("instances_executed"),
-        "Pattern should record instances executed"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Multiple Instance Without Sync pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("instances_executed"),
+            "Pattern should record instances executed"
+        );
+    }
+);
 
-chicago_test!(test_pattern_13_multiple_instance_design_time_executes_known_count, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("instance_count".to_string(), "5".to_string());
+chicago_test!(
+    test_pattern_13_multiple_instance_design_time_executes_known_count,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("instance_count".to_string(), "5".to_string());
 
-    // Act: Execute pattern 13 (Multiple Instance Design Time)
-    let result = registry
-        .execute(&PatternId(13), &ctx)
-        .expect("Pattern 13 should be registered");
+        // Act: Execute pattern 13 (Multiple Instance Design Time)
+        let result = registry
+            .execute(&PatternId(13), &ctx)
+            .expect("Pattern 13 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Multiple Instance Design Time pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("all_completed"),
-        "Pattern should indicate all instances completed"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Multiple Instance Design Time pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("all_completed"),
+            "Pattern should indicate all instances completed"
+        );
+    }
+);
 
-chicago_test!(test_pattern_14_multiple_instance_runtime_executes_runtime_count, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("instance_count".to_string(), "4".to_string());
+chicago_test!(
+    test_pattern_14_multiple_instance_runtime_executes_runtime_count,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("instance_count".to_string(), "4".to_string());
 
-    // Act: Execute pattern 14 (Multiple Instance Runtime)
-    let result = registry
-        .execute(&PatternId(14), &ctx)
-        .expect("Pattern 14 should be registered");
+        // Act: Execute pattern 14 (Multiple Instance Runtime)
+        let result = registry
+            .execute(&PatternId(14), &ctx)
+            .expect("Pattern 14 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Multiple Instance Runtime pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("runtime_determined"),
-        "Pattern should indicate runtime determination"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Multiple Instance Runtime pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("runtime_determined"),
+            "Pattern should indicate runtime determination"
+        );
+    }
+);
 
-chicago_test!(test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let ctx = create_test_context();
+chicago_test!(
+    test_pattern_15_multiple_instance_dynamic_creates_instances_dynamically,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let ctx = create_test_context();
 
-    // Act: Execute pattern 15 (Multiple Instance Dynamic)
-    let result = registry
-        .execute(&PatternId(15), &ctx)
-        .expect("Pattern 15 should be registered");
+        // Act: Execute pattern 15 (Multiple Instance Dynamic)
+        let result = registry
+            .execute(&PatternId(15), &ctx)
+            .expect("Pattern 15 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Multiple Instance Dynamic pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("dynamic_instances"),
-        "Pattern should indicate dynamic instance creation"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Multiple Instance Dynamic pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("dynamic_instances"),
+            "Pattern should indicate dynamic instance creation"
+        );
+    }
+);
 
 // ============================================================================
 // State-Based Patterns (16-18)
@@ -372,26 +390,29 @@ chicago_test!(test_pattern_16_deferred_choice_waits_for_external_event, {
     );
 });
 
-chicago_test!(test_pattern_17_interleaved_parallel_routing_executes_interleaved, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let ctx = create_test_context();
+chicago_test!(
+    test_pattern_17_interleaved_parallel_routing_executes_interleaved,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let ctx = create_test_context();
 
-    // Act: Execute pattern 17 (Interleaved Parallel Routing)
-    let result = registry
-        .execute(&PatternId(17), &ctx)
-        .expect("Pattern 17 should be registered");
+        // Act: Execute pattern 17 (Interleaved Parallel Routing)
+        let result = registry
+            .execute(&PatternId(17), &ctx)
+            .expect("Pattern 17 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Interleaved Parallel Routing pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("interleaved"),
-        "Pattern should indicate interleaved execution"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Interleaved Parallel Routing pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("interleaved"),
+            "Pattern should indicate interleaved execution"
+        );
+    }
+);
 
 chicago_test!(test_pattern_18_milestone_enables_activity_when_reached, {
     // Arrange: Create registry and context
@@ -416,29 +437,32 @@ chicago_test!(test_pattern_18_milestone_enables_activity_when_reached, {
     );
 });
 
-chicago_test!(test_pattern_18_milestone_blocks_activity_when_not_reached, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("milestone_reached".to_string(), "false".to_string());
+chicago_test!(
+    test_pattern_18_milestone_blocks_activity_when_not_reached,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("milestone_reached".to_string(), "false".to_string());
 
-    // Act: Execute pattern 18 (Milestone)
-    let result = registry
-        .execute(&PatternId(18), &ctx)
-        .expect("Pattern 18 should be registered");
+        // Act: Execute pattern 18 (Milestone)
+        let result = registry
+            .execute(&PatternId(18), &ctx)
+            .expect("Pattern 18 should be registered");
 
-    // Assert: Pattern blocks activity when milestone not reached
-    assert!(
-        !result.success,
-        "Milestone pattern should block activity when milestone not reached"
-    );
-    assert_eq!(
-        result.variables.get("activity_enabled"),
-        Some(&"false".to_string()),
-        "Activity should be disabled when milestone not reached"
-    );
-});
+        // Assert: Pattern blocks activity when milestone not reached
+        assert!(
+            !result.success,
+            "Milestone pattern should block activity when milestone not reached"
+        );
+        assert_eq!(
+            result.variables.get("activity_enabled"),
+            Some(&"false".to_string()),
+            "Activity should be disabled when milestone not reached"
+        );
+    }
+);
 
 // ============================================================================
 // Cancellation Patterns (19-25)
@@ -547,53 +571,59 @@ chicago_test!(test_pattern_23_cancel_region_cancels_region, {
     );
 });
 
-chicago_test!(test_pattern_24_cancel_multiple_instance_activity_cancels_instances, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("activity_id".to_string(), "activity-789".to_string());
-    ctx.variables
-        .insert("instance_count".to_string(), "5".to_string());
+chicago_test!(
+    test_pattern_24_cancel_multiple_instance_activity_cancels_instances,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("activity_id".to_string(), "activity-789".to_string());
+        ctx.variables
+            .insert("instance_count".to_string(), "5".to_string());
 
-    // Act: Execute pattern 24 (Cancel Multiple Instance Activity)
-    let result = registry
-        .execute(&PatternId(24), &ctx)
-        .expect("Pattern 24 should be registered");
+        // Act: Execute pattern 24 (Cancel Multiple Instance Activity)
+        let result = registry
+            .execute(&PatternId(24), &ctx)
+            .expect("Pattern 24 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Cancel Multiple Instance Activity pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("multiple_instance_cancelled"),
-        "Pattern should record cancelled multiple instance activity"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Cancel Multiple Instance Activity pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("multiple_instance_cancelled"),
+            "Pattern should record cancelled multiple instance activity"
+        );
+    }
+);
 
-chicago_test!(test_pattern_25_complete_multiple_instance_activity_completes_instances, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("activity_id".to_string(), "activity-101".to_string());
+chicago_test!(
+    test_pattern_25_complete_multiple_instance_activity_completes_instances,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("activity_id".to_string(), "activity-101".to_string());
 
-    // Act: Execute pattern 25 (Complete Multiple Instance Activity)
-    let result = registry
-        .execute(&PatternId(25), &ctx)
-        .expect("Pattern 25 should be registered");
+        // Act: Execute pattern 25 (Complete Multiple Instance Activity)
+        let result = registry
+            .execute(&PatternId(25), &ctx)
+            .expect("Pattern 25 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Complete Multiple Instance Activity pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("multiple_instance_completed"),
-        "Pattern should record completed multiple instance activity"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Complete Multiple Instance Activity pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("multiple_instance_completed"),
+            "Pattern should record completed multiple instance activity"
+        );
+    }
+);
 
 // ============================================================================
 // Advanced Control Patterns (26-39)
@@ -641,28 +671,31 @@ chicago_test!(test_pattern_27_cancelling_discriminator_cancels_others, {
     );
 });
 
-chicago_test!(test_pattern_28_structured_loop_executes_with_exit_condition, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("iterations".to_string(), "3".to_string());
+chicago_test!(
+    test_pattern_28_structured_loop_executes_with_exit_condition,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("iterations".to_string(), "3".to_string());
 
-    // Act: Execute pattern 28 (Structured Loop)
-    let result = registry
-        .execute(&PatternId(28), &ctx)
-        .expect("Pattern 28 should be registered");
+        // Act: Execute pattern 28 (Structured Loop)
+        let result = registry
+            .execute(&PatternId(28), &ctx)
+            .expect("Pattern 28 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Structured Loop pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("loop_completed"),
-        "Pattern should indicate loop completion"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Structured Loop pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("loop_completed"),
+            "Pattern should indicate loop completion"
+        );
+    }
+);
 
 chicago_test!(test_pattern_29_recursion_executes_recursively, {
     // Arrange: Create registry and context
@@ -707,49 +740,55 @@ chicago_test!(test_pattern_30_transient_trigger_handles_transient_event, {
     );
 });
 
-chicago_test!(test_pattern_31_persistent_trigger_handles_persistent_event, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let ctx = create_test_context();
+chicago_test!(
+    test_pattern_31_persistent_trigger_handles_persistent_event,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let ctx = create_test_context();
 
-    // Act: Execute pattern 31 (Persistent Trigger)
-    let result = registry
-        .execute(&PatternId(31), &ctx)
-        .expect("Pattern 31 should be registered");
+        // Act: Execute pattern 31 (Persistent Trigger)
+        let result = registry
+            .execute(&PatternId(31), &ctx)
+            .expect("Pattern 31 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Persistent Trigger pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("trigger_received"),
-        "Pattern should indicate trigger received"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Persistent Trigger pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("trigger_received"),
+            "Pattern should indicate trigger received"
+        );
+    }
+);
 
-chicago_test!(test_pattern_32_cancel_activity_instance_cancels_specific_instance, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("instance_id".to_string(), "instance-123".to_string());
+chicago_test!(
+    test_pattern_32_cancel_activity_instance_cancels_specific_instance,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("instance_id".to_string(), "instance-123".to_string());
 
-    // Act: Execute pattern 32 (Cancel Activity Instance)
-    let result = registry
-        .execute(&PatternId(32), &ctx)
-        .expect("Pattern 32 should be registered");
+        // Act: Execute pattern 32 (Cancel Activity Instance)
+        let result = registry
+            .execute(&PatternId(32), &ctx)
+            .expect("Pattern 32 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Cancel Activity Instance pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("instance_cancelled"),
-        "Pattern should record cancelled instance"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Cancel Activity Instance pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("instance_cancelled"),
+            "Pattern should record cancelled instance"
+        );
+    }
+);
 
 chicago_test!(test_pattern_33_cancel_process_instance_cancels_process, {
     // Arrange: Create registry and context
@@ -862,28 +901,31 @@ chicago_test!(test_pattern_37_skip_activity_skips_activity, {
     );
 });
 
-chicago_test!(test_pattern_38_activity_instance_multiple_threads_executes_in_threads, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("thread_count".to_string(), "4".to_string());
+chicago_test!(
+    test_pattern_38_activity_instance_multiple_threads_executes_in_threads,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("thread_count".to_string(), "4".to_string());
 
-    // Act: Execute pattern 38 (Activity Instance Multiple Threads)
-    let result = registry
-        .execute(&PatternId(38), &ctx)
-        .expect("Pattern 38 should be registered");
+        // Act: Execute pattern 38 (Activity Instance Multiple Threads)
+        let result = registry
+            .execute(&PatternId(38), &ctx)
+            .expect("Pattern 38 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Activity Instance Multiple Threads pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("threads_used"),
-        "Pattern should record threads used"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Activity Instance Multiple Threads pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("threads_used"),
+            "Pattern should record threads used"
+        );
+    }
+);
 
 chicago_test!(test_pattern_39_thread_merge_merges_threads, {
     // Arrange: Create registry and context
@@ -984,28 +1026,31 @@ chicago_test!(test_pattern_42_multiple_trigger_waits_for_all_triggers, {
     );
 });
 
-chicago_test!(test_pattern_43_cancel_trigger_cancels_trigger_based_activity, {
-    // Arrange: Create registry and context
-    let registry = create_test_registry();
-    let mut ctx = create_test_context();
-    ctx.variables
-        .insert("trigger_id".to_string(), "trigger-123".to_string());
+chicago_test!(
+    test_pattern_43_cancel_trigger_cancels_trigger_based_activity,
+    {
+        // Arrange: Create registry and context
+        let registry = create_test_registry();
+        let mut ctx = create_test_context();
+        ctx.variables
+            .insert("trigger_id".to_string(), "trigger-123".to_string());
 
-    // Act: Execute pattern 43 (Cancel Trigger)
-    let result = registry
-        .execute(&PatternId(43), &ctx)
-        .expect("Pattern 43 should be registered");
+        // Act: Execute pattern 43 (Cancel Trigger)
+        let result = registry
+            .execute(&PatternId(43), &ctx)
+            .expect("Pattern 43 should be registered");
 
-    // Assert: Pattern executed successfully
-    assert!(
-        result.success,
-        "Cancel Trigger pattern should execute successfully"
-    );
-    assert!(
-        result.variables.contains_key("trigger_cancelled"),
-        "Pattern should indicate trigger cancelled"
-    );
-});
+        // Assert: Pattern executed successfully
+        assert!(
+            result.success,
+            "Cancel Trigger pattern should execute successfully"
+        );
+        assert!(
+            result.variables.contains_key("trigger_cancelled"),
+            "Pattern should indicate trigger cancelled"
+        );
+    }
+);
 
 // ============================================================================
 // Integration Tests - Pattern Registry
@@ -1046,17 +1091,20 @@ chicago_test!(test_pattern_registry_executes_registered_pattern, {
     assert!(result.success, "Pattern execution should succeed");
 });
 
-chicago_test!(test_pattern_registry_returns_none_for_unregistered_pattern, {
-    // Arrange: Create registry
-    let registry = PatternRegistry::new(); // Empty registry
-    let ctx = create_test_context();
+chicago_test!(
+    test_pattern_registry_returns_none_for_unregistered_pattern,
+    {
+        // Arrange: Create registry
+        let registry = PatternRegistry::new(); // Empty registry
+        let ctx = create_test_context();
 
-    // Act: Try to execute pattern 1
-    let result = registry.execute(&PatternId(1), &ctx);
+        // Act: Try to execute pattern 1
+        let result = registry.execute(&PatternId(1), &ctx);
 
-    // Assert: No result for unregistered pattern
-    assert!(result.is_none(), "Unregistered pattern should return None");
-});
+        // Assert: No result for unregistered pattern
+        assert!(result.is_none(), "Unregistered pattern should return None");
+    }
+);
 
 chicago_test!(test_pattern_execution_preserves_variables, {
     // Arrange: Create registry and context with variables

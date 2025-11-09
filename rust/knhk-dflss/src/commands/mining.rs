@@ -213,7 +213,7 @@ pub fn performance_analysis(log: PathBuf) -> CnvResult<serde_json::Value> {
             durations.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / durations.len() as f64;
         let std_dev = variance.sqrt();
         let min = durations.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        let max = durations.iter().fold(0.0, |a, &b| a.max(b));
+        let max = durations.iter().fold(0.0_f64, |a, &b| a.max(b));
 
         activity_stats.insert(
             activity.clone(),

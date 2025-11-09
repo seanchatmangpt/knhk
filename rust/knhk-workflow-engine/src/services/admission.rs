@@ -10,7 +10,9 @@
 //! Execution paths (hot path, executor, state) assume inputs are pre-validated here.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::validation::guards::{validate_batch_size, validate_run_len, MAX_BATCH_SIZE, MAX_RUN_LEN};
+use crate::validation::guards::{
+    validate_batch_size, validate_run_len, MAX_BATCH_SIZE, MAX_RUN_LEN,
+};
 use serde_json::Value;
 
 /// Admission gate for case validation
@@ -29,10 +31,10 @@ impl AdmissionGate {
         let mut gate = Self {
             policies: Vec::new(),
         };
-        
+
         // Add default MAX_RUN_LEN guard policy
         gate.add_max_run_len_policy();
-        
+
         gate
     }
 
@@ -87,7 +89,7 @@ impl AdmissionGate {
                     if key == "batch" || key == "metadata" {
                         continue;
                     }
-                    
+
                     if let Some(arr) = value.as_array() {
                         let len = arr.len();
                         // If array has >8 items and looks like operations/triples, validate
