@@ -99,17 +99,25 @@ pub(super) fn execute_workflow<'a>(
         // Track how many incoming flows each task has received
         // For AND join: task needs all incoming flows
         // For XOR join: task needs only one incoming flow
+        // For OR join: task needs all active incoming flows (all that were enabled by OR-split)
         let mut task_incoming_count: HashMap<String, usize> = HashMap::new();
         for (task_id, task) in &spec.tasks {
             let required_count = if task.incoming_flows.is_empty() {
                 0 // Task with no incoming flows (starts from start condition) is ready immediately
             } else if matches!(task.join_type, crate::parser::JoinType::And) {
                 task.incoming_flows.len() // AND join needs all
+            } else if matches!(task.join_type, crate::parser::JoinType::Or) {
+                // OR join: needs all active branches (will be calculated dynamically)
+                // For now, we'll track which branches are active and wait for all of them
+                task.incoming_flows.len() // Will be adjusted based on active branches
             } else {
                 1 // XOR join needs at least one
             };
             task_incoming_count.insert(task_id.clone(), required_count);
         }
+
+        // Track active branches for OR joins (which branches were enabled by OR-splits)
+        let mut or_join_active_branches: HashMap<String, HashSet<String>> = HashMap::new();
 
         // Track how many incoming flows each task has actually received
         let mut task_received_count: HashMap<String, usize> = HashMap::new();

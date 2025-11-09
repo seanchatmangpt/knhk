@@ -38,12 +38,20 @@ fn create_sequential_workflow() -> WorkflowSpec {
         Task {
             id: "task_a".to_string(),
             name: "Task A".to_string(),
+            task_type: TaskType::Atomic,
             split_type: SplitType::Xor,
             join_type: JoinType::Xor,
-            incoming_flows: vec!["start_to_a".to_string()],
+            max_ticks: None,
+            priority: None,
+            use_simd: false,
+            input_conditions: vec![],
+            output_conditions: vec![],
             outgoing_flows: vec!["a_to_b".to_string()],
-            resource_allocation: None,
-            data_mapping: None,
+            incoming_flows: vec!["start_to_a".to_string()],
+            allocation_policy: None,
+            required_roles: vec![],
+            required_capabilities: vec![],
+            exception_worklet: None,
         },
     );
 
@@ -53,12 +61,20 @@ fn create_sequential_workflow() -> WorkflowSpec {
         Task {
             id: "task_b".to_string(),
             name: "Task B".to_string(),
+            task_type: TaskType::Atomic,
             split_type: SplitType::Xor,
             join_type: JoinType::Xor,
-            incoming_flows: vec!["a_to_b".to_string()],
+            max_ticks: None,
+            priority: None,
+            use_simd: false,
+            input_conditions: vec![],
+            output_conditions: vec![],
             outgoing_flows: vec!["b_to_c".to_string()],
-            resource_allocation: None,
-            data_mapping: None,
+            incoming_flows: vec!["a_to_b".to_string()],
+            allocation_policy: None,
+            required_roles: vec![],
+            required_capabilities: vec![],
+            exception_worklet: None,
         },
     );
 
@@ -68,36 +84,48 @@ fn create_sequential_workflow() -> WorkflowSpec {
         Task {
             id: "task_c".to_string(),
             name: "Task C".to_string(),
+            task_type: TaskType::Atomic,
             split_type: SplitType::Xor,
             join_type: JoinType::Xor,
-            incoming_flows: vec!["b_to_c".to_string()],
+            max_ticks: None,
+            priority: None,
+            use_simd: false,
+            input_conditions: vec![],
+            output_conditions: vec![],
             outgoing_flows: vec!["c_to_end".to_string()],
-            resource_allocation: None,
-            data_mapping: None,
+            incoming_flows: vec!["b_to_c".to_string()],
+            allocation_policy: None,
+            required_roles: vec![],
+            required_capabilities: vec![],
+            exception_worklet: None,
         },
     );
 
     // Flows
-    flows.push((
-        "start".to_string(),
-        "task_a".to_string(),
-        "start_to_a".to_string(),
-    ));
-    flows.push((
-        "task_a".to_string(),
-        "task_b".to_string(),
-        "a_to_b".to_string(),
-    ));
-    flows.push((
-        "task_b".to_string(),
-        "task_c".to_string(),
-        "b_to_c".to_string(),
-    ));
-    flows.push((
-        "task_c".to_string(),
-        "end".to_string(),
-        "c_to_end".to_string(),
-    ));
+    flows.push(Flow {
+        id: "start_to_a".to_string(),
+        from: "start".to_string(),
+        to: "task_a".to_string(),
+        predicate: None,
+    });
+    flows.push(Flow {
+        id: "a_to_b".to_string(),
+        from: "task_a".to_string(),
+        to: "task_b".to_string(),
+        predicate: None,
+    });
+    flows.push(Flow {
+        id: "b_to_c".to_string(),
+        from: "task_b".to_string(),
+        to: "task_c".to_string(),
+        predicate: None,
+    });
+    flows.push(Flow {
+        id: "c_to_end".to_string(),
+        from: "task_c".to_string(),
+        to: "end".to_string(),
+        predicate: None,
+    });
 
     WorkflowSpec {
         id: WorkflowSpecId::new(),
@@ -106,10 +134,7 @@ fn create_sequential_workflow() -> WorkflowSpec {
         end_condition: Some("end".to_string()),
         tasks,
         conditions: HashMap::new(),
-        flows: flows
-            .into_iter()
-            .map(|(from, to, id)| (from, to, id))
-            .collect(),
+        flows,
         source_turtle: None,
     }
 }
