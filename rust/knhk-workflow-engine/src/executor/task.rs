@@ -3,27 +3,13 @@
 use crate::case::CaseId;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::fortune5::RuntimeClass;
-use crate::parser::{Task, WorkflowSpec, WorkflowSpecId};
+use crate::parser::{Task, WorkflowSpecId};
 use crate::patterns::PatternExecutionContext;
 use crate::resource::AllocationRequest;
 use std::collections::HashMap;
 use std::time::Instant;
 
-use super::workflow_execution::execute_workflow;
 use super::WorkflowEngine;
-
-/// Execute workflow tasks with resource allocation
-/// Uses the real workflow execution engine to follow flows from start to end condition
-pub(super) fn execute_workflow_tasks<'a>(
-    engine: &'a WorkflowEngine,
-    case_id: CaseId,
-    spec: &'a WorkflowSpec,
-) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<()>> + Send + 'a>> {
-    Box::pin(async move {
-        // Use the real workflow execution engine
-        execute_workflow(engine, case_id, spec).await
-    })
-}
 
 /// Execute a task with resource allocation and Fortune 5 SLO tracking
 pub(super) async fn execute_task_with_allocation(

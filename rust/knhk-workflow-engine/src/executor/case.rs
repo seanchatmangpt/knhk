@@ -9,15 +9,6 @@ use std::time::Instant;
 use super::WorkflowEngine;
 
 impl WorkflowEngine {
-    /// Internal helper to execute workflow (avoids recursion detection)
-    async fn execute_workflow_internal(
-        engine: &WorkflowEngine,
-        case_id: CaseId,
-        spec: &crate::parser::WorkflowSpec,
-    ) -> WorkflowResult<()> {
-        super::workflow_execution::execute_workflow(engine, case_id, spec).await
-    }
-
     /// Create a new case
     pub async fn create_case(
         &self,

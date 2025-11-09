@@ -43,6 +43,7 @@ default = ["otel"]
 otel = ["dep:serde_json", "tracing-subscriber"]
 serde_json = ["dep:serde_json"]
 fortune5 = ["aws-sdk-kms", "aws-config", "reqwest"]
+rest-api = ["knhk-workflow-engine", "axum"]
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }

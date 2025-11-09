@@ -25,12 +25,16 @@ pub mod key_rotation; // Automatic key rotation (≤24h)
 pub mod kms; // HSM/KMS integration
 pub mod multi_region; // Multi-region support
 pub mod promotion;
+#[cfg(feature = "rest-api")]
+pub mod rest_api;
 pub mod slo_admission; // SLO-based admission control
-pub mod spiffe; // SPIFFE/SPIRE integration // Formal promotion gates
+pub mod spiffe; // SPIFFE/SPIRE integration // Formal promotion gates // REST API server for workflow engine
 
 pub use client::SidecarClient;
 pub use config::SidecarConfig;
 pub use error::{SidecarError, SidecarResult};
+#[cfg(feature = "rest-api")]
+pub use rest_api::{start_rest_api, RestApiConfig, SidecarRestApiServer};
 pub use server::SidecarServer;
 pub use service::KgcSidecarService;
 
@@ -974,5 +978,27 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
     );
 
     info!("Sidecar server starting on {}", config.listen_address);
+
+    // Start REST API server if enabled
+    #[cfg(feature = "rest-api")]
+    {
+        use crate::rest_api::{start_rest_api, RestApiConfig};
+        use tokio::task;
+
+        // Start REST API server in background task
+        let rest_config = RestApiConfig {
+            bind_address: "0.0.0.0:8080".to_string(),
+            state_store_path: "./workflow_db".to_string(),
+        };
+
+        let _rest_handle = task::spawn(async move {
+            if let Err(e) = start_rest_api(rest_config).await {
+                error!("REST API server error: {}", e);
+            }
+        });
+
+        info!("REST API server started in background task on http://0.0.0.0:8080");
+    }
+
     server.start().await.map_err(|e| e.into())
 }
