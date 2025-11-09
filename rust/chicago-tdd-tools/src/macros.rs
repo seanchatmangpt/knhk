@@ -366,88 +366,136 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_assert_ok_macro() {
+    chicago_test!(test_assert_ok_macro, {
+        // Arrange: Create successful result
         let result: Result<u32, String> = Ok(42);
+
+        // Act & Assert: Verify assert_ok! macro works
         assert_ok!(result);
         assert_ok!(result, "Should succeed");
-    }
+    });
 
     #[test]
     #[should_panic(expected = "Expected Ok")]
     fn test_assert_ok_macro_fails() {
+        // Arrange: Create error result
         let result: Result<u32, String> = Err("error".to_string());
+
+        // Act & Assert: Should panic
         assert_ok!(result);
     }
 
-    #[test]
-    fn test_assert_err_macro() {
+    chicago_test!(test_assert_err_macro, {
+        // Arrange: Create error result
         let result: Result<u32, String> = Err("error".to_string());
+
+        // Act & Assert: Verify assert_err! macro works
         assert_err!(result);
         assert_err!(result, "Should fail");
-    }
+    });
 
     #[test]
     #[should_panic(expected = "Expected Err")]
     fn test_assert_err_macro_fails() {
+        // Arrange: Create successful result
         let result: Result<u32, String> = Ok(42);
+
+        // Act & Assert: Should panic
         assert_err!(result);
     }
 
-    #[test]
-    fn test_assert_within_tick_budget_macro() {
-        assert_within_tick_budget!(5);
-        assert_within_tick_budget!(8);
-        assert_within_tick_budget!(0);
-        assert_within_tick_budget!(5, "Test operation");
-    }
+    chicago_test!(test_assert_within_tick_budget_macro, {
+        // Arrange: Various tick values
+        let ticks_valid = 5;
+        let ticks_max = 8;
+        let ticks_zero = 0;
+
+        // Act & Assert: Verify tick budget validation
+        assert_within_tick_budget!(ticks_valid);
+        assert_within_tick_budget!(ticks_max);
+        assert_within_tick_budget!(ticks_zero);
+        assert_within_tick_budget!(ticks_valid, "Test operation");
+    });
 
     #[test]
     #[should_panic(expected = "Tick budget exceeded")]
     fn test_assert_within_tick_budget_macro_fails() {
-        assert_within_tick_budget!(9);
+        // Arrange: Tick value exceeding budget
+        let ticks = 9;
+
+        // Act & Assert: Should panic
+        assert_within_tick_budget!(ticks);
     }
 
-    #[test]
-    fn test_assert_in_range_macro() {
-        assert_in_range!(5, 0, 10);
-        assert_in_range!(0, 0, 10);
-        assert_in_range!(10, 0, 10);
-        assert_in_range!(5, 0, 10, "Value should be valid");
-    }
+    chicago_test!(test_assert_in_range_macro, {
+        // Arrange: Values within and at boundaries
+        let value_mid = 5;
+        let value_min = 0;
+        let value_max = 10;
+
+        // Act & Assert: Verify range validation
+        assert_in_range!(value_mid, 0, 10);
+        assert_in_range!(value_min, 0, 10);
+        assert_in_range!(value_max, 0, 10);
+        assert_in_range!(value_mid, 0, 10, "Value should be valid");
+    });
 
     #[test]
     #[should_panic(expected = "not in range")]
     fn test_assert_in_range_macro_fails_below() {
-        assert_in_range!(-1, 0, 10);
+        // Arrange: Value below range
+        let value = -1;
+
+        // Act & Assert: Should panic
+        assert_in_range!(value, 0, 10);
     }
 
     #[test]
     #[should_panic(expected = "not in range")]
     fn test_assert_in_range_macro_fails_above() {
-        assert_in_range!(11, 0, 10);
+        // Arrange: Value above range
+        let value = 11;
+
+        // Act & Assert: Should panic
+        assert_in_range!(value, 0, 10);
     }
 
-    #[test]
-    fn test_assert_eq_msg_macro() {
-        assert_eq_msg!(42, 42, "Values should match");
-    }
+    chicago_test!(test_assert_eq_msg_macro, {
+        // Arrange: Equal values
+        let actual = 42;
+        let expected = 42;
+
+        // Act & Assert: Verify equality with message
+        assert_eq_msg!(actual, expected, "Values should match");
+    });
 
     #[test]
     #[should_panic(expected = "Values should match")]
     fn test_assert_eq_msg_macro_fails() {
-        assert_eq_msg!(41, 42, "Values should match");
+        // Arrange: Unequal values
+        let actual = 41;
+        let expected = 42;
+
+        // Act & Assert: Should panic
+        assert_eq_msg!(actual, expected, "Values should match");
     }
 
-    #[test]
-    fn test_assert_guard_constraint_macro() {
-        assert_guard_constraint!(5 <= 8, "max_run_len");
+    chicago_test!(test_assert_guard_constraint_macro, {
+        // Arrange: Valid constraint values
+        let max_run_len = 5;
+
+        // Act & Assert: Verify guard constraint validation
+        assert_guard_constraint!(max_run_len <= 8, "max_run_len");
         assert_guard_constraint!(true, "always_true");
-    }
+    });
 
     #[test]
     #[should_panic(expected = "Guard constraint violation")]
     fn test_assert_guard_constraint_macro_fails() {
-        assert_guard_constraint!(9 <= 8, "max_run_len");
+        // Arrange: Invalid constraint value
+        let max_run_len = 9;
+
+        // Act & Assert: Should panic
+        assert_guard_constraint!(max_run_len <= 8, "max_run_len");
     }
 }

@@ -36,7 +36,7 @@ impl WorkflowEngine {
                 if let (Some(ref otel), Some(ref span)) =
                     (self.otel_integration.as_ref(), span_ctx.as_ref())
                 {
-                    crate::                    otel_span_end!(
+                    otel_span_end!(
                         otel,
                         span_ctx,
                         success: false,
@@ -63,7 +63,7 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::            otel_conformance!(
+            otel_conformance!(
                 otel,
                 span_ctx,
                 expected_pattern: expected_pattern,
@@ -164,7 +164,7 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::            otel_bottleneck!(
+            otel_bottleneck!(
                 otel,
                 span_ctx,
                 latency_ms: latency_ms,
@@ -177,7 +177,7 @@ impl WorkflowEngine {
         if let (Some(ref otel), Some(ref span)) =
             (self.otel_integration.as_ref(), span_ctx.as_ref())
         {
-            crate::            otel_span_end!(
+            otel_span_end!(
                 otel,
                 span_ctx,
                 success: result.success,

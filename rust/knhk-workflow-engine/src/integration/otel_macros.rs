@@ -28,7 +28,8 @@ macro_rules! otel_span {
         $(parent: $parent:expr,)?
     ) => {{
         async {
-            use crate::integration::otel_helpers::create_trace_context;
+            use $crate::integration::otel_helpers::create_trace_context;
+            #[allow(unused_imports)]
             use knhk_otel::SpanContext;
 
             let mut guard = $otel.tracer.write().await;
@@ -108,7 +109,7 @@ macro_rules! otel_span {
         } else {
             Ok(None)
         }
-        }.await
+    }.await
     }};
 }
 
