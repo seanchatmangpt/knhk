@@ -349,7 +349,7 @@ match connector.fetch_delta().await {
 - **[CLI Guide](CLI.md)** - CLI usage and command reference
 
 ### Detailed Documentation
-- **Integration Guide**: [Integration Guide](integration-guide.md) - Complete integration reference
+- **Integration Guide**: [Integration Guide](archived/reference-docs/integration-guide.md) (archived - detailed reference) - Complete integration reference
 - **unrdf Integration**: [unrdf Integration Plan](v1.0-unrdf-integration-plan.md) - Cold path integration
 - **Lockchain Compatibility**: [Lockchain Compatibility](lockchain-unrdf-compatibility-check.md) - Provenance integration
 

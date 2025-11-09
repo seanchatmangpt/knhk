@@ -248,7 +248,7 @@ async fn test_workflow_events_captured_in_xes() {
     );
 
     // Verify events have required attributes
-    for event in &trace.events {
+    for _event in &trace.events {
         // XES events should have concept:name (activity)
         // Note: Attribute access depends on process_mining API structure
         assert!(

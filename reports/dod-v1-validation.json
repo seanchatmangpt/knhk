@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-09T05:02:04Z",
+  "timestamp": "2025-11-09T05:06:47Z",
   "summary": {
     "total_criteria": 19,
     "passed": 12,
@@ -51,7 +51,7 @@
 ,
     "core_no_false_positives": {
       "status": "warning",
-      "message": "Found 305 instances of Ok(())"
+      "message": "Found 307 instances of Ok(())"
     }
 ,
     "core_performance": {

@@ -39,14 +39,14 @@
 
 ### Architecture
 - **[Architecture Guide](ARCHITECTURE.md)** - 🆕 Consolidated 80/20 guide (Hot/Warm/Cold paths, Core Components)
-- **[Architecture Overview](architecture.md)** - Detailed architecture reference
+- **[Architecture Overview](archived/reference-docs/architecture.md) (archived - consolidated)** - Detailed architecture reference
 - **[8-Beat PRD](8BEAT-PRD.txt)** - 8-beat epoch system requirements
 - **[8-Beat Integration Complete](8BEAT-INTEGRATION-COMPLETE.md)** - C/Rust integration status
 - **[Branchless C Engine](BRANCHLESS_C_ENGINE_IMPLEMENTATION.md)** - Hot path implementation
 
 ### Integration Guides
 - **[Integration Guide](INTEGRATION.md)** - 🆕 Consolidated 80/20 guide (Integration patterns - 80% use cases)
-- **[Integration Guide](integration-guide.md)** - Detailed integration reference
+- **[Integration Guide](archived/reference-docs/integration-guide.md) (archived - consolidated)** - Detailed integration reference
 - **[Weaver Integration](WEAVER.md)** - OpenTelemetry Weaver integration
 - **[unrdf Integration](v1.0-unrdf-integration-plan.md)** - Cold path integration
 
@@ -70,15 +70,15 @@
 
 ### API Reference
 - **[API Guide](API.md)** - 🆕 Consolidated 80/20 guide (C, Rust, Erlang APIs - 80% use cases)
-- **[API Documentation](api.md)** - Complete API reference with all functions
+- **[API Documentation](archived/reference-docs/api.md) (archived - consolidated)** - Complete API reference with all functions
 - **[CLI Guide](CLI.md)** - 🆕 Consolidated 80/20 guide (Command reference - 80% use cases)
-- **[CLI Documentation](cli.md)** - Complete CLI command reference
+- **[CLI Documentation](archived/reference-docs/cli.md) (archived - consolidated)** - Complete CLI command reference
 - **[Configuration](configuration.md)** - Configuration options
 
 ### Development
 - **[Code Organization](code-organization.md)** - Codebase structure
-- **[Testing Guide](testing.md)** - Testing practices
-- **[Performance](performance.md)** - Performance considerations
+- **[Testing Guide](archived/reference-docs/testing.md) (archived - consolidated)** - Testing practices
+- **[Performance](archived/reference-docs/performance.md) (archived - consolidated)** - Performance considerations
 - **[Deployment](deployment.md)** - Deployment guide
 
 ### Formal Foundations
@@ -154,8 +154,8 @@ docs/
 
 - **Getting Started**: See [QUICK_START.md](QUICK_START.md)
 - **v1.0 Release**: See [v1.0-definition-of-done.md](v1.0-definition-of-done.md)
-- **Architecture**: See [architecture.md](architecture.md) and [8BEAT-PRD.txt](8BEAT-PRD.txt)
-- **Integration**: See [integration-guide.md](integration-guide.md)
+- **Architecture**: See [architecture.md](archived/reference-docs/architecture.md) (archived - consolidated) and [8BEAT-PRD.txt](8BEAT-PRD.txt)
+- **Integration**: See [integration-guide.md](archived/reference-docs/integration-guide.md) (archived - consolidated)
 - **Validation**: Run `./scripts/validate-v1-dod.sh`
 
 ---

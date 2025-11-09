@@ -211,10 +211,10 @@ cargo test --workspace
 - **[Workflow Engine Guide](WORKFLOW_ENGINE.md)** - Workflow execution and patterns
 
 ### Detailed Documentation
-- **Production Certification**: [Production Readiness Certification](PRODUCTION_READINESS_CERTIFICATION.md)
-- **Certification Summary**: [Production Certification Summary](PRODUCTION_CERTIFICATION_SUMMARY.md)
+- **Production Certification**: [Production Readiness Certification](archived/historical-reports/PRODUCTION_READINESS_CERTIFICATION.md) (archived)
+- **Certification Summary**: [Production Certification Summary](archived/historical-reports/PRODUCTION_CERTIFICATION_SUMMARY.md) (archived)
 - **Validation Report**: [Production Validation Report](production-validation-report.md)
-- **Release Status**: [V1 Release Status](V1-RELEASE-STATUS.md)
+- **Release Status**: [V1 Release Status](archived/historical-reports/V1-RELEASE-STATUS.md) (archived)
 - **Release Checklist**: [V1 Release Checklist](V1-RELEASE-CHECKLIST.md)
 
 ### Certification Reports

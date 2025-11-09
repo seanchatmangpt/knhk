@@ -280,10 +280,10 @@ POST /cases
 - **[Integration Guide](INTEGRATION.md)** - Integration patterns and connectors
 
 ### Detailed Documentation
-- **Executive Summary**: [YAWL Executive Summary](yawl-knhk-executive-summary.md)
-- **Implementation Priorities**: [YAWL Implementation Priorities](yawl-knhk-implementation-priorities.md)
-- **Architecture Mapping**: [YAWL Architecture Mapping](yawl-knhk-architecture-mapping.md)
-- **Parity Report**: [YAWL Parity Final Report](YAWL_PARITY_FINAL_REPORT.md)
+- **Executive Summary**: [YAWL Executive Summary](archived/yawl-detailed/yawl-knhk-executive-summary.md) (archived - consolidated)
+- **Implementation Priorities**: [YAWL Implementation Priorities](archived/yawl-detailed/yawl-knhk-implementation-priorities.md) (archived - consolidated)
+- **Architecture Mapping**: [YAWL Architecture Mapping](archived/yawl-detailed/yawl-knhk-architecture-mapping.md) (archived - consolidated)
+- **Parity Report**: [YAWL Parity Final Report](archived/historical-reports/YAWL_PARITY_FINAL_REPORT.md) (archived - consolidated)
 - **Workflow Engine**: [Workflow Engine Guide](WORKFLOW_ENGINE.md)
 
 ### Archived Documentation

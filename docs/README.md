@@ -17,8 +17,8 @@
 ## Quick Start
 
 1. **[QUICK_START.md](QUICK_START.md)** - 5-minute setup guide
-2. **[architecture.md](architecture.md)** - System architecture overview
-3. **[api.md](api.md)** - Complete API reference
+2. **[architecture.md](archived/reference-docs/architecture.md) (archived - consolidated)** - System architecture overview
+3. **[api.md](archived/reference-docs/api.md) (archived - consolidated)** - Complete API reference
 
 ## Core Documentation (80/20 Guides)
 
@@ -40,15 +40,15 @@
 ### Getting Started
 - **[QUICK_START.md](QUICK_START.md)** - Quick setup and first steps
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - 🆕 Consolidated 80/20 guide (Hot/Warm/Cold paths, Core Components)
-- **[architecture.md](architecture.md)** - Detailed architecture reference
+- **[architecture.md](archived/reference-docs/architecture.md) (archived - consolidated)** - Detailed architecture reference
 - **[API.md](API.md)** - 🆕 Consolidated 80/20 guide (C, Rust, Erlang APIs - 80% use cases)
-- **[api.md](api.md)** - Complete API reference
+- **[api.md](archived/reference-docs/api.md) (archived - consolidated)** - Complete API reference
 - **[CLI.md](CLI.md)** - 🆕 Consolidated 80/20 guide (Command reference - 80% use cases)
-- **[cli.md](cli.md)** - Complete CLI command reference
+- **[cli.md](archived/reference-docs/cli.md) (archived - consolidated)** - Complete CLI command reference
 
 ### Core Reference
 - **[Integration Guide](INTEGRATION.md)** - 🆕 Consolidated 80/20 guide (Integration patterns - 80% use cases)
-- **[integration-guide.md](integration-guide.md)** - Detailed integration reference
+- **[integration-guide.md](archived/reference-docs/integration-guide.md) (archived - consolidated)** - Detailed integration reference
 - **[v1.0-unrdf-integration-plan.md](v1.0-unrdf-integration-plan.md)** - unrdf integration roadmap
 - **[lockchain-unrdf-compatibility-check.md](lockchain-unrdf-compatibility-check.md)** - Lockchain compatibility analysis
 

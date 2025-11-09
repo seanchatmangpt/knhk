@@ -446,9 +446,9 @@ weaver registry live-check --registry registry/
 ### Detailed Documentation
 - **Full Pattern Reference**: See `PatternRegistry` for all 43 patterns
 - **Architecture**: [RDF Workflow Architecture](architecture/README-RDF-WORKFLOW-ARCHITECTURE.md)
-- **YAWL Mapping**: [YAWL to knhk Architecture Mapping](yawl-knhk-architecture-mapping.md)
-- **Implementation Priorities**: [YAWL Implementation Priorities](yawl-knhk-implementation-priorities.md)
-- **Executive Summary**: [YAWL Executive Summary](yawl-knhk-executive-summary.md)
+- **YAWL Mapping**: [YAWL to knhk Architecture Mapping](archived/yawl-detailed/yawl-knhk-architecture-mapping.md) (archived - consolidated)
+- **Implementation Priorities**: [YAWL Implementation Priorities](archived/yawl-detailed/yawl-knhk-implementation-priorities.md) (archived - consolidated)
+- **Executive Summary**: [YAWL Executive Summary](archived/yawl-detailed/yawl-knhk-executive-summary.md) (archived - consolidated)
 
 ### Advanced Features
 - **Fortune 5 Deployment**: [Fortune 5 Features](rust/knhk-workflow-engine/docs/FORTUNE5_DEPLOYMENT.md)
