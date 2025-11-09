@@ -247,8 +247,6 @@ pub(super) async fn execute_task_with_allocation(
             let mut instance_handles = Vec::new();
             for instance_id in 0..instance_count {
                 let task_id = task.id.clone();
-                let case_id_clone = case_id;
-                let engine_clone = engine.clone();
                 let case_data_clone = case.data.clone();
 
                 // Create instance-specific data
@@ -268,7 +266,7 @@ pub(super) async fn execute_task_with_allocation(
                 let handle = tokio::spawn(async move {
                     // Create a temporary case for this instance
                     // In production, would create proper instance tracking
-                    let instance_case_id = CaseId::new();
+                    let _instance_case_id = CaseId::new();
 
                     // Execute task with instance-specific data
                     // For now, execute the task directly with instance data

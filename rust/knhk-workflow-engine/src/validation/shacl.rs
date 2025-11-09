@@ -30,8 +30,7 @@
 //! - `VR-S012`: OR join vicious circle warning (requires runtime analysis)
 
 use oxigraph::io::RdfFormat;
-use oxigraph::model::*;
-use oxigraph::sparql::{QueryOptions, QueryResults};
+use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 
 /// SHACL validation severity levels

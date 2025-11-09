@@ -136,7 +136,7 @@ impl SimClock {
         }
 
         drop(q);
-        drop(mono);
+        let _ = mono;
 
         // Wake all due tasks
         for sender in to_wake {
