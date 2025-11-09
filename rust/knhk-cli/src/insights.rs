@@ -416,11 +416,11 @@ fn print_insights_report(insights: &ProcessMiningInsights, detailed: bool) {
     );
     println!(
         "  Inductive Miner: {}",
-        crossmark(!insights.algorithm_usage.inductive_miner)
+        checkmark(insights.algorithm_usage.inductive_miner)
     );
     println!(
         "  Heuristics Miner: {}",
-        crossmark(!insights.algorithm_usage.heuristics_miner)
+        checkmark(insights.algorithm_usage.heuristics_miner)
     );
     if !insights.algorithm_usage.other_algorithms.is_empty() {
         println!("  Other: {:?}", insights.algorithm_usage.other_algorithms);
@@ -522,13 +522,5 @@ fn checkmark(value: bool) -> &'static str {
         "✅"
     } else {
         "❌"
-    }
-}
-
-fn crossmark(value: bool) -> &'static str {
-    if value {
-        "❌"
-    } else {
-        "✅"
     }
 }

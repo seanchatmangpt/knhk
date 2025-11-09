@@ -1,0 +1,437 @@
+# KNHK v1.0 DFLSS Code Mapping
+
+**Direct Mapping of DFLSS Documentation to Code Files**
+
+This document maps the DFLSS (Design For Lean Six Sigma) documentation directly to implementation files and code references in the KNHK codebase.
+
+---
+
+## Overview
+
+**Purpose**: Provide direct code references for all DFLSS documentation  
+**Scope**: Map all DFLSS phases, CTQ requirements, and VOC statements to code  
+**Last Updated**: 2025-11-09
+
+---
+
+## DFLSS Phase → Code Mapping
+
+### DEFINE Phase
+
+#### Project Charter → Code Structure
+
+| Charter Section | Code Reference | File Path |
+|----------------|----------------|-----------|
+| **Core Engine** | `WorkflowEngine` | `rust/knhk-workflow-engine/src/executor/engine.rs` |
+| **Workflow Parser** | `WorkflowParser` | `rust/knhk-workflow-engine/src/parser/mod.rs` |
+| **State Management** | `StateManager`, `StateStore` | `rust/knhk-workflow-engine/src/state/manager.rs`, `rust/knhk-workflow-engine/src/state/store.rs` |
+| **Pattern Registry** | `PatternRegistry` | `rust/knhk-workflow-engine/src/patterns/mod.rs` |
+| **API Layer** | REST, gRPC, CLI | `rust/knhk-workflow-engine/src/api/rest/`, `rust/knhk-workflow-engine/src/api/grpc.rs`, `rust/knhk-cli/src/` |
+
+#### CTQ Requirements → Implementation Files
+
+| CTQ Metric | Implementation | Code Reference |
+|------------|----------------|---------------|
+| **Weaver Validation** | Weaver integration | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **Performance ≤8 ticks** | Hot path operations | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **DoD Compliance** | Validation framework | `rust/knhk-workflow-engine/src/validation/mod.rs` |
+| **Zero Warnings** | Clippy configuration | `rust/knhk-workflow-engine/src/lib.rs:54-55` |
+| **Process Capability** | Performance metrics | `rust/knhk-workflow-engine/src/performance/mod.rs` |
+
+---
+
+### MEASURE Phase
+
+#### Performance Metrics → Code Files
+
+| Metric | Measurement Code | File Path |
+|--------|------------------|-----------|
+| **Hot Path Ticks** | RDTSC measurement | `rust/knhk-hot/src/lib.rs` |
+| **Performance Benchmarks** | Benchmark tests | `rust/knhk-workflow-engine/tests/performance/` |
+| **Process Capability (Cp/Cpk)** | Statistical analysis | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+| **Weaver Validation** | Schema validation | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **Test Coverage** | Coverage analysis | `rust/knhk-workflow-engine/src/testing/coverage.rs` |
+
+#### Defect Tracking → Code Files
+
+| Defect Type | Detection Code | File Path |
+|-------------|----------------|-----------|
+| **Clippy Errors** | Pre-commit hooks | `.git/hooks/pre-commit` |
+| **Unwrap/Expect** | Static analysis | `rust/knhk-workflow-engine/src/lib.rs:54-55` |
+| **Compilation Warnings** | Cargo check | `Makefile` (check targets) |
+| **Test Failures** | Test execution | `rust/knhk-workflow-engine/tests/` |
+
+---
+
+### ANALYZE Phase
+
+#### Root Cause Analysis → Code Files
+
+| Root Cause | Analysis Code | File Path |
+|------------|---------------|-----------|
+| **Clippy Errors** | Clippy configuration | `rust/knhk-workflow-engine/src/lib.rs:54-55` |
+| **Chicago TDD Crash** | Test framework | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
+| **Integration Tests** | Test infrastructure | `rust/knhk-workflow-engine/tests/integration/` |
+| **Unwrap Usage** | Error handling | `rust/knhk-workflow-engine/src/error/mod.rs` |
+| **Performance Issues** | Hot path analysis | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+
+#### Pareto Analysis → Code Files
+
+| Category | Analysis Code | File Path |
+|----------|---------------|-----------|
+| **80/20 Analysis** | Pattern usage | `rust/knhk-workflow-engine/src/patterns/mod.rs` |
+| **Critical Path** | Hot path operations | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **Error Distribution** | Error handling | `rust/knhk-workflow-engine/src/error/mod.rs` |
+
+---
+
+### IMPROVE Phase
+
+#### Fixes → Code Files
+
+| Fix | Implementation | File Path |
+|-----|----------------|-----------|
+| **Fix Clippy Errors** | Code refactoring | `rust/knhk-workflow-engine/src/` (all files) |
+| **Fix Chicago TDD** | Test framework | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
+| **Fix Integration Tests** | Test infrastructure | `rust/knhk-workflow-engine/tests/integration/` |
+| **Remove Unwrap** | Error handling | `rust/knhk-workflow-engine/src/error/mod.rs` |
+| **Optimize Performance** | Hot path optimization | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+
+#### Optimizations → Code Files
+
+| Optimization | Implementation | File Path |
+|--------------|----------------|-----------|
+| **Hot Path ≤8 ticks** | SIMD operations | `rust/knhk-hot/src/lib.rs` |
+| **Zero-Copy Operations** | Reference usage | `rust/knhk-workflow-engine/src/executor/` |
+| **Branchless Operations** | Constant-time execution | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+
+---
+
+### CONTROL Phase
+
+#### Control Mechanisms → Code Files
+
+| Control | Implementation | File Path |
+|---------|----------------|-----------|
+| **CI/CD Gates** | GitHub Actions | `.github/workflows/` |
+| **Pre-commit Hooks** | Validation | `.git/hooks/pre-commit` |
+| **Pre-push Hooks** | Validation | `.git/hooks/pre-push` |
+| **SPC Charts** | Metrics collection | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+| **Automated Testing** | Test suite | `rust/knhk-workflow-engine/tests/` |
+
+---
+
+## SIPOC → Code Mapping
+
+### SUPPLIERS → Code Dependencies
+
+| Supplier | Dependency | File Path |
+|----------|------------|-----------|
+| **Rust Compiler** | `rustc`, `cargo` | `rust/Cargo.toml` |
+| **OpenTelemetry** | `opentelemetry` crates | `rust/knhk-workflow-engine/Cargo.toml` |
+| **Weaver** | External tool | `vendors/weaver/` |
+| **Docker** | Container runtime | `Dockerfile` |
+
+### INPUTS → Source Files
+
+| Input | Source Files | File Path |
+|-------|--------------|-----------|
+| **Rust Source Code** | All Rust files | `rust/knhk-workflow-engine/src/` |
+| **C Source Code** | C library files | `c/` |
+| **OTel Schemas** | Schema files | `vendors/weaver/registry/` |
+| **Configuration** | Config files | `rust/knhk-config/` |
+
+### PROCESS → Implementation Modules
+
+| Process Step | Implementation Module | File Path |
+|--------------|----------------------|-----------|
+| **DEFINE** | Documentation | `docs/v1/dflss/` |
+| **MEASURE** | Metrics collection | `rust/knhk-workflow-engine/src/validation/` |
+| **ANALYZE** | Analysis tools | `rust/knhk-workflow-engine/src/testing/` |
+| **IMPROVE** | Code fixes | `rust/knhk-workflow-engine/src/` |
+| **CONTROL** | CI/CD, hooks | `.github/workflows/`, `.git/hooks/` |
+
+### OUTPUTS → Artifacts
+
+| Output | Artifact Location | File Path |
+|-------|-------------------|-----------|
+| **Documentation** | DFLSS docs | `docs/v1/dflss/` |
+| **Code Artifacts** | Source code | `rust/knhk-workflow-engine/src/` |
+| **Test Results** | Test reports | `reports/` |
+| **Evidence** | Evidence archive | `docs/v1/evidence/` |
+
+### CUSTOMERS → API Interfaces
+
+| Customer | API Interface | File Path |
+|----------|---------------|-----------|
+| **End Users** | REST API | `rust/knhk-workflow-engine/src/api/rest/` |
+| **Developers** | CLI | `rust/knhk-cli/src/` |
+| **Services** | gRPC API | `rust/knhk-workflow-engine/src/api/grpc.rs` |
+
+---
+
+## VOC → Code Mapping
+
+### Customer Need: "Tests must prove features work"
+
+| VOC Statement | Implementation | Code Reference |
+|---------------|----------------|----------------|
+| **Weaver Validation** | Schema validation | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **Functional Validation** | Test execution | `rust/knhk-workflow-engine/tests/` |
+| **Evidence Collection** | Test reports | `reports/` |
+
+### Customer Need: "Zero overhead performance"
+
+| VOC Statement | Implementation | Code Reference |
+|---------------|----------------|----------------|
+| **≤8 Tick Requirement** | Hot path operations | `rust/knhk-hot/src/lib.rs` |
+| **RDTSC Measurement** | Performance benchmarks | `rust/knhk-workflow-engine/tests/performance/` |
+| **Performance Validation** | Validation framework | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+
+### Customer Need: "Production-ready quality"
+
+| VOC Statement | Implementation | Code Reference |
+|---------------|----------------|----------------|
+| **DoD Compliance** | Validation framework | `rust/knhk-workflow-engine/src/validation/mod.rs` |
+| **Zero Warnings** | Clippy configuration | `rust/knhk-workflow-engine/src/lib.rs:54-55` |
+| **Error Handling** | Error management | `rust/knhk-workflow-engine/src/error/mod.rs` |
+
+---
+
+## CTQ → Code Mapping
+
+### CTQ 1: Weaver Validation (100% pass rate)
+
+| CTQ Metric | Implementation | Code Reference |
+|------------|----------------|----------------|
+| **Static Validation** | Schema checking | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **Live Validation** | Runtime validation | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **Schema Registry** | OTel schemas | `registry/` |
+| **Weaver Examples** | Validation examples | `rust/knhk-workflow-engine/examples/weaver_real_jtbd_validation.rs` |
+| **OTEL Live Check** | Live validation | `rust/knhk-otel/examples/weaver_live_check.rs` |
+
+**Key Files**:
+- ```1:267:rust/knhk-workflow-engine/src/integration/weaver.rs```
+- ```1:50:registry/knhk-attributes.yaml```
+- ```1:100:rust/knhk-workflow-engine/examples/weaver_real_jtbd_validation.rs```
+- ```1:100:rust/knhk-otel/examples/weaver_live_check.rs```
+
+### CTQ 2: Performance (≤8 ticks)
+
+| CTQ Metric | Implementation | Code Reference |
+|------------|----------------|----------------|
+| **Hot Path Operations** | AOT kernel | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **RDTSC Measurement** | Cycle counting | `rust/knhk-hot/src/lib.rs` |
+| **Performance Benchmarks** | Benchmark tests | `rust/knhk-workflow-engine/tests/performance/` |
+
+**Key Files**:
+- ```1:100:rust/knhk-workflow-engine/src/performance/aot.rs```
+- ```1:50:rust/knhk-hot/src/lib.rs```
+
+### CTQ 3: DoD Compliance (≥85%)
+
+| CTQ Metric | Implementation | Code Reference |
+|------------|----------------|----------------|
+| **Validation Framework** | Validation module | `rust/knhk-workflow-engine/src/validation/mod.rs` |
+| **Test Coverage** | Coverage analysis | `rust/knhk-workflow-engine/src/testing/coverage.rs` |
+| **DoD Checklist** | Documentation | `docs/v1/definition-of-done/fortune5-production.md` |
+
+**Key Files**:
+- ```1:100:rust/knhk-workflow-engine/src/validation/mod.rs```
+- ```1:50:rust/knhk-workflow-engine/src/testing/coverage.rs```
+
+### CTQ 4: Zero Warnings
+
+| CTQ Metric | Implementation | Code Reference |
+|------------|----------------|----------------|
+| **Clippy Configuration** | Lint settings | `rust/knhk-workflow-engine/src/lib.rs:54-55` |
+| **Pre-commit Hooks** | Validation | `.git/hooks/pre-commit` |
+| **Pre-push Hooks** | Validation | `.git/hooks/pre-push` |
+
+**Key Files**:
+- ```54:55:rust/knhk-workflow-engine/src/lib.rs```
+- ```1:50:.git/hooks/pre-commit```
+
+### CTQ 5: Process Capability (Cpk ≥1.67)
+
+| CTQ Metric | Implementation | Code Reference |
+|------------|----------------|----------------|
+| **Statistical Analysis** | Process mining | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+| **Metrics Collection** | Performance metrics | `rust/knhk-workflow-engine/src/performance/mod.rs` |
+| **SPC Charts** | Control charts | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+
+**Key Files**:
+- ```1:100:rust/knhk-workflow-engine/src/validation/process_mining.rs```
+- ```1:50:rust/knhk-workflow-engine/src/performance/mod.rs```
+
+---
+
+## Critical Blockers → Code Files
+
+### Blocker 1: Clippy Errors (15+)
+
+| Error Type | Affected Files | Code Reference |
+|------------|----------------|----------------|
+| **Deprecated API** | SPARQL queries | `rust/knhk-workflow-engine/src/data/gateway.rs:167-181` |
+| **Unused Variables** | Multiple files | `rust/knhk-workflow-engine/src/` (various) |
+| **Type Complexity** | Pattern code | `rust/knhk-workflow-engine/src/patterns/` |
+
+**Key Files**:
+- ```167:181:rust/knhk-workflow-engine/src/data/gateway.rs```
+- ```1:50:rust/knhk-workflow-engine/src/patterns/mod.rs```
+
+### Blocker 2: Chicago TDD Crash
+
+| Issue | Affected Code | Code Reference |
+|-------|---------------|----------------|
+| **Abort Trap: 6** | Test framework | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
+| **Memory Safety** | Test execution | `rust/knhk-workflow-engine/tests/chicago_tdd_*.rs` |
+
+**Key Files**:
+- ```1:100:rust/knhk-workflow-engine/src/testing/chicago_tdd.rs```
+- ```1:50:rust/knhk-workflow-engine/tests/chicago_tdd_difficult_patterns.rs```
+
+### Blocker 3: Integration Tests
+
+| Issue | Affected Code | Code Reference |
+|-------|---------------|----------------|
+| **Compilation Errors** | Test infrastructure | `rust/knhk-workflow-engine/tests/integration/` |
+| **Missing Dependencies** | Test setup | `rust/knhk-workflow-engine/tests/integration/` |
+
+**Key Files**:
+- ```1:50:rust/knhk-workflow-engine/tests/integration/mod.rs```
+
+### Blocker 4: Unwrap in Hot Path
+
+| Issue | Affected Code | Code Reference |
+|-------|---------------|----------------|
+| **Unwrap Usage** | Hot path operations | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **Error Handling** | Error management | `rust/knhk-workflow-engine/src/error/mod.rs` |
+
+**Key Files**:
+- ```1:100:rust/knhk-workflow-engine/src/performance/aot.rs```
+- ```1:50:rust/knhk-workflow-engine/src/error/mod.rs```
+
+---
+
+## Implementation Modules → DFLSS Phases
+
+### Core Engine Module
+
+| Module | DFLSS Phase | Code Reference |
+|--------|-------------|----------------|
+| **WorkflowEngine** | IMPROVE | `rust/knhk-workflow-engine/src/executor/engine.rs` |
+| **StateManager** | CONTROL | `rust/knhk-workflow-engine/src/state/manager.rs` |
+| **PatternRegistry** | IMPROVE | `rust/knhk-workflow-engine/src/patterns/mod.rs` |
+
+### Validation Module
+
+| Module | DFLSS Phase | Code Reference |
+|--------|-------------|----------------|
+| **ValidationFramework** | MEASURE | `rust/knhk-workflow-engine/src/validation/mod.rs` |
+| **ProcessMining** | ANALYZE | `rust/knhk-workflow-engine/src/validation/process_mining.rs` |
+| **CoverageAnalysis** | MEASURE | `rust/knhk-workflow-engine/src/testing/coverage.rs` |
+
+### Performance Module
+
+| Module | DFLSS Phase | Code Reference |
+|--------|-------------|----------------|
+| **AotKernel** | IMPROVE | `rust/knhk-workflow-engine/src/performance/aot.rs` |
+| **HotPath** | IMPROVE | `rust/knhk-hot/src/lib.rs` |
+| **Benchmarks** | MEASURE | `rust/knhk-workflow-engine/tests/performance/` |
+
+### Integration Module
+
+| Module | DFLSS Phase | Code Reference |
+|--------|-------------|----------------|
+| **WeaverIntegration** | CONTROL | `rust/knhk-workflow-engine/src/integration/weaver.rs` |
+| **OtelIntegration** | CONTROL | `rust/knhk-workflow-engine/src/integration/otel.rs` |
+| **Fortune5Integration** | CONTROL | `rust/knhk-workflow-engine/src/integration/fortune5.rs` |
+
+---
+
+## Test Files → DFLSS Phases
+
+### Chicago TDD Tests
+
+| Test File | DFLSS Phase | Code Reference |
+|-----------|-------------|----------------|
+| **Basic Patterns** | ANALYZE | `rust/knhk-workflow-engine/tests/chicago_tdd_basic_patterns.rs` |
+| **Difficult Patterns** | ANALYZE | `rust/knhk-workflow-engine/tests/chicago_tdd_difficult_patterns.rs` |
+| **Test Framework** | IMPROVE | `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs` |
+
+### Performance Tests
+
+| Test File | DFLSS Phase | Code Reference |
+|-----------|-------------|----------------|
+| **Hot Path Benchmarks** | MEASURE | `rust/knhk-workflow-engine/tests/performance/hot_path.rs` |
+| **Performance Validation** | MEASURE | `rust/knhk-workflow-engine/tests/performance/` |
+
+### Integration Tests
+
+| Test File | DFLSS Phase | Code Reference |
+|-----------|-------------|----------------|
+| **API Tests** | CONTROL | `rust/knhk-workflow-engine/tests/integration/api.rs` |
+| **Workflow Tests** | CONTROL | `rust/knhk-workflow-engine/tests/integration/workflow.rs` |
+
+---
+
+## Documentation → Code Mapping
+
+### DFLSS Documents → Implementation
+
+| Document | Related Code | Code Reference |
+|----------|--------------|----------------|
+| **PROJECT_CHARTER.md** | Core engine | `rust/knhk-workflow-engine/src/executor/engine.rs` |
+| **SIPOC.md** | Process modules | `rust/knhk-workflow-engine/src/` |
+| **SYNTHETIC_VOC.md** | API interfaces | `rust/knhk-workflow-engine/src/api/` |
+| **define/PHASE_SUMMARY.md** | Parser, compiler | `rust/knhk-workflow-engine/src/parser/`, `rust/knhk-workflow-engine/src/compiler/` |
+| **measure/PHASE_SUMMARY.md** | Validation, metrics | `rust/knhk-workflow-engine/src/validation/`, `rust/knhk-workflow-engine/src/performance/` |
+| **analyze/PHASE_SUMMARY.md** | Analysis tools | `rust/knhk-workflow-engine/src/testing/` |
+| **improve/PHASE_SUMMARY.md** | Code fixes | `rust/knhk-workflow-engine/src/` |
+| **control/PHASE_SUMMARY.md** | CI/CD, hooks | `.github/workflows/`, `.git/hooks/` |
+
+---
+
+## Quick Reference: Code Locations
+
+### Core Implementation
+
+- **Workflow Engine**: `rust/knhk-workflow-engine/src/executor/engine.rs`
+- **State Management**: `rust/knhk-workflow-engine/src/state/`
+- **Pattern Registry**: `rust/knhk-workflow-engine/src/patterns/`
+- **API Layer**: `rust/knhk-workflow-engine/src/api/`
+
+### Validation & Testing
+
+- **Validation Framework**: `rust/knhk-workflow-engine/src/validation/`
+- **Chicago TDD**: `rust/knhk-workflow-engine/src/testing/chicago_tdd.rs`
+- **Test Suite**: `rust/knhk-workflow-engine/tests/`
+- **Performance Tests**: `rust/knhk-workflow-engine/tests/performance/`
+
+### Performance & Optimization
+
+- **Hot Path**: `rust/knhk-hot/src/lib.rs`
+- **AOT Kernel**: `rust/knhk-workflow-engine/src/performance/aot.rs`
+- **Performance Metrics**: `rust/knhk-workflow-engine/src/performance/mod.rs`
+
+### Integration & Control
+
+- **Weaver Integration**: `rust/knhk-workflow-engine/src/integration/weaver.rs`
+- **OTEL Integration**: `rust/knhk-workflow-engine/src/integration/otel.rs`
+- **CI/CD**: `.github/workflows/`
+- **Git Hooks**: `.git/hooks/`
+
+---
+
+## Revision History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-11-09 | Initial code mapping creation |
+
+---
+
+**Code Mapping Complete** ✅  
+**All DFLSS Documentation Mapped to Code Files**
+

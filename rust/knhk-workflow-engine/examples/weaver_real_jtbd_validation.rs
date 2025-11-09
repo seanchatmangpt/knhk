@@ -23,7 +23,7 @@ use tracing::{error, info, warn};
 
 /// Real workflow scenario for testing patterns
 struct WorkflowScenario {
-    name: &'static str,
+    name: String,
     pattern_id: u32,
     setup_context: fn() -> PatternExecutionContext,
     validate_result: fn(
@@ -39,7 +39,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 1: Sequence - Should execute tasks in order
     scenarios.push(WorkflowScenario {
-        name: "Sequence: Order Processing",
+        name: "Sequence: Order Processing".to_string(),
         pattern_id: 1,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -60,7 +60,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 2: Parallel Split - Should create multiple parallel branches
     scenarios.push(WorkflowScenario {
-        name: "Parallel Split: Multi-Department Approval",
+        name: "Parallel Split: Multi-Department Approval".to_string(),
         pattern_id: 2,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -82,7 +82,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 3: Synchronization - Should wait for all parallel branches
     scenarios.push(WorkflowScenario {
-        name: "Synchronization: Wait for All Approvals",
+        name: "Synchronization: Wait for All Approvals".to_string(),
         pattern_id: 3,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -105,7 +105,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 4: Exclusive Choice - Should choose one path
     scenarios.push(WorkflowScenario {
-        name: "Exclusive Choice: Route by Priority",
+        name: "Exclusive Choice: Route by Priority".to_string(),
         pattern_id: 4,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -127,7 +127,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 12: MI Without Sync - Should execute multiple instances
     scenarios.push(WorkflowScenario {
-        name: "MI Without Sync: Process Multiple Orders",
+        name: "MI Without Sync: Process Multiple Orders".to_string(),
         pattern_id: 12,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -158,7 +158,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 13: MI With Design-Time Knowledge - Should execute known count
     scenarios.push(WorkflowScenario {
-        name: "MI Design-Time: Process Fixed Batch",
+        name: "MI Design-Time: Process Fixed Batch".to_string(),
         pattern_id: 13,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -182,7 +182,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 16: Deferred Choice - Should choose at runtime
     scenarios.push(WorkflowScenario {
-        name: "Deferred Choice: User Selection",
+        name: "Deferred Choice: User Selection".to_string(),
         pattern_id: 16,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -204,7 +204,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
 
     // Pattern 19: Cancel Activity - Should cancel specific activity
     scenarios.push(WorkflowScenario {
-        name: "Cancel Activity: Stop Processing",
+        name: "Cancel Activity: Stop Processing".to_string(),
         pattern_id: 19,
         setup_context: || {
             let mut ctx = PatternExecutionContext::default();
@@ -229,7 +229,7 @@ fn create_real_scenarios() -> Vec<WorkflowScenario> {
     for pattern_id in 5..=43 {
         if !scenarios.iter().any(|s| s.pattern_id == pattern_id) {
             scenarios.push(WorkflowScenario {
-                name: &format!("Pattern {}: Generic Test", pattern_id),
+                name: format!("Pattern {}: Generic Test", pattern_id),
                 pattern_id,
                 setup_context: || PatternExecutionContext::default(),
                 validate_result: |_, result| result.success,

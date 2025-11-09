@@ -305,6 +305,9 @@ KNHK v1.0 is a **new product**, not an improvement project:
 - `../specs/TESTING_STRATEGY_V1_DOD.md` - Test hierarchy
 - `../specs/CICD_PIPELINE_DOD_V1.md` - Automation gates
 
+### Code Mapping
+- `CODE_MAPPING.md` - **Direct mapping of DFLSS documentation to code files**
+
 ### Diagrams
 - `../diagrams/01-validation-hierarchy.puml` - 3-level validation
 - `../diagrams/05-dflss-dmaic.puml` - DMAIC framework (applicable to DMEDI)

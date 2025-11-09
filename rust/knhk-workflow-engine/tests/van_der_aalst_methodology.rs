@@ -65,7 +65,7 @@
 
 mod common;
 
-use common::data::simple_case_data;
+use common::{data::simple_case_data, TestHarness};
 use knhk_workflow_engine::patterns::{
     PatternExecutionContext, PatternId, PatternRegistry, RegisterAllExt,
 };

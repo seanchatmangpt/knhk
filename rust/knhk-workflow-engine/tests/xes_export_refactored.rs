@@ -41,7 +41,7 @@ async fn test_single_case_xes_export() {
     let xes = harness.engine.export_case_to_xes(case_id).await.unwrap();
 
     // Assert: Use helper
-    assert_valid_xes(xes);
+    assert_valid_xes(&xes);
     assert!(xes.contains("SimpleWorkflow"));
 }
 
@@ -66,7 +66,7 @@ async fn test_xes_xml_structure() {
     let xes = harness.engine.export_case_to_xes(case_id).await.unwrap();
 
     // Assert: XES 2.0 structure
-    assert_valid_xes(xes);
+    assert_valid_xes(&xes);
     assert!(xes.contains("xes.version=\"2.0\""));
     assert!(xes.contains("<trace>"));
     assert!(xes.contains("</trace>"));
@@ -133,7 +133,7 @@ async fn test_multiple_cases_export() {
     let xes = harness.engine.export_all_cases_to_xes().await.unwrap();
 
     // Assert: All cases present
-    assert_valid_xes(xes);
+    assert_valid_xes(&xes);
     assert!(xes.matches("<trace>").count() >= 3);
 }
 

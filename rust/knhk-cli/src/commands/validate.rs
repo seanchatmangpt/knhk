@@ -3,7 +3,7 @@
 // "Eating our own dog food" - Using KNHKS to validate itself
 
 use clap_noun_verb::{NounVerbError, Result as CnvResult};
-use clap_noun_verb_macros::{arg, verb};
+use clap_noun_verb_macros::verb;
 #[allow(unused_imports)]
 use knhk_lockchain::{LockchainStorage, Receipt};
 use knhk_validation::{ValidationReport, ValidationResult};
@@ -65,12 +65,15 @@ pub struct ValidationResultData {
 }
 
 /// Run one-time self-validation
+/// Usage: knhk validate self-validate [--weaver] [--receipts] [--output <path>]
 #[verb]
 pub fn self_validate(
-    #[arg(long)] weaver: bool,
-    #[arg(long)] receipts: bool,
-    #[arg(long)] output: Option<PathBuf>,
+    weaver: Option<bool>,
+    receipts: Option<bool>,
+    output: Option<PathBuf>,
 ) -> CnvResult<()> {
+    let weaver = weaver.unwrap_or(false);
+    let receipts = receipts.unwrap_or(false);
     #[cfg(feature = "otel")]
     let span_ctx = {
         let span = span!(
@@ -286,13 +289,17 @@ pub fn self_validate(
 }
 
 /// Run continuous self-validation (daemon mode)
+/// Usage: knhk validate self-validate-daemon [interval] [--weaver] [--receipts] [--output <path>]
 #[verb]
 pub fn self_validate_daemon(
-    #[arg(long, default_value = "300")] interval: u64,
-    #[arg(long)] weaver: bool,
-    #[arg(long)] receipts: bool,
-    #[arg(long)] output: Option<PathBuf>,
+    interval: Option<u64>,
+    weaver: Option<bool>,
+    receipts: Option<bool>,
+    output: Option<PathBuf>,
 ) -> CnvResult<()> {
+    let interval = interval.unwrap_or(300);
+    let weaver = weaver.unwrap_or(false);
+    let receipts = receipts.unwrap_or(false);
     #[cfg(feature = "otel")]
     let _span = span!(
         Level::INFO,
@@ -329,7 +336,7 @@ pub fn self_validate_daemon(
         info!(iteration = iteration, "running_self_validation_iteration");
 
         // Run validation
-        let result = self_validate(weaver, receipts, {
+        let result = self_validate(Some(weaver), Some(receipts), {
             if let Some(ref output_path) = output {
                 Some(output_path.join(format!("validation_{}_{}.json", timestamp, iteration)))
             } else {
