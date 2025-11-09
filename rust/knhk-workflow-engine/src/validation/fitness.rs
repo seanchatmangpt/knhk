@@ -146,10 +146,7 @@ impl FitnessValidator {
         }
 
         // Export to XES
-        let xes_content = self
-            .engine
-            .export_workflow_to_xes(spec_id)
-            .await?;
+        let xes_content = self.engine.export_workflow_to_xes(spec_id).await?;
 
         // Validate XES format
         if !xes_content.contains("<?xml version") || !xes_content.contains("<log xes.version") {
@@ -174,8 +171,8 @@ impl FitnessValidator {
 
         // Note: Full pattern testing is done in chicago_tdd_43_patterns.rs
         // This is a placeholder that verifies pattern registry is accessible
-        let _registry = crate::patterns::PatternRegistry::new();
-        _registry.register_all_patterns();
+        let mut registry = crate::patterns::PatternRegistry::new();
+        crate::patterns::register_all_patterns(&mut registry);
 
         let duration_ms = start.elapsed().as_millis() as u64;
 
@@ -187,4 +184,3 @@ impl FitnessValidator {
         })
     }
 }
-

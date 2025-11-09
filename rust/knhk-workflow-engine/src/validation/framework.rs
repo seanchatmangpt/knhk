@@ -98,10 +98,10 @@ impl ValidationFramework {
                 let verifier = FormalVerifier::new(self.engine.clone());
                 verifier.verify(spec_id).await
             }
-            _ => Err(crate::error::WorkflowError::InvalidSpecification(
-                format!("Unknown validation phase: {}", phase),
-            )),
+            _ => Err(crate::error::WorkflowError::InvalidSpecification(format!(
+                "Unknown validation phase: {}",
+                phase
+            ))),
         }
     }
 }
-

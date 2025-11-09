@@ -316,7 +316,8 @@ fn extract_task_parameters(
     };
 
     // Ensure task_id is properly formatted as an IRI (trim any whitespace)
-    let task_id_iri = task_id.trim();
+    // Remove any existing angle brackets from task_id if present
+    let task_id_clean = task_id.trim().trim_start_matches('<').trim_end_matches('>');
 
     // Construct full IRI for the parameter property
     let param_property_iri = format!("{}{}", yawl_ns, param_type);
@@ -329,7 +330,7 @@ fn extract_task_parameters(
            ?param yawl:paramName ?paramName .\n\
            OPTIONAL {{ ?param yawl:paramType ?paramType }}\n\
          }}",
-        yawl_ns, task_id_iri, param_property_iri
+        yawl_ns, task_id_clean, param_property_iri
     );
 
     #[allow(deprecated)]

@@ -138,15 +138,11 @@ impl ValidationReport {
         ));
         md.push_str(&format!(
             "- **Phases**: {} passed / {} failed / {} total\n",
-            self.summary.passed_phases,
-            self.summary.failed_phases,
-            self.summary.total_phases
+            self.summary.passed_phases, self.summary.failed_phases, self.summary.total_phases
         ));
         md.push_str(&format!(
             "- **Tests**: {} passed / {} failed / {} total\n",
-            self.summary.passed_tests,
-            self.summary.failed_tests,
-            self.summary.total_tests
+            self.summary.passed_tests, self.summary.failed_tests, self.summary.total_tests
         ));
         md.push_str(&format!("- **Warnings**: {}\n\n", self.summary.warnings));
 
@@ -155,22 +151,10 @@ impl ValidationReport {
         for (phase_name, phase_result) in &self.phases {
             md.push_str(&format!("### {}\n\n", phase_name));
             md.push_str(&format!("**Status**: {:?}\n", phase_result.status));
-            md.push_str(&format!(
-                "- Passed: {}\n",
-                phase_result.passed
-            ));
-            md.push_str(&format!(
-                "- Failed: {}\n",
-                phase_result.failed
-            ));
-            md.push_str(&format!(
-                "- Warnings: {}\n",
-                phase_result.warnings
-            ));
-            md.push_str(&format!(
-                "- Skipped: {}\n\n",
-                phase_result.skipped
-            ));
+            md.push_str(&format!("- Passed: {}\n", phase_result.passed));
+            md.push_str(&format!("- Failed: {}\n", phase_result.failed));
+            md.push_str(&format!("- Warnings: {}\n", phase_result.warnings));
+            md.push_str(&format!("- Skipped: {}\n\n", phase_result.skipped));
 
             // Metrics
             if !phase_result.metrics.is_empty() {
@@ -216,8 +200,14 @@ impl ValidationReport {
         html.push_str("</style>\n");
         html.push_str("</head>\n<body>\n");
         html.push_str("<h1>Van der Aalst Validation Report</h1>\n");
-        html.push_str(&format!("<p><strong>Workflow Spec ID</strong>: {}</p>\n", self.spec_id));
-        html.push_str(&format!("<p><strong>Timestamp</strong>: {}</p>\n", self.timestamp));
+        html.push_str(&format!(
+            "<p><strong>Workflow Spec ID</strong>: {}</p>\n",
+            self.spec_id
+        ));
+        html.push_str(&format!(
+            "<p><strong>Timestamp</strong>: {}</p>\n",
+            self.timestamp
+        ));
         html.push_str("<h2>Summary</h2>\n");
         html.push_str(&format!(
             "<p><strong>Overall Status</strong>: <span class=\"{:?}\">{:?}</span></p>\n",
@@ -227,4 +217,3 @@ impl ValidationReport {
         html
     }
 }
-
