@@ -477,7 +477,7 @@ fn print_insights_report(insights: &ProcessMiningInsights, detailed: bool) {
 
     if !high_priority.is_empty() {
         println!("  High Priority:");
-        for rec in high_priority {
+        for rec in &high_priority {
             println!("    [{}] {}", rec.category, rec.description);
             println!("      Impact: {}", rec.impact);
         }

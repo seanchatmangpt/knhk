@@ -12,14 +12,11 @@
 //! 3. Pattern results are validated against expected behavior
 //! 4. OTEL telemetry reflects actual pattern work
 
-use knhk_otel::SpanStatus;
 use knhk_workflow_engine::integration::{OtelIntegration, PatternAttributes, PatternOtelHelper};
 use knhk_workflow_engine::patterns::{
     PatternExecutionContext, PatternId, PatternRegistry, RegisterAllExt,
 };
-use knhk_workflow_engine::{CaseId, WorkflowSpecId};
-use std::collections::HashMap;
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 
 /// Real workflow scenario for testing patterns
 struct WorkflowScenario {
