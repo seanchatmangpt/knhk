@@ -28,8 +28,7 @@ macro_rules! otel_span {
         $(parent: $parent:expr,)?
     ) => {{
         async {
-            use $crate::integration::otel_helpers::create_trace_context;
-            #[allow(unused_imports)]
+            use crate::integration::otel_helpers::create_trace_context;
             use knhk_otel::SpanContext;
 
             let mut guard = $otel.tracer.write().await;
@@ -109,7 +108,7 @@ macro_rules! otel_span {
         } else {
             Ok(None)
         }
-    }.await
+        }
     }};
 }
 
@@ -152,7 +151,7 @@ macro_rules! otel_span_end {
         if let Some(ref span) = $span_ctx {
             $otel
                 .add_attribute(
-                    (*span).clone(),
+                    span.clone(),
                     "knhk.workflow_engine.success".to_string(),
                     $success.to_string(),
                 )
@@ -160,7 +159,7 @@ macro_rules! otel_span_end {
 
             $otel
                 .add_attribute(
-                    (*span).clone(),
+                    span.clone(),
                     "knhk.workflow_engine.latency_ms".to_string(),
                     $latency_ms.to_string(),
                 )
@@ -173,7 +172,7 @@ macro_rules! otel_span_end {
 
             $otel
                 .end_span(
-                    (*span).clone(),
+                    span.clone(),
                     if $success {
                         SpanStatus::Ok
                     } else {

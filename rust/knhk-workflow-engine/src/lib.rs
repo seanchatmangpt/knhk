@@ -73,6 +73,7 @@ pub mod executor;
 pub mod ggen;
 pub mod hooks;
 pub mod innovation;
+#[macro_use]
 pub mod integration;
 
 // Macros are exported via #[macro_export] in otel_macros.rs

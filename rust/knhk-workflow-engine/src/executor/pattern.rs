@@ -19,11 +19,11 @@ impl WorkflowEngine {
 
         // Start OTEL span for pattern execution
         let span_ctx: Option<SpanContext> = if let Some(ref otel) = self.otel_integration {
-            crate::otel_span!(
+            otel_span!(
                 otel,
                 "knhk.workflow_engine.execute_pattern",
                 case_id: Some(&context.case_id),
-                pattern_id: Some(&pattern_id),
+                pattern_id: Some(&pattern_id)
             )
             .await?
         } else {

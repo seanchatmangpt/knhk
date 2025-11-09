@@ -6,15 +6,14 @@
 //! - Hardware acceleration experiments
 //! - Zero-copy optimization experiments
 
-use crate::case::{Case, CaseId};
+use crate::case::Case;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::innovation::{
-    DeterministicContext, DeterministicExecutor, FormalVerifier, HardwareAccelerator,
-    VerificationResult, ZeroCopyTriple, ZeroCopyTripleBatch,
+    DeterministicExecutor, FormalVerifier, HardwareAccelerator, ZeroCopyTriple, ZeroCopyTripleBatch,
 };
 use crate::parser::WorkflowSpec;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Experiment result
 #[derive(Debug, Clone, Serialize, Deserialize)]
