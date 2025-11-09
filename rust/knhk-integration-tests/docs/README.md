@@ -12,5 +12,6 @@ The `knhk-integration-tests` crate provides integration tests for:
 ## Related Documentation
 
 - [Testing](../../../docs/testing.md) - Testing documentation
-- [Architecture](../../../docs/architecture.md) - System architecture
+- [Architecture Guide](../../../docs/ARCHITECTURE.md) - 🆕 Consolidated 80/20 guide (System architecture)
+- [Architecture Reference](../../../docs/architecture.md) - Detailed architecture reference
 
