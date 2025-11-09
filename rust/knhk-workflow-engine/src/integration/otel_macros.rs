@@ -106,9 +106,9 @@ macro_rules! otel_span {
                     }
                 )?
 
-                Ok(Some(span_ctx))
+                Ok::<Option<SpanContext>, $crate::error::WorkflowError>(Some(span_ctx))
             } else {
-                Ok(None)
+                Ok::<Option<SpanContext>, $crate::error::WorkflowError>(None)
             }
         }
     }};

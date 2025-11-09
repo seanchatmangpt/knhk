@@ -46,7 +46,8 @@ pub(super) async fn execute_task_with_allocation(
             task_id: Some(&task.id),
             pattern_id: Some(&pattern_id)
         )
-        .await?
+        .await
+        .map_err(|e: crate::error::WorkflowError| e)?
     } else {
         None
     };
