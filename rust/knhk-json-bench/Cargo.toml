@@ -12,7 +12,7 @@ knhk-hot = { path = "../knhk-hot" }
 knhk-patterns = { path = "../knhk-patterns" }
 knhk-etl = { path = "../knhk-etl" }
 knhk-warm = { path = "../knhk-warm" }
-blake3 = "1.5"
+blake3 = { workspace = true }
 hex = "0.4"
 
 [dev-dependencies]

@@ -16,7 +16,7 @@ name = "knhk_hot"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
-blake3 = "1.5"
+blake3 = { workspace = true }
 subtle = "2.5"
 
 [dev-dependencies]

@@ -21,7 +21,7 @@ knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
 knhk-otel = { path = "../knhk-otel", version = "1.0.0", features = ["std"] }
 hashbrown = { version = "0.15", default-features = false }
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
-blake3 = { version = "1.5", default-features = false }
+blake3 = { workspace = true, default-features = false }
 oxigraph = { version = "0.5" }
 reqwest = { version = "0.11", features = ["json", "blocking"] }
 serde_json = { version = "1.0" }
@@ -33,7 +33,7 @@ opentelemetry-otlp = "0.31"
 tracing = "0.1"
 tracing-opentelemetry = "0.32"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-rayon = { version = "1.10", optional = true }
+rayon = { workspace = true, optional = true }
 
 [features]
 default = ["std", "knhk-otel", "knhk-lockchain", "parallel"]

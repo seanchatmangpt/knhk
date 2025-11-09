@@ -32,14 +32,14 @@ knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0" }
 
 # RDF & Turtle parsing
-oxigraph = "0.5"
+oxigraph = { workspace = true }
 rio_turtle = "0.8"
 
 # Template engine (for ggen integration)
-tera = { version = "1.19", features = ["builtins"] }
+tera = { workspace = true, features = ["builtins"] }
 
 # Async runtime
-tokio = { version = "1.35", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 futures = "0.3"
 async-trait = "0.1.83"
 
@@ -57,9 +57,9 @@ tonic = { version = "0.10", features = ["tls", "tls-roots"] }
 tonic-build = "0.10"
 prost = "0.12"
 prost-types = "0.12"
-axum = { version = "0.6", features = ["json", "multipart"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+axum = { version = "0.8", features = ["json", "multipart"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
@@ -68,7 +68,7 @@ clap = { version = "4.5", features = ["derive"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 hashbrown = { version = "0.15", default-features = false }
-rayon = "1.8"
+rayon = { workspace = true }
 fastrand = "2.0"
 sha2 = "0.10"
 hex = "0.4"
@@ -77,7 +77,7 @@ hex = "0.4"
 governor = "0.6"
 
 # Caching
-lru = "0.12"
+lru = { workspace = true }
 dashmap = "5.5"
 parking_lot = "0.12"
 
@@ -86,12 +86,12 @@ metrics = "0.23"
 metrics-prometheus = "0.6"
 
 # Tracing & observability
-tracing = "0.1"
-tracing-opentelemetry = "0.32"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # Storage
-sled = "0.34"
+sled = { workspace = true }
 
 [features]
 default = ["unrdf"]
@@ -112,7 +112,7 @@ tonic-build = "0.10"
 
 [dev-dependencies]
 tokio-test = "0.4"
-tempfile = "3.8"
+tempfile = { workspace = true }
 criterion = { version = "0.5", features = ["html_reports"] }
 futures = "0.3"
 serial_test = "3.0"
