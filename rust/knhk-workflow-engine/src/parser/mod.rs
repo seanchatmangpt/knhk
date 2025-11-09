@@ -58,7 +58,7 @@ impl WorkflowParser {
         self.store
             .load_from_reader(
                 RdfFormat::JsonLd {
-                    profile: oxigraph::io::JsonLdProfile::Expanded,
+                    profile: oxigraph::io::JsonLdProfile::Expanded.into(),
                 },
                 jsonld.as_bytes(),
             )
