@@ -940,7 +940,7 @@ chicago_test!(test_all_patterns_registered, {
             i
         );
     }
-}
+});
 
 chicago_test!(test_pattern_ids_valid, {
     // JTBD: Verify all pattern IDs are valid (1-43)
@@ -959,7 +959,7 @@ chicago_test!(test_pattern_ids_valid, {
         PatternId::new(44).is_err(),
         "Pattern ID 44 should be invalid"
     );
-}
+});
 
 chicago_test!(test_pattern_execution_with_variables, {
     // JTBD: Verify patterns can execute with input variables
