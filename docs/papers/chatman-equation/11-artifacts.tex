@@ -1,0 +1,100 @@
+\section{Artifacts and Reproducibility}
+
+\label{sec:artifacts}
+
+\subsection{Source Code Release}
+
+Source code, configs, and datasets are released. Each experiment is keyed by a Git commit and a Lockchain root. Independent recomputation must reproduce $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$ within $10^{-3}$ tolerance; otherwise the claim is falsified.
+
+\textbf{Repositories}:
+\begin{itemize}
+    \item \textbf{KNHK}: \texttt{https://github.com/seanchatmangpt/knhk} (hot-path engine, workflow engine, 43/43 patterns)
+    \item \textbf{unrdf}: \texttt{https://github.com/unrdf/unrdf} (knowledge hooks, \RDF{}/SHACL validation)
+    \item \textbf{ggen}: \texttt{https://github.com/seanchatmangpt/ggen} (bounded ontology-to-code projection)
+    \item \textbf{Lockchain}: Integrated into KNHK and unrdf (cryptographic receipts)
+\end{itemize}
+
+\subsection{Configuration Files}
+
+Workflow definitions, guard sets, ontology schemas, and deployment configs are released.
+
+\textbf{Configurations}:
+\begin{itemize}
+    \item \textbf{Workflow Definitions}: Turtle/YAWL format workflow specifications
+    \item \textbf{Guard Sets}: Ingress guard definitions (legality, budgets, chronology, causality)
+    \item \textbf{Ontology Schemas}: OWL/SHACL schema definitions
+    \item \textbf{Deployment Configs}: Production deployment configurations
+\end{itemize}
+
+\subsection{Datasets}
+
+Test data, benchmark inputs, and validation sets are released.
+
+\textbf{Datasets}:
+\begin{itemize}
+    \item \textbf{Test Data}: Synthetic and real-world knowledge graph data
+    \item \textbf{Benchmark Inputs}: Standardized benchmark inputs for reproducibility
+    \item \textbf{Validation Sets}: Validation sets for determinism and receipt verification
+\end{itemize}
+
+\subsection{Runbooks}
+
+Deployment procedures, verification steps, and troubleshooting guides are released.
+
+\textbf{Runbooks}:
+\begin{itemize}
+    \item \textbf{Deployment Procedures}: Step-by-step deployment instructions
+    \item \textbf{Verification Steps}: Receipt verification and reproducibility procedures
+    \item \textbf{Troubleshooting Guides}: Common issues and solutions
+\end{itemize}
+
+\subsection{Reproducibility Requirements}
+
+Independent recomputation must reproduce $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$ within $10^{-3}$ tolerance. Divergence beyond $10^{-3}$ invalidates the run.
+
+\textbf{Verification Process}:
+\begin{enumerate}
+    \item \textbf{Clone}: Clone repository at specified commit
+    \item \textbf{Configure}: Load configuration from dataset
+    \item \textbf{Execute}: Run experiment with same inputs
+    \item \textbf{Verify}: Compare receipt hashes within tolerance
+    \item \textbf{Validate}: Receipt delta $< 10^{-3}$ confirms reproducibility
+\end{enumerate}
+
+\subsection{Falsifiability}
+
+Every experiment can be independently verified by recomputing the hash chain of operations. Divergence beyond $10^{-3}$ invalidates the run.
+
+\textbf{Falsification Criteria}:
+\begin{itemize}
+    \item \textbf{Receipt Delta}: $> 10^{-3}$ tolerance
+    \item \textbf{Hash Mismatch}: $\mathrm{hash}(A) \neq \mathrm{hash}(\mu(O))$
+    \item \textbf{Determinism Violation}: $O_1 = O_2$ but $\mu(O_1) \neq \mu(O_2)$
+    \item \textbf{Boundedness Violation}: Unbounded loop or non-terminating regeneration
+\end{itemize}
+
+\subsection{Authorship}
+
+The law and system are introduced by \textbf{Sean Chatman}. Cite as: Chatman (2025), \textit{The Chatman Equation and the Industrial Revolution of Knowledge}.
+
+\textbf{Attribution}:
+\begin{itemize}
+    \item \textbf{The Chatman Equation}: $A = \mu(O)$ introduced by Sean Chatman
+    \item \textbf{Knowledge Hooks}: Unit of knowledge work introduced by Sean Chatman
+    \item \textbf{Reflex Enterprise}: Complete stack implementation by Sean Chatman
+    \item \textbf{43/43 Pattern Coverage}: Complete enterprise embodiment by Sean Chatman
+\end{itemize}
+
+\subsection{License}
+
+All source code, configs, datasets, and runbooks are released under MIT License. See individual repositories for license details.
+
+\subsection{Contact}
+
+For questions, issues, or contributions, contact:
+\begin{itemize}
+    \item \textbf{Email}: \texttt{sean@chatman.ai}
+    \item \textbf{GitHub}: \texttt{https://github.com/seanchatmangpt}
+    \item \textbf{Issues}: See individual repositories for issue tracking
+\end{itemize}
+

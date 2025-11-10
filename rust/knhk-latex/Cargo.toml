@@ -1,0 +1,24 @@
+[package]
+name = "knhk-latex"
+version = "0.1.0"
+edition = "2021"
+authors = ["KNHK Team"]
+description = "LaTeX compilation and management CLI using clap-noun-verb"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "knhk-latex"
+path = "src/main.rs"
+
+[dependencies]
+clap = "4.5"
+clap-noun-verb = "3.4.0"
+clap-noun-verb-macros = "3.4.0"
+linkme = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+which = "6.0"
+
+[dev-dependencies]
+chicago-tdd-tools = { path = "../chicago-tdd-tools" }
+tokio = { version = "1.48", features = ["full"] }
+

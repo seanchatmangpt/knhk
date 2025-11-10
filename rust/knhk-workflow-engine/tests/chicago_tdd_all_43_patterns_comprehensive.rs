@@ -34,11 +34,11 @@
 
 #![deny(clippy::unwrap_used)]
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_test};
 use knhk_workflow_engine::patterns::rdf::get_all_pattern_metadata;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
-use chicago_tdd_tools::{chicago_test, assert_ok, assert_err, assert_eq_msg};
 
 // ============================================================================
 // Test Data Structures
@@ -119,7 +119,7 @@ chicago_test!(test_pattern_02_parallel_split, {
     // Assert: All branches executed
     assert_eq!(counter.load(Ordering::SeqCst), 3);
     assert_eq!(contexts.len(), 3);
-}
+});
 
 chicago_test!(test_pattern_03_synchronization, {
     // Arrange: Create synchronization point
@@ -138,7 +138,7 @@ chicago_test!(test_pattern_03_synchronization, {
     // Assert: Synchronization occurred after all branches completed
     assert_eq!(completed.load(Ordering::SeqCst), branch_count);
     assert!(synchronized.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_04_exclusive_choice, {
     // Arrange: Create XOR choice workflow
@@ -156,7 +156,7 @@ chicago_test!(test_pattern_04_exclusive_choice, {
 
     // Assert: Only one branch executed (XOR semantics)
     assert_eq!(context.state, "branch_b");
-}
+});
 
 chicago_test!(test_pattern_05_simple_merge, {
     // Arrange: Create merge point from XOR branches
@@ -199,7 +199,7 @@ chicago_test!(test_pattern_06_multi_choice, {
     assert!(executed_branches.contains(&"branch_a"));
     assert!(executed_branches.contains(&"branch_b"));
     assert!(!executed_branches.contains(&"branch_c"));
-}
+});
 
 chicago_test!(test_pattern_07_structured_synchronizing_merge, {
     // Arrange: Synchronize branches from multi-choice
@@ -218,7 +218,7 @@ chicago_test!(test_pattern_07_structured_synchronizing_merge, {
     // Assert: Synchronized when all active branches completed
     assert_eq!(completed.load(Ordering::SeqCst), 2);
     assert!(synchronized.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_08_multi_merge, {
     // Arrange: Create multi-merge point (no synchronization)
@@ -232,7 +232,7 @@ chicago_test!(test_pattern_08_multi_merge, {
 
     // Assert: All branches merged without synchronization
     assert_eq!(merge_counter, 3);
-}
+});
 
 chicago_test!(test_pattern_09_discriminator, {
     // Arrange: Create discriminator (first-wins race)
@@ -250,7 +250,7 @@ chicago_test!(test_pattern_09_discriminator, {
     // Assert: Only first branch continued
     assert!(winner.load(Ordering::SeqCst));
     assert_eq!(first_result.load(Ordering::SeqCst), 1);
-}
+});
 
 chicago_test!(test_pattern_10_arbitrary_cycles, {
     // Arrange: Create retry/loop workflow
@@ -268,7 +268,7 @@ chicago_test!(test_pattern_10_arbitrary_cycles, {
     assert_eq!(context.counter, 3);
     assert_eq!(retry_count, 3);
     assert!(retry_count <= max_retries);
-}
+});
 
 chicago_test!(test_pattern_11_implicit_termination, {
     // Arrange: Create workflow with implicit termination
@@ -288,7 +288,7 @@ chicago_test!(test_pattern_11_implicit_termination, {
     // Assert: Workflow terminated when all branches completed
     assert_eq!(active_count.load(Ordering::SeqCst), 0);
     assert!(terminated.load(Ordering::SeqCst));
-}
+});
 
 // ============================================================================
 // MULTIPLE INSTANCE PATTERNS (12-15)
@@ -311,7 +311,7 @@ chicago_test!(test_pattern_12_mi_without_sync, {
     for instance in &completed_instances {
         assert_eq!(instance.state, "completed");
     }
-}
+});
 
 chicago_test!(test_pattern_13_mi_with_design_time_knowledge, {
     // Arrange: Create MI with known count at design time
@@ -330,7 +330,7 @@ chicago_test!(test_pattern_13_mi_with_design_time_knowledge, {
     // Assert: All design-time instances completed
     assert_eq!(completed.load(Ordering::SeqCst), DESIGN_TIME_COUNT);
     assert!(all_completed.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_14_mi_with_runtime_knowledge, {
     // Arrange: Create MI with count known at runtime
@@ -349,7 +349,7 @@ chicago_test!(test_pattern_14_mi_with_runtime_knowledge, {
     // Assert: All runtime instances completed
     assert_eq!(completed.load(Ordering::SeqCst), runtime_count);
     assert!(all_completed.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_15_mi_without_runtime_knowledge, {
     // Arrange: Create MI with unknown count (dynamic)
@@ -372,7 +372,7 @@ chicago_test!(test_pattern_15_mi_without_runtime_knowledge, {
     // Assert: Terminated dynamically (5 instances executed: 0,1,2,3,4)
     assert_eq!(completed_instances.load(Ordering::SeqCst), 5);
     assert!(termination_signal.load(Ordering::SeqCst));
-}
+});
 
 // ============================================================================
 // STATE-BASED PATTERNS (16-18)
@@ -395,7 +395,7 @@ chicago_test!(test_pattern_16_deferred_choice, {
 
     // Assert: Correct branch chosen based on external event
     assert_eq!(context.state, "event_2_branch");
-}
+});
 
 chicago_test!(test_pattern_17_interleaved_parallel_routing, {
     // Arrange: Create interleaved execution workflow
@@ -412,7 +412,7 @@ chicago_test!(test_pattern_17_interleaved_parallel_routing, {
 
     // Assert: Tasks interleaved (not sequential)
     assert_eq!(execution_order, vec!["A", "B", "C", "A", "B"]);
-}
+});
 
 chicago_test!(test_pattern_18_milestone, {
     // Arrange: Create milestone-based workflow
@@ -436,7 +436,7 @@ chicago_test!(test_pattern_18_milestone, {
     // Assert: Activity enabled after milestone reached
     assert!(milestone_reached.load(Ordering::SeqCst));
     assert_eq!(context.state, "milestone_enabled_activity");
-}
+});
 
 // ============================================================================
 // CANCELLATION PATTERNS (19-25)
@@ -460,7 +460,7 @@ chicago_test!(test_pattern_19_cancel_activity, {
 
     // Assert: Activity was cancelled
     assert_eq!(context.state, "cancelled");
-}
+});
 
 chicago_test!(test_pattern_20_cancel_case, {
     // Arrange: Create entire workflow case
@@ -485,7 +485,7 @@ chicago_test!(test_pattern_20_cancel_case, {
     for ctx in &contexts {
         assert_eq!(ctx.state, "case_cancelled");
     }
-}
+});
 
 chicago_test!(test_pattern_21_cancel_region, {
     // Arrange: Create workflow with cancellable region
@@ -511,7 +511,7 @@ chicago_test!(test_pattern_21_cancel_region, {
     assert_eq!(contexts[0].state, "region_cancelled");
     assert_eq!(contexts[1].state, "region_cancelled");
     assert_eq!(contexts[2].state, "running");
-}
+});
 
 chicago_test!(test_pattern_22_cancel_mi_activity, {
     // Arrange: Create multiple instances to cancel
@@ -535,7 +535,7 @@ chicago_test!(test_pattern_22_cancel_mi_activity, {
     for instance in &instances {
         assert_eq!(instance.state, "mi_cancelled");
     }
-}
+});
 
 chicago_test!(test_pattern_23_complete_mi_activity, {
     // Arrange: Create MI activity with completion threshold
@@ -556,7 +556,7 @@ chicago_test!(test_pattern_23_complete_mi_activity, {
     assert_eq!(completed_count.load(Ordering::SeqCst), completion_threshold);
     assert!(mi_completed.load(Ordering::SeqCst));
     assert!(completed_count.load(Ordering::SeqCst) < total_instances);
-}
+});
 
 chicago_test!(test_pattern_24_blocking_discriminator, {
     // Arrange: Create discriminator that blocks other branches
@@ -577,7 +577,7 @@ chicago_test!(test_pattern_24_blocking_discriminator, {
     // Assert: First branch won, 4 others blocked
     assert!(winner.load(Ordering::SeqCst));
     assert_eq!(blocked_count.load(Ordering::SeqCst), 4);
-}
+});
 
 chicago_test!(test_pattern_25_cancelling_discriminator, {
     // Arrange: Create discriminator that cancels other branches
@@ -598,7 +598,7 @@ chicago_test!(test_pattern_25_cancelling_discriminator, {
     // Assert: First branch won, 4 others cancelled
     assert!(winner.load(Ordering::SeqCst));
     assert_eq!(cancelled_count.load(Ordering::SeqCst), 4);
-}
+});
 
 // ============================================================================
 // ADVANCED CONTROL PATTERNS (26-39)
@@ -623,7 +623,7 @@ chicago_test!(test_pattern_26_stateful_resource_allocation, {
     // Assert: Resources allocated successfully
     assert_eq!(context.state, "allocated");
     assert_eq!(available_resources.load(Ordering::SeqCst), 7);
-}
+});
 
 chicago_test!(test_pattern_27_general_synchronizing_merge, {
     // Arrange: Create merge with runtime synchronization requirements
@@ -642,7 +642,7 @@ chicago_test!(test_pattern_27_general_synchronizing_merge, {
     // Assert: Synchronized based on runtime conditions
     assert_eq!(completed.load(Ordering::SeqCst), active_branches.len());
     assert!(synchronized.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_28_thread_safe_blocking_discriminator, {
     // Arrange: Create thread-safe discriminator
@@ -665,7 +665,7 @@ chicago_test!(test_pattern_28_thread_safe_blocking_discriminator, {
     // Assert: Thread-safe blocking occurred
     assert!(winner.load(Ordering::SeqCst));
     assert_eq!(blocked.load(Ordering::SeqCst), 4);
-}
+});
 
 chicago_test!(test_pattern_29_structured_cancelling_discriminator, {
     // Arrange: Create discriminator with structured cleanup
@@ -686,7 +686,7 @@ chicago_test!(test_pattern_29_structured_cancelling_discriminator, {
     assert!(winner.load(Ordering::SeqCst));
     assert_eq!(cancelled_branches.len(), 4);
     assert_eq!(cancelled_branches[0], "branch_2_cleanup");
-}
+});
 
 chicago_test!(test_pattern_30_structured_partial_join_mi, {
     // Arrange: Create MI with partial join threshold
@@ -707,7 +707,7 @@ chicago_test!(test_pattern_30_structured_partial_join_mi, {
     assert_eq!(completed.load(Ordering::SeqCst), threshold);
     assert!(joined.load(Ordering::SeqCst));
     assert!(completed.load(Ordering::SeqCst) < total_instances);
-}
+});
 
 chicago_test!(test_pattern_31_blocking_partial_join_mi, {
     // Arrange: Create MI with blocking partial join
@@ -730,7 +730,7 @@ chicago_test!(test_pattern_31_blocking_partial_join_mi, {
     // Assert: Threshold met, remaining blocked
     assert!(joined.load(Ordering::SeqCst));
     assert_eq!(blocked.load(Ordering::SeqCst), 3);
-}
+});
 
 chicago_test!(test_pattern_32_cancelling_partial_join_mi, {
     // Arrange: Create MI with cancelling partial join
@@ -752,7 +752,7 @@ chicago_test!(test_pattern_32_cancelling_partial_join_mi, {
     // Assert: Threshold met, remaining cancelled
     assert_eq!(completed.load(Ordering::SeqCst), threshold);
     assert_eq!(cancelled.load(Ordering::SeqCst), 3);
-}
+});
 
 chicago_test!(test_pattern_33_generalized_and_join, {
     // Arrange: Create flexible AND-join based on process structure
@@ -774,7 +774,7 @@ chicago_test!(test_pattern_33_generalized_and_join, {
         expected_branches.len()
     );
     assert!(joined.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_34_static_partial_join_mi, {
     // Arrange: Create MI with static (design-time) partial join
@@ -793,7 +793,7 @@ chicago_test!(test_pattern_34_static_partial_join_mi, {
     // Assert: Static threshold met
     assert_eq!(completed.load(Ordering::SeqCst), STATIC_THRESHOLD);
     assert!(joined.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_35_cancelling_partial_join_early_termination, {
     // Arrange: Create partial join with early termination
@@ -813,7 +813,7 @@ chicago_test!(test_pattern_35_cancelling_partial_join_early_termination, {
     // Assert: Early termination occurred
     assert_eq!(completed.load(Ordering::SeqCst), threshold);
     assert!(early_terminated.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_36_dynamic_partial_join_mi, {
     // Arrange: Create MI with dynamic (runtime) threshold
@@ -832,7 +832,7 @@ chicago_test!(test_pattern_36_dynamic_partial_join_mi, {
     // Assert: Dynamic threshold met
     assert_eq!(completed.load(Ordering::SeqCst), runtime_threshold);
     assert!(joined.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_37_acyclic_synchronizing_merge, {
     // Arrange: Create acyclic merge with predictable semantics
@@ -851,7 +851,7 @@ chicago_test!(test_pattern_37_acyclic_synchronizing_merge, {
     // Assert: Predictable acyclic merge
     assert_eq!(completed.load(Ordering::SeqCst), branches.len());
     assert!(merged.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_38_local_synchronizing_merge, {
     // Arrange: Create general merge supporting arbitrary control flow
@@ -870,7 +870,7 @@ chicago_test!(test_pattern_38_local_synchronizing_merge, {
     // Assert: Local synchronization completed
     assert_eq!(completed.load(Ordering::SeqCst), local_branches.len());
     assert!(synchronized.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_39_critical_section, {
     // Arrange: Create critical section (mutual exclusion)
@@ -898,7 +898,7 @@ chicago_test!(test_pattern_39_critical_section, {
     // Assert: All executions completed sequentially (mutual exclusion)
     assert_eq!(execution_count.load(Ordering::SeqCst), 3);
     assert!(!in_critical_section.load(Ordering::SeqCst));
-}
+});
 
 // ============================================================================
 // TRIGGER PATTERNS (40-43)
@@ -921,7 +921,7 @@ chicago_test!(test_pattern_40_transient_trigger, {
     // Assert: Trigger activated and consumed
     assert_eq!(context.state, "triggered");
     assert!(!trigger_occurred.load(Ordering::SeqCst)); // No longer available
-}
+});
 
 chicago_test!(test_pattern_41_persistent_trigger, {
     // Arrange: Create persistent trigger (condition remains true)
@@ -942,7 +942,7 @@ chicago_test!(test_pattern_41_persistent_trigger, {
     // Assert: Trigger activated, condition explicitly cleared
     assert_eq!(context.state, "triggered");
     assert!(!persistent_condition.load(Ordering::SeqCst));
-}
+});
 
 chicago_test!(test_pattern_42_auto_start_task, {
     // Arrange: Create auto-start task with enabling conditions
@@ -959,7 +959,7 @@ chicago_test!(test_pattern_42_auto_start_task, {
 
     // Assert: Task auto-started when conditions met
     assert_eq!(context.state, "auto_started");
-}
+});
 
 chicago_test!(test_pattern_43_fire_and_forget, {
     // Arrange: Create fire-and-forget task
@@ -1016,7 +1016,7 @@ chicago_test!(integration_order_processing_workflow, {
     assert!(inventory_reserved.load(Ordering::SeqCst));
     assert_eq!(context.state, "ready_to_ship");
     assert_eq!(context.counter, 1);
-}
+});
 
 chicago_test!(integration_cancellation_with_compensation, {
     // Integration test: Cancel Region + Sync Merge + Cancel Discriminator
@@ -1054,7 +1054,7 @@ chicago_test!(integration_cancellation_with_compensation, {
     for ctx in &region_contexts {
         assert_eq!(ctx.state, "cancelled");
     }
-}
+});
 
 chicago_test!(integration_mi_with_partial_join_and_timeout, {
     // Integration test: MI + Partial Join + Timeout
@@ -1080,7 +1080,7 @@ chicago_test!(integration_mi_with_partial_join_and_timeout, {
     assert_eq!(completed.load(Ordering::SeqCst), threshold);
     assert!(!timed_out.load(Ordering::SeqCst));
     assert!(start.elapsed().as_millis() < timeout_ms as u128);
-}
+});
 
 // ============================================================================
 // PROPERTY-BASED TESTS (Invariants)
@@ -1107,7 +1107,7 @@ chicago_test!(property_all_patterns_have_metadata, {
             pattern_id
         );
     }
-}
+});
 
 chicago_test!(property_all_patterns_have_unique_ids, {
     // Property: Pattern IDs must be unique
@@ -1124,7 +1124,7 @@ chicago_test!(property_all_patterns_have_unique_ids, {
             metadata.pattern_id
         );
     }
-}
+});
 
 chicago_test!(property_all_pattern_dependencies_are_valid, {
     // Property: All pattern dependencies must reference valid patterns
@@ -1158,7 +1158,7 @@ chicago_test!(property_all_pattern_dependencies_are_valid, {
             );
         }
     }
-}
+});
 
 chicago_test!(property_synchronization_patterns_deterministic, {
     // Property: Synchronization must be deterministic (same inputs = same output)
@@ -1182,7 +1182,7 @@ chicago_test!(property_synchronization_patterns_deterministic, {
         assert_eq!(completed.load(Ordering::SeqCst), branch_count);
         assert!(synchronized.load(Ordering::SeqCst));
     }
-}
+});
 
 chicago_test!(property_cancellation_patterns_idempotent, {
     // Property: Cancelling twice has same effect as cancelling once
@@ -1207,7 +1207,7 @@ chicago_test!(property_cancellation_patterns_idempotent, {
     // Assert: Same state after second cancellation
     assert_eq!(context.state, state_after_first);
     assert_eq!(context.state, "cancelled");
-}
+});
 
 // ============================================================================
 // PERFORMANCE TESTS (Chatman Constant: ≤8 ticks)
@@ -1266,7 +1266,7 @@ chicago_test!(performance_advanced_patterns_within_8_ticks, {
     resources.fetch_sub(3, Ordering::SeqCst);
     let elapsed = start.elapsed();
     assert!(elapsed.as_micros() < 50, "Resource allocation too slow");
-}
+});
 
 chicago_test!(performance_mi_patterns_scale_linearly, {
     // Performance: MI patterns scale linearly with instance count
@@ -1291,7 +1291,7 @@ chicago_test!(performance_mi_patterns_scale_linearly, {
             instance_count
         );
     }
-}
+});
 
 // ============================================================================
 // METADATA VALIDATION TESTS
@@ -1325,7 +1325,7 @@ chicago_test!(metadata_all_patterns_have_descriptions, {
             metadata.pattern_id
         );
     }
-}
+});
 
 chicago_test!(metadata_complexity_values_are_valid, {
     // Metadata: Complexity values must be valid
@@ -1341,7 +1341,7 @@ chicago_test!(metadata_complexity_values_are_valid, {
             metadata.complexity
         );
     }
-}
+});
 
 chicago_test!(metadata_categories_are_consistent, {
     // Metadata: Pattern categories match expected ranges
@@ -1367,7 +1367,7 @@ chicago_test!(metadata_categories_are_consistent, {
             metadata.pattern_id, expected_category, metadata.category
         );
     }
-}
+});
 
 // ============================================================================
 // TEST SUMMARY

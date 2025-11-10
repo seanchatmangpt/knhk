@@ -20,7 +20,14 @@
 //! - End-to-end validation (complete workflow from execution to analysis)
 //! - Behavior verification (test what patterns do, not how they do it)
 
-use chicago_tdd_tools::{assert_eq_msg, assert_guard_constraint, assert_ok, chicago_async_test};
+use chicago_tdd_tools::{
+    assert_eq_msg, assert_guard_constraint, assert_ok, chicago_async_test,
+};
+#[cfg(feature = "otel")]
+use chicago_tdd_tools::otel::OtelTestHelper;
+use chicago_tdd_tools::performance::{measure_ticks, assert_within_tick_budget};
+#[cfg(feature = "weaver")]
+use chicago_tdd_tools::weaver::WeaverValidator;
 use knhk_workflow_engine::{
     executor::WorkflowEngine,
     parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId},
@@ -82,7 +89,7 @@ fn validate_discovered_model_structure(
     discovered_transition_count >= original_task_count || petri_net.places.len() > 0
 }
 
-/// Helper: Execute workflow and discover process model
+/// Helper: Execute workflow and discover process model with DFLSS validation
 async fn execute_and_discover(
     engine: &WorkflowEngine,
     spec_id: WorkflowSpecId,
@@ -120,6 +127,15 @@ async fn execute_and_discover(
         replay_thresh: 0.5,
     };
     let (petri_net, _duration) = alphappp_discover_petri_net(&projection, config);
+
+    // OTEL Validation (if available)
+    #[cfg(feature = "otel")]
+    {
+        // Note: OTEL validation would require access to spans/metrics from execution
+        // This is a placeholder for when OTEL integration is fully available
+        // let otel_helper = OtelTestHelper::new();
+        // otel_helper.assert_spans_valid(&spans);
+    }
 
     (xes_content, petri_net, event_log)
 }

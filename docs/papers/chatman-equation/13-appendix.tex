@@ -1,0 +1,182 @@
+\appendix
+
+\section{Knowledge Hook Definition (Operational)}
+
+\label{app:hook-definition}
+
+A \textbf{knowledge hook} $h$ is a tuple:
+\[
+h = (\mathrm{trigger}, \mathrm{check}, \mathrm{act}, \mathrm{receipt})
+\]
+
+where:
+\begin{itemize}
+    \item $\mathrm{trigger}$: A change $\Delta O$ detected in the knowledge graph
+    \item $\mathrm{check}$: A bounded evaluation (SPARQL/SHACL/threshold) preserving invariants $Q$ and guards $H$
+    \item $\mathrm{act}$: A workflow step executed via KNHK/YAWL with $t_{\mathrm{hot}} \leq 2$ ns or $t_{\mathrm{warm}} \leq 500$ ms
+    \item $\mathrm{receipt}$: A Merkle-linked record with $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$
+\end{itemize}
+
+\section{Measurement Definitions}
+
+\label{app:measurements}
+
+\textbf{Decision Latency (DL\_P99)}: 99th-percentile decision latency measured via OTEL spans.
+
+\textbf{Determinism Error (DE)}: $|\Delta A|/|A|$ across replays with identical $O$.
+
+\textbf{Receipt Delta (RD)}: Absolute Merkle root drift across recomputation.
+
+\textbf{Hook Coverage (HC)}: \# hooks mapped to activities / total activities.
+
+\textbf{Manual Interventions Avoided (MIA)}: baseline vs quarter.
+
+\textbf{Audit Pass Rate (APR)}: \% runs reproducible from receipts.
+
+\section{Complete 43-Pattern-to-Operator Mapping}
+
+\label{app:pattern-mapping}
+
+Table~\ref{tab:patterns-full} provides the complete mapping of all 43 Van der Aalst workflow patterns to KNHK operators and hook IDs.
+
+\begin{longtable}{p{0.8cm}p{4.5cm}p{4.5cm}p{4.5cm}}
+\caption{Complete 43-Pattern Mapping (Full Table)}
+\label{tab:patterns-full}\\
+\toprule
+\textbf{P} & \textbf{Pattern Name} & \textbf{KNHK Operator} & \textbf{Hook ID} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{c}{{\bfseries \tablename\ \thetable{} -- continued from previous page}} \\
+\toprule
+\textbf{P} & \textbf{Pattern Name} & \textbf{KNHK Operator} & \textbf{Hook ID} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+1 & Sequence & \texttt{op\_sequence} & \texttt{hook\_seq} \\
+2 & Parallel Split & \texttt{op\_parallel\_split} & \texttt{hook\_and\_split} \\
+3 & Synchronization & \texttt{op\_synchronization} & \texttt{hook\_and\_join} \\
+4 & Exclusive Choice & \texttt{op\_exclusive\_choice} & \texttt{hook\_xor\_split} \\
+5 & Simple Merge & \texttt{op\_simple\_merge} & \texttt{hook\_xor\_join} \\
+6 & Multi-Choice & \texttt{op\_multi\_choice} & \texttt{hook\_or\_split} \\
+7 & Structured Synchronizing Merge & \texttt{op\_struct\_sync\_merge} & \texttt{hook\_or\_join} \\
+8 & Multi-Merge & \texttt{op\_multi\_merge} & \texttt{hook\_multi\_merge} \\
+9 & Discriminator & \texttt{op\_discriminator} & \texttt{hook\_discriminator} \\
+10 & Arbitrary Cycles & \texttt{op\_arbitrary\_cycles} & \texttt{hook\_cycles} \\
+11 & Implicit Termination & \texttt{op\_implicit\_termination} & \texttt{hook\_termination} \\
+12 & MI Without Sync & \texttt{op\_mi\_no\_sync} & \texttt{hook\_mi\_no\_sync} \\
+13 & MI With Design-Time Knowledge & \texttt{op\_mi\_design\_time} & \texttt{hook\_mi\_design} \\
+14 & MI With Runtime Knowledge & \texttt{op\_mi\_runtime} & \texttt{hook\_mi\_runtime} \\
+15 & MI Without Runtime Knowledge & \texttt{op\_mi\_no\_runtime} & \texttt{hook\_mi\_no\_runtime} \\
+16 & Deferred Choice & \texttt{op\_deferred\_choice} & \texttt{hook\_deferred} \\
+17 & Interleaved Parallel Routing & \texttt{op\_interleaved} & \texttt{hook\_interleaved} \\
+18 & Milestone & \texttt{op\_milestone} & \texttt{hook\_milestone} \\
+19 & Cancel Activity & \texttt{op\_cancel\_activity} & \texttt{hook\_cancel\_act} \\
+20 & Cancel Case & \texttt{op\_cancel\_case} & \texttt{hook\_cancel\_case} \\
+21 & Cancel Region & \texttt{op\_cancel\_region} & \texttt{hook\_cancel\_region} \\
+22 & Cancel MI Activity & \texttt{op\_cancel\_mi\_activity} & \texttt{hook\_cancel\_mi} \\
+23 & Complete MI Activity & \texttt{op\_complete\_mi} & \texttt{hook\_complete\_mi} \\
+24 & Blocking Discriminator & \texttt{op\_blocking\_discriminator} & \texttt{hook\_block\_disc} \\
+25 & Cancelling Discriminator & \texttt{op\_cancelling\_discriminator} & \texttt{hook\_cancel\_disc} \\
+26 & Structured Loop & \texttt{op\_structured\_loop} & \texttt{hook\_structured\_loop} \\
+27 & Recursion & \texttt{op\_recursion} & \texttt{hook\_recursion} \\
+28 & Transient Trigger & \texttt{op\_transient\_trigger} & \texttt{hook\_transient} \\
+29 & Persistent Trigger & \texttt{op\_persistent\_trigger} & \texttt{hook\_persistent} \\
+30 & Cancel Process Instance & \texttt{op\_cancel\_process} & \texttt{hook\_cancel\_process} \\
+31 & Structured Partial Join & \texttt{op\_struct\_partial\_join} & \texttt{hook\_struct\_partial} \\
+32 & Blocking Partial Join & \texttt{op\_blocking\_partial\_join} & \texttt{hook\_block\_partial} \\
+33 & Cancelling Partial Join & \texttt{op\_cancelling\_partial\_join} & \texttt{hook\_cancel\_partial} \\
+34 & Generalised AND-Join & \texttt{op\_generalised\_and\_join} & \texttt{hook\_gen\_and\_join} \\
+35 & Local Synchronizing Merge & \texttt{op\_local\_sync\_merge} & \texttt{hook\_local\_sync} \\
+36 & General Synchronizing Merge & \texttt{op\_general\_sync\_merge} & \texttt{hook\_gen\_sync} \\
+37 & Dynamic Partial Join MI & \texttt{op\_dynamic\_partial\_join\_mi} & \texttt{hook\_dynamic\_partial\_mi} \\
+38 & Multiple Threads & \texttt{op\_multiple\_threads} & \texttt{hook\_multiple\_threads} \\
+39 & Thread Merge & \texttt{op\_thread\_merge} & \texttt{hook\_thread\_merge} \\
+40 & Event-Based Trigger & \texttt{op\_event\_trigger} & \texttt{hook\_event\_trigger} \\
+41 & Time-Based Trigger & \texttt{op\_time\_trigger} & \texttt{hook\_time\_trigger} \\
+42 & Message-Based Trigger & \texttt{op\_message\_trigger} & \texttt{hook\_message\_trigger} \\
+43 & Signal-Based Trigger & \texttt{op\_signal\_trigger} & \texttt{hook\_signal\_trigger} \\
+\end{longtable}
+
+\section{Receipt Schema Specification}
+
+\label{app:receipt-schema}
+
+Every action produces a receipt:
+\[
+R = (\mathrm{actor}, \mathrm{delta}, \mathrm{guard\_set}, \mathrm{SLO}, \mathrm{merkleRoot})
+\]
+
+where:
+\begin{itemize}
+    \item $\mathrm{actor}$: Entity that triggered the action (system, user, or hook)
+    \item $\mathrm{delta}$: Change $\Delta O$ that triggered the action
+    \item $\mathrm{guard\_set}$: Guards $H$ that were enforced (legality, budgets, chronology, causality)
+    \item $\mathrm{SLO}$: Service level objective (hot/warm/cold path)
+    \item $\mathrm{merkleRoot}$: SHA3-256 Merkle root for tamper detection
+\end{itemize}
+
+Receipts enable end-to-end recomputation and audit. Independent recomputation must reproduce $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$ within $10^{-3}$ tolerance; otherwise the claim is falsified.
+
+\section{Bibliography}
+
+\label{app:bibliography}
+
+\begin{thebibliography}{99}
+
+\bibitem{van_der_aalst_2003}
+van der Aalst, W. M. P., ter Hofstede, A. H. M., Kiepuszewski, B., \& Barros, A. P. (2003). Workflow Patterns. \textit{Distributed and Parallel Databases}, 14(1), 5--51.
+
+\bibitem{van_der_aalst_2005}
+van der Aalst, W. M. P., \& ter Hofstede, A. H. M. (2005). YAWL: Yet Another Workflow Language. \textit{Information Systems}, 30(4), 245--275.
+
+\bibitem{spivak_kent_2011}
+Spivak, D. I., \& Kent, R. E. (2011). Ologs: A Categorical Framework for Knowledge Representation. \textit{PLOS ONE}, 6(1), e24274.
+
+\bibitem{phillips_2020}
+Phillips, S. (2020). Sheaving—a universal construction for semantic compositionality. \textit{Philosophical Transactions of the Royal Society B}, 375(1791), 20190303.
+
+\bibitem{schneier_kelsey_1999}
+Schneier, B., \& Kelsey, J. (1999). Secure Audit Logs to Support Computer Forensics. \textit{ACM Transactions on Information and System Security}, 2(2), 159--176.
+
+\bibitem{crosby_wallach_2009}
+Crosby, S. A., \& Wallach, D. S. (2009). Efficient Data Structures for Tamper-Evident Logging. In \textit{Proceedings of the 18th USENIX Security Symposium} (pp. 317--334).
+
+\bibitem{gray_2002}
+Gray, J. (2002). Generating a Generator. In \textit{Proceedings of the 1st ACM SIGPLAN/SIGSOFT Conference on Generative Programming and Component Engineering} (pp. 1--8).
+
+\bibitem{chatman_knhk_2025}
+Chatman, S. (2025). KNHK: Knowledge Graph Hot Path Engine (v1.2.0). Implements deterministic, guard-verified hot path evaluation ($\leq 2$ ns) for bounded knowledge graph operations. Supports Reflex Enterprise™ architecture and Fortune 5 deployment.
+
+\bibitem{chatman_unrdf_2025}
+Chatman, S. (2025). unrdf: Knowledge Hooks for Reflex Enterprise (v3.0.0). Production-ready \RDF{} knowledge graph library with autonomic hooks, cryptographic provenance, and Dark Matter 80/20 optimization.
+
+\bibitem{chatman_ggen_2025}
+Chatman, S. (2025). ggen: Knowledge Graph Code Generation (v2.5.0). Implements deterministic, \RDF{}-based bounded regeneration for Fortune 5--scale enterprise code synchronization. Verified through 782-line E2E tests and 610-file \RDF{} integration.
+
+\bibitem{shapiro_spr_2024}
+Shapiro, D. (2024). Sparse Priming Representations (SPR). GitHub. \texttt{https://github.com/daveshap/Sparse\_Priming\_Representations}
+
+\end{thebibliography}
+
+\section{Notation}
+
+\label{app:notation}
+
+\begin{itemize}
+    \item $O$: Observations (typed by $\Schema$)
+    \item $A$: Actions (workflow execution results)
+    \item $\mu$: Measurement function (pattern execution)
+    \item $\Schema$: Ontology (OWL/SHACL schema)
+    \item $\Guard$: Guard projectors enforcing invariants
+    \item $\Gamma$: Candidate proposals (cover of futures)
+    \item $\Pi$: Artifacts with merge operator $\oplus$
+    \item $\alpha$: Under-relaxation step size
+    \item $\varepsilon$: Convergence tolerance
+    \item $\tau$: Residual tolerance
+    \item $\Pattern_i$: Van der Aalst pattern $i$
+    \item $\PatternSet$: Pattern registry (all 43 patterns)
+\end{itemize}
+

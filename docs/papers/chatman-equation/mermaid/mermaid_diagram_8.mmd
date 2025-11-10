@@ -1,0 +1,29 @@
+graph TB
+    subgraph RegionA["Region A (Primary)"]
+        A1["Hot Path (C)"]
+        A2["Warm Path (Rust)"]
+        A3["Cold Path (Erlang)"]
+        A1 --> A2
+        A2 --> A3
+    end
+    
+    subgraph RegionB["Region B (Secondary)"]
+        B1["Hot Path (C)"]
+        B2["Warm Path (Rust)"]
+        B3["Cold Path (Erlang)"]
+        B1 --> B2
+        B2 --> B3
+    end
+    
+    A3 <-->|sync| Sync["Cross-Region Sync"]
+    B3 <-->|sync| Sync
+    
+    style RegionA fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    style RegionB fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    style A1 fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style A2 fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#000
+    style A3 fill:#27AE60,stroke:#229954,stroke-width:2px,color:#fff
+    style B1 fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style B2 fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#000
+    style B3 fill:#27AE60,stroke:#229954,stroke-width:2px,color:#fff
+    style Sync fill:#F1C40F,stroke:#D4AC0D,stroke-width:2px,color:#000

@@ -223,7 +223,9 @@ chicago_test!(test_pattern_6_multi_choice_jtbd, {
     );
     // Verify condition variables were evaluated
     assert!(
-        result.variables.is_empty() || result.variables.contains_key("choice1") || result.variables.contains_key("choice2"),
+        result.variables.is_empty()
+            || result.variables.contains_key("choice1")
+            || result.variables.contains_key("choice2"),
         "Output variables may reflect choice evaluation"
     );
 });

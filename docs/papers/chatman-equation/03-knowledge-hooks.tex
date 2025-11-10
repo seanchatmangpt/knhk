@@ -1,0 +1,113 @@
+\section{Knowledge Hooks: The Unit of Knowledge Work}
+
+\label{sec:hooks}
+
+\subsection{Definition}
+
+A \textbf{knowledge hook} $h$ is the atomic unit of knowledge work. It replaces human judgment with bounded, receipt-verified execution. Each hook is a tuple:
+\[
+h = (\mathrm{trigger}, \mathrm{check}, \mathrm{act}, \mathrm{receipt})
+\]
+
+\subsection{Scope of Replacement}
+
+Knowledge hooks replace all manual knowledge operations:
+
+\begin{itemize}
+    \item \textbf{Triage}: Route cases based on typed knowledge graph queries
+    \item \textbf{Validation}: Enforce SHACL constraints and business rules
+    \item \textbf{Routing}: Execute workflow patterns (43/43 YAWL patterns)
+    \item \textbf{Entitlement checks}: Verify permissions via SPARQL queries
+    \item \textbf{SLA timers}: Monitor and escalate based on temporal constraints
+    \item \textbf{Compliance gates}: Enforce regulatory requirements at ingress
+    \item \textbf{Case progression}: Advance workflows through deterministic state transitions
+    \item \textbf{Aggregation}: Compute summaries and metrics from knowledge graphs
+    \item \textbf{Deduplication}: Identify and merge duplicate entities
+    \item \textbf{Exception escalation}: Route exceptions through workflow patterns
+\end{itemize}
+
+\subsection{Bounded Execution}
+
+Each hook executes within strict time bounds:
+
+\begin{itemize}
+    \item \textbf{Hot path}: $\leq 8$ ticks ($\leq 2$ ns) for rule checks (ASK, COUNT, COMPARE, VALIDATE)
+    \item \textbf{Warm path}: $\leq 500$ ms for hook service time (SPARQL queries, SHACL validation, workflow orchestration)
+    \item \textbf{Cold path}: $\leq 500$ ms for complex queries and historical reconciliation
+\end{itemize}
+
+No hook executes unbounded loops. All operations terminate within stated SLOs.
+
+\subsection{Receipt Schema}
+
+Every hook execution produces a receipt:
+\[
+R = (\mathrm{actor}, \mathrm{delta}, \mathrm{guard\_set}, \mathrm{SLO}, \mathrm{merkleRoot})
+\]
+
+where:
+\begin{itemize}
+    \item $\mathrm{actor}$: Entity that triggered the hook (system, user, or other hook)
+    \item $\mathrm{delta}$: Change $\Delta O$ that triggered the hook
+    \item $\mathrm{guard\_set}$: Guards $H$ that were enforced
+    \item $\mathrm{SLO}$: Service level objective (hot/warm/cold path)
+    \item $\mathrm{merkleRoot}$: SHA3-256 Merkle root for tamper detection
+\end{itemize}
+
+\subsection{Hook Types}
+
+Knowledge hooks support multiple trigger types:
+
+\begin{itemize}
+    \item \textbf{SPARQL ASK}: Boolean queries over knowledge graphs
+    \item \textbf{SHACL validation}: Shape constraint checking
+    \item \textbf{Threshold}: Numeric comparisons (count, sum, average)
+    \item \textbf{Delta detection}: Change events in the knowledge graph
+    \item \textbf{Temporal}: Time-based triggers (schedules, deadlines)
+\end{itemize}
+
+\subsection{Knowledge Hook Economics}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=\textbf{Knowledge Hook Economics: Unit Model}]
+\textbf{Unit of production}: A verified decision.
+
+\textbf{Hot-path cost}: Amortized compute + receipt write (micro-cents per decision).
+
+\textbf{Warm-path cost}: Batch orchestration + connectors (sub-millisecond amortization).
+
+\textbf{Labor displacement}: 30--70\% fewer touches in targeted flows within 2--3 quarters.
+
+\textbf{Board KPIs}:
+\begin{itemize}
+    \item Hook Coverage (HC): hooks per process, \% activities covered
+    \item Decision Latency (DL\_P99): $\leq 2$ ns hot, $\leq 500$ ms warm
+    \item Determinism Error (DE): $|\Delta A|/|A| < 10^{-4}$
+    \item Receipt Delta (RD): Merkle root drift $< 10^{-3}$
+    \item Manual Interventions Avoided (MIA): baseline vs quarter
+    \item Audit Pass Rate (APR): \% runs reproducible from receipts
+\end{itemize}
+\end{tcolorbox}
+
+\subsection{Example: Data Quality Hook}
+
+Consider a data quality hook that ensures all persons have names:
+
+\begin{verbatim}
+hook = {
+  trigger: "Delta O detected",
+  check: "ASK { ?person a foaf:Person . 
+                 FILTER NOT EXISTS { 
+                   ?person foaf:name ?name 
+                 } 
+               }",
+  act: "Workflow: data-quality-escalation",
+  receipt: "Merkle(actor, delta, guards, SLO, hash)"
+}
+\end{verbatim}
+
+When a person entity is added without a name, the hook triggers the data-quality-escalation workflow, producing a receipt that cryptographically verifies the action.
+
+\subsection{Industrial Revolution Analogy}
+
+Just as the Industrial Revolution standardized manufacturing through interchangeable parts, knowledge hooks standardize knowledge work through interchangeable decision units. Each hook is a measurable, verifiable, bounded unit of production. Quality is receipts, not anecdotes. Throughput scales with hooks, not headcount.
+

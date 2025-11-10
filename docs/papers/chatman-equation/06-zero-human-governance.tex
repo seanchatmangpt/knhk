@@ -1,0 +1,84 @@
+\section{Zero Human Decision-Making: End of Knowledge Work}
+
+\label{sec:zero-human}
+
+\subsection{Policy Statement}
+
+After deployment, humans provide only untyped $\Delta O$ inputs. All decisions execute via hooks and workflows. There are no discretionary routing paths, no manual approval gates, no advisory layers, and no shadow channels. Any path lacking a workflow pattern mapping is refused at ingress guards $H$.
+
+\subsection{No Discretionary Routing}
+
+All routing is one of the 43 workflow patterns or a bounded composition. Discretionary steps are illegal at ingress $H$. Every routing decision is deterministic, bounded, and receipt-verified.
+
+\textbf{Example}: A case cannot be routed to "senior analyst" without a workflow pattern. It must route through one of the 43 patterns (e.g., Pattern 4: Exclusive Choice, Pattern 6: Multi-Choice) with guard-verified conditions.
+
+\subsection{No Manual Gates}
+
+Approvals, triage, escalation, and case progression are hooks. There are no manual approval gates, no human-in-the-loop checkpoints, and no discretionary escalations.
+
+\textbf{Example}: A compliance check cannot require "manager approval" without a hook. It must execute via a knowledge hook (e.g., SHACL validation, SPARQL ASK query) with guard-verified conditions.
+
+\subsection{No Advisory Layers}
+
+Large language models annotate and normalize $\Delta O$ inputs; they do not emit $A$ actions. LLMs serve as typed ingress instruments, not as deciders.
+
+\textbf{Example}: An LLM can normalize unstructured text into typed \RDF{} triples, but it cannot decide which workflow pattern to execute. That decision is made by knowledge hooks and workflow patterns.
+
+\subsection{No Shadow Channels}
+
+Email, chat, or meetings are untyped noise until ingressed. Nothing executes without a hook and receipt. All communication must be ingressed as $\Delta O$ and processed through hooks and workflows.
+
+\textbf{Example}: A decision made in a meeting cannot be executed without ingressing it as $\Delta O$ and processing it through hooks and workflows. There are no "offline" decisions or "manual overrides."
+
+\subsection{Governance Model}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=\textbf{Governance Model: Zero Human Decision Loops}]
+\textbf{Policy}: Any decision path lacking a workflow pattern mapping is refused at ingress guards $H$.
+
+\textbf{Enforcement}: All routing decisions are deterministic, bounded, and receipt-verified.
+
+\textbf{Verification}: Every action produces a receipt that cryptographically verifies the execution path.
+
+\textbf{Audit}: Independent recomputation must reproduce $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$ within $10^{-3}$ tolerance.
+
+\textbf{Result}: Zero human decision-making after deployment. Humans provide only untyped $\Delta O$ inputs.
+\end{tcolorbox}
+
+\subsection{Change Control}
+
+Hook changes require dual sign-off (domain expert + guard steward) and staged rollout. All changes are receipt-verified and auditable.
+
+\textbf{Process}:
+\begin{enumerate}
+    \item \textbf{Proposal}: Domain expert proposes hook change
+    \item \textbf{Review}: Guard steward reviews guard implications
+    \item \textbf{Approval}: Dual sign-off required
+    \item \textbf{Deployment}: Staged rollout with receipt verification
+    \item \textbf{Verification}: Independent recomputation validates receipt
+\end{enumerate}
+
+\subsection{Kill Switch}
+
+Per-domain suspension is supported with receipt-based rollback. Any domain failing reproducibility is suspended until corrected.
+
+\textbf{Process}:
+\begin{enumerate}
+    \item \textbf{Detection}: Receipt delta $> 10^{-3}$ tolerance
+    \item \textbf{Suspension}: Domain suspended automatically
+    \item \textbf{Rollback}: Receipt-based rollback to last verified state
+    \item \textbf{Correction}: Domain corrected and re-verified
+    \item \textbf{Resumption}: Domain resumed after verification
+\end{enumerate}
+
+\subsection{Regulatory Alignment}
+
+Receipts map to control catalogs (SOX, HIPAA, PCI) by table, not narrative. All compliance requirements are encoded as guards and hooks, not as manual processes.
+
+\textbf{Example}: A SOX control requiring "segregation of duties" is encoded as a guard that enforces role-based access control. The receipt verifies that the guard was enforced, providing audit evidence.
+
+\subsection{End of Knowledge Work}
+
+At 2 ns per rule check, humans cannot compete with machine-speed execution. Knowledge hooks industrialize all knowledge operations. Units are runs, not tickets. Quality is receipts, not anecdotes. Throughput scales with hooks, not headcount. Cost is proportional to evaluated rules, not meeting hours.
+
+This is not the end of \textit{some} knowledge work—it is the end of knowledge work. Every decision is measured, every operation is auditable, and every rule is enforced within stated SLOs. There are no discretionary paths, no manual gates, no advisory layers, and no shadow channels. The enterprise operates as a closed, bounded, verifiable fabric.
+

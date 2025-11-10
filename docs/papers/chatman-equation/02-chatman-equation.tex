@@ -1,0 +1,127 @@
+\section{The Chatman Equation: Formal Definition}
+
+\label{sec:chatman-equation}
+
+\subsection{The Law}
+
+\textbf{Sean Chatman} introduces the central law:
+\begin{equation}
+A = \mu(O)
+\label{eq:chatman}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $O \in \Obs$: Observations (typed \RDF{} workflow graphs, defined by ontology $\Schema$)
+    \item $\mu: \Obs \to \Act$: Measurement function (deterministic projection of $O$ to $A$)
+    \item $A \in \Act$: Actions (measurable workflow executions satisfying invariants $Q$)
+\end{itemize}
+
+The measurement function $\mu$ executes workflow patterns under ingress guards $H$, producing deterministic outcomes with cryptographic receipts.
+
+\subsection{Knowledge Hook Definition}
+
+A \textbf{knowledge hook} $h$ is a tuple:
+\begin{equation}
+h = (\mathrm{trigger}, \mathrm{check}, \mathrm{act}, \mathrm{receipt})
+\label{eq:hook}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\mathrm{trigger}$: A change $\Delta O$ detected in the knowledge graph
+    \item $\mathrm{check}$: A bounded evaluation (SPARQL/SHACL/threshold) preserving invariants $Q$ and guards $H$
+    \item $\mathrm{act}$: A workflow step executed via KNHK/YAWL with $t_{\mathrm{hot}} \leq 2$ ns or $t_{\mathrm{warm}} \leq 500$ ms
+    \item $\mathrm{receipt}$: A Merkle-linked record with $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$
+\end{itemize}
+
+\subsection{Formal Properties}
+
+The measurement function $\mu$ satisfies:
+
+\textbf{1. Determinism}:
+\begin{equation}
+\forall O_1, O_2 \in \Obs: O_1 = O_2 \implies \mu(O_1) = \mu(O_2)
+\label{eq:determinism}
+\end{equation}
+
+\textbf{2. Idempotence}:
+\begin{equation}
+\mu \comp \mu = \mu
+\label{eq:idempotence}
+\end{equation}
+
+\textbf{3. Typing}:
+\begin{equation}
+\forall O \in \Obs: O \satisfies \Schema
+\label{eq:typing}
+\end{equation}
+
+where $\Schema$ is the ontology (OWL/SHACL schema).
+
+\textbf{4. Provenance}:
+\begin{equation}
+\mathrm{hash}(A) = \mathrm{hash}(\mu(O))
+\label{eq:provenance}
+\end{equation}
+
+\textbf{5. Shard Law}:
+\begin{equation}
+\mu(O \unionop \Delta) = \mu(O) \unionop \mu(\Delta)
+\label{eq:shard}
+\end{equation}
+
+\textbf{6. Guard Adjunction}:
+\begin{equation}
+\mu \adjoint H
+\label{eq:guard}
+\end{equation}
+
+Actions must satisfy ingress guards $H$ (legality, budgets, chronology, causality).
+
+\textbf{7. Bounded Epoch}:
+\begin{equation}
+\mu \subset \tau, \quad \tau \leq 8 \text{ ticks} \quad (\leq 2 \text{ ns})
+\label{eq:epoch}
+\end{equation}
+
+Hot-path checks are bounded to $\leq 8$ ticks.
+
+\textbf{8. Bounded Regeneration}:
+\begin{equation}
+\mu^{t+1}(O) = \mu^t(O) \text{ while } \mathrm{drift}(A^t) > \varepsilon
+\label{eq:regeneration}
+\end{equation}
+
+Regeneration halts when schema drift $\leq \varepsilon$ (typically $0.5\%$).
+
+\subsection{Boundedness Guarantees}
+
+All operations are bounded:
+\begin{itemize}
+    \item \textbf{No unbounded loops}: Each hook runs within an epoch of $\leq 8$ ticks (hot path) or $\leq 500$ ms (warm path)
+    \item \textbf{Termination guarantee}: Regeneration halts when $\mathrm{drift}(\Sigma) \leq \varepsilon$
+    \item \textbf{Finite state space}: All knowledge graphs are finite; all workflows are finite-state
+    \item \textbf{Measurable convergence}: Receipt deltas $< 10^{-3}$ within tolerance
+\end{itemize}
+
+\subsection{Receipt Schema}
+
+Every action produces a receipt:
+\begin{equation}
+R^t = (h_O, h_\Gamma, h_H, h_A, h_\mu), \quad h_t = \mathrm{Merkle}(\ldots, h_{t-1})
+\label{eq:receipt}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $h_O$: Hash of observations $O$
+    \item $h_\Gamma$: Hash of candidate proposals $\Gamma$
+    \item $h_H$: Hash of guard set $H$
+    \item $h_A$: Hash of actions $A$
+    \item $h_\mu$: Hash of measurement function $\mu$
+    \item $h_t$: Merkle root chained to previous receipt
+\end{itemize}
+
+Receipts enable end-to-end recomputation and audit. Independent recomputation must reproduce $\mathrm{hash}(A) = \mathrm{hash}(\mu(O))$ within $10^{-3}$ tolerance; otherwise the claim is falsified.
+

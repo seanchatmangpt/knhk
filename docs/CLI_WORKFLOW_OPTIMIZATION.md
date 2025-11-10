@@ -162,3 +162,4 @@ FAST_MODE=0 make lint-rust
 - Full features still available when needed
 - Compatible with other coding agents working on the codebase
 
+
