@@ -42,6 +42,7 @@ fn get_engine(state_store_path: Option<&str>) -> CnvResult<Arc<WorkflowEngine>> 
 }
 
 /// Export case to XES format
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn export_xes(
     case_id: String,
@@ -102,6 +103,7 @@ pub fn export_xes(
 }
 
 /// Discover process model from XES event log
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn discover(
     xes_file: PathBuf,
@@ -198,6 +200,7 @@ pub fn discover(
 }
 
 /// Check conformance between workflow and XES event log
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn conformance(
     workflow_file: PathBuf,

@@ -51,6 +51,7 @@ pub struct PatternInfo {
 }
 
 /// List all 43 workflow patterns
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn list(json: bool) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -97,6 +98,7 @@ pub fn list(json: bool) -> CnvResult<()> {
 }
 
 /// Test a specific pattern
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResult<()> {
     if !(1..=43).contains(&pattern_id) {
@@ -179,6 +181,7 @@ pub fn test(pattern_id: u32, state_store: Option<String>, json: bool) -> CnvResu
 }
 
 /// Test all 43 patterns
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn test_all(state_store: Option<String>, json: bool) -> CnvResult<()> {
     let runtime = get_runtime();

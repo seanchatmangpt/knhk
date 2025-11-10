@@ -28,6 +28,7 @@ pub struct SoundnessReport {
 }
 
 /// Verify all three soundness properties
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn verify(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
     let workflow_content = std::fs::read_to_string(&workflow_file).map_err(|e| {
@@ -140,6 +141,7 @@ pub fn verify(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
 }
 
 /// Verify option to complete property
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn option_to_complete(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
     let workflow_content = std::fs::read_to_string(&workflow_file).map_err(|e| {
@@ -207,6 +209,7 @@ pub fn option_to_complete(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
 }
 
 /// Verify proper completion property
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn proper_completion(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
     let workflow_content = std::fs::read_to_string(&workflow_file).map_err(|e| {
@@ -274,6 +277,7 @@ pub fn proper_completion(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
 }
 
 /// Verify no dead tasks property
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn no_dead_tasks(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
     let workflow_content = std::fs::read_to_string(&workflow_file).map_err(|e| {
@@ -341,6 +345,7 @@ pub fn no_dead_tasks(workflow_file: PathBuf, json: bool) -> CnvResult<()> {
 }
 
 /// Generate detailed soundness report
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn report(workflow_file: PathBuf, output: Option<PathBuf>, json: bool) -> CnvResult<()> {
     let workflow_content = std::fs::read_to_string(&workflow_file).map_err(|e| {

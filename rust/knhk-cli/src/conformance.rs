@@ -52,6 +52,7 @@ pub struct ConformanceReport {
 }
 
 /// Check conformance between workflow and XES event log
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn check(
     workflow_file: PathBuf,
@@ -173,6 +174,7 @@ pub fn check(
 }
 
 /// Calculate fitness between workflow and XES event log
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn fitness(
     workflow_file: PathBuf,
@@ -188,6 +190,7 @@ pub fn fitness(
 ///
 /// Precision measures how much of the model is actually used.
 /// High precision means the model doesn't allow too much behavior beyond what's in the event log.
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn precision(
     workflow_file: PathBuf,
@@ -203,6 +206,7 @@ pub fn precision(
 ///
 /// Generalization measures how well the model generalizes beyond the event log.
 /// High generalization means the model can handle behavior not seen in the log.
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn generalization(
     workflow_file: PathBuf,
@@ -218,6 +222,7 @@ pub fn generalization(
 ///
 /// Alignment finds the optimal matching between traces in the event log and paths through the model.
 /// Uses edit distance to find minimum cost alignments (synchronous moves, model moves, log moves).
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn alignment(
     workflow_file: PathBuf,

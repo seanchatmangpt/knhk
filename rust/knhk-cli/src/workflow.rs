@@ -49,6 +49,7 @@ use std::sync::Arc;
 use tokio::runtime::Runtime;
 
 /// Get or create tokio runtime for async operations
+#[cfg(feature = "workflow")]
 fn get_runtime() -> &'static Runtime {
     static RUNTIME: std::sync::OnceLock<Runtime> = std::sync::OnceLock::new();
     RUNTIME.get_or_init(|| {
@@ -59,6 +60,7 @@ fn get_runtime() -> &'static Runtime {
 }
 
 /// Get workflow engine instance (created per command to avoid Sync issues with LockchainStorage)
+#[cfg(feature = "workflow")]
 fn get_engine(state_store_path: Option<&str>) -> CnvResult<Arc<WorkflowEngine>> {
     let path = state_store_path.unwrap_or("./workflow_db");
     let state_store = StateStore::new(path).map_err(|e| {
@@ -71,6 +73,7 @@ fn get_engine(state_store_path: Option<&str>) -> CnvResult<Arc<WorkflowEngine>> 
 }
 
 /// Parse a workflow from Turtle file
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn parse(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -113,6 +116,7 @@ pub fn parse(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
 }
 
 /// Register a workflow specification
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn register(file: PathBuf, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -162,6 +166,7 @@ pub fn register(file: PathBuf, state_store: Option<String>) -> CnvResult<()> {
 }
 
 /// Create a new workflow case
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn create(spec_id: String, data: Option<String>, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -196,6 +201,7 @@ pub fn create(spec_id: String, data: Option<String>, state_store: Option<String>
 }
 
 /// Start a workflow case
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn start(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -221,6 +227,7 @@ pub fn start(case_id: String, state_store: Option<String>) -> CnvResult<()> {
 }
 
 /// Execute a workflow case
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn execute(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -246,6 +253,7 @@ pub fn execute(case_id: String, state_store: Option<String>) -> CnvResult<()> {
 }
 
 /// Cancel a workflow case
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn cancel(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -271,6 +279,7 @@ pub fn cancel(case_id: String, state_store: Option<String>) -> CnvResult<()> {
 }
 
 /// Get case status
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn get(case_id: String, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -303,6 +312,7 @@ pub fn get(case_id: String, state_store: Option<String>) -> CnvResult<()> {
 }
 
 /// List all workflow cases for a specification
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn list(spec_id: Option<String>, state_store: Option<String>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -342,6 +352,7 @@ pub fn list(spec_id: Option<String>, state_store: Option<String>) -> CnvResult<(
 }
 
 /// List all 43 workflow patterns
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn patterns() -> CnvResult<()> {
     let runtime = get_runtime();
@@ -363,6 +374,7 @@ pub fn patterns() -> CnvResult<()> {
 }
 
 /// Start REST API server
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn serve(
     port: Option<u16>,
@@ -411,6 +423,7 @@ pub fn serve(
 }
 
 /// Import XES event log
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn import_xes(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
     let log = import_xes_file(&file, XESImportOptions::default()).map_err(|e| {
@@ -452,6 +465,7 @@ pub fn import_xes(file: PathBuf, output: Option<PathBuf>) -> CnvResult<()> {
 /// 3. Generalization validation (works beyond examples?)
 /// 4. Process mining analysis (XES, conformance)
 /// 5. Formal verification (state transitions, deadlock freedom)
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn validate(
     spec_id: String,
@@ -568,6 +582,7 @@ pub fn validate(
 /// 3. Validate XES format
 /// 4. Compare with specification
 /// 5. Check conformance
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn validate_xes(spec_id: Option<String>, output_dir: Option<PathBuf>) -> CnvResult<()> {
     let runtime = get_runtime();
@@ -789,6 +804,7 @@ Automated validation loop: Execute → Export → Validate → Conformance Check
 }
 
 /// Export workflow execution to XES format
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn export_xes(
     case_id: Option<String>,
@@ -851,6 +867,7 @@ pub fn export_xes(
 ///
 /// Starts Weaver live-check process and validates runtime telemetry against schema.
 /// This is the source of truth for telemetry validation - proves features work.
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn weaver_live_check(
     registry: Option<PathBuf>,
@@ -977,6 +994,7 @@ pub fn weaver_live_check(
 }
 
 /// Run Alpha+++ process discovery algorithm
+#[cfg(feature = "workflow")]
 #[verb]
 pub fn discover(
     xes_file: PathBuf,
