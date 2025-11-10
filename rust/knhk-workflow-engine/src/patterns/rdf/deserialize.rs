@@ -4,12 +4,16 @@ use super::metadata::{get_all_pattern_metadata, PatternMetadata};
 use super::{WORKFLOW_PATTERN_NS, YAWL_NS};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
+#[cfg(feature = "rdf")]
 use oxigraph::model::Term;
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::SparqlEvaluator;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
 /// Deserialize pattern metadata from RDF store
+#[cfg(feature = "rdf")]
 pub fn deserialize_metadata_from_rdf(
     store: &Store,
     pattern_id: PatternId,
@@ -157,9 +161,11 @@ pub fn load_all_metadata_from_rdf(store: &Store) -> WorkflowResult<Vec<PatternMe
 }
 
 /// Deserialize pattern execution context from RDF/Turtle
+#[cfg(feature = "rdf")]
 pub fn deserialize_context_from_rdf(
     turtle: &str,
 ) -> WorkflowResult<(PatternId, PatternExecutionContext)> {
+    #[cfg(feature = "rdf")]
     use oxigraph::io::RdfFormat;
 
     let store = Store::new()
@@ -296,7 +302,9 @@ pub fn deserialize_context_from_rdf(
 }
 
 /// Deserialize pattern execution result from RDF/Turtle
+#[cfg(feature = "rdf")]
 pub fn deserialize_result_from_rdf(turtle: &str) -> WorkflowResult<PatternExecutionResult> {
+    #[cfg(feature = "rdf")]
     use oxigraph::io::RdfFormat;
 
     let store = Store::new()

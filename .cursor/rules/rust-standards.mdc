@@ -7,6 +7,25 @@ alwaysApply: false
 
 # Rust Coding Standards
 
+## Build System Usage
+
+### CRITICAL: Use Make Targets, Not Direct Cargo Commands
+
+**NEVER use these directly:**
+- ❌ `cargo check`
+- ❌ `cargo build`
+- ❌ `cargo test`
+- ❌ `cargo clippy`
+- ❌ `cargo fmt`
+
+**ALWAYS use these Make targets instead:**
+- ✅ `make check` - Check compilation without building
+- ✅ `make build-rust` - Build all Rust crates
+- ✅ `make test-rust` - Run all Rust tests
+- ✅ `make lint-rust` or `make clippy` - Lint Rust code
+- ✅ `make fmt` - Format Rust code (NEVER use `cargo fmt` directly)
+- ✅ `make pre-commit` - Run pre-commit validation checks
+
 ## Error Handling
 
 - **Never use `unwrap()` or `expect()` in production code paths** - KNHK strict rule

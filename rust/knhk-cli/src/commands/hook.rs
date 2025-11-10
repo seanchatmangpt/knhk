@@ -73,38 +73,46 @@ pub fn create(
     }
 
     // Use HookRegistry for persistent storage
-    use crate::hook_registry::HookRegistryIntegration;
-    let mut registry = HookRegistryIntegration::new()?;
+    #[cfg(feature = "etl")]
+    {
+        use crate::hook_registry::HookRegistryIntegration;
+        let mut registry = HookRegistryIntegration::new()?;
 
-    // Check if hook with same name exists
-    if registry.get(&name).is_ok() {
-        return Err(format!("Hook with name '{}' already exists", name));
+        // Check if hook with same name exists
+        if registry.get(&name).is_ok() {
+            return Err(format!("Hook with name '{}' already exists", name));
+        }
+
+        // Create hook entry
+        use crate::hook_registry::store::HookEntry;
+        let hook_entry = HookEntry {
+            id: format!("hook_{}", name),
+            name: name.clone(),
+            op: op.clone(),
+            pred,
+            off,
+            len,
+            s,
+            p,
+            o,
+            k,
+        };
+
+        // Register hook
+        registry.register(hook_entry)?;
+
+        println!("✓ Hook created: {}", name);
+
+        Ok(())
     }
-
-    // Create hook entry
-    use crate::hook_registry::store::HookEntry;
-    let hook_entry = HookEntry {
-        id: format!("hook_{}", name),
-        name: name.clone(),
-        op: op.clone(),
-        pred,
-        off,
-        len,
-        s,
-        p,
-        o,
-        k,
-    };
-
-    // Register hook
-    registry.register(hook_entry)?;
-
-    println!("✓ Hook created: {}", name);
-
-    Ok(())
+    #[cfg(not(feature = "etl"))]
+    {
+        Err("Hook operations require etl feature".to_string())
+    }
 }
 
 /// List hooks
+#[cfg(feature = "etl")]
 pub fn list() -> Result<Vec<String>, String> {
     // Use HookRegistry
     use crate::hook_registry::HookRegistryIntegration;
@@ -113,6 +121,7 @@ pub fn list() -> Result<Vec<String>, String> {
 }
 
 /// Evaluate a hook using knhk-hot FFI
+#[cfg(feature = "etl")]
 pub fn eval(hook_name: String) -> Result<String, String> {
     println!("Evaluating hook: {}", hook_name);
 
@@ -234,6 +243,7 @@ pub fn eval(hook_name: String) -> Result<String, String> {
 }
 
 /// Show hook details
+#[cfg(feature = "etl")]
 pub fn show(hook_name: String) -> Result<crate::hook_registry::store::HookEntry, String> {
     // Use HookRegistry
     use crate::hook_registry::HookRegistryIntegration;

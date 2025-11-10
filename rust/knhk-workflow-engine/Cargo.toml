@@ -24,7 +24,6 @@ path = "src/bin/knhk-workflow.rs"
 # KNHK infrastructure
 knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
-knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
 knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", optional = true }
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 # knhk-sidecar dependency removed to avoid circular dependency
@@ -100,14 +99,13 @@ process_mining = "0.3"
 [features]
 default = []  # Minimal by default for fast builds
 minimal = []  # Core only, no optional deps
-unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
 rdf = ["oxigraph"]
 storage = ["sled"]
 grpc = ["dep:tonic", "dep:tonic-build", "dep:tonic-prost-build", "dep:tonic-prost", "dep:prost", "dep:prost-types"]
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 connectors = ["dep:knhk-connectors"]
 testing = ["dep:chicago-tdd-tools"]
-full = ["unrdf", "rdf", "storage", "grpc", "http", "connectors", "testing"]
+full = ["rdf", "storage", "grpc", "http", "connectors", "testing"]
 # sidecar feature removed to avoid circular dependency
 
 [[example]]

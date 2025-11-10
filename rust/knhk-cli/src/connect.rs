@@ -3,6 +3,7 @@
 // Allow non_upper_case_globals - #[verb] macro generates static vars with lowercase names
 #![allow(non_upper_case_globals)]
 
+#[cfg(feature = "connectors")]
 use crate::commands::connect as connect_impl;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
@@ -17,6 +18,7 @@ struct RegisterResult {
 
 /// Register a connector
 #[verb] // Noun "connect" auto-inferred from filename "connect.rs"
+#[cfg(feature = "connectors")]
 fn register(name: String, schema: String, source: String) -> Result<RegisterResult> {
     connect_impl::register(name.clone(), schema.clone(), source.clone())
         .map_err(|e| {
@@ -39,6 +41,7 @@ struct ConnectorList {
 
 /// List connectors
 #[verb] // Noun "connect" auto-inferred
+#[cfg(feature = "connectors")]
 fn list() -> Result<ConnectorList> {
     connect_impl::list()
         .map_err(|e| {

@@ -565,7 +565,7 @@ chicago_async_test!(test_jtbd_process_enhancement_from_discovered_model, {
         enhanced_model.transitions.len()
     );
     println!("    Model complexity: {}", model_complexity);
-}
+}););
 
 /// JTBD 5: Complete Process Mining Workflow - End-to-End Validation
 chicago_async_test!(test_jtbd_complete_process_mining_workflow, {
@@ -655,7 +655,7 @@ chicago_async_test!(test_jtbd_complete_process_mining_workflow, {
     );
     println!("    Discovery time: {:?}", discovery_duration);
     println!("    Model complexity: {}", model_complexity);
-}
+}););
 
 /// JTBD 6: Multiple Workflow Patterns - Validate process discovery across patterns
 chicago_async_test!(test_jtbd_multiple_workflow_patterns_discovery, {
@@ -723,4 +723,4 @@ chicago_async_test!(test_jtbd_multiple_workflow_patterns_discovery, {
         discovered_model.places.len(),
         discovered_model.transitions.len()
     );
-}
+});

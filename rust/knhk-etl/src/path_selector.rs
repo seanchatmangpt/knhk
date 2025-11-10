@@ -42,7 +42,7 @@ pub fn select_path(query: &str, data_size: usize) -> QueryPath {
         return QueryPath::Warm;
     }
     
-    // Otherwise, use cold path (unrdf)
+    // Otherwise, use warm path (oxigraph)
     QueryPath::Cold
 }
 
@@ -172,7 +172,7 @@ pub fn is_warm_path_query(query: &str) -> bool {
     true
 }
 
-/// Check if query requires cold path (unrdf)
+/// Check if query requires warm path (oxigraph)
 /// 
 /// Cold path required for:
 /// - UPDATE queries

@@ -4,7 +4,7 @@
 //! Ensures all OTEL spans and metrics conform to declared schema.
 
 #[cfg(feature = "weaver")]
-use knhk_otel::WeaverLiveCheck;
+use crate::weaver_types::WeaverLiveCheck;
 use std::path::PathBuf;
 use std::process::Child;
 use thiserror::Error;

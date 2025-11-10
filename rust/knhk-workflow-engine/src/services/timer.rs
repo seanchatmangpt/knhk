@@ -13,6 +13,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::PatternId;
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use crate::timebase::Timebase;
 use chrono::{DateTime, Utc};

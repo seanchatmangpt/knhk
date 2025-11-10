@@ -5,6 +5,7 @@
 use crate::case::{Case, CaseId};
 use crate::error::WorkflowResult;
 use crate::parser::{WorkflowSpec, WorkflowSpecId};
+#[cfg(feature = "storage")]
 use crate::state::store::StateStore;
 use std::collections::HashMap;
 use std::sync::Arc;

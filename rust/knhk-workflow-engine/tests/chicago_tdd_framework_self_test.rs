@@ -98,8 +98,8 @@ chicago_async_test!(test_fixture_assert_case_completed, {
     // Note: This will panic if case is not completed, which is expected behavior
     if case.state == CaseState::Completed {
         fixture.assert_case_completed(&case);
-    });
-}
+    }
+});
 
 // ============================================================================
 // Pattern Helper Tests
@@ -119,7 +119,7 @@ chicago_test!(test_create_test_registry_registers_all_patterns, {
             pattern_id
         );
     }
-}
+});
 
 chicago_test!(test_create_test_context_creates_empty_context, {
     // Arrange & Act: Create context

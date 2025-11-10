@@ -9,8 +9,7 @@ use std::collections::HashMap;
 /// Builder for test data (case variables)
 ///
 /// This builder creates test data as `HashMap<String, String>` and can convert to JSON.
-/// The API matches `knhk-workflow-engine/src/testing/chicago_tdd.rs::TestDataBuilder`
-/// to ensure consistency across the framework.
+/// Provides a fluent API for building test data structures.
 pub struct TestDataBuilder {
     data: HashMap<String, String>,
 }

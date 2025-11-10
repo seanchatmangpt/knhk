@@ -5,7 +5,6 @@ members = [
     "knhk-otel",
     "knhk-connectors",
     "knhk-lockchain",
-    "knhk-unrdf",
     "knhk-etl",
     "knhk-warm",
     "knhk-validation",
@@ -17,6 +16,8 @@ members = [
     "knhk-integration-tests",
     "knhk-json-bench",  # JSON parsing benchmark using knhk-hot
     "chicago-tdd-tools", "knhk-dflss",  # Chicago TDD testing framework
+    "knhk-latex-compiler",  # LaTeX to PDF compiler
+    "knhk-latex",  # LaTeX CLI using clap-noun-verb
 ]
 
 [workspace.package]
@@ -31,7 +32,6 @@ knhk-hot = { path = "./knhk-hot", version = "1.0.0" }
 knhk-otel = { path = "./knhk-otel", version = "1.0.0" }
 knhk-connectors = { path = "./knhk-connectors", version = "1.0.0" }
 knhk-lockchain = { path = "./knhk-lockchain", version = "1.0.0" }
-knhk-unrdf = { path = "./knhk-unrdf", version = "1.0.0" }
 knhk-etl = { path = "./knhk-etl", version = "1.0.0" }
 knhk-warm = { path = "./knhk-warm", version = "1.0.0" }
 knhk-validation = { path = "./knhk-validation", version = "1.0.0" }
@@ -153,3 +153,9 @@ debug = true
 [profile.bench]
 opt-level = 3
 debug = false
+
+# Profile for knhk-hot benchmarks (hot path optimization)
+[profile.bench.package.knhk-hot]
+opt-level = 3
+codegen-units = 1
+debug = true  # Keep debug symbols for perf analysis

@@ -1,0 +1,12 @@
+[package]
+name = "knhk-latex-compiler"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "compile-latex"
+path = "src/main.rs"
+
+[dependencies]
+which = "6.0"
+

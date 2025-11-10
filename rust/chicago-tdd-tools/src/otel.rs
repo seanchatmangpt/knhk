@@ -4,7 +4,7 @@
 //! Validates that telemetry conforms to schema and semantic conventions.
 
 #[cfg(feature = "otel")]
-use knhk_otel::{Metric, Span, SpanId};
+use crate::otel_types::{Metric, Span, SpanId};
 use thiserror::Error;
 
 /// OTEL validation error
@@ -180,13 +180,13 @@ impl MetricValidator {
 
         // Validate metric value is valid
         match &metric.value {
-            knhk_otel::MetricValue::Counter(count) => {
+            crate::otel_types::MetricValue::Counter(count) => {
                 if *count == 0 && metric.name.contains("error") {
                     // Error counters should be > 0 if metric name suggests errors
                     // This is informational, not an error
                 }
             }
-            knhk_otel::MetricValue::Gauge(value) => {
+            crate::otel_types::MetricValue::Gauge(value) => {
                 if value.is_nan() || value.is_infinite() {
                     return Err(OtelValidationError::MetricValidationFailed(format!(
                         "Metric '{}' has invalid gauge value: {}",
@@ -194,7 +194,7 @@ impl MetricValidator {
                     )));
                 }
             }
-            knhk_otel::MetricValue::Histogram(buckets) => {
+            crate::otel_types::MetricValue::Histogram(buckets) => {
                 if buckets.is_empty() {
                     return Err(OtelValidationError::MetricValidationFailed(format!(
                         "Metric '{}' has empty histogram buckets",
@@ -276,7 +276,7 @@ impl OtelTestHelper {
 mod tests {
     use super::*;
     #[cfg(feature = "otel")]
-    use knhk_otel::{SpanContext, SpanId, SpanStatus, TraceId};
+    use crate::otel_types::{SpanContext, SpanId, SpanStatus, TraceId};
 
     #[cfg(feature = "otel")]
     #[test]
@@ -303,7 +303,7 @@ mod tests {
     #[cfg(feature = "otel")]
     #[test]
     fn test_span_validator_zero_span_id() {
-        use knhk_otel::SpanContext;
+        use crate::otel_types::SpanContext;
 
         let validator = SpanValidator::new();
         let span = Span {
@@ -327,7 +327,7 @@ mod tests {
     #[cfg(feature = "otel")]
     #[test]
     fn test_span_validator_empty_name() {
-        use knhk_otel::SpanContext;
+        use crate::otel_types::SpanContext;
 
         let validator = SpanValidator::new();
         let span = Span {

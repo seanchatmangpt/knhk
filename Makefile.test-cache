@@ -1,0 +1,57 @@
+# KNHK Test Cache Configuration
+# Autonomic caching system for maximum test performance
+
+# Cache directory
+CACHE_DIR := .test-cache
+RESULT_CACHE_DIR := $(CACHE_DIR)/results
+
+# Test binary locations
+RUST_TARGET_DIR := rust/target
+TEST_BINARIES := $(RUST_TARGET_DIR)/**/*test*
+
+# Cache invalidation
+CODE_HASH_FILE := $(CACHE_DIR)/code.hash
+BUILD_LOCK := $(CACHE_DIR)/build.lock
+
+# Default cache TTL (1 hour)
+CACHE_TTL := 3600
+
+# File watcher configuration
+WATCHER_INTERVAL := 0.5
+WATCHER_EXCLUDE := --exclude='.*\.(git|target|test-cache)'
+WATCHER_INCLUDE := --include='.*\.rs$$'
+
+# Test execution configuration
+TEST_TIMEOUT := 5
+TEST_THREADS := 0  # Auto-detect CPU count
+TEST_PROFILE := fast
+
+# Performance targets
+.PHONY: test-cache-clean test-cache-stats
+
+# Clean test cache
+test-cache-clean:
+	@echo "🧹 Cleaning test cache..."
+	@rm -rf $(CACHE_DIR)
+	@echo "✅ Test cache cleaned"
+
+# Show cache statistics
+test-cache-stats:
+	@echo "📊 Test Cache Statistics"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@if [ -d "$(CACHE_DIR)" ]; then \
+		echo "Cache directory: $(CACHE_DIR)"; \
+		echo "Cache size: $$(du -sh $(CACHE_DIR) 2>/dev/null | cut -f1 || echo '0')"; \
+		echo "Cached results: $$(find $(RESULT_CACHE_DIR) -name '*.json' 2>/dev/null | wc -l | tr -d ' ')"; \
+		echo "Test binaries: $$(find $(RUST_TARGET_DIR) -name '*test*' -type f 2>/dev/null | wc -l | tr -d ' ')"; \
+	else \
+		echo "Cache not initialized"; \
+	fi
+
+# Auto-start cache daemon on first test run
+test-cache-auto-start:
+	@if [ ! -f "$(CACHE_DIR)/daemon.pid" ]; then \
+		echo "🚀 Auto-starting test cache daemon..."; \
+		$(MAKE) test-cache-start; \
+	fi
+

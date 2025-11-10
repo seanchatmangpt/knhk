@@ -1,20 +1,26 @@
 //! Hook registry integration - Integrates with knhk-etl HookRegistry
 
+#[cfg(feature = "etl")]
 use super::store::HookStore;
 
+#[cfg(feature = "etl")]
 use knhk_etl::HookRegistry;
 use std::sync::Arc;
 
+#[cfg(feature = "etl")]
 /// Hook registry integration - Manages hooks with system
 pub struct HookRegistryIntegration {
     registry: Arc<HookRegistry>,
+    #[cfg(feature = "etl")]
     store: HookStore,
 }
 
+#[cfg(feature = "etl")]
 impl HookRegistryIntegration {
     /// Create new hook registry integration
     pub fn new() -> Result<Self, String> {
         let registry = Arc::new(HookRegistry::new());
+        #[cfg(feature = "etl")]
         let store = HookStore::new()?;
 
         let mut integration = Self { registry, store };
@@ -181,6 +187,7 @@ impl HookRegistryIntegration {
     }
 }
 
+#[cfg(feature = "etl")]
 impl Default for HookRegistryIntegration {
     fn default() -> Self {
         Self::new().expect("Failed to create hook registry integration")

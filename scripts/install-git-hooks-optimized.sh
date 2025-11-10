@@ -387,9 +387,12 @@ echo "  ✅ No expect() in production code (CLI exempt)"
 # Check 5: Formatting (runs in parallel with clippy prep)
 echo "   Checking Rust formatting..."
 cd rust
-if ! cargo fmt --all -- --check 2>&1; then
+cd "$(git rev-parse --show-toplevel)"
+if ! make fmt 2>&1 | grep -q "Diff\|error"; then
+  echo "  ✅ Code is formatted"
+else
   echo "❌ ERROR: Code is not formatted"
-  echo "   Run: cd rust && cargo fmt --all"
+  echo "   Run: make fmt"
   exit 1
 fi
 cd "$(git rev-parse --show-toplevel)"
@@ -487,10 +490,31 @@ trap "rm -rf $TMPDIR" EXIT
 # Gate 1: Cargo check (all packages) - must run first
 echo "Gate 1/5: Cargo check..."
 cd rust
-if ! cargo check --workspace 2>&1; then
-  echo "❌ ERROR: cargo check failed"
-  exit 1
-fi
+
+# Retry logic for build directory locks
+MAX_RETRIES=3
+RETRY_DELAY=2
+for i in $(seq 1 $MAX_RETRIES); do
+  if cargo check --workspace --message-format=short 2>&1; then
+    break
+  fi
+  
+  if [ $i -lt $MAX_RETRIES ]; then
+    if grep -q "Blocking waiting for file lock" /dev/stderr 2>/dev/null || \
+       grep -q "Blocking waiting for file lock" <(cargo check --workspace --message-format=short 2>&1) 2>/dev/null; then
+      echo "⚠️  Build directory locked (attempt $i/$MAX_RETRIES), waiting ${RETRY_DELAY}s..."
+      sleep $RETRY_DELAY
+      RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
+    else
+      echo "❌ ERROR: cargo check failed"
+      exit 1
+    fi
+  else
+    echo "❌ ERROR: cargo check failed after $MAX_RETRIES attempts"
+    exit 1
+  fi
+done
+
 cd "$(git rev-parse --show-toplevel)"
 echo "✅ Gate 1 passed"
 echo ""
@@ -520,12 +544,13 @@ cd rust
 
 (
   # Gate 3: Formatting
-  if cargo fmt --all -- --check 2>&1; then
-    echo "✅ Gate 3 passed" > "$TMPDIR/gate3_result.txt"
-  else
+  cd "$(git rev-parse --show-toplevel)"
+  if make fmt 2>&1 | grep -q "Diff\|error"; then
     echo "❌ ERROR: Code is not formatted" > "$TMPDIR/gate3_result.txt"
-    echo "   Run: cd rust && cargo fmt --all" >> "$TMPDIR/gate3_result.txt"
+    echo "   Run: make fmt" >> "$TMPDIR/gate3_result.txt"
     exit 1
+  else
+    echo "✅ Gate 3 passed" > "$TMPDIR/gate3_result.txt"
   fi
 ) &
 

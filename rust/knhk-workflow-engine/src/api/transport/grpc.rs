@@ -2,12 +2,16 @@
 //!
 //! Converts between gRPC-specific types (tonic::Request, tonic::Response, tonic::Status) and unified models.
 
+#[cfg(feature = "grpc")]
 use crate::api::models::errors::ApiError;
+#[cfg(feature = "grpc")]
 use tonic::Status;
 
+#[cfg(feature = "grpc")]
 /// gRPC adapter for converting between gRPC types and unified models
 pub struct GrpcAdapter;
 
+#[cfg(feature = "grpc")]
 impl GrpcAdapter {
     /// Convert ApiError to gRPC Status
     pub fn error_to_status(error: ApiError) -> Status {

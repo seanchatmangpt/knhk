@@ -1,0 +1,65 @@
+# cargo-deny configuration for KNHK workspace
+# See https://github.com/EmbarkStudios/cargo-deny
+
+# License checking
+[licenses]
+# Default license policy: allow MIT, Apache-2.0, and BSD variants
+default = "deny"
+copyleft = "deny"
+# Allow these licenses
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MPL-2.0",
+    "Zlib",
+    "Unlicense",
+    "CC0-1.0",
+]
+# Explicitly deny these licenses
+deny = [
+    "AGPL-3.0",
+    "GPL-2.0",
+    "GPL-3.0",
+    "LGPL-2.0",
+    "LGPL-2.1",
+    "LGPL-3.0",
+]
+
+# Security advisories
+[advisories]
+# Check against RustSec advisory database
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+vulnerability = "deny"
+unmaintained = "warn"
+unsound = "deny"
+yanked = "deny"
+notice = "warn"
+ignore = [
+    # Add specific advisories to ignore here if needed
+]
+
+# Banned dependencies
+[bans]
+# Don't allow specific crates
+deny = [
+    # Example: { name = "insecure-crate", reason = "Security vulnerability" }
+]
+
+# Duplicate dependencies
+[duplicates]
+# Warn about duplicate dependencies
+highest = true
+
+# Sources
+[sources]
+# Allow crates.io, git, and local paths
+unknown-registry = "deny"
+unknown-git = "deny"
+path = "allow"
+registry = ["https://github.com/rust-lang/crates.io-index"]
+git = ["https://github.com"]
+

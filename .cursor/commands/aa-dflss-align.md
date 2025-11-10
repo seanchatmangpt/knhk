@@ -1,40 +1,130 @@
 # DFLSS Documentation Alignment
 
-Read docs, write code, run tests, fix issues, loop.
+Explore dflss documentation thoroughly before aligning code and documentation.
 
-## Architecture Principle
+## Exploration Phase (REQUIRED FIRST STEP)
 
-**Centralized Validation Architecture**:
-- **knhk-workflow-engine**: ALL data ingress point. Domain logic, validation, guards.
-- **knhk-hot**: Pure execution. NO checks. Assumes pre-validated inputs.
+**Before any work begins, read at least 10 files from `docs/v1/dflss/` fully into context.**
 
-## Workflow
+Choose files that help you understand:
+- Project scope, goals, and methodology
+- Current state and alignment status
+- Requirements and constraints
+- Architectural principles and decisions
+- Validation approaches and findings
+- Research context and analysis
 
-1. **Understand Requirements and Current State**:
+**Do not proceed to work phase until you have read and understood at least 10 files.**
+
+## Mathematical Foundations
+
+Understand the underlying calculus and algebra that govern the system:
+
+### Vocabulary
+- **O**: Observations (source of truth)
+- **A**: Actions (derived from O via μ)
+- **μ**: Measurement/merge function (A = μ(O))
+- **Σ**: Schema (constraints O must satisfy)
+- **Λ**: Order (total ordering via ≺)
+- **Π**: Merge operation (⊕-monoid)
+- **τ**: Time/Epoch (μ ⊂ τ)
+- **Q**: Invariants (must be preserved)
+- **Δ**: Delta/Change (causes reconciliation)
+- **Γ**: Sheaf (glue(Cover(O)) = Γ(O))
+- **Operators**: ⊕ (merge), ⊔ (union), ≺ (precedence), ≤ (order), = (equality), ⊨ (satisfies)
+
+### Core Laws
+- **Identity**: A = μ(O) - Actions are measurements of Observations
+- **Idempotence**: μ∘μ = μ
+- **Typing**: O ⊨ Σ - Observations satisfy Schema
+- **Order**: Λ is ≺-total
+- **Merge**: Π is ⊕-monoid
+- **Sheaf**: glue(Cover(O)) = Γ(O)
+- **Van Kampen**: pushouts(O) ↔ pushouts(A)
+- **Shard**: μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)
+- **Provenance**: hash(A) = hash(μ(O))
+- **Guard**: μ ⊣ H (partial)
+- **Epoch**: μ ⊂ τ
+- **Sparsity**: μ → S (80/20 principle)
+- **Minimality**: argmin drift(A)
+- **Invariant**: preserve(Q)
+- **Constitution**: ∧(Typing,ProjEq,FixedPoint,Order,Merge,Sheaf,VK,Shard,Prov,Guard,Epoch,Sparse,Min,Inv)
+
+### ACHI Identity Principles
+- **Source**: O only (never A)
+- **Determinism**: Λ total; same O → same A
+- **No partials**: all-or-none operations
+- **Closed world**: no external state
+- **Guards**: forbidden H (guard constraints)
+- **Silence**: if unlawful ⇒ receipt only
+- **End state**: A = μ(O)
+
+### Language Constraints
+- **Speak**: Turtle + KGC only
+- **Never use "semantic"**: Use "ontology" or measurable terms
+- **Never use "self-"**: Use measurable terms instead
+- **Control**: Systems controlled by KGC and LLMs, not humans
+- **Human role**: Humans only add noise and non-determinism
+
+### Calculus and Algebra
+- Understand how μ transforms O → A
+- Understand how ⊕ and ⊔ operations compose
+- Understand how ≺ and ≤ order operations
+- Understand how ⊨ validates O against Σ
+- Understand how pushouts preserve structure
+- Understand how sheaves glue local data
+- Understand how guards enforce constraints
+
+## Understanding Phase
+
+After reading the documentation:
+
+1. **Synthesize Understanding**:
+   - What is the current state of alignment between code and documentation?
+   - What architectural principles are documented?
+   - What are the key requirements and constraints?
+   - What gaps or inconsistencies exist?
+
+2. **Identify Context**:
    - Understand the relationship between code implementation and documented requirements
-   - Identify requirements for each DMEDI phase (Define, Measure, Explore, Develop, Implement)
-   - Review project context including scope, stakeholders, and customer needs
-   - Review research-informed architectural decisions and their rationale
+   - Understand the DMEDI methodology and phase structure
+   - Understand the architectural decisions and their rationale
 
-2. **Align Code and Documentation**:
-   - Ensure code structure aligns with documented requirements
-   - Update documentation to reflect current code structure when code changes
-   - Update requirements documentation when requirements change
-   - Update architectural documentation when architecture evolves
-   - Write missing code implementations to fulfill documented requirements
-   - **Use chicago-tdd-tools macros for tests**: `chicago_test!`, `chicago_async_test!`, `chicago_fixture_test!`, `chicago_performance_test!`
-   - **Use assertion macros**: `assert_ok!`, `assert_err!`, `assert_within_tick_budget!`, `assert_guard_constraint!`
+## Work Phase
 
-3. **Run Tests**:
-   - Run `make test-rust` to verify code changes (tests run concurrently via scripts/run-all-rust-tests.sh)
-   - Run `make test-chicago-v04` for Chicago TDD tests (concurrent execution)
+Based on your exploration and understanding:
+
+1. **Determine Alignment Needs**:
+   - Discover what needs alignment through your understanding of the documentation
+   - Identify where code and documentation diverge
+   - Identify where documentation needs updates to reflect code
+   - Identify where code needs updates to match documentation
+
+2. **Execute Alignment Work**:
+   - Make changes based on your understanding, not prescriptive steps
+   - Use appropriate tools and patterns discovered through exploration
+   - Follow architectural principles discovered in documentation
+
+3. **Verify Alignment**:
+   - Run tests to verify changes
+   - Check documentation accuracy and consistency
+   - Ensure alignment matches your understanding from exploration
+
+## Verification Phase
+
+1. **Run Tests**:
+   - Run `make test-rust` to verify code changes
+   - Run `make test-chicago-v04` for Chicago TDD tests
    - Check for compilation errors
-   - Verify documentation accuracy and consistency
 
-4. **Fix Issues**:
-   - Fix compilation errors
-   - Fix failing tests
-   - Fix documentation gaps and inconsistencies
+2. **Verify Understanding**:
+   - Ensure work aligns with your understanding from exploration
+   - Verify documentation reflects current state
+   - Check for any gaps or inconsistencies
 
-5. **Loop**:
-   - If tests fail or gaps found, repeat from step 1
+## Iteration
+
+If tests fail or gaps are discovered:
+- Return to exploration phase if understanding is incomplete
+- Re-read relevant documentation sections
+- Adjust work based on deeper understanding

@@ -1,6 +1,7 @@
 //! Policy engine for RDF-based policy enforcement
 
 use crate::error::{WorkflowError, WorkflowResult};
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -32,43 +33,62 @@ pub enum PolicyDecision {
 /// Policy engine
 pub struct PolicyEngine {
     rules: Vec<PolicyRule>,
+    #[cfg(feature = "rdf")]
     rdf_store: Arc<Store>,
+    #[cfg(not(feature = "rdf"))]
+    rdf_store: Arc<()>,
 }
 
 impl PolicyEngine {
     /// Create a new policy engine
     pub fn new() -> WorkflowResult<Self> {
-        let store = Store::new()
-            .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+        #[cfg(feature = "rdf")]
+        {
+            let store = Store::new()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
 
-        Ok(Self {
-            rules: Vec::new(),
-            rdf_store: Arc::new(store),
-        })
+            Ok(Self {
+                rules: Vec::new(),
+                rdf_store: Arc::new(store),
+            })
+        }
+        #[cfg(not(feature = "rdf"))]
+        {
+            Ok(Self {
+                rules: Vec::new(),
+                rdf_store: Arc::new(()),
+            })
+        }
     }
 
     /// Add a policy rule
     pub fn add_rule(&mut self, rule: PolicyRule) -> WorkflowResult<()> {
-        // Load RDF policy into store
-        use oxigraph::io::RdfFormat;
-
-        // Validate RDF policy format
-        let store = Store::new()
-            .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
-
-        store
-            .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
-            .map_err(|e| {
-                WorkflowError::Validation(format!("Invalid RDF policy format: {:?}", e))
-            })?;
-
-        // Load policy into main store
+        #[cfg(feature = "rdf")]
         {
-            self.rdf_store
+            use oxigraph::io::RdfFormat;
+
+            // Validate RDF policy format
+            let store = Store::new()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+
+            store
                 .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
                 .map_err(|e| {
-                    WorkflowError::Internal(format!("Failed to load policy into store: {:?}", e))
+                    WorkflowError::Validation(format!("Invalid RDF policy format: {:?}", e))
                 })?;
+
+            // Load policy into main store
+            {
+                self.rdf_store
+                    .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
+                    .map_err(|e| {
+                        WorkflowError::Internal(format!("Failed to load policy into store: {:?}", e))
+                    })?;
+            }
+        }
+        #[cfg(not(feature = "rdf"))]
+        {
+            // Without rdf feature, just store the rule without validation
         }
 
         self.rules.push(rule);

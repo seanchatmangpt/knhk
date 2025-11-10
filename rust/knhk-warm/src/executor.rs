@@ -1,18 +1,14 @@
 //! Warm path executor with path selection
-//! Routes queries to oxigraph (warm) or unrdf (cold) based on complexity
+//! Routes queries to oxigraph (warm path)
 
 use crate::graph::WarmPathGraph;
 use crate::query::{AskResult, ConstructResult, DescribeResult, SelectResult};
-#[cfg(feature = "unrdf")]
-use knhk_unrdf::{query_sparql, query_sparql_ask, query_sparql_construct, query_sparql_describe};
 // Path selector removed - use simple routing logic instead
 use std::sync::Arc;
 
 /// Warm path executor that routes queries to appropriate backend
 pub struct WarmPathExecutor {
     graph: Arc<WarmPathGraph>,
-    #[allow(dead_code)] // FUTURE: unRDF integration flag
-    unrdf_initialized: bool,
 }
 
 /// Unified query result
@@ -31,18 +27,7 @@ impl WarmPathExecutor {
 
         Ok(Self {
             graph: Arc::new(graph),
-            unrdf_initialized: false,
         })
-    }
-
-    /// Initialize unrdf for cold path fallback
-    #[cfg(feature = "unrdf")]
-    pub fn init_unrdf(&mut self, unrdf_path: &str) -> Result<(), String> {
-        knhk_unrdf::init_unrdf(unrdf_path)
-            .map_err(|e| format!("Failed to initialize unrdf: {}", e))?;
-
-        self.unrdf_initialized = true;
-        Ok(())
     }
 
     /// Execute query with automatic path selection
@@ -113,96 +98,6 @@ impl WarmPathExecutor {
         }
     }
 
-    /// Execute query via cold path (unrdf)
-    #[cfg(feature = "unrdf")]
-    fn execute_cold_path(&self, sparql: &str) -> Result<QueryExecutionResult, String> {
-        let query_upper = sparql.trim().to_uppercase();
-
-        if query_upper.starts_with("SELECT") {
-            let result =
-                query_sparql(sparql).map_err(|e| format!("unrdf SELECT query failed: {}", e))?;
-
-            // Convert unrdf QueryResult to SelectResult
-            let bindings = result
-                .bindings
-                .into_iter()
-                .map(|b| {
-                    let mut map = std::collections::BTreeMap::new();
-                    if let serde_json::Value::Object(obj) = b {
-                        for (k, v) in obj {
-                            if let Some(v_str) = v.as_str() {
-                                map.insert(k, v_str.to_string());
-                            }
-                        }
-                    }
-                    map
-                })
-                .collect();
-
-            Ok(QueryExecutionResult::Select(crate::query::SelectResult {
-                bindings,
-                variables: Vec::new(), // Would extract from result if available
-            }))
-        } else if query_upper.starts_with("ASK") {
-            let result =
-                query_sparql_ask(sparql).map_err(|e| format!("unrdf ASK query failed: {}", e))?;
-
-            Ok(QueryExecutionResult::Ask(crate::query::AskResult {
-                result: result.result,
-            }))
-        } else if query_upper.starts_with("CONSTRUCT") {
-            let result = query_sparql_construct(sparql)
-                .map_err(|e| format!("unrdf CONSTRUCT query failed: {}", e))?;
-
-            // Convert unrdf triples to string format
-            let triples = result
-                .triples
-                .into_iter()
-                .filter_map(|t| {
-                    if let serde_json::Value::Object(obj) = t {
-                        let s = obj.get("subject")?.as_str()?;
-                        let p = obj.get("predicate")?.as_str()?;
-                        let o = obj.get("object")?.as_str()?;
-                        Some(format!("<{}> <{}> <{}> .", s, p, o))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            Ok(QueryExecutionResult::Construct(
-                crate::query::ConstructResult { triples },
-            ))
-        } else if query_upper.starts_with("DESCRIBE") {
-            let result = query_sparql_describe(sparql)
-                .map_err(|e| format!("unrdf DESCRIBE query failed: {}", e))?;
-
-            let triples = result
-                .triples
-                .into_iter()
-                .filter_map(|t| {
-                    if let serde_json::Value::Object(obj) = t {
-                        let s = obj.get("subject")?.as_str()?;
-                        let p = obj.get("predicate")?.as_str()?;
-                        let o = obj.get("object")?.as_str()?;
-                        Some(format!("<{}> <{}> <{}> .", s, p, o))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            Ok(QueryExecutionResult::Describe(
-                crate::query::DescribeResult { triples },
-            ))
-        } else {
-            Err(format!(
-                "Unsupported cold path query type: {}",
-                query_upper.split_whitespace().next().unwrap_or("unknown")
-            ))
-        }
-    }
-
     /// Load RDF data into graph
     pub fn load_rdf(&self, turtle_data: &str) -> Result<(), String> {
         self.graph.load_from_turtle(turtle_data)
@@ -222,7 +117,6 @@ impl Default for WarmPathExecutor {
             // Create minimal executor with default graph
             Self {
                 graph: Arc::new(WarmPathGraph::default()),
-                unrdf_initialized: false,
             }
         })
     }

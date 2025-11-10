@@ -48,7 +48,6 @@ profiling = []
 [dev-dependencies]
 reqwest = { version = "0.11", features = ["blocking"] }
 # Test dependencies
-knhk-unrdf = { path = "../knhk-unrdf" }
 sha2 = "0.10"
 # Benchmark dependencies
 criterion = { version = "0.5", features = ["html_reports"] }

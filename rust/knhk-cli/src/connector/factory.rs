@@ -1,11 +1,14 @@
 //! Connector factory - Creates connector instances
 
+#[cfg(feature = "connectors")]
 use knhk_connectors::{Connector, DataFormat, SourceType};
 use std::collections::BTreeMap;
 
+#[cfg(feature = "connectors")]
 /// Connector factory - Creates connector instances from source strings
 pub struct ConnectorFactory;
 
+#[cfg(feature = "connectors")]
 impl ConnectorFactory {
     /// Create connector from source string
     pub fn create(source: &str) -> Result<Box<dyn Connector>, String> {

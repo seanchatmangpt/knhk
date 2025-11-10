@@ -11,6 +11,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use crate::executor::WorkflowEngine;
 use crate::parser::{WorkflowParser, WorkflowSpecId};
 use crate::patterns::PatternRegistry;
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use std::path::Path;
 
@@ -24,7 +25,11 @@ pub struct SelfValidationManager {
 impl SelfValidationManager {
     /// Create new self-validation manager
     pub fn new<P: AsRef<Path>>(state_path: P) -> WorkflowResult<Self> {
+        #[cfg(feature = "storage")]
         let state_store = StateStore::new(state_path)?;
+        #[cfg(not(feature = "storage"))]
+        return Err(WorkflowError::Internal("StateStore requires storage feature".to_string()));
+        #[cfg(feature = "storage")]
         let engine = WorkflowEngine::new(state_store);
         let pattern_registry = PatternRegistry::new();
         let capability_registry = CapabilityRegistry::new();

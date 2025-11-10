@@ -1,13 +1,17 @@
 //! Connector integration for external systems
 
+#[cfg(feature = "connectors")]
 use crate::error::WorkflowResult;
+#[cfg(feature = "connectors")]
 use knhk_connectors::Connector;
 
+#[cfg(feature = "connectors")]
 /// Connector integration for external task execution
 pub struct ConnectorIntegration {
     connectors: std::collections::HashMap<String, Box<dyn Connector + Send + Sync>>,
 }
 
+#[cfg(feature = "connectors")]
 impl ConnectorIntegration {
     /// Create new connector integration
     pub fn new() -> Self {

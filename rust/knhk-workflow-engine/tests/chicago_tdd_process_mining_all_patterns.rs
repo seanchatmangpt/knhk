@@ -20,14 +20,12 @@
 //! - End-to-end validation (complete workflow from execution to analysis)
 //! - Behavior verification (test what patterns do, not how they do it)
 
-use chicago_tdd_tools::{
-    assert_eq_msg, assert_guard_constraint, assert_ok, chicago_async_test,
-};
 #[cfg(feature = "otel")]
 use chicago_tdd_tools::otel::OtelTestHelper;
-use chicago_tdd_tools::performance::{measure_ticks, assert_within_tick_budget};
+use chicago_tdd_tools::performance::{assert_within_tick_budget, measure_ticks};
 #[cfg(feature = "weaver")]
 use chicago_tdd_tools::weaver::WeaverValidator;
+use chicago_tdd_tools::{assert_eq_msg, assert_guard_constraint, assert_ok, chicago_async_test};
 use knhk_workflow_engine::{
     executor::WorkflowEngine,
     parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId},

@@ -6,11 +6,14 @@ use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::types::{
     Condition, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId,
 };
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::SparqlEvaluator;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
 /// Extract workflow specification from RDF store
+#[cfg(feature = "rdf")]
 pub fn extract_workflow_spec(store: &Store) -> WorkflowResult<WorkflowSpec> {
     // YAWL namespace prefixes
     let yawl_ns = "http://bitflow.ai/ontology/yawl/v2#";

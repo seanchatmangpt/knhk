@@ -2,6 +2,7 @@
 
 mod best_practices;
 mod check;
+#[cfg(feature = "connectors")]
 mod connectors;
 pub mod fortune5;
 mod lockchain;
@@ -17,6 +18,7 @@ mod weaver;
 // Re-export integration types
 pub use best_practices::BestPracticesIntegration;
 pub use check::{HealthCheckResult, HealthStatus, IntegrationHealthChecker};
+#[cfg(feature = "connectors")]
 pub use connectors::ConnectorIntegration;
 pub use fortune5::*;
 pub use lockchain::LockchainIntegration;

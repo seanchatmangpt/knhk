@@ -4,8 +4,10 @@
 //! in a unified, production-ready way.
 
 use crate::error::WorkflowResult;
+#[cfg(feature = "connectors")]
+use crate::integration::connectors::ConnectorIntegration;
 use crate::integration::{
-    check::IntegrationHealthChecker, connectors::ConnectorIntegration,
+    check::IntegrationHealthChecker,
     fortune5::Fortune5Integration, lockchain::LockchainIntegration, otel::OtelIntegration,
 };
 use crate::parser::WorkflowSpecId;
@@ -16,7 +18,10 @@ pub struct BestPracticesIntegration {
     fortune5: Option<Arc<Fortune5Integration>>,
     lockchain: Option<Arc<LockchainIntegration>>,
     otel: Option<Arc<OtelIntegration>>,
+    #[cfg(feature = "connectors")]
     connectors: Option<Arc<ConnectorIntegration>>,
+    #[cfg(not(feature = "connectors"))]
+    connectors: Option<()>,
     health_checker: IntegrationHealthChecker,
 }
 
@@ -56,7 +61,10 @@ impl BestPracticesIntegration {
         });
 
         // Initialize Connector integration
+        #[cfg(feature = "connectors")]
         let connectors = Some(Arc::new(ConnectorIntegration::new()));
+        #[cfg(not(feature = "connectors"))]
+        let connectors = None;
 
         // Create health checker with integration instances
         let health_checker = IntegrationHealthChecker::with_integrations(

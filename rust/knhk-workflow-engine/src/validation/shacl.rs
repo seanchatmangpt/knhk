@@ -29,6 +29,7 @@
 //! - `VR-S011`: XOR split flows should have predicates for routing
 //! - `VR-S012`: OR join vicious circle warning (requires runtime analysis)
 
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;

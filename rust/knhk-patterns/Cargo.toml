@@ -13,11 +13,9 @@ knhk-etl = { path = "../knhk-etl" }
 knhk-config = { path = "../knhk-config" }
 rayon = "1.10"
 crossbeam-channel = "0.5"
-knhk-unrdf = { path = "../knhk-unrdf", optional = true }
 
 [features]
 default = []
-unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
 
 [build-dependencies]
 cc = "1.0"

@@ -9,6 +9,29 @@ alwaysApply: false
 
 # Build System and Development Workflow Practices
 
+## CRITICAL: Use Make Targets, Not Direct Cargo Commands
+
+**NEVER use these directly:**
+- ❌ `cargo check`
+- ❌ `cargo build`
+- ❌ `cargo test`
+- ❌ `cargo clippy`
+- ❌ `cargo fmt`
+
+**ALWAYS use these Make targets instead:**
+- ✅ `make check` - Check compilation without building
+- ✅ `make build-rust` - Build all Rust crates
+- ✅ `make test-rust` - Run all Rust tests
+- ✅ `make lint-rust` or `make clippy` - Lint Rust code
+- ✅ `make fmt` - Format Rust code (NEVER use `cargo fmt` directly)
+- ✅ `make pre-commit` - Run pre-commit validation checks
+
+**Rationale:**
+- Make targets ensure consistent build configuration
+- Make targets handle workspace-level operations correctly
+- Make targets include proper timeouts and error handling
+- Make targets provide consistent output formatting
+
 ## Chicago TDD Tools
 
 All Rust tests should use `chicago-tdd-tools` macros and utilities:

@@ -2,10 +2,12 @@
 //!
 //! Provides sled-based persistence with hot cache layer for reflex core performance.
 
+#[cfg(feature = "storage")]
 use crate::cache::ReflexCache;
 use crate::case::Case;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
+#[cfg(feature = "storage")]
 use sled::Db;
 use std::path::Path;
 use std::sync::Arc;

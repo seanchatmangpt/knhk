@@ -87,7 +87,10 @@ impl WorkflowEngine {
         }
 
         // Create case RDF store
+        #[cfg(feature = "rdf")]
         let rdf_result = self.create_case_rdf_store(case_id, &data).await;
+        #[cfg(not(feature = "rdf"))]
+        let rdf_result: Result<(), String> = Ok(());
         if let Err(e) = rdf_result {
             if let (Some(ref otel), Some(ref span)) =
                 (self.otel_integration.as_ref(), span_ctx.as_ref())

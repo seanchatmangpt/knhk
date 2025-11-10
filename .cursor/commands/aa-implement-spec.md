@@ -1,39 +1,129 @@
-# Implement Missing DFLSS Requirements
+# Implement DFLSS Requirements
 
-Read docs, write code, run tests, fix issues, loop.
+Explore dflss documentation thoroughly before determining what needs implementation.
 
-## Architecture Principle
+## Exploration Phase (REQUIRED FIRST STEP)
 
-**Centralized Validation Architecture**:
-- **knhk-workflow-engine**: ALL data ingress point. Domain logic, validation, guards.
-- **knhk-hot**: Pure execution. NO checks. Assumes pre-validated inputs.
+**Before any work begins, read at least 10 files from `docs/v1/dflss/` fully into context.**
 
-## Workflow
+Choose files that help you understand:
+- Project scope, goals, and methodology
+- Requirements and specifications
+- Current implementation state
+- Architectural principles and patterns
+- Gap analysis and validation findings
+- Research context and design decisions
 
-1. **Identify Gaps**:
-   - Identify gaps between documented requirements and code implementation
-   - Review requirements for each DMEDI phase (Define, Measure, Explore, Develop, Implement)
-   - Review architectural decisions and design patterns that inform implementation
+**Do not proceed to work phase until you have read and understood at least 10 files.**
 
-2. **Implement Missing Functionality**:
-   - Implement missing functionality based on documented requirements
-   - Ensure all documented requirements have corresponding code implementations
-   - Ensure all validation logic is implemented in knhk-workflow-engine (ingress point)
-   - Ensure knhk-hot contains only pure execution with NO validation checks
-   - Follow architecture principles: centralized validation at ingress, pure execution in hot path
-   - **Use chicago-tdd-tools macros for tests**: `chicago_test!`, `chicago_async_test!`, `chicago_fixture_test!`, `chicago_performance_test!`
-   - **Use assertion macros**: `assert_ok!`, `assert_err!`, `assert_within_tick_budget!`, `assert_guard_constraint!`
+## Mathematical Foundations
 
-3. **Run Tests**:
-   - Run `make test-rust` to verify implementations (tests run concurrently via scripts/run-all-rust-tests.sh)
-   - Run `make test-chicago-v04` for Chicago TDD tests (concurrent execution)
+Understand the underlying calculus and algebra that govern the system:
+
+### Vocabulary
+- **O**: Observations (source of truth)
+- **A**: Actions (derived from O via μ)
+- **μ**: Measurement/merge function (A = μ(O))
+- **Σ**: Schema (constraints O must satisfy)
+- **Λ**: Order (total ordering via ≺)
+- **Π**: Merge operation (⊕-monoid)
+- **τ**: Time/Epoch (μ ⊂ τ)
+- **Q**: Invariants (must be preserved)
+- **Δ**: Delta/Change (causes reconciliation)
+- **Γ**: Sheaf (glue(Cover(O)) = Γ(O))
+- **Operators**: ⊕ (merge), ⊔ (union), ≺ (precedence), ≤ (order), = (equality), ⊨ (satisfies)
+
+### Core Laws
+- **Identity**: A = μ(O) - Actions are measurements of Observations
+- **Idempotence**: μ∘μ = μ
+- **Typing**: O ⊨ Σ - Observations satisfy Schema
+- **Order**: Λ is ≺-total
+- **Merge**: Π is ⊕-monoid
+- **Sheaf**: glue(Cover(O)) = Γ(O)
+- **Van Kampen**: pushouts(O) ↔ pushouts(A)
+- **Shard**: μ(O ⊔ Δ) = μ(O) ⊔ μ(Δ)
+- **Provenance**: hash(A) = hash(μ(O))
+- **Guard**: μ ⊣ H (partial)
+- **Epoch**: μ ⊂ τ
+- **Sparsity**: μ → S (80/20 principle)
+- **Minimality**: argmin drift(A)
+- **Invariant**: preserve(Q)
+- **Constitution**: ∧(Typing,ProjEq,FixedPoint,Order,Merge,Sheaf,VK,Shard,Prov,Guard,Epoch,Sparse,Min,Inv)
+
+### ACHI Identity Principles
+- **Source**: O only (never A)
+- **Determinism**: Λ total; same O → same A
+- **No partials**: all-or-none operations
+- **Closed world**: no external state
+- **Guards**: forbidden H (guard constraints)
+- **Silence**: if unlawful ⇒ receipt only
+- **End state**: A = μ(O)
+
+### Language Constraints
+- **Speak**: Turtle + KGC only
+- **Never use "semantic"**: Use "ontology" or measurable terms
+- **Never use "self-"**: Use measurable terms instead
+- **Control**: Systems controlled by KGC and LLMs, not humans
+- **Human role**: Humans only add noise and non-determinism
+
+### Calculus and Algebra
+- Understand how μ transforms O → A
+- Understand how ⊕ and ⊔ operations compose
+- Understand how ≺ and ≤ order operations
+- Understand how ⊨ validates O against Σ
+- Understand how pushouts preserve structure
+- Understand how sheaves glue local data
+- Understand how guards enforce constraints
+
+## Understanding Phase
+
+After reading the documentation:
+
+1. **Synthesize Understanding**:
+   - What requirements are documented?
+   - What is the current implementation state?
+   - What architectural principles guide implementation?
+   - What gaps exist between requirements and implementation?
+
+2. **Identify Context**:
+   - Understand the DMEDI methodology and phase structure
+   - Understand architectural decisions and design patterns
+   - Understand the relationship between requirements and code
+
+## Work Phase
+
+Based on your exploration and understanding:
+
+1. **Discover Implementation Needs**:
+   - Identify what needs implementation through your understanding of the documentation
+   - Determine gaps between documented requirements and current code
+   - Understand what functionality is missing or incomplete
+
+2. **Execute Implementation Work**:
+   - Implement based on your understanding, not prescriptive steps
+   - Follow architectural principles discovered in documentation
+   - Use appropriate patterns and tools discovered through exploration
+
+3. **Verify Implementation**:
+   - Run tests to verify implementations
+   - Check architecture compliance based on your understanding
+   - Ensure implementation matches requirements discovered in exploration
+
+## Verification Phase
+
+1. **Run Tests**:
+   - Run `make test-rust` to verify implementations
+   - Run `make test-chicago-v04` for Chicago TDD tests
    - Check for compilation errors
-   - Verify architecture compliance (validation at ingress, no checks in hot path)
 
-4. **Fix Issues**:
-   - Fix compilation errors
-   - Fix failing tests
-   - Fix architecture violations
+2. **Verify Understanding**:
+   - Ensure implementation aligns with your understanding from exploration
+   - Verify requirements are met based on documentation
+   - Check for any gaps or inconsistencies
 
-5. **Loop**:
-   - If tests fail or more requirements found, repeat from step 1
+## Iteration
+
+If tests fail or gaps are discovered:
+- Return to exploration phase if understanding is incomplete
+- Re-read relevant documentation sections
+- Adjust implementation based on deeper understanding

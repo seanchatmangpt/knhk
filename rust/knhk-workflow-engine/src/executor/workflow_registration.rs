@@ -73,19 +73,22 @@ impl WorkflowEngine {
 
         // Load source turtle into RDF store if available
         if let Some(ref turtle) = spec.source_turtle {
-            self.load_spec_rdf(turtle).await.map_err(|e| {
-                if let (Some(ref otel), Some(ref span)) =
-                    (self.otel_integration.as_ref(), span_ctx.as_ref())
-                {
-                    let _ = otel.add_attribute(
-                        (*span).clone(),
-                        "knhk.workflow_engine.success".to_string(),
-                        "false".to_string(),
-                    );
-                    let _ = otel.end_span((*span).clone(), SpanStatus::Error);
-                }
-                WorkflowError::Internal(format!("Failed to load spec RDF: {}", e))
-            })?;
+            #[cfg(feature = "rdf")]
+            {
+                self.load_spec_rdf(turtle).await.map_err(|e| {
+                    if let (Some(ref otel), Some(ref span)) =
+                        (self.otel_integration.as_ref(), span_ctx.as_ref())
+                    {
+                        let _ = otel.add_attribute(
+                            (*span).clone(),
+                            "knhk.workflow_engine.success".to_string(),
+                            "false".to_string(),
+                        );
+                        let _ = otel.end_span((*span).clone(), SpanStatus::Error);
+                    }
+                    WorkflowError::Internal(format!("Failed to load spec RDF: {}", e))
+                })?;
+            }
         }
 
         let spec_clone = spec.clone();

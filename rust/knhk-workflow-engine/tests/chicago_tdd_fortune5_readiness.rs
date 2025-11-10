@@ -5,9 +5,9 @@
 //!
 //! Tests push to breaking point to identify gaps and issues.
 
+use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
 use knhk_workflow_engine::integration::fortune5::*;
 use std::sync::Arc;
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
 
 /// Test fixture for Fortune 5 readiness tests
 struct Fortune5ReadinessFixture {
@@ -227,7 +227,7 @@ chicago_async_test!(test_slo_config_validation, {
         result.is_err(),
         "SLO config validation should fail for invalid values"
     );
-}
+});
 
 chicago_async_test!(test_slo_config_validation_success, {
     // Arrange: Create SLO config with valid values
@@ -246,7 +246,7 @@ chicago_async_test!(test_slo_config_validation_success, {
         result.is_ok(),
         "SLO config validation should succeed for valid values"
     );
-}
+});
 
 chicago_async_test!(test_concurrent_slo_metric_recording, {
     // Arrange: Create fixture
@@ -280,7 +280,7 @@ chicago_async_test!(test_concurrent_slo_metric_recording, {
         compliant || true, // Allow for implementation gaps
         "SLO compliance should work after concurrent metric recording"
     );
-}
+});
 
 chicago_async_test!(test_promotion_gate_with_auto_rollback, {
     // Arrange: Create fixture with auto-rollback enabled
@@ -333,7 +333,7 @@ chicago_async_test!(test_stress_slo_metric_recording, {
         compliant || true, // Allow for implementation gaps
         "System should handle stress test of SLO metric recording"
     );
-}
+});
 
 chicago_async_test!(test_multiple_runtime_classes, {
     // Arrange: Create fixture

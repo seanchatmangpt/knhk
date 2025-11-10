@@ -4,9 +4,11 @@ pub use store::HookStore;
 
 pub mod store;
 
+#[cfg(feature = "etl")]
 use knhk_etl::HookRegistry;
 use std::sync::Arc;
 
+#[cfg(feature = "etl")]
 /// Hook registry integration - Manages hooks with system
 pub struct HookRegistryIntegration {
     registry: Arc<HookRegistry>,

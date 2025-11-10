@@ -11,9 +11,6 @@ pub mod hot_path;
 pub mod patterns;
 pub mod pipeline_ext;
 
-#[cfg(feature = "unrdf")]
-pub mod unrdf_patterns;
-
 pub mod hybrid_patterns;
 
 pub use ffi::PatternType;
@@ -30,12 +27,6 @@ pub use hook_patterns::{
     HookParallelPattern, HookRetryCondition, HookRetryPattern, HookSequencePattern,
 };
 pub use pipeline_ext::PipelinePatternExt;
-
-#[cfg(feature = "unrdf")]
-pub use unrdf_patterns::{
-    UnrdfChoicePattern, UnrdfHookCondition, UnrdfHookRetryCondition, UnrdfParallelPattern,
-    UnrdfRetryPattern, UnrdfSequencePattern,
-};
 
 pub use hybrid_patterns::{
     HybridChoicePattern, HybridExecutionResult, HybridHookCondition, HybridParallelPattern,

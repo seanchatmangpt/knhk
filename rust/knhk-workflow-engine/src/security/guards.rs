@@ -6,6 +6,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use serde_json::Value;
 use std::marker::PhantomData;

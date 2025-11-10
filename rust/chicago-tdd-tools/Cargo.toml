@@ -11,7 +11,7 @@ categories = ["development-tools::testing"]
 
 [dependencies]
 # Async runtime
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
 futures = "0.3"
 
 # Serialization
@@ -28,21 +28,23 @@ thiserror = "2.0"
 # Procedural macros (internal)
 chicago-tdd-tools-proc-macros = { path = "proc_macros", version = "1.0.0" }
 
-# OTEL integration (optional, enabled with "otel" feature)
-knhk-otel = { workspace = true, optional = true }
+# OTEL types are now internal (otel_types.rs, weaver_types.rs)
+# No external dependency on knhk-otel needed
 
 [dev-dependencies]
 tokio-test = "0.4"
-tempfile = { workspace = true }
+tempfile = "3.0"
 
 [features]
 default = []
-workflow-engine = []  # Enable workflow-specific features
-property-testing = []  # Enable property-based testing
-mutation-testing = []  # Enable mutation testing
-otel = ["knhk-otel"]  # Enable OTEL validation features
-weaver = ["otel"]  # Enable Weaver live validation (requires otel)
-async = []  # Enable async performance measurement utilities
+workflow-engine = [] # Enable workflow-specific features
+property-testing = [] # Enable property-based testing
+mutation-testing = [] # Enable mutation testing
+otel = [] # Enable OTEL validation features (uses internal otel_types)
+weaver = [
+  "otel",
+] # Enable Weaver live validation (requires otel, uses internal weaver_types)
+async = [] # Enable async performance measurement utilities
 
 [lib]
 name = "chicago_tdd_tools"

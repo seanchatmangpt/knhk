@@ -87,6 +87,27 @@ This document summarizes the integration of cursor rules and commands from `ggen
    - Step-by-step validation process
    - Checklist for production readiness
 
+5. **`.cursor/commands/aa-dflss-align.md`** (UPDATED)
+   - Refactored to exploration-first approach
+   - Requires reading 10+ files from `docs/v1/dflss/` before work
+   - Added Mathematical Foundations section with vocabulary, laws, and calculus
+   - Removed prescriptive implementation steps
+   - Emphasizes context-driven discovery
+
+6. **`.cursor/commands/aa-implement-spec.md`** (UPDATED)
+   - Refactored to exploration-first approach
+   - Requires reading 10+ files from `docs/v1/dflss/` before work
+   - Added Mathematical Foundations section with vocabulary, laws, and calculus
+   - Removed prescriptive gap identification steps
+   - Emphasizes discovery through exploration
+
+7. **`.cursor/commands/aa-validate-implementation.md`** (UPDATED)
+   - Refactored to exploration-first approach
+   - Requires reading 10+ files from `docs/v1/dflss/` before work
+   - Added Mathematical Foundations section with vocabulary, laws, and calculus
+   - Removed prescriptive validation code writing steps
+   - Emphasizes discovery through exploration
+
 ## Key Principles Integrated
 
 1. **Never Trust the Text, Only Trust Test Results**
@@ -113,6 +134,21 @@ This document summarizes the integration of cursor rules and commands from `ggen
    - Fixed seeds for tests
    - Reproducible builds and tests
 
+6. **Exploration-First DFLSS Commands**
+   - Agents must read 10+ files from `docs/v1/dflss/` before starting work
+   - No prescriptive file lists - agents choose files for genetic variety
+   - Context-driven discovery rather than rigid workflows
+   - Mathematical foundations guide understanding
+
+7. **Mathematical Foundations**
+   - Vocabulary: {O,A,μ,Σ,Λ,Π,τ,Q,Δ,Γ,⊕,⊔,≺,≤,=,⊨}
+   - Core Law: A = μ(O) - Actions are measurements of Observations
+   - Idempotence: μ∘μ = μ
+   - Typing: O ⊨ Σ
+   - ACHI Identity Principles: Source O only, Determinism, No partials, Closed world
+   - Language constraints: Turtle + KGC only, avoid "semantic" and "self-" terminology
+   - Systems controlled by KGC and LLMs, not humans
+
 ## Usage
 
 ### Review Code:
@@ -135,9 +171,29 @@ This document summarizes the integration of cursor rules and commands from `ggen
 # Use cursor command: validate-definition-of-done
 ```
 
+### DFLSS Documentation Alignment:
+```bash
+# Use cursor command: aa-dflss-align
+# Explores dflss documentation, understands mathematical foundations, aligns code and docs
+```
+
+### Implement DFLSS Requirements:
+```bash
+# Use cursor command: aa-implement-spec
+# Explores dflss documentation, understands mathematical foundations, implements requirements
+```
+
+### Validate Implementation Against DFLSS:
+```bash
+# Use cursor command: aa-validate-implementation
+# Explores dflss documentation, understands mathematical foundations, validates implementation
+```
+
 ## Integration Date
 
 Integrated: 2025-01-27
+
+Updated: 2025-01-27 (DFLSS command refactoring and mathematical foundations)
 
 ## Notes
 
@@ -145,4 +201,9 @@ Integrated: 2025-01-27
 - Performance requirements (≤8 ticks) remain unchanged
 - OTEL validation remains the ultimate truth source
 - All patterns align with FAANG-level code quality standards
+- DFLSS commands emphasize exploration and mathematical foundations over prescriptive steps
+- Agents have genetic variety in file selection for exploration (no prescribed file lists)
+- Mathematical vocabulary and laws guide understanding: A = μ(O), idempotence, typing, order, merge, sheaf, Van Kampen, shard, provenance, guard, epoch, sparsity, minimality, invariant
+- Language constraints: Turtle + KGC only, avoid "semantic" and "self-" terminology
+- Systems are controlled by KGC and LLMs, not humans
 

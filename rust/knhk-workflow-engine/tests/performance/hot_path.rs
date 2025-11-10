@@ -123,3 +123,59 @@ fn test_hot_path_compare_operation() {
     assert_within_tick_budget!(ticks, "COMPARE_O operation");
 }
 
+/// Test VALIDATE_SP operation with actual hot path code
+///
+/// **GAP FIXED**: Now calls actual `KernelExecutor::execute()` instead of simulating.
+#[test]
+fn test_hot_path_validate_operation() {
+    // Arrange: Create SoA arrays with ≤8 triples
+    let n_rows = 4;
+    let s_lane: [u64; 8] = [1, 2, 3, 4, 0, 0, 0, 0];
+    let p_lane: [u64; 8] = [10, 10, 10, 10, 0, 0, 0, 0];
+    let o_lane: [u64; 8] = [100, 200, 300, 400, 0, 0, 0, 0];
+
+    // Act: Execute actual VALIDATE_SP operation and measure with RDTSC
+    let result = KernelExecutor::execute(
+        KernelType::ValidateSp,
+        &s_lane[..n_rows],
+        &p_lane[..n_rows],
+        &o_lane[..n_rows],
+        n_rows,
+    );
+    
+    // Assert: Operation succeeds and completes within 8 ticks
+    assert_ok!(&result, "VALIDATE_SP operation should succeed");
+    let (cycles, _mask) = result.unwrap();
+    let ticks = cycles_to_ticks(cycles);
+    
+    assert_within_tick_budget!(ticks, "VALIDATE_SP operation");
+}
+
+/// Test UNIQUE_SP operation with actual hot path code
+///
+/// **GAP FIXED**: Now calls actual `KernelExecutor::execute()` instead of simulating.
+#[test]
+fn test_hot_path_unique_operation() {
+    // Arrange: Create SoA arrays with ≤8 triples
+    let n_rows = 3;
+    let s_lane: [u64; 8] = [1, 2, 3, 0, 0, 0, 0, 0];
+    let p_lane: [u64; 8] = [10, 10, 10, 0, 0, 0, 0, 0];
+    let o_lane: [u64; 8] = [100, 200, 300, 0, 0, 0, 0, 0];
+
+    // Act: Execute actual UNIQUE_SP operation and measure with RDTSC
+    let result = KernelExecutor::execute(
+        KernelType::UniqueSp,
+        &s_lane[..n_rows],
+        &p_lane[..n_rows],
+        &o_lane[..n_rows],
+        n_rows,
+    );
+    
+    // Assert: Operation succeeds and completes within 8 ticks
+    assert_ok!(&result, "UNIQUE_SP operation should succeed");
+    let (cycles, _mask) = result.unwrap();
+    let ticks = cycles_to_ticks(cycles);
+    
+    assert_within_tick_budget!(ticks, "UNIQUE_SP operation");
+}
+

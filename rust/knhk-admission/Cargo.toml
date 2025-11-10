@@ -16,13 +16,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
 base64 = "0.22"
-knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
+oxigraph = { version = "0.5", optional = true }
 knhk-validation = { path = "../knhk-validation", version = "1.0.0", optional = true }
 pqcrypto-dilithium = { version = "0.5", optional = true }
 
 [features]
 default = []
-unrdf = ["dep:knhk-unrdf"]
+rdf = ["oxigraph"]
 validation = ["dep:knhk-validation"]
 pqc = ["dep:pqcrypto-dilithium"]
 

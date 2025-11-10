@@ -19,7 +19,6 @@ crate-type = ["staticlib", "cdylib"]
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
 knhk-etl = { path = "../knhk-etl", version = "1.0.0", default-features = false }
 knhk-otel = { path = "../knhk-otel", version = "1.0.0", optional = true }
-knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
 oxigraph = "0.5"
 lru = "0.16"
 ahash = "0.8"
@@ -42,4 +41,3 @@ path = "examples/warm_path_query.rs"
 default = ["std"]
 otel = ["knhk-otel"]
 std = []
-unrdf = ["knhk-unrdf"]

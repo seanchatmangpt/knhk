@@ -4,13 +4,16 @@
 
 use crate::case::CaseId;
 use crate::parser::WorkflowSpecId;
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::QueryResults;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
 use super::engine::WorkflowEngine;
 
 /// Execute SPARQL query on store and return results
+#[cfg(feature = "rdf")]
 fn execute_sparql_query(
     store: &Store,
     sparql: &str,
@@ -72,6 +75,7 @@ impl WorkflowEngine {
     ///
     /// Executes SPARQL SELECT query against the workflow specification RDF store.
     /// Returns variable bindings as Vec<HashMap<var_name, value>>.
+    #[cfg(feature = "rdf")]
     pub async fn query_rdf(
         &self,
         _spec_id: &WorkflowSpecId,
@@ -85,6 +89,7 @@ impl WorkflowEngine {
     ///
     /// Executes SPARQL SELECT query against case-specific RDF store containing
     /// runtime variables and state.
+    #[cfg(feature = "rdf")]
     pub async fn query_case_rdf(
         &self,
         case_id: &CaseId,
@@ -102,6 +107,7 @@ impl WorkflowEngine {
     /// Executes SPARQL SELECT query against pattern metadata store containing
     /// all 43 Van der Aalst workflow patterns with their metadata, dependencies,
     /// and categorization.
+    #[cfg(feature = "rdf")]
     pub async fn query_pattern_metadata(
         &self,
         sparql_query: &str,
@@ -111,6 +117,7 @@ impl WorkflowEngine {
     }
 
     /// Load workflow specification into RDF store (called during registration)
+    #[cfg(feature = "rdf")]
     pub(crate) async fn load_spec_rdf(&self, turtle: &str) -> Result<(), String> {
         let store = self.spec_rdf_store.write().await;
         store
@@ -119,6 +126,7 @@ impl WorkflowEngine {
     }
 
     /// Create case RDF store
+    #[cfg(feature = "rdf")]
     pub(crate) async fn create_case_rdf_store(
         &self,
         case_id: CaseId,
@@ -133,6 +141,7 @@ impl WorkflowEngine {
     }
 
     /// Load pattern metadata into RDF store
+    #[cfg(feature = "rdf")]
     pub(crate) async fn load_pattern_metadata_rdf(&self) -> Result<(), String> {
         use crate::patterns::{get_all_pattern_metadata, serialize_metadata_to_rdf};
 

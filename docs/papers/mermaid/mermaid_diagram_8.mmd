@@ -1,0 +1,13 @@
+graph TD
+    A[Ingress<br/>Guards] -->|simple| B[Hot Path<br/>C<br/>≤ 8 ticks]
+    A -->|batch| C[Warm Path<br/>Rust<br/>≤ 500ms]
+    A -->|complex| D[Cold Path<br/>Erlang<br/>≤ 500ms]
+    B --> E[Actions A<br/>+<br/>Receipts]
+    C --> E
+    D --> E
+    
+    style A fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style B fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style C fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#000
+    style D fill:#27AE60,stroke:#229954,stroke-width:2px,color:#fff
+    style E fill:#F1C40F,stroke:#D4AC0D,stroke-width:2px,color:#000

@@ -5,7 +5,9 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -171,55 +173,55 @@ impl SchemaRegistry {
                 WorkflowError::Internal(format!("Failed to load workflow spec: {:?}", e))
             })?;
 
-        // Execute SHACL validation queries using unrdf if available
-        let mut errors = Vec::new();
-
-        #[cfg(feature = "unrdf")]
+        // Use existing SHACL validator (oxigraph-based, from WIP)
+        #[cfg(feature = "rdf")]
         {
-            use knhk_unrdf::validate_shacl;
+            use crate::validation::ShaclValidator;
 
-            // Convert workflow spec RDF to Turtle
-            let workflow_turtle = self.workflow_spec_to_rdf(spec)?;
+            let validator = ShaclValidator::new()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to create SHACL validator: {:?}", e)))?;
+            
+            let report = validator
+                .validate_soundness(&workflow_rdf)
+                .map_err(|e| WorkflowError::Validation(format!("SHACL validation failed: {:?}", e)))?;
 
-            // Load SHACL shapes from schema
-            let shapes_turtle = schema.rdf_content.clone();
-
-            // Execute SHACL validation
-            match validate_shacl(&workflow_turtle, &shapes_turtle) {
-                Ok(result) => {
-                    if !result.conforms {
-                        for violation in result.violations {
-                            errors.push(format!("SHACL violation: {:?}", violation));
-                        }
-                    }
-                }
-                Err(e) => {
-                    errors.push(format!("SHACL validation error: {:?}", e));
-                }
+            if !report.conforms {
+                let errors: Vec<String> = report
+                    .violations
+                    .iter()
+                    .map(|v| format!("{}: {}", v.rule_id, v.message))
+                    .collect();
+                return Ok(SchemaValidationResult::failure(errors));
             }
-        }
 
-        // Perform basic structural validation as fallback
-
-        // Validate workflow has at least one task
-        if spec.tasks.is_empty() {
-            errors.push("Workflow must have at least one task".to_string());
-        }
-
-        // Validate task flows
-        for (task_id, task) in &spec.tasks {
-            if task.outgoing_flows.is_empty() && task.incoming_flows.is_empty() {
-                errors.push(format!(
-                    "Task {} has no incoming or outgoing flows",
-                    task_id
-                ));
-            }
-        }
-
-        if errors.is_empty() {
             Ok(SchemaValidationResult::success())
-        } else {
-            Ok(SchemaValidationResult::failure(errors))
+        }
+
+        #[cfg(not(feature = "rdf"))]
+        {
+            // Fallback: basic structural validation when rdf feature is disabled
+            let mut errors = Vec::new();
+
+            // Validate workflow has at least one task
+            if spec.tasks.is_empty() {
+                errors.push("Workflow must have at least one task".to_string());
+            }
+
+            // Validate task flows
+            for (task_id, task) in &spec.tasks {
+                if task.outgoing_flows.is_empty() && task.incoming_flows.is_empty() {
+                    errors.push(format!(
+                        "Task {} has no incoming or outgoing flows",
+                        task_id
+                    ));
+                }
+            }
+
+            if errors.is_empty() {
+                Ok(SchemaValidationResult::success())
+            } else {
+                Ok(SchemaValidationResult::failure(errors))
+            }
         }
     }
 

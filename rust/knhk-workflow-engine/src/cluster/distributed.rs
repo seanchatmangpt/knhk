@@ -3,6 +3,7 @@
 //! Distributed state store for multi-region deployment
 
 // Unused imports removed - will be used when implementing distributed state
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -75,7 +76,8 @@ impl DistributedStateStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::StateStore;
+    #[cfg(feature = "storage")]
+use crate::state::StateStore;
     use tempfile::TempDir;
 
     #[tokio::test]

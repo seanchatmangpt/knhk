@@ -2,12 +2,16 @@
 //!
 //! Converts between REST-specific types (axum::Json, StatusCode) and unified models.
 
+#[cfg(feature = "http")]
 use crate::api::models::errors::ApiError;
+#[cfg(feature = "http")]
 use axum::{http::StatusCode, response::IntoResponse, Json as AxumJson};
 
+#[cfg(feature = "http")]
 /// REST adapter for converting between REST types and unified models
 pub struct RestAdapter;
 
+#[cfg(feature = "http")]
 impl RestAdapter {
     /// Convert ApiError to HTTP StatusCode
     pub fn error_to_status(error: &ApiError) -> StatusCode {

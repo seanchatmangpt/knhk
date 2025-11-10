@@ -3,9 +3,12 @@
 //! Provides unified API layer with service layer for business logic
 //! and transport adapters for REST, gRPC, and CLI.
 
+#[cfg(feature = "grpc")]
 pub mod grpc;
+#[cfg(feature = "http")]
 pub mod middleware;
 pub mod models;
+#[cfg(feature = "http")]
 pub mod rest;
 pub mod service;
 pub mod transport;

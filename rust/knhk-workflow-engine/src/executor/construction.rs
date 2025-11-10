@@ -3,14 +3,15 @@
 use crate::compliance::ProvenanceTracker;
 use crate::error::WorkflowResult;
 use crate::integration::fortune5::Fortune5Config;
-use crate::integration::{
-    ConnectorIntegration, Fortune5Integration, LockchainIntegration, OtelIntegration,
-};
+#[cfg(feature = "connectors")]
+use crate::integration::ConnectorIntegration;
+use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
 use crate::patterns::{PatternRegistry, RegisterAllExt};
 use crate::resource::ResourceAllocator;
 use crate::services::timer::TimerService;
 use crate::services::{AdmissionGate, EventSidecar, TimerFired, WorkItemService};
 use crate::state::manager::StateManager;
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
@@ -20,6 +21,7 @@ use tokio::sync::{mpsc, RwLock};
 
 use super::events::{start_event_loop, start_timer_loop};
 use super::WorkflowEngine;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
@@ -51,13 +53,19 @@ impl WorkflowEngine {
         let event_sidecar = Arc::new(EventSidecar::new(event_tx.clone()));
 
         // Create RDF stores for runtime queries
+        #[cfg(feature = "rdf")]
         let spec_rdf_store = Arc::new(RwLock::new(
             Store::new().unwrap_or_else(|_| panic!("Failed to create spec RDF store")),
         ));
+        #[cfg(not(feature = "rdf"))]
+        let spec_rdf_store = Arc::new(RwLock::new(()));
+        #[cfg(feature = "rdf")]
         let pattern_metadata_store =
             Arc::new(RwLock::new(Store::new().unwrap_or_else(|_| {
                 panic!("Failed to create pattern metadata RDF store")
             })));
+        #[cfg(not(feature = "rdf"))]
+        let pattern_metadata_store = Arc::new(RwLock::new(()));
         let case_rdf_stores = Arc::new(RwLock::new(HashMap::new()));
 
         let engine = Self {
@@ -80,9 +88,12 @@ impl WorkflowEngine {
             provenance_tracker: None,
             fortune5_integration: None,
             sidecar_integration: None,
+            #[cfg(feature = "connectors")]
             connector_integration: Some(Arc::new(tokio::sync::Mutex::new(
                 ConnectorIntegration::new(),
             ))),
+            #[cfg(not(feature = "connectors"))]
+            connector_integration: None,
             spec_rdf_store,
             pattern_metadata_store,
             case_rdf_stores,
@@ -146,13 +157,19 @@ impl WorkflowEngine {
         let lockchain_integration = Some(Arc::new(LockchainIntegration::new(&lockchain_path)?));
 
         // Create RDF stores for runtime queries
+        #[cfg(feature = "rdf")]
         let spec_rdf_store = Arc::new(RwLock::new(
             Store::new().unwrap_or_else(|_| panic!("Failed to create spec RDF store")),
         ));
+        #[cfg(not(feature = "rdf"))]
+        let spec_rdf_store = Arc::new(RwLock::new(()));
+        #[cfg(feature = "rdf")]
         let pattern_metadata_store =
             Arc::new(RwLock::new(Store::new().unwrap_or_else(|_| {
                 panic!("Failed to create pattern metadata RDF store")
             })));
+        #[cfg(not(feature = "rdf"))]
+        let pattern_metadata_store = Arc::new(RwLock::new(()));
         let case_rdf_stores = Arc::new(RwLock::new(HashMap::new()));
 
         let engine = Self {
@@ -175,9 +192,12 @@ impl WorkflowEngine {
             auth_manager: None,
             provenance_tracker: Some(Arc::new(ProvenanceTracker::new(true))),
             sidecar_integration: None,
+            #[cfg(feature = "connectors")]
             connector_integration: Some(Arc::new(tokio::sync::Mutex::new(
                 ConnectorIntegration::new(),
             ))),
+            #[cfg(not(feature = "connectors"))]
+            connector_integration: None,
             spec_rdf_store,
             pattern_metadata_store,
             case_rdf_stores,

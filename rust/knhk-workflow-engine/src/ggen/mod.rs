@@ -14,7 +14,9 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -56,7 +58,11 @@ impl GgenGenerator {
     }
 
     /// Load RDF file into graph store
+    #[cfg(feature = "rdf")]
     pub fn load_rdf(&mut self, rdf_path: impl AsRef<Path>) -> WorkflowResult<()> {
+        use oxigraph::store::Store;
+        use oxigraph::io::RdfFormat;
+
         let rdf_path = rdf_path.as_ref();
         let rdf_content = std::fs::read_to_string(rdf_path)
             .map_err(|e| WorkflowError::Internal(format!("Failed to read RDF file: {}", e)))?;
@@ -70,6 +76,11 @@ impl GgenGenerator {
 
         self.graph_store = Some(store);
         Ok(())
+    }
+
+    #[cfg(not(feature = "rdf"))]
+    pub fn load_rdf(&mut self, _rdf_path: impl AsRef<Path>) -> WorkflowResult<()> {
+        Err(WorkflowError::Internal("RDF feature not enabled".to_string()))
     }
 
     /// Generate workflow spec from template and RDF

@@ -54,6 +54,7 @@ impl ApiError {
     }
 
     /// Convert to gRPC status
+    #[cfg(feature = "grpc")]
     pub fn to_grpc_status(&self) -> tonic::Status {
         match self.code.as_str() {
             "NOT_FOUND" => tonic::Status::not_found(&self.message),
@@ -64,6 +65,11 @@ impl ApiError {
             "RESOURCE_UNAVAILABLE" => tonic::Status::unavailable(&self.message),
             _ => tonic::Status::internal(&self.message),
         }
+    }
+
+    #[cfg(not(feature = "grpc"))]
+    pub fn to_grpc_status(&self) -> String {
+        format!("{}: {}", self.code, self.message)
     }
 }
 

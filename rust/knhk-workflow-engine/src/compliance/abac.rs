@@ -7,8 +7,11 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::security::Principal;
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::SparqlEvaluator;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -76,37 +79,57 @@ pub struct AbacPolicyEngine {
     /// Policy rules
     rules: Arc<RwLock<Vec<AbacPolicyRule>>>,
     /// RDF store for policy evaluation
+    #[cfg(feature = "rdf")]
     rdf_store: Arc<RwLock<Store>>,
+    #[cfg(not(feature = "rdf"))]
+    rdf_store: Arc<RwLock<()>>,
 }
 
 impl AbacPolicyEngine {
     /// Create a new ABAC policy engine
     pub fn new() -> WorkflowResult<Self> {
-        let store = Store::new()
-            .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+        #[cfg(feature = "rdf")]
+        {
+            let store = Store::new()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
 
-        Ok(Self {
-            rules: Arc::new(RwLock::new(Vec::new())),
-            rdf_store: Arc::new(RwLock::new(store)),
-        })
+            Ok(Self {
+                rules: Arc::new(RwLock::new(Vec::new())),
+                rdf_store: Arc::new(RwLock::new(store)),
+            })
+        }
+        #[cfg(not(feature = "rdf"))]
+        {
+            Ok(Self {
+                rules: Arc::new(RwLock::new(Vec::new())),
+                rdf_store: Arc::new(RwLock::new(())),
+            })
+        }
     }
 
     /// Add a policy rule
     pub async fn add_rule(&self, rule: AbacPolicyRule) -> WorkflowResult<()> {
-        // Validate RDF policy format
-        let store = Store::new()
-            .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+        #[cfg(feature = "rdf")]
+        {
+            // Validate RDF policy format
+            let store = Store::new()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
 
-        store
-            .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
-            .map_err(|e| {
-                WorkflowError::Validation(format!("Invalid RDF policy format: {:?}", e))
-            })?;
+            store
+                .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
+                .map_err(|e| {
+                    WorkflowError::Validation(format!("Invalid RDF policy format: {:?}", e))
+                })?;
 
-        // Validate SPARQL query using SparqlEvaluator
-        let _ = SparqlEvaluator::new()
-            .parse_query(&rule.evaluation_query)
-            .map_err(|e| WorkflowError::Validation(format!("Invalid SPARQL query: {:?}", e)))?;
+            // Validate SPARQL query using SparqlEvaluator
+            let _ = SparqlEvaluator::new()
+                .parse_query(&rule.evaluation_query)
+                .map_err(|e| WorkflowError::Validation(format!("Invalid SPARQL query: {:?}", e)))?;
+        }
+        #[cfg(not(feature = "rdf"))]
+        {
+            // Without rdf feature, just store the rule without validation
+        }
 
         let mut rules = self.rules.write().await;
         rules.push(rule);
@@ -134,58 +157,66 @@ impl AbacPolicyEngine {
             resource_id: resource_id.to_string(),
         };
 
-        // Load context into RDF store
-        let context_rdf = self.context_to_rdf(&context, principal)?;
-        let store = self.rdf_store.write().await;
-        store
-            .load_from_reader(RdfFormat::Turtle, context_rdf.as_bytes())
-            .map_err(|e| {
-                WorkflowError::Internal(format!("Failed to load context into store: {:?}", e))
-            })?;
-
-        // Evaluate rules in priority order
-        let rules = self.rules.read().await;
-        for rule in rules.iter() {
-            if !rule.enabled {
-                continue;
-            }
-
-            // Load policy into store
+        #[cfg(feature = "rdf")]
+        {
+            // Load context into RDF store
+            let context_rdf = self.context_to_rdf(&context, principal)?;
+            let mut store = self.rdf_store.write().await;
             store
-                .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
-                .map_err(|e| WorkflowError::Internal(format!("Failed to load policy: {:?}", e)))?;
-
-            // Execute evaluation query using SparqlEvaluator
-            let results = SparqlEvaluator::new()
-                .parse_query(&rule.evaluation_query)
+                .load_from_reader(RdfFormat::Turtle, context_rdf.as_bytes())
                 .map_err(|e| {
-                    WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e))
-                })?
-                .on_store(&store)
-                .execute()
-                .map_err(|e| WorkflowError::Internal(format!("SPARQL query failed: {:?}", e)))?;
+                    WorkflowError::Internal(format!("Failed to load context into store: {:?}", e))
+                })?;
 
-            // Check if query returned results (policy matches)
-            if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
-                let mut has_results = false;
-                for solution_result in solutions {
-                    match solution_result {
-                        Ok(_) => {
-                            has_results = true;
-                            break;
+            // Evaluate rules in priority order
+            let rules = self.rules.read().await;
+            for rule in rules.iter() {
+                if !rule.enabled {
+                    continue;
+                }
+
+                // Load policy into store
+                store
+                    .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
+                    .map_err(|e| WorkflowError::Internal(format!("Failed to load policy: {:?}", e)))?;
+
+                // Execute evaluation query using SparqlEvaluator
+                let results = SparqlEvaluator::new()
+                    .parse_query(&rule.evaluation_query)
+                    .map_err(|e| {
+                        WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e))
+                    })?
+                    .on_store(&*store)
+                    .execute()
+                    .map_err(|e| WorkflowError::Internal(format!("SPARQL query failed: {:?}", e)))?;
+
+                // Check if query returned results (policy matches)
+                if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {
+                    let mut has_results = false;
+                    for solution_result in solutions {
+                        match solution_result {
+                            Ok(_) => {
+                                has_results = true;
+                                break;
+                            }
+                            Err(_) => continue,
                         }
-                        Err(_) => continue,
+                    }
+
+                    if has_results {
+                        // Policy matches - return decision based on effect
+                        return Ok(match rule.effect {
+                            AbacEffect::Allow => AbacDecision::Allow,
+                            AbacEffect::Deny => AbacDecision::Deny,
+                        });
                     }
                 }
-
-                if has_results {
-                    // Policy matches - return decision based on effect
-                    return Ok(match rule.effect {
-                        AbacEffect::Allow => AbacDecision::Allow,
-                        AbacEffect::Deny => AbacDecision::Deny,
-                    });
-                }
             }
+        }
+        #[cfg(not(feature = "rdf"))]
+        {
+            // Without rdf feature, return NotApplicable
+            return Ok(AbacDecision::NotApplicable);
         }
 
         // No matching policy

@@ -11,10 +11,13 @@ pub mod metadata;
 pub mod serialize;
 pub mod utils;
 
+#[cfg(feature = "rdf")]
 pub use deserialize::{
-    deserialize_context_from_rdf, deserialize_metadata_from_rdf, deserialize_result_from_rdf,
-    load_all_metadata_from_rdf,
+    deserialize_context_from_rdf,
+    deserialize_metadata_from_rdf,
+    deserialize_result_from_rdf,
 };
+pub use deserialize::load_all_metadata_from_rdf;
 pub use metadata::{get_all_pattern_metadata, PatternMetadata};
 pub use serialize::{serialize_context_to_rdf, serialize_metadata_to_rdf, serialize_result_to_rdf};
 

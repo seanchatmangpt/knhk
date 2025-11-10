@@ -1,0 +1,153 @@
+{
+  "timestamp": "2025-11-10T05:43:34Z",
+  "system": {
+    "os": "Darwin",
+    "cpu_cores": "16",
+    "rust_version": "rustc 1.90.0 (1159e78c4 2025-09-14)",
+    "cargo_version": "cargo 1.90.0 (840b83a10 2025-07-30)"
+  },
+  "totals": {
+    "debug_build": 952.844573000,
+    "release_build": 1729.338477000,
+    "test": 655.800143000,
+    "check": 799.096967000
+  },
+  "crates": [
+    {
+      "name": "knhk-hot",
+      "loc": 4675,
+      "debug_build": 2.623513000,
+      "release_build": 2.369738000,
+      "test": 8.204721000,
+      "check": .586431000
+    },
+    {
+      "name": "knhk-otel",
+      "loc": 3290,
+      "debug_build": 10.703123000,
+      "release_build": 24.968124000,
+      "test": .933132000,
+      "check": 4.584268000
+    },
+    {
+      "name": "knhk-connectors",
+      "loc": 2556,
+      "debug_build": .796485000,
+      "release_build": 1.227747000,
+      "test": .715340000,
+      "check": .542977000
+    },
+    {
+      "name": "knhk-lockchain",
+      "loc": 1111,
+      "debug_build": 9.990638000,
+      "release_build": 13.412757000,
+      "test": 1.024947000,
+      "check": 7.506300000
+    },
+    {
+      "name": "knhk-etl",
+      "loc": 9262,
+      "debug_build": 120.236723000,
+      "release_build": 221.150323000,
+      "test": 306.885474000,
+      "check": 136.721524000
+    },
+    {
+      "name": "knhk-warm",
+      "loc": 1941,
+      "debug_build": 135.561127000,
+      "release_build": 221.614805000,
+      "test": 102.162048000,
+      "check": 107.835318000
+    },
+    {
+      "name": "knhk-validation",
+      "loc": 2601,
+      "debug_build": 19.683816000,
+      "release_build": 32.818422000,
+      "test": 3.162394000,
+      "check": 10.709455000
+    },
+    {
+      "name": "knhk-config",
+      "loc": 547,
+      "debug_build": 5.297769000,
+      "release_build": 9.347818000,
+      "test": .881488000,
+      "check": 2.445435000
+    },
+    {
+      "name": "knhk-patterns",
+      "loc": 2393,
+      "debug_build": 135.807249000,
+      "release_build": 211.157420000,
+      "test": 98.966481000,
+      "check": 97.869690000
+    },
+    {
+      "name": "knhk-workflow-engine",
+      "loc": 39448,
+      "debug_build": 123.596960000,
+      "release_build": 278.566980000,
+      "test": 101.617688000,
+      "check": 114.253138000
+    },
+    {
+      "name": "knhk-sidecar",
+      "loc": 7760,
+      "debug_build": 140.799864000,
+      "release_build": 253.014342000,
+      "test": 12.991132000,
+      "check": 113.504925000
+    },
+    {
+      "name": "knhk-cli",
+      "loc": 10998,
+      "debug_build": 111.227749000,
+      "release_build": 166.457263000,
+      "test": 3.147147000,
+      "check": 94.584491000
+    },
+    {
+      "name": "knhk-integration-tests",
+      "loc": 138,
+      "debug_build": 109.694241000,
+      "release_build": 223.542977000,
+      "test": .348155000,
+      "check": 93.937798000
+    },
+    {
+      "name": "chicago-tdd-tools",
+      "loc": 3056,
+      "debug_build": 5.828161000,
+      "release_build": 8.058763000,
+      "test": 5.431880000,
+      "check": 2.354675000
+    },
+    {
+      "name": "knhk-dflss",
+      "loc": 5141,
+      "debug_build": 14.107860000,
+      "release_build": 43.935235000,
+      "test": 3.810679000,
+      "check": 8.720269000
+    },
+    {
+      "name": "knhk-latex-compiler",
+      "loc": 217,
+      "debug_build": 1.862625000,
+      "release_build": 4.698883000,
+      "test": .245351000,
+      "check": 1.191301000
+    },
+    {
+      "name": "knhk-latex",
+      "loc": 1140,
+      "debug_build": 5.026670000,
+      "release_build": 12.996880000,
+      "test": 5.272086000,
+      "check": 1.748972000
+    }
+  ]
+}

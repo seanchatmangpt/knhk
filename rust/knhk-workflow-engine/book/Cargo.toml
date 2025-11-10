@@ -23,7 +23,6 @@ path = "src/bin/knhk-workflow.rs"
 # KNHK infrastructure
 knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
-knhk-unrdf = { path = "../knhk-unrdf", version = "1.0.0", optional = true }
 knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, features = ["fortune5"] }
@@ -87,8 +86,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sled = "0.34"
 
 [features]
-default = ["unrdf"]
-unrdf = ["dep:knhk-unrdf", "knhk-unrdf/native"]
+default = []
 rdf = []
 sidecar = ["dep:knhk-sidecar"]
 

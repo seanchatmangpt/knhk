@@ -164,23 +164,30 @@ impl DataGateway {
         request: &DataQueryRequest,
     ) -> WorkflowResult<serde_json::Value> {
         // Use oxigraph to execute SPARQL query
-        use oxigraph::sparql::SparqlEvaluator;
-        use oxigraph::store::Store;
+        #[cfg(feature = "rdf")]
+        {
+            use oxigraph::store::Store;
+            use oxigraph::sparql::SparqlEvaluator;
 
-        // Create or connect to store from connection string
-        // For now, create in-memory store (in production, would connect to existing store)
-        let store = Store::new()
-            .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+            // Create or connect to store from connection string
+            // For now, create in-memory store (in production, would connect to existing store)
+            let store = Store::new()
+                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
 
-        // Execute query using SparqlEvaluator (oxigraph 0.5 best practices)
-        let _results = SparqlEvaluator::new()
-            .parse_query(&request.query)
-            .map_err(|e| WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e)))?
-            .on_store(&store)
-            .execute()
-            .map_err(|e| {
-                WorkflowError::Internal(format!("Failed to execute SPARQL query: {:?}", e))
-            })?;
+            // Execute query using SparqlEvaluator (oxigraph 0.5 best practices)
+            let _results = SparqlEvaluator::new()
+                .parse_query(&request.query)
+                .map_err(|e| WorkflowError::Internal(format!("Failed to parse SPARQL query: {:?}", e)))?
+                .on_store(&store)
+                .execute()
+                .map_err(|e| {
+                    WorkflowError::Internal(format!("Failed to execute SPARQL query: {:?}", e))
+                })?;
+        }
+        #[cfg(not(feature = "rdf"))]
+        {
+            return Err(WorkflowError::Internal("RDF feature not enabled".to_string()));
+        }
 
         // Convert results to JSON (simplified - would need proper serialization)
         let json_results = serde_json::json!({

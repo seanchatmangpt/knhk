@@ -312,8 +312,13 @@ pub fn register_all_patterns(registry: &mut PatternRegistry) {
 }
 
 // RDF support for patterns
+#[cfg(feature = "rdf")]
 pub use rdf::{
-    deserialize_context_from_rdf, deserialize_metadata_from_rdf, deserialize_result_from_rdf,
+    deserialize_context_from_rdf,
+    deserialize_metadata_from_rdf,
+    deserialize_result_from_rdf,
+};
+pub use rdf::{
     get_all_pattern_metadata, load_all_metadata_from_rdf, serialize_context_to_rdf,
     serialize_metadata_to_rdf, serialize_result_to_rdf, PatternMetadata, WORKFLOW_PATTERN_NS,
     YAWL_NS,

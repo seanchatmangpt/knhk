@@ -1,0 +1,48 @@
+# cargo-nextest configuration for KNHK workspace
+# See https://nexte.st/book/config-file.html
+
+[profile.default]
+# Retry flaky tests up to 2 times
+retries = 2
+
+# Test timeout (30 seconds)
+test-timeout = "30s"
+
+# Number of threads (0 = auto-detect CPU count)
+test-threads = 0
+
+# Output format
+output = "human"
+
+# JUnit XML output for CI
+junit = "test-results.xml"
+
+# Test filtering
+[profile.default.filter]
+# Run all tests by default
+test = ""
+
+# Exclude slow integration tests by default (use --profile slow for full suite)
+# exclude = "test::integration"
+
+[profile.ci]
+# CI-specific profile with retries and JUnit output
+retries = 2
+test-timeout = "60s"
+junit = "test-results.xml"
+test-threads = 0
+
+[profile.slow]
+# Profile for running slow tests (integration tests, etc.)
+retries = 1
+test-timeout = "300s"
+test-threads = 2
+
+[profile.fast]
+# Fast profile for quick feedback (unit tests only)
+retries = 0
+test-timeout = "10s"
+test-threads = 0
+# Filter to only unit tests
+filter = { test = "test", kind = "lib" }
+

@@ -1,0 +1,10 @@
+graph TD
+    A[unrdf<br/>Knowledge Layer] -->|hooks| B[KNHK<br/>Execution Layer]
+    B -->|workflows| C[ggen<br/>Projection Layer]
+    C -->|code| D[Lockchain<br/>Provenance Layer]
+    D -->|receipts| A
+    
+    style A fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style B fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style C fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#000
+    style D fill:#27AE60,stroke:#229954,stroke-width:2px,color:#fff

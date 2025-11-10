@@ -1,0 +1,13 @@
+graph TD
+    A["RDF Ontology<br/>(O)"] -->|extract| B["SPARQL Query"]
+    B -->|transform| C["ggen Template Engine"]
+    C -->|generate| D["KNHK Workflow Engine"]
+    D -->|execute| E["Generated Substrate<br/>(A)"]
+    E -->|audit| F["Meta-Receipt"]
+    
+    style A fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style B fill:#27AE60,stroke:#229954,stroke-width:2px,color:#fff
+    style C fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#000
+    style D fill:#F1C40F,stroke:#D4AC0D,stroke-width:2px,color:#000
+    style E fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style F fill:#9B59B6,stroke:#8E44AD,stroke-width:2px,color:#fff

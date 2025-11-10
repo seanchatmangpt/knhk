@@ -15,6 +15,7 @@ use crate::patterns::{
     PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
 };
 use crate::resource::{Capability, Resource, ResourceId, Role};
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use crate::worklets::{Worklet, WorkletId, WorkletMetadata};
 use std::collections::HashMap;

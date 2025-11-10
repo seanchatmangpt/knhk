@@ -1,6 +1,8 @@
 //! Connector registry - Manages connector instances
 
+#[cfg(feature = "connectors")]
 use crate::commands::connect;
+#[cfg(feature = "connectors")]
 use knhk_connectors::Connector;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -8,11 +10,13 @@ use std::sync::Arc;
 // Re-export for use in save_to_storage
 use connect::{save_connectors, ConnectorStorage, ConnectorStorageEntry};
 
+#[cfg(feature = "connectors")]
 /// Connector registry - Manages connector instances
 pub struct ConnectorRegistry {
     connectors: HashMap<String, Arc<dyn Connector>>,
 }
 
+#[cfg(feature = "connectors")]
 impl ConnectorRegistry {
     /// Create new connector registry
     pub fn new() -> Result<Self, String> {

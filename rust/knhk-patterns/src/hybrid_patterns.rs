@@ -6,70 +6,21 @@ use knhk_etl::{
     hook_orchestration::{HookExecutionContext, HookExecutionResult},
     hook_registry::SharedHookRegistry,
 };
-use std::sync::Arc;
-
-#[cfg(feature = "unrdf")]
-use crate::unrdf_patterns::{UnrdfParallelPattern, UnrdfSequencePattern};
-#[cfg(feature = "unrdf")]
-use knhk_unrdf::{hooks_native::NativeHookRegistry, types::HookResult};
-
-#[cfg(not(feature = "unrdf"))]
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 /// Hybrid hook condition function type: evaluates on execution context
 pub type HybridHookCondition = Arc<dyn Fn(&HookExecutionContext) -> bool + Send + Sync>;
 
-/// Hybrid hook sequence pattern: Execute hot path hooks, then cold path hooks
+/// Hybrid hook sequence pattern: Execute hot path hooks
 pub struct HybridSequencePattern {
     hot_predicates: Vec<u64>,
-    #[cfg(feature = "unrdf")]
-    cold_hook_ids: Vec<String>,
-    #[cfg(not(feature = "unrdf"))]
     _phantom: PhantomData<()>,
     hot_registry: SharedHookRegistry,
-    #[cfg(feature = "unrdf")]
-    cold_registry: Arc<NativeHookRegistry>,
 }
 
 impl HybridSequencePattern {
     /// Create new hybrid sequence pattern
-    #[cfg(feature = "unrdf")]
-    pub fn new(
-        hot_predicates: Vec<u64>,
-        cold_hook_ids: Vec<String>,
-        hot_registry: SharedHookRegistry,
-    ) -> PatternResult<Self> {
-        Self::with_registries(
-            hot_predicates,
-            cold_hook_ids,
-            hot_registry,
-            Arc::new(NativeHookRegistry::new()),
-        )
-    }
-
-    /// Create new hybrid sequence pattern with registries
-    #[cfg(feature = "unrdf")]
-    pub fn with_registries(
-        hot_predicates: Vec<u64>,
-        cold_hook_ids: Vec<String>,
-        hot_registry: SharedHookRegistry,
-        cold_registry: Arc<NativeHookRegistry>,
-    ) -> PatternResult<Self> {
-        if hot_predicates.is_empty() && cold_hook_ids.is_empty() {
-            return Err(PatternError::InvalidConfiguration(
-                "At least one hot predicate or cold hook ID required".to_string(),
-            ));
-        }
-
-        Ok(Self {
-            hot_predicates,
-            cold_hook_ids,
-            hot_registry,
-            cold_registry,
-        })
-    }
-
-    #[cfg(not(feature = "unrdf"))]
     pub fn new(
         hot_predicates: Vec<u64>,
         _cold_hook_ids: Vec<String>,
@@ -77,7 +28,7 @@ impl HybridSequencePattern {
     ) -> PatternResult<Self> {
         if hot_predicates.is_empty() {
             return Err(PatternError::InvalidConfiguration(
-                "Hot predicates list cannot be empty when unrdf feature is disabled".to_string(),
+                "Hot predicates list cannot be empty".to_string(),
             ));
         }
 
@@ -96,8 +47,6 @@ impl HybridSequencePattern {
         use crate::hook_patterns::HookSequencePattern;
 
         let mut hot_results = None;
-        #[allow(unused_mut)] // mut needed when unrdf feature enabled
-        let mut cold_results = None;
 
         // Execute hot path hooks if predicates provided
         if !self.hot_predicates.is_empty() {
@@ -113,107 +62,22 @@ impl HybridSequencePattern {
             hot_results = Some(hot_result);
         }
 
-        // Execute cold path hooks if hook IDs provided
-        #[cfg(feature = "unrdf")]
-        {
-            if !self.cold_hook_ids.is_empty() {
-                // Convert SoAArrays to turtle data for cold path
-                let turtle_data = self.soa_to_turtle(&context.soa_arrays)?;
-
-                let pattern = UnrdfSequencePattern::with_registry(
-                    self.cold_hook_ids.clone(),
-                    self.cold_registry.clone(),
-                )?;
-                let cold_result = pattern.execute_hooks(&turtle_data)?;
-                cold_results = Some(cold_result);
-            }
-        }
-
         Ok(HybridExecutionResult {
             hot_results,
-            cold_results,
+            cold_results: None,
         })
-    }
-
-    #[cfg(feature = "unrdf")]
-    /// Convert SoAArrays to turtle data
-    fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
-        // Convert SoA arrays to Turtle format
-        // Since SoA uses u64 hashes, we convert them back to IRIs using hex representation
-        let mut turtle = String::new();
-        turtle.push_str("@prefix knhk: <urn:knhk:> .\n\n");
-
-        // Find the actual length (first zero indicates end, or use all 8 if no zeros)
-        let len = soa.s.iter().position(|&x| x == 0).unwrap_or(8).min(8);
-
-        for i in 0..len {
-            if soa.s[i] == 0 && soa.p[i] == 0 && soa.o[i] == 0 {
-                break; // Stop at first empty triple
-            }
-
-            // Convert u64 hashes to IRIs (using hex representation)
-            let subject = format!("<urn:hash:{:x}>", soa.s[i]);
-            let predicate = format!("<urn:hash:{:x}>", soa.p[i]);
-            let object = format!("<urn:hash:{:x}>", soa.o[i]);
-
-            turtle.push_str(&format!("{} {} {} .\n", subject, predicate, object));
-        }
-
-        Ok(turtle)
     }
 }
 
-/// Hybrid hook parallel pattern: Execute hot and cold path hooks concurrently
+/// Hybrid hook parallel pattern: Execute hot path hooks
 pub struct HybridParallelPattern {
     hot_predicates: Vec<u64>,
-    #[cfg(feature = "unrdf")]
-    cold_hook_ids: Vec<String>,
-    #[cfg(not(feature = "unrdf"))]
     _phantom: PhantomData<()>,
     hot_registry: SharedHookRegistry,
-    #[cfg(feature = "unrdf")]
-    cold_registry: Arc<NativeHookRegistry>,
 }
 
 impl HybridParallelPattern {
     /// Create new hybrid parallel pattern
-    #[cfg(feature = "unrdf")]
-    pub fn new(
-        hot_predicates: Vec<u64>,
-        cold_hook_ids: Vec<String>,
-        hot_registry: SharedHookRegistry,
-    ) -> PatternResult<Self> {
-        Self::with_registries(
-            hot_predicates,
-            cold_hook_ids,
-            hot_registry,
-            Arc::new(NativeHookRegistry::new()),
-        )
-    }
-
-    /// Create new hybrid parallel pattern with registries
-    #[cfg(feature = "unrdf")]
-    pub fn with_registries(
-        hot_predicates: Vec<u64>,
-        cold_hook_ids: Vec<String>,
-        hot_registry: SharedHookRegistry,
-        cold_registry: Arc<NativeHookRegistry>,
-    ) -> PatternResult<Self> {
-        if hot_predicates.is_empty() && cold_hook_ids.is_empty() {
-            return Err(PatternError::InvalidConfiguration(
-                "At least one hot predicate or cold hook ID required".to_string(),
-            ));
-        }
-
-        Ok(Self {
-            hot_predicates,
-            cold_hook_ids,
-            hot_registry,
-            cold_registry,
-        })
-    }
-
-    #[cfg(not(feature = "unrdf"))]
     pub fn new(
         hot_predicates: Vec<u64>,
         _cold_hook_ids: Vec<String>,
@@ -221,7 +85,7 @@ impl HybridParallelPattern {
     ) -> PatternResult<Self> {
         if hot_predicates.is_empty() {
             return Err(PatternError::InvalidConfiguration(
-                "Hot predicates list cannot be empty when unrdf feature is disabled".to_string(),
+                "Hot predicates list cannot be empty".to_string(),
             ));
         }
 
@@ -232,22 +96,16 @@ impl HybridParallelPattern {
         })
     }
 
-    /// Execute hot and cold path hooks in parallel
+    /// Execute hot path hooks
     pub fn execute(
         &self,
         context: &HookExecutionContext,
     ) -> Result<HybridExecutionResult, PatternError> {
         use crate::hook_patterns::HookParallelPattern;
-        use rayon::prelude::*;
 
         let mut hot_results = None;
-        #[allow(unused_mut)] // mut needed when unrdf feature enabled
-        let mut cold_results = None;
 
-        // Execute hot and cold paths in parallel using rayon
-        let mut results_vec = Vec::new();
-
-        // Hot path execution
+        // Execute hot path hooks
         if !self.hot_predicates.is_empty() {
             let hot_context = HookExecutionContext {
                 hook_registry: Arc::clone(&self.hot_registry),
@@ -257,145 +115,27 @@ impl HybridParallelPattern {
             };
 
             let pattern = HookParallelPattern::new(self.hot_predicates.clone())?;
-            match pattern.execute_hooks(&hot_context) {
-                Ok(result) => {
-                    hot_results = Some(result);
-                    results_vec.push(Ok(()));
-                }
-                Err(e) => results_vec.push(Err(e)),
-            }
-        } else {
-            results_vec.push(Ok(()));
-        }
-
-        // Cold path execution
-        #[cfg(feature = "unrdf")]
-        {
-            if !self.cold_hook_ids.is_empty() {
-                let turtle_data = self.soa_to_turtle(&context.soa_arrays)?;
-                let pattern = UnrdfParallelPattern::with_registry(
-                    self.cold_hook_ids.clone(),
-                    self.cold_registry.clone(),
-                )?;
-                match pattern.execute_hooks(&turtle_data) {
-                    Ok(result) => {
-                        cold_results = Some(result);
-                        results_vec.push(Ok(()));
-                    }
-                    Err(e) => results_vec.push(Err(e)),
-                }
-            } else {
-                results_vec.push(Ok(()));
-            }
-        }
-
-        let results: Vec<Result<(), PatternError>> = results_vec.into_par_iter().collect();
-
-        // Check for errors
-        for result in results {
-            result?;
+            let hot_result = pattern.execute_hooks(&hot_context)?;
+            hot_results = Some(hot_result);
         }
 
         Ok(HybridExecutionResult {
             hot_results,
-            cold_results,
+            cold_results: None,
         })
-    }
-
-    #[cfg(feature = "unrdf")]
-    /// Convert SoAArrays to turtle data
-    fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
-        // Convert SoA arrays to Turtle format
-        // Since SoA uses u64 hashes, we convert them back to IRIs using hex representation
-        let mut turtle = String::new();
-        turtle.push_str("@prefix knhk: <urn:knhk:> .\n\n");
-
-        // Find the actual length (first zero indicates end, or use all 8 if no zeros)
-        let len = soa.s.iter().position(|&x| x == 0).unwrap_or(8).min(8);
-
-        for i in 0..len {
-            if soa.s[i] == 0 && soa.p[i] == 0 && soa.o[i] == 0 {
-                break; // Stop at first empty triple
-            }
-
-            // Convert u64 hashes to IRIs (using hex representation)
-            let subject = format!("<urn:hash:{:x}>", soa.s[i]);
-            let predicate = format!("<urn:hash:{:x}>", soa.p[i]);
-            let object = format!("<urn:hash:{:x}>", soa.o[i]);
-
-            turtle.push_str(&format!("{} {} {} .\n", subject, predicate, object));
-        }
-
-        Ok(turtle)
     }
 }
 
-/// Hybrid hook choice pattern: Route between hot and cold paths based on condition
+/// Hybrid hook choice pattern: Route to hot path based on condition
 pub struct HybridChoicePattern {
     condition: HybridHookCondition,
     hot_predicates: Vec<u64>,
-    #[cfg(feature = "unrdf")]
-    cold_hook_ids: Vec<String>,
-    #[cfg(not(feature = "unrdf"))]
     _phantom: PhantomData<()>,
     hot_registry: SharedHookRegistry,
-    #[cfg(feature = "unrdf")]
-    cold_registry: Arc<NativeHookRegistry>,
 }
 
 impl HybridChoicePattern {
     /// Create new hybrid choice pattern
-    #[cfg(feature = "unrdf")]
-    pub fn new(
-        condition: HybridHookCondition,
-        hot_registry: SharedHookRegistry,
-        cold_hook_ids: Vec<String>,
-    ) -> PatternResult<Self> {
-        Self::with_registries(
-            condition,
-            Vec::new(),
-            cold_hook_ids,
-            hot_registry,
-            Arc::new(NativeHookRegistry::new()),
-        )
-    }
-
-    /// Create new hybrid choice pattern with hot predicates
-    #[cfg(feature = "unrdf")]
-    pub fn with_hot_predicates(
-        condition: HybridHookCondition,
-        hot_predicates: Vec<u64>,
-        hot_registry: SharedHookRegistry,
-        cold_hook_ids: Vec<String>,
-    ) -> PatternResult<Self> {
-        Self::with_registries(
-            condition,
-            hot_predicates,
-            cold_hook_ids,
-            hot_registry,
-            Arc::new(NativeHookRegistry::new()),
-        )
-    }
-
-    /// Create new hybrid choice pattern with registries
-    #[cfg(feature = "unrdf")]
-    pub fn with_registries(
-        condition: HybridHookCondition,
-        hot_predicates: Vec<u64>,
-        cold_hook_ids: Vec<String>,
-        hot_registry: SharedHookRegistry,
-        cold_registry: Arc<NativeHookRegistry>,
-    ) -> PatternResult<Self> {
-        Ok(Self {
-            condition,
-            hot_predicates,
-            cold_hook_ids,
-            hot_registry,
-            cold_registry,
-        })
-    }
-
-    #[cfg(not(feature = "unrdf"))]
     pub fn new(
         condition: HybridHookCondition,
         hot_registry: SharedHookRegistry,
@@ -414,32 +154,10 @@ impl HybridChoicePattern {
         &self,
         context: &HookExecutionContext,
     ) -> Result<HybridExecutionResult, PatternError> {
-        // Evaluate condition
-        let use_cold_path = (self.condition)(context);
+        // Evaluate condition - always use hot path (cold path removed)
+        let use_hot_path = !(self.condition)(context);
 
-        if use_cold_path {
-            // Execute cold path hooks
-            #[cfg(feature = "unrdf")]
-            {
-                if !self.cold_hook_ids.is_empty() {
-                    let turtle_data = self.soa_to_turtle(&context.soa_arrays)?;
-                    let pattern = UnrdfSequencePattern::with_registry(
-                        self.cold_hook_ids.clone(),
-                        self.cold_registry.clone(),
-                    )?;
-                    let cold_result = pattern.execute_hooks(&turtle_data)?;
-                    return Ok(HybridExecutionResult {
-                        hot_results: None,
-                        cold_results: Some(cold_result),
-                    });
-                }
-            }
-
-            // Cold path requested but no hooks or feature disabled
-            Err(PatternError::ExecutionFailed(
-                "Cold path requested but no hooks available or unrdf feature disabled".to_string(),
-            ))
-        } else {
+        if use_hot_path {
             // Execute hot path hooks
             if !self.hot_predicates.is_empty() {
                 use crate::hook_patterns::HookSequencePattern;
@@ -463,44 +181,19 @@ impl HybridChoicePattern {
             Err(PatternError::ExecutionFailed(
                 "Hot path requested but no predicates available".to_string(),
             ))
+        } else {
+            // Cold path removed - return error
+            Err(PatternError::ExecutionFailed(
+                "Cold path no longer available - unrdf project removed".to_string(),
+            ))
         }
-    }
-
-    #[cfg(feature = "unrdf")]
-    /// Convert SoAArrays to turtle data
-    fn soa_to_turtle(&self, soa: &knhk_etl::load::SoAArrays) -> Result<String, PatternError> {
-        // Convert SoA arrays to Turtle format
-        // Since SoA uses u64 hashes, we convert them back to IRIs using hex representation
-        let mut turtle = String::new();
-        turtle.push_str("@prefix knhk: <urn:knhk:> .\n\n");
-
-        // Find the actual length (first zero indicates end, or use all 8 if no zeros)
-        let len = soa.s.iter().position(|&x| x == 0).unwrap_or(8).min(8);
-
-        for i in 0..len {
-            if soa.s[i] == 0 && soa.p[i] == 0 && soa.o[i] == 0 {
-                break; // Stop at first empty triple
-            }
-
-            // Convert u64 hashes to IRIs (using hex representation)
-            let subject = format!("<urn:hash:{:x}>", soa.s[i]);
-            let predicate = format!("<urn:hash:{:x}>", soa.p[i]);
-            let object = format!("<urn:hash:{:x}>", soa.o[i]);
-
-            turtle.push_str(&format!("{} {} {} .\n", subject, predicate, object));
-        }
-
-        Ok(turtle)
     }
 }
 
-/// Hybrid execution result: Contains results from both hot and cold paths
+/// Hybrid execution result: Contains results from hot path
 pub struct HybridExecutionResult {
     /// Hot path hook execution results
     pub hot_results: Option<HookExecutionResult>,
-    /// Cold path hook execution results
-    #[cfg(feature = "unrdf")]
-    pub cold_results: Option<Vec<HookResult>>,
-    #[cfg(not(feature = "unrdf"))]
+    /// Cold path hook execution results (removed - unrdf project removed)
     pub cold_results: Option<()>,
 }

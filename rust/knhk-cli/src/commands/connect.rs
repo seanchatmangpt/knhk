@@ -1,6 +1,7 @@
 // rust/knhk-cli/src/commands/connect.rs
 // Connect commands - Connector management with ConnectorRegistry
 
+#[cfg(feature = "connectors")]
 use knhk_connectors::SourceType;
 use std::fs;
 use std::path::PathBuf;
@@ -8,6 +9,7 @@ use std::path::PathBuf;
 /// Register a connector
 /// connect(#{name, schema, source, map, guard})
 /// Uses ConnectorRegistry for persistent storage
+#[cfg(feature = "connectors")]
 pub fn register(name: String, schema: String, source: String) -> Result<(), String> {
     #[cfg(feature = "otel")]
     let _span = tracing::span!(
@@ -63,6 +65,7 @@ pub fn register(name: String, schema: String, source: String) -> Result<(), Stri
 }
 
 /// List connectors
+#[cfg(feature = "connectors")]
 pub fn list() -> Result<Vec<String>, String> {
     #[cfg(feature = "otel")]
     let _span = tracing::span!(
@@ -80,6 +83,7 @@ pub fn list() -> Result<Vec<String>, String> {
     registry.list()
 }
 
+#[cfg(feature = "connectors")]
 fn parse_source(source: &str) -> Result<SourceType, String> {
     // Validate source format - delegate to ConnectorFactory
     use crate::connector::factory::ConnectorFactory;

@@ -10,7 +10,9 @@ pub use types::*;
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::validation::DeadlockDetector;
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::io::Read;
 
@@ -111,7 +113,9 @@ impl WorkflowParser {
 
     /// Export current RDF store as Turtle string
     pub fn export_turtle(&self) -> WorkflowResult<String> {
+        #[cfg(feature = "rdf")]
         use oxigraph::io::RdfSerializer;
+        #[cfg(feature = "rdf")]
         use oxigraph::model::GraphNameRef;
 
         let mut buffer = Vec::new();

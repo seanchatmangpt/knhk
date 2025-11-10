@@ -104,11 +104,13 @@ pub mod macros;
 pub mod mutation;
 #[cfg(feature = "otel")]
 pub mod otel;
+pub mod otel_types;
 pub mod performance;
 pub mod property;
 pub mod state;
 #[cfg(feature = "weaver")]
 pub mod weaver;
+pub mod weaver_types;
 
 /// Prelude module - import commonly used items
 pub mod prelude {

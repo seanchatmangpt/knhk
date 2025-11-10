@@ -1,12 +1,13 @@
 // rust/knhk-cli/src/commands/pipeline.rs
 // Pipeline commands - ETL pipeline operations
 
+#[cfg(feature = "connectors")]
 use crate::connector::ConnectorRegistry;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "etl")]
 use knhk_etl::integration::IntegratedPipeline;
 
 /// Pipeline execution status
@@ -25,6 +26,7 @@ struct PipelineExecutionResult {
 }
 
 /// Execute full ETL pipeline (Ingest → Emit)
+#[cfg(all(feature = "connectors", feature = "etl"))]
 pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), String> {
     #[cfg(feature = "otel")]
     let _span = tracing::span!(
@@ -127,6 +129,7 @@ pub fn run(connectors: Option<String>, schema: Option<String>) -> Result<(), Str
 }
 
 /// Show pipeline execution status and metrics
+#[cfg(feature = "etl")]
 pub fn status() -> Result<String, String> {
     let status = load_pipeline_status()?;
 

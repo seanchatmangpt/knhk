@@ -35,6 +35,12 @@ jobs:
           toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+
       - name: Cache Rust dependencies
         uses: actions/cache@v4
         with:
@@ -64,11 +70,45 @@ jobs:
         if: matrix.rust == 'stable'
         run: make lint-rust
 
+      - name: Check dependencies with cargo-deny
+        if: matrix.rust == 'stable'
+        run: |
+          cd rust
+          cargo deny check
+
       - name: Build Rust crates
         run: make build-rust
 
-      - name: Run Rust tests
-        run: bash scripts/run-all-rust-tests.sh
+      - name: Run Rust tests with cargo-nextest
+        run: |
+          cd rust
+          cargo nextest run --workspace --profile ci
+        continue-on-error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.rust }}
+          path: rust/test-results.xml
+          retention-days: 7
+
+  # Shell script tests
+  shell-tests:
+    name: Shell Script Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Run shell script tests
+        run: make test-shell
 
   # C library tests
   c-tests:
@@ -122,6 +162,9 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+
       - name: Install C dependencies
         run: |
           sudo apt-get update
@@ -158,6 +201,9 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
 
       - name: Install C dependencies
         run: |
@@ -196,6 +242,9 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+
       - name: Install C dependencies
         run: |
           sudo apt-get update
@@ -222,7 +271,7 @@ jobs:
   complete-suite:
     name: Complete Test Suite
     runs-on: ubuntu-latest
-    needs: [chicago-tdd, performance, integration]
+    needs: [chicago-tdd, performance, integration, shell-tests]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -233,6 +282,9 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
 
       - name: Install C dependencies
         run: |

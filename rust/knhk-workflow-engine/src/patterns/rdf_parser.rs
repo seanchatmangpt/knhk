@@ -6,9 +6,13 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::{Task, TaskType, WorkflowSpec, WorkflowSpecId};
 use crate::patterns::PatternId;
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::model::{NamedNode, Quad, Term};
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::SparqlEvaluator;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::collections::HashMap;
 
@@ -19,11 +23,13 @@ pub const RDF_NS: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 pub const RDFS_NS: &str = "http://www.w3.org/2000/01/rdf-schema#";
 pub const OWL_NS: &str = "http://www.w3.org/2002/07/owl#";
 
+#[cfg(feature = "rdf")]
 /// RDF parser for workflow specifications
 pub struct RdfWorkflowParser {
     store: Store,
 }
 
+#[cfg(feature = "rdf")]
 impl RdfWorkflowParser {
     /// Create new RDF parser
     pub fn new() -> WorkflowResult<Self> {

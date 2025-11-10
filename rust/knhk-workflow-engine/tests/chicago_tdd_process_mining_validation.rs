@@ -25,8 +25,8 @@ use tempfile::TempDir;
 /// Create a simple test workflow specification that can actually execute
 /// Real workflow: Task A → Task B (sequential pattern)
 fn create_test_workflow() -> WorkflowSpec {
+    use chicago_tdd_tools::{assert_eq_msg, assert_err, assert_ok, chicago_async_test};
     use knhk_workflow_engine::parser::{Flow, JoinType, SplitType, Task, TaskType};
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg};
     let mut tasks = HashMap::new();
     let mut flows = Vec::new();
 
@@ -154,7 +154,7 @@ chicago_async_test!(test_xes_export_import_round_trip, {
     );
 
     println!("  ✓ XES export/import round-trip validated");
-}
+});
 
 /// Test: Process discovery can discover workflow structure from execution logs
 chicago_async_test!(test_process_discovery_from_workflow_execution, {
@@ -222,7 +222,7 @@ chicago_async_test!(test_process_discovery_from_workflow_execution, {
         petri_net.places.len(),
         petri_net.transitions.len()
     );
-}
+});
 
 /// Test: Multiple workflow executions produce consistent process models
 chicago_async_test!(test_consistent_process_discovery_across_executions, {
@@ -289,7 +289,7 @@ chicago_async_test!(test_consistent_process_discovery_across_executions, {
         petri_net.places.len(),
         petri_net.transitions.len()
     );
-}
+});
 
 /// Test: Workflow execution events are correctly captured in XES format
 chicago_async_test!(test_workflow_events_captured_in_xes, {
@@ -357,7 +357,7 @@ chicago_async_test!(test_workflow_events_captured_in_xes, {
 
     println!("  ✓ Workflow events correctly captured in XES format");
     println!("    Captured {} events in trace", trace.events.len());
-}
+});
 
 /// Test: Process discovery handles workflow with multiple cases correctly
 chicago_async_test!(test_process_discovery_multiple_cases, {
@@ -423,7 +423,7 @@ chicago_async_test!(test_process_discovery_multiple_cases, {
         petri_net.places.len(),
         petri_net.transitions.len()
     );
-}
+});
 
 /// Test: XES export maintains event ordering and timestamps
 chicago_async_test!(test_xes_event_ordering_and_timestamps, {
@@ -488,7 +488,7 @@ chicago_async_test!(test_xes_event_ordering_and_timestamps, {
         "    Processed {} events with timestamp validation",
         events.len()
     );
-}
+});
 
 /// Test: Process discovery produces valid Petri net from workflow execution
 chicago_async_test!(test_process_discovery_produces_valid_petri_net, {
@@ -592,7 +592,7 @@ chicago_async_test!(test_process_discovery_produces_valid_petri_net, {
     }
 
     println!("  ✓ Process discovery produces valid Petri nets");
-}
+});
 
 /// Test: Workflow-engine XES export is compatible with process_mining library
 chicago_async_test!(test_xes_compatibility_with_process_mining, {
@@ -658,4 +658,4 @@ chicago_async_test!(test_xes_compatibility_with_process_mining, {
             );
         }
     }
-}
+});

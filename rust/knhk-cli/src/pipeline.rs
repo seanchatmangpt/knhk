@@ -3,6 +3,7 @@
 // Allow non_upper_case_globals - #[verb] macro generates static vars with lowercase names
 #![allow(non_upper_case_globals)]
 
+#[cfg(all(feature = "connectors", feature = "etl"))]
 use crate::commands::pipeline as pipeline_impl;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
@@ -17,6 +18,7 @@ struct PipelineResult {
 
 /// Execute pipeline
 #[verb] // Noun "pipeline" auto-inferred from filename "pipeline.rs"
+#[cfg(all(feature = "connectors", feature = "etl"))]
 fn run(connectors: Option<String>, schema: Option<String>) -> Result<PipelineResult> {
     pipeline_impl::run(connectors.clone(), schema.clone())
         .map_err(|e| {
@@ -36,6 +38,7 @@ struct PipelineStatus {
 
 /// Show pipeline status
 #[verb] // Noun "pipeline" auto-inferred
+#[cfg(feature = "etl")]
 fn status() -> Result<PipelineStatus> {
     pipeline_impl::status()
         .map_err(|e| {

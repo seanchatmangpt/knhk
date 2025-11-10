@@ -7,6 +7,7 @@
 use crate::case::{Case, CaseId};
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::integration::LockchainIntegration;
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use hex;
 use serde::{Deserialize, Serialize};

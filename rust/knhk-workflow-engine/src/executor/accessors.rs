@@ -8,6 +8,7 @@ use crate::patterns::PatternRegistry;
 use crate::resource::ResourceAllocator;
 use crate::services::timer::TimerService;
 use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};

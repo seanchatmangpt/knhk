@@ -14,10 +14,12 @@ use crate::security::AuthManager;
 use crate::services::timer::TimerService;
 use crate::services::{AdmissionGate, EventSidecar, WorkItemService};
 use crate::state::manager::StateManager;
+#[cfg(feature = "storage")]
 use crate::state::StateStore;
 use crate::timebase::SysClock;
 use crate::worklets::{WorkletExecutor, WorkletRepository};
 use dashmap::DashMap;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -67,9 +69,18 @@ pub struct WorkflowEngine {
     /// Connector integration (if enabled)
     pub(crate) connector_integration: Option<Arc<tokio::sync::Mutex<ConnectorIntegration>>>,
     /// RDF store for workflow specifications (SPARQL queries)
+    #[cfg(feature = "rdf")]
     pub(crate) spec_rdf_store: Arc<RwLock<Store>>,
+    #[cfg(not(feature = "rdf"))]
+    pub(crate) spec_rdf_store: Arc<RwLock<()>>,
     /// RDF store for pattern metadata
+    #[cfg(feature = "rdf")]
     pub(crate) pattern_metadata_store: Arc<RwLock<Store>>,
+    #[cfg(not(feature = "rdf"))]
+    pub(crate) pattern_metadata_store: Arc<RwLock<()>>,
     /// RDF stores for case runtime state (per case)
+    #[cfg(feature = "rdf")]
     pub(crate) case_rdf_stores: Arc<RwLock<HashMap<CaseId, Store>>>,
+    #[cfg(not(feature = "rdf"))]
+    pub(crate) case_rdf_stores: Arc<RwLock<HashMap<CaseId, ()>>>,
 }
