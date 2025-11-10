@@ -8,6 +8,7 @@
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
+#[cfg(feature = "workflow")]
 use knhk_workflow_engine::{case::CaseId, state::StateStore, WorkflowEngine};
 use process_mining::{
     alphappp::full::{alphappp_discover_petri_net, AlphaPPPConfig},
@@ -538,7 +539,7 @@ pub fn generalization(
         let generalization = if log_complexity > 0.0 {
             // Generalization = 1 - (model_complexity / log_complexity)
             // If model is simpler than log, generalization is high
-            (1.0 - (model_complexity / log_complexity))
+            (1.0_f64 - (model_complexity / log_complexity))
                 .max(0.0)
                 .min(1.0)
         } else {

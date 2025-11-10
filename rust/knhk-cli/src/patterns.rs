@@ -9,6 +9,7 @@
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
+#[cfg(feature = "workflow")]
 use knhk_workflow_engine::{
     patterns::{PatternId, PatternRegistry, RegisterAllExt},
     state::StateStore,

@@ -52,5 +52,4 @@ clap = { version = "4.5", features = ["derive"] }
 [dev-dependencies]
 tempfile = "3.10"
 tokio-test = "0.4"
-chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0" }
-
+chicago-tdd-tools = "1.0.0"

@@ -23,18 +23,21 @@ pub struct WarmPathConstruct8;
 
 impl WarmPathConstruct8 {
     /// Detect CONSTRUCT8 pattern for AOT optimization
-    /// 
+    ///
     /// Analyzes subject array to determine if all-nonzero, all-zero, or mixed pattern.
     /// This enables routing to specialized hot path functions.
     fn detect_pattern(ctx: &Ctx) -> Construct8Pattern {
         if ctx.run.len == 0 {
             return Construct8Pattern::AllZero;
         }
-        
-        let s_slice = &ctx.S[ctx.run.off..ctx.run.off + ctx.run.len];
+
+        // Safe access to pointer: ctx.S is a *const u64, need to create slice
+        let s_slice = unsafe {
+            std::slice::from_raw_parts(ctx.S.add(ctx.run.off as usize), ctx.run.len as usize)
+        };
         let all_zero = s_slice.iter().all(|&s| s == 0);
         let all_nonzero = s_slice.iter().all(|&s| s != 0);
-        
+
         if all_zero {
             Construct8Pattern::AllZero
         } else if all_nonzero {
@@ -43,54 +46,51 @@ impl WarmPathConstruct8 {
             Construct8Pattern::Mixed
         }
     }
-    
+
     /// Execute CONSTRUCT8 operation in warm path with AOT precomputation
-    /// 
+    ///
     /// # Arguments
     /// * `ctx` - Hot path context (SoA arrays)
     /// * `ir` - Hook IR with CONSTRUCT8 operation
-    /// 
+    ///
     /// # Returns
     /// * `Ok(WarmPathResult)` - Success with timing and result metrics
     /// * `Err(WarmPathError)` - Error with descriptive message
-    /// 
+    ///
     /// # Performance
     /// * Budget: ≤500 µs (warm path)
     /// * Target: ≤8 ticks (hot path, via AOT optimization)
     /// * SLO: ≤1 ms (p99)
     /// * Validates guard constraints (max_run_len ≤ 8)
     /// * AOT optimizations: pattern detection, length specialization, constant pre-broadcast
-    pub fn execute(
-        ctx: &Ctx,
-        ir: &mut Ir,
-    ) -> Result<WarmPathResult, WarmPathError> {
+    pub fn execute(ctx: &Ctx, ir: &mut Ir) -> Result<WarmPathResult, WarmPathError> {
         // Validate inputs
-        if ir.op != Op::Construct8 {
+        if !matches!(ir.op, Op::Construct8) {
             return Err(WarmPathError::InvalidInput(
-                "Operation is not CONSTRUCT8".to_string()
+                "Operation is not CONSTRUCT8".to_string(),
             ));
         }
 
         // Validate guard constraints
         if ctx.run.len > 8 {
-            return Err(WarmPathError::GuardViolation(
-                format!("Run length {} exceeds max_run_len 8", ctx.run.len)
-            ));
+            return Err(WarmPathError::InvalidInput(format!(
+                "Run length {} exceeds max_run_len 8",
+                ctx.run.len
+            )));
         }
 
         // AOT precomputation: Detect pattern for specialized routing
         let pattern = Self::detect_pattern(ctx);
-        
+
         // Early return for all-zero pattern (0 ticks in hot path)
         if pattern == Construct8Pattern::AllZero {
             ir.out_mask = 0;
             ir.construct8_pattern_hint = 0; // KNHK_CONSTRUCT8_PATTERN_GENERIC
-            return Ok(WarmPathResult::new(
-                false,
-                0,
-                0,
-                0,
-            ));
+            return Ok(WarmPathResult {
+                lanes_written: 0,
+                receipt: crate::WarmReceipt::default(),
+                latency_us: 0,
+            });
         }
 
         // Set pattern hint for branchless routing to specialized functions
@@ -123,31 +123,33 @@ impl WarmPathConstruct8 {
 
         // Measure execution time (in microseconds for W1 budget)
         let start_time = Self::get_current_time_us();
-        
+
         // Execute CONSTRUCT8 via hot path C code with branchless routing
         // Hot path uses dispatch table indexed by construct8_pattern_hint
         // Routes to specialized functions: all-nonzero (skips mask), len1-len8 (compile-time constants)
         let mut rcpt = Receipt::default();
-        let result = unsafe {
-            knhk_hot::knhk_eval_construct8(ctx, ir, &mut rcpt)
-        };
+        let result = unsafe { knhk_hot::knhk_eval_construct8(ctx, ir, &mut rcpt) };
 
         let end_time = Self::get_current_time_us();
         let latency_us = end_time.saturating_sub(start_time);
 
         // Check timeout (500µs budget)
         if latency_us > 500 {
-            return Err(WarmPathError::TimeoutExceeded(
-                format!("CONSTRUCT8 exceeded 500µs budget: {}µs", latency_us)
-            ));
+            return Err(WarmPathError::InvalidInput(format!(
+                "CONSTRUCT8 exceeded 500µs budget: {}µs",
+                latency_us
+            )));
         }
 
-        Ok(WarmPathResult::new(
-            result > 0,
-            latency_us / 1000, // Convert to milliseconds for result
-            result as usize,
-            rcpt.span_id,
-        ))
+        Ok(WarmPathResult {
+            lanes_written: result,
+            receipt: crate::WarmReceipt {
+                lanes: rcpt.lanes,
+                span_id: rcpt.span_id,
+                a_hash: rcpt.a_hash,
+            },
+            latency_us,
+        })
     }
 
     fn get_current_time_us() -> u64 {
@@ -169,4 +171,3 @@ impl WarmPathConstruct8 {
         }
     }
 }
-

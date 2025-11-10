@@ -9,16 +9,16 @@ members = [
     "knhk-warm",
     "knhk-validation",
     "knhk-config",
-    "knhk-patterns",  # Van der Aalst workflow patterns
-    "knhk-workflow-engine",  # Enterprise YAWL workflow engine
+    "knhk-patterns",          # Van der Aalst workflow patterns
+    "knhk-workflow-engine",   # Enterprise YAWL workflow engine
     "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
-    "knhk-json-bench",  # JSON parsing benchmark using knhk-hot
-    "chicago-tdd-tools", "knhk-dflss",  # Chicago TDD testing framework
-    "knhk-latex-compiler",  # LaTeX to PDF compiler
-    "knhk-latex",  # LaTeX CLI using clap-noun-verb
-    "knhk-test-cache",  # Autonomic test cache daemon
+    "knhk-json-bench",        # JSON parsing benchmark using knhk-hot
+    "knhk-dflss",             # Chicago TDD testing framework (now published to crates.io)
+    "knhk-latex-compiler",    # LaTeX to PDF compiler
+    "knhk-latex",             # LaTeX CLI using clap-noun-verb
+    "knhk-test-cache",        # Autonomic test cache daemon
 ]
 
 [workspace.package]
@@ -118,7 +118,10 @@ git2 = "0.18"
 tera = { version = "1.19", features = ["builtins"] }
 
 # Policy engine
-regorus = { version = "0.4", default-features = false, features = ["std", "arc"] }
+regorus = { version = "0.4", default-features = false, features = [
+    "std",
+    "arc",
+] }
 
 # Utilities
 uuid = { version = "1.0", features = ["v4"] }
@@ -159,4 +162,4 @@ debug = false
 [profile.bench.package.knhk-hot]
 opt-level = 3
 codegen-units = 1
-debug = true  # Keep debug symbols for perf analysis
+debug = true      # Keep debug symbols for perf analysis

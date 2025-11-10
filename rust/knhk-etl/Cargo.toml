@@ -15,11 +15,13 @@ authors = ["KNHK Team"]
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = ["std"] }
+knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = [
+  "std",
+] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
 knhk-otel = { path = "../knhk-otel", version = "1.0.0", features = ["std"] }
-chicago-tdd-tools = { path = "../chicago-tdd-tools" }
+chicago-tdd-tools = "1.0.0"
 hashbrown = { version = "0.15", default-features = false }
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
 blake3 = { workspace = true, default-features = false }

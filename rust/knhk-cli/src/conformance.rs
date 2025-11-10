@@ -8,6 +8,7 @@
 
 use clap_noun_verb::Result as CnvResult;
 use clap_noun_verb_macros::verb;
+#[cfg(feature = "workflow")]
 use knhk_workflow_engine::{parser::WorkflowParser, state::StateStore, WorkflowEngine};
 use process_mining::import_xes_file;
 use process_mining::XESImportOptions;
@@ -515,7 +516,7 @@ fn calculate_generalization_simple(
 
     // Generalization = 1 - (model_complexity / log_complexity)
     if log_complexity > 0.0 {
-        (1.0 - (model_complexity / log_complexity))
+        (1.0_f64 - (model_complexity / log_complexity))
             .max(0.0)
             .min(1.0)
     } else {

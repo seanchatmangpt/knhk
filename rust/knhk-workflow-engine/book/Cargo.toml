@@ -25,8 +25,10 @@ knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
 knhk-connectors = { path = "../knhk-connectors", version = "1.0.0" }
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
-knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, features = ["fortune5"] }
-chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0" }
+knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, features = [
+  "fortune5",
+] }
+chicago-tdd-tools = "1.0.0"
 
 # RDF & Turtle parsing
 oxigraph = "0.5"

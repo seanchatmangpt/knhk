@@ -28,7 +28,7 @@ knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", optional = t
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 # knhk-sidecar dependency removed to avoid circular dependency
 # Sidecar now depends on workflow engine, not the other way around
-chicago-tdd-tools = { path = "../chicago-tdd-tools", version = "1.0.0", optional = true }
+chicago-tdd-tools = { version = "1.0.0", optional = true }
 
 # RDF & Turtle parsing
 oxigraph = { workspace = true, optional = true }
@@ -97,11 +97,24 @@ tempfile = { workspace = true }
 process_mining = "0.3"
 
 [features]
-default = ["rdf", "storage", "testing", "connectors", "http"]  # Enable core features by default
-minimal = []  # Core only, no optional deps
+default = [
+  "rdf",
+  "storage",
+  "testing",
+  "connectors",
+  "http",
+] # Enable core features by default
+minimal = [] # Core only, no optional deps
 rdf = ["oxigraph"]
 storage = ["sled"]
-grpc = ["dep:tonic", "dep:tonic-build", "dep:tonic-prost-build", "dep:tonic-prost", "dep:prost", "dep:prost-types"]
+grpc = [
+  "dep:tonic",
+  "dep:tonic-build",
+  "dep:tonic-prost-build",
+  "dep:tonic-prost",
+  "dep:prost",
+  "dep:prost-types",
+]
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 connectors = ["dep:knhk-connectors"]
 testing = ["dep:chicago-tdd-tools"]

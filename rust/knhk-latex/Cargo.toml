@@ -19,6 +19,5 @@ serde = { version = "1.0", features = ["derive"] }
 which = "6.0"
 
 [dev-dependencies]
-chicago-tdd-tools = { path = "../chicago-tdd-tools" }
+chicago-tdd-tools = "1.0.0"
 tokio = { version = "1.48", features = ["full"] }
-

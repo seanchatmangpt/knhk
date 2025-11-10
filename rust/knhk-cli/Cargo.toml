@@ -18,7 +18,9 @@ clap = { version = "4.5", features = ["derive"] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
 knhk-warm = { path = "../knhk-warm", version = "1.0.0", features = ["std"] }
 knhk-config = { path = "../knhk-config", version = "1.0.0", features = ["std"] }
-knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"], optional = true }
+knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = [
+  "std",
+], optional = true }
 knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", features = [
   "std",
 ], optional = true }
@@ -29,7 +31,7 @@ knhk-validation = { path = "../knhk-validation", version = "1.0.0", features = [
   "std",
 ] }
 knhk-workflow-engine = { path = "../knhk-workflow-engine", version = "1.0.0", optional = true }
-chicago-tdd-tools = { path = "../chicago-tdd-tools" }
+chicago-tdd-tools = "1.0.0"
 knhk-sidecar = { path = "../knhk-sidecar", version = "1.0.0", optional = true, features = [
   "fortune5",
 ] }
@@ -68,7 +70,7 @@ reqwest = { workspace = true, optional = true, features = ["json", "blocking"] }
 [features]
 default = ["std", "otel"]
 std = []
-minimal = ["std"]  # Core only, no optional deps
+minimal = ["std"] # Core only, no optional deps
 workflow = ["knhk-workflow-engine"]
 etl = ["knhk-etl"]
 connectors = ["knhk-connectors"]
