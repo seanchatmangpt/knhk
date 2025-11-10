@@ -7,8 +7,8 @@ use crate::error::WorkflowResult;
 #[cfg(feature = "connectors")]
 use crate::integration::connectors::ConnectorIntegration;
 use crate::integration::{
-    check::IntegrationHealthChecker,
-    fortune5::Fortune5Integration, lockchain::LockchainIntegration, otel::OtelIntegration,
+    check::IntegrationHealthChecker, fortune5::Fortune5Integration,
+    lockchain::LockchainIntegration, otel::OtelIntegration,
 };
 use crate::parser::WorkflowSpecId;
 use std::sync::Arc;

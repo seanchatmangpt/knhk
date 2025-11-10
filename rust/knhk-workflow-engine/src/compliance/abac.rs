@@ -90,8 +90,9 @@ impl AbacPolicyEngine {
     pub fn new() -> WorkflowResult<Self> {
         #[cfg(feature = "rdf")]
         {
-            let store = Store::new()
-                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+            let store = Store::new().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e))
+            })?;
 
             Ok(Self {
                 rules: Arc::new(RwLock::new(Vec::new())),
@@ -112,8 +113,9 @@ impl AbacPolicyEngine {
         #[cfg(feature = "rdf")]
         {
             // Validate RDF policy format
-            let store = Store::new()
-                .map_err(|e| WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e)))?;
+            let store = Store::new().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to create RDF store: {:?}", e))
+            })?;
 
             store
                 .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
@@ -178,7 +180,9 @@ impl AbacPolicyEngine {
                 // Load policy into store
                 store
                     .load_from_reader(RdfFormat::Turtle, rule.rdf_policy.as_bytes())
-                    .map_err(|e| WorkflowError::Internal(format!("Failed to load policy: {:?}", e)))?;
+                    .map_err(|e| {
+                        WorkflowError::Internal(format!("Failed to load policy: {:?}", e))
+                    })?;
 
                 // Execute evaluation query using SparqlEvaluator
                 let results = SparqlEvaluator::new()
@@ -188,7 +192,9 @@ impl AbacPolicyEngine {
                     })?
                     .on_store(&*store)
                     .execute()
-                    .map_err(|e| WorkflowError::Internal(format!("SPARQL query failed: {:?}", e)))?;
+                    .map_err(|e| {
+                        WorkflowError::Internal(format!("SPARQL query failed: {:?}", e))
+                    })?;
 
                 // Check if query returned results (policy matches)
                 if let oxigraph::sparql::QueryResults::Solutions(solutions) = results {

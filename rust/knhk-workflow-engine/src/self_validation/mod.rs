@@ -28,7 +28,9 @@ impl SelfValidationManager {
         #[cfg(feature = "storage")]
         let state_store = StateStore::new(state_path)?;
         #[cfg(not(feature = "storage"))]
-        return Err(WorkflowError::Internal("StateStore requires storage feature".to_string()));
+        return Err(WorkflowError::Internal(
+            "StateStore requires storage feature".to_string(),
+        ));
         #[cfg(feature = "storage")]
         let engine = WorkflowEngine::new(state_store);
         let pattern_registry = PatternRegistry::new();

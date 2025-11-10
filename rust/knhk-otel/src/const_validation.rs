@@ -29,28 +29,28 @@ pub const fn generate_span_id_const(seed: u64) -> u64 {
     let mut value = seed;
 
     // Process 8 bytes (64-bit value) - manually unroll loop for const fn
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
     value >>= 8;
-    hash ^= (value & 0xFF) as u64;
+    hash ^= (value & 0xFF);
     hash = hash.wrapping_mul(FNV_PRIME);
 
     hash

@@ -139,9 +139,9 @@ pub use process_mining::{WorkflowEvent, XesExporter};
 pub use reflex::{PromotableSegment, PromotionAnalysis, ReflexBridge};
 pub use security::*;
 pub use services::{AdmissionGate, EventSidecar, TimerFired, TimerService, WorkItemService};
-pub use state::{StateEvent, StateManager};
 #[cfg(feature = "storage")]
 pub use state::StateStore;
+pub use state::{StateEvent, StateManager};
 pub use templates::TemplateLibrary;
 pub use testing::{
     assert_pattern_failure, assert_pattern_has_next_state, assert_pattern_has_variable,

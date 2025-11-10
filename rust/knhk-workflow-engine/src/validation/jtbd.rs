@@ -7,6 +7,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::{
     PatternExecutionContext, PatternExecutionResult, PatternId, PatternRegistry,
 };
+#[cfg(feature = "testing")]
 use chicago_tdd_tools::jtbd::{
     ExecutionContext, ExecutionResult, JtbdScenario, JtbdValidationResult, JtbdValidationSummary,
     JtbdValidator,

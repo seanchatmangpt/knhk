@@ -14,11 +14,9 @@
 //! Invariants: μ∘μ = μ (idempotent), hash(A) = hash(μ(O))
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{
-    JoinType, SplitType, TaskType, WorkflowSpec, WorkflowSpecId,
-};
 #[cfg(feature = "rdf")]
 use crate::parser::extract_workflow_spec;
+use crate::parser::{JoinType, SplitType, TaskType, WorkflowSpec, WorkflowSpecId};
 #[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use sha2::{Digest, Sha256};
@@ -115,8 +113,7 @@ impl RdfCompiler {
     pub fn compile_rdf_to_ir(
         &self,
         store: &Store,
-        #[cfg(feature = "storage")]
-        sled_db: &sled::Db,
+        #[cfg(feature = "storage")] sled_db: &sled::Db,
         spec_id: &WorkflowSpecId,
     ) -> WorkflowResult<CompileOutput> {
         // 1) Hash RDF graph O
@@ -131,7 +128,9 @@ impl RdfCompiler {
         #[cfg(feature = "rdf")]
         let spec = extract_workflow_spec(store)?;
         #[cfg(not(feature = "rdf"))]
-        return Err(WorkflowError::Internal("RDF feature required for compilation".to_string()));
+        return Err(WorkflowError::Internal(
+            "RDF feature required for compilation".to_string(),
+        ));
 
         // 4) Lower to IR
         let mut ir = lower_spec_to_ir(&spec)?;
@@ -186,7 +185,7 @@ fn run_shacl_gates(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<(
         use oxigraph::model::GraphNameRef;
 
         // Convert store to Turtle string for validation
-        
+
         let mut turtle = Vec::new();
         store
             .dump_graph_to_writer(
@@ -194,14 +193,17 @@ fn run_shacl_gates(store: &Store, _spec_id: &WorkflowSpecId) -> WorkflowResult<(
                 RdfSerializer::from_format(RdfFormat::Turtle),
                 &mut turtle,
             )
-            .map_err(|e| WorkflowError::Validation(format!("Failed to serialize store: {:?}", e)))?;
+            .map_err(|e| {
+                WorkflowError::Validation(format!("Failed to serialize store: {:?}", e))
+            })?;
         let turtle_str = String::from_utf8(turtle)
             .map_err(|e| WorkflowError::Validation(format!("Invalid UTF-8 in Turtle: {:?}", e)))?;
 
         // Use existing SHACL validator (oxigraph-based, from WIP)
-        let validator = ShaclValidator::new()
-            .map_err(|e| WorkflowError::Validation(format!("Failed to create SHACL validator: {:?}", e)))?;
-        
+        let validator = ShaclValidator::new().map_err(|e| {
+            WorkflowError::Validation(format!("Failed to create SHACL validator: {:?}", e))
+        })?;
+
         let report = validator
             .validate_soundness(&turtle_str)
             .map_err(|e| WorkflowError::Validation(format!("SHACL validation failed: {:?}", e)))?;

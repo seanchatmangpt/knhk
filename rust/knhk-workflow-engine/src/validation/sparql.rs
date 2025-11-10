@@ -3,8 +3,11 @@
 //! Implements YAWL validation rules using SPARQL queries against RDF/Turtle workflow definitions.
 //! This provides structural validation beyond deadlock detection.
 
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::QueryResults;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 
 /// Validation result for a specific SPARQL rule

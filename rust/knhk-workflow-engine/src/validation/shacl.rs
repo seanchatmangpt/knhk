@@ -31,7 +31,9 @@
 
 #[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::QueryResults;
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 
 /// SHACL validation severity levels

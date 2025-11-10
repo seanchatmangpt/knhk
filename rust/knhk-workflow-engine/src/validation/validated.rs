@@ -18,6 +18,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use std::marker::PhantomData;
 
 // Import Triple from oxigraph (used in parser)
+#[cfg(feature = "rdf")]
 use oxigraph::model::Triple as OxigraphTriple;
 
 /// Validation level marker trait

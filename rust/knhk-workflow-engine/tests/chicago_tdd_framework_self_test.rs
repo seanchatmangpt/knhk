@@ -170,7 +170,7 @@ chicago_test!(test_assert_pattern_success_passes_for_successful_result, {
 
     // Act & Assert: Should not panic
     assert_pattern_success(&result);
-}
+});
 
 #[test]
 #[should_panic(expected = "Pattern execution should succeed")]
@@ -204,7 +204,7 @@ chicago_test!(test_assert_pattern_failure_passes_for_failed_result, {
 
     // Act & Assert: Should not panic
     assert_pattern_failure(&result);
-}
+});
 
 chicago_test!(test_assert_pattern_has_next_state_passes_when_state_set, {
     // Arrange: Create result with next state
@@ -220,7 +220,7 @@ chicago_test!(test_assert_pattern_has_next_state_passes_when_state_set, {
 
     // Act & Assert: Should not panic
     assert_pattern_has_next_state(&result);
-}
+});
 
 #[test]
 #[should_panic(expected = "Pattern execution should set next state")]
@@ -240,23 +240,26 @@ fn test_assert_pattern_has_next_state_fails_when_state_not_set() {
     assert_pattern_has_next_state(&result);
 }
 
-chicago_test!(test_assert_pattern_has_variable_passes_when_variable_exists, {
-    // Arrange: Create result with variable
-    let mut vars = HashMap::new();
-    vars.insert("test_key".to_string(), "test_value".to_string());
-    let result = PatternExecutionResult {
-        success: true,
-        next_state: Some("next_state".to_string()),
-        variables: vars,
-        updates: None,
-        cancel_activities: Vec::new(),
-        next_activities: Vec::new(),
-        terminates: false,
-    };
+chicago_test!(
+    test_assert_pattern_has_variable_passes_when_variable_exists,
+    {
+        // Arrange: Create result with variable
+        let mut vars = HashMap::new();
+        vars.insert("test_key".to_string(), "test_value".to_string());
+        let result = PatternExecutionResult {
+            success: true,
+            next_state: Some("next_state".to_string()),
+            variables: vars,
+            updates: None,
+            cancel_activities: Vec::new(),
+            next_activities: Vec::new(),
+            terminates: false,
+        };
 
-    // Act & Assert: Should not panic
-    assert_pattern_has_variable(&result, "test_key");
-}
+        // Act & Assert: Should not panic
+        assert_pattern_has_variable(&result, "test_key");
+    }
+);
 
 #[test]
 #[should_panic(expected = "Pattern result should contain variable")]
@@ -276,23 +279,26 @@ fn test_assert_pattern_has_variable_fails_when_variable_missing() {
     assert_pattern_has_variable(&result, "missing_key");
 }
 
-chicago_test!(test_assert_pattern_variable_equals_passes_when_value_matches, {
-    // Arrange: Create result with variable
-    let mut vars = HashMap::new();
-    vars.insert("test_key".to_string(), "expected_value".to_string());
-    let result = PatternExecutionResult {
-        success: true,
-        next_state: Some("next_state".to_string()),
-        variables: vars,
-        updates: None,
-        cancel_activities: Vec::new(),
-        next_activities: Vec::new(),
-        terminates: false,
-    };
+chicago_test!(
+    test_assert_pattern_variable_equals_passes_when_value_matches,
+    {
+        // Arrange: Create result with variable
+        let mut vars = HashMap::new();
+        vars.insert("test_key".to_string(), "expected_value".to_string());
+        let result = PatternExecutionResult {
+            success: true,
+            next_state: Some("next_state".to_string()),
+            variables: vars,
+            updates: None,
+            cancel_activities: Vec::new(),
+            next_activities: Vec::new(),
+            terminates: false,
+        };
 
-    // Act & Assert: Should not panic
-    assert_pattern_variable_equals(&result, "test_key", "expected_value");
-}
+        // Act & Assert: Should not panic
+        assert_pattern_variable_equals(&result, "test_key", "expected_value");
+    }
+);
 
 #[test]
 #[should_panic(expected = "Variable 'test_key' should equal")]
@@ -843,7 +849,7 @@ chicago_test!(test_framework_assertion_helpers_provide_clear_messages, {
     assert_pattern_has_next_state(&result);
     assert_pattern_has_variable(&result, "test_key");
     assert_pattern_variable_equals(&result, "test_key", "test_value");
-}
+});
 
 // ============================================================================
 // Framework Coverage: Test All Framework Features

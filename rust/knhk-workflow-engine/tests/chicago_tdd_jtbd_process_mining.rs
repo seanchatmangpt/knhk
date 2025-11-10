@@ -12,7 +12,9 @@
 //! - End-to-end validation (complete workflow from execution to analysis)
 //! - JTBD focus (validate actual use cases, not just technical integration)
 
-use chicago_tdd_tools::{chicago_async_test, assert_ok, assert_err, assert_eq_msg, assert_guard_constraint};
+use chicago_tdd_tools::{
+    assert_eq_msg, assert_err, assert_guard_constraint, assert_ok, chicago_async_test,
+};
 use knhk_workflow_engine::{
     executor::WorkflowEngine,
     parser::{Flow, JoinType, SplitType, Task, TaskType, WorkflowSpec, WorkflowSpecId},
@@ -247,7 +249,7 @@ chicago_async_test!(test_jtbd_process_discovery_from_execution_logs, {
         let _ = engine.execute_case(case_id).await;
         case_ids.push(case_id);
     }
-    
+
     // Guard constraint validation: Ensure workflow tasks don't exceed max_run_len
     assert_guard_constraint!(spec.tasks.len() <= 8, "max_run_len");
 
@@ -296,7 +298,7 @@ chicago_async_test!(test_jtbd_process_discovery_from_execution_logs, {
         petri_net.transitions.len()
     );
     println!("    Discovery time: {:?}", duration);
-}
+});
 
 /// JTBD 2: Conformance Checking - Verify discovered model matches original workflow
 chicago_async_test!(test_jtbd_conformance_checking_discovered_vs_design, {

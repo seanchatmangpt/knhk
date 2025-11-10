@@ -60,8 +60,8 @@ impl GgenGenerator {
     /// Load RDF file into graph store
     #[cfg(feature = "rdf")]
     pub fn load_rdf(&mut self, rdf_path: impl AsRef<Path>) -> WorkflowResult<()> {
-        use oxigraph::store::Store;
         use oxigraph::io::RdfFormat;
+        use oxigraph::store::Store;
 
         let rdf_path = rdf_path.as_ref();
         let rdf_content = std::fs::read_to_string(rdf_path)
@@ -80,7 +80,9 @@ impl GgenGenerator {
 
     #[cfg(not(feature = "rdf"))]
     pub fn load_rdf(&mut self, _rdf_path: impl AsRef<Path>) -> WorkflowResult<()> {
-        Err(WorkflowError::Internal("RDF feature not enabled".to_string()))
+        Err(WorkflowError::Internal(
+            "RDF feature not enabled".to_string(),
+        ))
     }
 
     /// Generate workflow spec from template and RDF

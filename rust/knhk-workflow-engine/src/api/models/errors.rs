@@ -41,6 +41,7 @@ impl ApiError {
     }
 
     /// Convert to HTTP status code
+    #[cfg(feature = "http")]
     pub fn to_http_status(&self) -> axum::http::StatusCode {
         match self.code.as_str() {
             "NOT_FOUND" => axum::http::StatusCode::NOT_FOUND,

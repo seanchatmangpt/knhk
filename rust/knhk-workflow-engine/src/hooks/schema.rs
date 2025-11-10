@@ -178,12 +178,13 @@ impl SchemaRegistry {
         {
             use crate::validation::ShaclValidator;
 
-            let validator = ShaclValidator::new()
-                .map_err(|e| WorkflowError::Internal(format!("Failed to create SHACL validator: {:?}", e)))?;
-            
-            let report = validator
-                .validate_soundness(&workflow_rdf)
-                .map_err(|e| WorkflowError::Validation(format!("SHACL validation failed: {:?}", e)))?;
+            let validator = ShaclValidator::new().map_err(|e| {
+                WorkflowError::Internal(format!("Failed to create SHACL validator: {:?}", e))
+            })?;
+
+            let report = validator.validate_soundness(&workflow_rdf).map_err(|e| {
+                WorkflowError::Validation(format!("SHACL validation failed: {:?}", e))
+            })?;
 
             if !report.conforms {
                 let errors: Vec<String> = report

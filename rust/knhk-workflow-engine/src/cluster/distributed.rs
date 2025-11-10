@@ -77,7 +77,7 @@ impl DistributedStateStore {
 mod tests {
     use super::*;
     #[cfg(feature = "storage")]
-use crate::state::StateStore;
+    use crate::state::StateStore;
     use tempfile::TempDir;
 
     #[tokio::test]
