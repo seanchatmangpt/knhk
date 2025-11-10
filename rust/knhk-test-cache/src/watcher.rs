@@ -3,11 +3,11 @@
 //! Uses `notify` crate to watch for changes to Rust source files.
 //! Triggers rebuild when code changes are detected.
 
+use crate::TestCacheError;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use tokio::sync::mpsc as tokio_mpsc;
-use crate::TestCacheError;
 
 /// File watcher that monitors Rust source files for changes
 pub struct FileWatcher {
@@ -23,11 +23,11 @@ impl FileWatcher {
     /// Create a new file watcher
     pub fn new(watch_dir: PathBuf) -> Result<Self, TestCacheError> {
         let (tx, rx) = mpsc::channel();
-        
+
         let config = Config::default()
             .with_poll_interval(std::time::Duration::from_millis(500))
             .with_compare_contents(true);
-        
+
         let mut watcher = RecommendedWatcher::new(tx, config)?;
         watcher.watch(&watch_dir, RecursiveMode::Recursive)?;
 
@@ -50,7 +50,10 @@ impl FileWatcher {
 
         loop {
             // Check for events with timeout
-            match self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
+            match self
+                .receiver
+                .recv_timeout(std::time::Duration::from_millis(100))
+            {
                 Ok(Ok(event)) => {
                     if self.is_rust_file_change(&event) {
                         pending_changes.push(event);
@@ -62,7 +65,8 @@ impl FileWatcher {
                 }
                 Err(mpsc::RecvTimeoutError::Timeout) => {
                     // Check if debounce period has elapsed
-                    if !pending_changes.is_empty() && last_event_time.elapsed() >= debounce_duration {
+                    if !pending_changes.is_empty() && last_event_time.elapsed() >= debounce_duration
+                    {
                         // Process pending changes
                         let changed_files = self.extract_changed_files(&pending_changes);
                         for file in changed_files {
@@ -98,20 +102,20 @@ impl FileWatcher {
     /// Extract changed file paths from events
     fn extract_changed_files(&self, events: &[Event]) -> Vec<PathBuf> {
         let mut files = Vec::new();
-        
+
         for event in events {
             for path in &event.paths {
                 // Skip excluded paths
                 if self.is_excluded(path) {
                     continue;
                 }
-                
+
                 if path.extension().and_then(|s| s.to_str()) == Some("rs") {
                     files.push(path.clone());
                 }
             }
         }
-        
+
         files
     }
 
@@ -127,9 +131,9 @@ impl FileWatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use std::fs;
     use std::time::Duration;
+    use tempfile::TempDir;
     use tokio::time::timeout;
 
     #[tokio::test]
@@ -158,4 +162,3 @@ mod tests {
         assert!(result.is_ok(), "Should detect file creation");
     }
 }
-

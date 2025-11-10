@@ -67,7 +67,10 @@ pub struct WorkflowEngine {
     /// Sidecar integration (if enabled)
     pub(crate) sidecar_integration: Option<Arc<SidecarIntegration>>,
     /// Connector integration (if enabled)
+    #[cfg(feature = "connectors")]
     pub(crate) connector_integration: Option<Arc<tokio::sync::Mutex<ConnectorIntegration>>>,
+    #[cfg(not(feature = "connectors"))]
+    pub(crate) connector_integration: Option<Arc<tokio::sync::Mutex<()>>>,
     /// RDF store for workflow specifications (SPARQL queries)
     #[cfg(feature = "rdf")]
     pub(crate) spec_rdf_store: Arc<RwLock<Store>>,

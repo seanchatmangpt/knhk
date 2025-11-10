@@ -361,6 +361,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Commands::Serve { port, host } => {
             println!("Starting REST API server on {}:{}", host, port);
+            #[cfg(feature = "http")]
             use knhk_workflow_engine::api::rest::RestApiServer;
             let app = RestApiServer::new(engine.clone()).router();
             use std::net::SocketAddr;
@@ -372,6 +373,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let listener = TcpListener::bind(&addr)
                 .await
                 .map_err(|e| format!("Failed to bind to {}:{}: {}", host, port, e))?;
+            #[cfg(feature = "http")]
             axum::serve(listener, app)
                 .await
                 .map_err(|e| format!("Server error: {}", e))?;

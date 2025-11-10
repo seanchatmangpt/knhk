@@ -258,6 +258,7 @@ impl IntegrationHealthChecker {
         // Verify connector integration module is available
         // In production, would check Kafka broker connectivity and Salesforce API availability
         // For now, verify the integration module can be instantiated
+        #[cfg(feature = "connectors")]
         let _connector_integration = crate::integration::ConnectorIntegration::new();
 
         // Basic health check passed

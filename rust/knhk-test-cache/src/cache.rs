@@ -3,11 +3,11 @@
 //! Caches test results by code hash to enable instant test execution
 //! when code hasn't changed.
 
+use crate::TestCacheError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::TestCacheError;
 
 /// Cached test result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,6 +33,7 @@ pub enum TestStatus {
 }
 
 /// Test cache manager
+#[derive(Clone)]
 pub struct Cache {
     /// Cache directory
     cache_dir: PathBuf,
@@ -47,7 +48,7 @@ impl Cache {
     pub fn new(cache_dir: PathBuf) -> Self {
         let result_dir = cache_dir.join("results");
         std::fs::create_dir_all(&result_dir).ok();
-        
+
         Self {
             cache_dir,
             result_dir,
@@ -64,16 +65,14 @@ impl Cache {
     /// Get cached test result for code hash
     pub fn get(&self, code_hash: &str) -> Result<Option<CacheResult>, TestCacheError> {
         let result_file = self.result_dir.join(format!("{}.json", code_hash));
-        
+
         if !result_file.exists() {
             return Ok(None);
         }
 
         let metadata = std::fs::metadata(&result_file)?;
         let modified = metadata.modified()?;
-        let age = modified.duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let age = modified.duration_since(UNIX_EPOCH).unwrap().as_secs();
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -132,13 +131,11 @@ impl Cache {
         for entry in std::fs::read_dir(&self.result_dir)? {
             let entry = entry?;
             let path = entry.path();
-            
+
             if path.extension().and_then(|s| s.to_str()) == Some("json") {
                 if let Ok(metadata) = std::fs::metadata(&path) {
                     if let Ok(modified) = metadata.modified() {
-                        let timestamp = modified.duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs();
+                        let timestamp = modified.duration_since(UNIX_EPOCH).unwrap().as_secs();
                         entries.push((path, timestamp));
                     }
                 }
@@ -209,7 +206,9 @@ mod tests {
         let cache = Cache::new(temp_dir.path().to_path_buf());
 
         let code_hash = "test_hash_123";
-        cache.store(code_hash, TestStatus::Passed, None, 1.5).unwrap();
+        cache
+            .store(code_hash, TestStatus::Passed, None, 1.5)
+            .unwrap();
 
         let result = cache.get(code_hash).unwrap();
         assert!(result.is_some());
@@ -222,11 +221,12 @@ mod tests {
     #[test]
     fn test_cache_expiration() {
         let temp_dir = TempDir::new().unwrap();
-        let cache = Cache::new(temp_dir.path().to_path_buf())
-            .with_max_age(1); // 1 second expiration
+        let cache = Cache::new(temp_dir.path().to_path_buf()).with_max_age(1); // 1 second expiration
 
         let code_hash = "test_hash_456";
-        cache.store(code_hash, TestStatus::Passed, None, 1.0).unwrap();
+        cache
+            .store(code_hash, TestStatus::Passed, None, 1.0)
+            .unwrap();
 
         // Should be available immediately
         assert!(cache.get(code_hash).unwrap().is_some());
@@ -238,4 +238,3 @@ mod tests {
         assert!(cache.get(code_hash).unwrap().is_none());
     }
 }
-

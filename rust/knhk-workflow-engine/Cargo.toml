@@ -97,7 +97,7 @@ tempfile = { workspace = true }
 process_mining = "0.3"
 
 [features]
-default = ["rdf", "storage", "testing"]  # Enable core features by default
+default = ["rdf", "storage", "testing", "connectors", "http"]  # Enable core features by default
 minimal = []  # Core only, no optional deps
 rdf = ["oxigraph"]
 storage = ["sled"]

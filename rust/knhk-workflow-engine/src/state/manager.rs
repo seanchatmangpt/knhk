@@ -137,7 +137,7 @@ impl StateManager {
         }
 
         // Load from store
-        let spec = self.store.load_spec(spec_id)?;
+        let spec: Option<WorkflowSpec> = self.store.load_spec(spec_id)?;
 
         // Update cache if found
         if let Some(ref spec) = spec {
@@ -198,7 +198,7 @@ impl StateManager {
         }
 
         // Load from store
-        let case = self.store.load_case(case_id)?;
+        let case: Option<Case> = self.store.load_case(case_id)?;
 
         // Update cache if found
         if let Some(ref case) = case {
