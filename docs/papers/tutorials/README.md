@@ -14,21 +14,47 @@ Tutorials are designed for **learning by doing**. They:
 
 ---
 
-## 🚀 Coming Soon
-
-We're working on comprehensive tutorials including:
+## 📚 Available Tutorials
 
 ### Getting Started Series
-- **Your First KNHK Workflow** - Set up and run your first telemetry-validated workflow
-- **Understanding Telemetry** - Hands-on exploration of OpenTelemetry integration
-- **Chicago TDD Basics** - Learn Test-Driven Development with real examples
 
-### Advanced Tutorials
+#### [1. Getting Started with KNHK](01-getting-started-with-knhk.md)
+**Level**: Beginner | **Time**: 15-20 minutes
+
+Learn the fundamentals of KNHK in this foundational tutorial:
+- Clone and set up the repository
+- Understand the Chatman Equation concepts
+- Run your first test
+- Explore the documentation structure
+- Verify installation with performance tests
+- Understand Weaver schema validation
+
+**What you'll accomplish**: A fully working KNHK development environment
+
+#### [2. Understanding Telemetry in KNHK](02-understanding-telemetry.md)
+**Level**: Intermediate | **Time**: 20-25 minutes
+
+Dive deeper into KNHK's core innovation: telemetry-based validation:
+- Learn OpenTelemetry concepts (spans, metrics, logs)
+- Understand how telemetry eliminates false positives
+- Learn the Chatman Constant (≤8 ticks)
+- Run code with telemetry output
+- Validate with Weaver schema validation
+- Understand the three validation levels
+
+**What you'll accomplish**: Deep understanding of why KNHK's approach is different
+
+### Coming Soon
+
+We're planning additional tutorials including:
+
+#### Advanced Tutorials (Coming Soon)
+- **Chicago TDD Basics** - Learn Test-Driven Development with real examples
 - **Building Production-Ready Features** - End-to-end feature development
 - **Optimizing Performance** - Meet the ≤8 tick Chatman Constant
 - **Schema-First Development** - OTel Weaver validation workflow
 
-### Tool-Specific Tutorials
+#### Tool-Specific Tutorials (Coming Soon)
 - **Working with Knowledge Hooks** - Practical guide to K-hooks
 - **Implementing Workflow Patterns** - The 43 patterns in practice
 - **Telemetry Schema Design** - Create effective OTel schemas
@@ -37,20 +63,21 @@ We're working on comprehensive tutorials including:
 
 ## 📖 Tutorial Structure
 
-Each tutorial will follow this structure:
+Each tutorial follows this structure:
 
 1. **Learning Objectives** - What you'll accomplish
 2. **Prerequisites** - What you need before starting
-3. **Setup** - Environment preparation
-4. **Step-by-Step Guide** - Detailed walkthrough
+3. **Step-by-Step Guide** - Detailed walkthrough with code examples
+4. **Key Concepts** - Important ideas explained
 5. **Verification** - Confirm it works
-6. **What You Learned** - Recap and next steps
+6. **Troubleshooting** - Solutions for common issues
+7. **What You've Learned** - Recap and next steps
 
 ---
 
-## 🎯 For Now
+## 🎯 Getting Started
 
-While we build comprehensive tutorials, you can:
+Start here based on your experience level:
 
 ### Learn the Concepts
 Start with [**Explanation**](../explanation/) documentation:
@@ -82,7 +109,7 @@ Look at existing implementations:
 **Other Diátaxis Categories**:
 - [**Explanation**](../explanation/) - Conceptual understanding (start here if new)
 - [**Reference**](../reference/) - Technical specifications and papers
-- [**How-to Guides**](../how-to-guides/) - Task-oriented problem solving (coming soon)
+- [**How-to Guides**](../how-to-guides/) - Task-oriented problem solving for specific tasks
 
 **External Resources**:
 - [Diátaxis Framework](https://diataxis.fr/tutorials/) - Understanding tutorials
@@ -141,5 +168,5 @@ Want to help create tutorials? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: Coming Soon
+**Status**: ✅ 2 Core Tutorials Complete | 🔄 Advanced Tutorials Coming
 **Framework**: Diátaxis (Learning-oriented Tutorials)
