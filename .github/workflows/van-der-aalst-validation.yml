@@ -50,7 +50,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Cache cargo dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload validation report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: van-der-aalst-validation-report
           path: |

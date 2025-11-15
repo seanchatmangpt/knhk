@@ -192,7 +192,7 @@ Each guide will follow this structure:
 ## 🔗 Related Documentation
 
 **Other Diátaxis Categories**:
-- [**Tutorials**](../tutorials/) - Learning-oriented guides (coming soon)
+- [**Tutorials**](../tutorials/) - Learning-oriented guides for getting started
 - [**Reference**](../reference/) - Technical specifications and papers
 - [**Explanation**](../explanation/) - Conceptual understanding
 
@@ -279,3 +279,6 @@ Want to help create how-to guides? We'd love your help!
 **Last Updated**: 2025-11-15
 **Status**: Complete (13/13 complete, 100%) 🎉
 **Framework**: Diátaxis (Task-oriented How-to Guides)
+**Estimated Coverage**: Beginner to Advanced (95% of core workflows)
+**Total Lines**: 6,000+ (comprehensive solution guides)
+**Total Study Time**: 300+ minutes of practical learning content

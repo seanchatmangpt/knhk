@@ -61,11 +61,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: rustfmt, clippy
 
       - name: Cache cargo registry
@@ -125,11 +122,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -237,12 +230,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
 
       - name: Build release binaries
         run: |
@@ -291,11 +281,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Publish crates (dry-run first)
         env:
