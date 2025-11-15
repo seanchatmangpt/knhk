@@ -1,0 +1,1 @@
+../../kgs_whitepaper_v2_0_sean_chatman.md
