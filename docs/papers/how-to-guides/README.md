@@ -38,16 +38,39 @@ How-to guides are designed for **getting things done**. They:
    - Add debug output and use debuggers
    - **Time**: 15-30 minutes | **Level**: Intermediate
 
+4. **[How to Add New Features](04-add-new-features.md)** ⭐ NEW
+   - Complete feature development workflow
+   - Code structure and organization
+   - Test-first approach with real examples
+   - Adding telemetry to features
+   - Verification and validation
+   - **Time**: 2.5-4 hours | **Level**: Intermediate
+
+### Telemetry & Validation ✅ (Available Now)
+
+5. **[How to Create OTel Schemas](05-create-otel-schemas.md)** ⭐ NEW
+   - Design telemetry specifications
+   - Schema fundamentals and structure
+   - YAML schema creation with examples
+   - Validation with Weaver
+   - Common patterns and best practices
+   - **Time**: 2-3 hours | **Level**: Intermediate
+
+6. **[How to Fix Weaver Validation Errors](06-fix-weaver-validation-errors.md)** ⭐ NEW
+   - Understanding validation errors
+   - Systematic debugging workflow
+   - Fixing each error type
+   - Prevention strategies
+   - Troubleshooting guide
+   - **Time**: 1.5-2 hours | **Level**: Intermediate
+
 ### Coming Soon
 
-#### Development Workflows (3 guides)
-- **How to Add New Features** - Feature development workflow
+#### Development Workflows (2 guides)
 - **How to Build the C Library** - C compilation workflow
 - **How to Build Rust Binaries** - Cargo build optimization
 
-#### Telemetry & Validation (4 guides)
-- **How to Create OTel Schemas** - Schema design and validation
-- **How to Fix Weaver Validation Errors** - Common issues and solutions
+#### Telemetry & Validation (1 guide)
 - **How to Emit Proper Telemetry** - Instrumentation best practices
 - **How to Optimize Performance** - Meet the ≤8 tick constraint
 
@@ -93,14 +116,17 @@ Each guide will follow this structure:
 ### Need to Run Tests?
 → [How-to: Run Tests Efficiently](02-run-tests-efficiently.md)
 
-### Building a New Feature? (Coming Soon)
-→ How-to: Add New Features
+### Building a New Feature?
+→ [How-to: Add New Features](04-add-new-features.md)
 
-### Performance Tests Failing?
-→ [How-to: Optimize Performance](11-optimize-performance.md) (coming soon)
+### Need to Design OTel Schema?
+→ [How-to: Create OTel Schemas](05-create-otel-schemas.md)
 
 ### Weaver Validation Failing?
-→ How-to: Fix Weaver Validation Errors (coming soon)
+→ [How-to: Fix Weaver Validation Errors](06-fix-weaver-validation-errors.md)
+
+### Performance Tests Failing?
+→ [How-to: Optimize Performance](08-optimize-performance.md) (coming soon)
 
 ---
 
@@ -178,16 +204,16 @@ Want to help create how-to guides? We'd love your help!
 | Setup Development Environment | ✅ Complete | 15-30min | Beginner |
 | Run Tests Efficiently | ✅ Complete | 10-20min | Beginner |
 | Debug Failing Tests | ✅ Complete | 15-30min | Intermediate |
-| Add New Features | 🔄 Coming Soon | 20-30min | Intermediate |
-| Build C Library | 🔄 Coming Soon | 15-20min | Intermediate |
-| Create OTel Schemas | 🔄 Coming Soon | 20-25min | Intermediate |
-| Fix Weaver Errors | 🔄 Coming Soon | 10-15min | Intermediate |
-| Emit Proper Telemetry | 🔄 Coming Soon | 20-30min | Intermediate |
-| Optimize Performance | 🔄 Coming Soon | 20-30min | Advanced |
-| Validate Production Ready | 🔄 Coming Soon | 15-20min | Advanced |
+| Add New Features | ✅ Complete | 2.5-4h | Intermediate |
+| Create OTel Schemas | ✅ Complete | 2-3h | Intermediate |
+| Fix Weaver Errors | ✅ Complete | 1.5-2h | Intermediate |
+| Emit Proper Telemetry | 🔄 Coming Soon | 2-3h | Intermediate |
+| Build C Library | 🔄 Coming Soon | 1.5-2h | Intermediate |
+| Optimize Performance | 🔄 Coming Soon | 2-3h | Advanced |
+| Validate Production Ready | 🔄 Coming Soon | 1.5-2h | Advanced |
 
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (3/13 complete)
+**Status**: In Progress (6/13 complete, 46%)
 **Framework**: Diátaxis (Task-oriented How-to Guides)

@@ -25,16 +25,23 @@ Tutorials are designed for **learning by doing**. They:
    - Learn the three-tier validation hierarchy
    - **Time**: 20-30 minutes | **Level**: Beginner
 
+2. **[Understanding Telemetry](02-understanding-telemetry.md)** ⭐ NEW
+   - Why telemetry matters for validation
+   - OpenTelemetry fundamentals and architecture
+   - Three pillars: Spans, Metrics, Logs
+   - KNHK instrumentation patterns and best practices
+   - Hands-on telemetry example with code
+   - Troubleshooting telemetry issues
+   - **Time**: 1.5-2 hours | **Level**: Beginner-Intermediate
+
 ### Coming Soon
 
-- **Understanding Telemetry** - Hands-on exploration of OpenTelemetry integration
 - **Chicago TDD Basics** - Learn Test-Driven Development with real examples
 - **Building Production-Ready Features** - End-to-end feature development
 - **Optimizing Performance** - Meet the ≤8 tick Chatman Constant
 - **Schema-First Development** - OTel Weaver validation workflow
 - **Working with Knowledge Hooks** - Practical guide to K-hooks
 - **Implementing Workflow Patterns** - The 43 patterns in practice
-- **Telemetry Schema Design** - Create effective OTel schemas
 
 ---
 
@@ -146,7 +153,7 @@ Want to help create tutorials? We'd love your help!
 | Tutorial | Status | Time | Level |
 |----------|--------|------|-------|
 | Your First KNHK Workflow | ✅ Complete | 20-30min | Beginner |
-| Understanding Telemetry | 🔄 Coming Soon | 15-20min | Beginner |
+| Understanding Telemetry | ✅ Complete | 1.5-2h | Beginner-Intermediate |
 | Chicago TDD Basics | 🔄 Coming Soon | 20-25min | Beginner |
 | Building Production Features | 🔄 Coming Soon | 30-45min | Intermediate |
 | Optimizing Performance | 🔄 Coming Soon | 20-30min | Intermediate |
@@ -155,5 +162,5 @@ Want to help create tutorials? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (1/6 complete)
+**Status**: In Progress (2/6 complete, 33%)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
