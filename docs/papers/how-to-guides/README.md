@@ -14,33 +14,52 @@ How-to guides are designed for **getting things done**. They:
 
 ---
 
-## 🚀 Coming Soon
+## 📚 Available How-to Guides
 
-We're working on practical how-to guides including:
+### Development Workflows ✅ (Available Now)
 
-### Development Workflows
-- **How to Set Up Your Development Environment** - Complete setup guide
-- **How to Run Tests Efficiently** - Test execution strategies
-- **How to Debug Failing Tests** - Troubleshooting test failures
+1. **[How to Set Up Your Development Environment](01-setup-development-environment.md)**
+   - Install Rust, Cargo, and system dependencies
+   - Clone and configure the repository
+   - Verify your setup with validation checks
+   - **Time**: 15-30 minutes | **Level**: Beginner
+
+2. **[How to Run Tests Efficiently](02-run-tests-efficiently.md)**
+   - Understand the three-tier validation hierarchy
+   - Use `cargo test`, `cargo nextest`, and project-specific commands
+   - Optimize test execution for fast feedback
+   - Interpret test results and performance constraints
+   - **Time**: 10-20 minutes | **Level**: Beginner
+
+3. **[How to Debug Failing Tests](03-debug-failing-tests.md)**
+   - Systematically identify test failures
+   - Use debugging tools and techniques
+   - Common errors and solutions
+   - Add debug output and use debuggers
+   - **Time**: 15-30 minutes | **Level**: Intermediate
+
+### Coming Soon
+
+#### Development Workflows (3 guides)
 - **How to Add New Features** - Feature development workflow
+- **How to Build the C Library** - C compilation workflow
+- **How to Build Rust Binaries** - Cargo build optimization
 
-### Telemetry & Validation
+#### Telemetry & Validation (4 guides)
 - **How to Create OTel Schemas** - Schema design and validation
 - **How to Fix Weaver Validation Errors** - Common issues and solutions
 - **How to Emit Proper Telemetry** - Instrumentation best practices
 - **How to Optimize Performance** - Meet the ≤8 tick constraint
 
-### Build & Deployment
-- **How to Build the C Library** - C compilation workflow
-- **How to Build Rust Binaries** - Cargo build optimization
+#### Deployment & Integration (4 guides)
 - **How to Run Performance Tests** - Performance validation
 - **How to Generate Documentation** - Doc generation workflow
-
-### Integration Patterns
 - **How to Integrate with OpenTelemetry Collectors** - OTLP setup
+- **How to Validate Production Readiness** - Pre-deployment checklist
+
+#### Advanced Patterns (2+ guides)
 - **How to Use Knowledge Hooks** - Practical K-hook patterns
 - **How to Implement Workflow Patterns** - Apply the 43 patterns
-- **How to Validate Production Readiness** - Pre-deployment checklist
 
 ---
 
@@ -57,35 +76,31 @@ Each guide will follow this structure:
 
 ---
 
-## 🎯 For Now
+## 🎯 Quick Start by Scenario
 
-While we build comprehensive how-to guides, you can:
+### New to KNHK?
+1. Read: [Explanation: KNHK Overview](../explanation/the_chatman_equation_fortune5.md)
+2. Do: [Tutorial: Your First KNHK Workflow](../tutorials/01-getting-started.md)
+3. Setup: [How-to: Setup Development Environment](01-setup-development-environment.md)
+4. Learn: [How-to: Run Tests Efficiently](02-run-tests-efficiently.md)
 
-### Check Existing Documentation
-Review project files:
-```bash
-# Build guides
-cat Makefile              # See available make targets
-cat Cargo.toml            # Understand Rust workspace
+### Setup for the First Time?
+→ [How-to: Setup Development Environment](01-setup-development-environment.md)
 
-# Test guides
-make test-chicago-v04     # Run Chicago TDD tests
-make test-performance-v04 # Run performance tests
-cargo test --workspace    # Run all Rust tests
-```
+### Tests Are Failing?
+→ [How-to: Debug Failing Tests](03-debug-failing-tests.md)
 
-### Explore CLAUDE.md
-The [`/CLAUDE.md`](/CLAUDE.md) file contains:
-- Development workflow guidelines
-- SPARC methodology usage
-- Agent coordination patterns
-- Build and test commands
+### Need to Run Tests?
+→ [How-to: Run Tests Efficiently](02-run-tests-efficiently.md)
 
-### Review Reference Documentation
-Check [**Reference**](../reference/) for:
-- Technical specifications
-- Formal papers with implementation details
-- Architecture documentation
+### Building a New Feature? (Coming Soon)
+→ How-to: Add New Features
+
+### Performance Tests Failing?
+→ [How-to: Optimize Performance](11-optimize-performance.md) (coming soon)
+
+### Weaver Validation Failing?
+→ How-to: Fix Weaver Validation Errors (coming soon)
 
 ---
 
@@ -154,6 +169,25 @@ Want to help create how-to guides? We'd love your help!
 
 ---
 
+---
+
+## 📊 How-to Guide Progress
+
+| Guide | Status | Time | Level |
+|-------|--------|------|-------|
+| Setup Development Environment | ✅ Complete | 15-30min | Beginner |
+| Run Tests Efficiently | ✅ Complete | 10-20min | Beginner |
+| Debug Failing Tests | ✅ Complete | 15-30min | Intermediate |
+| Add New Features | 🔄 Coming Soon | 20-30min | Intermediate |
+| Build C Library | 🔄 Coming Soon | 15-20min | Intermediate |
+| Create OTel Schemas | 🔄 Coming Soon | 20-25min | Intermediate |
+| Fix Weaver Errors | 🔄 Coming Soon | 10-15min | Intermediate |
+| Emit Proper Telemetry | 🔄 Coming Soon | 20-30min | Intermediate |
+| Optimize Performance | 🔄 Coming Soon | 20-30min | Advanced |
+| Validate Production Ready | 🔄 Coming Soon | 15-20min | Advanced |
+
+---
+
 **Last Updated**: 2025-11-15
-**Status**: Coming Soon
+**Status**: In Progress (3/13 complete)
 **Framework**: Diátaxis (Task-oriented How-to Guides)

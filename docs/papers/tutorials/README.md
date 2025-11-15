@@ -14,21 +14,24 @@ Tutorials are designed for **learning by doing**. They:
 
 ---
 
-## 🚀 Coming Soon
+## 📚 Available Tutorials
 
-We're working on comprehensive tutorials including:
+### Getting Started Series ✅ (Available Now)
 
-### Getting Started Series
-- **Your First KNHK Workflow** - Set up and run your first telemetry-validated workflow
+1. **[Your First KNHK Workflow](01-getting-started.md)**
+   - Understand KNHK fundamentals and the schema-first approach
+   - Set up your development environment
+   - Run your first telemetry-validated workflow
+   - Learn the three-tier validation hierarchy
+   - **Time**: 20-30 minutes | **Level**: Beginner
+
+### Coming Soon
+
 - **Understanding Telemetry** - Hands-on exploration of OpenTelemetry integration
 - **Chicago TDD Basics** - Learn Test-Driven Development with real examples
-
-### Advanced Tutorials
 - **Building Production-Ready Features** - End-to-end feature development
 - **Optimizing Performance** - Meet the ≤8 tick Chatman Constant
 - **Schema-First Development** - OTel Weaver validation workflow
-
-### Tool-Specific Tutorials
 - **Working with Knowledge Hooks** - Practical guide to K-hooks
 - **Implementing Workflow Patterns** - The 43 patterns in practice
 - **Telemetry Schema Design** - Create effective OTel schemas
@@ -48,32 +51,28 @@ Each tutorial will follow this structure:
 
 ---
 
-## 🎯 For Now
+## 🎯 Recommended Learning Path
 
-While we build comprehensive tutorials, you can:
+### For Complete Beginners
 
-### Learn the Concepts
-Start with [**Explanation**](../explanation/) documentation:
-- Read [`the_chatman_equation_fortune5.md`](../explanation/the_chatman_equation_fortune5.md)
-- Understand [`kgs_whitepaper_v2_0_sean_chatman.md`](../explanation/kgs_whitepaper_v2_0_sean_chatman.md)
+1. **Start here**: [Your First KNHK Workflow](01-getting-started.md) - Learn fundamentals
+2. **Then**: [How-to: Setup Development Environment](../how-to-guides/01-setup-development-environment.md) - Get hands-on
+3. **Next**: [How-to: Run Tests Efficiently](../how-to-guides/02-run-tests-efficiently.md) - Understand validation
+4. **Continue**: [Explanation: Chatman Equation](../explanation/the_chatman_equation_fortune5.md) - Deep dive
 
-### Explore the Code
-Check the main repository:
-```bash
-# Clone and explore
-git clone https://github.com/seanchatmangpt/knhk.git
-cd knhk
+### For Experienced Developers
 
-# Run basic tests
-cargo test --workspace
-make test-chicago-v04
-```
+1. **Quick start**: [How-to: Setup Development](../how-to-guides/01-setup-development-environment.md)
+2. **Key insight**: [How-to: Run Tests Efficiently](../how-to-guides/02-run-tests-efficiently.md) - understand validation hierarchy
+3. **Reference**: [Technical Papers](../reference/) - Full specifications
+4. **Build**: [How-to: Add New Features](../how-to-guides/04-add-new-features.md) (coming soon)
 
-### Review Examples
-Look at existing implementations:
-- Browse `/src` for Rust implementations
-- Check `/tests` for test patterns
-- Review `/examples` (if available)
+### For Researchers
+
+1. **Theory**: [Explanation: Formal Foundations](../explanation/formal-foundations.md)
+2. **Details**: [Chatman Equation Paper](../reference/the_chatman_equation_fortune5_v1.2.0.pdf)
+3. **Implementation**: [Technical Reference](../reference/)
+4. **Code**: Explore `/src` in repository
 
 ---
 
@@ -140,6 +139,21 @@ Want to help create tutorials? We'd love your help!
 
 ---
 
+---
+
+## 📊 Tutorial Progress
+
+| Tutorial | Status | Time | Level |
+|----------|--------|------|-------|
+| Your First KNHK Workflow | ✅ Complete | 20-30min | Beginner |
+| Understanding Telemetry | 🔄 Coming Soon | 15-20min | Beginner |
+| Chicago TDD Basics | 🔄 Coming Soon | 20-25min | Beginner |
+| Building Production Features | 🔄 Coming Soon | 30-45min | Intermediate |
+| Optimizing Performance | 🔄 Coming Soon | 20-30min | Intermediate |
+| Schema-First Development | 🔄 Coming Soon | 25-35min | Intermediate |
+
+---
+
 **Last Updated**: 2025-11-15
-**Status**: Coming Soon
+**Status**: In Progress (1/6 complete)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
