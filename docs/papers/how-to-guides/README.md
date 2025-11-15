@@ -64,15 +64,39 @@ How-to guides are designed for **getting things done**. They:
    - Troubleshooting guide
    - **Time**: 1.5-2 hours | **Level**: Intermediate
 
+7. **[How to Emit Proper Telemetry](07-emit-proper-telemetry.md)** ⭐ NEW
+   - Complete, correct, performant instrumentation
+   - Instrumentation methods (Macro, Manual, Events, Metrics)
+   - Strategic instrumentation pyramid (Tier 1, 2, 3)
+   - Four common patterns with code examples
+   - Performance-conscious design approaches
+   - **Time**: 2-3 hours | **Level**: Intermediate
+
+### Advanced Optimization ✅ (Available Now)
+
+8. **[How to Optimize Performance](08-optimize-performance.md)** ⭐ NEW
+   - Meet the ≤8 tick Chatman Constant
+   - Performance measurement methods
+   - Six optimization strategies with O-notation examples
+   - Common performance problems and solutions
+   - Step-by-step optimization process
+   - **Time**: 2-3 hours | **Level**: Advanced
+
+### Infrastructure & Build ✅ (Available Now)
+
+9. **[How to Build the C Library](09-build-c-library.md)** ⭐ NEW
+   - C library compilation and build system
+   - Debug vs. release builds
+   - Optimization flags and platform-specific tuning
+   - Build verification and testing
+   - Troubleshooting common build issues
+   - Advanced topics: cross-compilation, sanitizers
+   - **Time**: 1.5-2 hours | **Level**: Intermediate
+
 ### Coming Soon
 
-#### Development Workflows (2 guides)
-- **How to Build the C Library** - C compilation workflow
+#### Development Workflows (1 guide)
 - **How to Build Rust Binaries** - Cargo build optimization
-
-#### Telemetry & Validation (1 guide)
-- **How to Emit Proper Telemetry** - Instrumentation best practices
-- **How to Optimize Performance** - Meet the ≤8 tick constraint
 
 #### Deployment & Integration (4 guides)
 - **How to Run Performance Tests** - Performance validation
@@ -125,8 +149,11 @@ Each guide will follow this structure:
 ### Weaver Validation Failing?
 → [How-to: Fix Weaver Validation Errors](06-fix-weaver-validation-errors.md)
 
+### Need to Emit Telemetry Properly?
+→ [How-to: Emit Proper Telemetry](07-emit-proper-telemetry.md)
+
 ### Performance Tests Failing?
-→ [How-to: Optimize Performance](08-optimize-performance.md) (coming soon)
+→ [How-to: Optimize Performance](08-optimize-performance.md)
 
 ---
 
@@ -207,13 +234,13 @@ Want to help create how-to guides? We'd love your help!
 | Add New Features | ✅ Complete | 2.5-4h | Intermediate |
 | Create OTel Schemas | ✅ Complete | 2-3h | Intermediate |
 | Fix Weaver Errors | ✅ Complete | 1.5-2h | Intermediate |
-| Emit Proper Telemetry | 🔄 Coming Soon | 2-3h | Intermediate |
-| Build C Library | 🔄 Coming Soon | 1.5-2h | Intermediate |
-| Optimize Performance | 🔄 Coming Soon | 2-3h | Advanced |
+| Emit Proper Telemetry | ✅ Complete | 2-3h | Intermediate |
+| Optimize Performance | ✅ Complete | 2-3h | Advanced |
+| Build C Library | ✅ Complete | 1.5-2h | Intermediate |
 | Validate Production Ready | 🔄 Coming Soon | 1.5-2h | Advanced |
 
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (6/13 complete, 46%)
+**Status**: In Progress (9/13 complete, 69%)
 **Framework**: Diátaxis (Task-oriented How-to Guides)

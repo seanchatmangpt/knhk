@@ -34,9 +34,17 @@ Tutorials are designed for **learning by doing**. They:
    - Troubleshooting telemetry issues
    - **Time**: 1.5-2 hours | **Level**: Beginner-Intermediate
 
+3. **[Chicago TDD Basics](03-chicago-tdd-basics.md)** ⭐ NEW
+   - Test-Driven Development fundamentals
+   - Chicago style TDD (behavior-focused, real objects)
+   - Red-Green-Refactor cycle with practical example
+   - Best practices: AAA pattern, testing behavior vs implementation
+   - Hands-on: Building user registration with TDD
+   - Integration with telemetry validation
+   - **Time**: 20-25 minutes | **Level**: Beginner-Intermediate
+
 ### Coming Soon
 
-- **Chicago TDD Basics** - Learn Test-Driven Development with real examples
 - **Building Production-Ready Features** - End-to-end feature development
 - **Optimizing Performance** - Meet the ≤8 tick Chatman Constant
 - **Schema-First Development** - OTel Weaver validation workflow
@@ -154,7 +162,7 @@ Want to help create tutorials? We'd love your help!
 |----------|--------|------|-------|
 | Your First KNHK Workflow | ✅ Complete | 20-30min | Beginner |
 | Understanding Telemetry | ✅ Complete | 1.5-2h | Beginner-Intermediate |
-| Chicago TDD Basics | 🔄 Coming Soon | 20-25min | Beginner |
+| Chicago TDD Basics | ✅ Complete | 20-25min | Beginner-Intermediate |
 | Building Production Features | 🔄 Coming Soon | 30-45min | Intermediate |
 | Optimizing Performance | 🔄 Coming Soon | 20-30min | Intermediate |
 | Schema-First Development | 🔄 Coming Soon | 25-35min | Intermediate |
@@ -162,5 +170,5 @@ Want to help create tutorials? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (2/6 complete, 33%)
+**Status**: In Progress (3/6 complete, 50%)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
