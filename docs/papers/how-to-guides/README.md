@@ -147,17 +147,70 @@ Ensure code is ready for production deployment:
 
 **What you'll accomplish**: Production-ready code with validation checklist
 
+#### [10. How to Profile Performance](10-profile-performance.md)
+**Time**: 30-45 minutes | **Level**: Advanced
+
+Master performance profiling and optimization techniques:
+- Flamegraph for CPU profiling
+- Criterion benchmarking framework
+- Heaptrack memory profiling
+- Valgrind for leak detection
+- Jaeger distributed tracing
+- Identifying CPU, memory, and I/O bottlenecks
+- Profile-guided optimization workflow
+
+**What you'll accomplish**: Expert-level performance analysis and optimization skills
+
+#### [11. How to Implement Workflow Patterns](11-implement-workflow-patterns.md)
+**Time**: 45-60 minutes | **Level**: Advanced
+
+Implement the 43 fundamental workflow patterns:
+- Pattern selection and decision tree
+- Step-by-step implementation guide
+- 8 core patterns with code examples
+- Combining multiple patterns
+- Performance implications
+- Best practices and anti-patterns
+
+**What you'll accomplish**: Mastery of workflow pattern implementation
+
+#### [12. How to Handle Errors and Build Resilience](12-error-handling-resilience.md)
+**Time**: 30-45 minutes | **Level**: Intermediate-Advanced
+
+Build resilient systems with comprehensive error handling:
+- Error type hierarchy and classification
+- Retry with exponential backoff
+- Circuit breaker pattern
+- Bulkhead (resource isolation)
+- Fallback and timeout patterns
+- Error logging strategies
+- Combining resilience patterns
+
+**What you'll accomplish**: Production-grade error handling and resilience architecture
+
+#### [13. How to Coordinate Distributed Systems](13-distributed-systems-coordination.md)
+**Time**: 45-60 minutes | **Level**: Advanced
+
+Coordinate work across multiple services:
+- Service communication patterns (RPC, messaging, discovery)
+- Coordination patterns (two-phase commit, Raft consensus)
+- Distributed tracing for multi-service workflows
+- Handling network partitions
+- Cascading failure protection
+- Complete distributed workflow examples
+
+**What you'll accomplish**: Expertise in distributed systems coordination
+
 ### Coming Soon
 
-We're developing additional guides for:
+We're developing additional specialized guides for:
 
-#### Advanced Topics (Coming Soon)
+#### Specialized Topics (Coming Soon)
 - **How to Build the C Library** - C compilation workflow
-- **How to Profile Code** - Deep performance analysis
-- **How to Handle Errors** - Error handling best practices
 - **How to Document APIs** - API documentation generation
-- **How to Use Knowledge Hooks** - Practical K-hook patterns
-- **How to Implement Workflow Patterns** - The 43 patterns
+- **How to Use Knowledge Hooks** - Practical K-hook patterns for intelligent routing
+- **How to Deploy to Production** - Deployment strategies and CI/CD integration
+- **How to Monitor Production** - Metrics, alerting, and incident response
 
 ---
 
@@ -265,7 +318,8 @@ Want to help create how-to guides? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: ✅ 9 Guides Complete | 🔄 Advanced Topics Coming (6+ planned)
+**Status**: ✅ 13 Guides Complete | 🔄 Specialized Topics Coming (5+ planned)
 **Framework**: Diátaxis (Task-oriented How-to Guides)
-**Estimated Coverage**: Development to Advanced (90% of core workflows)
-**Total Lines**: 3,500+ (production-grade solution guides)
+**Estimated Coverage**: Beginner to Advanced (95% of core workflows)
+**Total Lines**: 6,000+ (comprehensive solution guides)
+**Total Study Time**: 300+ minutes of practical learning content

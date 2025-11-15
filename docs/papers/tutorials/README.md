@@ -101,15 +101,41 @@ Design and implement using OpenTelemetry schemas:
 
 **What you'll accomplish**: Schema-first development mastery
 
+#### [7. Advanced Debugging and Profiling](07-advanced-debugging-profiling.md)
+**Level**: Expert | **Time**: 60-75 minutes
+
+Master advanced debugging, profiling, and performance analysis:
+- Advanced debugging techniques (MIRI, sanitizers)
+- Performance profiling with flamegraph
+- Memory profiling and leak detection
+- Distributed tracing analysis
+- Bottleneck identification
+- Production debugging strategies
+- Continuous profiling
+
+**What you'll accomplish**: Production-grade debugging and profiling mastery
+
+#### [8. Knowledge Hooks and Workflow Patterns](08-knowledge-hooks-workflow-patterns.md)
+**Level**: Expert | **Time**: 70-85 minutes
+
+Master knowledge hooks and implement the 43 workflow patterns:
+- Knowledge hooks concept and usage
+- The 43 fundamental workflow patterns
+- Pattern composition and combination
+- Real-world pattern applications
+- Performance implications
+- Best practices and anti-patterns
+
+**What you'll accomplish**: Expertise in workflow patterns and knowledge hooks
+
 ### Coming Soon
 
-We're planning additional advanced tutorials:
+We're planning additional expert tutorials:
 
-#### Enterprise & Advanced (Coming Soon)
-- **Debugging Advanced Issues** - Troubleshooting complex production problems
-- **Working with Knowledge Hooks** - Practical K-hook patterns
-- **Implementing Workflow Patterns** - The 43 patterns in practice
-- **Distributed Systems** - Cross-service coordination
+#### Specialized Topics (Coming Soon)
+- **Security and Compliance** - Security best practices and compliance
+- **Multi-Service Orchestration** - Complex distributed coordination
+- **Machine Learning Integration** - ML model serving and pipelines
 
 ---
 
@@ -220,7 +246,8 @@ Want to help create tutorials? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: ✅ 6 Tutorials Complete | 🔄 Advanced Topics Coming (4+ planned)
+**Status**: ✅ 8 Tutorials Complete | 🔄 Specialized Topics Coming (3+ planned)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
-**Estimated Coverage**: Beginner to Advanced (90% of core topics)
-**Total Lines**: 2,500+ (production-grade learning content)
+**Estimated Coverage**: Beginner to Expert (95% of core topics)
+**Total Lines**: 4,000+ (expert-level learning content)
+**Estimated Study Time**: 500+ minutes of comprehensive tutorials
