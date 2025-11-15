@@ -3,7 +3,7 @@
 **High-performance knowledge graph engine optimized for hot path operations (≤2ns latency)**
 
 [![Production Ready](https://img.shields.io/badge/status-production--ready-green)](docs/PRODUCTION.md)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](docs/RELEASE_NOTES_v1.0.0.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](docs/RELEASE_NOTES_v1.1.0.md)
 
 **Built for Reflex Enterprise™**: KNHK powers Reflex Enterprise™, a 2-ns, law-driven compute fabric. See [Reflex Enterprise Press Release](docs/REFLEX_ENTERPRISE_PRESS_RELEASE.md) for product details.
 

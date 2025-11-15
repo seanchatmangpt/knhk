@@ -111,15 +111,24 @@ How-to guides are designed for **getting things done**. They:
    - Pattern selection guide and step-by-step implementation
    - **Time**: 2.5-3 hours | **Level**: Advanced
 
+### Production Readiness ✅ (Available Now)
+
+12. **[How to Validate Production Readiness](12-validate-production-readiness.md)** ⭐ NEW
+   - Comprehensive production readiness checklist
+   - Three-tier validation (Weaver + Quality + Tests)
+   - Security audit and error handling review
+   - Configuration management and documentation completeness
+   - Final smoke test and deployment certification
+   - **Time**: 1-2 hours | **Level**: Advanced
+
 ### Coming Soon
 
 #### Development Workflows (1 guide)
 - **How to Build Rust Binaries** - Cargo build optimization
 
-#### Deployment & Integration (3 guides)
+#### Deployment & Integration (2 guides)
 - **How to Run Performance Tests** - Performance validation
 - **How to Integrate with OpenTelemetry Collectors** - OTLP setup
-- **How to Validate Production Readiness** - Pre-deployment checklist
 
 ---
 
@@ -252,10 +261,10 @@ Want to help create how-to guides? We'd love your help!
 | Build C Library | ✅ Complete | 1.5-2h | Intermediate |
 | Use Knowledge Hooks | ✅ Complete | 2h | Intermediate-Advanced |
 | Implement Workflow Patterns | ✅ Complete | 2.5-3h | Advanced |
-| Validate Production Ready | 🔄 Coming Soon | 1.5-2h | Advanced |
+| Validate Production Ready | ✅ Complete | 1-2h | Advanced |
 
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (11/13 complete, 85%)
+**Status**: Complete (12/13 complete, 92%)
 **Framework**: Diátaxis (Task-oriented How-to Guides)

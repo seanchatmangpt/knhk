@@ -43,11 +43,37 @@ Tutorials are designed for **learning by doing**. They:
    - Integration with telemetry validation
    - **Time**: 20-25 minutes | **Level**: Beginner-Intermediate
 
+### Production Development Series ✅ (Available Now)
+
+4. **[Building Production-Ready Features](04-building-production-ready-features.md)** ⭐ NEW
+   - Plan and implement a complete production feature
+   - TDD implementation with Chicago-style testing
+   - Integrate telemetry from the start
+   - Validate with Weaver and performance benchmarks
+   - Hands-on: Build User Activity Log feature
+   - Three-tier production readiness certification
+   - **Time**: 30-45 minutes | **Level**: Intermediate
+
+5. **[Optimizing Performance for the Chatman Constant](05-optimizing-performance.md)** ⭐ NEW
+   - Understand the ≤8 tick Chatman Constant
+   - Measure and profile performance with multiple tools
+   - Apply 4 optimization techniques systematically
+   - Hands-on: Optimize slow User Activity Log (15 ticks → 3 ticks)
+   - Verify improvements with benchmarks
+   - Document performance gains (80% improvement)
+   - **Time**: 20-30 minutes | **Level**: Intermediate
+
+6. **[Schema-First Development with Weaver](06-schema-first-development.md)** ⭐ NEW
+   - Design telemetry schema before implementation
+   - Write OpenTelemetry schemas correctly
+   - Let schemas guide code implementation
+   - Validate runtime behavior against schema
+   - Hands-on: Build search feature with schema-first approach
+   - Debug schema mismatches systematically
+   - **Time**: 25-35 minutes | **Level**: Intermediate
+
 ### Coming Soon
 
-- **Building Production-Ready Features** - End-to-end feature development
-- **Optimizing Performance** - Meet the ≤8 tick Chatman Constant
-- **Schema-First Development** - OTel Weaver validation workflow
 - **Working with Knowledge Hooks** - Practical guide to K-hooks
 - **Implementing Workflow Patterns** - The 43 patterns in practice
 
@@ -163,12 +189,12 @@ Want to help create tutorials? We'd love your help!
 | Your First KNHK Workflow | ✅ Complete | 20-30min | Beginner |
 | Understanding Telemetry | ✅ Complete | 1.5-2h | Beginner-Intermediate |
 | Chicago TDD Basics | ✅ Complete | 20-25min | Beginner-Intermediate |
-| Building Production Features | 🔄 Coming Soon | 30-45min | Intermediate |
-| Optimizing Performance | 🔄 Coming Soon | 20-30min | Intermediate |
-| Schema-First Development | 🔄 Coming Soon | 25-35min | Intermediate |
+| Building Production Features | ✅ Complete | 30-45min | Intermediate |
+| Optimizing Performance | ✅ Complete | 20-30min | Intermediate |
+| Schema-First Development | ✅ Complete | 25-35min | Intermediate |
 
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (3/6 complete, 50%)
+**Status**: Complete (6/6 complete, 100%)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
