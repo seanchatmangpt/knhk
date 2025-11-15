@@ -1,41 +1,53 @@
-# Research Papers & Publications
+# KNHK Research & Documentation
 
-This directory contains all KNHK research papers, whitepapers, and related materials.
+Welcome to the KNHK documentation hub, organized using the **Diátaxis framework** for clear, purposeful documentation.
 
-## 📚 Papers Included
+## 📚 What is Diátaxis?
 
-### Chatman Equation - Fortune 500 Optimization
-**Latest Version**: v1.2.0 (2025-11-14)
+[Diátaxis](https://diataxis.fr/) is a systematic approach to documentation that divides content into four categories based on user needs:
 
-- **PDF**: `the_chatman_equation_fortune5_v1.2.0.pdf` (670 KB)
-  - For reading and citation
-  - Published/final version
+| Category | Orientation | Purpose | When to Use |
+|----------|-------------|---------|-------------|
+| **[Tutorials](tutorials/)** | Learning-oriented | Learn by doing | You're new and want to learn fundamentals |
+| **[How-to Guides](how-to-guides/)** | Task-oriented | Solve specific problems | You know basics, need to accomplish something |
+| **[Reference](reference/)** | Information-oriented | Look up technical details | You need precise specifications or citations |
+| **[Explanation](explanation/)** | Understanding-oriented | Understand concepts | You want context, rationale, or big picture |
 
-- **Source Materials**: `chatman-equation/` subdirectory
-  - Source TEX file with complete content (44 MB)
-  - Individual chapter files (00-header.tex through 13-appendix.tex)
-  - Mermaid diagrams and visualizations (90+ diagrams)
-  - Use this directory for:
-    - Building/compiling the paper
-    - Modifying content
-    - Referencing individual sections
-    - Understanding paper structure
+---
 
-**Related Documentation**:
-- Main guide: [`/docs/the_chatman_equation_fortune5.md`](/docs/the_chatman_equation_fortune5.md) (50 KB markdown version)
-- Whitepaper: [`/docs/kgs_whitepaper_v2_0_sean_chatman.md`](/docs/kgs_whitepaper_v2_0_sean_chatman.md)
+## 🚀 Quick Start
 
-### KGS Manifestation - Knowledge Graph Complexities
-**Status**: Latest Version
+### New to KNHK?
+1. **Start here**: [Explanation](explanation/) - Understand the concepts
+   - Read [The Chatman Equation overview](explanation/the_chatman_equation_fortune5.md)
+   - Explore [KGS Whitepaper](explanation/kgs_whitepaper_v2_0_sean_chatman.md)
 
-- **PDF**: `kgc-manifestation-fortune5.pdf` (315 KB)
-  - Complete published version
+2. **Then**: [Tutorials](tutorials/) (coming soon) - Learn by doing
+   - Your first KNHK workflow
+   - Understanding telemetry
 
-- **Source**: `kgc-manifestation-fortune5.tex` (22 KB)
-  - LaTeX source for modifications
+3. **Next**: [How-to Guides](how-to-guides/) (coming soon) - Build real features
+   - Set up development environment
+   - Run tests efficiently
 
-**Related Documentation**:
-- Whitepaper: [`/docs/kgs_whitepaper_v2_0_sean_chatman.md`](/docs/kgs_whitepaper_v2_0_sean_chatman.md)
+### Need Technical Details?
+**Go to**: [Reference](reference/) - Technical specifications
+- [Chatman Equation paper (PDF)](reference/the_chatman_equation_fortune5_v1.2.0.pdf)
+- [KGC Manifestation paper (PDF)](reference/kgc-manifestation-fortune5.pdf)
+- [LaTeX sources](reference/chatman-equation/)
+- [Diagrams](reference/mermaid/)
+
+### Implementing Features?
+**Go to**: [How-to Guides](how-to-guides/) (coming soon)
+- Development workflows
+- Telemetry validation
+- Performance optimization
+
+### Understanding Concepts?
+**Go to**: [Explanation](explanation/)
+- [Chatman Equation philosophy](explanation/the_chatman_equation_fortune5.md)
+- [Knowledge graphs explained](explanation/kgs_whitepaper_v2_0_sean_chatman.md)
+- [Formal foundations](explanation/formal-foundations.md)
 
 ---
 
@@ -43,147 +55,229 @@ This directory contains all KNHK research papers, whitepapers, and related mater
 
 ```
 papers/
-├── README.md                                    # This file
-├── CLEANUP_PLAN.md                              # History of cleanup (2025-11-15)
-├── the_chatman_equation_fortune5_v1.2.0.pdf    # ✅ Latest PDF (use this)
-├── kgc-manifestation-fortune5.pdf              # ✅ KGC paper (final)
-├── kgc-manifestation-fortune5.tex              # KGC source (optional)
+├── README.md                      # This file (navigation hub)
 │
-├── chatman-equation/                            # Source materials
-│   ├── the_chatman_equation_fortune5_v1.2.0.tex # ✅ Latest source (authoritative)
-│   ├── 00-header.tex                           # Chapter: Header
-│   ├── 01-introduction.tex                     # Chapter: Introduction
-│   ├── 02-chatman-equation.tex                 # Chapter: Equation definition
-│   ├── 03-knowledge-hooks.tex                  # Chapter: Knowledge hooks
-│   ├── 04-43-workflow-patterns.tex             # Chapter: 43 workflow patterns
-│   ├── 05-architecture.tex                     # Chapter: Architecture
-│   ├── 06-zero-human-governance.tex            # Chapter: Zero human governance
-│   ├── 07-implementation.tex                   # Chapter: Implementation
-│   ├── 10-related-work.tex                     # Chapter: Related work
-│   ├── 11-artifacts.tex                        # Chapter: Artifacts
-│   ├── 12-conclusion.tex                       # Chapter: Conclusion
-│   ├── 13-appendix.tex                         # Chapter: Appendix
-│   │
-│   └── mermaid/                                # Visualizations (90+ diagrams)
-│       ├── *.mmd                               # Mermaid source files
-│       ├── *.svg                               # SVG versions
-│       └── *.png                               # PNG versions
+├── tutorials/                     # Learning-oriented (coming soon)
+│   ├── README.md
+│   └── [Step-by-step learning guides]
 │
-└── mermaid/                                     # Diagram copies (for convenience)
-    ├── *.mmd
-    ├── *.svg
-    └── *.png
+├── how-to-guides/                 # Task-oriented (coming soon)
+│   ├── README.md
+│   └── [Problem-solving guides]
+│
+├── reference/                     # Information-oriented
+│   ├── README.md
+│   ├── the_chatman_equation_fortune5_v1.2.0.pdf    # Latest paper
+│   ├── kgc-manifestation-fortune5.pdf              # KGC paper
+│   ├── kgc-manifestation-fortune5.tex              # KGC source
+│   ├── chatman-equation/                           # Source materials
+│   │   ├── the_chatman_equation_fortune5_v1.2.0.tex
+│   │   ├── 00-header.tex ... 13-appendix.tex       # Individual chapters
+│   │   └── mermaid/                                # 90+ diagrams
+│   └── mermaid/                                    # Top-level diagrams
+│
+└── explanation/                   # Understanding-oriented
+    ├── README.md
+    ├── the_chatman_equation_fortune5.md            # Conceptual overview
+    ├── kgs_whitepaper_v2_0_sean_chatman.md         # KGS explained
+    ├── formal-foundations.md                       # Mathematical background
+    └── spr_kgs_gaps_filled.md                      # Gap analysis
+
+Historical:
+├── CLEANUP_PLAN.md               # Documentation of 2025-11-15 cleanup
 ```
 
 ---
 
-## 🚀 Using These Papers
+## 🎯 Find What You Need
 
-### For Reading
-- Use **PDF files** in this directory
-- Latest versions only (no old versions kept)
+### By Goal
 
-### For Citation
+**"I want to learn KNHK from scratch"**
+→ [Tutorials](tutorials/) (coming soon) + [Explanation](explanation/)
+
+**"I need to solve a specific problem"**
+→ [How-to Guides](how-to-guides/) (coming soon)
+
+**"I need exact formulas or specifications"**
+→ [Reference](reference/)
+
+**"I want to understand why things work this way"**
+→ [Explanation](explanation/)
+
+### By Document Type
+
+**Research Papers** (formal, peer-review ready):
+- [Chatman Equation v1.2.0 (PDF)](reference/the_chatman_equation_fortune5_v1.2.0.pdf)
+- [KGC Manifestation (PDF)](reference/kgc-manifestation-fortune5.pdf)
+
+**Conceptual Explanations** (accessible, markdown):
+- [Chatman Equation explained](explanation/the_chatman_equation_fortune5.md)
+- [KGS Whitepaper](explanation/kgs_whitepaper_v2_0_sean_chatman.md)
+- [Formal foundations](explanation/formal-foundations.md)
+
+**Source Materials** (for modification):
+- [LaTeX sources](reference/chatman-equation/)
+- [Mermaid diagrams](reference/mermaid/)
+
+### By Topic
+
+**The Chatman Equation**:
+- 📖 Concept: [explanation/the_chatman_equation_fortune5.md](explanation/the_chatman_equation_fortune5.md)
+- 📄 Paper: [reference/the_chatman_equation_fortune5_v1.2.0.pdf](reference/the_chatman_equation_fortune5_v1.2.0.pdf)
+- 🔧 Source: [reference/chatman-equation/](reference/chatman-equation/)
+
+**Knowledge Graph Structures**:
+- 📖 Concept: [explanation/kgs_whitepaper_v2_0_sean_chatman.md](explanation/kgs_whitepaper_v2_0_sean_chatman.md)
+- 📄 Paper: [reference/kgc-manifestation-fortune5.pdf](reference/kgc-manifestation-fortune5.pdf)
+
+**Mathematical Foundations**:
+- 📖 Theory: [explanation/formal-foundations.md](explanation/formal-foundations.md)
+- 📖 Gaps: [explanation/spr_kgs_gaps_filled.md](explanation/spr_kgs_gaps_filled.md)
+
+**Visualizations**:
+- 🎨 Diagrams: [reference/mermaid/](reference/mermaid/) (90+ diagrams in .mmd, .svg, .png)
+
+---
+
+## 📊 Content Overview
+
+### Research Papers
+
+| Paper | Version | Size | Location | Purpose |
+|-------|---------|------|----------|---------|
+| **Chatman Equation** | v1.2.0 | 670 KB | [PDF](reference/the_chatman_equation_fortune5_v1.2.0.pdf) | Fortune 500 optimization |
+| **KGC Manifestation** | Latest | 315 KB | [PDF](reference/kgc-manifestation-fortune5.pdf) | Knowledge graph complexities |
+
+### Source Materials
+
+| Material | Count/Size | Location | Purpose |
+|----------|------------|----------|---------|
+| **LaTeX Source** | 44 MB | [chatman-equation/](reference/chatman-equation/) | Build/modify papers |
+| **Chapter Files** | 12 files | [chatman-equation/*.tex](reference/chatman-equation/) | Individual sections |
+| **Diagrams** | 90+ files | [mermaid/](reference/mermaid/) | Visualizations (.mmd, .svg, .png) |
+
+### Explanatory Docs
+
+| Document | Size | Location | Purpose |
+|----------|------|----------|---------|
+| **Chatman Equation (MD)** | 50 KB | [explanation/](explanation/the_chatman_equation_fortune5.md) | Conceptual overview |
+| **KGS Whitepaper** | - | [explanation/](explanation/kgs_whitepaper_v2_0_sean_chatman.md) | KGS explained |
+| **Formal Foundations** | - | [explanation/](explanation/formal-foundations.md) | Math background |
+| **SPR KGS Gaps** | - | [explanation/](explanation/spr_kgs_gaps_filled.md) | Gap analysis |
+
+---
+
+## 📖 Citations
+
+### BibTeX
+
+**Chatman Equation**:
 ```bibtex
-@article{Chatman2025,
+@article{Chatman2025Equation,
   title={The Chatman Equation: Fortune 500 Optimization},
   author={Chatman, Sean},
   year={2025},
   version={1.2.0},
-  url={https://github.com/seanchatmangpt/knhk/docs/papers/}
+  url={https://github.com/seanchatmangpt/knhk/docs/papers/reference/}
 }
+```
 
-@article{KGC2025,
+**KGC Manifestation**:
+```bibtex
+@article{Chatman2025KGC,
   title={KGS Manifestation: Knowledge Graph Complexities},
   author={Chatman, Sean},
   year={2025},
-  url={https://github.com/seanchatmangpt/knhk/docs/papers/}
+  url={https://github.com/seanchatmangpt/knhk/docs/papers/reference/}
 }
 ```
-
-### For Modification/Compilation
-1. Navigate to `chatman-equation/` subdirectory
-2. Use `the_chatman_equation_fortune5_v1.2.0.tex` as the master file
-3. Modify individual chapter files (00-header.tex, etc.)
-4. Compile with: `pdflatex the_chatman_equation_fortune5_v1.2.0.tex`
-5. Output PDF will be generated in same directory
-
-### For Diagrams
-- Mermaid diagrams available in `mermaid/` subdirectory
-- Multiple formats: `.mmd` (source), `.svg` (scalable), `.png` (raster)
-- Use `.svg` for web, `.png` for documents
-
----
-
-## 📊 Versioning
-
-**Latest Version**: v1.2.0 (2025-11-14)
-
-**Version History** (archived):
-- v1.2.0 - Latest release
-- v1.1.0 - Previous (removed, use v1.2.0)
-- v1.0 - Original (removed, use v1.2.0)
-
-**Note**: Only latest version maintained. Old versions were removed 2025-11-15 to reduce storage (saved ~179 MB).
-
-For historical versions, check git history:
-```bash
-git log --oneline -- docs/papers/
-```
-
----
-
-## 📈 File Statistics
-
-| Item | Size | Count |
-|------|------|-------|
-| PDFs (final versions) | 985 KB | 2 |
-| TEX source files | 44 MB | 1 |
-| Chapter files | ~90 KB | 12 |
-| Diagrams (Mermaid) | ~5 MB | 90+ |
-| Total | ~49 MB | - |
-
-**Historical Context**:
-- Before cleanup: ~180 MB (3 versions of each)
-- After cleanup: ~49 MB (latest only)
-- Space saved: 131 MB
 
 ---
 
 ## 🔗 Related Documentation
 
-| Document | Purpose | Location |
-|----------|---------|----------|
-| **Chatman Equation (Markdown)** | Readable version in markdown | [`/docs/the_chatman_equation_fortune5.md`](/docs/the_chatman_equation_fortune5.md) |
-| **KGS Whitepaper** | Knowledge Graph Structures | [`/docs/kgs_whitepaper_v2_0_sean_chatman.md`](/docs/kgs_whitepaper_v2_0_sean_chatman.md) |
-| **Formal Foundations** | Mathematical theory | [`/docs/formal-foundations.md`](/docs/formal-foundations.md) |
-| **Papers Site Map** | All papers organized | [`/docs/SITE_MAP.md`](/docs/SITE_MAP.md) (Research section) |
-| **Documentation Hub** | All KNHK documentation | [`/docs/SITE_MAP.md`](/docs/SITE_MAP.md) |
+**Project Documentation**:
+- [`/README.md`](/README.md) - Project overview
+- [`/CLAUDE.md`](/CLAUDE.md) - Development guidelines
+- [`/docs/SITE_MAP.md`](/docs/SITE_MAP.md) - Full documentation index
+
+**External Resources**:
+- [Diátaxis Framework](https://diataxis.fr/) - Documentation methodology
+- [KNHK Repository](https://github.com/seanchatmangpt/knhk) - Source code
 
 ---
 
-## 🔄 Maintenance
+## 🔄 Maintenance & History
 
-**Last Cleanup**: 2025-11-15
-- Removed v1.0 and v1.1.0 versions
-- Removed build artifacts (.aux, .out files)
-- Kept only latest v1.2.0 versions
-- Centralized source in chatman-equation/ subdirectory
-- See [`CLEANUP_PLAN.md`](CLEANUP_PLAN.md) for details
+**Latest Update**: 2025-11-15
+- Reorganized using Diátaxis framework
+- Four categories: Tutorials, How-to Guides, Reference, Explanation
+- Improved navigation and discoverability
+
+**Previous Cleanup**: 2025-11-15
+- Removed old versions (v1.0, v1.1.0)
+- Removed build artifacts
+- Saved ~131 MB storage
+- See [CLEANUP_PLAN.md](CLEANUP_PLAN.md) for details
 
 **Next Review**: 2025-12-15
 
 ---
 
-## ❓ Questions?
+## ❓ Common Questions
 
-- **How do I cite these papers?** → See "Citation" section above
-- **Can I modify these?** → Use files in `chatman-equation/` subdirectory
-- **Where's version X?** → Only latest (v1.2.0) maintained. Old versions removed 2025-11-15
-- **Need other formats?** → See markdown versions in `/docs/`
-- **More papers?** → Check `/docs/papers.md` or SITE_MAP documentation
+**Q: Where do I start?**
+A: New to KNHK? Start with [Explanation](explanation/) to understand concepts.
+
+**Q: I need the formal paper**
+A: Go to [Reference](reference/) for PDFs and LaTeX sources.
+
+**Q: How do I cite these papers?**
+A: See the Citations section above for BibTeX entries.
+
+**Q: Can I modify the papers?**
+A: Yes! LaTeX sources are in [reference/chatman-equation/](reference/chatman-equation/).
+
+**Q: Where are the diagrams?**
+A: [reference/mermaid/](reference/mermaid/) has 90+ diagrams in multiple formats.
+
+**Q: Why is this organized differently now?**
+A: We adopted the Diátaxis framework for clearer, more purposeful documentation.
+
+**Q: Where did version X go?**
+A: Only latest versions maintained. Check git history for old versions.
 
 ---
 
+## 📚 Understanding Diátaxis
+
+The Diátaxis framework recognizes that documentation serves different purposes:
+
+### Learning (Tutorials)
+**What**: Guided learning experiences
+**When**: You're new, want to learn by doing
+**Example**: "Your first KNHK workflow" (coming soon)
+
+### Tasks (How-to Guides)
+**What**: Steps to solve specific problems
+**When**: You know basics, need to accomplish something
+**Example**: "How to optimize performance" (coming soon)
+
+### Information (Reference)
+**What**: Technical specifications and details
+**When**: You need exact formulas, APIs, specifications
+**Example**: [Chatman Equation PDF](reference/the_chatman_equation_fortune5_v1.2.0.pdf)
+
+### Understanding (Explanation)
+**What**: Conceptual clarity and context
+**When**: You want to understand "why" and "how it fits"
+**Example**: [Chatman Equation explained](explanation/the_chatman_equation_fortune5.md)
+
+**Learn more**: [diataxis.fr](https://diataxis.fr/)
+
+---
+
+**Framework**: Diátaxis
 **Last Updated**: 2025-11-15
-**Related**: [`CLEANUP_PLAN.md`](CLEANUP_PLAN.md), [`/docs/SITE_MAP.md`](/docs/SITE_MAP.md)
+**Maintained by**: KNHK Project
