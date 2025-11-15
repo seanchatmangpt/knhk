@@ -76,21 +76,59 @@ Implement features following KNHK patterns:
 
 **What you'll accomplish**: New working feature with proper telemetry
 
+### Telemetry & Validation
+
+#### [5. How to Emit Proper Telemetry](05-emit-telemetry.md)
+**Time**: 15 minutes | **Level**: Beginner
+
+Add OpenTelemetry instrumentation to your code:
+- Add tracing macros to functions
+- Use logging levels effectively
+- Skip sensitive data
+- Add custom attributes
+- Record results and performance
+- Error handling with telemetry
+
+**What you'll accomplish**: Properly instrumented code with complete telemetry
+
+#### [6. How to Create OTel Schemas](06-create-otel-schemas.md)
+**Time**: 20 minutes | **Level**: Intermediate
+
+Design and implement OpenTelemetry schemas:
+- Create schema files
+- Define spans with attributes
+- Define metrics and logs
+- Complete schema examples
+- Attribute and metric types
+- Schema versioning and validation
+
+**What you'll accomplish**: Well-documented telemetry contracts
+
+#### [7. How to Optimize Performance](07-optimize-performance.md)
+**Time**: 20-30 minutes | **Level**: Intermediate
+
+Improve code performance to meet Chatman Constant:
+- Identify hot paths
+- Eliminate allocations
+- Use references efficiently
+- Inline functions
+- Cache computations
+- Benchmark improvements
+
+**What you'll accomplish**: Code meeting ≤8 tick performance requirements
+
 ### Coming Soon
 
 We're developing additional guides for:
 
-#### Telemetry & Validation (Coming Soon)
-- **How to Create OTel Schemas** - Schema design and validation
-- **How to Emit Proper Telemetry** - Instrumentation best practices
-- **How to Optimize Performance** - Meet the ≤8 tick constraint
-
-#### Build & Advanced Topics (Coming Soon)
+#### Advanced Topics (Coming Soon)
 - **How to Build the C Library** - C compilation workflow
-- **How to Run Performance Tests** - Performance validation
 - **How to Debug Failing Tests** - Advanced troubleshooting
 - **How to Use Knowledge Hooks** - Practical K-hook patterns
 - **How to Validate Production Readiness** - Pre-deployment checklist
+- **How to Profile Code** - Deep performance analysis
+- **How to Handle Errors** - Error handling best practices
+- **How to Document APIs** - API documentation generation
 
 ---
 
@@ -198,5 +236,6 @@ Want to help create how-to guides? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: ✅ 4 Core Guides Complete | 🔄 Advanced Guides Coming
+**Status**: ✅ 7 Guides Complete | 🔄 Advanced Topics Coming (7+ planned)
 **Framework**: Diátaxis (Task-oriented How-to Guides)
+**Estimated Coverage**: Development to Advanced (80% of core workflows)

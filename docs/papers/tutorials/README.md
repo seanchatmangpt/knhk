@@ -44,20 +44,46 @@ Dive deeper into KNHK's core innovation: telemetry-based validation:
 
 **What you'll accomplish**: Deep understanding of why KNHK's approach is different
 
+### Advanced Tutorials
+
+#### [3. Chicago TDD Basics](03-chicago-tdd-basics.md)
+**Level**: Intermediate | **Time**: 25-30 minutes
+
+Master Test-Driven Development the Chicago School way:
+- Red-Green-Refactor cycle
+- Writing tests before code
+- Behavioral testing approach
+- Chicago TDD vs London School
+- Complete worked examples
+- Performance testing integration
+
+**What you'll accomplish**: TDD mastery and test-driven development skills
+
+#### [4. Optimizing Performance](04-optimizing-performance.md)
+**Level**: Advanced | **Time**: 30-40 minutes
+
+Optimize code to meet the ≤8 tick Chatman Constant:
+- Understanding performance budgets
+- Profiling techniques (perf, flamegraph)
+- Allocation optimization
+- Reference and ownership strategies
+- Hot path identification
+- Fortune 500 performance requirements
+
+**What you'll accomplish**: Performance-optimized code meeting Chatman Constant
+
 ### Coming Soon
 
-We're planning additional tutorials including:
+We're planning additional advanced tutorials:
 
-#### Advanced Tutorials (Coming Soon)
-- **Chicago TDD Basics** - Learn Test-Driven Development with real examples
+#### Building & Deployment (Coming Soon)
 - **Building Production-Ready Features** - End-to-end feature development
-- **Optimizing Performance** - Meet the ≤8 tick Chatman Constant
 - **Schema-First Development** - OTel Weaver validation workflow
+- **Debugging Advanced Issues** - Troubleshooting complex problems
 
 #### Tool-Specific Tutorials (Coming Soon)
 - **Working with Knowledge Hooks** - Practical guide to K-hooks
 - **Implementing Workflow Patterns** - The 43 patterns in practice
-- **Telemetry Schema Design** - Create effective OTel schemas
 
 ---
 
@@ -168,5 +194,6 @@ Want to help create tutorials? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: ✅ 2 Core Tutorials Complete | 🔄 Advanced Tutorials Coming
+**Status**: ✅ 4 Tutorials Complete | 🔄 Advanced Topics Coming (5+ planned)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
+**Estimated Coverage**: Beginner to Advanced (80% of core topics)
