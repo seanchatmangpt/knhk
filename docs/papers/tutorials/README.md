@@ -72,18 +72,44 @@ Optimize code to meet the ≤8 tick Chatman Constant:
 
 **What you'll accomplish**: Performance-optimized code meeting Chatman Constant
 
+#### [5. Building Production-Ready Features](05-building-production-ready-features.md)
+**Level**: Advanced | **Time**: 45-60 minutes
+
+Complete end-to-end feature development for production:
+- Feature conception and planning
+- TDD-driven implementation
+- Telemetry and observability
+- Error handling and resilience
+- Security hardening
+- Monitoring and metrics
+- Production testing
+- Deployment checklist
+
+**What you'll accomplish**: Production-ready feature with complete lifecycle
+
+#### [6. Schema-First Development](06-schema-first-development.md)
+**Level**: Advanced | **Time**: 40-50 minutes
+
+Design and implement using OpenTelemetry schemas:
+- Schema-first philosophy
+- Designing code from schemas
+- Schema-driven testing
+- Iterative refinement
+- Documentation through schemas
+- CI/CD schema validation
+- Benefits and best practices
+
+**What you'll accomplish**: Schema-first development mastery
+
 ### Coming Soon
 
 We're planning additional advanced tutorials:
 
-#### Building & Deployment (Coming Soon)
-- **Building Production-Ready Features** - End-to-end feature development
-- **Schema-First Development** - OTel Weaver validation workflow
-- **Debugging Advanced Issues** - Troubleshooting complex problems
-
-#### Tool-Specific Tutorials (Coming Soon)
-- **Working with Knowledge Hooks** - Practical guide to K-hooks
+#### Enterprise & Advanced (Coming Soon)
+- **Debugging Advanced Issues** - Troubleshooting complex production problems
+- **Working with Knowledge Hooks** - Practical K-hook patterns
 - **Implementing Workflow Patterns** - The 43 patterns in practice
+- **Distributed Systems** - Cross-service coordination
 
 ---
 
@@ -194,6 +220,7 @@ Want to help create tutorials? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: ✅ 4 Tutorials Complete | 🔄 Advanced Topics Coming (5+ planned)
+**Status**: ✅ 6 Tutorials Complete | 🔄 Advanced Topics Coming (4+ planned)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
-**Estimated Coverage**: Beginner to Advanced (80% of core topics)
+**Estimated Coverage**: Beginner to Advanced (90% of core topics)
+**Total Lines**: 2,500+ (production-grade learning content)

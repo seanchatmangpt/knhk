@@ -117,18 +117,47 @@ Improve code performance to meet Chatman Constant:
 
 **What you'll accomplish**: Code meeting ≤8 tick performance requirements
 
+### Advanced Topics
+
+#### [8. How to Debug Failing Tests](08-debug-failing-tests.md)
+**Time**: 15-45 minutes | **Level**: Intermediate
+
+Systematically identify and fix test failures:
+- Common failure patterns
+- Step-by-step debugging workflow
+- Decision tree for diagnostics
+- Instrumentation strategies
+- Advanced debugging techniques
+- Async and integration test debugging
+
+**What you'll accomplish**: Ability to fix any failing test efficiently
+
+#### [9. How to Validate Production Readiness](09-validate-production-readiness.md)
+**Time**: 30-45 minutes | **Level**: Advanced
+
+Ensure code is ready for production deployment:
+- Code quality checklist
+- Testing validation (100% pass rate)
+- Performance validation (≤8 ticks)
+- Telemetry validation (Weaver)
+- Security audit checklist
+- Observability requirements
+- Deployment procedures
+- Post-deployment monitoring
+
+**What you'll accomplish**: Production-ready code with validation checklist
+
 ### Coming Soon
 
 We're developing additional guides for:
 
 #### Advanced Topics (Coming Soon)
 - **How to Build the C Library** - C compilation workflow
-- **How to Debug Failing Tests** - Advanced troubleshooting
-- **How to Use Knowledge Hooks** - Practical K-hook patterns
-- **How to Validate Production Readiness** - Pre-deployment checklist
 - **How to Profile Code** - Deep performance analysis
 - **How to Handle Errors** - Error handling best practices
 - **How to Document APIs** - API documentation generation
+- **How to Use Knowledge Hooks** - Practical K-hook patterns
+- **How to Implement Workflow Patterns** - The 43 patterns
 
 ---
 
@@ -236,6 +265,7 @@ Want to help create how-to guides? We'd love your help!
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: ✅ 7 Guides Complete | 🔄 Advanced Topics Coming (7+ planned)
+**Status**: ✅ 9 Guides Complete | 🔄 Advanced Topics Coming (6+ planned)
 **Framework**: Diátaxis (Task-oriented How-to Guides)
-**Estimated Coverage**: Development to Advanced (80% of core workflows)
+**Estimated Coverage**: Development to Advanced (90% of core workflows)
+**Total Lines**: 3,500+ (production-grade solution guides)
