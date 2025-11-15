@@ -1,0 +1,43 @@
+[package]
+name = "knhk-process-mining"
+version = "1.0.0"
+edition = "2021"
+authors = ["KNHK Team"]
+description = "Process mining and workflow analytics for KNHK - discover patterns, analyze performance, optimize workflows"
+license = "MIT"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+# KNHK core crates
+knhk-otel = { workspace = true }
+knhk-workflow-engine = { workspace = true }
+
+# Process mining
+process_mining = { workspace = true }
+
+# OpenTelemetry
+tracing = { workspace = true }
+opentelemetry = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Collections
+hashbrown = { workspace = true }
+
+# Utilities
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+tempfile = { workspace = true }
+
+[features]
+default = []

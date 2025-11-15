@@ -121,6 +121,16 @@ How-to guides are designed for **getting things done**. They:
    - Final smoke test and deployment certification
    - **Time**: 1-2 hours | **Level**: Advanced
 
+### Workflow Analytics ✅ (Available Now)
+
+13. **[How to Analyze Workflows with Process Mining](13-analyze-workflows-with-process-mining.md)** ⭐ NEW
+   - Extract event logs from telemetry spans
+   - Discover process structure and workflow patterns
+   - Analyze performance metrics and identify bottlenecks
+   - Validate workflows against expected patterns
+   - Generate data-driven optimization recommendations
+   - **Time**: 2-3 hours | **Level**: Advanced
+
 ### Coming Soon
 
 #### Development Workflows (1 guide)
@@ -262,9 +272,10 @@ Want to help create how-to guides? We'd love your help!
 | Use Knowledge Hooks | ✅ Complete | 2h | Intermediate-Advanced |
 | Implement Workflow Patterns | ✅ Complete | 2.5-3h | Advanced |
 | Validate Production Ready | ✅ Complete | 1-2h | Advanced |
+| Analyze Workflows with Process Mining | ✅ Complete | 2-3h | Advanced |
 
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: Complete (12/13 complete, 92%)
+**Status**: Complete (13/13 complete, 100%) 🎉
 **Framework**: Diátaxis (Task-oriented How-to Guides)
