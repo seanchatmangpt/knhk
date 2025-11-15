@@ -93,20 +93,33 @@ How-to guides are designed for **getting things done**. They:
    - Advanced topics: cross-compilation, sanitizers
    - **Time**: 1.5-2 hours | **Level**: Intermediate
 
+### Advanced Patterns & Architecture ✅ (Available Now)
+
+10. **[How to Use Knowledge Hooks](10-use-knowledge-hooks.md)** ⭐ NEW
+   - Master K-hooks for self-documenting code
+   - Machine-readable knowledge representation
+   - Five common K-hook patterns with examples
+   - Querying K-hooks and linking to tests/telemetry
+   - Team collaboration and cross-team communication
+   - **Time**: 2 hours | **Level**: Intermediate-Advanced
+
+11. **[How to Implement Workflow Patterns](11-implement-workflow-patterns.md)** ⭐ NEW
+   - 43 proven workflow patterns for production code
+   - Core patterns: Request-Response, Error Handling, Caching, etc.
+   - Intermediate patterns: Observer, Decorator, Pipeline, etc.
+   - Advanced patterns: Event Sourcing, CQRS, Circuit Breaker, etc.
+   - Pattern selection guide and step-by-step implementation
+   - **Time**: 2.5-3 hours | **Level**: Advanced
+
 ### Coming Soon
 
 #### Development Workflows (1 guide)
 - **How to Build Rust Binaries** - Cargo build optimization
 
-#### Deployment & Integration (4 guides)
+#### Deployment & Integration (3 guides)
 - **How to Run Performance Tests** - Performance validation
-- **How to Generate Documentation** - Doc generation workflow
 - **How to Integrate with OpenTelemetry Collectors** - OTLP setup
 - **How to Validate Production Readiness** - Pre-deployment checklist
-
-#### Advanced Patterns (2+ guides)
-- **How to Use Knowledge Hooks** - Practical K-hook patterns
-- **How to Implement Workflow Patterns** - Apply the 43 patterns
 
 ---
 
@@ -237,10 +250,12 @@ Want to help create how-to guides? We'd love your help!
 | Emit Proper Telemetry | ✅ Complete | 2-3h | Intermediate |
 | Optimize Performance | ✅ Complete | 2-3h | Advanced |
 | Build C Library | ✅ Complete | 1.5-2h | Intermediate |
+| Use Knowledge Hooks | ✅ Complete | 2h | Intermediate-Advanced |
+| Implement Workflow Patterns | ✅ Complete | 2.5-3h | Advanced |
 | Validate Production Ready | 🔄 Coming Soon | 1.5-2h | Advanced |
 
 ---
 
 **Last Updated**: 2025-11-15
-**Status**: In Progress (9/13 complete, 69%)
+**Status**: In Progress (11/13 complete, 85%)
 **Framework**: Diátaxis (Task-oriented How-to Guides)
