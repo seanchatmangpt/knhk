@@ -16,126 +16,66 @@ Tutorials are designed for **learning by doing**. They:
 
 ## 📚 Available Tutorials
 
-### Getting Started Series
+### Getting Started Series ✅ (Available Now)
 
-#### [1. Getting Started with KNHK](01-getting-started-with-knhk.md)
-**Level**: Beginner | **Time**: 15-20 minutes
+1. **[Your First KNHK Workflow](01-getting-started.md)**
+   - Understand KNHK fundamentals and the schema-first approach
+   - Set up your development environment
+   - Run your first telemetry-validated workflow
+   - Learn the three-tier validation hierarchy
+   - **Time**: 20-30 minutes | **Level**: Beginner
 
-Learn the fundamentals of KNHK in this foundational tutorial:
-- Clone and set up the repository
-- Understand the Chatman Equation concepts
-- Run your first test
-- Explore the documentation structure
-- Verify installation with performance tests
-- Understand Weaver schema validation
+2. **[Understanding Telemetry](02-understanding-telemetry.md)** ⭐ NEW
+   - Why telemetry matters for validation
+   - OpenTelemetry fundamentals and architecture
+   - Three pillars: Spans, Metrics, Logs
+   - KNHK instrumentation patterns and best practices
+   - Hands-on telemetry example with code
+   - Troubleshooting telemetry issues
+   - **Time**: 1.5-2 hours | **Level**: Beginner-Intermediate
 
-**What you'll accomplish**: A fully working KNHK development environment
+3. **[Chicago TDD Basics](03-chicago-tdd-basics.md)** ⭐ NEW
+   - Test-Driven Development fundamentals
+   - Chicago style TDD (behavior-focused, real objects)
+   - Red-Green-Refactor cycle with practical example
+   - Best practices: AAA pattern, testing behavior vs implementation
+   - Hands-on: Building user registration with TDD
+   - Integration with telemetry validation
+   - **Time**: 20-25 minutes | **Level**: Beginner-Intermediate
 
-#### [2. Understanding Telemetry in KNHK](02-understanding-telemetry.md)
-**Level**: Intermediate | **Time**: 20-25 minutes
+### Production Development Series ✅ (Available Now)
 
-Dive deeper into KNHK's core innovation: telemetry-based validation:
-- Learn OpenTelemetry concepts (spans, metrics, logs)
-- Understand how telemetry eliminates false positives
-- Learn the Chatman Constant (≤8 ticks)
-- Run code with telemetry output
-- Validate with Weaver schema validation
-- Understand the three validation levels
+4. **[Building Production-Ready Features](04-building-production-ready-features.md)** ⭐ NEW
+   - Plan and implement a complete production feature
+   - TDD implementation with Chicago-style testing
+   - Integrate telemetry from the start
+   - Validate with Weaver and performance benchmarks
+   - Hands-on: Build User Activity Log feature
+   - Three-tier production readiness certification
+   - **Time**: 30-45 minutes | **Level**: Intermediate
 
-**What you'll accomplish**: Deep understanding of why KNHK's approach is different
+5. **[Optimizing Performance for the Chatman Constant](05-optimizing-performance.md)** ⭐ NEW
+   - Understand the ≤8 tick Chatman Constant
+   - Measure and profile performance with multiple tools
+   - Apply 4 optimization techniques systematically
+   - Hands-on: Optimize slow User Activity Log (15 ticks → 3 ticks)
+   - Verify improvements with benchmarks
+   - Document performance gains (80% improvement)
+   - **Time**: 20-30 minutes | **Level**: Intermediate
 
-### Advanced Tutorials
-
-#### [3. Chicago TDD Basics](03-chicago-tdd-basics.md)
-**Level**: Intermediate | **Time**: 25-30 minutes
-
-Master Test-Driven Development the Chicago School way:
-- Red-Green-Refactor cycle
-- Writing tests before code
-- Behavioral testing approach
-- Chicago TDD vs London School
-- Complete worked examples
-- Performance testing integration
-
-**What you'll accomplish**: TDD mastery and test-driven development skills
-
-#### [4. Optimizing Performance](04-optimizing-performance.md)
-**Level**: Advanced | **Time**: 30-40 minutes
-
-Optimize code to meet the ≤8 tick Chatman Constant:
-- Understanding performance budgets
-- Profiling techniques (perf, flamegraph)
-- Allocation optimization
-- Reference and ownership strategies
-- Hot path identification
-- Fortune 500 performance requirements
-
-**What you'll accomplish**: Performance-optimized code meeting Chatman Constant
-
-#### [5. Building Production-Ready Features](05-building-production-ready-features.md)
-**Level**: Advanced | **Time**: 45-60 minutes
-
-Complete end-to-end feature development for production:
-- Feature conception and planning
-- TDD-driven implementation
-- Telemetry and observability
-- Error handling and resilience
-- Security hardening
-- Monitoring and metrics
-- Production testing
-- Deployment checklist
-
-**What you'll accomplish**: Production-ready feature with complete lifecycle
-
-#### [6. Schema-First Development](06-schema-first-development.md)
-**Level**: Advanced | **Time**: 40-50 minutes
-
-Design and implement using OpenTelemetry schemas:
-- Schema-first philosophy
-- Designing code from schemas
-- Schema-driven testing
-- Iterative refinement
-- Documentation through schemas
-- CI/CD schema validation
-- Benefits and best practices
-
-**What you'll accomplish**: Schema-first development mastery
-
-#### [7. Advanced Debugging and Profiling](07-advanced-debugging-profiling.md)
-**Level**: Expert | **Time**: 60-75 minutes
-
-Master advanced debugging, profiling, and performance analysis:
-- Advanced debugging techniques (MIRI, sanitizers)
-- Performance profiling with flamegraph
-- Memory profiling and leak detection
-- Distributed tracing analysis
-- Bottleneck identification
-- Production debugging strategies
-- Continuous profiling
-
-**What you'll accomplish**: Production-grade debugging and profiling mastery
-
-#### [8. Knowledge Hooks and Workflow Patterns](08-knowledge-hooks-workflow-patterns.md)
-**Level**: Expert | **Time**: 70-85 minutes
-
-Master knowledge hooks and implement the 43 workflow patterns:
-- Knowledge hooks concept and usage
-- The 43 fundamental workflow patterns
-- Pattern composition and combination
-- Real-world pattern applications
-- Performance implications
-- Best practices and anti-patterns
-
-**What you'll accomplish**: Expertise in workflow patterns and knowledge hooks
+6. **[Schema-First Development with Weaver](06-schema-first-development.md)** ⭐ NEW
+   - Design telemetry schema before implementation
+   - Write OpenTelemetry schemas correctly
+   - Let schemas guide code implementation
+   - Validate runtime behavior against schema
+   - Hands-on: Build search feature with schema-first approach
+   - Debug schema mismatches systematically
+   - **Time**: 25-35 minutes | **Level**: Intermediate
 
 ### Coming Soon
 
-We're planning additional expert tutorials:
-
-#### Specialized Topics (Coming Soon)
-- **Security and Compliance** - Security best practices and compliance
-- **Multi-Service Orchestration** - Complex distributed coordination
-- **Machine Learning Integration** - ML model serving and pipelines
+- **Working with Knowledge Hooks** - Practical guide to K-hooks
+- **Implementing Workflow Patterns** - The 43 patterns in practice
 
 ---
 
@@ -153,32 +93,28 @@ Each tutorial follows this structure:
 
 ---
 
-## 🎯 Getting Started
+## 🎯 Recommended Learning Path
 
-Start here based on your experience level:
+### For Complete Beginners
 
-### Learn the Concepts
-Start with [**Explanation**](../explanation/) documentation:
-- Read [`the_chatman_equation_fortune5.md`](../explanation/the_chatman_equation_fortune5.md)
-- Understand [`kgs_whitepaper_v2_0_sean_chatman.md`](../explanation/kgs_whitepaper_v2_0_sean_chatman.md)
+1. **Start here**: [Your First KNHK Workflow](01-getting-started.md) - Learn fundamentals
+2. **Then**: [How-to: Setup Development Environment](../how-to-guides/01-setup-development-environment.md) - Get hands-on
+3. **Next**: [How-to: Run Tests Efficiently](../how-to-guides/02-run-tests-efficiently.md) - Understand validation
+4. **Continue**: [Explanation: Chatman Equation](../explanation/the_chatman_equation_fortune5.md) - Deep dive
 
-### Explore the Code
-Check the main repository:
-```bash
-# Clone and explore
-git clone https://github.com/seanchatmangpt/knhk.git
-cd knhk
+### For Experienced Developers
 
-# Run basic tests
-cargo test --workspace
-make test-chicago-v04
-```
+1. **Quick start**: [How-to: Setup Development](../how-to-guides/01-setup-development-environment.md)
+2. **Key insight**: [How-to: Run Tests Efficiently](../how-to-guides/02-run-tests-efficiently.md) - understand validation hierarchy
+3. **Reference**: [Technical Papers](../reference/) - Full specifications
+4. **Build**: [How-to: Add New Features](../how-to-guides/04-add-new-features.md) (coming soon)
 
-### Review Examples
-Look at existing implementations:
-- Browse `/src` for Rust implementations
-- Check `/tests` for test patterns
-- Review `/examples` (if available)
+### For Researchers
+
+1. **Theory**: [Explanation: Formal Foundations](../explanation/formal-foundations.md)
+2. **Details**: [Chatman Equation Paper](../reference/the_chatman_equation_fortune5_v1.2.0.pdf)
+3. **Implementation**: [Technical Reference](../reference/)
+4. **Code**: Explore `/src` in repository
 
 ---
 
@@ -245,8 +181,23 @@ Want to help create tutorials? We'd love your help!
 
 ---
 
+---
+
+## 📊 Tutorial Progress
+
+| Tutorial | Status | Time | Level |
+|----------|--------|------|-------|
+| Your First KNHK Workflow | ✅ Complete | 20-30min | Beginner |
+| Understanding Telemetry | ✅ Complete | 1.5-2h | Beginner-Intermediate |
+| Chicago TDD Basics | ✅ Complete | 20-25min | Beginner-Intermediate |
+| Building Production Features | ✅ Complete | 30-45min | Intermediate |
+| Optimizing Performance | ✅ Complete | 20-30min | Intermediate |
+| Schema-First Development | ✅ Complete | 25-35min | Intermediate |
+
+---
+
 **Last Updated**: 2025-11-15
-**Status**: ✅ 8 Tutorials Complete | 🔄 Specialized Topics Coming (3+ planned)
+**Status**: Complete (6/6 complete, 100%)
 **Framework**: Diátaxis (Learning-oriented Tutorials)
 **Estimated Coverage**: Beginner to Expert (95% of core topics)
 **Total Lines**: 4,000+ (expert-level learning content)

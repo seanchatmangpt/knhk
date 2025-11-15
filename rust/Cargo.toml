@@ -11,6 +11,7 @@ members = [
     "knhk-config",
     "knhk-patterns",          # Van der Aalst workflow patterns
     "knhk-workflow-engine",   # Enterprise YAWL workflow engine
+    "knhk-process-mining",    # Process mining and workflow analytics
     "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
@@ -22,7 +23,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 license = "MIT"
 authors = ["KNHK Team"]
@@ -39,7 +40,11 @@ knhk-validation = { path = "./knhk-validation", version = "1.0.0" }
 knhk-config = { path = "./knhk-config", version = "1.0.0" }
 knhk-patterns = { path = "./knhk-patterns", version = "1.0.0" }
 knhk-workflow-engine = { path = "./knhk-workflow-engine", version = "1.0.0" }
+knhk-process-mining = { path = "./knhk-process-mining", version = "1.0.0" }
 knhk-sidecar = { path = "./knhk-sidecar", version = "1.0.0" }
+
+# External analytics crates
+process_mining = "0.1"
 
 # Async runtime
 tokio = { version = "1.48", features = ["full"] }

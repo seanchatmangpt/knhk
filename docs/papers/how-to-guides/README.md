@@ -16,201 +16,129 @@ How-to guides are designed for **getting things done**. They:
 
 ## 📚 Available How-to Guides
 
-### Development Workflows
+### Development Workflows ✅ (Available Now)
 
-#### [1. How to Set Up Your Development Environment](01-setup-development-environment.md)
-**Time**: 10-15 minutes | **Level**: Beginner
+1. **[How to Set Up Your Development Environment](01-setup-development-environment.md)**
+   - Install Rust, Cargo, and system dependencies
+   - Clone and configure the repository
+   - Verify your setup with validation checks
+   - **Time**: 15-30 minutes | **Level**: Beginner
 
-Complete setup guide for KNHK development:
-- Install Rust and build dependencies
-- Clone the repository
-- Configure Git
-- Build the project
-- Verify installation
-- Set up IDE (optional)
-- Troubleshoot common issues
+2. **[How to Run Tests Efficiently](02-run-tests-efficiently.md)**
+   - Understand the three-tier validation hierarchy
+   - Use `cargo test`, `cargo nextest`, and project-specific commands
+   - Optimize test execution for fast feedback
+   - Interpret test results and performance constraints
+   - **Time**: 10-20 minutes | **Level**: Beginner
 
-**What you'll accomplish**: Ready-to-develop KNHK environment
+3. **[How to Debug Failing Tests](03-debug-failing-tests.md)**
+   - Systematically identify test failures
+   - Use debugging tools and techniques
+   - Common errors and solutions
+   - Add debug output and use debuggers
+   - **Time**: 15-30 minutes | **Level**: Intermediate
 
-#### [2. How to Run Tests Efficiently](02-run-tests-efficiently.md)
-**Time**: 10 minutes | **Level**: Beginner
+4. **[How to Add New Features](04-add-new-features.md)** ⭐ NEW
+   - Complete feature development workflow
+   - Code structure and organization
+   - Test-first approach with real examples
+   - Adding telemetry to features
+   - Verification and validation
+   - **Time**: 2.5-4 hours | **Level**: Intermediate
 
-Master the test suites and optimize your development workflow:
-- Understand available test suites
-- Run fast unit tests during development
-- Run comprehensive tests before committing
-- Run performance tests before pushing
-- Debug failing tests
-- Profile test performance
-- CI/CD test integration
+### Telemetry & Validation ✅ (Available Now)
 
-**What you'll accomplish**: Efficient testing workflow
+5. **[How to Create OTel Schemas](05-create-otel-schemas.md)** ⭐ NEW
+   - Design telemetry specifications
+   - Schema fundamentals and structure
+   - YAML schema creation with examples
+   - Validation with Weaver
+   - Common patterns and best practices
+   - **Time**: 2-3 hours | **Level**: Intermediate
 
-#### [3. How to Fix Weaver Validation Errors](03-fix-weaver-validation-errors.md)
-**Time**: 15 minutes per error | **Level**: Intermediate
+6. **[How to Fix Weaver Validation Errors](06-fix-weaver-validation-errors.md)** ⭐ NEW
+   - Understanding validation errors
+   - Systematic debugging workflow
+   - Fixing each error type
+   - Prevention strategies
+   - Troubleshooting guide
+   - **Time**: 1.5-2 hours | **Level**: Intermediate
 
-Understand and resolve OpenTelemetry schema validation failures:
-- Understand Weaver validation concepts
-- Identify common error types
-- Fix undocumented spans
-- Fix missing attributes
-- Fix metric issues
-- Add telemetry to schema
-- Validate schemas and live telemetry
+7. **[How to Emit Proper Telemetry](07-emit-proper-telemetry.md)** ⭐ NEW
+   - Complete, correct, performant instrumentation
+   - Instrumentation methods (Macro, Manual, Events, Metrics)
+   - Strategic instrumentation pyramid (Tier 1, 2, 3)
+   - Four common patterns with code examples
+   - Performance-conscious design approaches
+   - **Time**: 2-3 hours | **Level**: Intermediate
 
-**What you'll accomplish**: Ability to resolve validation issues
+### Advanced Optimization ✅ (Available Now)
 
-#### [4. How to Add New Features](04-add-new-features.md)
-**Time**: 30-60 minutes per feature | **Level**: Intermediate
+8. **[How to Optimize Performance](08-optimize-performance.md)** ⭐ NEW
+   - Meet the ≤8 tick Chatman Constant
+   - Performance measurement methods
+   - Six optimization strategies with O-notation examples
+   - Common performance problems and solutions
+   - Step-by-step optimization process
+   - **Time**: 2-3 hours | **Level**: Advanced
 
-Implement features following KNHK patterns:
-- Create feature branch
-- Plan the feature
-- Design architecture
-- Write tests first (TDD)
-- Implement code
-- Add telemetry
-- Create OTel schema
-- Validate and commit
-- Complete feature checklist
+### Infrastructure & Build ✅ (Available Now)
 
-**What you'll accomplish**: New working feature with proper telemetry
+9. **[How to Build the C Library](09-build-c-library.md)** ⭐ NEW
+   - C library compilation and build system
+   - Debug vs. release builds
+   - Optimization flags and platform-specific tuning
+   - Build verification and testing
+   - Troubleshooting common build issues
+   - Advanced topics: cross-compilation, sanitizers
+   - **Time**: 1.5-2 hours | **Level**: Intermediate
 
-### Telemetry & Validation
+### Advanced Patterns & Architecture ✅ (Available Now)
 
-#### [5. How to Emit Proper Telemetry](05-emit-telemetry.md)
-**Time**: 15 minutes | **Level**: Beginner
+10. **[How to Use Knowledge Hooks](10-use-knowledge-hooks.md)** ⭐ NEW
+   - Master K-hooks for self-documenting code
+   - Machine-readable knowledge representation
+   - Five common K-hook patterns with examples
+   - Querying K-hooks and linking to tests/telemetry
+   - Team collaboration and cross-team communication
+   - **Time**: 2 hours | **Level**: Intermediate-Advanced
 
-Add OpenTelemetry instrumentation to your code:
-- Add tracing macros to functions
-- Use logging levels effectively
-- Skip sensitive data
-- Add custom attributes
-- Record results and performance
-- Error handling with telemetry
+11. **[How to Implement Workflow Patterns](11-implement-workflow-patterns.md)** ⭐ NEW
+   - 43 proven workflow patterns for production code
+   - Core patterns: Request-Response, Error Handling, Caching, etc.
+   - Intermediate patterns: Observer, Decorator, Pipeline, etc.
+   - Advanced patterns: Event Sourcing, CQRS, Circuit Breaker, etc.
+   - Pattern selection guide and step-by-step implementation
+   - **Time**: 2.5-3 hours | **Level**: Advanced
 
-**What you'll accomplish**: Properly instrumented code with complete telemetry
+### Production Readiness ✅ (Available Now)
 
-#### [6. How to Create OTel Schemas](06-create-otel-schemas.md)
-**Time**: 20 minutes | **Level**: Intermediate
+12. **[How to Validate Production Readiness](12-validate-production-readiness.md)** ⭐ NEW
+   - Comprehensive production readiness checklist
+   - Three-tier validation (Weaver + Quality + Tests)
+   - Security audit and error handling review
+   - Configuration management and documentation completeness
+   - Final smoke test and deployment certification
+   - **Time**: 1-2 hours | **Level**: Advanced
 
-Design and implement OpenTelemetry schemas:
-- Create schema files
-- Define spans with attributes
-- Define metrics and logs
-- Complete schema examples
-- Attribute and metric types
-- Schema versioning and validation
+### Workflow Analytics ✅ (Available Now)
 
-**What you'll accomplish**: Well-documented telemetry contracts
-
-#### [7. How to Optimize Performance](07-optimize-performance.md)
-**Time**: 20-30 minutes | **Level**: Intermediate
-
-Improve code performance to meet Chatman Constant:
-- Identify hot paths
-- Eliminate allocations
-- Use references efficiently
-- Inline functions
-- Cache computations
-- Benchmark improvements
-
-**What you'll accomplish**: Code meeting ≤8 tick performance requirements
-
-### Advanced Topics
-
-#### [8. How to Debug Failing Tests](08-debug-failing-tests.md)
-**Time**: 15-45 minutes | **Level**: Intermediate
-
-Systematically identify and fix test failures:
-- Common failure patterns
-- Step-by-step debugging workflow
-- Decision tree for diagnostics
-- Instrumentation strategies
-- Advanced debugging techniques
-- Async and integration test debugging
-
-**What you'll accomplish**: Ability to fix any failing test efficiently
-
-#### [9. How to Validate Production Readiness](09-validate-production-readiness.md)
-**Time**: 30-45 minutes | **Level**: Advanced
-
-Ensure code is ready for production deployment:
-- Code quality checklist
-- Testing validation (100% pass rate)
-- Performance validation (≤8 ticks)
-- Telemetry validation (Weaver)
-- Security audit checklist
-- Observability requirements
-- Deployment procedures
-- Post-deployment monitoring
-
-**What you'll accomplish**: Production-ready code with validation checklist
-
-#### [10. How to Profile Performance](10-profile-performance.md)
-**Time**: 30-45 minutes | **Level**: Advanced
-
-Master performance profiling and optimization techniques:
-- Flamegraph for CPU profiling
-- Criterion benchmarking framework
-- Heaptrack memory profiling
-- Valgrind for leak detection
-- Jaeger distributed tracing
-- Identifying CPU, memory, and I/O bottlenecks
-- Profile-guided optimization workflow
-
-**What you'll accomplish**: Expert-level performance analysis and optimization skills
-
-#### [11. How to Implement Workflow Patterns](11-implement-workflow-patterns.md)
-**Time**: 45-60 minutes | **Level**: Advanced
-
-Implement the 43 fundamental workflow patterns:
-- Pattern selection and decision tree
-- Step-by-step implementation guide
-- 8 core patterns with code examples
-- Combining multiple patterns
-- Performance implications
-- Best practices and anti-patterns
-
-**What you'll accomplish**: Mastery of workflow pattern implementation
-
-#### [12. How to Handle Errors and Build Resilience](12-error-handling-resilience.md)
-**Time**: 30-45 minutes | **Level**: Intermediate-Advanced
-
-Build resilient systems with comprehensive error handling:
-- Error type hierarchy and classification
-- Retry with exponential backoff
-- Circuit breaker pattern
-- Bulkhead (resource isolation)
-- Fallback and timeout patterns
-- Error logging strategies
-- Combining resilience patterns
-
-**What you'll accomplish**: Production-grade error handling and resilience architecture
-
-#### [13. How to Coordinate Distributed Systems](13-distributed-systems-coordination.md)
-**Time**: 45-60 minutes | **Level**: Advanced
-
-Coordinate work across multiple services:
-- Service communication patterns (RPC, messaging, discovery)
-- Coordination patterns (two-phase commit, Raft consensus)
-- Distributed tracing for multi-service workflows
-- Handling network partitions
-- Cascading failure protection
-- Complete distributed workflow examples
-
-**What you'll accomplish**: Expertise in distributed systems coordination
+13. **[How to Analyze Workflows with Process Mining](13-analyze-workflows-with-process-mining.md)** ⭐ NEW
+   - Extract event logs from telemetry spans
+   - Discover process structure and workflow patterns
+   - Analyze performance metrics and identify bottlenecks
+   - Validate workflows against expected patterns
+   - Generate data-driven optimization recommendations
+   - **Time**: 2-3 hours | **Level**: Advanced
 
 ### Coming Soon
 
-We're developing additional specialized guides for:
+#### Development Workflows (1 guide)
+- **How to Build Rust Binaries** - Cargo build optimization
 
-#### Specialized Topics (Coming Soon)
-- **How to Build the C Library** - C compilation workflow
-- **How to Document APIs** - API documentation generation
-- **How to Use Knowledge Hooks** - Practical K-hook patterns for intelligent routing
-- **How to Deploy to Production** - Deployment strategies and CI/CD integration
-- **How to Monitor Production** - Metrics, alerting, and incident response
+#### Deployment & Integration (2 guides)
+- **How to Run Performance Tests** - Performance validation
+- **How to Integrate with OpenTelemetry Collectors** - OTLP setup
 
 ---
 
@@ -227,28 +155,37 @@ Each guide will follow this structure:
 
 ---
 
-## 🎯 Getting Started
+## 🎯 Quick Start by Scenario
 
-Choose a guide based on what you need to do:
+### New to KNHK?
+1. Read: [Explanation: KNHK Overview](../explanation/the_chatman_equation_fortune5.md)
+2. Do: [Tutorial: Your First KNHK Workflow](../tutorials/01-getting-started.md)
+3. Setup: [How-to: Setup Development Environment](01-setup-development-environment.md)
+4. Learn: [How-to: Run Tests Efficiently](02-run-tests-efficiently.md)
 
-### Just Starting Out?
-1. **Start with**: [Setup Development Environment](01-setup-development-environment.md)
-2. **Then learn**: [How to Run Tests Efficiently](02-run-tests-efficiently.md)
+### Setup for the First Time?
+→ [How-to: Setup Development Environment](01-setup-development-environment.md)
 
-### Ready to Add Features?
-1. **First understand**: [Tutorials](../tutorials/) - Learn the basics
-2. **Then follow**: [How to Add New Features](04-add-new-features.md)
+### Tests Are Failing?
+→ [How-to: Debug Failing Tests](03-debug-failing-tests.md)
 
-### Fixing Issues?
-1. **Schema errors?** → [How to Fix Weaver Validation Errors](03-fix-weaver-validation-errors.md)
-2. **Tests failing?** → [How to Run Tests Efficiently](02-run-tests-efficiently.md)
-3. **Setup issues?** → [How to Setup Development Environment](01-setup-development-environment.md)
+### Need to Run Tests?
+→ [How-to: Run Tests Efficiently](02-run-tests-efficiently.md)
 
-### Need More Details?
-- **CLAUDE.md**: [`/CLAUDE.md`](/CLAUDE.md) - Development workflow guidelines
-- **Reference**: [Technical specifications](../reference/)
-- **Explanation**: [Conceptual understanding](../explanation/)
-- **Tutorials**: [Learning-focused guides](../tutorials/)
+### Building a New Feature?
+→ [How-to: Add New Features](04-add-new-features.md)
+
+### Need to Design OTel Schema?
+→ [How-to: Create OTel Schemas](05-create-otel-schemas.md)
+
+### Weaver Validation Failing?
+→ [How-to: Fix Weaver Validation Errors](06-fix-weaver-validation-errors.md)
+
+### Need to Emit Telemetry Properly?
+→ [How-to: Emit Proper Telemetry](07-emit-proper-telemetry.md)
+
+### Performance Tests Failing?
+→ [How-to: Optimize Performance](08-optimize-performance.md)
 
 ---
 
@@ -317,8 +254,30 @@ Want to help create how-to guides? We'd love your help!
 
 ---
 
+---
+
+## 📊 How-to Guide Progress
+
+| Guide | Status | Time | Level |
+|-------|--------|------|-------|
+| Setup Development Environment | ✅ Complete | 15-30min | Beginner |
+| Run Tests Efficiently | ✅ Complete | 10-20min | Beginner |
+| Debug Failing Tests | ✅ Complete | 15-30min | Intermediate |
+| Add New Features | ✅ Complete | 2.5-4h | Intermediate |
+| Create OTel Schemas | ✅ Complete | 2-3h | Intermediate |
+| Fix Weaver Errors | ✅ Complete | 1.5-2h | Intermediate |
+| Emit Proper Telemetry | ✅ Complete | 2-3h | Intermediate |
+| Optimize Performance | ✅ Complete | 2-3h | Advanced |
+| Build C Library | ✅ Complete | 1.5-2h | Intermediate |
+| Use Knowledge Hooks | ✅ Complete | 2h | Intermediate-Advanced |
+| Implement Workflow Patterns | ✅ Complete | 2.5-3h | Advanced |
+| Validate Production Ready | ✅ Complete | 1-2h | Advanced |
+| Analyze Workflows with Process Mining | ✅ Complete | 2-3h | Advanced |
+
+---
+
 **Last Updated**: 2025-11-15
-**Status**: ✅ 13 Guides Complete | 🔄 Specialized Topics Coming (5+ planned)
+**Status**: Complete (13/13 complete, 100%) 🎉
 **Framework**: Diátaxis (Task-oriented How-to Guides)
 **Estimated Coverage**: Beginner to Advanced (95% of core workflows)
 **Total Lines**: 6,000+ (comprehensive solution guides)
