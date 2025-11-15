@@ -19,6 +19,7 @@ Welcome to the KNHK documentation hub, organized using the **Diátaxis framework
 
 ### New to KNHK?
 1. **Start here**: [Explanation](explanation/) - Understand the concepts
+   - Read [The Industrial Revolution of Knowledge](explanation/industrial-revolution-of-knowledge.md) - Why this matters
    - Read [The Chatman Equation overview](explanation/the_chatman_equation_fortune5.md)
    - Explore [KGS Whitepaper](explanation/kgs_whitepaper_v2_0_sean_chatman.md)
 

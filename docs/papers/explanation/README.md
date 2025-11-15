@@ -17,6 +17,22 @@ Explanation documentation provides **conceptual clarity and understanding**. Use
 
 ## 📖 Core Explanations
 
+### The Industrial Revolution of Knowledge (Vision & Context)
+**File**: [`industrial-revolution-of-knowledge.md`](industrial-revolution-of-knowledge.md)
+
+**Purpose**: Understand the larger transformation that KNHK enables
+- Why knowledge systematization matters now
+- Historical patterns and future implications
+- How this differs from previous revolutions
+- Why organizations need to act today
+
+**When to use**:
+- ✅ Understanding the "why" behind KNHK's existence
+- ✅ Explaining the vision to leadership
+- ✅ Understanding competitive advantage
+- ✅ Contextualizing Fortune 500 optimization
+- ❌ When you need implementation details (use [How-to Guides](../how-to-guides/) instead)
+
 ### The Chatman Equation (Conceptual Overview)
 **File**: [`the_chatman_equation_fortune5.md`](the_chatman_equation_fortune5.md) (50 KB markdown)
 
@@ -83,6 +99,9 @@ Explanation documentation provides **conceptual clarity and understanding**. Use
 
 ### By Topic
 
+**Vision & Context**:
+- Industrial Revolution of Knowledge → [`industrial-revolution-of-knowledge.md`](industrial-revolution-of-knowledge.md)
+
 **Core Concepts**:
 - Chatman Equation philosophy → [`the_chatman_equation_fortune5.md`](the_chatman_equation_fortune5.md)
 - Knowledge graphs explained → [`kgs_whitepaper_v2_0_sean_chatman.md`](kgs_whitepaper_v2_0_sean_chatman.md)
@@ -94,9 +113,10 @@ Explanation documentation provides **conceptual clarity and understanding**. Use
 ### By Learning Path
 
 **New to KNHK?**
-1. Start with [`the_chatman_equation_fortune5.md`](the_chatman_equation_fortune5.md) - Get the big picture
-2. Read [`kgs_whitepaper_v2_0_sean_chatman.md`](kgs_whitepaper_v2_0_sean_chatman.md) - Understand knowledge graphs
-3. Explore [Tutorials](../tutorials/) (coming soon) - Learn by doing
+1. Start with [`industrial-revolution-of-knowledge.md`](industrial-revolution-of-knowledge.md) - Understand the vision and why this matters
+2. Read [`the_chatman_equation_fortune5.md`](the_chatman_equation_fortune5.md) - Get the conceptual picture
+3. Explore [`kgs_whitepaper_v2_0_sean_chatman.md`](kgs_whitepaper_v2_0_sean_chatman.md) - Understand knowledge graphs
+4. Then [Tutorials](../tutorials/) (coming soon) - Learn by doing
 
 **Academic/Research Focus?**
 1. Start with [`formal-foundations.md`](formal-foundations.md) - Mathematical background
