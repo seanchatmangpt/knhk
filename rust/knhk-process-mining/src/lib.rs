@@ -11,6 +11,7 @@
 //! - **Performance Analytics**: Analyze cycle times, throughput, bottlenecks
 //! - **Pattern Validation**: Verify workflows match expected patterns
 //! - **Optimization Recommendations**: Data-driven process improvement
+//! - **Poka-Yoke Type Safety**: Make invalid states impossible through type system
 //!
 //! ## Architecture
 //!
@@ -50,6 +51,45 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
+//! ## Poka-Yoke Type-Safe API
+//!
+//! This crate uses Rust's type system to make invalid states impossible:
+//!
+//! ```rust,no_run
+//! use knhk_process_mining::{
+//!     builders::EventBuilder,
+//!     types::{CaseID, ActivityName, Timestamp},
+//!     resource_handles::EventLog,
+//!     typed_pipeline::ProcessMiningPipeline,
+//! };
+//!
+//! // Type-safe domain objects (cannot be invalid)
+//! let case_id = CaseID::new(1)?;              // Cannot be zero
+//! let activity = ActivityName::new("Task")?;  // Cannot be empty
+//!
+//! // Type-state builder (compile-time required fields)
+//! let event = EventBuilder::new()
+//!     .with_case_id(case_id)
+//!     .with_activity(activity)
+//!     .with_timestamp(Timestamp::now())
+//!     .build();  // Only available when all fields set
+//!
+//! // Resource lifecycle (cannot use after close)
+//! let mut log = EventLog::new();
+//! log = log.add_event(event)?;
+//! let closed = log.close();
+//! let analytics = closed.analyze();
+//!
+//! // Type-safe pipeline (enforced ordering)
+//! let results = ProcessMiningPipeline::new()
+//!     .load_from_event_log(closed)?
+//!     .discover_process()
+//!     .validate_model()
+//!     .complete()
+//!     .into_results();
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
 //! ## Integration Points
 //!
 //! 1. **OTEL Spans**: Primary event source
@@ -63,15 +103,43 @@
 //! - **Performance-Aware**: ≤8 tick constraint for hot path operations
 //! - **Non-Intrusive**: Extract from existing telemetry, no code changes
 //! - **Actionable**: Clear optimization recommendations
+//! - **Type-Safe**: Invalid states impossible through Poka-Yoke patterns
 
 pub mod analytics;
 pub mod discovery;
 pub mod event_log;
 
-// Re-export main types
+// Poka-Yoke type safety modules
+pub mod types;
+pub mod state_machine;
+pub mod builders;
+pub mod resource_handles;
+pub mod typed_pipeline;
+
+// Re-export main types (legacy API)
 pub use analytics::{BottleneckDetector, PerformanceAnalytics, ProcessAnalyzer};
 pub use discovery::{DiscoveryEngine, PatternValidator, ProcessGraph};
 pub use event_log::{EventLog, EventLogBuilder, ProcessEvent};
+
+// Re-export Poka-Yoke types (type-safe API)
+pub use types::{
+    CaseID, EventID, ActivityName, Timestamp, Duration, Count, Probability,
+    InvalidIdError, InvalidStringError, InvalidProbabilityError,
+};
+pub use state_machine::{WorkflowState, StateError, WorkflowStateSnapshot};
+pub use builders::{
+    EventBuilder, ConfigBuilder, ProcessMiningConfig, Event, ConfigError,
+};
+pub use resource_handles::{
+    EventLog as TypedEventLog, EventLogOpen, EventLogClosed,
+    ProcessAnalyzer as TypedProcessAnalyzer,
+    AnalyzerConfigured, AnalyzerRunning, AnalyzerCompleted,
+    ProcessAnalytics, AnalysisResults, EventLogError,
+};
+pub use typed_pipeline::{
+    ProcessMiningPipeline, PipelineResults, OwnedPipelineResults,
+    ProcessGraph as TypedProcessGraph, ValidationReport, PipelineError,
+};
 
 use thiserror::Error;
 
