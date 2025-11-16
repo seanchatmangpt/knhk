@@ -1,0 +1,283 @@
+# OpenTelemetry Weaver Schema for Connector Framework
+#
+# Defines telemetry for connector operations, ensuring all connector
+# executions, retries, circuit breaker state changes, and pool operations
+# are properly instrumented.
+
+file_format: 1.1.0
+schema_url: https://opentelemetry.io/schemas/1.24.0
+
+resource:
+  attributes:
+    - id: service.name
+      type: string
+      brief: "Service name for connector framework"
+      examples: ["knhk-workflow-engine"]
+
+instrumentation_library:
+  name: knhk.workflow.connectors
+  version: "1.0.0"
+
+groups:
+  # Connector Execution Metrics
+  - id: connector.execution
+    type: metric
+    brief: "Metrics for connector execution"
+    attributes:
+      - id: connector.name
+        type: string
+        brief: "Name of the connector"
+        examples: ["rest", "database", "message_queue"]
+      - id: connector.type
+        type: string
+        brief: "Type of connector"
+        examples: ["rest", "database", "message_queue"]
+      - id: connector.version
+        type: string
+        brief: "Version of the connector"
+        examples: ["1.0.0"]
+    metrics:
+      - id: connector.execution.duration
+        type: histogram
+        unit: "ms"
+        brief: "Duration of connector execution"
+        attributes: [connector.name, connector.type]
+      - id: connector.execution.count
+        type: counter
+        unit: "1"
+        brief: "Number of connector executions"
+        attributes: [connector.name, connector.type]
+      - id: connector.execution.errors
+        type: counter
+        unit: "1"
+        brief: "Number of connector execution errors"
+        attributes: [connector.name, connector.type, error.type]
+
+  # Retry Policy Metrics
+  - id: connector.retry
+    type: metric
+    brief: "Metrics for retry policy"
+    attributes:
+      - id: retry.attempt
+        type: int
+        brief: "Retry attempt number"
+        examples: [1, 2, 3]
+      - id: retry.max_attempts
+        type: int
+        brief: "Maximum retry attempts"
+        examples: [3, 5]
+    metrics:
+      - id: connector.retry.count
+        type: counter
+        unit: "1"
+        brief: "Number of retry attempts"
+        attributes: [connector.name, retry.attempt]
+      - id: connector.retry.delay
+        type: histogram
+        unit: "ms"
+        brief: "Retry delay duration"
+        attributes: [connector.name, retry.attempt]
+      - id: connector.retry.exhausted
+        type: counter
+        unit: "1"
+        brief: "Number of times max retries exceeded"
+        attributes: [connector.name, retry.max_attempts]
+
+  # Circuit Breaker Metrics
+  - id: connector.circuit_breaker
+    type: metric
+    brief: "Metrics for circuit breaker pattern"
+    attributes:
+      - id: circuit.state
+        type: string
+        brief: "Circuit breaker state"
+        examples: ["closed", "open", "half_open"]
+      - id: circuit.threshold
+        type: int
+        brief: "Failure threshold for circuit breaker"
+        examples: [3, 5]
+    metrics:
+      - id: connector.circuit_breaker.state
+        type: gauge
+        unit: "1"
+        brief: "Current circuit breaker state (0=closed, 1=open, 2=half_open)"
+        attributes: [connector.name]
+      - id: connector.circuit_breaker.failures
+        type: counter
+        unit: "1"
+        brief: "Number of circuit breaker failures"
+        attributes: [connector.name]
+      - id: connector.circuit_breaker.state_changes
+        type: counter
+        unit: "1"
+        brief: "Number of circuit breaker state changes"
+        attributes: [connector.name, circuit.state]
+
+  # Connection Pool Metrics
+  - id: connector.pool
+    type: metric
+    brief: "Metrics for connection pooling"
+    attributes:
+      - id: pool.name
+        type: string
+        brief: "Name of the connection pool"
+        examples: ["rest_pool", "db_pool"]
+      - id: pool.max_size
+        type: int
+        brief: "Maximum pool size"
+        examples: [10, 20]
+    metrics:
+      - id: connector.pool.size
+        type: gauge
+        unit: "1"
+        brief: "Current pool size"
+        attributes: [pool.name]
+      - id: connector.pool.idle
+        type: gauge
+        unit: "1"
+        brief: "Number of idle connections"
+        attributes: [pool.name]
+      - id: connector.pool.active
+        type: gauge
+        unit: "1"
+        brief: "Number of active connections"
+        attributes: [pool.name]
+      - id: connector.pool.reuse_rate
+        type: histogram
+        unit: "1"
+        brief: "Connection reuse rate"
+        attributes: [pool.name]
+      - id: connector.pool.exhaustion
+        type: counter
+        unit: "1"
+        brief: "Number of times pool was exhausted"
+        attributes: [pool.name]
+
+  # Connector Registry Metrics
+  - id: connector.registry
+    type: metric
+    brief: "Metrics for connector registry"
+    metrics:
+      - id: connector.registry.size
+        type: gauge
+        unit: "1"
+        brief: "Number of registered connectors"
+      - id: connector.registry.health_checks
+        type: counter
+        unit: "1"
+        brief: "Number of health checks performed"
+        attributes: [connector.name, health.status]
+
+spans:
+  # Connector Execution Span
+  - id: connector.execute
+    brief: "Span for connector execution"
+    attributes:
+      - id: connector.name
+        type: string
+        requirement_level: required
+      - id: connector.type
+        type: string
+        requirement_level: required
+      - id: connector.input_size
+        type: int
+        brief: "Size of input data in bytes"
+      - id: connector.output_size
+        type: int
+        brief: "Size of output data in bytes"
+    events:
+      - id: connector.retry.attempt
+        brief: "Retry attempt event"
+        attributes:
+          - id: retry.attempt
+            type: int
+          - id: retry.delay_ms
+            type: int
+      - id: circuit_breaker.state_change
+        brief: "Circuit breaker state change event"
+        attributes:
+          - id: circuit.previous_state
+            type: string
+          - id: circuit.new_state
+            type: string
+
+  # REST Connector Span
+  - id: connector.rest.request
+    brief: "Span for REST connector HTTP request"
+    attributes:
+      - id: http.method
+        type: string
+        requirement_level: required
+        examples: ["GET", "POST", "PUT", "DELETE"]
+      - id: http.url
+        type: string
+        requirement_level: required
+      - id: http.status_code
+        type: int
+        requirement_level: required
+      - id: http.request.header.content_type
+        type: string
+      - id: http.response.header.content_type
+        type: string
+
+  # Database Connector Span
+  - id: connector.database.query
+    brief: "Span for database connector query"
+    attributes:
+      - id: db.system
+        type: string
+        requirement_level: required
+        examples: ["postgresql", "mysql", "mongodb"]
+      - id: db.statement
+        type: string
+        brief: "Database query statement"
+      - id: db.rows_affected
+        type: int
+        brief: "Number of rows affected"
+
+  # Message Queue Connector Span
+  - id: connector.message_queue.publish
+    brief: "Span for message queue publish operation"
+    attributes:
+      - id: messaging.system
+        type: string
+        requirement_level: required
+        examples: ["kafka", "rabbitmq"]
+      - id: messaging.destination
+        type: string
+        brief: "Topic or queue name"
+      - id: messaging.message_id
+        type: string
+        brief: "Message ID"
+      - id: messaging.partition
+        type: int
+        brief: "Partition number"
+      - id: messaging.offset
+        type: int
+        brief: "Message offset"
+
+logs:
+  - id: connector.error
+    brief: "Error log for connector operations"
+    severity: error
+    attributes:
+      - id: connector.name
+        type: string
+      - id: error.type
+        type: string
+      - id: error.message
+        type: string
+      - id: error.stack_trace
+        type: string
+
+  - id: connector.health_check
+    brief: "Health check log"
+    severity: info
+    attributes:
+      - id: connector.name
+        type: string
+      - id: health.status
+        type: string
+        examples: ["healthy", "unhealthy"]
+      - id: health.details
+        type: string

@@ -162,6 +162,67 @@ impl HealthChecker {
             true
         }
     }
+
+    /// Kubernetes-style readiness probe
+    /// Returns true if service is ready to accept traffic
+    pub fn readiness_probe(&self) -> WorkflowResult<bool> {
+        let health = self.get_health();
+        // Ready if healthy or degraded (can still serve requests)
+        Ok(matches!(health, HealthStatus::Healthy | HealthStatus::Degraded))
+    }
+
+    /// Kubernetes-style liveness probe
+    /// Returns true if service is alive (not deadlocked/crashed)
+    pub fn liveness_probe(&self) -> WorkflowResult<bool> {
+        // Service is live if we can acquire the lock (not deadlocked)
+        let _guard = self.components.lock().map_err(|e| {
+            crate::error::WorkflowError::Internal(format!("Liveness check failed: {}", e))
+        })?;
+        Ok(true)
+    }
+
+    /// Kubernetes-style startup probe
+    /// Returns true if service has finished initialization
+    pub fn startup_probe(&self) -> WorkflowResult<bool> {
+        let components = self.components.lock().unwrap();
+
+        // Check if critical components are registered and not unhealthy
+        let required_components = vec!["state_store", "pattern_registry"];
+
+        for comp_name in required_components {
+            if let Some(comp) = components.get(comp_name) {
+                if comp.status == HealthStatus::Unhealthy {
+                    return Ok(false);
+                }
+            } else {
+                // Critical component not registered yet
+                return Ok(false);
+            }
+        }
+
+        Ok(true)
+    }
+
+    /// Get health details as JSON-serializable map
+    pub fn get_health_details(&self) -> HashMap<String, String> {
+        let components = self.components.lock().unwrap();
+        let mut details = HashMap::new();
+
+        for (name, comp) in components.iter() {
+            let status_str = match comp.status {
+                HealthStatus::Healthy => "healthy",
+                HealthStatus::Degraded => "degraded",
+                HealthStatus::Unhealthy => "unhealthy",
+            };
+            details.insert(name.clone(), status_str.to_string());
+
+            if let Some(ref error) = comp.error {
+                details.insert(format!("{}_error", name), error.clone());
+            }
+        }
+
+        details
+    }
 }
 
 impl Default for HealthChecker {

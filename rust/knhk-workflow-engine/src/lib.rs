@@ -64,13 +64,23 @@
 #![warn(missing_docs)]
 
 pub mod api;
+/// Phase 1: Type-System Mastery - Builders with type-state pattern
+pub mod builders;
 pub mod cache;
+/// Phase 1: Type-System Mastery - HRTB callback system
+pub mod callbacks;
 pub mod capabilities;
 pub mod case;
 pub mod cluster;
 pub mod compiler;
 pub mod compliance;
+/// Phase 0: Async/Await Mastery - Concurrency primitives
+#[cfg(feature = "async-v2")]
+pub mod concurrency;
 pub mod config;
+/// Phase 4: Connector Framework - Trait-based plugin system for external integrations
+#[cfg(feature = "connectors")]
+pub mod connectors;
 pub mod constants;
 /// Data gateway module for workflow data ingress and egress
 pub mod data;
@@ -82,8 +92,14 @@ pub mod executor;
 pub mod ggen;
 pub mod hooks;
 pub mod innovation;
+/// Phase 2: Memory Optimization - Lazy initialization with OnceLock
+#[cfg(feature = "memory-v2")]
+pub mod initialization;
 #[macro_use]
 pub mod integration;
+/// Phase 2: Memory Optimization - Custom allocators and arena allocation
+#[cfg(feature = "memory-v2")]
+pub mod memory;
 
 // Macros are exported via #[macro_export] in otel_macros.rs
 
@@ -101,9 +117,14 @@ pub mod security;
 pub mod self_validation;
 pub mod services;
 pub mod state;
+/// Phase 2: Memory Optimization - Memory-mapped storage
+#[cfg(feature = "memory-v2")]
+pub mod storage;
 pub mod templates;
 pub mod testing;
 pub mod timebase;
+/// Phase 1: Type-System Mastery - Type system enhancements (GATs, phantom types, newtypes)
+pub mod types;
 pub mod utils;
 pub mod validation;
 pub mod visualization;
@@ -114,6 +135,12 @@ pub use capabilities::{
     CapabilityValidationReport, CapabilityValidator,
 };
 pub use case::{Case, CaseId, CaseState};
+#[cfg(feature = "connectors")]
+pub use connectors::{
+    Connector, AsyncConnector, DynamicConnector, ConnectorRegistry, ConnectorConfig,
+    RestConnector, DatabaseConnector, MessageQueueConnector, ConnectorPool,
+    RetryPolicy, CircuitBreaker, BackoffStrategy,
+};
 pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
     SecurityConfig,
@@ -156,4 +183,22 @@ pub use testing::{
 };
 // TestDataBuilder is now in chicago-tdd-tools - import directly:
 // use chicago_tdd_tools::builders::TestDataBuilder;
+
+// Phase 1: Type-System Mastery exports
+pub use builders::{CaseBuilder, TaskExecution, WorkflowBuilder};
+pub use callbacks::{CallbackExecutor, CallbackRegistry, CallbackRegistryBuilder};
+pub use types::newtypes::{BatchSize, PriorityLevel, RetryCount, TickCount, TimeoutMs};
+pub use types::phantom::{Validate, Validatable, ValidationProof};
+
+#[cfg(feature = "type-system-v2")]
+pub use types::gat::{AsyncPatternExecutor as GatAsyncPatternExecutor, PatternExecutor as GatPatternExecutor};
+
 pub use visualization::WorkflowVisualizer;
+
+// Phase 2: Memory Optimization exports
+#[cfg(feature = "memory-v2")]
+pub use memory::{AllocatorConfig, AllocatorStats, Arena, ArenaAllocator, CacheAligned, CachePadded};
+#[cfg(feature = "memory-v2")]
+pub use initialization::{PatternRegistry as OncePatternRegistry, GlobalResourceRegistry};
+#[cfg(feature = "memory-v2")]
+pub use storage::{MmapWorkflowStore, MmapWorkflowReader};

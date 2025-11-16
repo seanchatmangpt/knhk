@@ -27,6 +27,18 @@ service WorkflowEngineService {
   
   // Cancel a case
   rpc CancelCase(CancelCaseRequest) returns (CancelCaseResponse);
+
+  // Watch case for real-time updates (server streaming)
+  rpc WatchCase(WatchCaseRequest) returns (stream CaseEvent);
+
+  // List cases with pagination (server streaming)
+  rpc ListCases(ListCasesRequest) returns (stream Case);
+
+  // Export case to XES format
+  rpc ExportCaseXes(ExportCaseRequest) returns (ExportCaseResponse);
+
+  // Health check probe
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
 
 // Register workflow request
@@ -132,5 +144,57 @@ message CaseHistoryEntry {
   int64 timestamp = 1;
   string event_type = 2;
   string data = 3; // JSON string
+}
+
+// Watch case request
+message WatchCaseRequest {
+  string case_id = 1;
+}
+
+// Case event (for streaming)
+message CaseEvent {
+  string case_id = 1;
+  string event_type = 2; // StateChanged, TaskCompleted, Error, etc.
+  int64 timestamp = 3;
+  string data = 4; // JSON string
+  string state = 5; // Current case state
+}
+
+// List cases request
+message ListCasesRequest {
+  string spec_id = 1; // Filter by workflow spec (optional)
+  string state_filter = 2; // Filter by state (optional)
+  int32 page_size = 3; // Number of cases per page (default 100)
+}
+
+// Export case request
+message ExportCaseRequest {
+  string case_id = 1;
+  string format = 2; // "xes" for now, extensible
+}
+
+// Export case response
+message ExportCaseResponse {
+  string format = 1;
+  bytes data = 2; // XES XML data
+  string filename = 3; // Suggested filename
+}
+
+// Health check request
+message HealthCheckRequest {
+  string service = 1; // Optional service name to check
+}
+
+// Health check response
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+  string message = 2; // Optional status message
+  map<string, string> components = 3; // Component health details
 }
 

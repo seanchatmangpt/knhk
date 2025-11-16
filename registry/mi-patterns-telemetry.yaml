@@ -1,0 +1,231 @@
+# OpenTelemetry Weaver Schema for Multiple Instance Patterns (12-15)
+#
+# Defines telemetry schema for MI pattern execution with work-stealing executor
+
+groups:
+  - id: mi_patterns
+    type: span
+    brief: Multiple Instance pattern execution spans
+    prefix: knhk.workflow.pattern.mi
+    spans:
+      - id: pattern_12_execute
+        brief: Pattern 12 - MI without synchronization execution
+        attributes:
+          - ref: pattern.id
+          - ref: case.id
+          - ref: instance_count
+          - ref: instance_set_id
+          - ref: executor.type
+        events:
+          - instances_created
+          - instances_spawned
+          - execution_complete
+
+      - id: pattern_13_execute
+        brief: Pattern 13 - MI with design-time knowledge execution
+        attributes:
+          - ref: pattern.id
+          - ref: case.id
+          - ref: instance_count
+          - ref: instance_set_id
+          - ref: sync_gate_id
+          - ref: executor.type
+        events:
+          - instances_created
+          - sync_gate_created
+          - instances_spawned
+          - sync_gate_opened
+          - execution_complete
+
+      - id: pattern_14_execute
+        brief: Pattern 14 - MI with runtime knowledge execution
+        attributes:
+          - ref: pattern.id
+          - ref: case.id
+          - ref: instance_count
+          - ref: instance_set_id
+          - ref: sync_gate_id
+          - ref: executor.type
+          - ref: runtime_data_source
+        events:
+          - runtime_count_determined
+          - instances_created
+          - sync_gate_created
+          - instances_spawned
+          - sync_gate_opened
+          - execution_complete
+
+      - id: pattern_15_execute
+        brief: Pattern 15 - MI with dynamic knowledge execution
+        attributes:
+          - ref: pattern.id
+          - ref: case.id
+          - ref: initial_instance_count
+          - ref: instance_set_id
+          - ref: sync_gate_id
+          - ref: executor.type
+          - ref: allow_dynamic_spawning
+        events:
+          - initial_instances_created
+          - sync_gate_created
+          - instances_spawned
+          - dynamic_instance_added
+          - termination_condition_met
+          - sync_gate_opened
+          - execution_complete
+
+      - id: instance_execute
+        brief: Individual instance execution
+        attributes:
+          - ref: instance.id
+          - ref: instance_set_id
+          - ref: case.id
+          - ref: pattern.id
+          - ref: executor.worker_id
+        events:
+          - instance_started
+          - instance_completed
+          - instance_failed
+
+      - id: sync_gate_wait
+        brief: Synchronization gate waiting
+        attributes:
+          - ref: sync_gate_id
+          - ref: completed_count
+          - ref: target_count
+        events:
+          - instance_completed
+          - gate_opened
+
+attributes:
+  - id: pattern.id
+    type: int
+    brief: Pattern ID (12-15 for MI patterns)
+    examples: [12, 13, 14, 15]
+
+  - id: case.id
+    type: string
+    brief: Case ID for workflow instance
+    examples: ["case-123", "order-456"]
+
+  - id: instance_count
+    type: int
+    brief: Total number of instances to create
+    examples: [10, 100, 1000]
+
+  - id: initial_instance_count
+    type: int
+    brief: Initial instance count for dynamic patterns
+    examples: [0, 5, 10]
+
+  - id: instance_set_id
+    type: string
+    brief: RDF instance set identifier
+    examples: ["case-123:pattern_12:instances"]
+
+  - id: sync_gate_id
+    type: string
+    brief: RDF sync gate identifier
+    examples: ["case-123:pattern_13:instances:sync_gate"]
+
+  - id: instance.id
+    type: string
+    brief: Individual instance identifier
+    examples: ["case-123:instance_0", "case-123:instance_42"]
+
+  - id: executor.type
+    type: string
+    brief: Executor type used for instances
+    examples: ["work-stealing", "tokio"]
+
+  - id: executor.worker_id
+    type: int
+    brief: Worker thread ID in work-stealing executor
+    examples: [0, 1, 2, 3]
+
+  - id: completed_count
+    type: int
+    brief: Number of instances completed
+    examples: [0, 5, 10]
+
+  - id: target_count
+    type: int
+    brief: Target number of instances for completion
+    examples: [10, 100, 1000]
+
+  - id: runtime_data_source
+    type: string
+    brief: Source of runtime instance data
+    examples: ["variable:runtime_instance_data", "array:orders"]
+
+  - id: allow_dynamic_spawning
+    type: boolean
+    brief: Whether dynamic instance spawning is allowed
+    examples: [true, false]
+
+metrics:
+  - id: mi.instances.created
+    type: counter
+    brief: Total number of instances created
+    unit: "{instances}"
+    attributes:
+      - ref: pattern.id
+      - ref: case.id
+
+  - id: mi.instances.completed
+    type: counter
+    brief: Total number of instances completed
+    unit: "{instances}"
+    attributes:
+      - ref: pattern.id
+      - ref: case.id
+      - ref: instance_set_id
+
+  - id: mi.instances.failed
+    type: counter
+    brief: Total number of instances that failed
+    unit: "{instances}"
+    attributes:
+      - ref: pattern.id
+      - ref: case.id
+      - ref: instance_set_id
+
+  - id: mi.sync_gate.wait_duration
+    type: histogram
+    brief: Time spent waiting for sync gate to open
+    unit: ms
+    attributes:
+      - ref: pattern.id
+      - ref: sync_gate_id
+      - ref: target_count
+
+  - id: mi.instance.execution_duration
+    type: histogram
+    brief: Duration of individual instance execution
+    unit: ms
+    attributes:
+      - ref: pattern.id
+      - ref: instance_set_id
+      - ref: executor.worker_id
+
+  - id: mi.executor.spawn_latency
+    type: histogram
+    brief: Latency to spawn instance on executor
+    unit: ns
+    attributes:
+      - ref: executor.type
+
+  - id: mi.executor.cpu_utilization
+    type: gauge
+    brief: CPU utilization of work-stealing executor
+    unit: "%"
+    attributes:
+      - ref: executor.type
+
+  - id: mi.executor.tasks_stolen
+    type: counter
+    brief: Number of tasks stolen by workers
+    unit: "{tasks}"
+    attributes:
+      - ref: executor.type
+      - ref: executor.worker_id

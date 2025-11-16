@@ -1,0 +1,249 @@
+# OpenTelemetry Weaver Schema for KNHK Concurrency Primitives
+# Phase 0: Async/Await Mastery Telemetry
+#
+# This schema validates that concurrency primitives emit proper telemetry
+# according to the async-v2 feature specification.
+
+schema_url: https://opentelemetry.io/schemas/1.21.0
+
+groups:
+  # Nursery Telemetry
+  - id: knhk.concurrency.nursery
+    type: span
+    brief: Structured concurrency nursery operations
+    attributes:
+      - id: nursery.id
+        type: string
+        brief: Unique identifier for the nursery instance
+        requirement_level: required
+
+      - id: nursery.task.count
+        type: int
+        brief: Number of tasks spawned in this nursery
+        requirement_level: required
+
+      - id: nursery.mode
+        type: string
+        brief: Nursery wait mode (wait_all or wait_any)
+        enum: ["wait_all", "wait_any"]
+        requirement_level: required
+
+    spans:
+      - id: knhk.concurrency.nursery.spawn
+        brief: Task spawned in nursery
+        attributes:
+          - ref: nursery.id
+          - id: task.id
+            type: string
+            brief: Task identifier
+            requirement_level: required
+
+      - id: knhk.concurrency.nursery.wait
+        brief: Waiting for nursery tasks to complete
+        attributes:
+          - ref: nursery.id
+          - ref: nursery.task.count
+          - ref: nursery.mode
+
+  # Cancel Token Telemetry
+  - id: knhk.concurrency.cancel
+    type: span
+    brief: Cancellation token operations
+    attributes:
+      - id: cancel.token.id
+        type: string
+        brief: Unique identifier for the cancellation token
+        requirement_level: required
+
+      - id: cancel.token.parent_id
+        type: string
+        brief: Parent token ID for hierarchical cancellation
+        requirement_level: optional
+
+      - id: cancel.token.is_cancelled
+        type: boolean
+        brief: Whether the token is in cancelled state
+        requirement_level: required
+
+      - id: cancel.scope.auto_cancel
+        type: boolean
+        brief: Whether the cancel scope auto-cancels on drop
+        requirement_level: optional
+
+    spans:
+      - id: knhk.concurrency.cancel.token.create
+        brief: Cancellation token created
+        attributes:
+          - ref: cancel.token.id
+          - ref: cancel.token.parent_id
+
+      - id: knhk.concurrency.cancel.token.cancel
+        brief: Cancellation token cancelled
+        attributes:
+          - ref: cancel.token.id
+
+      - id: knhk.concurrency.cancel.scope.create
+        brief: Cancel scope created
+        attributes:
+          - ref: cancel.token.id
+          - ref: cancel.scope.auto_cancel
+
+      - id: knhk.concurrency.cancel.scope.drop
+        brief: Cancel scope dropped (RAII cleanup)
+        attributes:
+          - ref: cancel.token.id
+          - ref: cancel.scope.auto_cancel
+
+  # Work-Stealing Executor Telemetry
+  - id: knhk.concurrency.workstealing
+    type: attribute_group
+    brief: Work-stealing executor attributes
+    attributes:
+      - id: executor.worker.id
+        type: int
+        brief: Worker thread identifier
+        requirement_level: required
+
+      - id: executor.worker.count
+        type: int
+        brief: Total number of worker threads
+        requirement_level: required
+
+      - id: executor.task.type
+        type: string
+        brief: Task classification (cpu_bound or io_bound)
+        enum: ["cpu_bound", "io_bound"]
+        requirement_level: optional
+
+      - id: executor.queue.type
+        type: string
+        brief: Queue type (local, global, or stolen)
+        enum: ["local", "global", "stolen"]
+        requirement_level: required
+
+      - id: executor.steal.attempts
+        type: int
+        brief: Number of steal attempts before finding work
+        requirement_level: optional
+
+  # Work-Stealing Metrics
+  - id: knhk.concurrency.workstealing.metrics
+    type: metric_group
+    brief: Work-stealing executor performance metrics
+    metrics:
+      - id: knhk.concurrency.executor.tasks.spawned
+        type: counter
+        brief: Total tasks spawned on the executor
+        unit: "{task}"
+        attributes:
+          - ref: executor.worker.count
+
+      - id: knhk.concurrency.executor.tasks.completed
+        type: counter
+        brief: Total tasks completed successfully
+        unit: "{task}"
+        attributes:
+          - ref: executor.worker.id
+
+      - id: knhk.concurrency.executor.tasks.stolen
+        type: counter
+        brief: Tasks stolen from other workers
+        unit: "{task}"
+        attributes:
+          - ref: executor.worker.id
+
+      - id: knhk.concurrency.executor.workers.idle
+        type: gauge
+        brief: Number of idle workers
+        unit: "{worker}"
+
+      - id: knhk.concurrency.executor.queue.depth
+        type: histogram
+        brief: Task queue depth distribution
+        unit: "{task}"
+        attributes:
+          - ref: executor.queue.type
+
+      - id: knhk.concurrency.executor.spawn.latency
+        type: histogram
+        brief: Task spawn latency (target <100ns)
+        unit: "ns"
+
+      - id: knhk.concurrency.executor.steal.latency
+        type: histogram
+        brief: Work stealing operation latency
+        unit: "ns"
+        attributes:
+          - ref: executor.steal.attempts
+
+  # Work-Stealing Spans
+  - id: knhk.concurrency.workstealing.spans
+    type: span_group
+    brief: Work-stealing executor span operations
+    spans:
+      - id: knhk.concurrency.executor.task.spawn
+        brief: Task spawned on executor
+        attributes:
+          - ref: executor.worker.count
+          - ref: executor.task.type
+
+      - id: knhk.concurrency.executor.task.execute
+        brief: Task execution on worker
+        attributes:
+          - ref: executor.worker.id
+          - ref: executor.queue.type
+
+      - id: knhk.concurrency.executor.task.steal
+        brief: Work stealing attempt
+        attributes:
+          - ref: executor.worker.id
+          - ref: executor.steal.attempts
+
+      - id: knhk.concurrency.executor.worker.park
+        brief: Worker parked due to no available work
+        attributes:
+          - ref: executor.worker.id
+
+      - id: knhk.concurrency.executor.shutdown
+        brief: Executor graceful shutdown
+        attributes:
+          - ref: executor.worker.count
+
+  # Pin/Unpin Operations (for debugging)
+  - id: knhk.concurrency.pin
+    type: span
+    brief: Pin/Unpin operations for async futures
+    attributes:
+      - id: pin.operation
+        type: string
+        brief: Pin operation type
+        enum: ["pin", "pinned", "pin_future"]
+        requirement_level: required
+
+    spans:
+      - id: knhk.concurrency.pin.future
+        brief: Future pinned in memory
+        attributes:
+          - ref: pin.operation
+
+# Performance Requirements (for validation)
+requirements:
+  - name: spawn_latency_p99
+    description: "Task spawn latency must be <100ns at P99"
+    metric: knhk.concurrency.executor.spawn.latency
+    threshold: 100
+    unit: ns
+    percentile: 99
+
+  - name: cpu_utilization
+    description: "CPU utilization must be >95% for CPU-bound workloads"
+    metric: knhk.concurrency.executor.cpu.utilization
+    threshold: 0.95
+    unit: ratio
+
+  - name: steal_efficiency
+    description: "Work stealing should succeed in <4 attempts on average"
+    metric: knhk.concurrency.executor.steal.attempts
+    threshold: 4
+    unit: attempts
+    aggregation: mean

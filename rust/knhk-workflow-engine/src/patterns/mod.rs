@@ -126,10 +126,18 @@ impl PatternExecutionResult {
     }
 }
 
-/// Pattern executor trait
+/// Pattern executor trait (sync version)
 pub trait PatternExecutor: Send + Sync {
     /// Execute pattern with context
     fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult;
+}
+
+/// Pattern executor trait (async version for async-v2 feature)
+#[cfg(feature = "async-v2")]
+#[async_trait::async_trait]
+pub trait AsyncPatternExecutor: Send + Sync {
+    /// Execute pattern with context asynchronously
+    async fn execute(&self, ctx: &PatternExecutionContext) -> PatternExecutionResult;
 }
 
 /// Pattern registry

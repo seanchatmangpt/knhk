@@ -5,6 +5,8 @@
 
 #[cfg(feature = "grpc")]
 pub mod grpc;
+#[cfg(feature = "grpc")]
+pub mod grpc_server;
 #[cfg(feature = "http")]
 pub mod middleware;
 pub mod models;
@@ -15,6 +17,10 @@ pub mod transport;
 
 // Re-export service layer for convenience
 pub use service::{CaseService, PatternService, WorkflowService};
+
+// Re-export gRPC server for convenience
+#[cfg(feature = "grpc")]
+pub use grpc_server::{GrpcServer, GrpcServerConfig};
 
 /// Workflow engine API placeholder
 pub struct WorkflowEngineApi;
