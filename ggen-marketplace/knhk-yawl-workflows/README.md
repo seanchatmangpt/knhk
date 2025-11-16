@@ -1,20 +1,21 @@
 # KNHK YAWL Workflow Generator
 
-> **Generate YAWL XML specifications from RDF/Turtle ontologies. All 43 YAWL patterns supported. Production-ready.**
+> **Generate YAWL Turtle (RDF) specifications from workflow ontologies. Direct knhk integration. All 43 YAWL patterns. Production-ready.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](ggen.yaml)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](ggen.yaml)
 [![Status](https://img.shields.io/badge/status-production--ready-green)](docs/ARCHITECTURE.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](#license)
 [![YAWL Patterns](https://img.shields.io/badge/YAWL%20Patterns-43%2F43-success)](#supported-patterns)
 
-A ggen marketplace template that transforms RDF/Turtle workflow ontologies into YAWL 2.2 XML specifications. Powered by SPARQL-driven code generation and integrated with the KNHK workflow engine.
+A ggen marketplace template that transforms RDF/Turtle workflow ontologies into YAWL specifications in Turtle (RDF) format. Direct integration with knhk workflow engine. Powered by SPARQL-driven semantic code generation.
 
 ## Features
 
 ✅ **All 43 YAWL Patterns** - Complete control flow pattern support
+✅ **Turtle/RDF Output** - YAWL specifications as Turtle (RDF) for knhk
 ✅ **RDF-Driven Generation** - SPARQL queries extract workflow structure
 ✅ **Deterministic Output** - Byte-identical, reproducible generation
-✅ **Multi-Format** - Generates YAWL XML and JSON
+✅ **Direct knhk Integration** - Output ready for workflow engine execution
 ✅ **Enterprise-Ready** - Production-grade quality with Weaver validation
 ✅ **Semantic Foundation** - W3C standard RDF ontologies
 
@@ -42,14 +43,14 @@ cat > workflow.ttl << 'EOF'
     yawl:hasIncomingFlow <http://example.org/cond/middle> .
 EOF
 
-# Generate YAWL
+# Generate YAWL specification (Turtle/RDF output)
 ggen template generate-rdf \
   --ontology workflow.ttl \
   --template io.knhk.yawl-workflows \
-  --output workflow.yawl
+  --output workflow-spec.ttl
 ```
 
-Result: `workflow.yawl` - YAWL 2.2 XML specification ready for execution.
+Result: `workflow-spec.ttl` - YAWL specification in Turtle format, ready for knhk workflow engine.
 
 ## Why This Approach?
 

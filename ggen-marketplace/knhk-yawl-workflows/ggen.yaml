@@ -1,13 +1,14 @@
 ---
 # ggen Marketplace Template: KNHK YAWL Workflow Generation
-# Generates YAWL XML specifications from RDF/Turtle workflow ontologies
+# Generates YAWL Turtle (RDF) specifications from RDF/Turtle workflow ontologies
+# Direct output for knhk workflow engine integration
 
 id: "io.knhk.yawl-workflows"
-version: "1.0.0"
+version: "1.1.0"
 name: "KNHK YAWL Workflow Generator"
 description: |
-  Generate YAWL (Yet Another Workflow Language) specifications from RDF/Turtle ontologies.
-  Supports all 43 YAWL patterns, perfect for enterprise workflow automation.
+  Generate YAWL (Yet Another Workflow Language) specifications in Turtle (RDF) format from workflow ontologies.
+  Direct integration with knhk workflow engine. Supports all 43 YAWL patterns for enterprise automation.
 
 author: "Sean Chatman (KNHK Team)"
 repository: "https://github.com/seanchatmangpt/knhk"
@@ -34,8 +35,8 @@ template:
   type: "rdf-driven"
   input_format: "turtle"
   output_formats:
-    - "yawl-xml"
-    - "yawl-json"
+    - "turtle"     # YAWL specification in Turtle (RDF) format
+    - "json"       # Alternative JSON format (from Turtle)
 
   # RDF ontology namespaces required
   required_namespaces:
