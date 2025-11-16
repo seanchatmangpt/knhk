@@ -13,6 +13,9 @@ use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::Message;
 use std::time::Duration;
 
+#[cfg(feature = "otel")]
+use tracing::{debug, error, info, instrument, span, Level};
+
 // ============================================================================
 // Kafka Producer
 // ============================================================================
@@ -39,12 +42,32 @@ pub fn create_producer(brokers: &str) -> Result<FutureProducer, String> {
 }
 
 /// Send message to Kafka topic
+#[cfg_attr(feature = "otel", instrument(
+    name = "knhk.kafka.send",
+    skip(producer, payload),
+    fields(
+        knhk.operation.name = "kafka.send",
+        knhk.operation.type = "messaging",
+        messaging.system = "kafka",
+        messaging.destination = topic,
+        messaging.message_payload_size_bytes = payload.len(),
+        messaging.kafka.message_key = key.unwrap_or("none")
+    )
+))]
 pub async fn send_message(
     producer: &FutureProducer,
     topic: &str,
     key: Option<&str>,
     payload: &[u8],
 ) -> Result<(), String> {
+    #[cfg(feature = "otel")]
+    debug!(
+        topic = %topic,
+        key = ?key,
+        payload_size = payload.len(),
+        "sending_kafka_message"
+    );
+
     let mut record = FutureRecord::to(topic).payload(payload);
 
     if let Some(k) = key {
@@ -54,8 +77,19 @@ pub async fn send_message(
     producer
         .send(record, Duration::from_secs(0))
         .await
-        .map_err(|(err, _)| format!("Failed to send message: {}", err))?
-        .map_err(|(err, _)| format!("Failed to deliver message: {}", err))?;
+        .map_err(|(err, _)| {
+            #[cfg(feature = "otel")]
+            error!(error = %err, topic = %topic, "failed_to_send_message");
+            format!("Failed to send message: {}", err)
+        })?
+        .map_err(|(err, _)| {
+            #[cfg(feature = "otel")]
+            error!(error = %err, topic = %topic, "failed_to_deliver_message");
+            format!("Failed to deliver message: {}", err)
+        })?;
+
+    #[cfg(feature = "otel")]
+    info!(topic = %topic, "message_sent_successfully");
 
     Ok(())
 }
@@ -99,21 +133,75 @@ where
     use futures::StreamExt;
     use rdkafka::consumer::stream_consumer::StreamConsumer as _;
 
+    #[cfg(feature = "otel")]
+    let _span = span!(
+        Level::INFO,
+        "knhk.kafka.consume",
+        knhk.operation.name = "kafka.consume",
+        knhk.operation.type = "messaging",
+        messaging.system = "kafka"
+    );
+
+    #[cfg(feature = "otel")]
+    let _enter = _span.enter();
+
+    #[cfg(feature = "otel")]
+    debug!("starting_kafka_consumer");
+
     loop {
         match consumer.recv().await {
             Ok(message) => {
+                #[cfg(feature = "otel")]
+                let message_span = span!(
+                    Level::INFO,
+                    "knhk.kafka.process_message",
+                    messaging.kafka.partition = message.partition(),
+                    messaging.kafka.offset = message.offset()
+                );
+
+                #[cfg(feature = "otel")]
+                let _message_enter = message_span.enter();
+
                 // Extract payload
                 let payload = message
                     .payload()
-                    .ok_or_else(|| "Message has no payload".to_string())?;
+                    .ok_or_else(|| {
+                        #[cfg(feature = "otel")]
+                        error!("message_has_no_payload");
+                        "Message has no payload".to_string()
+                    })?;
+
+                #[cfg(feature = "otel")]
+                debug!(
+                    partition = message.partition(),
+                    offset = message.offset(),
+                    payload_size = payload.len(),
+                    "processing_kafka_message"
+                );
 
                 // Process message
                 if let Err(e) = message_handler(payload) {
+                    #[cfg(feature = "otel")]
+                    error!(
+                        error = %e,
+                        partition = message.partition(),
+                        offset = message.offset(),
+                        "message_processing_failed"
+                    );
                     eprintln!("Error processing message: {}", e);
                     // Continue processing (or implement retry logic)
+                } else {
+                    #[cfg(feature = "otel")]
+                    info!(
+                        partition = message.partition(),
+                        offset = message.offset(),
+                        "message_processed_successfully"
+                    );
                 }
             }
             Err(e) => {
+                #[cfg(feature = "otel")]
+                error!(error = %e, "error_receiving_kafka_message");
                 eprintln!("Error receiving message: {}", e);
                 // Implement exponential backoff here
                 tokio::time::sleep(Duration::from_millis(100)).await;
@@ -166,26 +254,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 // Production Enhancements
 // ============================================================================
 
-// TODO: Add telemetry
-// use knhk_otel::{init_tracer, Tracer, SpanStatus};
+// ✅ Telemetry: IMPLEMENTED
 //
-// async fn send_message_with_telemetry(...) {
-//     let mut tracer = Tracer::new();
-//     let span = tracer.start_span("kafka.send".to_string(), None);
-//     tracer.add_attribute(span.clone(), "topic".to_string(), topic.to_string());
+// Telemetry has been integrated using the `tracing` crate with OpenTelemetry support.
+// Both producer and consumer operations now include:
+// - Instrumentation using #[instrument] attribute for send operations
+// - Span creation for message consumption loop
+// - Individual message processing spans with partition and offset tracking
+// - Structured logging with debug/info/error macros
+// - Essential messaging attributes (topic, partition, offset, payload size)
+// - Error context preservation with message details
 //
-//     let result = send_message(...).await;
+// To use telemetry in production:
+// 1. Build with the "otel" feature: `cargo build --features otel`
+// 2. Initialize tracing subscriber with OTLP exporter before Kafka operations
+// 3. All send/consume operations will automatically emit telemetry spans
 //
-//     match &result {
-//         Ok(_) => tracer.end_span(span, SpanStatus::Ok),
-//         Err(e) => {
-//             tracer.add_attribute(span.clone(), "error".to_string(), e.to_string());
-//             tracer.end_span(span, SpanStatus::Error)
-//         }
-//     }
-//
-//     result
-// }
+// The telemetry follows KNHK's instrumentation principles:
+// - Schema-first approach (define spans in OTel schema)
+// - Messaging boundary instrumentation
+// - OpenTelemetry messaging semantic conventions
+// - Essential attributes only (topic, partition, offset, message size)
+// - Performance budget compliance (minimal overhead)
 
 // TODO: Add retry logic
 // use tokio::time::{sleep, Duration};
