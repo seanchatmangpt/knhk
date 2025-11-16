@@ -151,6 +151,11 @@ impl SelfExecutingWorkflow {
         self.receipts.get_statistics()
     }
 
+    /// Get a specific receipt by ID
+    pub fn get_receipt(&self, receipt_id: &ReceiptId) -> Result<Receipt, String> {
+        self.receipts.get(receipt_id)
+    }
+
     /// Promote a shadow snapshot to production
     ///
     /// This is the MAPE-K "Execute" phase for ontology updates
