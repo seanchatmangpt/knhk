@@ -1,0 +1,285 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "knhk-overview",
+    "title": "KNHK Production Overview",
+    "tags": ["knhk", "production"],
+    "timezone": "utc",
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s",
+
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate (req/sec)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(knhk_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "Requests/sec", "show": true},
+          {"show": false}
+        ]
+      },
+
+      {
+        "id": 2,
+        "title": "Error Rate (%)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "100 * (rate(knhk_requests_total{status=\"error\"}[5m]) / rate(knhk_requests_total[5m]))",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "Percentage", "show": true, "max": 5},
+          {"show": false}
+        ],
+        "alert": {
+          "name": "High Error Rate",
+          "conditions": [
+            {
+              "evaluator": {"type": "gt", "params": [1]},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "message": "KNHK error rate exceeds 1%",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+
+      {
+        "id": 3,
+        "title": "Hot Path Latency (CPU Ticks)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(knhk_observation_append_ticks_bucket[5m]))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(knhk_observation_append_ticks_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(knhk_observation_append_ticks_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"label": "Ticks", "show": true, "max": 10},
+          {"show": false}
+        ],
+        "thresholds": [
+          {
+            "value": 8,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+
+      {
+        "id": 4,
+        "title": "Warm Path Latency (ms)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(knhk_pattern_detection_duration_ms_bucket[5m]))",
+            "legendFormat": "Pattern Detection p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(knhk_proposal_validation_duration_ms_bucket[5m]))",
+            "legendFormat": "Validation p95",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"label": "Milliseconds", "show": true, "max": 150},
+          {"show": false}
+        ],
+        "thresholds": [
+          {
+            "value": 100,
+            "colorMode": "critical",
+            "op": "gt"
+          }
+        ]
+      },
+
+      {
+        "id": 5,
+        "title": "Database Connection Pool",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "knhk_db_pool_total",
+            "legendFormat": "Total",
+            "refId": "A"
+          },
+          {
+            "expr": "knhk_db_pool_active",
+            "legendFormat": "Active",
+            "refId": "B"
+          },
+          {
+            "expr": "knhk_db_pool_idle",
+            "legendFormat": "Idle",
+            "refId": "C"
+          }
+        ]
+      },
+
+      {
+        "id": 6,
+        "title": "MAPE-K Loop Cycles",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 16, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(knhk_mape_k_cycles_total[5m])",
+            "legendFormat": "Cycles/sec",
+            "refId": "A"
+          }
+        ]
+      },
+
+      {
+        "id": 7,
+        "title": "Pattern Detection Success Rate",
+        "type": "stat",
+        "gridPos": {"x": 16, "y": 16, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "100 * (rate(knhk_patterns_detected[5m]) / rate(knhk_pattern_detection_attempts[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 80, "color": "yellow"},
+                {"value": 95, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+
+      {
+        "id": 8,
+        "title": "Receipt Chain Integrity",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "knhk_receipt_chain_breaks_total",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+
+      {
+        "id": 9,
+        "title": "Weaver Validation Status",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "knhk_weaver_validation_failures_total",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+
+      {
+        "id": 10,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=\"knhk-closed-loop\"}[5m]) * 100",
+            "legendFormat": "{{pod}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "CPU %", "show": true, "max": 100},
+          {"show": false}
+        ]
+      },
+
+      {
+        "id": 11,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 32, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"knhk-closed-loop\"} / 1024 / 1024",
+            "legendFormat": "{{pod}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "Memory (MB)", "show": true},
+          {"show": false}
+        ]
+      }
+    ]
+  }
+}

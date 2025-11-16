@@ -27,6 +27,7 @@ members = [
     "knhk-neural",            # Phase 6: Advanced Neural Integration with Self-Learning Workflows
     "knhk-accelerate",        # Phase 9: GPU/FPGA Hardware Acceleration
     "knhk-marketplace",       # Phase 10: Market deployment, licensing, and billing
+    "knhk-closed-loop",       # Closed-loop MAPE-K dark matter implementation
 ]
 
 [workspace.package]

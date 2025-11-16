@@ -1,0 +1,333 @@
+# OpenTelemetry Log Record Definitions for KNHK MAPE-K System
+# Version: 1.0.0
+# Date: 2025-11-16
+#
+# This schema defines ALL structured logs that KNHK emits during runtime.
+# Weaver validation ensures actual runtime logs match this schema.
+
+schema_url: https://knhk.io/schemas/1.0.0
+
+groups:
+  # ==================================================================
+  # PROPOSAL LIFECYCLE LOGS
+  # ==================================================================
+  - id: knhk.logs.proposals
+    type: log_record
+    brief: "Proposal generation, validation, and decision logs"
+    prefix: proposal
+    log_records:
+      - id: generated
+        severity: info
+        brief: "Proposal generated from detected pattern"
+        body: "Proposal {proposal.id} generated from pattern {pattern.name} with confidence {proposal.confidence}"
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: pattern.name
+            requirement_level: required
+          - ref: proposal.confidence
+            requirement_level: required
+          - ref: proposal.description
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: validated
+        severity: info
+        brief: "Proposal validation completed (all 7 stages)"
+        body: "Proposal {proposal.id} validation: {validation.passed} ({validation.stages_completed}/{validation.total_stages} stages)"
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: validation.passed
+            requirement_level: required
+          - ref: validation.total_stages
+            requirement_level: required
+          - ref: validation.stages_completed
+            requirement_level: required
+          - ref: validation.failure_reason
+            requirement_level:
+              conditionally_required: "if validation.passed == false"
+
+      - id: accepted
+        severity: info
+        brief: "Proposal accepted and promoted to production"
+        body: "Proposal {proposal.id} ACCEPTED → Snapshot {snapshot.id} promoted"
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: snapshot.id
+            requirement_level: required
+          - ref: snapshot.version
+            requirement_level: required
+          - ref: decision.reasoning
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: rejected
+        severity: info
+        brief: "Proposal rejected (failed validation)"
+        body: "Proposal {proposal.id} REJECTED at stage {rejection.stage}: {rejection.reason}"
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: rejection.reason
+            requirement_level: required
+          - ref: rejection.stage
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+  # ==================================================================
+  # INVARIANT ENFORCEMENT LOGS
+  # ==================================================================
+  - id: knhk.logs.invariants
+    type: log_record
+    brief: "Hard invariant violations and preservation"
+    prefix: invariant
+    log_records:
+      - id: violated
+        severity: error
+        brief: "Hard invariant violated (CRITICAL)"
+        body: "INVARIANT {invariant.id} VIOLATED: {violation.reason}"
+        attributes:
+          - ref: invariant.id
+            requirement_level: required
+          - ref: violation.reason
+            requirement_level: required
+          - ref: proposal.id
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: preserved
+        severity: debug
+        brief: "Hard invariant preserved (validation passed)"
+        body: "Invariant {invariant.id} preserved for proposal {proposal.id}"
+        attributes:
+          - ref: invariant.id
+            requirement_level: required
+          - ref: proposal.id
+            requirement_level: required
+
+  # ==================================================================
+  # GUARD ENFORCEMENT LOGS
+  # ==================================================================
+  - id: knhk.logs.guards
+    type: log_record
+    brief: "Guard enforcement and relaxation logs"
+    prefix: guard
+    log_records:
+      - id: enforced
+        severity: debug
+        brief: "Guard blocked an operation"
+        body: "Guard {guard.id} ({guard.name}) blocked operation: {operation.blocked}"
+        attributes:
+          - ref: guard.id
+            requirement_level: required
+          - ref: guard.name
+            requirement_level: required
+          - ref: operation.blocked
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: relaxed
+        severity: warning
+        brief: "Guard temporarily relaxed (requires multi-party approval)"
+        body: "Guard {guard.id} RELAXED for {relaxation.window_ms}ms (approved by {approval.count} signers)"
+        attributes:
+          - ref: guard.id
+            requirement_level: required
+          - ref: relaxation.window_ms
+            requirement_level: required
+          - ref: approval.count
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: slo_violated
+        severity: error
+        brief: "SLO violated during guard relaxation - re-enabling guard"
+        body: "Guard {guard.id} re-enabled: SLO violation (success_rate={success_rate} < threshold={slo_threshold})"
+        attributes:
+          - ref: guard.id
+            requirement_level: required
+          - ref: success_rate
+            requirement_level: required
+          - ref: slo_threshold
+            requirement_level: required
+
+  # ==================================================================
+  # SNAPSHOT LIFECYCLE LOGS
+  # ==================================================================
+  - id: knhk.logs.snapshots
+    type: log_record
+    brief: "Snapshot promotion and rollback logs"
+    prefix: snapshot
+    log_records:
+      - id: promoted
+        severity: info
+        brief: "Snapshot promoted to production (atomic RCU swap)"
+        body: "Snapshot {snapshot.id} v{snapshot.version} promoted (parent: {snapshot.parent_id}, latency: {promotion.latency_ns}ns)"
+        attributes:
+          - ref: snapshot.id
+            requirement_level: required
+          - ref: snapshot.version
+            requirement_level: required
+          - ref: snapshot.parent_id
+            requirement_level:
+              conditionally_required: "if not genesis snapshot"
+          - ref: promotion.latency_ns
+            requirement_level: required
+          - ref: promotion.timestamp
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: rollback
+        severity: warning
+        brief: "Snapshot promotion rolled back"
+        body: "Snapshot {snapshot.id} ROLLBACK: {rollback.reason}"
+        attributes:
+          - ref: snapshot.id
+            requirement_level: required
+          - ref: rollback.reason
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+  # ==================================================================
+  # LEARNING LOGS
+  # ==================================================================
+  - id: knhk.logs.learning
+    type: log_record
+    brief: "Learning outcomes and budget adjustments"
+    prefix: learning
+    log_records:
+      - id: lesson_learned
+        severity: info
+        brief: "Lesson learned from cycle outcome"
+        body: "Lesson: {lesson.description}"
+        attributes:
+          - ref: cycle.id
+            requirement_level: required
+          - ref: lesson.description
+            requirement_level: required
+          - ref: lesson.confidence
+            requirement_level: required
+
+      - id: budget_adjusted
+        severity: info
+        brief: "Performance budget adjusted"
+        body: "Budget for {budget.type} adjusted: {budget.old_value} → {budget.new_value} ({adjustment.direction})"
+        attributes:
+          - ref: budget.type
+            requirement_level: required
+          - ref: budget.old_value
+            requirement_level: required
+          - ref: budget.new_value
+            requirement_level: required
+          - ref: adjustment.direction
+            requirement_level: required
+          - ref: adjustment.reason
+            requirement_level: required
+
+  # ==================================================================
+  # CYCLE LOGS
+  # ==================================================================
+  - id: knhk.logs.cycles
+    type: log_record
+    brief: "MAPE-K cycle execution logs"
+    prefix: cycle
+    log_records:
+      - id: started
+        severity: info
+        brief: "MAPE-K cycle started"
+        body: "Cycle {cycle.id} started for sector {sector}"
+        attributes:
+          - ref: cycle.id
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: completed
+        severity: info
+        brief: "MAPE-K cycle completed"
+        body: "Cycle {cycle.id} completed: {cycle.outcome} (duration: {latency_ms}ms, patterns: {cycle.patterns_detected}, proposals: {cycle.proposals_generated})"
+        attributes:
+          - ref: cycle.id
+            requirement_level: required
+          - ref: cycle.outcome
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+          - ref: cycle.patterns_detected
+            requirement_level: required
+          - ref: cycle.proposals_generated
+            requirement_level: required
+          - ref: cycle.validations_passed
+            requirement_level: required
+          - ref: cycle.validations_failed
+            requirement_level: required
+          - ref: cycle.snapshots_promoted
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: failed
+        severity: error
+        brief: "MAPE-K cycle failed"
+        body: "Cycle {cycle.id} FAILED at phase {failure.phase}: {failure.reason}"
+        attributes:
+          - ref: cycle.id
+            requirement_level: required
+          - ref: failure.phase
+            requirement_level: required
+          - ref: failure.reason
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+  # ==================================================================
+  # RECEIPT LOGS
+  # ==================================================================
+  - id: knhk.logs.receipts
+    type: log_record
+    brief: "Cryptographic receipt generation logs"
+    prefix: receipt
+    log_records:
+      - id: generated
+        severity: debug
+        brief: "Cryptographic receipt generated"
+        body: "Receipt {receipt.id} generated for operation {receipt.operation}"
+        attributes:
+          - ref: receipt.id
+            requirement_level: required
+          - ref: receipt.operation
+            requirement_level: required
+          - ref: receipt.signature
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+
+      - id: verified
+        severity: debug
+        brief: "Receipt signature verified"
+        body: "Receipt {receipt.id} signature verified successfully"
+        attributes:
+          - ref: receipt.id
+            requirement_level: required
+          - ref: verification.success
+            requirement_level: required
+
+      - id: chain_broken
+        severity: error
+        brief: "Receipt chain integrity violated"
+        body: "Receipt chain BROKEN at {receipt.id}: {violation.reason}"
+        attributes:
+          - ref: receipt.id
+            requirement_level: required
+          - ref: violation.reason
+            requirement_level: required

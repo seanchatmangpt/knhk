@@ -1,0 +1,673 @@
+# OpenTelemetry Shared Attribute Definitions for KNHK
+# Version: 1.0.0
+# Date: 2025-11-16
+#
+# This schema defines ALL shared attributes used across spans, metrics, and logs.
+# Weaver validation ensures attribute types and requirements are enforced.
+
+schema_url: https://knhk.io/schemas/1.0.0
+
+groups:
+  # ==================================================================
+  # OBSERVATION ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.observation
+    type: attribute_group
+    brief: "Observation-related attributes"
+    attributes:
+      - id: observation.id
+        type: string
+        brief: "Unique observation identifier"
+        examples: ["finance-transaction-abc123def", "health-diagnosis-xyz789ghi"]
+        note: "Format: {sector}-{event_type}-{hash16}"
+
+      - id: observation.sector
+        type: string
+        brief: "Organizational sector"
+        examples: ["finance", "healthcare", "manufacturing", "logistics"]
+        note: "Must match one of the defined sectors"
+
+      - id: observation.event_type
+        type: string
+        brief: "Type of observed event"
+        examples: ["transaction.execute", "diagnosis.created", "production.run"]
+
+      - id: observation.timestamp
+        type: int
+        brief: "Unix timestamp in milliseconds"
+        note: "When the observation was created"
+
+  # ==================================================================
+  # PROPOSAL ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.proposal
+    type: attribute_group
+    brief: "Change proposal attributes"
+    attributes:
+      - id: proposal.id
+        type: string
+        brief: "Unique proposal identifier"
+        examples: ["prop-finance-2025-001"]
+
+      - id: proposal.confidence
+        type: double
+        brief: "Confidence score (0.0-1.0)"
+        note: "Higher confidence = more likely to be accepted"
+
+      - id: proposal.description
+        type: string
+        brief: "Human-readable proposal description"
+
+  # ==================================================================
+  # SNAPSHOT ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.snapshot
+    type: attribute_group
+    brief: "Ontology snapshot attributes"
+    attributes:
+      - id: snapshot.id
+        type: string
+        brief: "Snapshot identifier (SHA-256 hash)"
+        examples: ["sha256:abc123def456..."]
+
+      - id: snapshot.parent_id
+        type: string
+        brief: "Parent snapshot identifier (for DAG)"
+        note: "None for genesis snapshot"
+
+      - id: snapshot.version
+        type: int
+        brief: "Monotonic version number"
+        note: "Incremented on each promotion"
+
+  # ==================================================================
+  # VALIDATION ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.validation
+    type: attribute_group
+    brief: "Validation pipeline attributes"
+    attributes:
+      - id: validation.stage
+        type: int
+        brief: "Validation pipeline stage number (1-7)"
+        note: |
+          1: Static SHACL
+          2: Invariant Q1-Q5
+          3: Doctrine
+          4: Guard
+          5: Performance
+          6: Rollback
+          7: Compatibility
+
+      - id: validation.stage_name
+        type: string
+        brief: "Validation stage name"
+        examples: ["static", "invariant_Q3", "doctrine", "guard"]
+
+      - id: validation.passed
+        type: boolean
+        brief: "Validation result (true = passed)"
+
+      - id: validation.total_stages
+        type: int
+        brief: "Total number of validation stages"
+
+      - id: validation.stages_completed
+        type: int
+        brief: "Number of stages completed before failure (if failed)"
+
+      - id: validation.failure_reason
+        type: string
+        brief: "Reason for validation failure"
+
+  # ==================================================================
+  # INVARIANT ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.invariant
+    type: attribute_group
+    brief: "Hard invariant (Q1-Q5) attributes"
+    attributes:
+      - id: invariant.id
+        type: string
+        brief: "Invariant identifier"
+        members:
+          - id: q1
+            value: "Q1"
+            brief: "No retrocausation (DAG structure)"
+          - id: q2
+            value: "Q2"
+            brief: "Type soundness (O ⊨ Σ)"
+          - id: q3
+            value: "Q3"
+            brief: "Guard preservation (max_run_len ≤ 8)"
+          - id: q4
+            value: "Q4"
+            brief: "SLO compliance (hot ≤8 ticks, warm <100ms)"
+          - id: q5
+            value: "Q5"
+            brief: "Performance bounds (memory, CPU, latency)"
+
+      - id: invariant.preserved
+        type: boolean
+        brief: "Whether invariant is preserved"
+
+      - id: invariant.q1_preserved
+        type: boolean
+        brief: "Q1 (No retrocausation) preserved"
+
+      - id: invariant.q2_preserved
+        type: boolean
+        brief: "Q2 (Type soundness) preserved"
+
+      - id: invariant.q3_preserved
+        type: boolean
+        brief: "Q3 (Guard preservation) preserved"
+
+      - id: invariant.q4_preserved
+        type: boolean
+        brief: "Q4 (SLO compliance) preserved"
+
+      - id: invariant.q5_preserved
+        type: boolean
+        brief: "Q5 (Performance bounds) preserved"
+
+  # ==================================================================
+  # PERFORMANCE ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.performance
+    type: attribute_group
+    brief: "Performance measurement attributes"
+    attributes:
+      - id: latency_ns
+        type: int
+        brief: "Operation latency in nanoseconds"
+        unit: ns
+        note: "For hot path operations (≤8 ticks = <100ns)"
+
+      - id: latency_ms
+        type: int
+        brief: "Operation latency in milliseconds"
+        unit: ms
+        note: "For warm path operations (<100ms)"
+
+      - id: promotion.latency_ns
+        type: int
+        brief: "Atomic snapshot promotion latency"
+        unit: ns
+        note: "Target: <1ns, P99: <10ns"
+
+      - id: promotion.success
+        type: boolean
+        brief: "Snapshot promotion succeeded"
+
+  # ==================================================================
+  # GUARD ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.guard
+    type: attribute_group
+    brief: "Guard enforcement attributes"
+    attributes:
+      - id: guard.id
+        type: string
+        brief: "Guard identifier"
+        examples: ["FINANCE_CORE_GUARD", "HEALTH_HIPAA_GUARD"]
+
+      - id: guard.name
+        type: string
+        brief: "Human-readable guard name"
+
+      - id: operation.blocked
+        type: string
+        brief: "Operation that was blocked by guard"
+
+  # ==================================================================
+  # DOCTRINE ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.doctrine
+    type: attribute_group
+    brief: "Doctrine rule attributes"
+    attributes:
+      - id: doctrine.id
+        type: string
+        brief: "Doctrine rule identifier"
+        examples: ["FIN-001", "HEALTH-HIPAA-001"]
+
+      - id: doctrine.count
+        type: int
+        brief: "Number of doctrines checked"
+
+      - id: violation.count
+        type: int
+        brief: "Number of doctrine violations"
+
+      - id: violation.reason
+        type: string
+        brief: "Reason for doctrine violation"
+
+      - id: enforcement.level
+        type: string
+        brief: "Enforcement level of doctrine"
+        members:
+          - id: mandatory
+            value: "mandatory"
+          - id: warning
+            value: "warning"
+          - id: advisory
+            value: "advisory"
+
+  # ==================================================================
+  # PATTERN ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.pattern
+    type: attribute_group
+    brief: "Pattern detection attributes"
+    attributes:
+      - id: pattern.id
+        type: string
+        brief: "Pattern identifier"
+
+      - id: pattern.name
+        type: string
+        brief: "Pattern name"
+        examples: ["high_frequency_transaction", "error_spike_diagnosis"]
+
+      - id: pattern.type
+        type: string
+        brief: "Detected pattern type"
+        members:
+          - id: frequency_anomaly
+            value: "frequency_anomaly"
+            brief: ">100 events/min"
+          - id: error_spike
+            value: "error_spike"
+            brief: ">5% error rate"
+          - id: schema_mismatch
+            value: "schema_mismatch"
+            brief: "Unexpected fields"
+          - id: missing_observations
+            value: "missing_observations"
+            brief: "No observations in window"
+
+      - id: pattern.count
+        type: int
+        brief: "Number of patterns detected"
+
+      - id: pattern.types
+        type: "string[]"
+        brief: "Array of pattern types detected"
+
+      - id: pattern.confidence
+        type: double
+        brief: "Pattern confidence score (0.0-1.0)"
+
+      - id: pattern.evidence_count
+        type: int
+        brief: "Number of supporting observations"
+
+  # ==================================================================
+  # SECTOR ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.sector
+    type: attribute_group
+    brief: "Organizational sector attributes"
+    attributes:
+      - id: sector
+        type: string
+        brief: "Organizational sector"
+        members:
+          - id: finance
+            value: "finance"
+          - id: healthcare
+            value: "healthcare"
+          - id: manufacturing
+            value: "manufacturing"
+          - id: logistics
+            value: "logistics"
+
+  # ==================================================================
+  # ANALYSIS ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.analysis
+    type: attribute_group
+    brief: "Analysis window attributes"
+    attributes:
+      - id: analysis.window_ms
+        type: int
+        brief: "Analysis time window in milliseconds"
+        examples: [60000]
+        note: "Default: 60000ms (1 minute)"
+
+      - id: analysis.observation_count
+        type: int
+        brief: "Number of observations analyzed"
+
+  # ==================================================================
+  # SIGNATURE ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.signature
+    type: attribute_group
+    brief: "Cryptographic signature attributes"
+    attributes:
+      - id: signature.count
+        type: int
+        brief: "Number of signatures verified"
+
+      - id: signature.valid_count
+        type: int
+        brief: "Number of valid signatures"
+
+      - id: signature.invalid_count
+        type: int
+        brief: "Number of invalid signatures"
+
+  # ==================================================================
+  # CYCLE ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.cycle
+    type: attribute_group
+    brief: "MAPE-K cycle attributes"
+    attributes:
+      - id: cycle.id
+        type: string
+        brief: "Cycle identifier"
+        examples: ["cycle-finance-1731744000000"]
+
+      - id: cycle.patterns_detected
+        type: int
+        brief: "Number of patterns detected in cycle"
+
+      - id: cycle.proposals_generated
+        type: int
+        brief: "Number of proposals generated"
+
+      - id: cycle.validations_passed
+        type: int
+        brief: "Number of validations that passed"
+
+      - id: cycle.validations_failed
+        type: int
+        brief: "Number of validations that failed"
+
+      - id: cycle.snapshots_promoted
+        type: int
+        brief: "Number of snapshots promoted"
+
+      - id: cycle.outcome
+        type: string
+        brief: "Cycle outcome"
+        members:
+          - id: success
+            value: "success"
+          - id: partial_success
+            value: "partial_success"
+          - id: failed
+            value: "failed"
+
+      - id: cycle.phase
+        type: string
+        brief: "MAPE-K phase"
+        members:
+          - id: monitor
+            value: "monitor"
+          - id: analyze
+            value: "analyze"
+          - id: plan
+            value: "plan"
+          - id: execute
+            value: "execute"
+          - id: knowledge
+            value: "knowledge"
+
+  # ==================================================================
+  # ERROR ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.error
+    type: attribute_group
+    brief: "Error tracking attributes"
+    attributes:
+      - id: error.type
+        type: string
+        brief: "Error type"
+        members:
+          - id: invariant_violation
+            value: "invariant_violation"
+          - id: doctrine_violation
+            value: "doctrine_violation"
+          - id: guard_violation
+            value: "guard_violation"
+          - id: performance_violation
+            value: "performance_violation"
+          - id: schema_validation_failure
+            value: "schema_validation_failure"
+
+      - id: error.severity
+        type: string
+        brief: "Error severity"
+        members:
+          - id: critical
+            value: "critical"
+          - id: warning
+            value: "warning"
+          - id: info
+            value: "info"
+
+      - id: failure.reason
+        type: string
+        brief: "Failure reason"
+
+      - id: failure.phase
+        type: string
+        brief: "MAPE-K phase where failure occurred"
+
+  # ==================================================================
+  # BUDGET ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.budget
+    type: attribute_group
+    brief: "Performance budget attributes"
+    attributes:
+      - id: budget.type
+        type: string
+        brief: "Budget type"
+        members:
+          - id: ticks
+            value: "ticks"
+            brief: "Execution ticks (Chatman Constant)"
+          - id: memory_mb
+            value: "memory_mb"
+          - id: latency_ms
+            value: "latency_ms"
+
+      - id: budget.ticks_before
+        type: int
+        brief: "Budget ticks before adjustment"
+
+      - id: budget.ticks_after
+        type: int
+        brief: "Budget ticks after adjustment"
+
+      - id: budget.old_value
+        type: double
+        brief: "Budget value before adjustment"
+
+      - id: budget.new_value
+        type: double
+        brief: "Budget value after adjustment"
+
+  # ==================================================================
+  # LEARNING ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.learning
+    type: attribute_group
+    brief: "Learning and knowledge attributes"
+    attributes:
+      - id: learning.lesson_count
+        type: int
+        brief: "Number of lessons learned"
+
+      - id: lesson.description
+        type: string
+        brief: "Lesson description"
+
+      - id: lesson.confidence
+        type: double
+        brief: "Lesson confidence (0.0-1.0)"
+
+      - id: outcome.accepted
+        type: boolean
+        brief: "Proposal accepted"
+
+      - id: outcome.reason
+        type: string
+        brief: "Outcome reason (why accepted/rejected)"
+
+      - id: acceptance.status
+        type: string
+        brief: "Acceptance status"
+        members:
+          - id: accepted
+            value: "accepted"
+          - id: rejected
+            value: "rejected"
+
+      - id: adjustment.direction
+        type: string
+        brief: "Budget adjustment direction"
+        members:
+          - id: increased
+            value: "increased"
+          - id: decreased
+            value: "decreased"
+
+      - id: adjustment.reason
+        type: string
+        brief: "Reason for budget adjustment"
+
+  # ==================================================================
+  # TEST ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.test
+    type: attribute_group
+    brief: "Shadow testing attributes"
+    attributes:
+      - id: test.total
+        type: int
+        brief: "Total number of tests"
+
+      - id: test.passed
+        type: int
+        brief: "Number of tests that passed"
+
+      - id: test.failed
+        type: int
+        brief: "Number of tests that failed"
+
+      - id: test.blocker_failures
+        type: int
+        brief: "Number of blocker-level test failures"
+
+  # ==================================================================
+  # CHAIN ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.chain
+    type: attribute_group
+    brief: "Snapshot chain attributes"
+    attributes:
+      - id: chain.length
+        type: int
+        brief: "Length of snapshot parent chain"
+
+  # ==================================================================
+  # RECEIPT ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.receipt
+    type: attribute_group
+    brief: "Cryptographic receipt attributes"
+    attributes:
+      - id: receipt.id
+        type: string
+        brief: "Receipt identifier"
+
+      - id: receipt.operation
+        type: string
+        brief: "Operation type"
+
+      - id: receipt.signature
+        type: string
+        brief: "Ed25519 signature (hex-encoded)"
+
+      - id: verification.success
+        type: boolean
+        brief: "Signature verification succeeded"
+
+      - id: promotion.timestamp
+        type: int
+        brief: "Promotion timestamp (Unix ms)"
+
+  # ==================================================================
+  # RELAXATION ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.relaxation
+    type: attribute_group
+    brief: "Guard relaxation attributes"
+    attributes:
+      - id: relaxation.window_ms
+        type: int
+        brief: "Relaxation window duration in milliseconds"
+
+      - id: approval.count
+        type: int
+        brief: "Number of approvals"
+
+      - id: success_rate
+        type: double
+        brief: "Success rate during relaxation (0.0-1.0)"
+
+      - id: slo_threshold
+        type: double
+        brief: "SLO threshold (0.0-1.0)"
+
+  # ==================================================================
+  # MEMORY ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.memory
+    type: attribute_group
+    brief: "Memory usage attributes"
+    attributes:
+      - id: memory.type
+        type: string
+        brief: "Memory allocation type"
+        members:
+          - id: observations
+            value: "observations"
+          - id: snapshots
+            value: "snapshots"
+          - id: receipts
+            value: "receipts"
+          - id: doctrines
+            value: "doctrines"
+          - id: proposals
+            value: "proposals"
+
+  # ==================================================================
+  # DECISION ATTRIBUTES
+  # ==================================================================
+  - id: knhk.attributes.decision
+    type: attribute_group
+    brief: "Decision-making attributes"
+    attributes:
+      - id: decision.reasoning
+        type: string
+        brief: "Reasoning for decision"
+
+      - id: rejection.reason
+        type: string
+        brief: "Reason for rejection"
+
+      - id: rejection.stage
+        type: string
+        brief: "Stage where rejection occurred"
+
+      - id: rollback.reason
+        type: string
+        brief: "Reason for rollback"

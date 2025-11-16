@@ -1,0 +1,353 @@
+# OpenTelemetry Span Definitions for KNHK MAPE-K System
+# Version: 1.0.0
+# Date: 2025-11-16
+#
+# This schema defines ALL spans that KNHK emits during runtime.
+# Weaver validation ensures actual runtime telemetry matches this schema.
+
+schema_url: https://knhk.io/schemas/1.0.0
+
+groups:
+  # ==================================================================
+  # MONITOR PHASE (Hot Path: ≤8 ticks = <100ns)
+  # ==================================================================
+  - id: knhk.monitor
+    type: span
+    brief: "Monitor phase operations (M in MAPE-K)"
+    prefix: monitor
+    spans:
+      - id: observe_event
+        span_kind: internal
+        brief: "Append observation to store (hot path <100ns)"
+        note: |
+          This is a HOT PATH operation that must complete in ≤8 ticks (~100ns).
+          Validated by Weaver live-check against performance baseline.
+        attributes:
+          - ref: observation.id
+            requirement_level: required
+          - ref: observation.sector
+            requirement_level: required
+          - ref: observation.event_type
+            requirement_level: required
+          - ref: observation.timestamp
+            requirement_level: required
+          - ref: latency_ns
+            requirement_level: required
+            brief: "Actual append latency in nanoseconds"
+            note: "MUST be ≤100ns (≤8 ticks) in production"
+        events:
+          - name: observation.appended
+            brief: "Observation successfully appended to store"
+          - name: observation.rejected
+            brief: "Observation rejected (malformed or duplicate)"
+
+      - id: detect_patterns
+        span_kind: internal
+        brief: "Detect patterns in observation stream (warm path <100ms)"
+        note: |
+          Scans observation window for anomalies (frequency spikes, error rates).
+          Target: <50ms typical, <100ms p99.
+        attributes:
+          - ref: pattern.count
+            requirement_level: required
+          - ref: pattern.types
+            requirement_level: required
+          - ref: analysis.window_ms
+            requirement_level: required
+          - ref: analysis.observation_count
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+        events:
+          - name: pattern.detected
+            brief: "Pattern detected"
+            attributes:
+              - ref: pattern.name
+              - ref: pattern.confidence
+              - ref: pattern.evidence_count
+
+  # ==================================================================
+  # ANALYZE PHASE (Warm Path: <100ms)
+  # ==================================================================
+  - id: knhk.analyze
+    type: span
+    brief: "Analyze phase operations (A in MAPE-K)"
+    prefix: analyze
+    spans:
+      - id: mine_proposal
+        span_kind: internal
+        brief: "Generate change proposal from detected pattern"
+        attributes:
+          - ref: pattern.id
+            requirement_level: required
+          - ref: proposal.id
+            requirement_level: required
+          - ref: proposal.confidence
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+
+      - id: validate_doctrines
+        span_kind: internal
+        brief: "Validate proposal against sector-specific doctrines"
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+          - ref: doctrine.count
+            requirement_level: required
+          - ref: violation.count
+            requirement_level: required
+          - ref: validation.passed
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+        events:
+          - name: doctrine.violated
+            brief: "Doctrine rule violated"
+            attributes:
+              - ref: doctrine.id
+              - ref: violation.reason
+
+      - id: verify_signatures
+        span_kind: internal
+        brief: "Verify cryptographic signatures (Ed25519)"
+        attributes:
+          - ref: signature.count
+            requirement_level: required
+          - ref: signature.valid_count
+            requirement_level: required
+          - ref: signature.invalid_count
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+
+  # ==================================================================
+  # PLAN PHASE (Warm Path: <100ms per stage)
+  # ==================================================================
+  - id: knhk.plan
+    type: span
+    brief: "Plan phase operations (P in MAPE-K)"
+    prefix: plan
+    spans:
+      - id: validate_proposal
+        span_kind: internal
+        brief: "7-stage validation pipeline (warm path <100ms total)"
+        note: |
+          Validates proposal through 7 stages:
+          1. Static SHACL check
+          2. Invariant Q1-Q5 checks
+          3. Doctrine validation
+          4. Guard constraints
+          5. Performance estimation
+          6. Rollback check
+          7. Compatibility check
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: validation.total_stages
+            requirement_level: required
+          - ref: validation.stages_completed
+            requirement_level: required
+          - ref: validation.passed
+            requirement_level: required
+          - ref: invariant.q1_preserved
+            requirement_level: required
+          - ref: invariant.q2_preserved
+            requirement_level: required
+          - ref: invariant.q3_preserved
+            requirement_level: required
+          - ref: invariant.q4_preserved
+            requirement_level: required
+          - ref: invariant.q5_preserved
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+        events:
+          - name: validation.stage_started
+            brief: "Validation stage started"
+            attributes:
+              - ref: validation.stage
+              - ref: validation.stage_name
+          - name: validation.stage_completed
+            brief: "Validation stage completed"
+            attributes:
+              - ref: validation.stage
+              - ref: validation.passed
+              - ref: latency_ms
+          - name: validation.failed
+            brief: "Validation failed at stage"
+            attributes:
+              - ref: validation.stage
+              - ref: failure.reason
+
+      - id: check_invariant
+        span_kind: internal
+        brief: "Check single hard invariant (Q1-Q5)"
+        attributes:
+          - ref: invariant.id
+            requirement_level: required
+          - ref: invariant.preserved
+            requirement_level: required
+          - ref: proposal.id
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+        events:
+          - name: invariant.violated
+            brief: "Hard invariant violated"
+            attributes:
+              - ref: invariant.id
+              - ref: violation.reason
+
+  # ==================================================================
+  # EXECUTE PHASE (Hot Path: ~1ns atomic swap)
+  # ==================================================================
+  - id: knhk.execute
+    type: span
+    brief: "Execute phase operations (E in MAPE-K)"
+    prefix: execute
+    spans:
+      - id: promote_snapshot
+        span_kind: internal
+        brief: "Atomic snapshot promotion (hot path <1ns for swap)"
+        note: |
+          This is the CRITICAL OPERATION: atomic pointer swap via RCU.
+          Target: ~1ns for swap, <10µs total including bookkeeping.
+        attributes:
+          - ref: snapshot.id
+            requirement_level: required
+          - ref: snapshot.parent_id
+            requirement_level:
+              conditionally_required: "if not genesis snapshot"
+          - ref: snapshot.version
+            requirement_level: required
+          - ref: promotion.latency_ns
+            requirement_level: required
+            brief: "Actual atomic swap latency (MUST be <10ns for p99)"
+          - ref: promotion.success
+            requirement_level: required
+        events:
+          - name: snapshot.promoted
+            brief: "Snapshot successfully promoted to production"
+            attributes:
+              - ref: snapshot.id
+              - ref: snapshot.version
+          - name: snapshot.rollback
+            brief: "Snapshot promotion rolled back"
+            attributes:
+              - ref: rollback.reason
+
+      - id: build_version_chain
+        span_kind: internal
+        brief: "Traverse snapshot parent chain (DAG)"
+        attributes:
+          - ref: snapshot.id
+            requirement_level: required
+          - ref: chain.length
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+
+  # ==================================================================
+  # KNOWLEDGE PHASE (Warm Path: <1ms)
+  # ==================================================================
+  - id: knhk.knowledge
+    type: span
+    brief: "Knowledge phase operations (K in MAPE-K)"
+    prefix: knowledge
+    spans:
+      - id: update_budget
+        span_kind: internal
+        brief: "Update performance budgets based on cycle outcomes"
+        attributes:
+          - ref: cycle.id
+            requirement_level: required
+          - ref: budget.ticks_before
+            requirement_level: required
+          - ref: budget.ticks_after
+            requirement_level: required
+          - ref: learning.lesson_count
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+
+      - id: shadow_test
+        span_kind: internal
+        brief: "Run shadow tests in isolated COW environment"
+        attributes:
+          - ref: snapshot.id
+            requirement_level: required
+          - ref: test.total
+            requirement_level: required
+          - ref: test.passed
+            requirement_level: required
+          - ref: test.failed
+            requirement_level: required
+          - ref: test.blocker_failures
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+
+      - id: record_outcome
+        span_kind: internal
+        brief: "Record learning outcome (accepted/rejected proposal)"
+        attributes:
+          - ref: proposal.id
+            requirement_level: required
+          - ref: outcome.accepted
+            requirement_level: required
+          - ref: outcome.reason
+            requirement_level:
+              conditionally_required: "if outcome.accepted == false"
+          - ref: latency_ms
+            requirement_level: required
+
+  # ==================================================================
+  # FULL MAPE-K CYCLE
+  # ==================================================================
+  - id: knhk.cycle
+    type: span
+    brief: "Complete MAPE-K cycle execution"
+    prefix: cycle
+    spans:
+      - id: execute
+        span_kind: internal
+        brief: "Execute complete MAPE-K loop"
+        note: |
+          Spans the entire autonomic cycle:
+          Monitor → Analyze → Plan → Execute → Knowledge
+          Target: <500ms typical, <1s p99.
+        attributes:
+          - ref: cycle.id
+            requirement_level: required
+          - ref: sector
+            requirement_level: required
+          - ref: cycle.patterns_detected
+            requirement_level: required
+          - ref: cycle.proposals_generated
+            requirement_level: required
+          - ref: cycle.validations_passed
+            requirement_level: required
+          - ref: cycle.validations_failed
+            requirement_level: required
+          - ref: cycle.snapshots_promoted
+            requirement_level: required
+          - ref: cycle.outcome
+            requirement_level: required
+          - ref: latency_ms
+            requirement_level: required
+        events:
+          - name: cycle.completed
+            brief: "MAPE-K cycle completed"
+            attributes:
+              - ref: cycle.outcome
+              - ref: latency_ms
+          - name: cycle.failed
+            brief: "MAPE-K cycle failed"
+            attributes:
+              - ref: failure.phase
+              - ref: failure.reason
