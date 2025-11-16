@@ -106,7 +106,7 @@ pub trait WorkflowPattern {
     const HAS_LOOPS: bool;
 
     /// Validate the pattern at compile time
-    const fn validate() -> bool {
+    fn validate() -> bool {
         Self::STEPS > 0
             && Self::STEPS <= MAX_WORKFLOW_STEPS
             && Self::ESTIMATED_TICKS <= CHATMAN_CONSTANT

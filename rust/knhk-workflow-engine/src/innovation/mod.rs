@@ -23,6 +23,13 @@
 //! - **GAT Query Engine**: Zero-cost query abstraction with Generic Associated Types
 //! - **Arena Allocator**: Custom bump allocator for workflow contexts
 //! - **Const Evaluation**: Compile-time workflow validation and optimization
+//!
+//! ## Microkernel Features (AHI Constitution)
+//! - **Verified Kernel**: Restricted Rust subset with total functions, no panics, Chatman enforcement
+//! - **Refinement Guards**: Guards as types, doctrine constraints via phantom parameters
+//! - **Cluster Types**: Distributed determinism with role-based access, quorum at compile time
+//! - **Auto-Specialization**: Hardware-adaptive kernels selected under doctrine control
+//! - **Linear Resources**: Resource quotas and priorities as linear/indexed types
 
 // Production features
 pub mod workflow_templates;
@@ -42,6 +49,13 @@ pub mod simd_hash;
 pub mod gat_query;
 pub mod arena;
 pub mod const_eval;
+
+// Microkernel features (AHI Constitution)
+pub mod verified_kernel;
+pub mod refinement_guards;
+pub mod cluster_types;
+pub mod auto_specialize;
+pub mod linear_resources;
 
 // Production feature exports
 pub use workflow_templates::{WorkflowTemplate, TemplateLibrary, TemplateMetadata};
@@ -79,4 +93,32 @@ pub use const_eval::{
     ConstWorkflow, WorkflowPattern as ConstPattern, Sequential, Parallel, Choice, Loop,
     Sequence, ParallelCompose, WorkflowMetrics, WorkflowBuilder, ConstOptimizer,
     AssertChatmanCompliant, CHATMAN_CONSTANT, MAX_WORKFLOW_STEPS, MAX_NESTING_DEPTH,
+};
+
+// Microkernel feature exports
+pub use verified_kernel::{
+    KernelResult, KernelError, TickBudget, KernelState, ExecutionPhase, GuardResult,
+    KernelOp, GuardCheckOp, KernelSequence, KernelProof, VerifiedContext,
+};
+pub use refinement_guards::{
+    SectorLevel, PublicSector, PrivateSector, CriticalSector, GuardProperty,
+    BudgetGuard, CausalityGuard, LegalityGuard, ProofToken, CertifiedOp,
+    GuardVector, TypedWorkflow as RefinementWorkflow, DoctrineConstraint,
+    StrictDoctrine, RelaxedDoctrine, InvariantQ, NoRetrocausation, BoundedResource,
+};
+pub use cluster_types::{
+    ClusterRole, Leader, Follower, Observer, ClusterConfig, ReplicationFactor,
+    TripleReplication, FiveWayReplication, ConsensusOp, Proposal, Committed,
+    LogEntry, ReplicatedLog, DistributedContext, ConsensusState, StateMachine,
+};
+pub use auto_specialize::{
+    CpuCapability, GenericCpu, X86Avx2, X86Avx512, ArmNeon, DataProfile,
+    SmallData, LargeData, SkewedData, KernelVariant, ScalarKernel, SimdAvx2Kernel,
+    AutoSelector, KernelSelection, SpecializedExecutor, AdaptationTrigger,
+    PerformanceMonitor, AdaptiveExecutor,
+};
+pub use linear_resources::{
+    ResourceToken, ConsumedToken, ResourceQuota, PriorityClass, P0, P1, P2, P3, P4,
+    SloBand, Interactive, Batch, Background, ScheduledAction, HotPathScheduler,
+    BackgroundScheduler, ResourcePool,
 };

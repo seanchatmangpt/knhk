@@ -491,14 +491,14 @@ mod tests {
     fn create_test_receipts() -> Vec<Receipt> {
         vec![
             Receipt::new(
-                SnapshotId::new("snap1"),
+                SnapshotId::from_string("snap1".to_string()),
                 &[1],
                 &[],
                 "wf-1".to_string(),
             ),
             {
                 let mut r = Receipt::new(
-                    SnapshotId::new("snap1"),
+                    SnapshotId::from_string("snap1".to_string()),
                     &[2],
                     &[],
                     "wf-1".to_string(),
@@ -507,7 +507,7 @@ mod tests {
                 r
             },
             Receipt::new(
-                SnapshotId::new("snap2"),
+                SnapshotId::from_string("snap2".to_string()),
                 &[3],
                 &[],
                 "wf-2".to_string(),

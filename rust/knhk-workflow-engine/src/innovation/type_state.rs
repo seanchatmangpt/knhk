@@ -464,14 +464,14 @@ mod tests {
         let workflow = TypedWorkflow::<Uninitialized, 8>::new();
 
         // Configure it
-        let workflow = workflow.configure(SnapshotId::new("test-snapshot"));
+        let workflow = workflow.configure(SnapshotId::from_string("test-snapshot".to_string()));
 
         // Validate it
         let workflow = workflow.validate().unwrap();
 
         // Execute it
         let context = HookContext {
-            snapshot_id: SnapshotId::new("test-snapshot"),
+            snapshot_id: SnapshotId::from_string("test-snapshot".to_string()),
             workflow_instance_id: "test-instance".to_string(),
             input_data: vec![1, 2, 3],
             variables: std::collections::HashMap::new(),
@@ -521,12 +521,12 @@ mod tests {
 
     #[test]
     fn test_property_proofs() {
-        let workflow = TypedWorkflow::<Completed, 8>::new()
-            .configure(SnapshotId::new("test"))
+        let workflow = TypedWorkflow::<Uninitialized, 8>::new()
+            .configure(SnapshotId::from_string("test".to_string()))
             .validate()
             .unwrap()
             .execute(HookContext {
-                snapshot_id: SnapshotId::new("test"),
+                snapshot_id: SnapshotId::from_string("test".to_string()),
                 workflow_instance_id: "test".to_string(),
                 input_data: vec![],
                 variables: std::collections::HashMap::new(),
@@ -541,10 +541,10 @@ mod tests {
     #[test]
     fn test_reconfiguration() {
         let workflow = TypedWorkflow::<Uninitialized, 8>::new()
-            .configure(SnapshotId::new("v1"));
+            .configure(SnapshotId::from_string("v1".to_string()));
 
         // Can reconfigure in Configured state
-        let workflow = workflow.reconfigure(SnapshotId::new("v2"));
+        let workflow = workflow.reconfigure(SnapshotId::from_string("v2".to_string()));
 
         // Validate and proceed
         let _workflow = workflow.validate().unwrap();
@@ -553,11 +553,11 @@ mod tests {
     #[test]
     fn test_failure_path() {
         let workflow = TypedWorkflow::<Uninitialized, 8>::new()
-            .configure(SnapshotId::new("test"))
+            .configure(SnapshotId::from_string("test".to_string()))
             .validate()
             .unwrap()
             .execute(HookContext {
-                snapshot_id: SnapshotId::new("test"),
+                snapshot_id: SnapshotId::from_string("test".to_string()),
                 workflow_instance_id: "test".to_string(),
                 input_data: vec![],
                 variables: std::collections::HashMap::new(),
@@ -569,8 +569,8 @@ mod tests {
 
     #[test]
     fn test_gat_transform() {
-        let workflow = TypedWorkflow::<Configured, 8>::new()
-            .configure(SnapshotId::new("test"));
+        let workflow = TypedWorkflow::<Uninitialized, 8>::new()
+            .configure(SnapshotId::from_string("test".to_string()));
 
         // Apply identity transformation
         let _transformed = Identity::transform(workflow);
