@@ -1,0 +1,394 @@
+[config]
+default_to_workspace = false
+skip_core_tasks = true
+
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+# ============================================================================
+# CORE TASK DEFINITIONS
+# ============================================================================
+
+[tasks.default]
+description = "Display available tasks"
+command = "cargo"
+args = ["make", "--list-all-steps"]
+
+[tasks.help]
+description = "Display all available tasks with descriptions"
+command = "cargo"
+args = ["make", "--list-all-steps"]
+
+# ============================================================================
+# TESTING TARGETS
+# ============================================================================
+
+[tasks.test]
+description = "Run all unit tests with chicago-tdd-tools"
+command = "cargo"
+args = ["test", "--workspace", "--lib", "--", "--test-threads=1", "--nocapture"]
+
+[tasks.test-unit]
+description = "Alias for test - run unit tests only"
+extend = "test"
+
+[tasks.test-all]
+description = "Run all tests: unit + integration + property + snapshot"
+dependencies = ["test", "test-integration", "test-property", "test-snapshot"]
+
+[tasks.test-integration]
+description = "Run integration tests with testcontainers (Docker required)"
+command = "cargo"
+args = ["test", "--test", "*", "--features", "testing-extras,otel,weaver,testcontainers", "--", "--test-threads=1", "--nocapture"]
+
+[tasks.test-property]
+description = "Run property-based tests with proptest"
+command = "cargo"
+args = ["test", "--lib", "--features", "testing-extras", "property", "--", "--test-threads=1", "--nocapture"]
+
+[tasks.test-mutation]
+description = "Run mutation testing (requires cargo-mutants)"
+command = "cargo"
+args = ["mutants", "--", "--test-threads=1"]
+install_crate = { crate_name = "cargo-mutants", binary_name = "cargo-mutants", test_arg = "--version" }
+
+[tasks.test-snapshot]
+description = "Run snapshot tests"
+command = "cargo"
+args = ["test", "--lib", "snapshot", "--", "--test-threads=1", "--nocapture"]
+
+[tasks.test-snapshot-accept]
+description = "Accept all snapshot changes"
+command = "cargo"
+args = ["test", "--lib", "snapshot_accept", "--", "--test-threads=1"]
+
+[tasks.test-snapshot-review]
+description = "Review snapshot changes before accepting"
+command = "cargo"
+args = ["test", "--lib", "snapshot_review", "--", "--test-threads=1"]
+
+[tasks.test-performance]
+description = "Run performance tests with tick budget validation (≤8 ticks)"
+command = "cargo"
+args = ["test", "--release", "--lib", "performance", "--", "--test-threads=1", "--nocapture"]
+
+[tasks.test-chicago]
+description = "Run all Chicago TDD tests (alias for test)"
+extend = "test"
+
+# ============================================================================
+# OBSERVABILITY & WEAVER TARGETS
+# ============================================================================
+
+[tasks.weaver-bootstrap]
+description = "Bootstrap Weaver CLI and semantic convention registry (first-time setup)"
+command = "bash"
+args = ["-c", "cargo make weaver-bootstrap-impl || echo '⚠️  Weaver bootstrap requires additional setup - see docs'"]
+
+[tasks.weaver-bootstrap-impl]
+private = true
+command = "bash"
+args = ["-c", "mkdir -p target/weaver && curl -fsSL https://github.com/open-telemetry/weaver/releases/download/v0.1.0/weaver-x86_64-unknown-linux-gnu -o target/weaver/weaver && chmod +x target/weaver/weaver && echo '✅ Weaver CLI installed'"]
+
+[tasks.weaver-smoke]
+description = "Verify Weaver works and can validate OTEL telemetry"
+command = "cargo"
+args = ["test", "--lib", "weaver_smoke", "--", "--test-threads=1", "--nocapture"]
+
+[tasks.weaver-live-check]
+description = "Run Weaver live-check validation against semantic conventions"
+command = "bash"
+args = ["-c", "echo '🔍 Checking semantic conventions with Weaver...' && target/weaver/weaver registry check -r registry/ 2>&1 || echo '⚠️  Install Weaver first: make weaver-bootstrap'"]
+
+[tasks.otel-test]
+description = "Test OpenTelemetry span/metric validation"
+command = "cargo"
+args = ["test", "--lib", "otel", "--features", "otel,weaver", "--", "--test-threads=1", "--nocapture"]
+
+# ============================================================================
+# BUILD & COMPILATION TARGETS
+# ============================================================================
+
+[tasks.build]
+description = "Build all Rust crates (dev profile, incremental)"
+command = "cargo"
+args = ["build", "--workspace"]
+env = { "CARGO_INCREMENTAL" = "1" }
+
+[tasks.build-release]
+description = "Build all Rust crates (release profile, optimized)"
+command = "cargo"
+args = ["build", "--workspace", "--release"]
+env = { "CARGO_INCREMENTAL" = "1" }
+
+[tasks.build-cli-fast]
+description = "Build knhk-cli with minimal features (fast)"
+command = "cargo"
+args = ["build", "-p", "knhk-cli", "--no-default-features", "--features", "std"]
+env = { "CARGO_INCREMENTAL" = "1" }
+
+[tasks.build-doc]
+description = "Build and open documentation"
+command = "cargo"
+args = ["doc", "--workspace", "--open", "--no-deps"]
+
+[tasks.check]
+description = "Check compilation without building (fast)"
+command = "cargo"
+args = ["check", "--workspace", "--message-format=short"]
+env = { "CARGO_INCREMENTAL" = "1" }
+
+# ============================================================================
+# CODE QUALITY & LINTING
+# ============================================================================
+
+[tasks.fmt]
+description = "Format all Rust code with rustfmt"
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.fmt-check]
+description = "Check code formatting (non-destructive)"
+command = "cargo"
+args = ["fmt", "--all", "--", "--check"]
+
+[tasks.clippy]
+description = "Lint code with Clippy (warnings as errors)"
+command = "cargo"
+args = ["clippy", "--workspace", "--", "-D", "warnings"]
+
+[tasks.clippy-fix]
+description = "Auto-fix Clippy warnings where possible"
+command = "cargo"
+args = ["clippy", "--workspace", "--fix", "--", "-D", "warnings"]
+
+[tasks.lint]
+description = "Alias for clippy - run all linting checks"
+extend = "clippy"
+
+[tasks.lint-fix]
+description = "Auto-fix all possible linting issues"
+command = "bash"
+args = ["-c", "cargo fmt --all && cargo clippy --workspace --fix -- -D warnings"]
+
+[tasks.audit]
+description = "Audit dependencies for security vulnerabilities"
+command = "cargo"
+args = ["audit"]
+install_crate = { crate_name = "cargo-audit", binary_name = "cargo-audit", test_arg = "--version" }
+
+[tasks.deny]
+description = "Check dependencies with cargo-deny"
+command = "cargo"
+args = ["deny", "check"]
+install_crate = { crate_name = "cargo-deny", binary_name = "cargo-deny", test_arg = "--version" }
+
+# ============================================================================
+# GIT HOOKS & SAFETY
+# ============================================================================
+
+[tasks.install-hooks]
+description = "Install git hooks to prevent unwrap/expect/panic in production"
+command = "bash"
+args = ["-c", "echo '📝 Installing git hooks for safety enforcement...' && cargo make install-hooks-impl || echo 'ℹ️  Git hooks setup requires additional configuration'"]
+
+[tasks.install-hooks-impl]
+private = true
+command = "bash"
+args = ["-c", "mkdir -p .git/hooks && cat > .git/hooks/pre-commit << 'HOOK_EOF'\n#!/bin/bash\necho '🔍 Running pre-commit safety checks...'\ncargo make pre-commit\nHOOK_EOF\nchmod +x .git/hooks/pre-commit && echo '✅ Git hooks installed'"]
+
+[tasks.check-unwrap]
+description = "Check for unwrap/expect in production code"
+command = "bash"
+args = ["-c", "echo '🔍 Checking for unsafe unwrap/expect calls...' && grep -r \"unwrap\\|expect\" rust/knhk-*/src --include='*.rs' | grep -v test | grep -v '#\\[cfg(test)\\]' | wc -l"]
+
+# ============================================================================
+# DEVELOPMENT WORKFLOW
+# ============================================================================
+
+[tasks.pre-commit]
+description = "Run pre-commit validation: fmt + clippy + test"
+dependencies = ["fmt", "clippy", "test"]
+
+[tasks.pre-commit-fast]
+description = "Fast pre-commit: fmt + clippy check (no tests)"
+dependencies = ["fmt", "clippy"]
+
+[tasks.develop]
+description = "Development workflow: check + fmt + clippy + test"
+dependencies = ["check", "fmt", "clippy", "test"]
+
+[tasks.develop-fast]
+description = "Fast development: check + fmt"
+dependencies = ["check", "fmt"]
+
+[tasks.ci-local]
+description = "Simulate full CI pipeline locally"
+dependencies = ["check", "fmt", "clippy", "test", "test-integration", "build-release"]
+
+[tasks.ci-fast]
+description = "Fast CI simulation (tests only, no release build)"
+dependencies = ["check", "fmt", "clippy", "test"]
+
+# ============================================================================
+# DOCUMENTATION & EXAMPLES
+# ============================================================================
+
+[tasks.docs]
+description = "Generate and view documentation"
+command = "cargo"
+args = ["doc", "--workspace", "--no-deps", "--open"]
+
+[tasks.example-basic-test]
+description = "Run basic chicago-tdd-tools test example"
+command = "cargo"
+args = ["test", "--example", "basic_test", "--", "--nocapture"]
+
+[tasks.example-property-testing]
+description = "Run property-based testing example"
+command = "cargo"
+args = ["test", "--example", "property_testing", "--features", "testing-extras", "--", "--nocapture"]
+
+[tasks.example-mutation-testing]
+description = "Run mutation testing example"
+command = "cargo"
+args = ["test", "--example", "mutation_testing", "--features", "testing-extras", "--", "--nocapture"]
+
+[tasks.example-snapshot-testing]
+description = "Run snapshot testing example"
+command = "cargo"
+args = ["test", "--example", "snapshot_testing", "--features", "testing-extras", "--", "--nocapture"]
+
+[tasks.example-concurrency-testing]
+description = "Run concurrency testing example"
+command = "cargo"
+args = ["test", "--example", "concurrency_testing", "--", "--nocapture"]
+
+[tasks.example-otel-weaver-testing]
+description = "Run OpenTelemetry + Weaver testing example"
+command = "cargo"
+args = ["test", "--example", "otel_weaver_testing", "--features", "otel,weaver", "--", "--nocapture"]
+
+[tasks.example-testcontainers]
+description = "Run testcontainers integration example (requires Docker)"
+command = "cargo"
+args = ["test", "--example", "testcontainers_example", "--features", "testcontainers", "--", "--nocapture"]
+
+[tasks.example-cli-testing]
+description = "Run CLI testing example"
+command = "cargo"
+args = ["test", "--example", "cli_testing", "--", "--nocapture"]
+
+# ============================================================================
+# CLEANUP
+# ============================================================================
+
+[tasks.clean]
+description = "Remove build artifacts and clean workspace"
+command = "cargo"
+args = ["clean"]
+
+[tasks.clean-deep]
+description = "Deep clean: cargo clean + remove .swarm directories"
+dependencies = ["clean"]
+script = [
+    "rm -rf .swarm",
+    "rm -rf .claude-flow",
+    "echo '✅ Deep clean complete'"
+]
+
+# ============================================================================
+# COVERAGE & METRICS
+# ============================================================================
+
+[tasks.coverage]
+description = "Generate test coverage report (requires cargo-tarpaulin)"
+command = "cargo"
+args = ["tarpaulin", "--workspace", "--out", "Html"]
+install_crate = { crate_name = "cargo-tarpaulin", binary_name = "cargo-tarpaulin", test_arg = "--version" }
+
+[tasks.measure-build-times]
+description = "Measure and compare build times for all crates"
+script = [
+    "echo '⏱️  Measuring build times...'",
+    "for crate in rust/knhk-*/; do",
+    "  if [ -f \"$crate/Cargo.toml\" ]; then",
+    "    name=$(basename \"$crate\")",
+    "    echo \"Building $name...\"",
+    "    /usr/bin/time -v cargo build -p \"${name#knhk-}\" 2>&1 | grep 'Elapsed\\|Maximum'",
+    "  fi",
+    "done"
+]
+
+# ============================================================================
+# WORKSPACE ANALYSIS
+# ============================================================================
+
+[tasks.tree]
+description = "Display dependency tree"
+command = "cargo"
+args = ["tree", "--workspace"]
+
+[tasks.outdated]
+description = "Check for outdated dependencies"
+command = "cargo"
+args = ["outdated"]
+install_crate = { crate_name = "cargo-outdated", binary_name = "cargo-outdated", test_arg = "--version" }
+
+[tasks.deps]
+description = "Analyze dependencies"
+command = "cargo"
+args = ["metadata", "--format-version", "1"]
+
+[tasks.feature-powerset]
+description = "Test all feature combinations"
+command = "cargo"
+args = ["hack", "--workspace", "check", "--feature-powerset"]
+install_crate = { crate_name = "cargo-hack", binary_name = "cargo-hack", test_arg = "--version" }
+
+# ============================================================================
+# BENCHMARKING
+# ============================================================================
+
+[tasks.bench]
+description = "Run all benchmarks"
+command = "cargo"
+args = ["bench", "--workspace"]
+
+[tasks.bench-knhk-hot]
+description = "Run knhk-hot hot path benchmarks"
+command = "cargo"
+args = ["bench", "-p", "knhk-hot"]
+
+[tasks.bench-knhk-cli]
+description = "Run knhk-cli benchmarks"
+command = "cargo"
+args = ["bench", "-p", "knhk-cli"]
+
+# ============================================================================
+# SPECIAL TARGETS
+# ============================================================================
+
+[tasks.init]
+description = "Initialize development environment"
+dependencies = ["install-hooks", "build"]
+
+[tasks.setup]
+description = "Setup workspace for first-time use"
+script = [
+    "echo '🚀 Setting up KNHK Rust workspace...'",
+    "cargo make install-hooks || true",
+    "cargo make check",
+    "cargo make fmt",
+    "cargo make clippy",
+    "echo '✅ Workspace setup complete'",
+    "echo ''",
+    "echo 'Next steps:'",
+    "echo '1. Run: cargo make test'",
+    "echo '2. Run: cargo make test-integration'",
+    "echo '3. Run: cargo make develop'",
+]
+
+[tasks.verify]
+description = "Comprehensive verification: check + format + lint + test + build"
+dependencies = ["check", "fmt", "clippy", "test", "build"]

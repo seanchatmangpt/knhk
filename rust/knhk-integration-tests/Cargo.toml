@@ -39,6 +39,7 @@ default = []
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }
 tempfile = { workspace = true }
+chicago-tdd-tools = { version = "1.3.0", features = ["testing-extras", "otel", "weaver", "testcontainers", "async"] }
 
 # Integration test organization
 [[test]]
