@@ -455,7 +455,7 @@ mod tests {
         let result = fiber.execute_tick(0, &delta, 1);
         match result {
             ExecutionResult::Parked { cause, .. } => {
-                assert_eq!(cause, ParkCause::TickBudgetExceeded);
+                assert_eq!(cause, ParkCause::RunLengthExceeded);
             }
             _ => panic!("Expected Parked result"),
         }

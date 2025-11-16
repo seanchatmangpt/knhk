@@ -14,11 +14,11 @@ extern _Atomic(uint64_t) knhk_global_cycle;
 // Initialize beat scheduler (call once at startup)
 void knhk_beat_init(void);
 
-// Advance cycle counter atomically, return new cycle value
+// Advance cycle counter atomically, return old cycle value then increment
 // Branchless: single atomic operation
 static inline uint64_t knhk_beat_next(void)
 {
-  return atomic_fetch_add(&knhk_global_cycle, 1) + 1;
+  return atomic_fetch_add(&knhk_global_cycle, 1);
 }
 
 // Extract tick from cycle (0..7)

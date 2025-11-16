@@ -4,6 +4,7 @@
 //
 // Target: ≤200 ns AVX2, ≤120 ns AVX-512 for 256B ATM JSON
 
+#[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
 
 // ============================================================================
