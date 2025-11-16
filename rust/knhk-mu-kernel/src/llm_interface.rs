@@ -2,6 +2,8 @@
 
 /// LLM generates ΔΣ proposals, never executes in hot path
 pub mod llm {
+    use alloc::vec::Vec;
+    use alloc::vec;
     use crate::overlay::DeltaSigma;
 
     /// Generate overlay proposals from LLM

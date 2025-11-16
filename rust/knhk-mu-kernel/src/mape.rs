@@ -3,10 +3,13 @@
 //! MAPE-K is not "beside" μ; it IS μ at different time scales.
 //! μ = (μ_monitor, μ_analyze, μ_plan, μ_execute) sharing Σ, Q, Γ
 
+use alloc::vec::Vec;
+use alloc::vec;
+use alloc::format;
+use alloc::string::String;
 use crate::receipts::{Receipt, ReceiptChain, ReceiptQuery};
 use crate::overlay::DeltaSigma;
 use crate::sigma::{SigmaCompiled, SigmaPointer};
-use alloc::vec::Vec;
 
 /// MAPE-K Colon - autonomic control loop
 pub struct MapeKColon {

@@ -3,6 +3,7 @@
 //! Every action A produces a receipt proving:
 //! hash(A) = hash(μ(O; Σ*)) with guards Q checked
 
+use alloc::vec::Vec;
 use crate::sigma::SigmaHash;
 use core::mem::size_of;
 use sha3::{Digest, Sha3_256};

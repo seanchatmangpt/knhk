@@ -2,6 +2,8 @@
 //!
 //! Integrates all components into the complete μ-kernel
 
+use alloc::format;
+use alloc::string::String;
 use crate::sigma::{SigmaCompiled, SigmaPointer};
 use crate::isa::{MuInstruction, GuardContext, TaskResult};
 use crate::timing::{TickCounter, TickBudget};

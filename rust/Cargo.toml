@@ -20,6 +20,7 @@ members = [
     "knhk-latex-compiler",    # LaTeX to PDF compiler
     "knhk-latex",             # LaTeX CLI using clap-noun-verb
     "knhk-test-cache",        # Autonomic test cache daemon
+    "knhk-mu-kernel",         # μ-kernel ISA for knowledge operations
 ]
 
 [workspace.package]
