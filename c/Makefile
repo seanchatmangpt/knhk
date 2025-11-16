@@ -20,7 +20,8 @@ endif
 INCLUDES = -Iinclude -Isrc
 
 # Library sources
-LIB_SRCS = src/knhk.c src/simd.c src/rdf.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c src/kernels.c src/ffi_wrappers.c
+# Note: src/rdf.c requires raptor2 dependency - temporarily disabled for v1
+LIB_SRCS = src/knhk.c src/simd.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c src/kernels.c src/ffi_wrappers.c
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB = libknhk.a
 

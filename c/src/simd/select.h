@@ -142,6 +142,7 @@ static inline size_t knhk_select_gather_8(const uint64_t *S_base, const uint64_t
   
   // Stop after 4 results (don't process v4-v7)
   out_idx = idx;
+  return out_idx;
 #else
   // Fallback: fully unrolled scalar with masks
   size_t out_idx = 0;
