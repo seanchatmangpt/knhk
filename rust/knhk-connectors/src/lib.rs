@@ -17,6 +17,14 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
+// Dark Matter 80/20 coverage tracking
+pub mod coverage;
+
+// Re-export coverage types for convenience
+pub use coverage::{
+    CoverageMetrics, DarkMatterTracker, PredicateCounter, hash_predicate_iri,
+};
+
 // HashMap not currently used - reserved for future use
 
 /// Connector identifier
