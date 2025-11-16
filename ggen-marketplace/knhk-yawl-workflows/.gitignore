@@ -1,0 +1,48 @@
+# Generated files
+output/
+*.yawl
+*.json
+*.xml
+generated/
+
+# Test artifacts
+test-results/
+test-output/
+.test-cache
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+target/
+dist/
+build/
+
+# Cache and temporary
+.cache/
+tmp/
+temp/
+*.tmp
+
+# Dependencies
+node_modules/
+Cargo.lock
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+.project
+.classpath
+.c9/
+
+# Template compilation
+*.j2c
+*.j2o
