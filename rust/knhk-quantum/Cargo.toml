@@ -7,11 +7,9 @@ description = "Phase 7: Quantum-safe cryptography module for post-quantum securi
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-# Post-Quantum Cryptography
-pqcrypto = "0.15"
-pqcrypto-kyber = "0.15"
-pqcrypto-dilithium = "0.15"
-pqcrypto-traits = "0.15"
+# Post-Quantum Cryptography (placeholder for NIST PQC Round 3 winners)
+# Real implementations will be added when final standards are stabilized
+# For now, using classical + hybrid approach with quantum-ready interface
 
 # Randomness
 rand = "0.8"
@@ -48,14 +46,6 @@ chrono = { version = "0.4", features = ["serde"] }
 criterion = "0.5"
 proptest = "1.4"
 tokio = { version = "1.35", features = ["full"] }
-
-[[bench]]
-name = "quantum_kem_bench"
-harness = false
-
-[[bench]]
-name = "quantum_sig_bench"
-harness = false
 
 [lib]
 name = "knhk_quantum"
