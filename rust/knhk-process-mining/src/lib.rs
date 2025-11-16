@@ -110,11 +110,11 @@ pub mod discovery;
 pub mod event_log;
 
 // Poka-Yoke type safety modules
-pub mod types;
-pub mod state_machine;
 pub mod builders;
 pub mod resource_handles;
+pub mod state_machine;
 pub mod typed_pipeline;
+pub mod types;
 
 // Re-export main types (legacy API)
 pub use analytics::{BottleneckDetector, PerformanceAnalytics, ProcessAnalyzer};
@@ -122,23 +122,20 @@ pub use discovery::{DiscoveryEngine, PatternValidator, ProcessGraph};
 pub use event_log::{EventLog, EventLogBuilder, ProcessEvent};
 
 // Re-export Poka-Yoke types (type-safe API)
-pub use types::{
-    CaseID, EventID, ActivityName, Timestamp, Duration, Count, Probability,
-    InvalidIdError, InvalidStringError, InvalidProbabilityError,
-};
-pub use state_machine::{WorkflowState, StateError, WorkflowStateSnapshot};
-pub use builders::{
-    EventBuilder, ConfigBuilder, ProcessMiningConfig, Event, ConfigError,
-};
+pub use builders::{ConfigBuilder, ConfigError, Event, EventBuilder, ProcessMiningConfig};
 pub use resource_handles::{
-    EventLog as TypedEventLog, EventLogOpen, EventLogClosed,
+    AnalysisResults, AnalyzerCompleted, AnalyzerConfigured, AnalyzerRunning,
+    EventLog as TypedEventLog, EventLogClosed, EventLogError, EventLogOpen, ProcessAnalytics,
     ProcessAnalyzer as TypedProcessAnalyzer,
-    AnalyzerConfigured, AnalyzerRunning, AnalyzerCompleted,
-    ProcessAnalytics, AnalysisResults, EventLogError,
 };
+pub use state_machine::{StateError, WorkflowState, WorkflowStateSnapshot};
 pub use typed_pipeline::{
-    ProcessMiningPipeline, PipelineResults, OwnedPipelineResults,
-    ProcessGraph as TypedProcessGraph, ValidationReport, PipelineError,
+    OwnedPipelineResults, PipelineError, PipelineResults, ProcessGraph as TypedProcessGraph,
+    ProcessMiningPipeline, ValidationReport,
+};
+pub use types::{
+    ActivityName, CaseID, Count, Duration, EventID, InvalidIdError, InvalidProbabilityError,
+    InvalidStringError, Probability, Timestamp,
 };
 
 use thiserror::Error;

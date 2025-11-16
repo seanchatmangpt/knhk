@@ -125,7 +125,8 @@ pub use execution::{
 pub use executor::WorkflowEngine;
 pub use ggen::{
     generate_documentation_from_spec, generate_tests_from_spec, generate_workflow_from_rdf,
-    GgenGenerator,
+    GgenGenerator, NeuralPatternLearner, Pattern, PatternRecommendation, PatternStatistics,
+    TargetLanguage,
 };
 pub use innovation::{
     DeltaLogEntry, DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,

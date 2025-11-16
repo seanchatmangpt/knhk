@@ -239,8 +239,8 @@ impl DiscoveryEngine {
         for (source, outgoing) in by_source {
             if outgoing.len() > 1 {
                 let activities: Vec<_> = outgoing.iter().map(|e| e.to.clone()).collect();
-                let avg_prob: f64 = outgoing.iter().map(|e| e.probability).sum::<f64>()
-                    / outgoing.len() as f64;
+                let avg_prob: f64 =
+                    outgoing.iter().map(|e| e.probability).sum::<f64>() / outgoing.len() as f64;
 
                 patterns.push(DiscoveredPattern {
                     pattern_type: PatternType::ParallelSplit,
@@ -260,7 +260,9 @@ impl DiscoveryEngine {
 
         for edge in edges {
             // Simple loop: A → B → A
-            if let Some(back_edge) = edges.iter().find(|e| e.from == edge.to && e.to == edge.from)
+            if let Some(back_edge) = edges
+                .iter()
+                .find(|e| e.from == edge.to && e.to == edge.from)
             {
                 let confidence = (edge.probability + back_edge.probability) / 2.0;
 

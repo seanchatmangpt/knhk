@@ -16,8 +16,14 @@ fn test_spiffe_config_with_defaults() {
     let config = SpiffeConfig::default();
 
     // Act & Assert: Verify defaults are sensible
-    assert!(!config.socket_path.is_empty(), "Socket path should have default");
-    assert!(!config.trust_domain.is_empty(), "Trust domain should have default");
+    assert!(
+        !config.socket_path.is_empty(),
+        "Socket path should have default"
+    );
+    assert!(
+        !config.trust_domain.is_empty(),
+        "Trust domain should have default"
+    );
     assert!(
         config.refresh_interval > Duration::from_secs(60),
         "Refresh interval should be > 1 minute"
@@ -53,9 +59,9 @@ fn test_spiffe_config_with_custom_socket_path() {
 fn test_spiffe_config_refresh_interval_bounds() {
     // Arrange: Various refresh intervals
     let valid_intervals = vec![
-        Duration::from_secs(300),    // 5 minutes
-        Duration::from_secs(3600),   // 1 hour
-        Duration::from_secs(86400),  // 24 hours
+        Duration::from_secs(300),   // 5 minutes
+        Duration::from_secs(3600),  // 1 hour
+        Duration::from_secs(86400), // 24 hours
     ];
 
     // Act & Assert: All intervals are valid
@@ -66,7 +72,10 @@ fn test_spiffe_config_refresh_interval_bounds() {
             ..Default::default()
         };
 
-        assert!(config.refresh_interval.as_secs() > 0, "Interval should be positive");
+        assert!(
+            config.refresh_interval.as_secs() > 0,
+            "Interval should be positive"
+        );
     }
 }
 
@@ -103,7 +112,7 @@ fn test_validate_spiffe_id_invalid_format() {
         "spiffe://",
         "spiffe://",
         "SPIFFE://example.com/service", // Case sensitive
-        "spiffe:/example.com/service",   // Single slash
+        "spiffe:/example.com/service",  // Single slash
     ];
 
     // Act & Assert: All invalid IDs fail validation
@@ -184,8 +193,14 @@ fn test_spiffe_cert_manager_config_default_id_generation() {
     let spiffe_id = config.extract_spiffe_id();
 
     // Assert: Default ID is generated from trust domain
-    assert!(spiffe_id.contains("example.com"), "Generated ID should include trust domain");
-    assert!(spiffe_id.starts_with("spiffe://"), "Generated ID should have SPIFFE scheme");
+    assert!(
+        spiffe_id.contains("example.com"),
+        "Generated ID should include trust domain"
+    );
+    assert!(
+        spiffe_id.starts_with("spiffe://"),
+        "Generated ID should have SPIFFE scheme"
+    );
 }
 
 // ============================================================================
@@ -262,7 +277,11 @@ fn test_spiffe_id_extraction_format() {
 
     // Act & Assert: All extracted IDs are valid
     for id in extracted_ids {
-        assert!(validate_spiffe_id(id), "Extracted ID should be valid: {}", id);
+        assert!(
+            validate_spiffe_id(id),
+            "Extracted ID should be valid: {}",
+            id
+        );
     }
 }
 
@@ -318,10 +337,7 @@ fn test_spiffe_config_error_invalid_trust_domain() {
     let result = config.validate();
 
     // Assert: Should fail validation
-    assert!(
-        result.is_err(),
-        "Empty trust domain should fail validation"
-    );
+    assert!(result.is_err(), "Empty trust domain should fail validation");
 }
 
 #[test]
@@ -338,10 +354,7 @@ fn test_spiffe_config_error_preserves_context() {
     // Assert: Error provides helpful context
     if let Err(e) = result {
         let error_msg = format!("{}", e);
-        assert!(
-            !error_msg.is_empty(),
-            "Error should explain what's wrong"
-        );
+        assert!(!error_msg.is_empty(), "Error should explain what's wrong");
     }
 }
 
@@ -376,11 +389,7 @@ fn test_spiffe_certificate_immutability() {
 #[test]
 fn test_spiffe_workload_api_request_format() {
     // Arrange: Valid workload API request types
-    let request_types = vec![
-        "FetchX509SVID",
-        "ValidateJWT",
-        "FetchJWTSVID",
-    ];
+    let request_types = vec!["FetchX509SVID", "ValidateJWT", "FetchJWTSVID"];
 
     // Act & Assert: All request types are valid strings
     for req_type in request_types {

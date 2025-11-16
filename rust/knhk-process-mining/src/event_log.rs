@@ -108,7 +108,9 @@ impl EventLog {
             .iter()
             .find(|e| e.activity == to_activity && e.lifecycle == EventLifecycle::Start)?;
 
-        let duration = to_event.timestamp.signed_duration_since(from_event.timestamp);
+        let duration = to_event
+            .timestamp
+            .signed_duration_since(from_event.timestamp);
         Some(duration.to_std().ok()?)
     }
 
@@ -135,7 +137,10 @@ impl EventLog {
 
         for case_id in &self.case_ids {
             xes.push_str("  <trace>\n");
-            xes.push_str(&format!("    <string key=\"concept:name\" value=\"{}\"/>\n", case_id));
+            xes.push_str(&format!(
+                "    <string key=\"concept:name\" value=\"{}\"/>\n",
+                case_id
+            ));
 
             for event in self.events_for_case(case_id) {
                 xes.push_str("    <event>\n");
