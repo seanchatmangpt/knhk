@@ -39,7 +39,10 @@ pub enum StateError {
     /// Already in the target state
     AlreadyInState { state: String },
     /// Not ready for the requested transition
-    NotReadyForTransition { current_state: String, required: String },
+    NotReadyForTransition {
+        current_state: String,
+        required: String,
+    },
     /// Cannot recover from error without valid recovery action
     RecoveryNotPossible { reason: String },
 }
@@ -182,8 +185,14 @@ pub enum WorkflowState {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WorkflowStateSnapshot {
     Initial,
-    Running { started_at: Timestamp, case_count: u64 },
-    Paused { paused_at: Timestamp, cases_processed: u64 },
+    Running {
+        started_at: Timestamp,
+        case_count: u64,
+    },
+    Paused {
+        paused_at: Timestamp,
+        cases_processed: u64,
+    },
 }
 
 impl WorkflowState {

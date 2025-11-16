@@ -62,17 +62,18 @@ fn test_slo_class_c1_definition() {
 fn test_slo_admission_r1_requires_high_hit_rate() {
     // Arrange: Different cache hit rates
     let test_cases = vec![
-        (0.999, true),  // 99.9% - exceeds 99% threshold
-        (0.99, true),   // 99% - meets threshold
-        (0.98, false),  // 98% - below threshold
-        (0.95, false),  // 95% - below threshold
+        (0.999, true), // 99.9% - exceeds 99% threshold
+        (0.99, true),  // 99% - meets threshold
+        (0.98, false), // 98% - below threshold
+        (0.95, false), // 95% - below threshold
     ];
 
     // Act & Assert: R1 requires 99% hit rate
     for (hit_rate, should_admit) in test_cases {
         let would_admit = hit_rate >= 0.99;
         assert_eq!(
-            would_admit, should_admit,
+            would_admit,
+            should_admit,
             "R1 admission for {:.1}% hit rate",
             hit_rate * 100.0
         );
@@ -83,17 +84,18 @@ fn test_slo_admission_r1_requires_high_hit_rate() {
 fn test_slo_admission_w1_requires_good_hit_rate() {
     // Arrange: Different cache hit rates
     let test_cases = vec![
-        (0.97, true),   // 97% - exceeds 95% threshold
-        (0.95, true),   // 95% - meets threshold
-        (0.94, false),  // 94% - below threshold
-        (0.80, false),  // 80% - below threshold
+        (0.97, true),  // 97% - exceeds 95% threshold
+        (0.95, true),  // 95% - meets threshold
+        (0.94, false), // 94% - below threshold
+        (0.80, false), // 80% - below threshold
     ];
 
     // Act & Assert: W1 requires 95% hit rate
     for (hit_rate, should_admit) in test_cases {
         let would_admit = hit_rate >= 0.95;
         assert_eq!(
-            would_admit, should_admit,
+            would_admit,
+            should_admit,
             "W1 admission for {:.1}% hit rate",
             hit_rate * 100.0
         );
@@ -108,7 +110,11 @@ fn test_slo_admission_c1_admits_all() {
     // Act & Assert: C1 admits all requests regardless of hit rate
     for hit_rate in test_cases {
         let would_admit = true; // C1 always admits
-        assert!(would_admit, "C1 should admit with {:.1}% hit rate", hit_rate * 100.0);
+        assert!(
+            would_admit,
+            "C1 should admit with {:.1}% hit rate",
+            hit_rate * 100.0
+        );
     }
 }
 
@@ -128,7 +134,10 @@ fn test_capacity_prediction_structure() {
     };
 
     // Act & Assert: Prediction has sensible values
-    assert!(prediction.l1_cache_size_bytes > 0, "L1 size should be positive");
+    assert!(
+        prediction.l1_cache_size_bytes > 0,
+        "L1 size should be positive"
+    );
     assert!(
         prediction.l2_cache_size_bytes > prediction.l1_cache_size_bytes,
         "L2 should be larger than L1"
@@ -143,9 +152,9 @@ fn test_capacity_prediction_structure() {
 #[test]
 fn test_capacity_l1_l2_hierarchy() {
     // Arrange: L1 and L2 cache sizes should follow hierarchy
-    let l1_size = 500_000;       // 500 KB
-    let l2_size = 5_000_000;     // 5 MB
-    let l3_size = 100_000_000;   // 100 MB
+    let l1_size = 500_000; // 500 KB
+    let l2_size = 5_000_000; // 5 MB
+    let l3_size = 100_000_000; // 100 MB
 
     // Act & Assert: Each level is larger than previous
     assert!(l1_size < l2_size, "L2 should be larger than L1");
@@ -203,21 +212,27 @@ fn test_cache_heat_metrics_initialization() {
 #[test]
 fn test_cache_heat_identification() {
     // Arrange: Different access patterns
-    let hot_key = ("frequently_accessed", CacheHeatMetrics {
-        access_count: 1000,
-        eviction_count: 0,
-        last_access_timestamp: 0,
-        key_size_bytes: 50,
-        value_size_bytes: 500,
-    });
+    let hot_key = (
+        "frequently_accessed",
+        CacheHeatMetrics {
+            access_count: 1000,
+            eviction_count: 0,
+            last_access_timestamp: 0,
+            key_size_bytes: 50,
+            value_size_bytes: 500,
+        },
+    );
 
-    let cold_key = ("rarely_accessed", CacheHeatMetrics {
-        access_count: 5,
-        eviction_count: 50,
-        last_access_timestamp: 0,
-        key_size_bytes: 50,
-        value_size_bytes: 500,
-    });
+    let cold_key = (
+        "rarely_accessed",
+        CacheHeatMetrics {
+            access_count: 5,
+            eviction_count: 50,
+            last_access_timestamp: 0,
+            key_size_bytes: 50,
+            value_size_bytes: 500,
+        },
+    );
 
     // Act: Determine hotness
     let hot_threshold = 100;
@@ -233,27 +248,36 @@ fn test_cache_heat_identification() {
 fn test_cache_working_set_analysis() {
     // Arrange: Cache heat map
     let mut heat_map = HashMap::new();
-    heat_map.insert("user:123", CacheHeatMetrics {
-        access_count: 500,
-        eviction_count: 0,
-        last_access_timestamp: 0,
-        key_size_bytes: 20,
-        value_size_bytes: 200,
-    });
-    heat_map.insert("config:db", CacheHeatMetrics {
-        access_count: 450,
-        eviction_count: 0,
-        last_access_timestamp: 0,
-        key_size_bytes: 15,
-        value_size_bytes: 500,
-    });
-    heat_map.insert("temp:session", CacheHeatMetrics {
-        access_count: 10,
-        eviction_count: 100,
-        last_access_timestamp: 0,
-        key_size_bytes: 25,
-        value_size_bytes: 100,
-    });
+    heat_map.insert(
+        "user:123",
+        CacheHeatMetrics {
+            access_count: 500,
+            eviction_count: 0,
+            last_access_timestamp: 0,
+            key_size_bytes: 20,
+            value_size_bytes: 200,
+        },
+    );
+    heat_map.insert(
+        "config:db",
+        CacheHeatMetrics {
+            access_count: 450,
+            eviction_count: 0,
+            last_access_timestamp: 0,
+            key_size_bytes: 15,
+            value_size_bytes: 500,
+        },
+    );
+    heat_map.insert(
+        "temp:session",
+        CacheHeatMetrics {
+            access_count: 10,
+            eviction_count: 100,
+            last_access_timestamp: 0,
+            key_size_bytes: 25,
+            value_size_bytes: 100,
+        },
+    );
 
     // Act: Calculate working set size
     let total_size: u64 = heat_map
@@ -302,9 +326,9 @@ fn test_eviction_policy_arc() {
 fn test_eviction_policy_selection() {
     // Arrange: Different workloads suggest different policies
     let workloads = vec![
-        ("temporal", "LRU"),      // Recently used more important
-        ("frequency", "LFU"),      // Frequency more important
-        ("adaptive", "ARC"),       // Mixed workload
+        ("temporal", "LRU"),  // Recently used more important
+        ("frequency", "LFU"), // Frequency more important
+        ("adaptive", "ARC"),  // Mixed workload
     ];
 
     // Act & Assert: All policies can be selected based on workload
@@ -330,7 +354,10 @@ fn test_optimization_tips_cache_size() {
     }
 
     // Assert: Tips are generated when needed
-    assert!(!tips.is_empty(), "Should suggest cache size increase when full");
+    assert!(
+        !tips.is_empty(),
+        "Should suggest cache size increase when full"
+    );
 }
 
 #[test]
@@ -346,7 +373,10 @@ fn test_optimization_tips_policy_change() {
     }
 
     // Assert: Tips suggest policy change
-    assert!(!tips.is_empty(), "Should suggest policy change for declining hit rate");
+    assert!(
+        !tips.is_empty(),
+        "Should suggest policy change for declining hit rate"
+    );
 }
 
 #[test]
@@ -362,7 +392,10 @@ fn test_optimization_tips_partitioning() {
     }
 
     // Assert: Partitioning suggested for imbalanced workload
-    assert!(!tips.is_empty(), "Should suggest partitioning for imbalanced workload");
+    assert!(
+        !tips.is_empty(),
+        "Should suggest partitioning for imbalanced workload"
+    );
 }
 
 // ============================================================================
@@ -391,7 +424,10 @@ fn test_capacity_admission_prevents_slo_violations() {
     let admission_threshold_w1 = 0.95;
 
     // Act & Assert: Thresholds prevent violations
-    assert!(admission_threshold_r1 > admission_threshold_w1, "R1 should have stricter requirements");
+    assert!(
+        admission_threshold_r1 > admission_threshold_w1,
+        "R1 should have stricter requirements"
+    );
 }
 
 #[test]
@@ -406,12 +442,18 @@ fn test_capacity_prediction_includes_growth() {
     };
 
     // Act & Assert: Growth is factored into prediction
-    assert!(prediction.projected_growth_percent > 0.0, "Should include growth projection");
+    assert!(
+        prediction.projected_growth_percent > 0.0,
+        "Should include growth projection"
+    );
 
     // Calculate future cache needs
-    let future_l1_size = prediction.l1_cache_size_bytes as f64
-        * (1.0 + prediction.projected_growth_percent / 100.0);
-    assert!(future_l1_size > prediction.l1_cache_size_bytes as f64, "Future size should be larger");
+    let future_l1_size =
+        prediction.l1_cache_size_bytes as f64 * (1.0 + prediction.projected_growth_percent / 100.0);
+    assert!(
+        future_l1_size > prediction.l1_cache_size_bytes as f64,
+        "Future size should be larger"
+    );
 }
 
 #[test]
@@ -419,7 +461,7 @@ fn test_capacity_heat_analysis_accuracy() {
     // Arrange: Heat metrics for accuracy
     let metrics = CacheHeatMetrics {
         access_count: 1000,
-        eviction_count: 5,       // Low evictions = good fit
+        eviction_count: 5, // Low evictions = good fit
         last_access_timestamp: 0,
         key_size_bytes: 100,
         value_size_bytes: 1000,

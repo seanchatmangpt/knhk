@@ -43,12 +43,12 @@ fn test_kms_key_id_property_idempotent_validation() {
 fn test_kms_rotation_interval_property_bounds() {
     // Property: Rotation intervals must be positive and reasonable
     let test_intervals = vec![
-        (3600, true),       // 1 hour - minimum
-        (86400, true),      // 24 hours - standard
-        (604800, true),     // 7 days
-        (2592000, true),    // 30 days
-        (0, false),         // Invalid
-        (-3600, false),     // Invalid (signed)
+        (3600, true),    // 1 hour - minimum
+        (86400, true),   // 24 hours - standard
+        (604800, true),  // 7 days
+        (2592000, true), // 30 days
+        (0, false),      // Invalid
+        (-3600, false),  // Invalid (signed)
     ];
 
     for (interval_secs, should_be_valid) in test_intervals {
@@ -147,7 +147,10 @@ fn test_promotion_routing_property_traffic_percentage_bounds() {
     let percentages = vec![0.0, 5.0, 10.0, 25.0, 50.0, 75.0, 90.0, 100.0];
 
     for percent in percentages {
-        assert!(percent >= 0.0 && percent <= 100.0, "Invalid traffic percentage");
+        assert!(
+            percent >= 0.0 && percent <= 100.0,
+            "Invalid traffic percentage"
+        );
     }
 }
 
@@ -159,10 +162,7 @@ fn test_promotion_routing_property_aggregate_respects_percentage() {
 
     let routed_count: usize = (0..request_count)
         .map(|i| {
-            let hash = format!("req-{}", i)
-                .chars()
-                .map(|c| c as u32)
-                .sum::<u32>() as u64;
+            let hash = format!("req-{}", i).chars().map(|c| c as u32).sum::<u32>() as u64;
             if (hash % 100) < (traffic_percent as u64) {
                 1
             } else {
@@ -190,11 +190,11 @@ fn test_promotion_routing_property_aggregate_respects_percentage() {
 fn test_promotion_metrics_property_error_rate_bounds() {
     // Property: Error rate is always 0-1
     let test_cases = vec![
-        (0, 0),      // 0% errors
-        (10, 100),   // 10% errors
-        (50, 100),   // 50% errors
-        (99, 100),   // 99% errors
-        (100, 100),  // 100% errors
+        (0, 0),     // 0% errors
+        (10, 100),  // 10% errors
+        (50, 100),  // 50% errors
+        (99, 100),  // 99% errors
+        (100, 100), // 100% errors
     ];
 
     for (errors, total) in test_cases {
@@ -224,8 +224,12 @@ fn test_promotion_metrics_property_latency_percentiles_monotonic() {
         sorted.sort();
 
         let p50_idx = (sorted.len() / 2).saturating_sub(1);
-        let p95_idx = ((sorted.len() * 95) / 100).saturating_sub(1).min(sorted.len() - 1);
-        let p99_idx = ((sorted.len() * 99) / 100).saturating_sub(1).min(sorted.len() - 1);
+        let p95_idx = ((sorted.len() * 95) / 100)
+            .saturating_sub(1)
+            .min(sorted.len() - 1);
+        let p99_idx = ((sorted.len() * 99) / 100)
+            .saturating_sub(1)
+            .min(sorted.len() - 1);
 
         let p50 = sorted[p50_idx];
         let p95 = sorted[p95_idx];
@@ -262,21 +266,21 @@ fn test_capacity_property_hit_rate_bounds() {
         CapacityPrediction {
             l1_cache_size_bytes: 1_000_000,
             l2_cache_size_bytes: 10_000_000,
-            expected_hit_rate: 0.0,  // No hits
+            expected_hit_rate: 0.0, // No hits
             estimated_cost: 1000.0,
             projected_growth_percent: 5.0,
         },
         CapacityPrediction {
             l1_cache_size_bytes: 1_000_000,
             l2_cache_size_bytes: 10_000_000,
-            expected_hit_rate: 0.5,  // 50% hit rate
+            expected_hit_rate: 0.5, // 50% hit rate
             estimated_cost: 1000.0,
             projected_growth_percent: 5.0,
         },
         CapacityPrediction {
             l1_cache_size_bytes: 1_000_000,
             l2_cache_size_bytes: 10_000_000,
-            expected_hit_rate: 1.0,  // Perfect hits
+            expected_hit_rate: 1.0, // Perfect hits
             estimated_cost: 1000.0,
             projected_growth_percent: 5.0,
         },
@@ -336,7 +340,11 @@ fn test_kms_config_validation_property_idempotent() {
         result2.is_ok(),
         "Validation should be idempotent"
     );
-    assert_eq!(result2.is_ok(), result3.is_ok(), "Validation should be idempotent");
+    assert_eq!(
+        result2.is_ok(),
+        result3.is_ok(),
+        "Validation should be idempotent"
+    );
 }
 
 #[test]
@@ -374,7 +382,10 @@ fn test_promotion_environment_creation_non_interfering() {
     }
 
     // Creating env3 shouldn't affect env2
-    assert!(matches!(env2, Environment::Staging), "env2 should be unchanged");
+    assert!(
+        matches!(env2, Environment::Staging),
+        "env2 should be unchanged"
+    );
 }
 
 #[test]
@@ -442,14 +453,17 @@ fn test_promotion_traffic_hundred_percent() {
 fn test_capacity_zero_cache_size_invalid() {
     // Property: Zero cache size should fail validation
     let prediction = CapacityPrediction {
-        l1_cache_size_bytes: 0,      // Invalid!
-        l2_cache_size_bytes: 0,      // Invalid!
+        l1_cache_size_bytes: 0, // Invalid!
+        l2_cache_size_bytes: 0, // Invalid!
         expected_hit_rate: 0.0,
-        estimated_cost: 0.0,         // Invalid!
+        estimated_cost: 0.0, // Invalid!
         projected_growth_percent: 0.0,
     };
 
     // Assert: This should be flagged as invalid
-    assert_eq!(prediction.l1_cache_size_bytes, 0, "Structure can be created, but should be validated");
+    assert_eq!(
+        prediction.l1_cache_size_bytes, 0,
+        "Structure can be created, but should be validated"
+    );
     assert_eq!(prediction.estimated_cost, 0.0, "Cost should be checked");
 }

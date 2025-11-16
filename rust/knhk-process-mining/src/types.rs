@@ -135,7 +135,9 @@ impl CaseID {
     /// ## Poka-Yoke:
     /// This is the ONLY way to create a CaseID from a raw integer, ensuring validation.
     pub fn new(id: u64) -> Result<Self, InvalidIdError> {
-        NonZeroU64::new(id).map(CaseID).ok_or(InvalidIdError::ZeroId)
+        NonZeroU64::new(id)
+            .map(CaseID)
+            .ok_or(InvalidIdError::ZeroId)
     }
 
     /// Returns the inner NonZeroU64 value.
@@ -199,7 +201,9 @@ impl EventID {
     /// ## Errors
     /// Returns `InvalidIdError::ZeroId` if the value is zero.
     pub fn new(id: u32) -> Result<Self, InvalidIdError> {
-        NonZeroU32::new(id).map(EventID).ok_or(InvalidIdError::ZeroId)
+        NonZeroU32::new(id)
+            .map(EventID)
+            .ok_or(InvalidIdError::ZeroId)
     }
 
     /// Returns the inner NonZeroU32 value.
@@ -288,9 +292,7 @@ impl Count {
     /// ## Panics
     /// Panics on overflow.
     pub fn add(self, other: Count) -> Self {
-        Count(
-            NonZeroU32::new(self.0.get() + other.0.get()).expect("count overflow on addition"),
-        )
+        Count(NonZeroU32::new(self.0.get() + other.0.get()).expect("count overflow on addition"))
     }
 }
 

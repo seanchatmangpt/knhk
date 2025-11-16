@@ -3,7 +3,7 @@
 
 use crate::error::{SidecarError, SidecarResult};
 use std::time::Duration;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 /// KMS provider type
 #[derive(Debug, Clone)]
@@ -210,7 +210,8 @@ impl KmsManager {
             } => {
                 #[cfg(feature = "fortune5")]
                 {
-                    let client = AzureKmsClientImpl::new(vault_url.clone(), key_name.clone()).await?;
+                    let client =
+                        AzureKmsClientImpl::new(vault_url.clone(), key_name.clone()).await?;
                     (None, Some(client), None)
                 }
                 #[cfg(not(feature = "fortune5"))]
@@ -227,11 +228,9 @@ impl KmsManager {
             } => {
                 #[cfg(feature = "fortune5")]
                 {
-                    let client = VaultKmsClientImpl::new(
-                        addr.clone(),
-                        mount_path.clone(),
-                        key_name.clone(),
-                    ).await?;
+                    let client =
+                        VaultKmsClientImpl::new(addr.clone(), mount_path.clone(), key_name.clone())
+                            .await?;
                     (None, None, Some(client))
                 }
                 #[cfg(not(feature = "fortune5"))]
@@ -297,7 +296,9 @@ impl KmsManager {
         } else if let Some(ref client) = self.vault_client {
             client.sign_async(data).await
         } else {
-            Err(SidecarError::config_error("No KMS client available".to_string()))
+            Err(SidecarError::config_error(
+                "No KMS client available".to_string(),
+            ))
         }
     }
 
@@ -310,7 +311,9 @@ impl KmsManager {
         } else if let Some(ref client) = self.vault_client {
             client.get_public_key_async().await
         } else {
-            Err(SidecarError::config_error("No KMS client available".to_string()))
+            Err(SidecarError::config_error(
+                "No KMS client available".to_string(),
+            ))
         }
     }
 
@@ -323,7 +326,9 @@ impl KmsManager {
         } else if let Some(ref client) = self.vault_client {
             client.rotate_key_async().await
         } else {
-            Err(SidecarError::config_error("No KMS client available".to_string()))
+            Err(SidecarError::config_error(
+                "No KMS client available".to_string(),
+            ))
         }
     }
 
@@ -336,7 +341,9 @@ impl KmsManager {
         } else if let Some(ref client) = self.vault_client {
             client.get_key_metadata_async().await
         } else {
-            Err(SidecarError::config_error("No KMS client available".to_string()))
+            Err(SidecarError::config_error(
+                "No KMS client available".to_string(),
+            ))
         }
     }
 }
@@ -365,7 +372,10 @@ impl AwsKmsClientImpl {
             .await;
         let client = aws_sdk_kms::Client::new(&config);
 
-        info!("AWS KMS client initialized for region: {}, key: {}", region, key_id);
+        info!(
+            "AWS KMS client initialized for region: {}, key: {}",
+            region, key_id
+        );
 
         Ok(Self {
             region,
@@ -384,11 +394,11 @@ impl AwsKmsClientImpl {
             .send()
             .await
             .map_err(|e| {
-                error!("AWS KMS signing failed: {}. Key: {}, Region: {}", e, self.key_id, self.region);
-                SidecarError::config_error(format!(
-                    "AWS KMS signing failed: {}",
-                    e
-                ))
+                error!(
+                    "AWS KMS signing failed: {}. Key: {}, Region: {}",
+                    e, self.key_id, self.region
+                );
+                SidecarError::config_error(format!("AWS KMS signing failed: {}", e))
             })?;
 
         let signature = response.signature().ok_or_else(|| {
@@ -408,10 +418,7 @@ impl AwsKmsClientImpl {
             .await
             .map_err(|e| {
                 error!("AWS KMS get_public_key failed: {}. Key: {}", e, self.key_id);
-                SidecarError::config_error(format!(
-                    "AWS KMS get_public_key failed: {}",
-                    e
-                ))
+                SidecarError::config_error(format!("AWS KMS get_public_key failed: {}", e))
             })?;
 
         let public_key = response.public_key().ok_or_else(|| {
@@ -431,10 +438,7 @@ impl AwsKmsClientImpl {
             .await
             .map_err(|e| {
                 error!("AWS KMS rotate_key failed: {}. Key: {}", e, self.key_id);
-                SidecarError::config_error(format!(
-                    "AWS KMS rotate_key failed: {}",
-                    e
-                ))
+                SidecarError::config_error(format!("AWS KMS rotate_key failed: {}", e))
             })?;
 
         let rotated_key_id = response
@@ -444,7 +448,10 @@ impl AwsKmsClientImpl {
             })?
             .to_string();
 
-        info!("AWS KMS key rotated successfully. New key ID: {}", rotated_key_id);
+        info!(
+            "AWS KMS key rotated successfully. New key ID: {}",
+            rotated_key_id
+        );
         Ok(rotated_key_id)
     }
 
@@ -457,10 +464,7 @@ impl AwsKmsClientImpl {
             .await
             .map_err(|e| {
                 error!("AWS KMS describe_key failed: {}. Key: {}", e, self.key_id);
-                SidecarError::config_error(format!(
-                    "AWS KMS describe_key failed: {}",
-                    e
-                ))
+                SidecarError::config_error(format!("AWS KMS describe_key failed: {}", e))
             })?;
 
         let key_metadata = response.key_metadata().ok_or_else(|| {
@@ -470,9 +474,7 @@ impl AwsKmsClientImpl {
         Ok(KeyMetadata {
             key_id: key_metadata
                 .key_id()
-                .ok_or_else(|| {
-                    SidecarError::config_error("AWS KMS key ID not found".to_string())
-                })?
+                .ok_or_else(|| SidecarError::config_error("AWS KMS key ID not found".to_string()))?
                 .to_string(),
             created_at: std::time::SystemTime::now(),
             rotation_date: None,
@@ -500,7 +502,10 @@ impl AzureKmsClientImpl {
 
         let client = reqwest::Client::new();
 
-        info!("Azure Key Vault client initialized for vault: {}, key: {}", vault_url, key_name);
+        info!(
+            "Azure Key Vault client initialized for vault: {}, key: {}",
+            vault_url, key_name
+        );
 
         Ok(Self {
             vault_url,
@@ -511,7 +516,10 @@ impl AzureKmsClientImpl {
 
     pub async fn sign_async(&self, data: &[u8]) -> SidecarResult<Vec<u8>> {
         // Azure Key Vault Sign API
-        let url = format!("{}/keys/{}/sign?api-version=7.4", self.vault_url, self.key_name);
+        let url = format!(
+            "{}/keys/{}/sign?api-version=7.4",
+            self.vault_url, self.key_name
+        );
 
         let payload = serde_json::json!({
             "alg": "RS256",
@@ -535,12 +543,10 @@ impl AzureKmsClientImpl {
                 SidecarError::config_error(format!("Failed to parse Azure response: {}", e))
             })?;
 
-            let signature = body["value"]
-                .as_str()
-                .ok_or_else(|| {
-                    error!("Azure returned no signature value");
-                    SidecarError::config_error("Azure Key Vault returned no signature".to_string())
-                })?;
+            let signature = body["value"].as_str().ok_or_else(|| {
+                error!("Azure returned no signature value");
+                SidecarError::config_error("Azure Key Vault returned no signature".to_string())
+            })?;
 
             info!("Azure Key Vault signature created successfully");
             hex::decode(signature).map_err(|e| {
@@ -548,7 +554,10 @@ impl AzureKmsClientImpl {
                 SidecarError::config_error(format!("Failed to decode signature: {}", e))
             })
         } else {
-            error!("Azure Key Vault request failed with status: {}", response.status());
+            error!(
+                "Azure Key Vault request failed with status: {}",
+                response.status()
+            );
             Err(SidecarError::config_error(format!(
                 "Azure Key Vault request failed with status: {}",
                 response.status()
@@ -559,15 +568,10 @@ impl AzureKmsClientImpl {
     pub async fn get_public_key_async(&self) -> SidecarResult<Vec<u8>> {
         let url = format!("{}/keys/{}?api-version=7.4", self.vault_url, self.key_name);
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Azure Key Vault get key request failed: {}", e);
-                SidecarError::config_error(format!("Azure Key Vault get public key failed: {}", e))
-            })?;
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            error!("Azure Key Vault get key request failed: {}", e);
+            SidecarError::config_error(format!("Azure Key Vault get public key failed: {}", e))
+        })?;
 
         if response.status().is_success() {
             let body = response.json::<serde_json::Value>().await.map_err(|e| {
@@ -586,7 +590,10 @@ impl AzureKmsClientImpl {
                 SidecarError::config_error("Failed to decode public key".to_string())
             })
         } else {
-            error!("Azure Key Vault get key request failed with status: {}", response.status());
+            error!(
+                "Azure Key Vault get key request failed with status: {}",
+                response.status()
+            );
             Err(SidecarError::config_error(format!(
                 "Azure Key Vault get key failed with status: {}",
                 response.status()
@@ -595,23 +602,24 @@ impl AzureKmsClientImpl {
     }
 
     pub async fn rotate_key_async(&self) -> SidecarResult<String> {
-        let url = format!("{}/keys/{}/rotate?api-version=7.4", self.vault_url, self.key_name);
+        let url = format!(
+            "{}/keys/{}/rotate?api-version=7.4",
+            self.vault_url, self.key_name
+        );
 
-        let response = self
-            .client
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Azure Key Vault rotate key request failed: {}", e);
-                SidecarError::config_error(format!("Azure Key Vault rotate key failed: {}", e))
-            })?;
+        let response = self.client.post(&url).send().await.map_err(|e| {
+            error!("Azure Key Vault rotate key request failed: {}", e);
+            SidecarError::config_error(format!("Azure Key Vault rotate key failed: {}", e))
+        })?;
 
         if response.status().is_success() {
             info!("Azure Key Vault key rotated successfully");
             Ok(self.key_name.clone())
         } else {
-            error!("Azure Key Vault rotate key failed with status: {}", response.status());
+            error!(
+                "Azure Key Vault rotate key failed with status: {}",
+                response.status()
+            );
             Err(SidecarError::config_error(format!(
                 "Azure Key Vault rotate key failed with status: {}",
                 response.status()
@@ -622,15 +630,10 @@ impl AzureKmsClientImpl {
     pub async fn get_key_metadata_async(&self) -> SidecarResult<KeyMetadata> {
         let url = format!("{}/keys/{}?api-version=7.4", self.vault_url, self.key_name);
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Azure Key Vault get metadata request failed: {}", e);
-                SidecarError::config_error("Azure Key Vault get metadata failed".to_string())
-            })?;
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            error!("Azure Key Vault get metadata request failed: {}", e);
+            SidecarError::config_error("Azure Key Vault get metadata failed".to_string())
+        })?;
 
         if response.status().is_success() {
             let body = response.json::<serde_json::Value>().await.map_err(|e| {
@@ -646,8 +649,13 @@ impl AzureKmsClientImpl {
                 algorithm: "RSA-2048".to_string(),
             })
         } else {
-            error!("Azure Key Vault get metadata failed with status: {}", response.status());
-            Err(SidecarError::config_error("Azure Key Vault get metadata failed".to_string()))
+            error!(
+                "Azure Key Vault get metadata failed with status: {}",
+                response.status()
+            );
+            Err(SidecarError::config_error(
+                "Azure Key Vault get metadata failed".to_string(),
+            ))
         }
     }
 }
@@ -672,7 +680,10 @@ impl VaultKmsClientImpl {
 
         let client = reqwest::Client::new();
 
-        info!("Vault Transit client initialized for: {}/{}", addr, mount_path);
+        info!(
+            "Vault Transit client initialized for: {}/{}",
+            addr, mount_path
+        );
 
         Ok(Self {
             addr,
@@ -684,7 +695,10 @@ impl VaultKmsClientImpl {
 
     pub async fn sign_async(&self, data: &[u8]) -> SidecarResult<Vec<u8>> {
         // Vault Transit API: POST /v1/{mount}/sign/{key_name}
-        let url = format!("{}/v1/{}/sign/{}", self.addr, self.mount_path, self.key_name);
+        let url = format!(
+            "{}/v1/{}/sign/{}",
+            self.addr, self.mount_path, self.key_name
+        );
 
         let payload = serde_json::json!({
             "input": hex::encode(data),
@@ -708,18 +722,19 @@ impl VaultKmsClientImpl {
                 SidecarError::config_error("Failed to parse Vault response".to_string())
             })?;
 
-            let signature = body["data"]["signature"]
-                .as_str()
-                .ok_or_else(|| {
-                    error!("Vault returned no signature");
-                    SidecarError::config_error("Vault returned no signature".to_string())
-                })?;
+            let signature = body["data"]["signature"].as_str().ok_or_else(|| {
+                error!("Vault returned no signature");
+                SidecarError::config_error("Vault returned no signature".to_string())
+            })?;
 
             info!("Vault signature created successfully");
             // Vault returns signature in base64
             Ok(signature.as_bytes().to_vec())
         } else {
-            error!("Vault sign request failed with status: {}", response.status());
+            error!(
+                "Vault sign request failed with status: {}",
+                response.status()
+            );
             Err(SidecarError::config_error(format!(
                 "Vault sign failed with status: {}",
                 response.status()
@@ -729,17 +744,15 @@ impl VaultKmsClientImpl {
 
     pub async fn get_public_key_async(&self) -> SidecarResult<Vec<u8>> {
         // Vault Transit API: GET /v1/{mount}/keys/{key_name}
-        let url = format!("{}/v1/{}/keys/{}", self.addr, self.mount_path, self.key_name);
+        let url = format!(
+            "{}/v1/{}/keys/{}",
+            self.addr, self.mount_path, self.key_name
+        );
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Vault get key request failed: {}", e);
-                SidecarError::config_error(format!("Vault get public key failed: {}", e))
-            })?;
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            error!("Vault get key request failed: {}", e);
+            SidecarError::config_error(format!("Vault get public key failed: {}", e))
+        })?;
 
         if response.status().is_success() {
             let body = response.json::<serde_json::Value>().await.map_err(|e| {
@@ -760,7 +773,10 @@ impl VaultKmsClientImpl {
             info!("Vault public key retrieved successfully");
             Ok(public_key.as_bytes().to_vec())
         } else {
-            error!("Vault get key request failed with status: {}", response.status());
+            error!(
+                "Vault get key request failed with status: {}",
+                response.status()
+            );
             Err(SidecarError::config_error(format!(
                 "Vault get key failed with status: {}",
                 response.status()
@@ -770,17 +786,15 @@ impl VaultKmsClientImpl {
 
     pub async fn rotate_key_async(&self) -> SidecarResult<String> {
         // Vault Transit API: POST /v1/{mount}/keys/{key_name}/rotate
-        let url = format!("{}/v1/{}/keys/{}/rotate", self.addr, self.mount_path, self.key_name);
+        let url = format!(
+            "{}/v1/{}/keys/{}/rotate",
+            self.addr, self.mount_path, self.key_name
+        );
 
-        let response = self
-            .client
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Vault rotate key request failed: {}", e);
-                SidecarError::config_error(format!("Vault rotate key failed: {}", e))
-            })?;
+        let response = self.client.post(&url).send().await.map_err(|e| {
+            error!("Vault rotate key request failed: {}", e);
+            SidecarError::config_error(format!("Vault rotate key failed: {}", e))
+        })?;
 
         if response.status().is_success() {
             info!("Vault key rotated successfully");
@@ -795,17 +809,15 @@ impl VaultKmsClientImpl {
     }
 
     pub async fn get_key_metadata_async(&self) -> SidecarResult<KeyMetadata> {
-        let url = format!("{}/v1/{}/keys/{}", self.addr, self.mount_path, self.key_name);
+        let url = format!(
+            "{}/v1/{}/keys/{}",
+            self.addr, self.mount_path, self.key_name
+        );
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Vault get metadata request failed: {}", e);
-                SidecarError::config_error("Vault get metadata failed".to_string())
-            })?;
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            error!("Vault get metadata request failed: {}", e);
+            SidecarError::config_error("Vault get metadata failed".to_string())
+        })?;
 
         if response.status().is_success() {
             info!("Vault metadata retrieved successfully");
@@ -816,8 +828,13 @@ impl VaultKmsClientImpl {
                 algorithm: "RSA".to_string(),
             })
         } else {
-            error!("Vault get metadata failed with status: {}", response.status());
-            Err(SidecarError::config_error("Vault get metadata failed".to_string()))
+            error!(
+                "Vault get metadata failed with status: {}",
+                response.status()
+            );
+            Err(SidecarError::config_error(
+                "Vault get metadata failed".to_string(),
+            ))
         }
     }
 }

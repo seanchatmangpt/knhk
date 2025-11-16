@@ -443,7 +443,11 @@ impl std::fmt::Display for PipelineError {
         match self {
             PipelineError::EmptyEventLog => write!(f, "Event log is empty"),
             PipelineError::InvalidEventOrder { position } => {
-                write!(f, "Events not in chronological order at position {}", position)
+                write!(
+                    f,
+                    "Events not in chronological order at position {}",
+                    position
+                )
             }
             PipelineError::DiscoveryFailed { reason } => {
                 write!(f, "Process discovery failed: {}", reason)
