@@ -31,6 +31,7 @@ mod config;
 mod conformance;
 mod connect;
 mod console;
+mod console_extended;
 mod context;
 mod cover;
 mod coverage;
