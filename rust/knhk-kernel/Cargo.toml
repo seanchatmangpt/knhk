@@ -1,0 +1,74 @@
+[package]
+name = "knhk-kernel"
+version = "0.1.0"
+edition = "2021"
+authors = ["KNHK Team"]
+
+[features]
+default = ["simd"]
+simd = []
+# Enable for advanced CPU features
+avx2 = []
+avx512 = []
+
+[dependencies]
+# Core dependencies - minimal for hot path
+parking_lot = { version = "0.12", features = ["deadlock_detection"] }
+rustc-hash = "1.1"
+arrayvec = "0.7"
+smallvec = { version = "1.13", features = ["const_generics"] }
+bitflags = "2.4"
+
+# For cryptographic receipts
+blake3 = { version = "1.5", features = ["std", "rayon"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# For atomic operations
+crossbeam-utils = "0.8"
+crossbeam-queue = "0.3"
+
+# Platform-specific
+libc = "0.2"
+num_cpus = "1.16"
+
+# For SIMD when enabled
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+core_arch = { version = "0.1", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+rand = "0.8"
+quickcheck = "1.0"
+test-case = "3.1"
+
+[build-dependencies]
+cc = "1.0"
+
+[[bench]]
+name = "hot_path_bench"
+harness = false
+
+[[bench]]
+name = "pattern_dispatch_bench"
+harness = false
+
+[[bench]]
+name = "guard_eval_bench"
+harness = false
+
+[[bench]]
+name = "receipt_gen_bench"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = false
+debug = false
+
+[profile.bench]
+inherits = "release"
+debug = true

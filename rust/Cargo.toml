@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "knhk-hot",
     "knhk-otel",
+    "knhk-kernel",            # Phase 3 Hot Path Rust Kernel (≤8 ticks)
     "knhk-connectors",
     "knhk-lockchain",
     "knhk-etl",

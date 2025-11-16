@@ -96,6 +96,11 @@ sled = { workspace = true, optional = true }
 tempfile = { workspace = true }
 process_mining = "0.3"
 
+# Compiler dependencies
+ring = "0.17"
+regex = "1.10"
+crc32fast = "1.4"
+
 [features]
 default = [
   "rdf",
@@ -132,6 +137,10 @@ path = "examples/weaver_all_43_patterns.rs"
 [[example]]
 name = "weaver_real_jtbd_validation"
 path = "examples/weaver_real_jtbd_validation.rs"
+
+[[example]]
+name = "compile_workflow"
+path = "examples/compile_workflow.rs"
 
 [[bench]]
 name = "fortune5_performance"

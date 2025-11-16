@@ -23,6 +23,7 @@ pub mod executor;
 pub mod ffi;
 pub mod graph;
 pub mod hot_path;
+pub mod kernel;
 pub mod query;
 pub mod scheduler;
 pub mod warm_path;
