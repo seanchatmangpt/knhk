@@ -12,6 +12,7 @@ members = [
     "knhk-patterns",          # Van der Aalst workflow patterns
     "knhk-workflow-engine",   # Enterprise YAWL workflow engine
     "knhk-process-mining",    # Process mining and workflow analytics
+    "knhk-autonomic",         # MAPE-K Autonomic Knowledge Integration (Covenant 3)
     "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
@@ -20,6 +21,7 @@ members = [
     "knhk-latex-compiler",    # LaTeX to PDF compiler
     "knhk-latex",             # LaTeX CLI using clap-noun-verb
     "knhk-test-cache",        # Autonomic test cache daemon
+    "chicago-tdd",            # Chicago TDD Performance Harness (Chatman Constant enforcement)
 ]
 
 [workspace.package]

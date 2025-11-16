@@ -46,6 +46,10 @@ pub mod resolved_schema;
 #[cfg(feature = "streaming")]
 pub mod streaming;
 
+// Pattern Matrix Validator (Covenant 4: All Patterns Expressible)
+#[cfg(feature = "std")]
+pub mod pattern;
+
 pub struct ValidationResult {
     pub passed: bool,
     pub message: String,
