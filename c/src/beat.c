@@ -4,6 +4,7 @@
 
 #include "knhk/beat.h"
 #include <stdatomic.h>
+#include <stdint.h>
 
 // Global cycle counter (initialized to 0)
 _Atomic(uint64_t) knhk_global_cycle = ATOMIC_VAR_INIT(0);

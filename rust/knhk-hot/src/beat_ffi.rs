@@ -18,10 +18,10 @@ extern "C" {
 // The following functions are static inline in C header knhk/beat.h
 // We implement them in Rust since they're simple branchless operations
 
-/// Advance cycle counter atomically, return new cycle value
+/// Advance cycle counter atomically, return old cycle value then increment
 /// Branchless: single atomic operation
 pub fn knhk_beat_next() -> u64 {
-    KNHK_GLOBAL_CYCLE.fetch_add(1, Ordering::SeqCst) + 1
+    KNHK_GLOBAL_CYCLE.fetch_add(1, Ordering::SeqCst)
 }
 
 /// Extract tick from cycle (0..7)
@@ -52,6 +52,8 @@ impl BeatScheduler {
     /// Initialize beat scheduler (call once at startup)
     pub fn init() {
         unsafe { knhk_beat_init() }
+        // Reset the Rust-side counter to match C-side initialization
+        KNHK_GLOBAL_CYCLE.store(0, Ordering::SeqCst);
     }
 
     /// Advance to next beat and return cycle
