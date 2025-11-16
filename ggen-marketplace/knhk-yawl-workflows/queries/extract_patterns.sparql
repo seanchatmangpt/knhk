@@ -1,0 +1,47 @@
+# SPARQL Query: Extract YAWL control patterns (routing, joins, splits)
+# Used by: Pattern detection and generation in YAWL XML template
+# Purpose: Identify routing patterns for proper YAWL code generation
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?element ?elementLabel ?patternName ?patternType ?routingType
+WHERE {
+  # Find elements with defined patterns
+  ?element rdf:type ?elementType .
+  FILTER (?elementType IN (yawl:Task, yawl:Condition))
+
+  OPTIONAL { ?element rdfs:label ?elementLabel . }
+
+  # Extract split patterns
+  OPTIONAL {
+    ?element yawl:hasSplitType ?splitType .
+    BIND(CONCAT("Split-", STR(?splitType)) AS ?patternName)
+    BIND("split" AS ?patternType)
+    BIND(?splitType AS ?routingType)
+  }
+
+  # Extract join patterns
+  OPTIONAL {
+    ?element yawl:hasJoinType ?joinType .
+    BIND(CONCAT("Join-", STR(?joinType)) AS ?patternName)
+    BIND("join" AS ?patternType)
+    BIND(?joinType AS ?routingType)
+  }
+
+  # Extract flow predicates (conditions on arcs)
+  OPTIONAL {
+    ?element yawl:flowCondition ?flowPredicate .
+    BIND("conditional-flow" AS ?patternType)
+    BIND(?flowPredicate AS ?routingType)
+  }
+
+  # Extract cancellation patterns
+  OPTIONAL {
+    ?element yawl:cancellationRegion ?cancelRegion .
+    BIND("cancellation" AS ?patternType)
+    BIND(?cancelRegion AS ?routingType)
+  }
+}
+ORDER BY ?element ?patternType

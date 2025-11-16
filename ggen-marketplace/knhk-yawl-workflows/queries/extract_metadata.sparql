@@ -1,0 +1,25 @@
+# SPARQL Query: Extract workflow metadata
+# Used by: YAWL metadata generation
+# Purpose: Extract workflow name, description, version, and other metadata
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?workflow ?name ?description ?version ?author ?created ?modified ?status
+WHERE {
+  # Find workflow specification
+  ?workflow a yawl:WorkflowSpecification .
+
+  # Standard metadata fields
+  OPTIONAL { ?workflow rdfs:label ?name . }
+  OPTIONAL { ?workflow rdfs:comment ?description . }
+  OPTIONAL { ?workflow schema:version ?version . }
+  OPTIONAL { ?workflow dcterms:creator ?author . }
+  OPTIONAL { ?workflow dcterms:created ?created . }
+  OPTIONAL { ?workflow dcterms:modified ?modified . }
+
+  # YAWL-specific metadata
+  OPTIONAL { ?workflow yawl:status ?status . }
+}

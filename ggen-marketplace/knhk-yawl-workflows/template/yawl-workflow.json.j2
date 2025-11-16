@@ -1,0 +1,95 @@
+{#- YAWL JSON Template -#}
+{#- Generates YAWL workflow specification in JSON format -#}
+{
+  "version": "2.2",
+  "generator": "KNHK ggen Marketplace Template",
+  "workflows": [
+    {% for workflow in workflows %}
+    {
+      "id": "{{ workflow.workflow }}",
+      "name": "{{ workflow.workflowLabel | default('Unnamed Workflow') }}",
+      "description": "{{ workflow.workflowDescription | default('No description provided') }}",
+      "metadata": {
+        "creator": "KNHK YAWL Generator",
+        "version": "1.0",
+        "status": "{{ workflow.status | default('draft') }}"
+      },
+      "net": {
+        "id": "workflow_net",
+        "conditions": [
+          {% for condition in conditions %}
+          {% if condition.conditionLabel %}
+          {
+            "id": "{{ condition.condition | replace('/', '_') | replace('#', '') }}",
+            "name": "{{ condition.conditionLabel }}",
+            "type": "{% if condition.isStartCondition %}START{% elif condition.isEndCondition %}END{% else %}INTERNAL{% endif %}",
+            "initialMarking": {{ condition.initialMarking | default(0) }},
+            "metadata": {
+              "description": "{{ condition.conditionDescription | default('') }}"
+            }
+          }{% if not loop.last %},{% endif %}
+          {% endif %}
+          {% endfor %}
+        ],
+        "tasks": [
+          {% for task in tasks %}
+          {% if task.taskLabel %}
+          {
+            "id": "{{ task.task | replace('/', '_') | replace('#', '') }}",
+            "name": "{{ task.taskLabel }}",
+            "type": "TASK",
+            "routing": {
+              "splitType": "{{ task.splitType | default('AND') }}",
+              "joinType": "{{ task.joinType | default('AND') }}"
+            },
+            "configuration": {
+              "multiInstance": {{ task.isMultiInstance | default(false) | lower }},
+              "handler": "{{ task.handler | default('') }}"
+            },
+            "metadata": {
+              "description": "{{ task.taskDescription | default('') }}"
+            }
+          }{% if not loop.last %},{% endif %}
+          {% endif %}
+          {% endfor %}
+        ],
+        "flows": [
+          {% for flow in flows %}
+          {
+            "id": "{{ flow.source | replace('/', '_') | replace('#', '') }}_to_{{ flow.target | replace('/', '_') | replace('#', '') }}",
+            "source": "{{ flow.source | replace('/', '_') | replace('#', '') }}",
+            "target": "{{ flow.target | replace('/', '_') | replace('#', '') }}",
+            "label": "{{ flow.flowLabel | default('') }}",
+            "predicate": "{{ flow.flowPredicate | default('') }}"
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      },
+      "patterns": {
+        "routingPatterns": [
+          {% for pattern in patterns %}
+          {% if pattern.patternType == 'split' or pattern.patternType == 'join' %}
+          {
+            "element": "{{ pattern.element | replace('/', '_') | replace('#', '') }}",
+            "patternName": "{{ pattern.patternName }}",
+            "type": "{{ pattern.patternType }}",
+            "routingType": "{{ pattern.routingType }}"
+          }{% if not loop.last %},{% endif %}
+          {% endif %}
+          {% endfor %}
+        ],
+        "controlFlowPatterns": [
+          {% for pattern in patterns %}
+          {% if pattern.patternType == 'conditional-flow' %}
+          {
+            "element": "{{ pattern.element | replace('/', '_') | replace('#', '') }}",
+            "condition": "{{ pattern.routingType }}"
+          }{% if not loop.last %},{% endif %}
+          {% endif %}
+          {% endfor %}
+        ]
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
