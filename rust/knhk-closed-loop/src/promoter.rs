@@ -327,7 +327,7 @@ mod tests {
         let stats = promoter.get_stats();
         assert_eq!(stats.total_promotions, 1);
         assert_eq!(stats.total_snapshots, 2);
-        assert!(stats.max_promotion_latency_ns < 10_000_000); // Should be <10ms
+        assert!(stats.max_promotion_latency_ns < 10_000_000u64); // Should be <10ms
     }
 
     #[test]

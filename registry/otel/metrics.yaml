@@ -1,0 +1,321 @@
+# OpenTelemetry Metric Definitions for KNHK MAPE-K System
+# Version: 1.0.0
+# Date: 2025-11-16
+#
+# This schema defines ALL metrics that KNHK emits during runtime.
+# Weaver validation ensures actual runtime metrics match this schema.
+
+schema_url: https://knhk.io/schemas/1.0.0
+
+groups:
+  # ==================================================================
+  # HOT PATH METRICS (≤8 ticks = <100ns)
+  # ==================================================================
+  - id: knhk.metrics.hotpath
+    type: metric
+    brief: "Hot path performance metrics (≤8 ticks)"
+    prefix: knhk
+    metrics:
+      - id: observation.latency_ns
+        type: histogram
+        brief: "Observation append latency in nanoseconds"
+        instrument: histogram
+        unit: ns
+        stability: stable
+        attributes:
+          - ref: observation.sector
+          - ref: observation.event_type
+        note: |
+          Target: <100ns (≤8 ticks), P99: <150ns
+          Critical hot path metric - alerts if exceeded.
+
+      - id: snapshot.promotion.latency_ns
+        type: histogram
+        brief: "Snapshot promotion latency (atomic swap)"
+        instrument: histogram
+        unit: ns
+        stability: stable
+        note: |
+          Target: <1ns (atomic operation), P99: <10ns
+          Measures RCU atomic pointer swap latency.
+
+  # ==================================================================
+  # WARM PATH METRICS (<100ms)
+  # ==================================================================
+  - id: knhk.metrics.warmpath
+    type: metric
+    brief: "Warm path performance metrics (<100ms)"
+    prefix: knhk
+    metrics:
+      - id: pattern.detection.latency_ms
+        type: histogram
+        brief: "Pattern detection latency in milliseconds"
+        instrument: histogram
+        unit: ms
+        stability: stable
+        attributes:
+          - ref: pattern.type
+          - ref: analysis.window_ms
+        note: "Target: <50ms typical, <100ms p99"
+
+      - id: proposal.validation.latency_ms
+        type: histogram
+        brief: "Proposal validation latency (7-stage pipeline)"
+        instrument: histogram
+        unit: ms
+        stability: stable
+        attributes:
+          - ref: validation.stage
+          - ref: sector
+        note: |
+          Target: <100ms total for all 7 stages, <20ms per stage
+          Stages: SHACL, Q1-Q5, Doctrine, Guard, Perf, Rollback, Compat
+
+      - id: doctrine.validation.latency_ms
+        type: histogram
+        brief: "Doctrine validation latency"
+        instrument: histogram
+        unit: ms
+        stability: stable
+        attributes:
+          - ref: sector
+        note: "Target: <30ms, P99: <50ms"
+
+      - id: signature.verification.latency_ms
+        type: histogram
+        brief: "Cryptographic signature verification latency (Ed25519)"
+        instrument: histogram
+        unit: ms
+        stability: stable
+        note: "Target: <1ms per signature, <5ms for multi-party approval"
+
+  # ==================================================================
+  # LEARNING METRICS (Acceptance Rate, Budget Adjustments)
+  # ==================================================================
+  - id: knhk.metrics.learning
+    type: metric
+    brief: "Learning and adaptation metrics"
+    prefix: knhk
+    metrics:
+      - id: proposal.total
+        type: counter
+        brief: "Total proposal count by acceptance status"
+        instrument: counter
+        unit: "{proposal}"
+        stability: stable
+        attributes:
+          - ref: sector
+          - ref: pattern.type
+          - ref: acceptance.status
+        note: |
+          Track learning effectiveness: acceptance_rate = accepted / total
+          Target acceptance rate: >75%
+
+      - id: proposal.acceptance_rate
+        type: gauge
+        brief: "Current proposal acceptance rate (rolling 1 hour)"
+        instrument: gauge
+        unit: "1"
+        stability: stable
+        attributes:
+          - ref: sector
+        note: |
+          Calculated as: rate(accepted[1h]) / rate(total[1h])
+          Alert if < 0.5 (50%) - indicates learning regression
+
+      - id: budget.adjustment.total
+        type: counter
+        brief: "Number of times budgets were adjusted"
+        instrument: counter
+        unit: "{adjustment}"
+        stability: stable
+        attributes:
+          - ref: adjustment.direction
+          - ref: budget.type
+        note: "Track how often budgets are increased/decreased"
+
+      - id: budget.current_ticks
+        type: gauge
+        brief: "Current Chatman Constant budget (max execution ticks)"
+        instrument: gauge
+        unit: "{tick}"
+        stability: stable
+        attributes:
+          - ref: sector
+        note: "MUST always be ≤8 (Chatman Constant)"
+
+  # ==================================================================
+  # ERROR METRICS (Violations, Failures)
+  # ==================================================================
+  - id: knhk.metrics.errors
+    type: metric
+    brief: "Error tracking metrics"
+    prefix: knhk
+    metrics:
+      - id: error.total
+        type: counter
+        brief: "Total error count by type and severity"
+        instrument: counter
+        unit: "{error}"
+        stability: stable
+        attributes:
+          - ref: error.type
+          - ref: error.severity
+          - ref: sector
+
+      - id: invariant.violation.total
+        type: counter
+        brief: "Hard invariant violations (SHOULD BE ZERO)"
+        instrument: counter
+        unit: "{violation}"
+        stability: stable
+        attributes:
+          - ref: invariant.id
+          - ref: sector
+        note: |
+          Alert immediately if > 0
+          Q1: No retrocausation
+          Q2: Type soundness
+          Q3: Guard preservation (≤8 ticks)
+          Q4: SLO compliance
+          Q5: Performance bounds
+
+      - id: doctrine.violation.total
+        type: counter
+        brief: "Doctrine rule violations"
+        instrument: counter
+        unit: "{violation}"
+        stability: stable
+        attributes:
+          - ref: doctrine.id
+          - ref: sector
+          - ref: enforcement.level
+
+      - id: guard.blocked.total
+        type: counter
+        brief: "Operations blocked by guards"
+        instrument: counter
+        unit: "{operation}"
+        stability: stable
+        attributes:
+          - ref: guard.id
+          - ref: sector
+
+  # ==================================================================
+  # THROUGHPUT METRICS (Events/sec)
+  # ==================================================================
+  - id: knhk.metrics.throughput
+    type: metric
+    brief: "System throughput metrics"
+    prefix: knhk
+    metrics:
+      - id: observation.ingestion_rate
+        type: counter
+        brief: "Observation ingestion rate (events/sec)"
+        instrument: counter
+        unit: "{observation}"
+        stability: stable
+        attributes:
+          - ref: observation.sector
+          - ref: observation.event_type
+
+      - id: pattern.detection_rate
+        type: counter
+        brief: "Pattern detection rate (patterns/sec)"
+        instrument: counter
+        unit: "{pattern}"
+        stability: stable
+        attributes:
+          - ref: pattern.type
+          - ref: sector
+
+      - id: snapshot.promotion_rate
+        type: counter
+        brief: "Snapshot promotion rate (promotions/sec)"
+        instrument: counter
+        unit: "{promotion}"
+        stability: stable
+        attributes:
+          - ref: sector
+
+  # ==================================================================
+  # RESOURCE UTILIZATION METRICS
+  # ==================================================================
+  - id: knhk.metrics.resources
+    type: metric
+    brief: "Resource utilization metrics"
+    prefix: knhk
+    metrics:
+      - id: memory.usage_bytes
+        type: gauge
+        brief: "Current memory usage in bytes"
+        instrument: gauge
+        unit: By
+        stability: stable
+        attributes:
+          - ref: memory.type
+        note: "Track: observations, snapshots, receipts, doctrines"
+
+      - id: cpu.utilization
+        type: gauge
+        brief: "CPU utilization percentage"
+        instrument: gauge
+        unit: "1"
+        stability: stable
+        note: "Target: <50% average, <80% p99"
+
+      - id: snapshot.history_depth
+        type: gauge
+        brief: "Current snapshot history depth (version count)"
+        instrument: gauge
+        unit: "{snapshot}"
+        stability: stable
+        attributes:
+          - ref: sector
+        note: "Track history growth for GC purposes"
+
+  # ==================================================================
+  # CYCLE METRICS (Full MAPE-K Cycle)
+  # ==================================================================
+  - id: knhk.metrics.cycle
+    type: metric
+    brief: "MAPE-K cycle execution metrics"
+    prefix: knhk
+    metrics:
+      - id: cycle.duration_ms
+        type: histogram
+        brief: "Full MAPE-K cycle duration"
+        instrument: histogram
+        unit: ms
+        stability: stable
+        attributes:
+          - ref: sector
+          - ref: cycle.outcome
+        note: "Target: <500ms typical, <1s p99"
+
+      - id: cycle.total
+        type: counter
+        brief: "Total MAPE-K cycles executed"
+        instrument: counter
+        unit: "{cycle}"
+        stability: stable
+        attributes:
+          - ref: sector
+          - ref: cycle.outcome
+
+      - id: cycle.phase_duration_ms
+        type: histogram
+        brief: "Individual MAPE-K phase duration"
+        instrument: histogram
+        unit: ms
+        stability: stable
+        attributes:
+          - ref: cycle.phase
+          - ref: sector
+        note: |
+          Tracks duration of each phase:
+          - Monitor
+          - Analyze
+          - Plan
+          - Execute
+          - Knowledge

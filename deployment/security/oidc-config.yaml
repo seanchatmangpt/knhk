@@ -1,0 +1,212 @@
+oidc:
+  # Multiple identity providers supported
+  providers:
+    # Okta configuration
+    - name: okta
+      enabled: true
+      issuer: https://your-domain.okta.com
+      client_id: ${OKTA_CLIENT_ID}               # From Vault
+      client_secret: ${OKTA_CLIENT_SECRET}       # From Vault
+      scopes:
+        - openid
+        - profile
+        - email
+        - groups
+
+      # Claims mapping
+      claims:
+        user_id: sub
+        email: email
+        name: name
+        groups: groups
+
+    # Azure AD configuration
+    - name: azure-ad
+      enabled: true
+      issuer: https://login.microsoftonline.com/${TENANT_ID}/v2.0
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+      scopes:
+        - openid
+        - profile
+        - email
+
+      claims:
+        user_id: oid
+        email: email
+        name: name
+        groups: roles
+
+    # Keycloak (self-hosted)
+    - name: keycloak
+      enabled: false
+      issuer: https://keycloak.company.com/realms/knhk
+      client_id: ${KEYCLOAK_CLIENT_ID}
+      client_secret: ${KEYCLOAK_CLIENT_SECRET}
+      scopes:
+        - openid
+        - profile
+        - email
+        - roles
+
+  # Token validation settings
+  validation:
+    require_audience: true
+    allowed_audiences:
+      - "knhk-api"
+      - "knhk-admin"
+      - "knhk-cli"
+
+    require_expiration: true
+    max_token_age_seconds: 3600  # 1 hour
+
+    require_issuer_validation: true
+
+    # Clock skew tolerance
+    leeway_seconds: 60
+
+  # Role-Based Access Control mapping
+  rbac_mapping:
+    # Observer role - read-only access
+    observer:
+      groups: ["knhk-observers", "knhk-readonly"]
+      permissions:
+        - READ_OBSERVATIONS
+        - READ_SNAPSHOTS
+        - READ_RECEIPTS
+        - READ_PATTERNS
+
+      # API endpoints allowed
+      allowed_endpoints:
+        - "GET /api/v1/observations"
+        - "GET /api/v1/observations/:id"
+        - "GET /api/v1/snapshots"
+        - "GET /api/v1/snapshots/:id"
+        - "GET /api/v1/receipts"
+        - "GET /api/v1/patterns"
+
+    # Analyst role - can detect patterns
+    analyst:
+      groups: ["knhk-analysts", "knhk-data-analysts"]
+      permissions:
+        - READ_*                    # All read permissions
+        - DETECT_PATTERNS
+        - RUN_ANALYTICS
+
+      allowed_endpoints:
+        - "GET /api/v1/*"
+        - "POST /api/v1/patterns/detect"
+        - "POST /api/v1/analytics/run"
+
+    # Proposer role - can generate proposals
+    proposer:
+      groups: ["knhk-proposers", "knhk-ml-engineers"]
+      permissions:
+        - READ_*
+        - DETECT_PATTERNS
+        - GENERATE_PROPOSALS
+        - VIEW_VALIDATION_REPORTS
+
+      allowed_endpoints:
+        - "GET /api/v1/*"
+        - "POST /api/v1/patterns/detect"
+        - "POST /api/v1/proposals/generate"
+        - "GET /api/v1/proposals/:id/validation"
+
+    # Validator role - can validate proposals
+    validator:
+      groups: ["knhk-validators", "knhk-approvers"]
+      permissions:
+        - READ_*
+        - VALIDATE_PROPOSALS
+        - VIEW_VALIDATION_DETAILS
+
+      allowed_endpoints:
+        - "GET /api/v1/*"
+        - "POST /api/v1/proposals/:id/validate"
+        - "GET /api/v1/proposals/:id/validation-report"
+
+    # Operator role - can promote snapshots
+    operator:
+      groups: ["knhk-operators", "knhk-deployers"]
+      permissions:
+        - READ_*
+        - PROMOTE_SNAPSHOTS
+        - EXECUTE_MAPE_K
+        - VIEW_SYSTEM_METRICS
+
+      allowed_endpoints:
+        - "GET /api/v1/*"
+        - "POST /api/v1/snapshots/:id/promote"
+        - "POST /api/v1/mape-k/execute"
+        - "GET /api/v1/metrics"
+
+    # Administrator role - full access
+    administrator:
+      groups: ["knhk-admins", "knhk-superusers"]
+      permissions:
+        - "*"                       # All permissions
+
+      allowed_endpoints:
+        - "*"                       # All endpoints
+
+      # Additional admin capabilities
+      can_manage_users: true
+      can_modify_config: true
+      can_access_audit_logs: true
+      can_manage_secrets: true
+
+  # Session management
+  session:
+    timeout_minutes: 60
+    refresh_enabled: true
+    refresh_threshold_minutes: 10  # Refresh if <10 min remaining
+
+    # Session storage (Redis)
+    storage:
+      type: redis
+      connection: ${REDIS_URL}
+      key_prefix: "knhk:session:"
+      ttl_seconds: 3600
+
+  # Security settings
+  security:
+    # Require HTTPS for all OIDC flows
+    require_https: true
+
+    # PKCE (Proof Key for Code Exchange) - recommended
+    pkce_enabled: true
+
+    # State parameter (CSRF protection)
+    state_parameter_enabled: true
+
+    # Nonce (replay attack protection)
+    nonce_enabled: true
+
+    # Token encryption at rest
+    encrypt_tokens: true
+    encryption_key: ${TOKEN_ENCRYPTION_KEY}  # From Vault
+
+  # Audit logging
+  audit:
+    log_authentication_attempts: true
+    log_authorization_decisions: true
+    log_token_refreshes: true
+    log_session_events: true
+
+    # Emit OpenTelemetry spans
+    emit_telemetry: true
+
+# Example usage in Rust:
+#
+# use knhk_api::auth::{OidcValidator, Claims};
+#
+# let validator = OidcValidator::from_config(&config).await?;
+#
+# // Validate token from Authorization header
+# let claims = validator.validate_token(&token).await?;
+#
+# // Check permissions
+# if !claims.has_permission("PROMOTE_SNAPSHOTS") {
+#     return Err(AuthError::Forbidden);
+# }

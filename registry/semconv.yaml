@@ -1,0 +1,298 @@
+# OpenTelemetry Semantic Conventions for KNHK
+# Version: 1.0.0
+# Date: 2025-11-16
+#
+# Defines semantic conventions and overrides for KNHK-specific telemetry.
+# Extends OpenTelemetry semantic conventions with domain-specific attributes.
+
+schema_url: https://knhk.io/schemas/1.0.0
+
+# ==================================================================
+# KNHK-SPECIFIC SEMANTIC CONVENTIONS
+# ==================================================================
+
+# Resource attributes (describe the service)
+resource_attributes:
+  - id: service.name
+    type: string
+    brief: "KNHK service name"
+    examples: ["knhk-closed-loop"]
+    requirement_level: required
+
+  - id: service.version
+    type: string
+    brief: "KNHK service version"
+    examples: ["1.0.0"]
+    requirement_level: required
+
+  - id: knhk.sector
+    type: string
+    brief: "Primary organizational sector for this instance"
+    examples: ["finance", "healthcare", "manufacturing", "logistics"]
+    requirement_level: required
+    note: "Each KNHK instance is deployed per sector"
+
+  - id: knhk.deployment.environment
+    type: string
+    brief: "Deployment environment"
+    examples: ["production", "staging", "development"]
+    requirement_level: required
+
+# ==================================================================
+# CHATMAN CONSTANT SEMANTIC CONVENTIONS
+# ==================================================================
+
+constants:
+  - id: chatman.constant
+    value: 8
+    type: int
+    brief: "Maximum execution steps for hot path operations"
+    note: |
+      The Chatman Constant defines the absolute maximum number of execution
+      ticks allowed for hot path operations. This is a hard invariant (Q3).
+
+  - id: chatman.constant.nanoseconds
+    value: 100
+    type: int
+    unit: ns
+    brief: "Maximum hot path latency in nanoseconds (≈8 ticks @ 3GHz)"
+
+# ==================================================================
+# PERFORMANCE TIER SEMANTIC CONVENTIONS
+# ==================================================================
+
+performance_tiers:
+  - id: hot_path
+    brief: "Hot path operations (≤8 ticks)"
+    max_latency_ns: 100
+    max_latency_ticks: 8
+    examples:
+      - "observation.append"
+      - "snapshot.promotion (atomic swap)"
+    note: "Critical path operations with sub-microsecond latency requirements"
+
+  - id: warm_path
+    brief: "Warm path operations (<100ms)"
+    max_latency_ms: 100
+    examples:
+      - "pattern.detection"
+      - "proposal.validation"
+      - "doctrine.validation"
+    note: "Operations with millisecond-scale latency requirements"
+
+  - id: cold_path
+    brief: "Cold path operations (no hard latency constraint)"
+    examples:
+      - "llm.inference"
+      - "shadow.testing"
+      - "code.generation"
+    note: "Operations that may take seconds to minutes"
+
+# ==================================================================
+# MAPE-K PHASE SEMANTIC CONVENTIONS
+# ==================================================================
+
+mape_k_phases:
+  - id: monitor
+    brief: "Monitor phase (M)"
+    description: "Ingest observations, detect patterns"
+    performance_tier: hot_path
+
+  - id: analyze
+    brief: "Analyze phase (A)"
+    description: "Generate proposals, validate doctrines"
+    performance_tier: warm_path
+
+  - id: plan
+    brief: "Plan phase (P)"
+    description: "Validate proposals, check invariants"
+    performance_tier: warm_path
+
+  - id: execute
+    brief: "Execute phase (E)"
+    description: "Promote snapshots atomically"
+    performance_tier: hot_path
+
+  - id: knowledge
+    brief: "Knowledge phase (K)"
+    description: "Learn from outcomes, update budgets"
+    performance_tier: warm_path
+
+# ==================================================================
+# HARD INVARIANTS (Q1-Q5) SEMANTIC CONVENTIONS
+# ==================================================================
+
+hard_invariants:
+  - id: q1
+    name: "No Retrocausation"
+    brief: "Time flows forward (DAG structure, no cycles)"
+    validation: "Snapshot chain must be acyclic directed graph"
+    violation_severity: critical
+
+  - id: q2
+    name: "Type Soundness"
+    brief: "Observations conform to ontology (O ⊨ Σ)"
+    validation: "SHACL shape validation"
+    violation_severity: critical
+
+  - id: q3
+    name: "Guard Preservation"
+    brief: "Hot path operations ≤8 ticks (Chatman Constant)"
+    validation: "Step counting, latency measurement"
+    violation_severity: critical
+
+  - id: q4
+    name: "SLO Compliance"
+    brief: "Hot path ≤8 ticks, warm path <100ms"
+    validation: "Latency histogram percentiles"
+    violation_severity: critical
+
+  - id: q5
+    name: "Performance Bounds"
+    brief: "Memory ≤1GB, CPU ≤50%, p99 latency ≤500ms"
+    validation: "Resource usage monitoring"
+    violation_severity: high
+
+# ==================================================================
+# SECTOR-SPECIFIC SEMANTIC CONVENTIONS
+# ==================================================================
+
+sectors:
+  - id: finance
+    brief: "Financial services sector"
+    doctrines:
+      - "Approval chains (SOX compliance)"
+      - "Segregation of duties"
+      - "Audit trail immutability"
+    invariants_extended:
+      - "Balance preservation"
+      - "Double-entry bookkeeping"
+
+  - id: healthcare
+    brief: "Healthcare sector"
+    doctrines:
+      - "HIPAA consent validation"
+      - "Treatment protocol adherence"
+      - "Patient safety thresholds"
+    invariants_extended:
+      - "HIPAA compliance"
+      - "Treatment safety"
+
+  - id: manufacturing
+    brief: "Manufacturing sector"
+    doctrines:
+      - "Quality control gates"
+      - "Equipment certification"
+      - "Predictive maintenance"
+    invariants_extended:
+      - "Quality assurance"
+      - "Equipment safety"
+
+  - id: logistics
+    brief: "Logistics sector"
+    doctrines:
+      - "Route optimization"
+      - "Supply chain visibility"
+      - "Delivery SLAs"
+    invariants_extended:
+      - "Supply chain integrity"
+
+# ==================================================================
+# ERROR CLASSIFICATION SEMANTIC CONVENTIONS
+# ==================================================================
+
+error_categories:
+  - id: invariant_violation
+    severity: critical
+    brief: "Hard invariant (Q1-Q5) violated"
+    action: "Block operation, alert immediately"
+
+  - id: doctrine_violation
+    severity: high
+    brief: "Sector-specific doctrine violated"
+    action: "Depends on enforcement level (mandatory/warning/advisory)"
+
+  - id: guard_violation
+    severity: high
+    brief: "Protected operation attempted"
+    action: "Block operation, require relaxation approval"
+
+  - id: performance_violation
+    severity: medium
+    brief: "Performance budget exceeded"
+    action: "Alert, trigger optimization"
+
+  - id: schema_validation_failure
+    severity: high
+    brief: "Weaver schema validation failed"
+    action: "Feature does not work, block deployment"
+
+# ==================================================================
+# CRYPTOGRAPHIC SIGNATURE SEMANTIC CONVENTIONS
+# ==================================================================
+
+signatures:
+  - id: ed25519
+    algorithm: "Ed25519"
+    key_size_bits: 256
+    signature_size_bytes: 64
+    brief: "Elliptic curve digital signature"
+    use_cases:
+      - "Receipt signing"
+      - "Multi-party approvals"
+      - "Guard relaxation approval"
+
+# ==================================================================
+# RECEIPT OPERATION TYPES
+# ==================================================================
+
+receipt_operations:
+  - id: observation_ingested
+    brief: "Observation appended to store"
+
+  - id: pattern_detected
+    brief: "Pattern detected in observation stream"
+
+  - id: proposal_generated
+    brief: "Change proposal generated"
+
+  - id: validation_executed
+    brief: "Validation pipeline executed"
+
+  - id: snapshot_promoted
+    brief: "Snapshot promoted to production"
+
+  - id: loop_cycle_completed
+    brief: "Full MAPE-K cycle completed"
+
+# ==================================================================
+# WEAVER VALIDATION SEMANTIC CONVENTIONS
+# ==================================================================
+
+weaver_validation:
+  - id: schema_check
+    command: "weaver registry check -r registry/"
+    brief: "Validate schema definition (static)"
+    frequency: "On every schema change, in CI/CD"
+
+  - id: live_check
+    command: "weaver registry live-check --registry registry/"
+    brief: "Validate runtime telemetry (SOURCE OF TRUTH)"
+    frequency: "In CI/CD, daily in production"
+    note: "This is the ONLY source of truth for feature validation"
+
+  - id: baseline_capture
+    brief: "Capture performance baseline for regression detection"
+    frequency: "After major releases, monthly"
+
+# ==================================================================
+# VERSIONING SEMANTIC CONVENTIONS
+# ==================================================================
+
+schema_versioning:
+  format: "semantic versioning (MAJOR.MINOR.PATCH)"
+  deprecation_policy:
+    - "Mark attribute as deprecated in schema"
+    - "Continue emitting for 2 releases"
+    - "Remove after 2 releases"
+  backward_compatibility: "MUST maintain for 2 major versions"
