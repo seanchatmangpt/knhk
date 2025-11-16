@@ -74,6 +74,8 @@ pub mod compensation;
 pub mod compiler;
 pub mod compliance;
 pub mod config;
+/// Distributed consensus protocols (Raft + Byzantine Fault Tolerance)
+pub mod consensus;
 pub mod constants;
 /// Data gateway module for workflow data ingress and egress
 pub mod data;
@@ -83,6 +85,9 @@ pub mod events;
 pub mod execution;
 pub mod executor;
 pub mod ggen;
+#[cfg(any(feature = "gpu-cuda", feature = "gpu-vulkan", feature = "gpu"))]
+/// GPU-accelerated workflow processing with CUDA, Vulkan, and CPU fallback
+pub mod gpu;
 pub mod hooks;
 pub mod innovation;
 #[macro_use]
@@ -93,6 +98,8 @@ pub mod integration;
 #[macro_use]
 pub mod observability;
 pub mod multi_instance;
+/// Neural network-based workflow prediction and optimization
+pub mod neural;
 pub mod parser;
 pub mod patterns;
 pub mod performance;
@@ -108,6 +115,8 @@ pub mod self_validation;
 pub mod services;
 pub mod state;
 pub mod templates;
+/// Advanced real-time telemetry processing with OTEL integration and Weaver validation
+pub mod telemetry;
 pub mod testing;
 pub mod timebase;
 pub mod utils;
@@ -142,6 +151,19 @@ pub use case::{Case, CaseId, CaseState};
 pub use compensation::{
     CompensationEntry, CompensationHandler, CompensationId, CompensationRegistry,
     CompensationScope, CompensationStats,
+};
+pub use consensus::{
+    // Core types
+    ConsensusConfig, ConsensusError, ConsensusMetrics, ConsensusResult, LogIndex, NodeId,
+    SequenceNumber, Term, ViewNumber,
+    // Raft
+    RaftCluster, RaftConfig, RaftNode, RaftRole,
+    // BFT
+    BftCluster, BftConfig, BftProtocol, Decision,
+    // Hybrid
+    HybridConsensus, ThreatLevel, ThreatModel,
+    // Replication
+    ReplicatedStateMachine, Snapshot, StateMachineOp,
 };
 pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
@@ -207,3 +229,13 @@ pub use verification::{
     VerificationConfig, VerificationResult, VerificationStrictness,
 };
 pub use visualization::WorkflowVisualizer;
+
+/// Zero-knowledge proof systems for privacy-preserving workflow verification
+#[cfg(feature = "zkp")]
+pub mod zkp;
+
+#[cfg(feature = "zkp")]
+pub use zkp::{
+    ProofSystem, ZkProver, ZkVerifier, PrivateInputs, PublicInputs,
+    ZkProof, ZkError, ZkResult, ProverConfig, VerifierConfig,
+};

@@ -76,6 +76,33 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 blake3 = { workspace = true }
 
+# Zero-Knowledge Proof Systems
+ark-groth16 = { version = "0.4", optional = true }
+ark-bls12-381 = { version = "0.4", optional = true }
+ark-ff = { version = "0.4", optional = true }
+ark-ec = { version = "0.4", optional = true }
+ark-relations = { version = "0.4", optional = true }
+ark-r1cs-std = { version = "0.4", optional = true }
+ark-std = { version = "0.4", optional = true }
+ark-serialize = { version = "0.4", optional = true }
+ark-crypto-primitives = { version = "0.4", optional = true }
+plonky2 = { version = "0.2", optional = true }
+winterfell = { version = "0.7", optional = true }
+sha3 = { version = "0.10", optional = true }
+rand = { version = "0.8", optional = true }
+rand_chacha = { version = "0.3", optional = true }
+lazy_static = { version = "1.4", optional = true }
+
+# Consensus & cryptography
+ed25519-dalek = { version = "2.0", features = ["serde"] }
+
+# GPU acceleration (optional)
+cudarc = { version = "0.9", optional = true, features = ["driver", "nvrtc"] }
+vulkano = { version = "0.34", optional = true }
+ash = { version = "0.37", optional = true, features = ["linked"] }
+wide = { version = "0.7", optional = true }
+bytemuck = { version = "1.14", optional = true, features = ["derive"] }
+
 # Rate limiting
 governor = "0.6"
 
@@ -92,6 +119,20 @@ metrics-prometheus = "0.6"
 tracing = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+opentelemetry = "0.21"
+opentelemetry-otlp = "0.14"
+opentelemetry-semantic-conventions = "0.13"
+
+# Lock-free data structures for telemetry
+crossbeam = "0.8"
+flume = "0.11"
+
+# Machine Learning (optional)
+candle-core = { version = "0.4", optional = true }
+candle-nn = { version = "0.4", optional = true }
+tract-onnx = { version = "0.21", optional = true }
+ndarray = { version = "0.15", optional = true }
+linfa = { version = "0.7", optional = true }
 
 # Storage (optional)
 sled = { workspace = true, optional = true }
@@ -122,7 +163,34 @@ grpc = [
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 connectors = ["dep:knhk-connectors"]
 testing = ["dep:chicago-tdd-tools"]
-full = ["rdf", "storage", "grpc", "http", "connectors", "testing"]
+neural = [
+  "dep:candle-core",
+  "dep:candle-nn",
+  "dep:tract-onnx",
+  "dep:ndarray",
+  "dep:linfa",
+]
+gpu-cuda = ["dep:cudarc", "dep:bytemuck", "dep:wide"]
+gpu-vulkan = ["dep:vulkano", "dep:ash", "dep:bytemuck", "dep:wide"]
+gpu = ["gpu-cuda", "gpu-vulkan"]
+zkp = [
+  "dep:ark-groth16",
+  "dep:ark-bls12-381",
+  "dep:ark-ff",
+  "dep:ark-ec",
+  "dep:ark-relations",
+  "dep:ark-r1cs-std",
+  "dep:ark-std",
+  "dep:ark-serialize",
+  "dep:ark-crypto-primitives",
+  "dep:plonky2",
+  "dep:winterfell",
+  "dep:sha3",
+  "dep:rand",
+  "dep:rand_chacha",
+  "dep:lazy_static",
+]
+full = ["rdf", "storage", "grpc", "http", "connectors", "testing", "neural", "gpu", "zkp"]
 # sidecar feature removed to avoid circular dependency
 
 [[example]]
@@ -140,6 +208,16 @@ path = "examples/weaver_real_jtbd_validation.rs"
 [[bench]]
 name = "fortune5_performance"
 harness = false
+
+[[bench]]
+name = "gpu_acceleration"
+harness = false
+required-features = ["gpu"]
+
+[[bench]]
+name = "zkp_benchmarks"
+harness = false
+required-features = ["zkp"]
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }

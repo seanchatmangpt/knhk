@@ -1,0 +1,222 @@
+# OpenTelemetry Weaver Schema for Zero-Knowledge Proof Telemetry
+# This schema validates that ZK proof operations emit proper telemetry
+
+schema_url: https://knhk.io/schemas/zkp/1.0.0
+groups:
+  - id: zkp.proof
+    type: span
+    brief: "Zero-knowledge proof generation and verification operations"
+    attributes:
+      - id: zkp.proof.system
+        type: string
+        brief: "The ZK proof system used"
+        requirement_level: required
+        examples: ["groth16", "plonk", "stark"]
+
+      - id: zkp.proof.circuit_id
+        type: string
+        brief: "The circuit identifier"
+        requirement_level: required
+        examples: ["state_transition", "compliance", "policy", "computation"]
+
+      - id: zkp.proof.size_bytes
+        type: int
+        brief: "Size of the generated proof in bytes"
+        requirement_level: required
+
+      - id: zkp.proof.generation_time_ms
+        type: int
+        brief: "Time taken to generate proof in milliseconds"
+        requirement_level: required
+
+      - id: zkp.proof.verification_time_ms
+        type: int
+        brief: "Time taken to verify proof in milliseconds"
+        requirement_level: required
+
+      - id: zkp.proof.security_level
+        type: int
+        brief: "Security level in bits (e.g., 128, 256)"
+        requirement_level: required
+        examples: [128, 256]
+
+      - id: zkp.proof.valid
+        type: boolean
+        brief: "Whether the proof verification succeeded"
+        requirement_level: required
+
+  - id: zkp.circuit
+    type: span
+    brief: "Circuit compilation and constraint generation"
+    attributes:
+      - id: zkp.circuit.id
+        type: string
+        brief: "Circuit identifier"
+        requirement_level: required
+
+      - id: zkp.circuit.num_constraints
+        type: int
+        brief: "Number of constraints in the circuit"
+        requirement_level: recommended
+
+      - id: zkp.circuit.num_variables
+        type: int
+        brief: "Number of variables in the circuit"
+        requirement_level: recommended
+
+  - id: zkp.privacy
+    type: span
+    brief: "Privacy-preserving operations"
+    attributes:
+      - id: zkp.privacy.operation
+        type: string
+        brief: "Privacy operation type"
+        requirement_level: required
+        examples: ["anonymize", "pseudonymize", "differential_privacy", "k_anonymity", "l_diversity"]
+
+      - id: zkp.privacy.epsilon
+        type: double
+        brief: "Differential privacy epsilon budget (if applicable)"
+        requirement_level:
+          conditionally_required: "when operation is differential_privacy"
+
+      - id: zkp.privacy.k_value
+        type: int
+        brief: "K-anonymity parameter (if applicable)"
+        requirement_level:
+          conditionally_required: "when operation is k_anonymity"
+
+  - id: zkp.governance
+    type: span
+    brief: "Governance layer ZK proof operations"
+    attributes:
+      - id: zkp.governance.proof_type
+        type: string
+        brief: "Type of governance proof"
+        requirement_level: required
+        examples: ["delta_sigma_overlay", "policy_lattice", "session_isolation", "counterfactual"]
+
+      - id: zkp.governance.workflow_id
+        type: string
+        brief: "Workflow ID for governance proof"
+        requirement_level: required
+
+      - id: zkp.governance.session_id
+        type: string
+        brief: "Session ID (if applicable)"
+        requirement_level:
+          conditionally_required: "when proof_type is session_isolation"
+
+metrics:
+  - metric_name: zkp.proof.generation.duration
+    instrument: histogram
+    unit: ms
+    brief: "Histogram of proof generation times"
+    attributes:
+      - zkp.proof.system
+      - zkp.proof.circuit_id
+
+  - metric_name: zkp.proof.verification.duration
+    instrument: histogram
+    unit: ms
+    brief: "Histogram of proof verification times"
+    attributes:
+      - zkp.proof.system
+      - zkp.proof.circuit_id
+
+  - metric_name: zkp.proof.size
+    instrument: histogram
+    unit: bytes
+    brief: "Histogram of proof sizes"
+    attributes:
+      - zkp.proof.system
+
+  - metric_name: zkp.proof.success
+    instrument: counter
+    unit: "1"
+    brief: "Count of successful proof operations"
+    attributes:
+      - zkp.proof.system
+      - zkp.proof.circuit_id
+      - zkp.proof.operation # "generate" or "verify"
+
+  - metric_name: zkp.proof.failure
+    instrument: counter
+    unit: "1"
+    brief: "Count of failed proof operations"
+    attributes:
+      - zkp.proof.system
+      - zkp.proof.circuit_id
+      - zkp.proof.operation
+      - zkp.error.type
+
+  - metric_name: zkp.privacy.budget.remaining
+    instrument: gauge
+    unit: "1"
+    brief: "Remaining privacy budget (epsilon)"
+    attributes:
+      - zkp.workflow_id
+
+spans:
+  - span_name: zkp.proof.generate
+    brief: "Generate a zero-knowledge proof"
+    attributes:
+      - zkp.proof.system
+      - zkp.proof.circuit_id
+      - zkp.proof.size_bytes
+      - zkp.proof.generation_time_ms
+      - zkp.proof.security_level
+    events:
+      - event_name: zkp.proof.generation.started
+        brief: "Proof generation started"
+      - event_name: zkp.proof.generation.completed
+        brief: "Proof generation completed successfully"
+      - event_name: zkp.proof.generation.failed
+        brief: "Proof generation failed"
+        attributes:
+          - zkp.error.message
+
+  - span_name: zkp.proof.verify
+    brief: "Verify a zero-knowledge proof"
+    attributes:
+      - zkp.proof.system
+      - zkp.proof.circuit_id
+      - zkp.proof.verification_time_ms
+      - zkp.proof.valid
+    events:
+      - event_name: zkp.proof.verification.started
+        brief: "Proof verification started"
+      - event_name: zkp.proof.verification.completed
+        brief: "Proof verification completed"
+      - event_name: zkp.proof.verification.invalid
+        brief: "Proof verification failed (invalid proof)"
+
+  - span_name: zkp.governance.prove
+    brief: "Generate governance proof"
+    attributes:
+      - zkp.governance.proof_type
+      - zkp.governance.workflow_id
+      - zkp.governance.session_id
+      - zkp.proof.system
+      - zkp.proof.generation_time_ms
+
+  - span_name: zkp.governance.verify
+    brief: "Verify governance proof"
+    attributes:
+      - zkp.governance.proof_type
+      - zkp.governance.workflow_id
+      - zkp.proof.valid
+      - zkp.proof.verification_time_ms
+
+  - span_name: zkp.privacy.anonymize
+    brief: "Anonymize sensitive data"
+    attributes:
+      - zkp.privacy.operation
+      - zkp.data.size_bytes
+
+  - span_name: zkp.privacy.differential_privacy
+    brief: "Apply differential privacy mechanism"
+    attributes:
+      - zkp.privacy.operation
+      - zkp.privacy.epsilon
+      - zkp.privacy.sensitivity

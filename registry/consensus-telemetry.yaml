@@ -1,0 +1,395 @@
+# OpenTelemetry Weaver Schema for Consensus Telemetry
+# This schema defines the telemetry emitted by KNHK's distributed consensus protocols
+
+groups:
+  - id: consensus
+    type: span
+    brief: "Distributed consensus operations for multi-datacenter KNHK deployments"
+    prefix: consensus
+    attributes:
+      - id: protocol
+        type: string
+        brief: "Consensus protocol in use (raft|pbft|hotstuff|hybrid)"
+        requirement_level: required
+        examples: ["raft", "hotstuff", "hybrid"]
+
+      - id: node_id
+        type: int
+        brief: "Unique identifier for this consensus node"
+        requirement_level: required
+        examples: [1, 2, 3]
+
+      - id: operation
+        type: string
+        brief: "Consensus operation type"
+        requirement_level: required
+        examples: ["propose", "commit", "snapshot", "replicate"]
+
+      - id: term
+        type: int
+        brief: "Raft term number (monotonically increasing)"
+        requirement_level:
+          conditionally_required: "if protocol is raft"
+        examples: [1, 5, 42]
+
+      - id: log_index
+        type: int
+        brief: "Log index for this entry"
+        requirement_level: required
+        examples: [1, 100, 1000]
+
+      - id: view
+        type: int
+        brief: "BFT view number"
+        requirement_level:
+          conditionally_required: "if protocol is pbft or hotstuff"
+        examples: [0, 1, 2]
+
+      - id: success
+        type: boolean
+        brief: "Whether the consensus operation succeeded"
+        requirement_level: required
+        examples: [true, false]
+
+      - id: latency_ms
+        type: double
+        brief: "Consensus operation latency in milliseconds"
+        requirement_level: required
+        examples: [5.2, 8.7, 35.4]
+
+      - id: quorum_size
+        type: int
+        brief: "Number of nodes required for quorum"
+        requirement_level: required
+        examples: [3, 5, 7]
+
+      - id: votes_received
+        type: int
+        brief: "Number of votes/signatures received"
+        requirement_level:
+          conditionally_required: "if operation is election or bft consensus"
+        examples: [2, 3, 5]
+
+      - id: threat_level
+        type: string
+        brief: "Current threat level (none|low|medium|high|critical)"
+        requirement_level:
+          conditionally_required: "if protocol is hybrid"
+        examples: ["none", "low", "critical"]
+
+      - id: byzantine_detected
+        type: boolean
+        brief: "Whether Byzantine behavior was detected"
+        requirement_level: optional
+        examples: [false, true]
+
+  - id: consensus.raft
+    type: span
+    brief: "Raft consensus operations"
+    prefix: consensus.raft
+    attributes:
+      - id: role
+        type: string
+        brief: "Raft node role (follower|candidate|leader)"
+        requirement_level: required
+        examples: ["follower", "leader", "candidate"]
+
+      - id: leader_id
+        type: int
+        brief: "Current leader node ID"
+        requirement_level: optional
+        examples: [1, 2, 3]
+
+      - id: election_timeout_ms
+        type: int
+        brief: "Election timeout in milliseconds"
+        requirement_level: required
+        examples: [150, 200, 300]
+
+      - id: heartbeat_interval_ms
+        type: int
+        brief: "Heartbeat interval in milliseconds"
+        requirement_level: required
+        examples: [50, 100]
+
+      - id: log_entries_count
+        type: int
+        brief: "Number of log entries in this operation"
+        requirement_level: optional
+        examples: [1, 10, 100]
+
+      - id: snapshot_index
+        type: int
+        brief: "Last included index in snapshot"
+        requirement_level:
+          conditionally_required: "if operation is snapshot"
+        examples: [1000, 5000, 10000]
+
+  - id: consensus.bft
+    type: span
+    brief: "Byzantine Fault Tolerance operations"
+    prefix: consensus.bft
+    attributes:
+      - id: protocol_variant
+        type: string
+        brief: "BFT protocol variant (pbft|hotstuff)"
+        requirement_level: required
+        examples: ["pbft", "hotstuff"]
+
+      - id: phase
+        type: string
+        brief: "BFT consensus phase"
+        requirement_level: required
+        examples: ["pre-prepare", "prepare", "commit", "decide"]
+
+      - id: sequence_number
+        type: int
+        brief: "BFT sequence number"
+        requirement_level: required
+        examples: [1, 100, 1000]
+
+      - id: byzantine_threshold
+        type: int
+        brief: "Byzantine threshold (f in 3f+1)"
+        requirement_level: required
+        examples: [1, 2, 3]
+
+      - id: signature_valid
+        type: boolean
+        brief: "Whether signature verification succeeded"
+        requirement_level: optional
+        examples: [true, false]
+
+      - id: quorum_achieved
+        type: boolean
+        brief: "Whether quorum was achieved"
+        requirement_level: required
+        examples: [true, false]
+
+  - id: consensus.hybrid
+    type: span
+    brief: "Hybrid consensus protocol operations"
+    prefix: consensus.hybrid
+    attributes:
+      - id: active_protocol
+        type: string
+        brief: "Currently active protocol (raft|bft)"
+        requirement_level: required
+        examples: ["raft", "bft"]
+
+      - id: protocol_switch
+        type: boolean
+        brief: "Whether protocol switched during this operation"
+        requirement_level: optional
+        examples: [false, true]
+
+      - id: threat_incidents
+        type: int
+        brief: "Number of threat incidents detected"
+        requirement_level: optional
+        examples: [0, 1, 5]
+
+      - id: signature_failures
+        type: int
+        brief: "Number of signature verification failures"
+        requirement_level: optional
+        examples: [0, 2]
+
+      - id: tampering_detected
+        type: boolean
+        brief: "Whether message tampering was detected"
+        requirement_level: optional
+        examples: [false, true]
+
+  - id: consensus.replication
+    type: span
+    brief: "State machine replication operations"
+    prefix: consensus.replication
+    attributes:
+      - id: operation_type
+        type: string
+        brief: "State machine operation type"
+        requirement_level: required
+        examples: ["create_case", "update_state", "apply_policy", "deploy_overlay"]
+
+      - id: last_applied_index
+        type: int
+        brief: "Last applied log index"
+        requirement_level: required
+        examples: [1, 100, 1000]
+
+      - id: snapshot_created
+        type: boolean
+        brief: "Whether a snapshot was created"
+        requirement_level: optional
+        examples: [false, true]
+
+      - id: snapshot_size_bytes
+        type: int
+        brief: "Size of snapshot in bytes"
+        requirement_level:
+          conditionally_required: "if snapshot_created is true"
+        examples: [1024, 10240, 102400]
+
+      - id: state_machine_latency_ms
+        type: double
+        brief: "State machine operation latency in milliseconds"
+        requirement_level: required
+        examples: [0.5, 1.2, 5.0]
+
+spans:
+  - id: consensus.propose
+    brief: "Propose a new value for consensus"
+    attributes:
+      - ref: consensus.protocol
+      - ref: consensus.node_id
+      - ref: consensus.operation
+      - ref: consensus.log_index
+      - ref: consensus.success
+      - ref: consensus.latency_ms
+    events:
+      - proposal_submitted
+      - quorum_reached
+      - committed
+
+  - id: consensus.raft.election
+    brief: "Raft leader election"
+    attributes:
+      - ref: consensus.raft.role
+      - ref: consensus.raft.election_timeout_ms
+      - ref: consensus.term
+      - ref: consensus.votes_received
+      - ref: consensus.quorum_size
+      - ref: consensus.success
+    events:
+      - election_started
+      - vote_requested
+      - vote_granted
+      - leader_elected
+
+  - id: consensus.raft.replicate
+    brief: "Raft log replication"
+    attributes:
+      - ref: consensus.raft.role
+      - ref: consensus.raft.leader_id
+      - ref: consensus.term
+      - ref: consensus.log_index
+      - ref: consensus.raft.log_entries_count
+      - ref: consensus.success
+    events:
+      - entries_appended
+      - replicated_to_follower
+      - entries_committed
+
+  - id: consensus.raft.snapshot
+    brief: "Raft log compaction via snapshot"
+    attributes:
+      - ref: consensus.raft.snapshot_index
+      - ref: consensus.term
+      - ref: consensus.success
+      - ref: consensus.latency_ms
+    events:
+      - snapshot_created
+      - snapshot_installed
+
+  - id: consensus.bft.consensus
+    brief: "BFT consensus protocol"
+    attributes:
+      - ref: consensus.bft.protocol_variant
+      - ref: consensus.bft.phase
+      - ref: consensus.view
+      - ref: consensus.bft.sequence_number
+      - ref: consensus.bft.byzantine_threshold
+      - ref: consensus.votes_received
+      - ref: consensus.bft.quorum_achieved
+      - ref: consensus.success
+      - ref: consensus.latency_ms
+    events:
+      - pre_prepare_sent
+      - prepare_broadcast
+      - commit_broadcast
+      - decision_reached
+
+  - id: consensus.hybrid.threat_detection
+    brief: "Hybrid consensus threat detection"
+    attributes:
+      - ref: consensus.hybrid.active_protocol
+      - ref: consensus.threat_level
+      - ref: consensus.hybrid.threat_incidents
+      - ref: consensus.hybrid.signature_failures
+      - ref: consensus.byzantine_detected
+      - ref: consensus.hybrid.protocol_switch
+    events:
+      - threat_detected
+      - threat_escalated
+      - protocol_switched
+
+  - id: consensus.replication.apply
+    brief: "Apply operation to replicated state machine"
+    attributes:
+      - ref: consensus.replication.operation_type
+      - ref: consensus.log_index
+      - ref: consensus.replication.last_applied_index
+      - ref: consensus.replication.state_machine_latency_ms
+      - ref: consensus.success
+    events:
+      - operation_deserialized
+      - state_updated
+      - operation_applied
+
+  - id: consensus.replication.snapshot
+    brief: "Create or restore state machine snapshot"
+    attributes:
+      - ref: consensus.replication.snapshot_created
+      - ref: consensus.replication.snapshot_size_bytes
+      - ref: consensus.replication.last_applied_index
+      - ref: consensus.term
+      - ref: consensus.success
+    events:
+      - snapshot_started
+      - state_serialized
+      - snapshot_completed
+
+metrics:
+  - id: consensus.proposals.total
+    brief: "Total number of consensus proposals"
+    instrument: counter
+    unit: "{proposal}"
+    attributes:
+      - ref: consensus.protocol
+      - ref: consensus.success
+
+  - id: consensus.latency
+    brief: "Consensus operation latency"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: consensus.protocol
+      - ref: consensus.operation
+
+  - id: consensus.throughput
+    brief: "Consensus throughput (operations per second)"
+    instrument: gauge
+    unit: "{ops}/s"
+    attributes:
+      - ref: consensus.protocol
+
+  - id: consensus.raft.elections.total
+    brief: "Total number of Raft leader elections"
+    instrument: counter
+    unit: "{election}"
+
+  - id: consensus.bft.byzantine_failures.total
+    brief: "Total number of Byzantine failures detected"
+    instrument: counter
+    unit: "{failure}"
+    attributes:
+      - ref: consensus.bft.protocol_variant
+
+  - id: consensus.hybrid.protocol_switches.total
+    brief: "Total number of protocol switches"
+    instrument: counter
+    unit: "{switch}"
+    attributes:
+      - ref: consensus.hybrid.active_protocol
+      - ref: consensus.threat_level
