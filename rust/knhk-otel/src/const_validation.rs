@@ -20,40 +20,41 @@ use crate::{SpanId, TraceId};
 /// ```rust
 /// const SPAN_ID: u64 = generate_span_id_const(12345);
 /// ```
+/// Helper const function to process a single byte in FNV-1a hash
+/// This is a zero-cost abstraction that eliminates warnings while maintaining const-safety
+#[inline(always)]
+const fn fnv1a_process_byte(hash: u64, byte: u64) -> u64 {
+    (hash ^ byte).wrapping_mul(1099511628211)
+}
+
 pub const fn generate_span_id_const(seed: u64) -> u64 {
     // FNV-1a hash for compile-time computation
     const FNV_OFFSET: u64 = 14695981039346656037;
-    const FNV_PRIME: u64 = 1099511628211;
 
-    let mut hash = FNV_OFFSET;
-    let mut value = seed;
-
-    // Process 8 bytes (64-bit value) - manually unroll loop for const fn
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-    value >>= 8;
-    hash ^= (value & 0xFF);
-    hash = hash.wrapping_mul(FNV_PRIME);
-
-    hash
+    // Process 8 bytes (64-bit value) using helper function
+    // This approach is const-safe and produces zero-cost abstraction
+    fnv1a_process_byte(
+        fnv1a_process_byte(
+            fnv1a_process_byte(
+                fnv1a_process_byte(
+                    fnv1a_process_byte(
+                        fnv1a_process_byte(
+                            fnv1a_process_byte(
+                                fnv1a_process_byte(FNV_OFFSET, seed & 0xFF),
+                                (seed >> 8) & 0xFF
+                            ),
+                            (seed >> 16) & 0xFF
+                        ),
+                        (seed >> 24) & 0xFF
+                    ),
+                    (seed >> 32) & 0xFF
+                ),
+                (seed >> 40) & 0xFF
+            ),
+            (seed >> 48) & 0xFF
+        ),
+        (seed >> 56) & 0xFF
+    )
 }
 
 /// Compile-time trace ID generation
@@ -65,67 +66,68 @@ pub const fn generate_span_id_const(seed: u64) -> u64 {
 ///
 /// # Returns
 /// * Deterministic trace ID (128-bit) computed at compile time
+///
+/// # Helper Functions
+///
+/// Helper const function to process a single byte in FNV-1a hash (128-bit).
+/// This is a zero-cost abstraction that eliminates warnings while maintaining const-safety.
+#[inline(always)]
+const fn fnv1a_process_byte_128(hash: u128, byte: u128) -> u128 {
+    (hash ^ byte).wrapping_mul(1099511628211)
+}
+
 pub const fn generate_trace_id_const(seed: u128) -> u128 {
     // FNV-1a hash for compile-time computation (128-bit)
     const FNV_OFFSET_128: u128 = 14695981039346656037;
-    const FNV_PRIME_128: u128 = 1099511628211;
 
-    let mut hash = FNV_OFFSET_128;
-    let mut value = seed;
-
-    // Process 16 bytes (128-bit value) - manually unroll loop for const fn
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-    value >>= 8;
-    hash ^= (value & 0xFF) as u128;
-    hash = hash.wrapping_mul(FNV_PRIME_128);
-
-    hash
+    // Process 16 bytes (128-bit value) using helper function
+    // This approach is const-safe and produces zero-cost abstraction
+    fnv1a_process_byte_128(
+        fnv1a_process_byte_128(
+            fnv1a_process_byte_128(
+                fnv1a_process_byte_128(
+                    fnv1a_process_byte_128(
+                        fnv1a_process_byte_128(
+                            fnv1a_process_byte_128(
+                                fnv1a_process_byte_128(
+                                    fnv1a_process_byte_128(
+                                        fnv1a_process_byte_128(
+                                            fnv1a_process_byte_128(
+                                                fnv1a_process_byte_128(
+                                                    fnv1a_process_byte_128(
+                                                        fnv1a_process_byte_128(
+                                                            fnv1a_process_byte_128(
+                                                                fnv1a_process_byte_128(FNV_OFFSET_128, seed & 0xFF),
+                                                                (seed >> 8) & 0xFF
+                                                            ),
+                                                            (seed >> 16) & 0xFF
+                                                        ),
+                                                        (seed >> 24) & 0xFF
+                                                    ),
+                                                    (seed >> 32) & 0xFF
+                                                ),
+                                                (seed >> 40) & 0xFF
+                                            ),
+                                            (seed >> 48) & 0xFF
+                                        ),
+                                        (seed >> 56) & 0xFF
+                                    ),
+                                    (seed >> 64) & 0xFF
+                                ),
+                                (seed >> 72) & 0xFF
+                            ),
+                            (seed >> 80) & 0xFF
+                        ),
+                        (seed >> 88) & 0xFF
+                    ),
+                    (seed >> 96) & 0xFF
+                ),
+                (seed >> 104) & 0xFF
+            ),
+            (seed >> 112) & 0xFF
+        ),
+        (seed >> 120) & 0xFF
+    )
 }
 
 /// Compile-time validation that MAX_SPANS ≤ 8

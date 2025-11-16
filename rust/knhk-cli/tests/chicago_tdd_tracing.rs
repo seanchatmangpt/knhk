@@ -174,6 +174,24 @@ fn test_init_tracing_multiple_times() {
     let result2 = tracing::init_tracing();
 
     // Assert: Both should return Results (may fail if subscriber already initialized)
-    assert!(result1.is_ok() || result1.is_err());
-    assert!(result2.is_ok() || result2.is_err());
+    // First call should succeed or fail with meaningful error
+    match result1 {
+        Ok(_) => {
+            // First initialization succeeded
+        }
+        Err(e) => {
+            // First initialization failed (subscriber already set)
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
+    // Second call should fail with "already set" error since first call may have succeeded
+    match result2 {
+        Ok(_) => {
+            // Second initialization succeeded (unlikely if first succeeded)
+        }
+        Err(e) => {
+            // Second initialization failed (expected - subscriber already set)
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }

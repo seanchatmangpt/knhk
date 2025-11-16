@@ -4,7 +4,6 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use which::which;
 
 pub fn compile_latex(
     tex_path: &Path,
@@ -102,7 +101,7 @@ fn compile_with_pdflatex(
     let original_dir = std::env::current_dir()?;
     let tex_in_output = output_dir.join(tex_path.file_name().ok_or("LaTeX file has no filename")?);
 
-    if tex_path != &tex_in_output {
+    if tex_path != tex_in_output {
         std::fs::copy(tex_path, &tex_in_output)?;
     }
 
@@ -149,7 +148,7 @@ fn compile_with_xelatex(
     let original_dir = std::env::current_dir()?;
     let tex_in_output = output_dir.join(tex_path.file_name().ok_or("LaTeX file has no filename")?);
 
-    if tex_path != &tex_in_output {
+    if tex_path != tex_in_output {
         std::fs::copy(tex_path, &tex_in_output)?;
     }
 

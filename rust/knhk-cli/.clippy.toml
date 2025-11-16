@@ -9,42 +9,11 @@
 # This is acceptable for receipt tracking and other future features
 # Set via #[allow(dead_code)] on specific items
 
-# Performance lints (important for hot path)
-# These are critical for performance-sensitive code
-[performance]
-# Warn about unnecessary clones
-unnecessary-clone = "warn"
-# Warn about inefficient string operations
-inefficient-string-operation = "warn"
-# Warn about large enum variants
-large-enum-variant = "warn"
+# Complexity threshold for cognitive complexity lint
+cognitive-complexity-threshold = 25
 
-# Correctness lints (critical for correctness)
-[correctness]
-# Warn about potential panics
-panic = "warn"
-# Warn about incorrect implementations
-incorrect-impl = "warn"
-# Warn about integer arithmetic issues
-integer-arithmetic = "warn"
-
-# Style lints (code quality)
-[style]
-# Warn about unnecessary parentheses
-unnecessary-parens = "warn"
-# Warn about unnecessary casts
-unnecessary-cast = "warn"
-# Warn about redundant closures
-redundant-closure = "warn"
-
-# Complexity lints (code maintainability)
-[complexity]
-# Warn about overly complex functions
-cognitive-complexity = "warn"
-# Warn about too many parameters
-too-many-arguments = "warn"
-# Warn about too many lines
-too-many-lines = "warn"
+# Maximum number of parameters for too-many-arguments lint
+max-fn-params-bools = 3
 
 
 

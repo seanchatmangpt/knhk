@@ -84,8 +84,16 @@ fn test_otlp_exporter_export_spans_multiple() {
         status: SpanStatus::Ok,
     };
     let result = exporter.export_spans(&[span1, span2]);
-    // May fail if collector not running, but should not panic
-    assert!(result.is_ok() || result.is_err());
+    // Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - spans exported to collector
+        }
+        Err(e) => {
+            // Error case - collector not running or network error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 #[test]
@@ -120,8 +128,16 @@ fn test_otlp_exporter_export_spans_with_parent() {
         status: SpanStatus::Ok,
     };
     let result = exporter.export_spans(&[parent_span, child_span]);
-    // May fail if collector not running, but should not panic
-    assert!(result.is_ok() || result.is_err());
+    // Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - spans exported to collector
+        }
+        Err(e) => {
+            // Error case - collector not running or network error, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 #[test]

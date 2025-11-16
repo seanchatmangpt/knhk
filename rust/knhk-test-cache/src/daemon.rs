@@ -130,7 +130,7 @@ impl Daemon {
 
         // Start file watcher
         let rust_dir = self.project_root.join("rust");
-        let mut watcher = FileWatcher::new(rust_dir)?;
+        let watcher = FileWatcher::new(rust_dir)?;
 
         let (event_tx, mut event_rx) = mpsc::unbounded_channel();
 

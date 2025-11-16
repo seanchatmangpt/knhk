@@ -106,7 +106,7 @@ fn compile_with_pdflatex(
             .file_name()
             .ok_or("Invalid tex file path: no file name")?,
     );
-    if tex_path != &tex_in_output {
+    if tex_path != tex_in_output {
         std::fs::copy(tex_path, &tex_in_output)?;
     }
 
@@ -162,7 +162,7 @@ fn compile_with_xelatex(
             .file_name()
             .ok_or("Invalid tex file path: no file name")?,
     );
-    if tex_path != &tex_in_output {
+    if tex_path != tex_in_output {
         std::fs::copy(tex_path, &tex_in_output)?;
     }
 

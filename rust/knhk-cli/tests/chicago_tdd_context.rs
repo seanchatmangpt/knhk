@@ -81,8 +81,16 @@ fn test_context_use_returns_result() {
     // Act: Use context
     let result = context::use_context(id.clone());
 
-    // Assert: Returns Result (may fail if context doesn't exist, but should not panic)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - context switched successfully
+        }
+        Err(e) => {
+            // Error case - context doesn't exist or switch failed, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: context::create then use

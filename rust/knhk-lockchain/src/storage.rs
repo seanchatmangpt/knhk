@@ -273,7 +273,17 @@ impl LockchainStorage {
     }
 }
 
-// LockchainStorage is now Sync because git_repo is wrapped in Mutex
+// SAFETY: LockchainStorage is safe to implement Sync because:
+// 1. sled::Db already implements Sync (thread-safe database)
+// 2. git_repo is wrapped in Option<Mutex<Repository>>:
+//    - Mutex provides interior mutability with synchronization
+//    - Mutex<T> is Sync when T: Send (git2::Repository is Send but not Sync)
+//    - All access to Repository goes through Mutex::lock(), preventing data races
+// 3. git_path is Option<String>, which is Sync
+// 4. No other mutable state exists that could cause data races
+//
+// The Mutex wrapper ensures that only one thread can access the git2::Repository
+// at a time, making the entire struct safe to share across threads.
 unsafe impl Sync for LockchainStorage {}
 
 impl std::fmt::Debug for LockchainStorage {

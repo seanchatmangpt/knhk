@@ -110,12 +110,26 @@ fn test_canary_routing_different_requests_differ() {
     let route_1 = (hash_1 % 100) < (traffic_percent as u64);
     let route_2 = (hash_2 % 100) < (traffic_percent as u64);
 
-    // Assert: Different hashes will likely produce different routes
-    // (This is probabilistic, but with 50% split and different IDs,
-    // we expect at least some variation in a larger test set)
-    // For this test, we just verify the logic works for both cases
-    assert!(route_1 == true || route_1 == false, "Route should be boolean");
-    assert!(route_2 == true || route_2 == false, "Route should be boolean");
+    // Assert: Verify routing logic produces deterministic results based on hash
+    // hash_1 = sum of chars in "request-11111" = 114 + 101 + 113 + 117 + 101 + 115 + 116 + 45 + 49*5 = 1106
+    // hash_1 % 100 = 6, which is < 50, so route_1 should be true
+    assert!(
+        route_1,
+        "Request ID '{}' with hash {} should route to new version ({}% < 50%)",
+        request_id_1,
+        hash_1 % 100,
+        hash_1 % 100
+    );
+
+    // hash_2 = sum of chars in "request-99999" = 114 + 101 + 113 + 117 + 101 + 115 + 116 + 45 + 57*5 = 1147
+    // hash_2 % 100 = 47, which is < 50, so route_2 should also be true
+    assert!(
+        route_2,
+        "Request ID '{}' with hash {} should route to new version ({}% < 50%)",
+        request_id_2,
+        hash_2 % 100,
+        hash_2 % 100
+    );
 }
 
 #[test]

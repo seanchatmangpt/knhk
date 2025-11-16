@@ -208,8 +208,8 @@ chicago_test!(test_compiler_binaries_exist, {
     let exists = compiler.binaries_exist();
 
     // Assert
-    // Binary existence is a heuristic - just verify method exists
-    assert!(exists == false || exists == true, "Should return boolean");
+    // For a fresh temp directory without compiled binaries, they should not exist
+    assert_eq!(exists, false, "Binaries should not exist in fresh temp directory");
 });
 
 /// Test daemon status when not running

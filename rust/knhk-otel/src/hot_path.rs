@@ -54,6 +54,12 @@ pub struct SpanBuffer<const MAX_SPANS: usize> {
     len: usize,
 }
 
+impl<const MAX_SPANS: usize> Default for SpanBuffer<MAX_SPANS> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const MAX_SPANS: usize> SpanBuffer<MAX_SPANS> {
     /// Create a new span buffer
     ///
@@ -171,6 +177,11 @@ impl<const MAX_SPANS: usize> SpanBuffer<MAX_SPANS> {
         self.len
     }
 
+    /// Check if buffer is empty
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
     /// Check if buffer is full
     pub fn is_full(&self) -> bool {
         self.len >= MAX_SPANS
@@ -282,12 +293,12 @@ impl PinnedSpanContext {
     }
 
     /// Get reference to span context
-    pub fn as_ref(&self) -> &SpanContext {
+    pub fn get_context(&self) -> &SpanContext {
         &self.context
     }
 
     /// Get mutable reference to span context
-    pub fn as_mut(&mut self) -> Pin<&mut SpanContext> {
+    pub fn get_context_mut(&mut self) -> Pin<&mut SpanContext> {
         self.context.as_mut()
     }
 }
@@ -357,8 +368,8 @@ mod tests {
         };
 
         let pinned = PinnedSpanContext::new(context);
-        assert_eq!(pinned.as_ref().trace_id.0, 12345);
-        assert_eq!(pinned.as_ref().span_id.0, 67890);
+        assert_eq!(pinned.get_context().trace_id.0, 12345);
+        assert_eq!(pinned.get_context().span_id.0, 67890);
     }
 
     #[test]

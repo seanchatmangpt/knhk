@@ -167,24 +167,24 @@ fn test_beat_admission_handles_ring_buffer_full() {
     }
 }
 
-/// Test: BeatAdmission should_throttle returns boolean
+/// Test: BeatAdmission should_throttle returns false when under capacity
 #[test]
-fn test_beat_admission_should_throttle_returns_boolean() {
-    // Arrange: Create admission manager
+fn test_beat_admission_should_not_throttle_under_capacity() {
+    // Arrange: Create admission manager with capacity 16
     let scheduler = Arc::new(Mutex::new(
         BeatScheduler::new(4, 1, 16).expect("Failed to create beat scheduler"),
     ));
     let admission = BeatAdmission::new(scheduler, 0);
 
-    // Act: Check throttle status
+    // Act: Check throttle status when no requests have been made
     let should_throttle = admission
         .should_throttle(None)
         .expect("Failed to check throttle status");
 
-    // Assert: Returns boolean
-    assert!(
-        should_throttle == true || should_throttle == false,
-        "Should return boolean"
+    // Assert: Should not throttle when under capacity
+    assert_eq!(
+        should_throttle, false,
+        "Should not throttle when admission queue is under capacity"
     );
 }
 

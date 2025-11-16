@@ -248,6 +248,12 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
 }
 
 /// Generic fallback for non-ARM platforms
+///
+/// # Safety
+/// This function is unsafe because it performs low-level operations and SIMD emulation.
+/// Callers must ensure:
+/// - `json` slice is valid and properly aligned
+/// - `index` has sufficient capacity for structural characters found in `json`
 #[cfg(not(target_arch = "aarch64"))]
 pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) {
     index.structural_chars.clear();

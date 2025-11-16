@@ -61,8 +61,16 @@ fn test_epoch_run_returns_result() {
     // Act: Run epoch
     let result = epoch::run(id.clone());
 
-    // Assert: Returns Result (may fail if epoch doesn't exist, but should not panic)
-    assert!(result.is_ok() || result.is_err());
+    // Assert: Verify actual behavior - either succeeds or fails with meaningful error
+    match result {
+        Ok(_) => {
+            // Success case - epoch ran successfully
+        }
+        Err(e) => {
+            // Error case - epoch doesn't exist or run failed, verify error message
+            assert!(!e.is_empty(), "Error message should not be empty");
+        }
+    }
 }
 
 /// Test: epoch::create then run
