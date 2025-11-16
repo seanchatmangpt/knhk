@@ -1,0 +1,223 @@
+# OpenTelemetry Weaver Schema for Compile-Time Workflow Validation
+#
+# This schema defines telemetry for compile-time workflow validation,
+# enabling runtime verification that compile-time checks were performed.
+
+groups:
+  - id: knhk.workflow.compile_time
+    prefix: knhk.workflow.compile_time
+    type: span
+    brief: Compile-time workflow validation telemetry
+    spans:
+      - id: validation
+        span_name: knhk.workflow.compile_time.validation
+        brief: Records that compile-time validation was performed
+        attributes:
+          - id: workflow.name
+            type: string
+            brief: Name of the validated workflow
+            requirement_level: required
+            examples: ['UserRegistration', 'OrderProcessing']
+
+          - id: workflow.state_count
+            type: int
+            brief: Number of states in the workflow
+            requirement_level: required
+            examples: [5, 10, 20]
+
+          - id: workflow.transition_count
+            type: int
+            brief: Number of transitions in the workflow
+            requirement_level: required
+            examples: [6, 15, 30]
+
+          - id: workflow.complexity
+            type: int
+            brief: Cyclomatic complexity (calculated at compile time)
+            requirement_level: required
+            examples: [1, 5, 10]
+
+          - id: workflow.has_deadlock
+            type: boolean
+            brief: Whether workflow contains deadlock cycles
+            requirement_level: required
+            examples: [false]
+            note: Should always be false (deadlocks caught at compile time)
+
+          - id: workflow.is_simple
+            type: boolean
+            brief: Whether workflow is classified as simple
+            requirement_level: optional
+            examples: [true, false]
+
+          - id: workflow.max_parallelism
+            type: int
+            brief: Maximum number of parallel branches
+            requirement_level: optional
+            examples: [1, 2, 10]
+
+          - id: workflow.estimated_ticks
+            type: int
+            brief: Estimated execution ticks (calculated at compile time)
+            requirement_level: optional
+            examples: [8, 16, 32]
+            note: Should meet Chatman Constant (≤8 ticks for hot path)
+
+          - id: validation.patterns_used
+            type: string[]
+            brief: YAWL patterns declared in workflow
+            requirement_level: required
+            examples: [['Sequence', 'ExclusiveChoice'], ['ParallelSplit', 'Synchronization']]
+
+          - id: validation.patterns_detected
+            type: string[]
+            brief: YAWL patterns detected in workflow structure
+            requirement_level: required
+            examples: [['Sequence', 'ExclusiveChoice'], ['ParallelSplit', 'Synchronization']]
+
+          - id: validation.errors
+            type: string[]
+            brief: Compile-time validation errors (should be empty)
+            requirement_level: required
+            examples: [[]]
+            note: Non-empty array indicates validation bypass or runtime-only validation
+
+          - id: validation.compiler_version
+            type: string
+            brief: Rust compiler version used for validation
+            requirement_level: optional
+            examples: ['1.75.0', '1.76.0']
+
+      - id: state_transition
+        span_name: knhk.workflow.compile_time.state_transition
+        brief: Type-safe state transition execution
+        attributes:
+          - id: workflow.id
+            type: string
+            brief: Workflow instance ID
+            requirement_level: required
+            examples: ['wf-123', 'order-456']
+
+          - id: transition.from_state
+            type: string
+            brief: Source state type name
+            requirement_level: required
+            examples: ['Initial', 'EmailValidated', 'Running']
+
+          - id: transition.to_state
+            type: string
+            brief: Target state type name
+            requirement_level: required
+            examples: ['EmailValidated', 'Complete', 'Failed']
+
+          - id: transition.is_valid
+            type: boolean
+            brief: Whether transition is valid (compile-time guaranteed)
+            requirement_level: required
+            examples: [true]
+            note: Should always be true (invalid transitions caught at compile time)
+
+          - id: state.is_terminal
+            type: boolean
+            brief: Whether target state is terminal
+            requirement_level: required
+            examples: [true, false]
+
+          - id: state.is_initial
+            type: boolean
+            brief: Whether source state is initial
+            requirement_level: required
+            examples: [true, false]
+
+      - id: const_evaluation
+        span_name: knhk.workflow.compile_time.const_evaluation
+        brief: Const evaluation metrics
+        attributes:
+          - id: evaluation.metric_name
+            type: string
+            brief: Name of the evaluated metric
+            requirement_level: required
+            examples: ['complexity', 'memory_usage', 'estimated_ticks']
+
+          - id: evaluation.value
+            type: int
+            brief: Evaluated value
+            requirement_level: required
+            examples: [5, 1024, 8]
+
+          - id: evaluation.limit
+            type: int
+            brief: Limit or constraint value
+            requirement_level: optional
+            examples: [100, 1000000, 8]
+
+          - id: evaluation.within_bounds
+            type: boolean
+            brief: Whether value is within bounds
+            requirement_level: required
+            examples: [true]
+
+metrics:
+  - id: knhk.workflow.compile_time.validation.total
+    type: counter
+    brief: Total number of workflows validated at compile time
+    unit: '{workflow}'
+    attributes:
+      - id: workflow.has_deadlock
+        type: boolean
+        brief: Whether workflow had deadlocks (should be 0)
+      - id: validation.success
+        type: boolean
+        brief: Whether validation succeeded
+
+  - id: knhk.workflow.compile_time.complexity.distribution
+    type: histogram
+    brief: Distribution of workflow complexity values
+    unit: '{complexity}'
+    attributes:
+      - id: workflow.is_simple
+        type: boolean
+        brief: Whether workflow is simple
+
+  - id: knhk.workflow.compile_time.state_transitions.total
+    type: counter
+    brief: Total number of type-safe state transitions
+    unit: '{transition}'
+    attributes:
+      - id: transition.is_valid
+        type: boolean
+        brief: Whether transition was valid (should always be true)
+
+  - id: knhk.workflow.compile_time.estimated_ticks.distribution
+    type: histogram
+    brief: Distribution of estimated execution ticks
+    unit: '{tick}'
+    attributes:
+      - id: meets_chatman_constant
+        type: boolean
+        brief: Whether estimated ticks ≤ 8 (Chatman Constant)
+
+logs:
+  - id: compile_time_validation_performed
+    severity: info
+    body: Compile-time workflow validation performed for {workflow.name}
+    attributes:
+      - ref: knhk.workflow.compile_time.validation.workflow.name
+      - ref: knhk.workflow.compile_time.validation.workflow.complexity
+      - ref: knhk.workflow.compile_time.validation.workflow.has_deadlock
+
+  - id: state_transition_executed
+    severity: debug
+    body: Type-safe state transition from {transition.from_state} to {transition.to_state}
+    attributes:
+      - ref: knhk.workflow.compile_time.state_transition.workflow.id
+      - ref: knhk.workflow.compile_time.state_transition.transition.from_state
+      - ref: knhk.workflow.compile_time.state_transition.transition.to_state
+
+  - id: const_assertion_verified
+    severity: debug
+    body: Const assertion verified - {evaluation.metric_name} = {evaluation.value}
+    attributes:
+      - ref: knhk.workflow.compile_time.const_evaluation.evaluation.metric_name
+      - ref: knhk.workflow.compile_time.const_evaluation.evaluation.value
+      - ref: knhk.workflow.compile_time.const_evaluation.evaluation.within_bounds

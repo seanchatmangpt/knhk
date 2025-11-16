@@ -1,0 +1,245 @@
+name: WASM CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'rust/knhk-wasm/**'
+      - 'examples/wasm-*/**'
+      - '.github/workflows/wasm-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'rust/knhk-wasm/**'
+      - 'examples/wasm-*/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install wasm-opt
+        run: cargo install wasm-opt
+
+      - name: Build WASM (web)
+        run: |
+          cd rust/knhk-wasm
+          wasm-pack build --target web --release
+
+      - name: Build WASM (nodejs)
+        run: |
+          cd rust/knhk-wasm
+          wasm-pack build --target nodejs --release
+
+      - name: Run tests
+        run: |
+          cd rust/knhk-wasm
+          wasm-pack test --headless --firefox --chrome
+
+  build:
+    name: Build WASM
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        if: runner.os != 'Windows'
+
+      - name: Install wasm-pack (Windows)
+        run: |
+          Invoke-WebRequest -Uri https://rustwasm.github.io/wasm-pack/installer/init.sh -OutFile init.sh
+          bash init.sh
+        if: runner.os == 'Windows'
+
+      - name: Build
+        run: |
+          cd rust/knhk-wasm
+          wasm-pack build --target web --release
+
+      - name: Check size
+        run: |
+          ls -lh rust/knhk-wasm/pkg/*.wasm
+        if: runner.os != 'Windows'
+
+  clippy:
+    name: Clippy (WASM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Run clippy
+        run: |
+          cd rust/knhk-wasm
+          cargo clippy --target wasm32-unknown-unknown -- -D warnings
+
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: |
+          cd rust/knhk-wasm
+          cargo fmt -- --check
+
+  size:
+    name: Binary Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install wasm-opt
+        run: cargo install wasm-opt
+
+      - name: Build optimized
+        run: |
+          cd rust/knhk-wasm
+          wasm-pack build --target web --release
+
+      - name: Optimize
+        run: |
+          cd rust/knhk-wasm
+          wasm-opt -Oz --enable-simd -o pkg/optimized.wasm pkg/knhk_wasm_bg.wasm
+
+      - name: Check size
+        run: |
+          echo "Original size:"
+          ls -lh rust/knhk-wasm/pkg/knhk_wasm_bg.wasm
+          echo "Optimized size:"
+          ls -lh rust/knhk-wasm/pkg/optimized.wasm
+          echo "Gzipped size:"
+          gzip -c rust/knhk-wasm/pkg/optimized.wasm | wc -c | awk '{print $1/1024 " KB"}'
+
+      - name: Size regression check
+        run: |
+          SIZE=$(stat -c%s rust/knhk-wasm/pkg/optimized.wasm)
+          GZIP_SIZE=$(gzip -c rust/knhk-wasm/pkg/optimized.wasm | wc -c)
+          MAX_SIZE=1500000  # 1.5 MB
+          MAX_GZIP_SIZE=500000  # 500 KB
+
+          echo "Size: $SIZE bytes"
+          echo "Gzipped: $GZIP_SIZE bytes"
+
+          if [ $SIZE -gt $MAX_SIZE ]; then
+            echo "❌ Binary size exceeded maximum ($MAX_SIZE bytes)"
+            exit 1
+          fi
+
+          if [ $GZIP_SIZE -gt $MAX_GZIP_SIZE ]; then
+            echo "❌ Gzipped size exceeded maximum ($MAX_GZIP_SIZE bytes)"
+            exit 1
+          fi
+
+          echo "✅ Size checks passed"
+
+  benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Run benchmarks
+        run: |
+          cd rust/knhk-wasm
+          cargo bench --bench wasm_vs_native
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: rust/knhk-wasm/target/criterion/
+
+  examples:
+    name: Test Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM
+        run: |
+          cd rust/knhk-wasm
+          wasm-pack build --target nodejs --out-dir ../../wasm-dist/nodejs --release
+
+      - name: Test Node.js example
+        run: |
+          cd examples/wasm-nodejs
+          npm install
+          node example.js

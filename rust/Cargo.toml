@@ -20,6 +20,8 @@ members = [
     "knhk-latex-compiler",    # LaTeX to PDF compiler
     "knhk-latex",             # LaTeX CLI using clap-noun-verb
     "knhk-test-cache",        # Autonomic test cache daemon
+    "knhk-wasm",              # WebAssembly bindings for portable workflow execution
+    "knhk-workflow-macros",   # Compile-time workflow validation macros
 ]
 
 [workspace.package]

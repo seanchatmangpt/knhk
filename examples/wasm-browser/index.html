@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KNHK WASM Browser Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 200px;
+            resize: vertical;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 KNHK WASM Browser Example</h1>
+        <p>Execute KNHK workflows directly in your browser using WebAssembly</p>
+
+        <div class="section">
+            <label for="workflow">Workflow Definition (JSON):</label>
+            <textarea id="workflow">{
+  "id": "user-registration",
+  "pattern": "Sequence",
+  "tasks": [
+    {
+      "id": "validate-email",
+      "type": "validate",
+      "config": {
+        "required": ["email", "password"]
+      }
+    },
+    {
+      "id": "create-user",
+      "type": "transform",
+      "config": {
+        "userId": "new-user-123",
+        "status": "active"
+      }
+    }
+  ]
+}</textarea>
+        </div>
+
+        <div class="section">
+            <label for="input">Input Data (JSON):</label>
+            <textarea id="input">{
+  "email": "user@example.com",
+  "password": "secure123"
+}</textarea>
+        </div>
+
+        <div class="section">
+            <button id="executeBtn">Execute Workflow</button>
+            <button id="validateBtn">Validate Workflow</button>
+            <button id="statsBtn">Show Statistics</button>
+            <button id="resetBtn">Reset Engine</button>
+            <span id="loading" class="loading" style="display: none;"></span>
+        </div>
+
+        <div id="output"></div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat">
+                <div class="stat-label">Total Executed</div>
+                <div class="stat-value" id="totalExecuted">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Running</div>
+                <div class="stat-value" id="runningWorkflows">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Failed</div>
+                <div class="stat-value" id="failedWorkflows">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Avg Time (ms)</div>
+                <div class="stat-value" id="avgTime">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, { WasmWorkflowEngine } from '../../wasm-dist/web/knhk_wasm.js';
+
+        let engine = null;
+
+        // Initialize WASM module
+        async function initEngine() {
+            await init();
+            engine = new WasmWorkflowEngine();
+            console.log('✅ KNHK WASM engine initialized');
+        }
+
+        // Execute workflow
+        async function executeWorkflow() {
+            const workflowText = document.getElementById('workflow').value;
+            const inputText = document.getElementById('input').value;
+            const outputDiv = document.getElementById('output');
+            const loading = document.getElementById('loading');
+
+            try {
+                loading.style.display = 'inline-block';
+
+                const workflow = JSON.parse(workflowText);
+                const input = JSON.parse(inputText);
+
+                const start = performance.now();
+                const result = await engine.execute_workflow_json(
+                    JSON.stringify(workflow),
+                    input
+                );
+                const elapsed = performance.now() - start;
+
+                outputDiv.innerHTML = `<div class="success">✅ Workflow executed successfully in ${elapsed.toFixed(2)}ms</div>
+<div class="output">${JSON.stringify(result, null, 2)}</div>`;
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error(error);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Validate workflow
+        async function validateWorkflow() {
+            const workflowText = document.getElementById('workflow').value;
+            const outputDiv = document.getElementById('output');
+
+            try {
+                const workflow = JSON.parse(workflowText);
+                const valid = engine.validate_workflow(JSON.stringify(workflow));
+
+                outputDiv.innerHTML = `<div class="success">✅ Workflow is valid</div>`;
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="error">❌ Validation failed: ${error.message}</div>`;
+                console.error(error);
+            }
+        }
+
+        // Show statistics
+        async function showStats() {
+            try {
+                const stats = engine.get_stats();
+
+                document.getElementById('totalExecuted').textContent = stats.totalExecuted || 0;
+                document.getElementById('runningWorkflows').textContent = stats.runningWorkflows || 0;
+                document.getElementById('failedWorkflows').textContent = stats.failedWorkflows || 0;
+                document.getElementById('avgTime').textContent = (stats.avgExecutionTimeMs || 0).toFixed(2);
+
+                document.getElementById('stats').style.display = 'grid';
+            } catch (error) {
+                console.error('Failed to get stats:', error);
+            }
+        }
+
+        // Reset engine
+        async function resetEngine() {
+            try {
+                engine.reset();
+                document.getElementById('output').innerHTML = '<div class="success">✅ Engine reset successfully</div>';
+                document.getElementById('stats').style.display = 'none';
+            } catch (error) {
+                console.error('Failed to reset:', error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('executeBtn').addEventListener('click', executeWorkflow);
+        document.getElementById('validateBtn').addEventListener('click', validateWorkflow);
+        document.getElementById('statsBtn').addEventListener('click', showStats);
+        document.getElementById('resetBtn').addEventListener('click', resetEngine);
+
+        // Initialize on page load
+        initEngine().catch(console.error);
+    </script>
+</body>
+</html>

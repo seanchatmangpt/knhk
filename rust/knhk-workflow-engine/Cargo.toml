@@ -26,6 +26,7 @@ knhk-otel = { path = "../knhk-otel", version = "1.0.0" }
 knhk-lockchain = { path = "../knhk-lockchain", version = "1.0.0" }
 knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", optional = true }
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
+knhk-workflow-macros = { path = "../knhk-workflow-macros", version = "1.0.0", optional = true }
 # knhk-sidecar dependency removed to avoid circular dependency
 # Sidecar now depends on workflow engine, not the other way around
 chicago-tdd-tools = { version = "1.0.0", optional = true }
@@ -104,10 +105,12 @@ default = [
   "testing",
   "connectors",
   "http",
+  "compile-time-validation",
 ] # Enable core features by default
 minimal = [] # Core only, no optional deps
 rdf = ["oxigraph"]
 storage = ["sled"]
+compile-time-validation = ["dep:knhk-workflow-macros"]
 grpc = [
   "dep:tonic",
   "dep:tonic-build",

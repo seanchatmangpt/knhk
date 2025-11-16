@@ -97,6 +97,8 @@ pub mod parser;
 pub mod patterns;
 pub mod performance;
 pub mod process_mining;
+/// Quantum-inspired optimization for workflow scheduling and resource allocation
+pub mod quantum;
 /// Reflex module for autonomic workflow control and self-adaptation
 pub mod reflex;
 pub mod resilience;
@@ -110,8 +112,13 @@ pub mod testing;
 pub mod timebase;
 pub mod utils;
 pub mod validation;
+/// Formal verification module for governance layer
+pub mod verification;
 pub mod visualization;
 pub mod worklets;
+
+/// Compile-time workflow validation using procedural macros and type-level programming
+pub mod compile_time;
 
 pub use autonomic::{
     Action, ActionType, AdaptationPlan, Analysis, Analyzer, Anomaly, AnomalyType,
@@ -183,4 +190,20 @@ pub use testing::{
 };
 // TestDataBuilder is now in chicago-tdd-tools - import directly:
 // use chicago_tdd_tools::builders::TestDataBuilder;
+pub use verification::{
+    // SMT solver integration
+    PolicyVerifier, SmtFormula, SmtProof, SmtResult, SmtSolver, VerificationError,
+    // Invariant checking
+    Invariant, InvariantChecker, InvariantContext, InvariantSeverity, InvariantViolation,
+    ModeSafetyInvariant, PolicyConsistencyInvariant, RuntimeInvariant, SessionInvariant,
+    TraceDeterminismInvariant,
+    // Proof certificates
+    ProofCache, ProofCertificate, ProofCertificateStore, ProofId, ProofMetadata, ProofStatus,
+    ProofSubject,
+    // Type-level verification
+    Bounds, CallDepthBound, Evidence, MuKernelTickBound, PatternIdBound, Provable,
+    RunLengthBound, Unverified, VerificationState, Verified, VerifiedMetrics, VerifiedPolicy,
+    // Core types
+    VerificationConfig, VerificationResult, VerificationStrictness,
+};
 pub use visualization::WorkflowVisualizer;

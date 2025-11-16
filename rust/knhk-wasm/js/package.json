@@ -1,0 +1,43 @@
+{
+  "name": "@knhk/wasm",
+  "version": "1.0.0",
+  "description": "WebAssembly bindings for KNHK workflow engine",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "knhk_wasm_bg.wasm",
+    "knhk_wasm_bg.wasm.d.ts",
+    "knhk_wasm.js",
+    "knhk_wasm.d.ts"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir js ../",
+    "build:node": "wasm-pack build --target nodejs --out-dir js-node ../",
+    "build:bundler": "wasm-pack build --target bundler --out-dir js-bundler ../",
+    "optimize": "wasm-opt -Oz -o knhk_wasm_bg_opt.wasm knhk_wasm_bg.wasm",
+    "test": "wasm-pack test --headless --firefox --chrome"
+  },
+  "keywords": [
+    "wasm",
+    "workflow",
+    "webassembly",
+    "knhk",
+    "portable",
+    "browser",
+    "nodejs"
+  ],
+  "author": "KNHK Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/knhk"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "wasm-opt": "^1.4.0"
+  }
+}

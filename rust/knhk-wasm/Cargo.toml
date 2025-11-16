@@ -1,0 +1,90 @@
+[package]
+name = "knhk-wasm"
+version = "1.0.0"
+edition = "2021"
+description = "WebAssembly bindings for KNHK workflow engine"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-wasm"
+keywords = ["wasm", "workflow", "webassembly", "portable", "browser"]
+categories = ["wasm", "web-programming", "development-tools"]
+license = "MIT"
+authors = ["KNHK Team"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# NOTE: We don't depend on knhk-workflow-engine directly for WASM to avoid tokio/mio dependencies
+# The WASM runtime is a standalone implementation optimized for browser/edge environments
+
+# WASM bindings
+wasm-bindgen = "0.2.92"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "console",
+    "Window",
+    "Performance",
+    "PerformanceTiming",
+    "Headers",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "ResponseInit",
+] }
+
+# Async runtime for WASM (no tokio, use wasm-bindgen-futures)
+futures = "0.3"
+
+# Serialization (optimized for size)
+serde = { version = "1.0", features = ["derive", "alloc"], default-features = false }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+serde-wasm-bindgen = "0.6"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# RDF parsing (optional, size-optimized)
+rio_turtle = { version = "0.8", optional = true }
+
+# Utilities (WASM-compatible)
+uuid = { version = "1.0", features = ["v4", "serde", "js"] }
+chrono = { version = "0.4", default-features = false, features = ["wasmbind", "serde"] }
+instant = { version = "0.1", features = ["wasm-bindgen"] }
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
+# Logging for WASM (simplified - avoid mio dependency)
+tracing = { version = "0.1", default-features = false }
+tracing-wasm = "0.2"
+
+# WASM-optimized collections
+hashbrown = { version = "0.15", default-features = false, features = ["serde"] }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[features]
+default = ["rdf", "console_error_panic_hook"]
+rdf = ["rio_turtle"]
+console_error_panic_hook = ["dep:console_error_panic_hook"]
+
+[dependencies.console_error_panic_hook]
+version = "0.1"
+optional = true
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true
+codegen-units = 1
+panic = "abort"     # Smaller binary, no panic unwinding
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[package.metadata.wasm-pack]
+wasm-opt = ["-Oz", "--enable-simd"]

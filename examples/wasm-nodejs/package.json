@@ -1,0 +1,13 @@
+{
+  "name": "knhk-wasm-nodejs-example",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "KNHK WASM Node.js example",
+  "main": "example.js",
+  "scripts": {
+    "start": "node example.js"
+  },
+  "keywords": ["wasm", "workflow", "knhk"],
+  "author": "KNHK Team",
+  "license": "MIT"
+}
