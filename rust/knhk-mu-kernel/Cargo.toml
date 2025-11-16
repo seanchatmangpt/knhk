@@ -46,6 +46,22 @@ harness = false
 name = "sigma_compilation"
 harness = false
 
+[[bench]]
+name = "chatman_constant"
+harness = false
+
+[[bench]]
+name = "mu_ops"
+harness = false
+
+[[bench]]
+name = "patterns"
+harness = false
+
+[[bench]]
+name = "guards"
+harness = false
+
 [profile.release]
 opt-level = 3
 lto = "fat"
