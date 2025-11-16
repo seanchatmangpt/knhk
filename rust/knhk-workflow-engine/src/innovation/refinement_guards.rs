@@ -10,6 +10,7 @@
 //! - Illegal workflows are unrepresentable
 
 use core::marker::PhantomData;
+use crate::const_assert;
 
 /// Sector isolation levels - phantom type parameter
 pub trait SectorLevel: 'static {

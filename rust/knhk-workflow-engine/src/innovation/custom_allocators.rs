@@ -64,7 +64,7 @@ impl Arena {
 
             // Need new chunk
             let new_size = self.chunk_size.max(layout.size());
-            let new_chunk = Chunk::new(new_size)?;
+            let mut new_chunk = Chunk::new(new_size)?;
             let ptr = new_chunk.allocate(layout.size(), layout.align())?;
             chunks.push(new_chunk);
             Some(ptr)
@@ -92,11 +92,9 @@ impl Arena {
 
     /// Clear arena (dealloc all at once)
     pub fn clear(&mut self) {
-        unsafe {
-            let chunks = self.chunks.get_mut();
-            for chunk in chunks.drain(..) {
-                chunk.dealloc();
-            }
+        let chunks = self.chunks.get_mut();
+        for chunk in chunks.drain(..) {
+            chunk.dealloc();
         }
     }
 

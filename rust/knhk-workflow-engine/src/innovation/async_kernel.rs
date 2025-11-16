@@ -337,15 +337,8 @@ impl<T> AsyncWorkflowBuilder<T> {
 
     pub async fn execute<F>(self, future: F) -> Result<T, String>
     where
-        F: Future<Output = Result<T, String>> + Unpin,
+        F: Future<Output = Result<T, String>>,
     {
-        let mut fut: Pin<Box<dyn Future<Output = Result<T, String>>>> = Box::pin(future);
-
-        // Apply timeout if specified
-        if let Some(_timeout) = self.timeout {
-            // Would wrap with timeout
-        }
-
         // Apply cancellation if specified
         if let Some(token) = self.cancellation {
             if token.is_cancelled() {
@@ -353,7 +346,12 @@ impl<T> AsyncWorkflowBuilder<T> {
             }
         }
 
-        fut.await
+        // Apply timeout if specified
+        if let Some(_timeout) = self.timeout {
+            // Would wrap with timeout
+        }
+
+        future.await
     }
 }
 
@@ -438,7 +436,16 @@ mod tests {
     async fn test_spawn_many() {
         let executor = AsyncExecutor::new();
 
-        let futures = vec![async { 1 }, async { 2 }, async { 3 }];
+        // Helper function to create futures with same type
+        async fn make_future(value: i32) -> i32 {
+            value
+        }
+
+        let futures = vec![
+            make_future(1),
+            make_future(2),
+            make_future(3),
+        ];
 
         let results = executor.spawn_many(futures).await;
         assert_eq!(results.len(), 3);

@@ -11,6 +11,7 @@
 //! - Quorum enforcement at compile time
 
 use core::marker::PhantomData;
+use crate::const_assert;
 
 /// Cluster role - phantom type for access control
 pub trait ClusterRole: 'static {

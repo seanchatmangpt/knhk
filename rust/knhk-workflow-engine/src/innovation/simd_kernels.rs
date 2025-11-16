@@ -51,26 +51,26 @@ impl SimdWidth for Neon {
 /// SIMD vector sum - optimized for different architectures
 pub trait SimdVectorSum {
     /// Sum array of u32 values
-    fn sum_u32(data: &[u32]) -> u64;
+    unsafe fn sum_u32(data: &[u32]) -> u64;
 
     /// Sum array of u64 values
-    fn sum_u64(data: &[u64]) -> u64;
+    unsafe fn sum_u64(data: &[u64]) -> u64;
 
     /// Hash data using SIMD (simple FNV-1a variant)
-    fn hash_bytes(data: &[u8]) -> u64;
+    unsafe fn hash_bytes(data: &[u8]) -> u64;
 }
 
 /// Scalar implementation - baseline
 impl SimdVectorSum for Scalar {
-    fn sum_u32(data: &[u32]) -> u64 {
+    unsafe fn sum_u32(data: &[u32]) -> u64 {
         data.iter().map(|&x| x as u64).sum()
     }
 
-    fn sum_u64(data: &[u64]) -> u64 {
+    unsafe fn sum_u64(data: &[u64]) -> u64 {
         data.iter().copied().sum()
     }
 
-    fn hash_bytes(data: &[u8]) -> u64 {
+    unsafe fn hash_bytes(data: &[u8]) -> u64 {
         const FNV_PRIME: u64 = 1099511628211;
         const FNV_OFFSET: u64 = 14695981039346656037;
 
@@ -318,12 +318,10 @@ impl SimdDispatcher {
     pub fn sum_u32(data: &[u32]) -> u64 {
         #[cfg(target_arch = "x86_64")]
         {
-            if is_x86_feature_detected!("avx512f") {
-                unsafe { Avx512::sum_u32(data) }
-            } else if is_x86_feature_detected!("avx2") {
+            if is_x86_feature_detected!("avx2") {
                 unsafe { Avx2::sum_u32(data) }
             } else {
-                Scalar::sum_u32(data)
+                unsafe { Scalar::sum_u32(data) }
             }
         }
 
@@ -332,13 +330,13 @@ impl SimdDispatcher {
             if std::arch::is_aarch64_feature_detected!("neon") {
                 unsafe { Neon::sum_u32(data) }
             } else {
-                Scalar::sum_u32(data)
+                unsafe { Scalar::sum_u32(data) }
             }
         }
 
         #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
-            Scalar::sum_u32(data)
+            unsafe { Scalar::sum_u32(data) }
         }
     }
 
@@ -346,12 +344,10 @@ impl SimdDispatcher {
     pub fn sum_u64(data: &[u64]) -> u64 {
         #[cfg(target_arch = "x86_64")]
         {
-            if is_x86_feature_detected!("avx512f") {
-                unsafe { Avx512::sum_u64(data) }
-            } else if is_x86_feature_detected!("avx2") {
+            if is_x86_feature_detected!("avx2") {
                 unsafe { Avx2::sum_u64(data) }
             } else {
-                Scalar::sum_u64(data)
+                unsafe { Scalar::sum_u64(data) }
             }
         }
 
@@ -360,13 +356,13 @@ impl SimdDispatcher {
             if std::arch::is_aarch64_feature_detected!("neon") {
                 unsafe { Neon::sum_u64(data) }
             } else {
-                Scalar::sum_u64(data)
+                unsafe { Scalar::sum_u64(data) }
             }
         }
 
         #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
-            Scalar::sum_u64(data)
+            unsafe { Scalar::sum_u64(data) }
         }
     }
 
@@ -377,13 +373,13 @@ impl SimdDispatcher {
             if is_x86_feature_detected!("avx2") {
                 unsafe { Avx2::hash_bytes(data) }
             } else {
-                Scalar::hash_bytes(data)
+                unsafe { Scalar::hash_bytes(data) }
             }
         }
 
         #[cfg(not(target_arch = "x86_64"))]
         {
-            Scalar::hash_bytes(data)
+            unsafe { Scalar::hash_bytes(data) }
         }
     }
 }
@@ -420,22 +416,22 @@ mod tests {
     #[test]
     fn test_scalar_sum_u32() {
         let data = vec![1, 2, 3, 4, 5];
-        let sum = Scalar::sum_u32(&data);
+        let sum = unsafe { Scalar::sum_u32(&data) };
         assert_eq!(sum, 15);
     }
 
     #[test]
     fn test_scalar_sum_u64() {
         let data = vec![100u64, 200, 300];
-        let sum = Scalar::sum_u64(&data);
+        let sum = unsafe { Scalar::sum_u64(&data) };
         assert_eq!(sum, 600);
     }
 
     #[test]
     fn test_scalar_hash() {
         let data = b"hello world";
-        let hash1 = Scalar::hash_bytes(data);
-        let hash2 = Scalar::hash_bytes(data);
+        let hash1 = unsafe { Scalar::hash_bytes(data) };
+        let hash2 = unsafe { Scalar::hash_bytes(data) };
         assert_eq!(hash1, hash2);
         assert_ne!(hash1, 0);
     }

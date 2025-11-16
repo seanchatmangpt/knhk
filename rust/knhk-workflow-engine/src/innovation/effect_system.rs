@@ -56,6 +56,18 @@ pub trait EffectSet: 'static {
     const IS_PURE: bool;
 }
 
+/// Marker trait for pure effect sets
+pub trait PureEffectSet: EffectSet {}
+
+/// Marker trait for effect sets with I/O capability
+pub trait IoEffectSet: EffectSet {}
+
+/// Marker trait for effect sets with state capability
+pub trait StateEffectSet: EffectSet {}
+
+/// Marker trait for effect sets with error capability
+pub trait ErrorEffectSet: EffectSet {}
+
 /// No effects - pure computation
 pub struct NoEffects;
 impl EffectSet for NoEffects {
@@ -65,6 +77,7 @@ impl EffectSet for NoEffects {
     const HAS_RESOURCE: bool = false;
     const IS_PURE: bool = true;
 }
+impl PureEffectSet for NoEffects {}
 
 /// All effects - unrestricted computation
 pub struct AllEffects;
@@ -75,6 +88,9 @@ impl EffectSet for AllEffects {
     const HAS_RESOURCE: bool = true;
     const IS_PURE: bool = false;
 }
+impl IoEffectSet for AllEffects {}
+impl StateEffectSet for AllEffects {}
+impl ErrorEffectSet for AllEffects {}
 
 /// Effectful computation - tracks effects in types
 pub struct Effectful<T, E: EffectSet> {
@@ -94,7 +110,7 @@ impl<T, E: EffectSet> Effectful<T, E> {
     /// Extract value (only for pure computations)
     pub fn pure(self) -> T
     where
-        E: EffectSet<IS_PURE = true>,
+        E: PureEffectSet,
     {
         self.value
     }
@@ -200,7 +216,7 @@ impl<I, O, E: EffectSet> EffectfulWorkflow<I, O, E> {
     /// Execute workflow (only if pure)
     pub fn execute_pure(&self, input: I) -> O
     where
-        E: EffectSet<IS_PURE = true>,
+        E: PureEffectSet,
         O: Default,
     {
         // Pure workflows can be executed without effect handlers
@@ -249,7 +265,7 @@ impl<E: EffectSet> EffectContext<E> {
     /// Execute I/O operation (only if permitted)
     pub fn execute_io<T, F>(&self, f: F) -> Effectful<T, E>
     where
-        E: EffectSet<HAS_IO = true>,
+        E: IoEffectSet,
         F: FnOnce() -> T,
     {
         Effectful::new(f())
@@ -258,7 +274,7 @@ impl<E: EffectSet> EffectContext<E> {
     /// Modify state (only if permitted)
     pub fn modify_state<S, T, F>(&self, state: &mut S, f: F) -> Effectful<T, E>
     where
-        E: EffectSet<HAS_STATE = true>,
+        E: StateEffectSet,
         F: FnOnce(&mut S) -> T,
     {
         Effectful::new(f(state))
@@ -267,7 +283,7 @@ impl<E: EffectSet> EffectContext<E> {
     /// Propagate error (only if permitted)
     pub fn propagate_error<T>(&self, error: &'static str) -> Effectful<Result<T, &'static str>, E>
     where
-        E: EffectSet<HAS_ERROR = true>,
+        E: ErrorEffectSet,
     {
         Effectful::new(Err(error))
     }

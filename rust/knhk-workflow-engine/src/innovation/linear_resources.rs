@@ -5,6 +5,7 @@
 //! Compile-time guarantees that code cannot overspend quota.
 
 use core::marker::PhantomData;
+use crate::const_assert;
 
 /// Resource token - cannot be cloned (linear-ish semantics)
 pub struct ResourceToken<const AMOUNT: u32> {

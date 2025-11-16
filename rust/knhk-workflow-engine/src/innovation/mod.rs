@@ -144,7 +144,7 @@ pub use simd_kernels::{
     SimdWidth, Scalar, Avx2, Avx512, Neon, SimdVectorSum, SimdDispatcher, SimdReceiptValidator,
 };
 pub use custom_allocators::{
-    Arena, BumpAllocator, ObjectPool, PooledObject, StackAllocator, AllocatorStats,
+    Arena as CustomArena, BumpAllocator, ObjectPool, PooledObject, StackAllocator, AllocatorStats,
 };
 pub use async_kernel::{
     AsyncWorkflowState, AsyncPending, AsyncRunning, AsyncSuspended, AsyncCompleted, AsyncFailed,

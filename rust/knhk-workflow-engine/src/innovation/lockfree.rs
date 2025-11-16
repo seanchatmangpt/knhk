@@ -273,11 +273,9 @@ impl LockFreeReceiptQueue {
 
                     // Reclaim old head (sentinel)
                     // Safety: old head is no longer reachable from queue
-                    unsafe {
-                        // In production, use epoch-based reclamation
-                        // For now, leak it to avoid use-after-free
-                        // Box::from_raw(head);
-                    }
+                    // In production, use epoch-based reclamation
+                    // For now, leak it to avoid use-after-free
+                    // unsafe { Box::from_raw(head); }
 
                     self.dequeued.value.fetch_add(1, Ordering::Release);
                     return data;

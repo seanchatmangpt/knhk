@@ -17,6 +17,7 @@
 //! Everything else runs in "user space" outside the kernel.
 
 use core::marker::PhantomData;
+use crate::const_assert;
 
 /// Kernel execution result - total function, no panics
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

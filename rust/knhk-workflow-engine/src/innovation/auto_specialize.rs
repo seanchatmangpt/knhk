@@ -338,7 +338,11 @@ impl<C: CpuCapability, D: DataProfile> AdaptiveExecutor<C, D> {
         result
     }
 
-    pub fn current_variant(&self) -> KernelSelection<C, D> {
+    pub fn current_variant(&self) -> KernelSelection<C, D>
+    where
+        C: Copy,
+        D: Copy,
+    {
         self.current_selection
     }
 }
