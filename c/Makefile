@@ -2,7 +2,7 @@
 # Library build system
 
 CC = clang
-CFLAGS = -O3 -std=c11 -Wall -Wextra
+CFLAGS = -O3 -std=c11 -Wall -Wextra -D_POSIX_C_SOURCE=200809L
 RAPTOR_CFLAGS = $(shell pkg-config --cflags raptor2 2>/dev/null || echo "-I/opt/homebrew/Cellar/raptor/2.0.16/include")
 RAPTOR_LIBS = $(shell pkg-config --libs raptor2 2>/dev/null || echo "-L/opt/homebrew/Cellar/raptor/2.0.16/lib -lraptor2")
 
@@ -19,7 +19,8 @@ endif
 INCLUDES = -Iinclude -Isrc
 
 # Library sources
-LIB_SRCS = src/knhk.c src/simd.c src/rdf.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c src/kernels.c src/ffi_wrappers.c
+# Note: src/rdf.c requires raptor2 dependency - temporarily disabled for v1
+LIB_SRCS = src/knhk.c src/simd.c src/core.c src/clock.c src/aot/aot_guard.c src/eval_dispatch.c src/beat.c src/ring.c src/fiber.c src/kernels.c src/ffi_wrappers.c
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB = libknhk.a
 

@@ -36,7 +36,7 @@ pub fn validate_attributes_simd(span: &Span, required_keys: &[&str]) -> bool {
 
     #[cfg(target_arch = "x86_64")]
     {
-        validate_attributes_avx2(span, required_keys)
+        unsafe { validate_attributes_avx2(span, required_keys) }
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -103,7 +103,7 @@ pub fn match_attributes_simd(span: &Span, keys: &[&str]) -> alloc::vec::Vec<bool
 
     #[cfg(target_arch = "x86_64")]
     {
-        match_attributes_avx2(span, keys)
+        unsafe { match_attributes_avx2(span, keys) }
     }
 
     #[cfg(target_arch = "aarch64")]

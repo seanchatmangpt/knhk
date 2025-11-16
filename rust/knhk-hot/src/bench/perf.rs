@@ -182,7 +182,7 @@ pub struct BenchmarkResult {
 /// Run benchmark with both macOS time and Linux perf
 pub fn benchmark_with_perf<F>(operation: &str, bytes: usize, f: F) -> BenchmarkResult
 where
-    F: FnOnce(),
+    F: Fn(),
 {
     let start_time = std::time::Instant::now();
     f();

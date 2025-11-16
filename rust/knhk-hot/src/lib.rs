@@ -13,6 +13,7 @@
 #![allow(unexpected_cfgs)] // Some cfg values are informational
 
 pub mod beat_ffi;
+#[cfg(any(test, feature = "bench"))]
 pub mod bench;
 pub mod content_addr;
 pub mod cpu_dispatch;
