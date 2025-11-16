@@ -1,5 +1,26 @@
 # Claude Code Configuration - SPARC Development Environment
 
+---
+
+## ⭐ DOCTRINE NORTH STAR
+
+**All development is guided by DOCTRINE_2027.**
+
+Before any code is written, every task must answer:
+1. **Which doctrine principle does this embody?** (O, Σ, Q, Π, MAPE-K, or Chatman constant)
+2. **What would violate this covenant?** (see DOCTRINE_COVENANT.md)
+3. **How is this validated?** (Weaver, Chicago TDD, integration tests)
+4. **Where in the codebase does this live?** (canonical reference)
+
+**Key Documents**:
+- `DOCTRINE_2027.md` - Foundational narrative (50 years of TAI history compressed)
+- `DOCTRINE_COVENANT.md` - Binding enforcement rules for technical decisions
+- These are your north stars. Everything else hangs from them.
+
+**For Swarm Agents**: When briefed on a task, your first action is to read DOCTRINE_2027.md and identify which covenant applies. If your work violates any covenant, raise it as blocking before proceeding.
+
+---
+
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
 **ABSOLUTE RULES**:
@@ -586,6 +607,77 @@ KNHK Solution:
 - **A Weaver schema validation can only pass if the actual runtime telemetry matches the declared schema**
 
 This is why KNHK uses Weaver validation as the source of truth.
+
+## 🐝 Agent Briefing Template for Swarm Execution
+
+When spawning agents via the Task tool to work on this codebase, use this structure:
+
+```
+Agent Task: [Clear description of work]
+
+DOCTRINE ALIGNMENT:
+- Principle: [O/Σ/Q/Π/MAPE-K/Chatman]
+- Covenant: [Number from DOCTRINE_COVENANT.md]
+- Why This Matters: [1-2 sentences on the doctrine principle]
+
+WHAT THIS MEANS:
+[Plain English explanation of the work in doctrine terms]
+
+ANTI-PATTERNS TO AVOID:
+- [List specific things that would violate the covenant]
+- [Be specific about what NOT to do]
+
+VALIDATION CHECKLIST:
+- [ ] Does this satisfy the identified covenant?
+- [ ] Are anti-patterns avoided?
+- [ ] Is the code measurable/observable?
+- [ ] Does Weaver validation pass?
+- [ ] Are Q invariants respected?
+
+CANONICAL REFERENCES:
+- DOCTRINE_2027.md - See section on [Principle]
+- DOCTRINE_COVENANT.md - See covenant [Number]
+- [Code files that implement this pattern]
+
+CRITICAL GATE:
+If you identify any covenant violation, STOP and report it as blocking.
+Do NOT proceed until the violation is resolved.
+```
+
+**Example**:
+```
+Agent Task: Implement a new workflow validation system
+
+DOCTRINE ALIGNMENT:
+- Principle: Q (Hard Invariants)
+- Covenant: Covenant 2 (Invariants Are Law)
+- Why This Matters: Quality is not optional; it's enforced automatically
+
+WHAT THIS MEANS:
+Build a validator that checks every workflow against the permutation matrix
+and rejects any pattern that isn't provably valid. This enforcer is part of Q.
+
+ANTI-PATTERNS TO AVOID:
+- Don't allow "warnings" for invalid patterns (should be hard errors)
+- Don't skip validation on fast paths
+- Don't create exceptions for "legacy" workflows
+- Don't accept patterns outside the permutation matrix
+
+VALIDATION CHECKLIST:
+- [ ] Validator checks against yawl-pattern-permutations.ttl?
+- [ ] All invalid patterns rejected, never warned?
+- [ ] Integration tests verify 100% coverage of permutation matrix?
+- [ ] Latency <= 8 ticks for validation (chicago-tdd)?
+- [ ] Weaver schema includes validation assertions?
+
+CANONICAL REFERENCES:
+- DOCTRINE_COVENANT.md - Covenant 2 (Invariants Are Law)
+- ontology/yawl-pattern-permutations.ttl - The permutation matrix
+- chicago-tdd/harness/ - How latency is measured
+
+CRITICAL GATE:
+Reject any pattern not in the permutation matrix. This is not negotiable.
+```
 
 ## Support
 
