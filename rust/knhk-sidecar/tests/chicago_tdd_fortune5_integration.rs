@@ -93,8 +93,7 @@ fn test_spiffe_peer_verification_workflow() {
         );
 
         // Verify peer from different domain is rejected
-        let different_domain_invalid =
-            manager.verify_peer_id("spiffe://other.com/service");
+        let different_domain_invalid = manager.verify_peer_id("spiffe://other.com/service");
         assert!(
             !different_domain_invalid,
             "Peer from different domain should be rejected"
@@ -241,7 +240,7 @@ fn test_error_propagation_kms_to_application() {
     let bad_config = KmsConfig {
         provider: KmsProvider::Aws {
             region: "".to_string(), // Invalid
-            key_id: "".to_string(),  // Invalid
+            key_id: "".to_string(), // Invalid
         },
         rotation_enabled: true,
         rotation_interval_secs: 1800, // Invalid
@@ -342,7 +341,7 @@ fn test_promotion_metrics_aggregation() {
 #[test]
 fn test_promotion_auto_rollback_recovery() {
     // Arrange: Simulate canary health degradation
-    let initial_error_rate = 0.02;  // 2% - healthy
+    let initial_error_rate = 0.02; // 2% - healthy
     let degraded_error_rate = 0.10; // 10% - unhealthy
     let threshold = 0.05;
 
@@ -352,10 +351,7 @@ fn test_promotion_auto_rollback_recovery() {
 
     // Assert: Rollback would be triggered
     assert!(health_ok, "Initial state should be healthy");
-    assert!(
-        health_degraded,
-        "Degraded state should trigger rollback"
-    );
+    assert!(health_degraded, "Degraded state should trigger rollback");
 }
 
 #[test]

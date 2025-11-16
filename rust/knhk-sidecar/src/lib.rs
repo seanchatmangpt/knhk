@@ -670,7 +670,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             quorum_threshold: config.quorum_threshold,
         };
 
-        match ReceiptSyncManager::new(region_config) {
+        match ReceiptSyncManager::from_region_config(region_config) {
             Ok(manager) => {
                 info!("Multi-region receipt sync initialized");
                 Some(manager)
@@ -894,7 +894,7 @@ pub async fn run(config: SidecarConfig) -> Result<(), Box<dyn std::error::Error>
             quorum_threshold: config.quorum_threshold,
         };
 
-        match ReceiptSyncManager::new(region_config) {
+        match ReceiptSyncManager::from_region_config(region_config) {
             Ok(manager) => {
                 info!("Multi-region receipt sync initialized");
                 Some(manager)

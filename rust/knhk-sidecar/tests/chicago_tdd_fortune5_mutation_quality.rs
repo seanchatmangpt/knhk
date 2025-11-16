@@ -52,10 +52,16 @@ fn test_kms_config_mutation_rotation_threshold_detected() {
     let below_threshold = 1800; // 30 minutes - invalid
 
     // Valid should pass
-    assert!(valid_interval >= 3600, "Valid interval should exceed minimum");
+    assert!(
+        valid_interval >= 3600,
+        "Valid interval should exceed minimum"
+    );
 
     // Invalid should not pass
-    assert!(below_threshold < 3600, "Invalid interval should fail threshold check");
+    assert!(
+        below_threshold < 3600,
+        "Invalid interval should fail threshold check"
+    );
 }
 
 // ============================================================================
@@ -68,10 +74,7 @@ fn test_spiffe_id_validation_mutation_scheme_check() {
     let valid_id = "spiffe://example.com/service";
     let invalid_id = "http://example.com/service";
 
-    assert!(
-        validate_spiffe_id(valid_id),
-        "Valid SPIFFE ID should pass"
-    );
+    assert!(validate_spiffe_id(valid_id), "Valid SPIFFE ID should pass");
     assert!(
         !validate_spiffe_id(invalid_id),
         "Non-SPIFFE ID should fail (mutation would remove this check)"
@@ -81,18 +84,15 @@ fn test_spiffe_id_validation_mutation_scheme_check() {
 #[test]
 fn test_spiffe_id_validation_mutation_minimum_length() {
     // Mutation: Remove minimum length check
-    let valid_ids = vec![
-        "spiffe://example.com/service",
-        "spiffe://a/b",
-    ];
+    let valid_ids = vec!["spiffe://example.com/service", "spiffe://a/b"];
 
     for id in valid_ids {
         assert!(validate_spiffe_id(id), "Valid IDs should pass");
     }
 
     let invalid_ids = vec![
-        "spiffe://",        // Too short
-        "spiffe://x",       // Minimal
+        "spiffe://",  // Too short
+        "spiffe://x", // Minimal
     ];
 
     for id in invalid_ids {
@@ -134,10 +134,7 @@ fn test_promotion_routing_mutation_hash_function() {
     let traffic_percent = 25.0;
 
     // Original hash
-    let original_hash = request_id
-        .chars()
-        .map(|c| c as u32)
-        .sum::<u32>() as u64;
+    let original_hash = request_id.chars().map(|c| c as u32).sum::<u32>() as u64;
     let original_route = (original_hash % 100) < (traffic_percent as u64);
 
     // Mutated hash (with wrong modulo)
@@ -157,9 +154,9 @@ fn test_promotion_routing_mutation_comparison_operator() {
     let hash = 20u64;
     let traffic_percent = 20.0;
 
-    let correct_route = (hash % 100) < (traffic_percent as u64);  // < (less than)
+    let correct_route = (hash % 100) < (traffic_percent as u64); // < (less than)
     let wrong_route_le = (hash % 100) <= (traffic_percent as u64); // <= (less or equal)
-    let wrong_route_gt = (hash % 100) > (traffic_percent as u64);  // > (greater)
+    let wrong_route_gt = (hash % 100) > (traffic_percent as u64); // > (greater)
 
     // These should be different to catch mutations
     assert_ne!(
@@ -250,7 +247,10 @@ fn test_capacity_hierarchy_mutation_size_comparison() {
 
     // Mutated (would use <=)
     let with_le = l1 <= l2 && l2 <= l3;
-    assert!(with_le, "<= would still pass, but boundary case would differ");
+    assert!(
+        with_le,
+        "<= would still pass, but boundary case would differ"
+    );
 
     // Mutated (would use >)
     let with_gt = l1 > l2 || l2 > l3;
@@ -280,7 +280,10 @@ fn test_promotion_traffic_percentage_mutation_boundary_hundred() {
 
     assert!(hundred_traffic <= 100.0, "100% should be valid");
     assert!(ninety_nine <= 100.0, "99.9% should be valid");
-    assert_ne!(hundred_traffic, ninety_nine, "Boundary should be detectable");
+    assert_ne!(
+        hundred_traffic, ninety_nine,
+        "Boundary should be detectable"
+    );
 }
 
 // ============================================================================
@@ -309,7 +312,10 @@ fn test_promotion_admission_mutation_inverted_boolean() {
     let inverted_admission = !(error_rate < threshold);
 
     assert!(correct_admission, "Low error rate should admit");
-    assert!(!inverted_admission, "Inverted would reject - catches mutation");
+    assert!(
+        !inverted_admission,
+        "Inverted would reject - catches mutation"
+    );
 }
 
 // ============================================================================

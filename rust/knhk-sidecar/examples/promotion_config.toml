@@ -1,0 +1,204 @@
+# Example: Promotion Gates Configuration
+#
+# This TOML file demonstrates configuration options for the Promotion Gates system
+# in different scenarios: development, canary, staging, and production.
+
+# ============================================================================
+# SCENARIO 1: Development Environment (10% Canary)
+# ============================================================================
+# Use this during development to test new features with a small percentage of traffic
+
+[scenarios.dev]
+promotion_environment = "canary"
+promotion_traffic_percent = 10.0
+auto_rollback_enabled = true
+slo_threshold = 0.95
+slo_r1_p99_max_ns = 2
+slo_w1_p99_max_ms = 1
+slo_c1_p99_max_ms = 500
+
+# ============================================================================
+# SCENARIO 2: Blue-Green Canary (5% Initial, Gradual Ramp)
+# ============================================================================
+# Start with 5% traffic, then increase gradually as confidence grows:
+# 5% → 10% → 25% → 50% → 100%
+
+[scenarios.canary_5pct]
+promotion_environment = "canary"
+promotion_traffic_percent = 5.0
+auto_rollback_enabled = true
+slo_threshold = 0.95
+
+[scenarios.canary_10pct]
+promotion_environment = "canary"
+promotion_traffic_percent = 10.0
+auto_rollback_enabled = true
+slo_threshold = 0.95
+
+[scenarios.canary_25pct]
+promotion_environment = "canary"
+promotion_traffic_percent = 25.0
+auto_rollback_enabled = true
+slo_threshold = 0.90  # Slightly more lenient with more traffic
+
+[scenarios.canary_50pct]
+promotion_environment = "canary"
+promotion_traffic_percent = 50.0
+auto_rollback_enabled = true
+slo_threshold = 0.90
+
+# ============================================================================
+# SCENARIO 3: Staging Environment (100% Traffic)
+# ============================================================================
+# Use this when promoting from canary to staging for more comprehensive testing
+
+[scenarios.staging]
+promotion_environment = "staging"
+auto_rollback_enabled = true
+slo_threshold = 0.95
+
+# ============================================================================
+# SCENARIO 4: Production Environment (Stable)
+# ============================================================================
+# Final promotion to production with all users on stable version
+
+[scenarios.production]
+promotion_environment = "production"
+auto_rollback_enabled = true
+slo_threshold = 0.98  # Stricter SLO for production
+
+# ============================================================================
+# SCENARIO 5: Shadow Mode (Monitor New Version Without Routing)
+# ============================================================================
+# Monitor new version performance without routing production traffic to it
+# (0% means no requests routed to canary, used for parallel testing)
+
+[scenarios.shadow]
+promotion_environment = "canary"
+promotion_traffic_percent = 0.0
+auto_rollback_enabled = false
+slo_threshold = 0.95
+
+# ============================================================================
+# SLO CONFIGURATION EXPLANATIONS
+# ============================================================================
+#
+# slo_threshold: Compliance rate required before promotion (0.0-1.0)
+#   - 0.98 (98%): Very strict, requires 98% of requests to succeed
+#   - 0.95 (95%): Standard, requires 95% of requests to succeed
+#   - 0.90 (90%): Lenient, allows up to 10% errors
+#
+# slo_r1_p99_max_ns: R1 (Hot path) p99 max latency in nanoseconds
+#   - Default: 2ns (Fortune 5 requirement, very strict)
+#   - Note: This is for ultra-low latency operations
+#
+# slo_w1_p99_max_ms: W1 (Warm path) p99 max latency in milliseconds
+#   - Default: 1ms (Fortune 5 requirement)
+#   - Used for warm operations (cache hits, etc.)
+#
+# slo_c1_p99_max_ms: C1 (Cold path) p99 max latency in milliseconds
+#   - Default: 500ms (Fortune 5 requirement)
+#   - Used for cold operations (disk reads, network calls, etc.)
+#
+# promotion_traffic_percent: Percentage of traffic to route to new version (0-100)
+#   - 0%: No traffic (shadow mode - monitoring only)
+#   - 5%: Very small canary (0.05-0.5% of users)
+#   - 10%: Small canary (1-10% of users)
+#   - 25%: Medium canary (25% of users)
+#   - 50%: Large canary (50% of users)
+#   - 100%: Full rollout (all users on new version)
+#
+# auto_rollback_enabled: Automatically rollback on SLO violations
+#   - true: Automatic rollback enabled (recommended for production)
+#   - false: Manual rollback only (for testing/monitoring)
+
+# ============================================================================
+# RECOMMENDED PROGRESSION FOR PRODUCTION ROLLOUT
+# ============================================================================
+#
+# Day 1, 00:00 UTC:
+#   - Deploy new version to canary
+#   - Apply: [scenarios.canary_5pct]
+#   - Monitor: canary_error_rate, canary_p99_latency
+#
+# Day 1, 06:00 UTC (if healthy):
+#   - Increase canary traffic
+#   - Apply: [scenarios.canary_10pct]
+#   - Monitor: metrics still healthy?
+#
+# Day 1, 12:00 UTC (if still healthy):
+#   - Increase canary traffic more
+#   - Apply: [scenarios.canary_25pct]
+#   - Monitor: check for any degradation
+#
+# Day 2, 00:00 UTC (if metrics excellent):
+#   - Promote to staging for wider testing
+#   - Apply: [scenarios.staging]
+#   - Monitor: full feature testing
+#
+# Day 2, 12:00 UTC (if staging passes):
+#   - Final promotion to production
+#   - Apply: [scenarios.production]
+#   - Monitor: full production metrics
+#
+# Rollback (any time if issues):
+#   - Automatic: If slo_threshold violated
+#   - Manual: Change config back to previous scenario and redeploy
+
+# ============================================================================
+# MONITORING DURING CANARY
+# ============================================================================
+#
+# Key metrics to monitor while canary is active:
+#
+# 1. Error Rate Comparison
+#    - Compare canary_error_rate vs production_error_rate
+#    - Target: canary_error_rate <= production_error_rate
+#    - Rollback if: canary_error_rate > production_error_rate * 1.5
+#
+# 2. Latency Comparison (P99)
+#    - Compare canary_p99 vs production_p99
+#    - Target: canary_p99 <= production_p99
+#    - Rollback if: canary_p99 > production_p99 * 1.5
+#
+# 3. Health Score
+#    - 0.9-1.0: HEALTHY - OK to increase traffic
+#    - 0.8-0.9: MONITOR - Wait before increasing
+#    - < 0.8: ROLLBACK - Automatic rollback triggered
+#
+# 4. Feature-Specific Metrics
+#    - Errors in new features specifically
+#    - Latency added by new code
+#    - Resource usage changes (CPU, memory, connections)
+#
+# 5. User Experience Metrics
+#    - User-reported errors or issues
+#    - Feature adoption rate
+#    - Performance perception scores
+
+# ============================================================================
+# TROUBLESHOOTING CONFIGURATION ISSUES
+# ============================================================================
+#
+# Q: How do I increase canary traffic gradually?
+# A: Use the canary_5pct → 10pct → 25pct → 50pct progression.
+#    Update promotion_traffic_percent and redeploy the sidecar config.
+#
+# Q: My canary keeps rolling back. What should I do?
+# A: 1. Check if new version actually has bugs (fix first)
+#    2. Increase slo_threshold temporarily (e.g., 0.90 instead of 0.95)
+#    3. Reduce canary traffic to give new version easier conditions
+#    4. Check if canary is hitting different code paths (increase traffic%)
+#
+# Q: How do I do A/B testing with canary?
+# A: Use deterministic routing (same user_id always gets same version):
+#    1. Hash user_id consistently
+#    2. Use canary mode with traffic_percent
+#    3. Same users stay on same version throughout canary
+#    4. No user will experience version switching during canary
+#
+# Q: Can I skip staging and go straight from canary to production?
+# A: Yes, but not recommended. Better flow:
+#    1. Canary: User subset (risk limited)
+#    2. Staging: All traffic (comprehensive testing)
+#    3. Production: Real users (ready for full scale)

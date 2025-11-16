@@ -31,7 +31,10 @@ fn test_kms_sign_operation_telemetry_schema() {
     // Act: Verify schema compliance
     for (attr_name, attr_value) in kms_operation {
         assert!(!attr_name.is_empty(), "Attribute name should not be empty");
-        assert!(!attr_value.is_empty(), "Attribute value should not be empty");
+        assert!(
+            !attr_value.is_empty(),
+            "Attribute value should not be empty"
+        );
     }
 }
 
@@ -50,7 +53,11 @@ fn test_kms_rotate_operation_telemetry_schema() {
     ];
 
     // Act & Assert: Verify attributes are present
-    assert_eq!(rotation_attributes.len(), 3, "Should have 3 required attributes");
+    assert_eq!(
+        rotation_attributes.len(),
+        3,
+        "Should have 3 required attributes"
+    );
 }
 
 #[test]
@@ -104,7 +111,11 @@ fn test_spiffe_certificate_load_telemetry_schema() {
     ];
 
     // Act & Assert: Verify schema
-    assert_eq!(cert_attributes.len(), 4, "Should have 4 required attributes");
+    assert_eq!(
+        cert_attributes.len(),
+        4,
+        "Should have 4 required attributes"
+    );
     for (attr, value) in cert_attributes {
         assert!(!attr.is_empty(), "Attribute {} should not be empty", attr);
         assert!(!value.is_empty(), "Value {} should not be empty", value);
@@ -150,7 +161,11 @@ fn test_promotion_canary_decision_telemetry_schema() {
     ];
 
     // Act & Assert: Verify schema
-    assert_eq!(decision_attributes.len(), 4, "Should have 4 required attributes");
+    assert_eq!(
+        decision_attributes.len(),
+        4,
+        "Should have 4 required attributes"
+    );
 }
 
 #[test]
@@ -242,7 +257,10 @@ fn test_multi_region_sync_telemetry_schema() {
     // Arrange: Multi-region sync telemetry
     let sync_telemetry = vec![
         ("multi_region.source_region", "us-east-1"),
-        ("multi_region.destination_regions", "eu-west-1,ap-southeast-1"),
+        (
+            "multi_region.destination_regions",
+            "eu-west-1,ap-southeast-1",
+        ),
         ("multi_region.sync_method", "http"),
         ("multi_region.quorum_threshold", "2"),
         ("multi_region.regions_synced", "2"),
@@ -273,7 +291,10 @@ fn test_error_telemetry_includes_context() {
     ];
 
     // Act & Assert: Verify error telemetry
-    assert!(error_telemetry.len() >= 2, "Should have at least type and message");
+    assert!(
+        error_telemetry.len() >= 2,
+        "Should have at least type and message"
+    );
 }
 
 // ============================================================================
