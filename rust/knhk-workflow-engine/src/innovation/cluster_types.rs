@@ -141,7 +141,7 @@ pub struct Proposal<T, C: ReplicationFactor> {
 }
 
 impl<T, C: ReplicationFactor> Proposal<T, C> {
-    fn new(value: T) -> Self {
+    pub fn new(value: T) -> Self {
         Self {
             value,
             votes: 0,

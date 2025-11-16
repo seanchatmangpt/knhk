@@ -38,6 +38,15 @@ impl<const AMOUNT: u32> ResourceToken<AMOUNT> {
     pub const fn amount() -> u32 {
         AMOUNT
     }
+
+    /// Split token at runtime (for property-based testing)
+    /// Note: In production code, use compile-time split() instead
+    #[cfg(test)]
+    pub fn split_runtime(self, _a1: u32, _a2: u32) -> (Self, Self) {
+        // Returns tokens of same size for testing
+        // Real implementation would need runtime validation
+        (ResourceToken::new(), ResourceToken::new())
+    }
 }
 
 // Prevent cloning - enforce linear semantics
@@ -83,6 +92,17 @@ impl<const TOTAL: u32> ResourceQuota<TOTAL> {
     /// Remaining resources
     pub const fn remaining(&self) -> u32 {
         self.remaining
+    }
+
+    /// Runtime allocation (for testing - prefer compile-time allocate())
+    #[cfg(test)]
+    pub fn allocate_generic<const AMOUNT: u32>(&mut self, runtime_amount: u32) -> Option<ResourceToken<AMOUNT>> {
+        if self.remaining >= runtime_amount {
+            self.remaining -= runtime_amount;
+            Some(ResourceToken::new())
+        } else {
+            None
+        }
     }
 }
 
@@ -322,6 +342,22 @@ impl<const TOTAL: u32> ResourcePool<TOTAL> {
 
     pub fn remaining(&self) -> u32 {
         self.quota.remaining()
+    }
+
+    /// Allocate for P4 action - lowest priority
+    #[cfg(test)]
+    pub fn allocate_p4<const AMOUNT: u32>(&mut self) -> Option<ResourceToken<AMOUNT>> {
+        self.quota.allocate::<AMOUNT>()
+    }
+
+    /// Runtime allocation (for testing)
+    #[cfg(test)]
+    pub fn allocate_generic<const AMOUNT: u32>(&mut self, runtime_amount: u32) -> Option<ResourceToken<AMOUNT>> {
+        if self.quota.remaining() >= runtime_amount {
+            self.quota.allocate::<AMOUNT>()
+        } else {
+            None
+        }
     }
 }
 
