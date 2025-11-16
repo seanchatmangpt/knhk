@@ -23,6 +23,9 @@ members = [
     "knhk-latex",             # LaTeX CLI using clap-noun-verb
     "knhk-test-cache",        # Autonomic test cache daemon
     "chicago-tdd",            # Chicago TDD Performance Harness (Chatman Constant enforcement)
+    "knhk-neural",            # Phase 6: Advanced Neural Integration with Self-Learning Workflows
+    "knhk-accelerate",        # Phase 9: GPU/FPGA Hardware Acceleration
+    "knhk-marketplace",       # Phase 10: Market deployment, licensing, and billing
 ]
 
 [workspace.package]
