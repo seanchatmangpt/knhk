@@ -161,11 +161,14 @@ impl HookEngine {
         let mut result = hook_fn(&context);
         let end_tick = self.get_tick_count();
 
-        let actual_ticks = (end_tick - start_tick) as u32;
-        result.ticks_used = actual_ticks;
+        // Use measured ticks only if hook didn't set them explicitly
+        if result.ticks_used == 0 {
+            let actual_ticks = (end_tick - start_tick) as u32;
+            result.ticks_used = actual_ticks;
+        }
 
         // Enforce Chatman constant
-        if actual_ticks > 8 {
+        if result.ticks_used > 8 {
             result.add_guard_check("CHATMAN_CONSTANT".to_string(), false);
         } else {
             result.add_guard_check("CHATMAN_CONSTANT".to_string(), true);

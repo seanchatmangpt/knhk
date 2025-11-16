@@ -20,8 +20,7 @@ use std::collections::HashMap;
 use super::snapshot::{SnapshotId, SnapshotStore, SnapshotManifest, OntologyFile};
 use super::receipt::{Receipt, ReceiptStore, ReceiptId};
 use super::hooks::{HookEngine, HookRegistry, HookContext, HookResult, HookFn};
-use crate::observability::mape_k::MapekManager;
-use crate::observability::dark_matter::DarkMatterDetector;
+use crate::observability::{MapekManager, DarkMatterDetector};
 
 /// Self-executing workflow coordinator
 ///

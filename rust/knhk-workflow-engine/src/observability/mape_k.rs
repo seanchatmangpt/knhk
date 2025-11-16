@@ -319,11 +319,13 @@ impl MapekManager {
             }
         }
 
+        let requires_human = !in_80_percent || !issues.is_empty();
+
         AnalysisResult {
             in_80_percent,
             issues,
             critical_paths_in_80: paths_in_80,
-            requires_human_intervention: !in_80_percent || !issues.is_empty(),
+            requires_human_intervention: requires_human,
         }
     }
 

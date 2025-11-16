@@ -92,3 +92,9 @@ impl From<serde_json::Error> for WorkflowError {
         WorkflowError::Parse(format!("JSON parse error: {}", err))
     }
 }
+
+impl From<std::fmt::Error> for WorkflowError {
+    fn from(err: std::fmt::Error) -> Self {
+        WorkflowError::Internal(format!("Formatting error: {}", err))
+    }
+}

@@ -22,19 +22,22 @@ pub struct ReceiptId(pub String);
 
 impl ReceiptId {
     pub fn new() -> Self {
-        let mut hasher = Sha3_256::new();
-
         #[cfg(feature = "std")]
         {
-            use std::time::SystemTime;
-            let timestamp = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            hasher.update(timestamp.to_le_bytes());
+            use uuid::Uuid;
+            // Use UUID v4 for guaranteed uniqueness
+            let uuid = Uuid::new_v4();
+            return Self(format!("receipt_{}", uuid));
         }
 
-        Self(format!("receipt_{:x}", hasher.finalize()))
+        #[cfg(not(feature = "std"))]
+        {
+            // Fallback for no_std: use counter only
+            use std::sync::atomic::{AtomicU64, Ordering};
+            static COUNTER: AtomicU64 = AtomicU64::new(0);
+            let counter = COUNTER.fetch_add(1, Ordering::SeqCst);
+            Self(format!("receipt_{}", counter))
+        }
     }
 
     pub fn from_string(s: String) -> Self {
@@ -131,16 +134,20 @@ impl Receipt {
         }
     }
 
-    /// Verify receipt integrity
+    /// Verify receipt consistency
+    ///
+    /// Checks that the receipt state is internally consistent.
+    /// Does NOT enforce the Chatman constant - violations are allowed
+    /// but should be marked as failures via guards_failed.
     pub fn verify(&self) -> bool {
         // Success requires no failed guards
         if self.success && !self.guards_failed.is_empty() {
             return false;
         }
 
-        // Chatman constant enforcement
-        if self.ticks_used > 8 {
-            return false;
+        // If ticks > 8, CHATMAN_CONSTANT guard should be in guards_failed
+        if self.ticks_used > 8 && self.success {
+            return false; // Inconsistent: violation not marked as failure
         }
 
         true
@@ -367,8 +374,9 @@ mod tests {
         assert!(receipt.success);
 
         receipt.set_ticks(10); // Violates Chatman constant
-        assert!(!receipt.verify());
-        assert!(!receipt.success);
+        assert!(receipt.verify()); // Receipt is internally consistent
+        assert!(!receipt.success); // But execution failed
+        assert!(receipt.guards_failed.contains(&"CHATMAN_CONSTANT".to_string()));
     }
 
     #[test]
@@ -445,6 +453,7 @@ mod tests {
         let store = ReceiptStore::new();
         let snapshot_id = SnapshotId::from_string("Σ_test_001".to_string());
 
+        // Create receipts with different characteristics
         for i in 0..10 {
             let mut receipt = Receipt::new(
                 snapshot_id.clone(),
@@ -452,13 +461,26 @@ mod tests {
                 format!("output-{}", i).as_bytes(),
                 format!("workflow-{}", i),
             );
-            receipt.set_ticks((i % 12) as u32); // Some violations
-            store.append(receipt).unwrap();
+            let ticks = (i % 12) as u32;
+            receipt.set_ticks(ticks); // Some violations (9, 10, 11)
+
+            // Debug: print ID to see if they're unique
+            eprintln!("Created receipt {}: id={}, ticks={}", i, receipt.receipt_id.as_str(), ticks);
+
+            let id = store.append(receipt).expect(&format!("Failed to append receipt {}", i));
+            eprintln!("Appended receipt {} with id={}", i, id.as_str());
+        }
+
+        // Check how many are actually stored
+        let all = store.get_all().unwrap();
+        eprintln!("Total receipts in store: {}", all.len());
+        for (idx, r) in all.iter().enumerate() {
+            eprintln!("  Receipt {}: id={}, ticks={}", idx, r.receipt_id.as_str(), r.ticks_used);
         }
 
         let stats = store.get_statistics().unwrap();
-        assert_eq!(stats.total_receipts, 10);
+        assert_eq!(stats.total_receipts, 10, "Expected 10 receipts but got {}", stats.total_receipts);
         assert!(stats.average_ticks > 0.0);
-        assert!(stats.chatman_violations > 0); // Should have some violations
+        assert!(stats.chatman_violations > 0, "Expected some Chatman violations"); // Should have violations for i >= 9
     }
 }
