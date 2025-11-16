@@ -1,0 +1,270 @@
+{#- YAWL Workflow Turtle Template (Pure Passthrough)
+
+This template is intentionally MECHANICAL - it performs ZERO business logic.
+It is a pure passthrough renderer that converts SPARQL results into Turtle.
+
+The Turtle definition IS the complete specification of the workflow.
+All control flow, execution semantics, data flow, and constraints are
+extracted via SPARQL and rendered as-is.
+
+WHY NO LOGIC:
+- The input Turtle already contains ALL workflow information
+- SPARQL extracts exactly what's needed
+- Template just formats it back to Turtle
+- No reconstruction, filtering, or transformation
+- This makes Turtle the TRUE definition and cause
+
+DESIGN PRINCIPLE:
+Input Turtle → SPARQL Extract → Turtle Output (identical structure)
+No template logic interferes with the pure definition.
+-#}
+
+{#- Define namespaces -#}
+@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
+@prefix yawl-exec: <http://bitflow.ai/ontology/yawl/execution/v1#> .
+@prefix yawl-pattern: <http://bitflow.ai/ontology/yawl/patterns/v1#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix schema: <http://schema.org/> .
+
+{#- Render all workflows (SPARQL extracted) -#}
+{%- for workflow in workflows %}
+
+{#- === Workflow Specification === -#}
+{{ workflow.workflow }} a yawl:WorkflowSpecification ;
+    rdfs:label "{{ workflow.workflowLabel }}" ;
+    {%- if workflow.workflowDescription %}
+    rdfs:comment "{{ workflow.workflowDescription }}" ;
+    {%- endif %}
+    {%- if workflow.versionNumber %}
+    yawl:versionNumber "{{ workflow.versionNumber }}" ;
+    {%- endif %}
+    {%- if workflow.startCondition %}
+    yawl:hasStartCondition {{ workflow.startCondition }} ;
+    {%- endif %}
+    {%- if workflow.endCondition %}
+    yawl:hasEndCondition {{ workflow.endCondition }} ;
+    {%- endif %}
+    {%- for task in tasks %}
+    {%- if loop.first %}
+    yawl:hasTask {{ task.task }}{%- if tasks|length > 1 %},{%- else %} ;{%- endif %}
+    {%- elif loop.last %}
+    {{ task.task }} ;
+    {%- else %}
+    {{ task.task }},
+    {%- endif %}
+    {%- endfor %}
+    {%- for condition in conditions %}
+    {%- if loop.first %}
+    yawl:hasCondition {{ condition.condition }}{%- if conditions|length > 1 %},{%- else %} .{%- endif %}
+    {%- elif loop.last %}
+    {{ condition.condition }} .
+    {%- else %}
+    {{ condition.condition }},
+    {%- endif %}
+    {%- endfor %}
+
+{#- === Task Definitions (No filtering, no reconstruction) === -#}
+{%- for task in tasks %}
+
+{{ task.task }} a yawl:Task ;
+    rdfs:label "{{ task.taskLabel }}" ;
+    {%- if task.taskDescription %}
+    rdfs:comment "{{ task.taskDescription }}" ;
+    {%- endif %}
+    {%- if task.splitType %}
+    yawl:hasSplitType yawl:{{ task.splitType }} ;
+    {%- endif %}
+    {%- if task.joinType %}
+    yawl:hasJoinType yawl:{{ task.joinType }} ;
+    {%- endif %}
+    {%- if task.executionMode %}
+    yawl-exec:executionMode yawl-exec:{{ task.executionMode }} ;
+    {%- endif %}
+    {%- if task.isMultiInstance %}
+    yawl:isMultiInstance {{ task.isMultiInstance | lower }} ;
+    {%- endif %}
+    {%- if task.maxConcurrency %}
+    yawl-exec:MaxConcurrency {{ task.maxConcurrency }} ;
+    {%- endif %}
+    {%- if task.taskDuration %}
+    yawl-exec:TaskDuration "{{ task.taskDuration }}"^^xsd:duration ;
+    {%- endif %}
+    {%- if task.discriminatorThreshold %}
+    yawl:discriminatorThreshold {{ task.discriminatorThreshold }} ;
+    {%- endif %}
+    {%- if task.maxIterations %}
+    yawl:MaxIterations {{ task.maxIterations }} ;
+    {%- endif %}
+    {%- if task.milestone %}
+    yawl:Milestone true ;
+    {%- endif %}
+    {%- if task.milestoneCondition %}
+    yawl:MilestoneCondition "{{ task.milestoneCondition }}" ;
+    {%- endif %}
+    {%- if task.interleavingMode %}
+    yawl:InterleavingMode yawl:{{ task.interleavingMode }} ;
+    {%- endif %}
+    {%- if task.handler %}
+    yawl-exec:runtimeBehavior <{{ task.handler }}> ;
+    {%- endif %}
+    {%- if task.assignedResource %}
+    yawl:assignedResource <{{ task.assignedResource }}> ;
+    {%- endif %}
+    {%- for flow in task.outgoingFlows %}
+    {%- if loop.first %}
+    yawl:hasOutgoingFlow {{ flow }}{%- if task.outgoingFlows|length > 1 %},{%- else %} ;{%- endif %}
+    {%- elif loop.last %}
+    {{ flow }} ;
+    {%- else %}
+    {{ flow }},
+    {%- endif %}
+    {%- endfor %}
+    {%- for flow in task.incomingFlows %}
+    {%- if loop.first %}
+    yawl:hasIncomingFlow {{ flow }}{%- if task.incomingFlows|length > 1 %},{%- else %} .{%- endif %}
+    {%- elif loop.last %}
+    {{ flow }} .
+    {%- else %}
+    {{ flow }},
+    {%- endif %}
+    {%- endfor %}
+
+{%- endfor %}
+
+{#- === Condition Definitions (Places) === -#}
+{%- for condition in conditions %}
+
+{{ condition.condition }} a yawl:Condition ;
+    rdfs:label "{{ condition.conditionLabel }}" ;
+    {%- if condition.conditionDescription %}
+    rdfs:comment "{{ condition.conditionDescription }}" ;
+    {%- endif %}
+    {%- if condition.isStartCondition %}
+    a yawl:StartCondition ;
+    {%- endif %}
+    {%- if condition.isEndCondition %}
+    a yawl:EndCondition ;
+    {%- endif %}
+    {%- if condition.initialMarking %}
+    yawl:initialMarking {{ condition.initialMarking }} ;
+    {%- endif %}
+    {%- if condition.semaphore %}
+    yawl:Semaphore {{ condition.semaphore }} ;
+    {%- endif %}
+    {%- for flow in condition.outgoingFlows %}
+    {%- if loop.first %}
+    yawl:hasOutgoingFlow {{ flow }}{%- if condition.outgoingFlows|length > 1 %},{%- else %} ;{%- endif %}
+    {%- elif loop.last %}
+    {{ flow }} ;
+    {%- else %}
+    {{ flow }},
+    {%- endif %}
+    {%- endfor %}
+    {%- for flow in condition.incomingFlows %}
+    {%- if loop.first %}
+    yawl:hasIncomingFlow {{ flow }}{%- if condition.incomingFlows|length > 1 %},{%- else %} .{%- endif %}
+    {%- elif loop.last %}
+    {{ flow }} .
+    {%- else %}
+    {{ flow }},
+    {%- endif %}
+    {%- endfor %}
+
+{%- endfor %}
+
+{#- === Control Flow Patterns (Extracted, not reconstructed) === -#}
+{%- for pattern in patterns %}
+
+{{ pattern.element }} yawl:hasPattern yawl-pattern:{{ pattern.patternName }} ;
+    yawl:patternType "{{ pattern.patternType }}" ;
+    yawl:routingType "{{ pattern.routingType }}" .
+
+{%- endfor %}
+
+{#- === Flow Predicates (Conditional routing) === -#}
+{%- for flow in flows %}
+{%- if flow.flowPredicate or flow.flowCondition %}
+
+{{ flow.source }} yawl:flowCondition "{{ flow.flowPredicate or flow.flowCondition }}" .
+
+{%- endif %}
+{%- endfor %}
+
+{#- === Data Variables === -#}
+{%- for input_var in input_variables %}
+
+{{ input_var.variable }} a yawl:DataInput ;
+    rdfs:label "{{ input_var.label }}" ;
+    yawl:dataType <{{ input_var.dataType }}> ;
+    {%- if input_var.mandatory %}
+    yawl:mandatory true ;
+    {%- endif %}
+    {%- if input_var.transformation %}
+    yawl:transformation "{{ input_var.transformation }}" .
+    {%- else %}
+    yawl:transformation "" .
+    {%- endif %}
+
+{%- endfor %}
+
+{%- for output_var in output_variables %}
+
+{{ output_var.variable }} a yawl:DataOutput ;
+    rdfs:label "{{ output_var.label }}" ;
+    yawl:dataType <{{ output_var.dataType }}> ;
+    {%- if output_var.mandatory %}
+    yawl:mandatory true ;
+    {%- endif %}
+    {%- if output_var.transformation %}
+    yawl:transformation "{{ output_var.transformation }}" .
+    {%- else %}
+    yawl:transformation "" .
+    {%- endif %}
+
+{%- endfor %}
+
+{#- === Event Handlers === -#}
+{%- for event in events %}
+
+{{ event.eventId }} a yawl:EventTrigger ;
+    yawl:eventType yawl:{{ event.eventType }} ;
+    {%- if event.description %}
+    rdfs:comment "{{ event.description }}" ;
+    {%- endif %}
+    {%- if event.targetElement %}
+    yawl:triggeredBy <{{ event.targetElement }}> .
+    {%- else %}
+    yawl:triggeredBy <> .
+    {%- endif %}
+
+{%- endfor %}
+
+{#- === Constraints === -#}
+{%- for constraint in constraints %}
+
+{{ constraint.constraintId }} a yawl:ExecutionConstraint ;
+    yawl:constraintType "{{ constraint.constraintType }}" ;
+    yawl:constraintExpression "{{ constraint.expression }}" ;
+    {%- if constraint.description %}
+    rdfs:comment "{{ constraint.description }}" .
+    {%- else %}
+    rdfs:comment "" .
+    {%- endif %}
+
+{%- endfor %}
+
+{%- endfor %}
+
+{#- === END OF TEMPLATE ===
+
+This template is intentionally minimal. All intelligence is in:
+1. SPARQL queries (extract structure from Turtle)
+2. Input Turtle (defines all behavior)
+3. Validation rules (SHACL constraints)
+
+The template is a PURE PASSTHROUGH renderer.
+This makes the YAWL Turtle definition the TRUE source of truth.
+-#}

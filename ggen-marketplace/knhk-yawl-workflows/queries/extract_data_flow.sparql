@@ -1,0 +1,20 @@
+# SPARQL Query: Extract data flow (inputs, outputs, transformations)
+# Purpose: Complete data aspect of workflows (beyond control flow)
+# Used by: Template rendering and data dependency analysis
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# === INPUT VARIABLES ===
+SELECT ?variable ?label ?dataType ?mandatory ?transformation
+WHERE {
+  ?variable a yawl:DataInput .
+
+  OPTIONAL { ?variable rdfs:label ?label . }
+  OPTIONAL { ?variable yawl:dataType ?dataType . }
+  OPTIONAL { ?variable yawl:mandatory ?mandatory . }
+  OPTIONAL { ?variable yawl:transformation ?transformation . }
+}
+ORDER BY ?variable
