@@ -146,6 +146,10 @@ pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
     SecurityConfig,
 };
+pub use compiler::{
+    CompilerConfig, CompilationResult, CompilationMetadata, DescriptorCompiler,
+    OptimizationStats,
+};
 pub use error::{WorkflowError, WorkflowResult};
 pub use execution::{
     ExecutionEngine, ExecutionHandle, ExecutionPipeline, ExecutionStatus, WorkQueue,

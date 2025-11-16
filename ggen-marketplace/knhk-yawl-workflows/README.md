@@ -154,7 +154,7 @@ knhk-yawl-workflows/
 ├── ggen.yaml                          # Marketplace metadata
 ├── README.md                          # This file
 ├── template/
-│   ├── yawl-workflow.xml.j2          # YAWL 2.2 XML template
+│   ├── yawl-workflow.ttl.j2          # YAWL Turtle (RDF) format template
 │   └── yawl-workflow.json.j2         # YAWL JSON format template
 ├── queries/
 │   ├── extract_workflows.sparql      # Extract workflow specifications
@@ -178,16 +178,16 @@ knhk-yawl-workflows/
 ### Basic Generation
 
 ```bash
-# Generate YAWL XML (default)
+# Generate YAWL Turtle (RDF format)
 ggen template generate-rdf \
   --ontology workflow.ttl \
   --template io.knhk.yawl-workflows
 
-# Specify output filename
+# Specify output filename (default: workflow.ttl)
 ggen template generate-rdf \
   --ontology workflow.ttl \
   --template io.knhk.yawl-workflows \
-  --output my-process.yawl
+  --output my-process.ttl
 ```
 
 ### Batch Operations
@@ -198,7 +198,7 @@ for file in *.ttl; do
   ggen template generate-rdf \
     --ontology "$file" \
     --template io.knhk.yawl-workflows \
-    --output "${file%.ttl}.yawl"
+    --output "generated-${file%.ttl}.ttl"
 done
 
 # Watch directory for changes
@@ -208,8 +208,8 @@ ggen project watch --template io.knhk.yawl-workflows
 ### Validation
 
 ```bash
-# Validate generated YAWL
-ggen template lint workflow.yawl
+# Validate generated YAWL (Turtle format)
+ggen graph load workflow.ttl
 
 # Validate RDF ontology
 ggen graph load workflow.ttl

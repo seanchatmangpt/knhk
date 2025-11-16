@@ -1,0 +1,62 @@
+[package]
+name = "knhk-autonomic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MAPE-K Autonomic Knowledge Integration for self-managing workflows"
+keywords = ["mape-k", "autonomic", "self-healing", "workflow", "machine-learning"]
+categories = ["development-tools", "workflows", "machine-learning"]
+
+[dependencies]
+# Workspace crates
+knhk-hot.workspace = true
+knhk-otel.workspace = true
+knhk-workflow-engine.workspace = true
+knhk-validation.workspace = true
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+tokio-stream.workspace = true
+futures.workspace = true
+
+# RDF & SPARQL
+oxigraph.workspace = true
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Tracing & telemetry
+tracing.workspace = true
+opentelemetry.workspace = true
+opentelemetry_sdk.workspace = true
+
+# Storage
+sled.workspace = true
+
+# Collections
+hashbrown.workspace = true
+ahash.workspace = true
+lru.workspace = true
+
+# Utilities
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde"] }
+
+# Concurrency
+rayon.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
+tempfile.workspace = true
+criterion.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "mape_k_latency"
+harness = false

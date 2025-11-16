@@ -1,0 +1,66 @@
+# SPARQL Query: Extract all task definitions with execution semantics
+# Purpose: Complete task extraction including control flow, execution, data, and resources
+# Used by: Pure passthrough template rendering
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX yawl-exec: <http://bitflow.ai/ontology/yawl/execution/v1#>
+PREFIX yawl-pattern: <http://bitflow.ai/ontology/yawl/patterns/v1#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?task ?taskLabel ?taskDescription
+       ?splitType ?joinType
+       ?executionMode ?maxConcurrency ?taskDuration
+       ?isMultiInstance ?discriminatorThreshold ?maxIterations
+       ?milestone ?milestoneCondition ?interleavingMode
+       ?handler ?assignedResource
+       ?outgoingFlows ?incomingFlows
+WHERE {
+  # Find all tasks in the workflow
+  ?task a yawl:Task .
+
+  # === METADATA ===
+  OPTIONAL { ?task rdfs:label ?taskLabel . }
+  OPTIONAL { ?task rdfs:comment ?taskDescription . }
+
+  # === CONTROL FLOW ROUTING ===
+  OPTIONAL { ?task yawl:hasSplitType ?splitType . }
+  OPTIONAL { ?task yawl:hasJoinType ?joinType . }
+
+  # === EXECUTION SEMANTICS ===
+  OPTIONAL { ?task yawl-exec:executionMode ?executionMode . }
+  OPTIONAL { ?task yawl-exec:MaxConcurrency ?maxConcurrency . }
+  OPTIONAL { ?task yawl-exec:TaskDuration ?taskDuration . }
+
+  # === MULTI-INSTANCE & ITERATION ===
+  OPTIONAL { ?task yawl:isMultiInstance ?isMultiInstance . }
+  OPTIONAL { ?task yawl:discriminatorThreshold ?discriminatorThreshold . }
+  OPTIONAL { ?task yawl:MaxIterations ?maxIterations . }
+
+  # === ADVANCED PATTERNS ===
+  OPTIONAL { ?task yawl:Milestone ?milestone . }
+  OPTIONAL { ?task yawl:MilestoneCondition ?milestoneCondition . }
+  OPTIONAL { ?task yawl:InterleavingMode ?interleavingMode . }
+
+  # === IMPLEMENTATION & EXECUTION ===
+  OPTIONAL { ?task yawl-exec:runtimeBehavior ?handler . }
+  OPTIONAL { ?task yawl:assignedResource ?assignedResource . }
+
+  # === CONTROL FLOW CONNECTIONS (as aggregated lists) ===
+  {
+    SELECT ?task (GROUP_CONCAT(?outgoing; SEPARATOR=",") AS ?outgoingFlows)
+    WHERE {
+      ?task yawl:hasOutgoingFlow ?outgoing .
+    }
+    GROUP BY ?task
+  }
+  OPTIONAL {
+    SELECT ?task (GROUP_CONCAT(?incoming; SEPARATOR=",") AS ?incomingFlows)
+    WHERE {
+      ?task yawl:hasIncomingFlow ?incoming .
+    }
+    GROUP BY ?task
+  }
+}
+ORDER BY ?task

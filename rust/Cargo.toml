@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "knhk-hot",
     "knhk-otel",
+    "knhk-kernel",            # Phase 3 Hot Path Rust Kernel (≤8 ticks)
     "knhk-connectors",
     "knhk-lockchain",
     "knhk-etl",
@@ -12,6 +13,7 @@ members = [
     "knhk-patterns",          # Van der Aalst workflow patterns
     "knhk-workflow-engine",   # Enterprise YAWL workflow engine
     "knhk-process-mining",    # Process mining and workflow analytics
+    "knhk-autonomic",         # MAPE-K Autonomic Knowledge Integration (Covenant 3)
     "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
@@ -21,6 +23,10 @@ members = [
     "knhk-latex",             # LaTeX CLI using clap-noun-verb
     "knhk-test-cache",        # Autonomic test cache daemon
     "knhk-mu-kernel",         # μ-kernel ISA for knowledge operations
+    "chicago-tdd",            # Chicago TDD Performance Harness (Chatman Constant enforcement)
+    "knhk-neural",            # Phase 6: Advanced Neural Integration with Self-Learning Workflows
+    "knhk-accelerate",        # Phase 9: GPU/FPGA Hardware Acceleration
+    "knhk-marketplace",       # Phase 10: Market deployment, licensing, and billing
 ]
 
 [workspace.package]

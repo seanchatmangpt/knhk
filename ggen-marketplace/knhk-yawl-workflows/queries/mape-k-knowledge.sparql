@@ -1,0 +1,32 @@
+# MAPE-K Knowledge Layer: Learn from execution history
+# Extracts patterns and maintains success/failure memories
+
+PREFIX mape: <http://bitflow.ai/ontology/autonomic/mape-k/v1#>
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Query: Calculate Pattern Reliability
+SELECT ?pattern ?patternDesc ?frequency ?successCount ?reliability
+WHERE {
+  ?pattern a mape:LearnedPattern ;
+          rdfs:label ?patternDesc ;
+          mape:patternFrequency ?frequency .
+
+  # Count successful uses of pattern
+  {
+    SELECT ?pattern (COUNT(?success) AS ?successCount)
+    WHERE {
+      ?pattern mape:associatedActions ?action .
+      ?memory a mape:SuccessMemory ;
+             mape:successfulActions ?action ;
+             mape:successRate ?rate .
+      FILTER(?rate > 0.8)
+      BIND(?rate AS ?success)
+    }
+    GROUP BY ?pattern
+  }
+
+  # Calculate reliability
+  BIND(ROUND(?successCount / ?frequency * 100) AS ?reliability)
+}
+ORDER BY DESC(?reliability)

@@ -95,6 +95,14 @@ pub enum WorkflowError {
     /// Snapshot error
     #[error("Snapshot error: {0}")]
     SnapshotError(String),
+
+    /// IO error
+    #[error("IO error: {0}")]
+    Io(String),
+
+    /// Cryptographic error
+    #[error("Cryptographic error: {0}")]
+    Crypto(String),
 }
 
 impl From<std::io::Error> for WorkflowError {

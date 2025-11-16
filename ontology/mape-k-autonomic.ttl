@@ -1,510 +1,900 @@
-@prefix mapek: <http://knhk.ai/ontology/mape-k#> .
-@prefix yawl: <http://www.yawlfoundation.org/yawlschema#> .
-@prefix knhk: <urn:knhk:ontology#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix mape: <http://bitflow.ai/ontology/autonomic/mape-k/v1#> .
+@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
+@prefix yawl-exec: <http://bitflow.ai/ontology/yawl/execution/v1#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
 
-# ============================================================================
-# MAPE-K Autonomic Computing Ontology for Self-Executing Workflows
-# ============================================================================
+# =============================================================================
+# MAPE-K AUTONOMIC KNOWLEDGE ONTOLOGY
+# Complete feedback loop for self-managing workflows
+# =============================================================================
 #
-# Implements the MAPE-K (Monitor, Analyze, Plan, Execute, Knowledge) feedback
-# loop for autonomic workflow systems. This ontology enables workflows to:
+# MAPE-K provides autonomous behavior through feedback:
+# Monitor → Analyze → Plan → Execute → (feed back to Monitor)
+# Knowledge persists and improves across cycles
 #
-# 1. Monitor their own execution via telemetry and guards
-# 2. Analyze performance against SLOs and constraints
-# 3. Plan adaptations when violations occur
-# 4. Execute adaptation plans (shadow deployments, rollbacks)
-# 5. Learn from historical behavior (Knowledge base)
-#
-# Integration with YAWL: Workflows annotated with MAPE-K concepts can
-# self-adapt based on runtime telemetry and learned patterns.
-#
-# ============================================================================
+# This enables:
+# - Self-healing (detect failures, recover automatically)
+# - Self-optimizing (monitor performance, improve continuously)
+# - Self-configuring (adapt to changing conditions)
+# - Self-protecting (detect anomalies, prevent problems)
+# =============================================================================
 
-mapek:Ontology a owl:Ontology ;
-    rdfs:label "MAPE-K Autonomic Computing Ontology" ;
-    rdfs:comment "Self-executing workflow ontology with autonomic feedback loops" ;
-    owl:versionInfo "1.0.0" ;
-    owl:imports <http://www.yawlfoundation.org/yawlschema#> ;
-    owl:imports <urn:knhk:ontology#> .
+# =============================================================================
+# SECTION 1: MONITOR - Metric Collection & Event Observation
+# =============================================================================
 
-# ============================================================================
-# MAPE-K Core Classes
-# ============================================================================
+mape:MonitoringComponent a rdfs:Class ;
+    rdfs:label "Monitoring Component" ;
+    rdfs:comment "Collects metrics, events, and observations from workflows" .
 
-mapek:AutonomicElement a owl:Class ;
-    rdfs:label "Autonomic Element" ;
-    rdfs:comment "Self-managing computational element with MAPE-K loop" .
+mape:Metric a rdfs:Class ;
+    rdfs:label "Workflow Metric" ;
+    rdfs:comment "Measurable aspect of workflow execution" .
 
-mapek:ManagedElement a owl:Class ;
-    rdfs:label "Managed Element" ;
-    rdfs:comment "Workflow or component under autonomic management" ;
-    rdfs:subClassOf yawl:Specification .
-
-# ============================================================================
-# Monitor Phase
-# ============================================================================
-
-mapek:Monitor a owl:Class ;
-    rdfs:label "Monitor" ;
-    rdfs:comment "Observes managed element and collects telemetry" ;
-    rdfs:subClassOf mapek:AutonomicElement .
-
-mapek:Sensor a owl:Class ;
-    rdfs:label "Sensor" ;
-    rdfs:comment "Collects specific telemetry metrics" .
-
-mapek:TelemetryPoint a owl:Class ;
-    rdfs:label "Telemetry Point" ;
-    rdfs:comment "Location in workflow where monitoring occurs" .
-
-mapek:MetricType a owl:Class ;
+mape:MetricType a rdfs:Class ;
     rdfs:label "Metric Type" ;
-    rdfs:comment "Type of metric being monitored" .
+    rdfs:comment "Category of metric (performance, reliability, resource, quality)" .
 
-mapek:LatencyMetric a mapek:MetricType ;
-    rdfs:label "Latency Metric" ;
-    rdfs:comment "Execution time measurement (ticks or ms)" .
+# Metric types
+mape:PerformanceMetric a mape:MetricType ;
+    rdfs:label "Performance" ;
+    rdfs:comment "Execution speed, throughput, latency" .
 
-mapek:ThroughputMetric a mapek:MetricType ;
-    rdfs:label "Throughput Metric" ;
-    rdfs:comment "Operations per time unit" .
+mape:ReliabilityMetric a mape:MetricType ;
+    rdfs:label "Reliability" ;
+    rdfs:comment "Success rate, error rate, failure patterns" .
 
-mapek:ErrorRateMetric a mapek:MetricType ;
-    rdfs:label "Error Rate Metric" ;
-    rdfs:comment "Failure rate percentage" .
+mape:ResourceMetric a mape:MetricType ;
+    rdfs:label "Resource" ;
+    rdfs:comment "CPU, memory, network, disk usage" .
 
-mapek:ResourceUtilizationMetric a mapek:MetricType ;
-    rdfs:label "Resource Utilization Metric" ;
-    rdfs:comment "CPU, memory, or resource usage" .
+mape:QualityMetric a mape:MetricType ;
+    rdfs:label "Quality" ;
+    rdfs:comment "Data quality, result accuracy, SLA compliance" .
 
-mapek:SLOComplianceMetric a mapek:MetricType ;
-    rdfs:label "SLO Compliance Metric" ;
-    rdfs:comment "SLO target achievement rate" .
+mape:SecurityMetric a mape:MetricType ;
+    rdfs:label "Security" ;
+    rdfs:comment "Unauthorized access, anomalies, policy violations" .
 
-# ============================================================================
-# Analyze Phase
-# ============================================================================
+# Metric properties
+mape:metricName a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Name of the metric" .
 
-mapek:Analyzer a owl:Class ;
-    rdfs:label "Analyzer" ;
-    rdfs:comment "Processes monitored data to detect issues" ;
-    rdfs:subClassOf mapek:AutonomicElement .
+mape:metricType a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range mape:MetricType ;
+    rdfs:comment "Category of metric" .
 
-mapek:Symptom a owl:Class ;
-    rdfs:label "Symptom" ;
-    rdfs:comment "Observable indicator of potential problem" .
+mape:currentValue a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "Current measured value" .
 
-mapek:SLOViolation a mapek:Symptom ;
-    rdfs:label "SLO Violation" ;
-    rdfs:comment "Service level objective not met" .
+mape:expectedValue a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "Expected or target value" .
 
-mapek:PerformanceDegradation a mapek:Symptom ;
-    rdfs:label "Performance Degradation" ;
-    rdfs:comment "Execution slower than baseline" .
+mape:unit a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Unit of measurement (ms, percent, GB, etc)" .
 
-mapek:ResourceExhaustion a mapek:Symptom ;
-    rdfs:label "Resource Exhaustion" ;
-    rdfs:comment "Resource nearing capacity limits" .
+mape:isAnomalous a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether current value is anomalous" .
 
-mapek:DeadlockDetected a mapek:Symptom ;
-    rdfs:label "Deadlock Detected" ;
-    rdfs:comment "Workflow deadlock identified" .
+mape:anomalyThreshold a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "Threshold for detecting anomalies" .
 
-mapek:GuardViolation a mapek:Symptom ;
-    rdfs:label "Guard Violation" ;
-    rdfs:comment "Constraint or invariant violated" .
+mape:trendDirection a rdf:Property ;
+    rdfs:domain mape:Metric ;
+    rdfs:range mape:TrendDirection ;
+    rdfs:comment "Is metric improving, degrading, or stable?" .
 
-mapek:AnalysisRule a owl:Class ;
+mape:TrendDirection a rdfs:Class .
+
+mape:Improving a mape:TrendDirection ;
+    rdfs:label "Improving" .
+
+mape:Degrading a mape:TrendDirection ;
+    rdfs:label "Degrading" .
+
+mape:Stable a mape:TrendDirection ;
+    rdfs:label "Stable" .
+
+# Observation/Event recording
+mape:Observation a rdfs:Class ;
+    rdfs:label "Observation" ;
+    rdfs:comment "Observed event or state change" .
+
+mape:observedAt a rdf:Property ;
+    rdfs:domain mape:Observation ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When observation was made" .
+
+mape:observedElement a rdf:Property ;
+    rdfs:domain mape:Observation ;
+    rdfs:range yawl:Task ;
+    rdfs:comment "What was observed (task, flow, condition)" .
+
+mape:eventType a rdf:Property ;
+    rdfs:domain mape:Observation ;
+    rdfs:range mape:EventType ;
+    rdfs:comment "Type of event" .
+
+mape:EventType a rdfs:Class .
+
+mape:TaskStarted a mape:EventType .
+mape:TaskCompleted a mape:EventType .
+mape:TaskFailed a mape:EventType .
+mape:TaskTimeout a mape:EventType .
+mape:TaskSlowdown a mape:EventType .
+mape:DataCorruption a mape:EventType .
+mape:ResourceExhaustion a mape:EventType .
+mape:PolicyViolation a mape:EventType .
+mape:UnexpectedBehavior a mape:EventType .
+mape:AnomalyDetected a mape:EventType .
+
+mape:observationSeverity a rdf:Property ;
+    rdfs:domain mape:Observation ;
+    rdfs:range mape:Severity ;
+    rdfs:comment "How serious is the observation?" .
+
+mape:Severity a rdfs:Class .
+
+mape:Critical a mape:Severity ;
+    rdfs:label "Critical" ;
+    rdfs:comment "Workflow may fail" .
+
+mape:High a mape:Severity ;
+    rdfs:label "High" ;
+    rdfs:comment "Significant degradation" .
+
+mape:Medium a mape:Severity ;
+    rdfs:label "Medium" ;
+    rdfs:comment "Notable deviation" .
+
+mape:Low a mape:Severity ;
+    rdfs:label "Low" ;
+    rdfs:comment "Minor issue" .
+
+mape:monitoring a rdf:Property ;
+    rdfs:domain yawl:WorkflowSpecification ;
+    rdfs:range mape:MonitoringComponent ;
+    rdfs:comment "Monitoring configuration for workflow" .
+
+mape:metricsCollected a rdf:Property ;
+    rdfs:domain mape:MonitoringComponent ;
+    rdfs:range mape:Metric ;
+    rdfs:comment "Metrics being monitored" .
+
+# =============================================================================
+# SECTION 2: ANALYZE - Pattern Recognition & Decision Making
+# =============================================================================
+
+mape:AnalysisComponent a rdfs:Class ;
+    rdfs:label "Analysis Component" ;
+    rdfs:comment "Analyzes metrics and observations to understand state" .
+
+mape:AnalysisRule a rdfs:Class ;
     rdfs:label "Analysis Rule" ;
-    rdfs:comment "Rule for detecting symptoms from metrics" .
+    rdfs:comment "Pattern for recognizing problems or opportunities" .
 
-mapek:Threshold a owl:Class ;
-    rdfs:label "Threshold" ;
-    rdfs:comment "Metric threshold for symptom detection" .
+mape:ruleCondition a rdf:Property ;
+    rdfs:domain mape:AnalysisRule ;
+    rdfs:range xsd:string ;
+    rdfs:comment "SPARQL WHERE clause for detecting pattern" .
 
-# ============================================================================
-# Plan Phase
-# ============================================================================
+mape:ruleName a rdf:Property ;
+    rdfs:domain mape:AnalysisRule ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Descriptive name for this analysis rule" .
 
-mapek:Planner a owl:Class ;
-    rdfs:label "Planner" ;
-    rdfs:comment "Generates adaptation plans from symptoms" ;
-    rdfs:subClassOf mapek:AutonomicElement .
+mape:ruleType a rdf:Property ;
+    rdfs:domain mape:AnalysisRule ;
+    rdfs:range mape:RuleType ;
+    rdfs:comment "What kind of problem does this detect?" .
 
-mapek:AdaptationGoal a owl:Class ;
-    rdfs:label "Adaptation Goal" ;
-    rdfs:comment "Desired outcome of adaptation" .
+mape:RuleType a rdfs:Class .
 
-mapek:RestoreSLOCompliance a mapek:AdaptationGoal ;
-    rdfs:label "Restore SLO Compliance" ;
-    rdfs:comment "Return to SLO target performance" .
+mape:PerformanceDegradation a mape:RuleType ;
+    rdfs:label "Performance Degradation" .
 
-mapek:ImprovePerformance a mapek:AdaptationGoal ;
-    rdfs:label "Improve Performance" ;
-    rdfs:comment "Optimize execution efficiency" .
+mape:HighErrorRate a mape:RuleType ;
+    rdfs:label "High Error Rate" .
 
-mapek:AvoidDeadlock a mapek:AdaptationGoal ;
-    rdfs:label "Avoid Deadlock" ;
-    rdfs:comment "Prevent or resolve deadlock" .
+mape:ResourceStarvation a mape:RuleType ;
+    rdfs:label "Resource Starvation" .
 
-mapek:ReduceResourceUsage a mapek:AdaptationGoal ;
-    rdfs:label "Reduce Resource Usage" ;
-    rdfs:comment "Lower resource consumption" .
+mape:DeadlockRisk a mape:RuleType ;
+    rdfs:label "Deadlock Risk" .
 
-mapek:AdaptationPlan a owl:Class ;
-    rdfs:label "Adaptation Plan" ;
-    rdfs:comment "Sequence of adaptation actions to achieve goal" .
+mape:SLAViolation a mape:RuleType ;
+    rdfs:label "SLA Violation" .
 
-mapek:AdaptationAction a owl:Class ;
-    rdfs:label "Adaptation Action" ;
-    rdfs:comment "Atomic adaptation operation" .
+mape:SecurityThreat a mape:RuleType ;
+    rdfs:label "Security Threat" .
 
-mapek:ScaleAction a mapek:AdaptationAction ;
-    rdfs:label "Scale Action" ;
-    rdfs:comment "Scale resources up or down" .
+mape:DataQualityIssue a mape:RuleType ;
+    rdfs:label "Data Quality Issue" .
 
-mapek:RollbackAction a mapek:AdaptationAction ;
-    rdfs:label "Rollback Action" ;
-    rdfs:comment "Revert to previous stable version" .
+mape:OptimizationOpportunity a mape:RuleType ;
+    rdfs:label "Optimization Opportunity" .
 
-mapek:ShadowDeployAction a mapek:AdaptationAction ;
-    rdfs:label "Shadow Deploy Action" ;
-    rdfs:comment "Deploy alternative version in shadow mode" .
+# Analysis result
+mape:Analysis a rdfs:Class ;
+    rdfs:label "Analysis Result" ;
+    rdfs:comment "Outcome of analyzing metrics and observations" .
 
-mapek:CircuitBreakerAction a mapek:AdaptationAction ;
-    rdfs:label "Circuit Breaker Action" ;
-    rdfs:comment "Open circuit breaker to stop cascading failures" .
+mape:analysisTimestamp a rdf:Property ;
+    rdfs:domain mape:Analysis ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When analysis was performed" .
 
-mapek:WorkflowRestructureAction a mapek:AdaptationAction ;
-    rdfs:label "Workflow Restructure Action" ;
-    rdfs:comment "Change workflow structure (add/remove patterns)" .
+mape:problemIdentified a rdf:Property ;
+    rdfs:domain mape:Analysis ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Description of identified problem or opportunity" .
 
-# ============================================================================
-# Execute Phase
-# ============================================================================
+mape:rootCause a rdf:Property ;
+    rdfs:domain mape:Analysis ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Root cause analysis (SPARQL query results)" .
 
-mapek:Executor a owl:Class ;
-    rdfs:label "Executor" ;
-    rdfs:comment "Applies adaptation plan to managed element" ;
-    rdfs:subClassOf mapek:AutonomicElement .
+mape:affectedElements a rdf:Property ;
+    rdfs:domain mape:Analysis ;
+    rdfs:range [ rdf:type owl:Class ; owl:unionOf (yawl:Task yawl:Condition) ] ;
+    rdfs:comment "Workflow elements affected by problem" .
 
-mapek:ExecutionStrategy a owl:Class ;
-    rdfs:label "Execution Strategy" ;
-    rdfs:comment "Strategy for applying adaptations" .
+mape:recommendedActions a rdf:Property ;
+    rdfs:domain mape:Analysis ;
+    rdfs:range mape:Action ;
+    rdfs:comment "Actions recommended by analysis" .
 
-mapek:ImmediateExecution a mapek:ExecutionStrategy ;
-    rdfs:label "Immediate Execution" ;
-    rdfs:comment "Apply adaptation immediately" .
+mape:confidenceScore a rdf:Property ;
+    rdfs:domain mape:Analysis ;
+    rdfs:range xsd:double ;
+    rdfs:comment "Confidence in analysis (0.0-1.0)" .
 
-mapek:GradualRollout a mapek:ExecutionStrategy ;
-    rdfs:label "Gradual Rollout" ;
-    rdfs:comment "Apply adaptation incrementally (canary/blue-green)" .
+# =============================================================================
+# SECTION 3: PLAN - Decision Making & Action Planning
+# =============================================================================
 
-mapek:ScheduledExecution a mapek:ExecutionStrategy ;
-    rdfs:label "Scheduled Execution" ;
-    rdfs:comment "Apply adaptation at scheduled time" .
+mape:PlanningComponent a rdfs:Class ;
+    rdfs:label "Planning Component" ;
+    rdfs:comment "Decides what actions to take based on analysis" .
 
-mapek:EffectorAction a owl:Class ;
-    rdfs:label "Effector Action" ;
-    rdfs:comment "Concrete action executed on managed element" .
+mape:Action a rdfs:Class ;
+    rdfs:label "Autonomic Action" ;
+    rdfs:comment "Action to be taken by system" .
 
-# ============================================================================
-# Knowledge Phase
-# ============================================================================
+mape:ActionType a rdfs:Class ;
+    rdfs:label "Action Type" .
 
-mapek:Knowledge a owl:Class ;
-    rdfs:label "Knowledge" ;
-    rdfs:comment "Shared knowledge repository for MAPE-K loop" ;
-    rdfs:subClassOf mapek:AutonomicElement .
+mape:HealAction a mape:ActionType ;
+    rdfs:label "Heal" ;
+    rdfs:comment "Fix or recover from failure" .
 
-mapek:HistoricalBehavior a owl:Class ;
-    rdfs:label "Historical Behavior" ;
-    rdfs:comment "Record of past workflow execution patterns" .
+mape:OptimizeAction a mape:ActionType ;
+    rdfs:label "Optimize" ;
+    rdfs:comment "Improve performance or resource usage" .
 
-mapek:LearnedPattern a owl:Class ;
+mape:ConfigureAction a mape:ActionType ;
+    rdfs:label "Configure" ;
+    rdfs:comment "Adapt to changing conditions" .
+
+mape:ProtectAction a mape:ActionType ;
+    rdfs:label "Protect" ;
+    rdfs:comment "Prevent security threats or violations" .
+
+mape:PreventAction a mape:ActionType ;
+    rdfs:label "Prevent" ;
+    rdfs:comment "Prevent predicted problems" .
+
+mape:actionType a rdf:Property ;
+    rdfs:domain mape:Action ;
+    rdfs:range mape:ActionType ;
+    rdfs:comment "Category of action" .
+
+mape:actionDescription a rdf:Property ;
+    rdfs:domain mape:Action ;
+    rdfs:range xsd:string ;
+    rdfs:comment "What this action does" .
+
+mape:actionTarget a rdf:Property ;
+    rdfs:domain mape:Action ;
+    rdfs:range yawl:Task ;
+    rdfs:comment "Which workflow element to act on" .
+
+mape:actionImplementation a rdf:Property ;
+    rdfs:domain mape:Action ;
+    rdfs:range xsd:anyURI ;
+    rdfs:comment "Reference to implementation (code, service)" .
+
+mape:estimatedImpact a rdf:Property ;
+    rdfs:domain mape:Action ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Expected impact of action" .
+
+mape:riskLevel a rdf:Property ;
+    rdfs:domain mape:Action ;
+    rdfs:range mape:RiskLevel ;
+    rdfs:comment "Risk of taking this action" .
+
+mape:RiskLevel a rdfs:Class .
+
+mape:NoRisk a mape:RiskLevel .
+mape:LowRisk a mape:RiskLevel .
+mape:MediumRisk a mape:RiskLevel .
+mape:HighRisk a mape:RiskLevel .
+
+# Plan/Policy
+mape:Policy a rdfs:Class ;
+    rdfs:label "Autonomic Policy" ;
+    rdfs:comment "Rule defining when to take actions" .
+
+mape:policyName a rdf:Property ;
+    rdfs:domain mape:Policy ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Name of policy" .
+
+mape:policyTrigger a rdf:Property ;
+    rdfs:domain mape:Policy ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Condition that triggers policy (SPARQL)" .
+
+mape:policyAction a rdf:Property ;
+    rdfs:domain mape:Policy ;
+    rdfs:range mape:Action ;
+    rdfs:comment "Action(s) to take when triggered" .
+
+mape:policyPriority a rdf:Property ;
+    rdfs:domain mape:Policy ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Priority (higher = execute first)" .
+
+mape:policyCondition a rdf:Property ;
+    rdfs:domain mape:Policy ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Additional constraint before execution" .
+
+mape:policies a rdf:Property ;
+    rdfs:domain yawl:WorkflowSpecification ;
+    rdfs:range mape:Policy ;
+    rdfs:comment "Autonomic policies for this workflow" .
+
+mape:Plan a rdfs:Class ;
+    rdfs:label "Execution Plan" ;
+    rdfs:comment "Ordered sequence of actions to execute" .
+
+mape:planActions a rdf:Property ;
+    rdfs:domain mape:Plan ;
+    rdfs:range mape:Action ;
+    rdfs:comment "Ordered list of actions" .
+
+mape:planRationale a rdf:Property ;
+    rdfs:domain mape:Plan ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Why these actions were chosen" .
+
+mape:expectedOutcome a rdf:Property ;
+    rdfs:domain mape:Plan ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Expected state after plan execution" .
+
+mape:executionStartTime a rdf:Property ;
+    rdfs:domain mape:Plan ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When plan starts executing" .
+
+# =============================================================================
+# SECTION 4: EXECUTE - Action Execution & Feedback
+# =============================================================================
+
+mape:ExecutionComponent a rdfs:Class ;
+    rdfs:label "Execution Component" ;
+    rdfs:comment "Executes planned actions and captures feedback" .
+
+mape:ActionExecution a rdfs:Class ;
+    rdfs:label "Action Execution" ;
+    rdfs:comment "Record of an action being executed" .
+
+mape:executionStartTime a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When execution started" .
+
+mape:executionEndTime a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When execution completed" .
+
+mape:executionStatus a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range mape:ExecutionStatus ;
+    rdfs:comment "Whether action succeeded" .
+
+mape:ExecutionStatus a rdfs:Class .
+
+mape:Successful a mape:ExecutionStatus ;
+    rdfs:label "Successful" .
+
+mape:Failed a mape:ExecutionStatus ;
+    rdfs:label "Failed" .
+
+mape:PartialSuccess a mape:ExecutionStatus ;
+    rdfs:label "Partial Success" .
+
+mape:Cancelled a mape:ExecutionStatus ;
+    rdfs:label "Cancelled" .
+
+mape:executionOutput a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Output from action execution" .
+
+mape:executionError a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Error message if execution failed" .
+
+mape:metricsAfter a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range mape:Metric ;
+    rdfs:comment "Metrics after action execution" .
+
+mape:impactAnalysis a rdf:Property ;
+    rdfs:domain mape:ActionExecution ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Analysis of what changed after action" .
+
+# =============================================================================
+# SECTION 5: KNOWLEDGE - Learning & Adaptation
+# =============================================================================
+
+mape:KnowledgeBase a rdfs:Class ;
+    rdfs:label "Knowledge Base" ;
+    rdfs:comment "Persistent learning and experience from past cycles" .
+
+mape:knowledgeBase a rdf:Property ;
+    rdfs:domain yawl:WorkflowSpecification ;
+    rdfs:range mape:KnowledgeBase ;
+    rdfs:comment "Knowledge base for this workflow" .
+
+# Pattern learning
+mape:LearnedPattern a rdfs:Class ;
     rdfs:label "Learned Pattern" ;
-    rdfs:comment "Pattern learned from historical behavior" .
+    rdfs:comment "Pattern recognized from experience" .
 
-mapek:PerformanceBaseline a owl:Class ;
-    rdfs:label "Performance Baseline" ;
-    rdfs:comment "Expected normal performance characteristics" .
+mape:patternDescription a rdf:Property ;
+    rdfs:domain mape:LearnedPattern ;
+    rdfs:range xsd:string ;
+    rdfs:comment "What pattern was learned" .
 
-mapek:AdaptationHistory a owl:Class ;
-    rdfs:label "Adaptation History" ;
-    rdfs:comment "Record of past adaptations and outcomes" .
+mape:patternFrequency a rdf:Property ;
+    rdfs:domain mape:LearnedPattern ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "How many times pattern observed" .
 
-mapek:Policy a owl:Class ;
-    rdfs:label "Policy" ;
-    rdfs:comment "Rules governing autonomic behavior" .
+mape:patternReliability a rdf:Property ;
+    rdfs:domain mape:LearnedPattern ;
+    rdfs:range xsd:double ;
+    rdfs:comment "Success rate of pattern (0.0-1.0)" .
 
-mapek:AdaptationPolicy a mapek:Policy ;
-    rdfs:label "Adaptation Policy" ;
-    rdfs:comment "When and how to adapt" .
+mape:associatedActions a rdf:Property ;
+    rdfs:domain mape:LearnedPattern ;
+    rdfs:range mape:Action ;
+    rdfs:comment "Actions that work for this pattern" .
 
-mapek:UtilityFunction a owl:Class ;
-    rdfs:label "Utility Function" ;
-    rdfs:comment "Function for evaluating adaptation quality" .
+mape:learnedPatterns a rdf:Property ;
+    rdfs:domain mape:KnowledgeBase ;
+    rdfs:range mape:LearnedPattern ;
+    rdfs:comment "Patterns learned from experience" .
 
-# ============================================================================
-# Self-Executing Workflow Concepts
-# ============================================================================
+# Historical performance
+mape:PerformanceHistory a rdfs:Class ;
+    rdfs:label "Performance History" ;
+    rdfs:comment "Historical metrics for trend analysis" .
 
-mapek:SelfExecutingWorkflow a owl:Class ;
-    rdfs:label "Self-Executing Workflow" ;
-    rdfs:comment "Workflow with integrated MAPE-K loop" ;
-    rdfs:subClassOf yawl:Specification ;
-    rdfs:subClassOf mapek:ManagedElement .
+mape:historicalMetrics a rdf:Property ;
+    rdfs:domain mape:KnowledgeBase ;
+    rdfs:range mape:PerformanceHistory ;
+    rdfs:comment "Historical performance data" .
 
-mapek:AutonomicTask a owl:Class ;
-    rdfs:label "Autonomic Task" ;
-    rdfs:comment "Task with self-management capabilities" ;
-    rdfs:subClassOf yawl:Task .
+mape:metricTimeseries a rdf:Property ;
+    rdfs:domain mape:PerformanceHistory ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Time series data for analysis" .
 
-mapek:AdaptivePattern a owl:Class ;
-    rdfs:label "Adaptive Pattern" ;
-    rdfs:comment "Workflow pattern that can adapt at runtime" .
+mape:trend a rdf:Property ;
+    rdfs:domain mape:PerformanceHistory ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Trend (linear, seasonal, random)" .
 
-mapek:GuardedTransition a owl:Class ;
-    rdfs:label "Guarded Transition" ;
-    rdfs:comment "Workflow transition with runtime guards" .
+mape:forecast a rdf:Property ;
+    rdfs:domain mape:PerformanceHistory ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Predicted future values" .
 
-mapek:RuntimeInvariant a owl:Class ;
-    rdfs:label "Runtime Invariant" ;
-    rdfs:comment "Property that must hold during execution" .
+# Success/Failure mapping
+mape:SuccessMemory a rdfs:Class ;
+    rdfs:label "Success Memory" ;
+    rdfs:comment "What actions worked for what situations" .
 
-mapek:PerformanceConstraint a owl:Class ;
-    rdfs:label "Performance Constraint" ;
-    rdfs:comment "Execution time or resource constraint" .
+mape:situationDescription a rdf:Property ;
+    rdfs:domain mape:SuccessMemory ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Description of situation" .
 
-mapek:ChatmanConstant a mapek:PerformanceConstraint ;
-    rdfs:label "Chatman Constant" ;
-    rdfs:comment "Hot path constraint: ≤8 ticks" ;
-    mapek:maxTicks 8 .
+mape:successfulActions a rdf:Property ;
+    rdfs:domain mape:SuccessMemory ;
+    rdfs:range mape:Action ;
+    rdfs:comment "Actions that worked" .
 
-# ============================================================================
-# Shadow Deployment & A/B Testing
-# ============================================================================
+mape:successRate a rdf:Property ;
+    rdfs:domain mape:SuccessMemory ;
+    rdfs:range xsd:double ;
+    rdfs:comment "How often this worked (0.0-1.0)" .
 
-mapek:ShadowDeployment a owl:Class ;
-    rdfs:label "Shadow Deployment" ;
-    rdfs:comment "Parallel deployment for testing adaptations" .
+mape:successMemories a rdf:Property ;
+    rdfs:domain mape:KnowledgeBase ;
+    rdfs:range mape:SuccessMemory ;
+    rdfs:comment "Recorded successes" .
 
-mapek:ProductionVersion a owl:Class ;
-    rdfs:label "Production Version" ;
-    rdfs:comment "Current production workflow version" .
+# Predictive models
+mape:PredictiveModel a rdfs:Class ;
+    rdfs:label "Predictive Model" ;
+    rdfs:comment "ML model trained from historical data" .
 
-mapek:ShadowVersion a owl:Class ;
-    rdfs:label "Shadow Version" ;
-    rdfs:comment "Alternative version running in shadow mode" .
+mape:modelType a rdf:Property ;
+    rdfs:domain mape:PredictiveModel ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Type of model (regression, classification, etc)" .
 
-mapek:ComparisonMetrics a owl:Class ;
-    rdfs:label "Comparison Metrics" ;
-    rdfs:comment "Metrics comparing production vs shadow" .
+mape:modelAccuracy a rdf:Property ;
+    rdfs:domain mape:PredictiveModel ;
+    rdfs:range xsd:double ;
+    rdfs:comment "Model accuracy on validation set" .
 
-mapek:PromotionDecision a owl:Class ;
-    rdfs:label "Promotion Decision" ;
-    rdfs:comment "Decision to promote shadow to production" .
+mape:modelTrainedAt a rdf:Property ;
+    rdfs:domain mape:PredictiveModel ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When model was last trained" .
 
-# ============================================================================
-# Object Properties
-# ============================================================================
+mape:modelParameters a rdf:Property ;
+    rdfs:domain mape:PredictiveModel ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Model parameters (weights, thresholds)" .
 
-mapek:monitors a owl:ObjectProperty ;
-    rdfs:label "monitors" ;
-    rdfs:comment "Monitor observes ManagedElement" ;
-    rdfs:domain mapek:Monitor ;
-    rdfs:range mapek:ManagedElement .
+mape:predictiveModels a rdf:Property ;
+    rdfs:domain mape:KnowledgeBase ;
+    rdfs:range mape:PredictiveModel ;
+    rdfs:comment "Trained models" .
 
-mapek:collects a owl:ObjectProperty ;
-    rdfs:label "collects" ;
-    rdfs:comment "Sensor collects MetricType" ;
-    rdfs:domain mapek:Sensor ;
-    rdfs:range mapek:MetricType .
+# =============================================================================
+# SECTION 6: MAPE-K FEEDBACK LOOP ORCHESTRATION
+# =============================================================================
 
-mapek:analyzesSymptom a owl:ObjectProperty ;
-    rdfs:label "analyzes symptom" ;
-    rdfs:comment "Analyzer detects Symptom" ;
-    rdfs:domain mapek:Analyzer ;
-    rdfs:range mapek:Symptom .
+mape:AutonomiccWorkflow a rdfs:Class ;
+    rdfs:label "Autonomic Workflow" ;
+    rdfs:subClassOf yawl:WorkflowSpecification ;
+    rdfs:comment "Workflow with complete MAPE-K autonomic control loop" .
 
-mapek:hasThreshold a owl:ObjectProperty ;
-    rdfs:label "has threshold" ;
-    rdfs:comment "AnalysisRule has Threshold" ;
-    rdfs:domain mapek:AnalysisRule ;
-    rdfs:range mapek:Threshold .
+mape:mapeMonitor a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:MonitoringComponent ;
+    rdfs:comment "Monitor component" .
 
-mapek:generatesAdaptationPlan a owl:ObjectProperty ;
-    rdfs:label "generates adaptation plan" ;
-    rdfs:comment "Planner generates AdaptationPlan" ;
-    rdfs:domain mapek:Planner ;
-    rdfs:range mapek:AdaptationPlan .
+mape:mapeAnalyze a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:AnalysisComponent ;
+    rdfs:comment "Analyze component" .
 
-mapek:hasAdaptationGoal a owl:ObjectProperty ;
-    rdfs:label "has adaptation goal" ;
-    rdfs:comment "AdaptationPlan achieves AdaptationGoal" ;
-    rdfs:domain mapek:AdaptationPlan ;
-    rdfs:range mapek:AdaptationGoal .
+mape:mapePlan a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:PlanningComponent ;
+    rdfs:comment "Plan component" .
 
-mapek:containsAction a owl:ObjectProperty ;
-    rdfs:label "contains action" ;
-    rdfs:comment "AdaptationPlan contains AdaptationAction" ;
-    rdfs:domain mapek:AdaptationPlan ;
-    rdfs:range mapek:AdaptationAction .
+mape:mapeExecute a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:ExecutionComponent ;
+    rdfs:comment "Execute component" .
 
-mapek:executes a owl:ObjectProperty ;
-    rdfs:label "executes" ;
-    rdfs:comment "Executor applies AdaptationPlan" ;
-    rdfs:domain mapek:Executor ;
-    rdfs:range mapek:AdaptationPlan .
+mape:mapeKnowledge a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:KnowledgeBase ;
+    rdfs:comment "Knowledge base" .
 
-mapek:usesStrategy a owl:ObjectProperty ;
-    rdfs:label "uses strategy" ;
-    rdfs:comment "Executor uses ExecutionStrategy" ;
-    rdfs:domain mapek:Executor ;
-    rdfs:range mapek:ExecutionStrategy .
+mape:loopFrequency a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range xsd:duration ;
+    rdfs:comment "How often MAPE-K loop executes" .
 
-mapek:storesKnowledge a owl:ObjectProperty ;
-    rdfs:label "stores knowledge" ;
-    rdfs:comment "Knowledge repository stores HistoricalBehavior" ;
-    rdfs:domain mapek:Knowledge ;
-    rdfs:range mapek:HistoricalBehavior .
+mape:loopEnabled a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether autonomic loop is active" .
 
-mapek:hasBaseline a owl:ObjectProperty ;
-    rdfs:label "has baseline" ;
-    rdfs:comment "ManagedElement has PerformanceBaseline" ;
-    rdfs:domain mapek:ManagedElement ;
-    rdfs:range mapek:PerformanceBaseline .
+# Feedback metrics
+mape:FeedbackCycle a rdfs:Class ;
+    rdfs:label "Feedback Cycle" ;
+    rdfs:comment "One complete MAPE-K cycle" .
 
-mapek:enforces a owl:ObjectProperty ;
-    rdfs:label "enforces" ;
-    rdfs:comment "ManagedElement enforces Policy" ;
-    rdfs:domain mapek:ManagedElement ;
-    rdfs:range mapek:Policy .
+mape:cycleNumber a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Sequence number of cycle" .
 
-mapek:hasInvariant a owl:ObjectProperty ;
-    rdfs:label "has invariant" ;
-    rdfs:comment "SelfExecutingWorkflow enforces RuntimeInvariant" ;
-    rdfs:domain mapek:SelfExecutingWorkflow ;
-    rdfs:range mapek:RuntimeInvariant .
+mape:cycleStartTime a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When cycle started" .
 
-mapek:hasConstraint a owl:ObjectProperty ;
-    rdfs:label "has constraint" ;
-    rdfs:comment "AutonomicTask has PerformanceConstraint" ;
-    rdfs:domain mapek:AutonomicTask ;
-    rdfs:range mapek:PerformanceConstraint .
+mape:cycleEndTime a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When cycle completed" .
 
-mapek:shadowDeploys a owl:ObjectProperty ;
-    rdfs:label "shadow deploys" ;
-    rdfs:comment "ProductionVersion shadow deploys ShadowVersion" ;
-    rdfs:domain mapek:ProductionVersion ;
-    rdfs:range mapek:ShadowVersion .
+mape:cycleMonitorPhase a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range mape:Observation ;
+    rdfs:comment "Observations from monitor phase" .
 
-mapek:comparesUsing a owl:ObjectProperty ;
-    rdfs:label "compares using" ;
-    rdfs:comment "ShadowDeployment uses ComparisonMetrics" ;
-    rdfs:domain mapek:ShadowDeployment ;
-    rdfs:range mapek:ComparisonMetrics .
+mape:cycleAnalysisPhase a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range mape:Analysis ;
+    rdfs:comment "Analysis from analyze phase" .
 
-# ============================================================================
-# Datatype Properties
-# ============================================================================
+mape:cyclePlanPhase a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range mape:Plan ;
+    rdfs:comment "Plan from plan phase" .
 
-mapek:metricValue a owl:DatatypeProperty ;
-    rdfs:label "metric value" ;
-    rdfs:comment "Current value of metric" ;
-    rdfs:domain mapek:MetricType ;
-    rdfs:range xsd:decimal .
+mape:cycleExecutePhase a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range mape:ActionExecution ;
+    rdfs:comment "Actions executed in execute phase" .
 
-mapek:thresholdValue a owl:DatatypeProperty ;
-    rdfs:label "threshold value" ;
-    rdfs:comment "Threshold value for triggering symptom" ;
-    rdfs:domain mapek:Threshold ;
-    rdfs:range xsd:decimal .
+mape:cycleOutcome a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Summary of cycle outcome" .
 
-mapek:maxTicks a owl:DatatypeProperty ;
-    rdfs:label "max ticks" ;
-    rdfs:comment "Maximum ticks allowed (Chatman Constant = 8)" ;
-    rdfs:domain mapek:PerformanceConstraint ;
-    rdfs:range xsd:integer .
+mape:cycleEffectiveness a rdf:Property ;
+    rdfs:domain mape:FeedbackCycle ;
+    rdfs:range xsd:double ;
+    rdfs:comment "How effective was this cycle (0.0-1.0)" .
 
-mapek:targetSLO a owl:DatatypeProperty ;
-    rdfs:label "target SLO" ;
-    rdfs:comment "Target SLO value (e.g., P99 latency)" ;
-    rdfs:domain knhk:SLO ;
-    rdfs:range xsd:decimal .
+mape:feedbackCycles a rdf:Property ;
+    rdfs:domain mape:KnowledgeBase ;
+    rdfs:range mape:FeedbackCycle ;
+    rdfs:comment "History of all feedback cycles" .
 
-mapek:actualSLO a owl:DatatypeProperty ;
-    rdfs:label "actual SLO" ;
-    rdfs:comment "Measured SLO value" ;
-    rdfs:domain knhk:SLO ;
-    rdfs:range xsd:decimal .
+# =============================================================================
+# SECTION 7: SELF-MANAGEMENT PROPERTIES
+# =============================================================================
 
-mapek:adaptationScore a owl:DatatypeProperty ;
-    rdfs:label "adaptation score" ;
-    rdfs:comment "Quality score for adaptation (0.0-1.0)" ;
-    rdfs:domain mapek:AdaptationPlan ;
-    rdfs:range xsd:decimal .
+mape:SelfManagementProperty a rdfs:Class ;
+    rdfs:label "Self-Management Property" ;
+    rdfs:comment "Characteristic of self-managing system" .
 
-mapek:timestamp a owl:DatatypeProperty ;
-    rdfs:label "timestamp" ;
-    rdfs:comment "Unix timestamp of event" ;
-    rdfs:range xsd:long .
+mape:SelfHealing a mape:SelfManagementProperty ;
+    rdfs:label "Self-Healing" ;
+    rdfs:comment "Detects and recovers from failures automatically" .
 
-mapek:spanId a owl:DatatypeProperty ;
-    rdfs:label "span ID" ;
-    rdfs:comment "OpenTelemetry span identifier" ;
-    rdfs:range xsd:string .
+mape:SelfOptimizing a mape:SelfManagementProperty ;
+    rdfs:label "Self-Optimizing" ;
+    rdfs:comment "Continuously improves performance" .
 
-mapek:traceId a owl:DatatypeProperty ;
-    rdfs:label "trace ID" ;
-    rdfs:comment "OpenTelemetry trace identifier" ;
-    rdfs:range xsd:string .
+mape:SelfConfiguring a mape:SelfManagementProperty ;
+    rdfs:label "Self-Configuring" ;
+    rdfs:comment "Adapts to changing conditions automatically" .
 
-# ============================================================================
-# Example Instance: Self-Executing ATM Workflow
-# ============================================================================
+mape:SelfProtecting a mape:SelfManagementProperty ;
+    rdfs:label "Self-Protecting" ;
+    rdfs:comment "Detects and prevents security threats" .
 
-<http://knhk.ai/autonomic/atm-workflow> a mapek:SelfExecutingWorkflow ;
-    rdfs:label "Self-Executing ATM Workflow" ;
-    mapek:hasMonitor <http://knhk.ai/autonomic/atm-monitor> ;
-    mapek:hasAnalyzer <http://knhk.ai/autonomic/atm-analyzer> ;
-    mapek:hasPlanner <http://knhk.ai/autonomic/atm-planner> ;
-    mapek:hasExecutor <http://knhk.ai/autonomic/atm-executor> ;
-    mapek:hasKnowledge <http://knhk.ai/autonomic/atm-knowledge> ;
-    mapek:hasInvariant <http://knhk.ai/autonomic/atm-invariant-balance-consistency> ;
-    mapek:hasConstraint mapek:ChatmanConstant .
+mape:SelfLearning a mape:SelfManagementProperty ;
+    rdfs:label "Self-Learning" ;
+    rdfs:comment "Improves from experience" .
 
-<http://knhk.ai/autonomic/atm-monitor> a mapek:Monitor ;
-    mapek:monitors <http://knhk.ai/autonomic/atm-workflow> ;
-    mapek:hasSensor <http://knhk.ai/autonomic/atm-latency-sensor> ;
-    mapek:hasSensor <http://knhk.ai/autonomic/atm-error-sensor> .
+mape:enabledProperties a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:SelfManagementProperty ;
+    rdfs:comment "Which self-management properties enabled" .
 
-<http://knhk.ai/autonomic/atm-latency-sensor> a mapek:Sensor ;
-    mapek:collects mapek:LatencyMetric ;
-    mapek:metricValue 6 . # 6 ticks (within Chatman Constant)
+# =============================================================================
+# SECTION 8: AUTONOMIC HOOKS FOR INTEGRATION
+# =============================================================================
 
-<http://knhk.ai/autonomic/atm-analyzer> a mapek:Analyzer ;
-    mapek:hasRule <http://knhk.ai/autonomic/atm-chatman-rule> .
+mape:Hook a rdfs:Class ;
+    rdfs:label "Autonomic Hook" ;
+    rdfs:comment "Integration point for autonomic behavior" .
 
-<http://knhk.ai/autonomic/atm-chatman-rule> a mapek:AnalysisRule ;
-    rdfs:comment "Detect Chatman Constant violation (>8 ticks)" ;
-    mapek:hasThreshold <http://knhk.ai/autonomic/atm-chatman-threshold> .
+mape:HookType a rdfs:Class ;
+    rdfs:label "Hook Type" .
 
-<http://knhk.ai/autonomic/atm-chatman-threshold> a mapek:Threshold ;
-    mapek:thresholdValue 8 .
+mape:PreMonitor a mape:HookType ;
+    rdfs:label "Pre-Monitor" ;
+    rdfs:comment "Hook before monitoring phase" .
 
-<http://knhk.ai/autonomic/atm-planner> a mapek:Planner .
+mape:PostMonitor a mape:HookType ;
+    rdfs:label "Post-Monitor" ;
+    rdfs:comment "Hook after monitoring phase" .
 
-<http://knhk.ai/autonomic/atm-executor> a mapek:Executor ;
-    mapek:usesStrategy mapek:GradualRollout .
+mape:PreAnalyze a mape:HookType ;
+    rdfs:label "Pre-Analyze" ;
+    rdfs:comment "Hook before analysis phase" .
 
-<http://knhk.ai/autonomic/atm-knowledge> a mapek:Knowledge ;
-    mapek:storesKnowledge <http://knhk.ai/autonomic/atm-historical-behavior> .
+mape:PostAnalyze a mape:HookType ;
+    rdfs:label "Post-Analyze" ;
+    rdfs:comment "Hook after analysis phase" .
 
-<http://knhk.ai/autonomic/atm-invariant-balance-consistency> a mapek:RuntimeInvariant ;
-    rdfs:comment "Balance after withdrawal = Balance before - Withdrawal amount" .
+mape:PrePlan a mape:HookType ;
+    rdfs:label "Pre-Plan" ;
+    rdfs:comment "Hook before planning phase" .
+
+mape:PostPlan a mape:HookType ;
+    rdfs:label "Post-Plan" ;
+    rdfs:comment "Hook after planning phase" .
+
+mape:PreExecute a mape:HookType ;
+    rdfs:label "Pre-Execute" ;
+    rdfs:comment "Hook before action execution" .
+
+mape:PostExecute a mape:HookType ;
+    rdfs:label "Post-Execute" ;
+    rdfs:comment "Hook after action execution" .
+
+mape:PreFeedback a mape:HookType ;
+    rdfs:label "Pre-Feedback" ;
+    rdfs:comment "Hook before feedback to knowledge" .
+
+mape:PostFeedback a mape:HookType ;
+    rdfs:label "Post-Feedback" ;
+    rdfs:comment "Hook after feedback to knowledge" .
+
+mape:hookType a rdf:Property ;
+    rdfs:domain mape:Hook ;
+    rdfs:range mape:HookType ;
+    rdfs:comment "When this hook is called" .
+
+mape:hookImplementation a rdf:Property ;
+    rdfs:domain mape:Hook ;
+    rdfs:range xsd:anyURI ;
+    rdfs:comment "Implementation (code, service, script)" .
+
+mape:hookName a rdf:Property ;
+    rdfs:domain mape:Hook ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Name of hook" .
+
+mape:autonomicHooks a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:Hook ;
+    rdfs:comment "Hooks for autonomic behavior" .
+
+# =============================================================================
+# SECTION 9: AUTONOMIC GOALS & OBJECTIVES
+# =============================================================================
+
+mape:AutonomicGoal a rdfs:Class ;
+    rdfs:label "Autonomic Goal" ;
+    rdfs:comment "High-level objective for autonomous system" .
+
+mape:goalName a rdf:Property ;
+    rdfs:domain mape:AutonomicGoal ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Name of goal" .
+
+mape:goalDescription a rdf:Property ;
+    rdfs:domain mape:AutonomicGoal ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Description of goal" .
+
+mape:goalMetric a rdf:Property ;
+    rdfs:domain mape:AutonomicGoal ;
+    rdfs:range mape:Metric ;
+    rdfs:comment "Metric to measure goal attainment" .
+
+mape:goalTarget a rdf:Property ;
+    rdfs:domain mape:AutonomicGoal ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "Target value for metric" .
+
+mape:goalPriority a rdf:Property ;
+    rdfs:domain mape:AutonomicGoal ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Priority level (higher = more important)" .
+
+mape:goalTolerance a rdf:Property ;
+    rdfs:domain mape:AutonomicGoal ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "Acceptable deviation from target" .
+
+mape:autonomicGoals a rdf:Property ;
+    rdfs:domain mape:AutonomiccWorkflow ;
+    rdfs:range mape:AutonomicGoal ;
+    rdfs:comment "Goals for autonomic system" .
+
+# =============================================================================
+# SECTION 10: ORCHESTRATION & INTEGRATION
+# =============================================================================
+
+# Integration with YAWL
+yawl:enableAutonomic a rdf:Property ;
+    rdfs:domain yawl:WorkflowSpecification ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Enable MAPE-K autonomic loop for this workflow" .
+
+yawl:autonomicConfig a rdf:Property ;
+    rdfs:domain yawl:WorkflowSpecification ;
+    rdfs:range mape:AutonomiccWorkflow ;
+    rdfs:comment "Autonomic configuration" .
+
+# Knowledge integration with task execution
+yawl:learnFrom a rdf:Property ;
+    rdfs:domain yawl:Task ;
+    rdfs:range mape:KnowledgeBase ;
+    rdfs:comment "Reference to knowledge base for decisions" .
+
+yawl:updateKnowledge a rdf:Property ;
+    rdfs:domain yawl:Task ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether this task updates knowledge base" .
+
+# =============================================================================
+# DOCUMENTATION & USAGE
+# =============================================================================
+
+# Complete MAPE-K autonomic workflow:
+#
+# 1. MONITOR (Continuous):
+#    - Collect metrics (performance, reliability, resource, quality, security)
+#    - Detect events and observations
+#    - Flag anomalies
+#
+# 2. ANALYZE (On schedule or event trigger):
+#    - Execute analysis rules
+#    - Match patterns to learned behaviors
+#    - Identify root causes
+#    - Assess severity
+#    - Generate recommendations
+#
+# 3. PLAN (When problems/opportunities detected):
+#    - Apply policies
+#    - Select actions based on knowledge
+#    - Sequence actions
+#    - Assess risk
+#
+# 4. EXECUTE (With safety gates):
+#    - Execute planned actions
+#    - Monitor action effects
+#    - Capture output and metrics
+#    - Adjust if needed
+#
+# 5. KNOWLEDGE (Continuous learning):
+#    - Record results
+#    - Update success memory
+#    - Train predictive models
+#    - Learn new patterns
+#    - Improve policies
+#
+# This creates a closed loop where:
+# - System monitors its own behavior
+# - System detects problems/opportunities
+# - System decides what to do
+# - System takes action
+# - System learns from results
+# - System improves future decisions
+#
+# Result: Truly autonomous, self-managing workflows

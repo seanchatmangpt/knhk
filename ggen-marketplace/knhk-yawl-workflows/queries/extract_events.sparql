@@ -1,0 +1,16 @@
+# SPARQL Query: Extract event handlers and triggers
+# Purpose: Event-driven workflow aspects (reactive patterns)
+# Used by: Template rendering and event routing
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?eventId ?eventType ?description ?targetElement
+WHERE {
+  ?eventId a yawl:EventTrigger .
+
+  OPTIONAL { ?eventId yawl:eventType ?eventType . }
+  OPTIONAL { ?eventId rdfs:comment ?description . }
+  OPTIONAL { ?eventId yawl:triggeredBy ?targetElement . }
+}
+ORDER BY ?eventId

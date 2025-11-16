@@ -1,0 +1,36 @@
+# MAPE-K Planning Layer: Decide what actions to take
+# Applies policies and selects actions based on knowledge
+
+PREFIX mape: <http://bitflow.ai/ontology/autonomic/mape-k/v1#>
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Query: Find Applicable Policies for Current Problems
+SELECT ?policyName ?policyPriority ?action ?actionType ?actionDescription
+WHERE {
+  # Find problems that exist
+  ?problem a mape:Analysis ;
+           mape:problemIdentified ?problemDesc ;
+           mape:rootCause ?rootCause .
+
+  # Find policies that match problems
+  ?policy a mape:Policy ;
+         rdfs:label ?policyName ;
+         mape:policyPriority ?policyPriority ;
+         mape:policyTrigger ?trigger ;
+         mape:policyAction ?action .
+
+  # Get action details
+  ?action mape:actionType ?actionType ;
+         rdfs:label ?actionDescription ;
+         mape:riskLevel ?riskLevel .
+
+  # Filter by success in knowledge base
+  ?success a mape:SuccessMemory ;
+          mape:situationDescription ?situation ;
+          mape:successfulActions ?action ;
+          mape:successRate ?successRate .
+
+  FILTER(?successRate > 0.7)  # Only use proven actions
+}
+ORDER BY DESC(?policyPriority)

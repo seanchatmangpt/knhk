@@ -42,7 +42,7 @@ echo "Checking required files..."
 required_files=(
   "ggen.yaml"
   "README.md"
-  "template/yawl-workflow.xml.j2"
+  "template/yawl-workflow.ttl.j2"
   "template/yawl-workflow.json.j2"
   "queries/extract_workflows.sparql"
   "queries/extract_tasks.sparql"

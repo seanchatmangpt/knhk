@@ -59,6 +59,14 @@ groups:
       Telemetry for Monitor-Analyze-Plan-Execute-Knowledge autonomic control loops.
       Tracks self-adaptation, anomaly detection, and knowledge base updates.
 
+  - id: knhk.mapek
+    type: span
+    brief: "KNHK MAPE-K autonomic feedback loop telemetry"
+    note: |
+      Telemetry for the MAPE-K (Monitor, Analyze, Plan, Execute, Knowledge)
+      autonomic feedback loop. Enables self-healing, self-optimizing, and
+      self-learning workflows.
+
   - id: knhk.guard
     type: span
     brief: "KNHK guard constraint enforcement telemetry"

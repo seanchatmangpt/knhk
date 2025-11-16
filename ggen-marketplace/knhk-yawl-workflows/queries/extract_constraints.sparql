@@ -1,0 +1,16 @@
+# SPARQL Query: Extract execution constraints and validation rules
+# Purpose: Constraints that must be satisfied for valid execution
+# Used by: Runtime validation and constraint checking
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?constraintId ?constraintType ?expression ?description
+WHERE {
+  ?constraintId a yawl:ExecutionConstraint .
+
+  OPTIONAL { ?constraintId yawl:constraintType ?constraintType . }
+  OPTIONAL { ?constraintId yawl:constraintExpression ?expression . }
+  OPTIONAL { ?constraintId rdfs:comment ?description . }
+}
+ORDER BY ?constraintId

@@ -2,6 +2,9 @@
 name = "knhk-integration-tests"
 version = "1.0.0"
 edition = "2021"
+license = "MIT"
+authors = ["KNHK Team"]
+description = "Comprehensive integration tests for all 6 DOCTRINE covenants"
 
 [[bin]]
 name = "integration_test"
@@ -19,7 +22,11 @@ knhk-etl = { path = "../knhk-etl", features = ["std"] }
 knhk-hot = { path = "../knhk-hot", version = "1.0.0" }
 knhk-otel = { path = "../knhk-otel" }
 knhk-patterns = { path = "../knhk-patterns" }
+knhk-workflow-engine = { path = "../knhk-workflow-engine" }
 knhk-sidecar = { path = "../knhk-sidecar", optional = true }
+
+# RDF and semantic web
+oxigraph = { workspace = true }
 
 # Utilities
 anyhow = "1.0"
@@ -27,5 +34,37 @@ anyhow = "1.0"
 [features]
 sidecar = ["dep:knhk-sidecar", "knhk-sidecar/otel"]
 otel = []
+default = []
 
 [dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+tempfile = { workspace = true }
+
+# Integration test organization
+[[test]]
+name = "covenant_1_turtle_definition"
+path = "tests/covenant_1/turtle_definition.rs"
+
+[[test]]
+name = "covenant_2_invariants"
+path = "tests/covenant_2/invariants.rs"
+
+[[test]]
+name = "covenant_3_mape_k_speed"
+path = "tests/covenant_3/mape_k_speed.rs"
+
+[[test]]
+name = "covenant_4_all_patterns"
+path = "tests/covenant_4/all_patterns.rs"
+
+[[test]]
+name = "covenant_5_latency_bounds"
+path = "tests/covenant_5/latency_bounds.rs"
+
+[[test]]
+name = "covenant_6_observations"
+path = "tests/covenant_6/observations.rs"
+
+[[test]]
+name = "end_to_end_complete_workflow"
+path = "tests/end_to_end/complete_workflow.rs"
