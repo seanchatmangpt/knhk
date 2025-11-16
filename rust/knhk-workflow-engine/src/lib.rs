@@ -87,6 +87,14 @@ pub mod integration;
 
 // Macros are exported via #[macro_export] in otel_macros.rs
 
+/// Compile-time assertion macro for const contexts
+#[macro_export]
+macro_rules! const_assert {
+    ($cond:expr) => {
+        const _: () = assert!($cond);
+    };
+}
+
 #[macro_use]
 pub mod observability;
 pub mod parser;

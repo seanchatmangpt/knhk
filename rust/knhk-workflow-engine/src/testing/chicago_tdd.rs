@@ -1498,7 +1498,8 @@ mod tests {
         let data = TestDataBuilder::new()
             .with_order_data("ORD-001", "100.00")
             .with_customer_data("CUST-001")
-            .build_json();
+            .build_json()
+            .unwrap();
 
         assert_eq!(data["order_id"], "ORD-001");
         assert_eq!(data["total_amount"], "100.00");
