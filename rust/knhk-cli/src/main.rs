@@ -35,6 +35,7 @@ mod cover;
 mod coverage;
 mod epoch;
 mod fortune5;
+mod gen;
 mod insights;
 mod metrics;
 mod mining;
