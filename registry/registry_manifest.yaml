@@ -51,3 +51,11 @@ groups:
     note: |
       Counters, histograms, and gauges for KNHK operations, latency,
       and resource usage.
+
+  - id: knhk.mapek
+    type: span
+    brief: "KNHK MAPE-K autonomic feedback loop telemetry"
+    note: |
+      Telemetry for the MAPE-K (Monitor, Analyze, Plan, Execute, Knowledge)
+      autonomic feedback loop. Enables self-healing, self-optimizing, and
+      self-learning workflows.

@@ -1,0 +1,363 @@
+# KNHK MAPE-K Autonomic Feedback Schema
+# Defines telemetry for the autonomic knowledge feedback loop
+# Covenant 6: Observations Drive Everything
+
+groups:
+  # MAPE-K Monitor attributes
+  - id: knhk.mapek.monitor.attributes
+    type: attribute_group
+    brief: "MAPE-K Monitor component attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.mapek.component
+        type: string
+        stability: experimental
+        brief: "MAPE-K component name"
+        examples: ["Monitor", "Analyze", "Plan", "Execute", "Knowledge"]
+        note: "Identifies which component of MAPE-K loop emitted this telemetry"
+
+      - id: knhk.mapek.observation_type
+        type: string
+        stability: experimental
+        brief: "Type of observation collected"
+        examples: ["performance", "reliability", "quality", "security", "resource"]
+        note: "Categories align with autonomic computing objectives"
+
+      - id: knhk.mapek.metric_name
+        type: string
+        stability: experimental
+        brief: "Name of the observed metric"
+        examples: ["latency_ms", "error_rate", "throughput", "cpu_usage"]
+
+      - id: knhk.mapek.metric_value
+        type: double
+        stability: experimental
+        brief: "Current value of the metric"
+        examples: [12.5, 0.05, 1000.0]
+
+      - id: knhk.mapek.threshold_breached
+        type: boolean
+        stability: experimental
+        brief: "Whether the metric breached a threshold"
+        note: "True indicates anomaly detection triggered"
+
+      - id: knhk.mapek.threshold_value
+        type: double
+        stability: experimental
+        brief: "The threshold that was breached"
+        examples: [100.0, 0.1, 5000.0]
+
+      - id: knhk.mapek.severity
+        type: string
+        stability: experimental
+        brief: "Severity level of the observation"
+        examples: ["critical", "high", "medium", "low", "info"]
+
+      - id: knhk.mapek.anomaly_detected
+        type: boolean
+        stability: experimental
+        brief: "Whether an anomaly was detected"
+        note: "Triggers Analyze component activation"
+
+  # MAPE-K Analyze attributes
+  - id: knhk.mapek.analyze.attributes
+    type: attribute_group
+    brief: "MAPE-K Analyze component attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.mapek.pattern_matched
+        type: string
+        stability: experimental
+        brief: "Pattern matched during analysis"
+        examples: ["high_latency_pattern", "error_burst_pattern", "resource_exhaustion"]
+        note: "Known pattern from knowledge base"
+
+      - id: knhk.mapek.root_cause
+        type: string
+        stability: experimental
+        brief: "Identified root cause"
+        examples: ["database_connection_pool_exhausted", "network_latency_spike", "memory_leak"]
+
+      - id: knhk.mapek.confidence
+        type: double
+        stability: experimental
+        brief: "Confidence in diagnosis (0.0-1.0)"
+        examples: [0.95, 0.75, 0.5]
+        note: "Higher confidence leads to automatic remediation"
+
+      - id: knhk.mapek.sparql_query
+        type: string
+        stability: experimental
+        brief: "SPARQL query used for analysis"
+        note: "Query against workflow RDF knowledge graph"
+
+      - id: knhk.mapek.analysis_duration_ms
+        type: int
+        stability: experimental
+        brief: "Duration of analysis in milliseconds"
+        examples: [50, 100, 500]
+
+  # MAPE-K Plan attributes
+  - id: knhk.mapek.plan.attributes
+    type: attribute_group
+    brief: "MAPE-K Plan component attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.mapek.policy_applied
+        type: string
+        stability: experimental
+        brief: "Autonomic policy applied"
+        examples: ["auto_scale_up", "failover_to_backup", "degrade_gracefully"]
+
+      - id: knhk.mapek.action_planned
+        type: string
+        stability: experimental
+        brief: "Action planned for execution"
+        examples: ["restart_service", "increase_timeout", "switch_to_cache"]
+
+      - id: knhk.mapek.action_sequence
+        type: string
+        stability: experimental
+        brief: "Comma-separated sequence of planned actions"
+        examples: ["check_health,restart_service,verify_recovery"]
+
+      - id: knhk.mapek.risk_level
+        type: string
+        stability: experimental
+        brief: "Risk level of planned actions"
+        examples: ["low", "medium", "high", "critical"]
+        note: "High risk actions require approval"
+
+      - id: knhk.mapek.approval_required
+        type: boolean
+        stability: experimental
+        brief: "Whether human approval is required"
+        note: "True for high-risk actions"
+
+      - id: knhk.mapek.historical_success_rate
+        type: double
+        stability: experimental
+        brief: "Historical success rate of this action (0.0-1.0)"
+        examples: [0.95, 0.80, 0.50]
+        note: "Learned from Knowledge component"
+
+  # MAPE-K Execute attributes
+  - id: knhk.mapek.execute.attributes
+    type: attribute_group
+    brief: "MAPE-K Execute component attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.mapek.action_executed
+        type: string
+        stability: experimental
+        brief: "Action that was executed"
+        examples: ["restart_service", "increase_pool_size", "enable_circuit_breaker"]
+
+      - id: knhk.mapek.execution_status
+        type: string
+        stability: experimental
+        brief: "Status of action execution"
+        examples: ["success", "failure", "partial", "timeout"]
+
+      - id: knhk.mapek.execution_duration_ms
+        type: int
+        stability: experimental
+        brief: "Duration of action execution in milliseconds"
+        examples: [100, 500, 2000]
+
+      - id: knhk.mapek.side_effects
+        type: string
+        stability: experimental
+        brief: "Observed side effects of the action"
+        examples: ["latency_reduced", "error_rate_increased", "no_change"]
+
+      - id: knhk.mapek.rollback_required
+        type: boolean
+        stability: experimental
+        brief: "Whether action needs to be rolled back"
+        note: "True if action made things worse"
+
+  # MAPE-K Knowledge attributes
+  - id: knhk.mapek.knowledge.attributes
+    type: attribute_group
+    brief: "MAPE-K Knowledge component attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.mapek.pattern_learned
+        type: string
+        stability: experimental
+        brief: "New pattern learned from experience"
+        examples: ["spike_at_9am_pattern", "cascade_failure_pattern"]
+
+      - id: knhk.mapek.success_recorded
+        type: boolean
+        stability: experimental
+        brief: "Whether action was successful"
+        note: "Updates success rate statistics"
+
+      - id: knhk.mapek.knowledge_updated
+        type: string
+        stability: experimental
+        brief: "What knowledge was updated"
+        examples: ["action_success_rate", "pattern_library", "policy_effectiveness"]
+
+      - id: knhk.mapek.prediction_accuracy
+        type: double
+        stability: experimental
+        brief: "Accuracy of prediction (0.0-1.0)"
+        examples: [0.90, 0.75, 0.60]
+        note: "How accurate was the root cause prediction"
+
+  # Monitor span
+  - id: knhk.mapek.monitor
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Monitor: Collect observations"
+    note: |
+      Continuous observation of system state, metrics, and events.
+      Detects anomalies and triggers analysis when thresholds are breached.
+    attributes:
+      - ref: knhk.mapek.component
+      - ref: knhk.mapek.observation_type
+      - ref: knhk.mapek.metric_name
+      - ref: knhk.mapek.metric_value
+      - ref: knhk.mapek.threshold_breached
+      - ref: knhk.mapek.threshold_value
+      - ref: knhk.mapek.severity
+      - ref: knhk.mapek.anomaly_detected
+
+  # Analyze span
+  - id: knhk.mapek.analyze
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Analyze: Diagnose root cause"
+    note: |
+      Pattern matching and root cause analysis.
+      Uses SPARQL queries against RDF knowledge graph to diagnose issues.
+    attributes:
+      - ref: knhk.mapek.component
+      - ref: knhk.mapek.pattern_matched
+      - ref: knhk.mapek.root_cause
+      - ref: knhk.mapek.confidence
+      - ref: knhk.mapek.sparql_query
+      - ref: knhk.mapek.analysis_duration_ms
+
+  # Plan span
+  - id: knhk.mapek.plan
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Plan: Decide on actions"
+    note: |
+      Applies autonomic policies and selects actions based on knowledge.
+      Considers risk and historical success rates.
+    attributes:
+      - ref: knhk.mapek.component
+      - ref: knhk.mapek.policy_applied
+      - ref: knhk.mapek.action_planned
+      - ref: knhk.mapek.action_sequence
+      - ref: knhk.mapek.risk_level
+      - ref: knhk.mapek.approval_required
+      - ref: knhk.mapek.historical_success_rate
+
+  # Execute span
+  - id: knhk.mapek.execute
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Execute: Take action"
+    note: |
+      Executes planned actions and monitors their effects.
+      May trigger rollback if action makes things worse.
+    attributes:
+      - ref: knhk.mapek.component
+      - ref: knhk.mapek.action_executed
+      - ref: knhk.mapek.execution_status
+      - ref: knhk.mapek.execution_duration_ms
+      - ref: knhk.mapek.side_effects
+      - ref: knhk.mapek.rollback_required
+
+  # Knowledge update span
+  - id: knhk.mapek.knowledge_update
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Knowledge: Learn from experience"
+    note: |
+      Records execution results and updates knowledge base.
+      Learns patterns, updates success rates, refines predictions.
+    attributes:
+      - ref: knhk.mapek.component
+      - ref: knhk.mapek.pattern_learned
+      - ref: knhk.mapek.success_recorded
+      - ref: knhk.mapek.knowledge_updated
+      - ref: knhk.mapek.prediction_accuracy
+
+  # Full MAPE-K cycle span
+  - id: knhk.mapek.cycle
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Complete MAPE-K feedback cycle"
+    note: |
+      Traces a complete autonomic feedback loop from observation to action.
+      Parent span for Monitor→Analyze→Plan→Execute→Knowledge sequence.
+    attributes:
+      - ref: knhk.mapek.component
+      - id: knhk.mapek.cycle_triggered_by
+        type: string
+        stability: experimental
+        brief: "What triggered this MAPE-K cycle"
+        examples: ["threshold_breach", "anomaly_detected", "scheduled_check"]
+      - id: knhk.mapek.cycle_duration_ms
+        type: int
+        stability: experimental
+        brief: "Total cycle duration in milliseconds"
+        examples: [500, 1000, 5000]
+      - id: knhk.mapek.cycle_outcome
+        type: string
+        stability: experimental
+        brief: "Outcome of the cycle"
+        examples: ["remediated", "escalated", "ignored", "failed"]
+
+  # Metrics for MAPE-K effectiveness
+  - id: metric.knhk.mapek.anomaly_count
+    type: metric
+    metric_name: knhk.mapek.anomaly_count
+    stability: experimental
+    brief: "Total number of anomalies detected"
+    instrument: counter
+    unit: "{anomalies}"
+    attributes:
+      - ref: knhk.mapek.observation_type
+      - ref: knhk.mapek.severity
+
+  - id: metric.knhk.mapek.remediation_success_rate
+    type: metric
+    metric_name: knhk.mapek.remediation_success_rate
+    stability: experimental
+    brief: "Success rate of autonomic remediation (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: knhk.mapek.action_executed
+
+  - id: metric.knhk.mapek.cycle_latency
+    type: metric
+    metric_name: knhk.mapek.cycle_latency
+    stability: experimental
+    brief: "MAPE-K cycle latency in milliseconds"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: knhk.mapek.cycle_triggered_by
+
+  - id: metric.knhk.mapek.knowledge_growth
+    type: metric
+    metric_name: knhk.mapek.knowledge_growth
+    stability: experimental
+    brief: "Number of new patterns learned over time"
+    instrument: counter
+    unit: "{patterns}"
