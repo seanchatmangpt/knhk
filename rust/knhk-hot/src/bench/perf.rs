@@ -79,7 +79,7 @@ where
         if let Ok(mut manager) = PerfEventManager::new() {
             if manager.start().is_ok() {
                 // Re-run function with perf measurement
-                let _ = f();
+                f();
                 if let Ok(perf) = manager.stop(bytes) {
                     return BenchmarkResult {
                         operation: operation.to_string(),

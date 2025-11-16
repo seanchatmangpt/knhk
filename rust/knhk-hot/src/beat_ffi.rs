@@ -51,7 +51,7 @@ pub struct BeatScheduler;
 impl BeatScheduler {
     /// Initialize beat scheduler (call once at startup)
     pub fn init() {
-        unsafe { knhk_beat_init() }
+        unsafe { knhk_beat_init(); }
         // Reset the Rust-side counter to match C-side initialization
         KNHK_GLOBAL_CYCLE.store(0, Ordering::SeqCst);
     }

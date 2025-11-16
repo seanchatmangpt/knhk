@@ -248,6 +248,11 @@ pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) 
 }
 
 /// Generic fallback for non-ARM platforms
+///
+/// # Safety
+/// This function uses unsafe SIMD operations. The caller must ensure:
+/// - `json` is a valid UTF-8 byte slice
+/// - `index` is a valid mutable reference
 #[cfg(not(target_arch = "aarch64"))]
 pub unsafe fn stage1_structural_index(json: &[u8], index: &mut StructuralIndex) {
     index.structural_chars.clear();
@@ -1184,6 +1189,11 @@ impl ATMShapeKernel {
     }
 
     /// Match key against expected keys using SIMD-accelerated comparison
+    ///
+    /// # Safety
+    /// Caller must ensure:
+    /// - `self.expected_keys` is properly initialized
+    /// - `key_bytes` contains valid UTF-8
     #[inline(always)]
     unsafe fn match_key_simd(&self, key_bytes: &[u8]) -> Option<u8> {
         // Try each expected key
@@ -1199,6 +1209,12 @@ impl ATMShapeKernel {
     }
 
     /// Parse value using fast path (no FP parse for numbers)
+    ///
+    /// # Safety
+    /// Caller must ensure:
+    /// - `json` is a valid, initialized byte slice
+    /// - `pos` is a valid mutable reference to a position < json.len()
+    /// - `json` contains well-formed JSON per the parser's assumptions
     #[inline(always)]
     unsafe fn parse_value_fast(&self, json: &[u8], pos: &mut usize) -> u64 {
         if *pos >= json.len() {
@@ -1282,6 +1298,12 @@ impl ATMShapeKernel {
     }
 
     /// Skip value (for unknown keys)
+    ///
+    /// # Safety
+    /// Caller must ensure:
+    /// - `json` is a valid, initialized byte slice
+    /// - `pos` is a valid mutable reference and initially < json.len()
+    /// - `json` contains well-formed JSON matching parser invariants
     #[inline(always)]
     unsafe fn skip_value(&self, json: &[u8], pos: &mut usize) {
         if *pos >= json.len() {
