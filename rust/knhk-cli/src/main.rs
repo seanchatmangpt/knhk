@@ -30,6 +30,7 @@ mod boot;
 mod config;
 mod conformance;
 mod connect;
+mod console;
 mod context;
 mod cover;
 mod coverage;
