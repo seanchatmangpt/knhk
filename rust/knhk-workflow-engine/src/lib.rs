@@ -65,9 +65,11 @@
 
 pub mod api;
 pub mod cache;
+pub mod cancellation;
 pub mod capabilities;
 pub mod case;
 pub mod cluster;
+pub mod compensation;
 pub mod compiler;
 pub mod compliance;
 pub mod config;
@@ -89,6 +91,7 @@ pub mod integration;
 
 #[macro_use]
 pub mod observability;
+pub mod multi_instance;
 pub mod parser;
 pub mod patterns;
 pub mod performance;
@@ -109,16 +112,28 @@ pub mod validation;
 pub mod visualization;
 pub mod worklets;
 
+pub use cancellation::{
+    CancellationEvent, CancellationRegistry, CancellationRegion, CancellationScope, RegionId,
+};
 pub use capabilities::{
     validate_capabilities, CapabilityMetadata, CapabilityRegistry, CapabilityStatus,
     CapabilityValidationReport, CapabilityValidator,
 };
 pub use case::{Case, CaseId, CaseState};
+pub use compensation::{
+    CompensationEntry, CompensationHandler, CompensationId, CompensationRegistry,
+    CompensationScope, CompensationStats,
+};
 pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
     SecurityConfig,
 };
 pub use error::{WorkflowError, WorkflowResult};
+pub use multi_instance::{
+    CompletionCondition, CreationStrategy, InstanceContext, InstanceId, InstanceState,
+    MultiInstanceId, MultiInstanceSpec, MultiInstanceStats, MultiInstanceTracker,
+    SynchronizationMode,
+};
 pub use execution::{
     ExecutionEngine, ExecutionHandle, ExecutionPipeline, ExecutionStatus, WorkQueue,
 };
