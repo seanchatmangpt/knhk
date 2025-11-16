@@ -1,0 +1,627 @@
+# KNHK Definition of Done (DoD) Manifest
+# ==========================================================================
+# This manifest codifies the 9 critical criteria for knhk to be "done".
+# Each criterion is machine-checkable and CI/CD-enforceable.
+#
+# Sources of Truth:
+# - Turtle: Single source of workflow truth (C1)
+# - SHACL: Invariant enforcement (C2)
+# - Chatman Constant (τ ≤ 8): Timing guarantees (C5)
+# - Receipts (Γ): Append-only audit trail (C6)
+# - MAPE-K: Autonomic feedback loop (C3)
+#
+# CI Failure Conditions: If ANY criterion is not "satisfied", build fails.
+# ==========================================================================
+
+version: "1.0.0"
+release_date: "2025-11-16"
+project: "knhk"
+doctrine_version: "2027"
+
+# ==========================================================================
+# 1. DOCTRINE & COVENANTS ARE EXECUTABLE, NOT ASPIRATIONAL
+# ==========================================================================
+section_1_doctrine_covenants:
+  criterion: "All 6 covenants are machine-checkable artifacts with formal specs and test suites"
+
+  covenant_c1:
+    name: "Turtle is definition and cause"
+    description: "All executable workflows defined in Turtle/RDF, no shadow DSLs"
+    checks:
+      - id: "C1.1"
+        description: "Turtle specifications exist for all 6 covenants"
+        command: "find registry/ -name '*.ttl' -type f | wc -l"
+        min_count: 6
+        ci_failure: true
+
+      - id: "C1.2"
+        description: "All example workflows validate as valid Turtle"
+        command: "find examples/ -name '*.ttl' -exec rapper -i turtle {} \\; 2>&1 | grep -c 'error' || true"
+        expected_value: 0
+        ci_failure: true
+
+      - id: "C1.3"
+        description: "No embedded business logic in projection code (audit via code review)"
+        command: "grep -r 'TODO\\|FIXME\\|hack\\|XXX' src/projection/ | wc -l || true"
+        max_count: 0
+        ci_failure: false  # Warning only
+
+  covenant_c2:
+    name: "Invariants are law"
+    description: "SHACL validates all Turtle against constraints"
+    checks:
+      - id: "C2.1"
+        description: "SHACL shape definitions exist for all invariant classes"
+        command: "find registry/ -name '*shapes*.ttl' | wc -l"
+        min_count: 3
+        ci_failure: true
+
+      - id: "C2.2"
+        description: "All registry Turtle validates against SHACL"
+        command: "npx shacl validate registry/ontology.ttl registry/shapes.ttl 2>&1 | grep -i 'conforms: true' || echo 'FAILED'"
+        expected_output: "CONFORMS"
+        ci_failure: true
+
+      - id: "C2.3"
+        description: "Covenant regression tests exist"
+        command: "test -f tests/COVENANT_TESTS.rs"
+        ci_failure: true
+
+  covenant_c3:
+    name: "Feedback loops run at machine speed"
+    description: "MAPE-K loop is fully wired and tested"
+    checks:
+      - id: "C3.1"
+        description: "MAPE-K modules are integrated with workflow engine"
+        command: "grep -l 'MAPE\\|Monitor\\|Analyze\\|Plan\\|Execute\\|Knowledge' src/engine/*.rs | wc -l"
+        min_count: 3
+        ci_failure: true
+
+      - id: "C3.2"
+        description: "MAPE-K loop tests demonstrate adaptation"
+        command: "grep -c 'test.*mape\\|test.*autonomic\\|test.*adapt' tests/ -r -i"
+        min_count: 3
+        ci_failure: true
+
+  covenant_c4:
+    name: "All patterns expressible via permutations"
+    description: "Pattern matrix is canonical and covers all supported workflows"
+    checks:
+      - id: "C4.1"
+        description: "Pattern matrix definition exists"
+        command: "test -f src/patterns/matrix.rs"
+        ci_failure: true
+
+      - id: "C4.2"
+        description: "Pattern basis (Split, Join, Modifiers) documented"
+        command: "grep -l 'Split\\|Join\\|Modifiers' src/patterns/*.rs | wc -l"
+        min_count: 3
+        ci_failure: true
+
+      - id: "C4.3"
+        description: "W3C pattern coverage tests exist"
+        command: "grep -c 'test.*pattern.*w3c\\|test.*pattern.*enterprise' tests/ -r -i"
+        min_count: 5
+        ci_failure: true
+
+  covenant_c5:
+    name: "Chatman constant guards all complexity (τ ≤ 8)"
+    description: "Hot path operations constrained to ≤8 ticks"
+    checks:
+      - id: "C5.1"
+        description: "Chatman constant declared in code/docs"
+        command: "grep -r 'CHATMAN_CONSTANT\\|τ.*8\\|8.*tick' . --include='*.rs' --include='*.md' | head -5"
+        ci_failure: false  # Informational
+
+      - id: "C5.2"
+        description: "Chicago TDD harness enforces τ bounds"
+        command: "make test-chicago-v04 2>&1 | grep -i 'chatman\\|τ\\|tick\\|8 tick' || echo 'CHECK_MANUALLY'"
+        ci_failure: false  # Performance test runs separately
+
+      - id: "C5.3"
+        description: "Performance tests document timing constraints"
+        command: "test -f tests/perf_chicago_v04.rs"
+        ci_failure: true
+
+  covenant_c6:
+    name: "Observations drive everything"
+    description: "Telemetry and receipts are first-class artifacts"
+    checks:
+      - id: "C6.1"
+        description: "Receipt generation module exists"
+        command: "test -f src/receipts/mod.rs"
+        ci_failure: true
+
+      - id: "C6.2"
+        description: "Append-only Γ (gamma) store implemented"
+        command: "grep -l 'append_only\\|audit_log\\|gamma_store\\|Γ' src/**/*.rs"
+        ci_failure: true
+
+  test_coverage:
+    description: "All covenant tests pass and produce receipts"
+    command: "cargo test --test COVENANT_TESTS -- --nocapture 2>&1 | grep -c 'test result: ok'"
+    expected_result: "ok"
+    ci_failure: true
+
+# ==========================================================================
+# 2. TURTLE IS THE ONLY CAUSE (C1)
+# ==========================================================================
+section_2_turtle_single_source_of_truth:
+  criterion: "Single source of truth via Turtle/RDF, no shadow DSLs"
+
+  checks:
+    - id: "T.1"
+      description: "All workflows in registry/ as valid Turtle"
+      command: "find registry/ -type f -name '*.ttl' | xargs -I {} sh -c 'rapper -i turtle {} > /dev/null 2>&1 || echo \"FAILED: {}\"' | wc -l"
+      expected_value: 0
+      ci_failure: true
+
+    - id: "T.2"
+      description: "Deterministic projection: Turtle → SPARQL → Π → μ_knhk"
+      command: "test -f src/projection/deterministic.rs"
+      ci_failure: true
+
+    - id: "T.3"
+      description: "Projection code is free of business logic (audit)"
+      command: "wc -l < src/projection/deterministic.rs"
+      min_lines: 50
+      max_lines: 500  # Keep it structural, not complex
+      ci_failure: false  # Code review required
+
+    - id: "T.4"
+      description: "E2E tests load Turtle only, execute, verify receipts"
+      command: "grep -c 'test.*turtle_to_receipt\\|fn.*e2e.*turtle' tests/ -r"
+      min_count: 3
+      ci_failure: true
+
+    - id: "T.5"
+      description: "No hardcoded behavior outside Turtle/ontology"
+      command: "grep -r 'match.*workflow\\|if.*pattern.*==' src/ --include='*.rs' | grep -v 'test' | wc -l"
+      max_count: 5  # Only for runtime projections, not logic
+      ci_failure: false  # Warning
+
+  ontology:
+    description: "Ontology file exists and documents all entities"
+    files:
+      - path: "registry/ontology.ttl"
+        required: true
+      - path: "registry/shapes.ttl"
+        required: true
+      - path: "registry/covenants.ttl"
+        required: true
+
+# ==========================================================================
+# 3. INVARIANTS ARE LAW (C2)
+# ==========================================================================
+section_3_invariants_law:
+  criterion: "SHACL validation is mandatory; invariants encoded, not in comments"
+
+  checks:
+    - id: "I.1"
+      description: "All Turtle validates against SHACL before execution"
+      command: "npx shacl validate registry/ontology.ttl registry/shapes.ttl 2>&1 | grep -q 'conforms: true'"
+      ci_failure: true
+
+    - id: "I.2"
+      description: "SHACL shapes define: type soundness, immutability, recursion bounds, latency"
+      command: "grep -c 'sh:maxCount\\|sh:minCount\\|sh:nodeKind\\|latency\\|recursion' registry/shapes.ttl"
+      min_count: 5
+      ci_failure: true
+
+    - id: "I.3"
+      description: "Failing SHACL validation blocks execution (engine enforces)"
+      command: "grep -l 'shacl.*validate\\|constraint.*fail\\|validation.*error' src/engine/*.rs"
+      ci_failure: true
+
+    - id: "I.4"
+      description: "Covenant regression tests verify Q1-Qn invariants"
+      command: "grep -c 'test.*invariant\\|assert.*Q[0-9]\\|check_invariant' tests/COVENANT_TESTS.rs"
+      min_count: 5
+      ci_failure: true
+
+    - id: "I.5"
+      description: "Rust invariant checks for critical rules (not comments)"
+      command: "grep -c 'assert!\\|debug_assert!' src/**/*.rs | awk '{print ($1 > 10 ? 1 : 0)}'"
+      expected_result: "1"
+      ci_failure: false  # Informational
+
+# ==========================================================================
+# 4. WORKFLOW ENGINE IS PURE STATE MACHINE (C1, C5)
+# ==========================================================================
+section_4_workflow_engine:
+  criterion: "Pure state machine with timing guarantees (τ ≤ 8 ticks, determinism)"
+
+  checks:
+    - id: "E.1"
+      description: "State machine module exists with deterministic next_state(state, event)"
+      command: "grep -l 'fn.*next_state\\|StateMachine\\|pure.*engine' src/engine/*.rs"
+      ci_failure: true
+
+    - id: "E.2"
+      description: "No global state; I/O, RNG, clocks are explicit inputs"
+      command: "grep -c 'lazy_static\\|thread_local\\|static mut' src/engine/*.rs"
+      expected_value: 0
+      ci_failure: false  # Warning only
+
+    - id: "E.3"
+      description: "Chatman constant enforced for hot paths (≤8 ticks)"
+      command: "make test-performance-v04 2>&1 | grep -i 'pass\\|ok' | head -1"
+      ci_failure: true
+
+    - id: "E.4"
+      description: "Determinism tests: same Turtle + inputs → identical sequences + receipts"
+      command: "grep -c 'test.*determinism\\|test.*replay.*same' tests/ -r"
+      min_count: 2
+      ci_failure: true
+
+    - id: "E.5"
+      description: "Engine processes only events from Π (no external state leakage)"
+      command: "grep -l 'event.*Π\\|event.*projection\\|consume.*event' src/engine/*.rs"
+      ci_failure: true
+
+# ==========================================================================
+# 5. PATTERN MATRIX & EXPRESSIVENESS (C4)
+# ==========================================================================
+section_5_pattern_matrix:
+  criterion: "Pattern matrix canonical; all patterns expressible via basis combinations"
+
+  checks:
+    - id: "P.1"
+      description: "Pattern matrix module documents basis (Split, Join, Modifiers)"
+      command: "grep -c 'Split\\|Join\\|Modifier' src/patterns/matrix.rs"
+      min_count: 10
+      ci_failure: true
+
+    - id: "P.2"
+      description: "Coverage tests map W3C/enterprise patterns to matrix configs"
+      command: "find tests/ -name '*pattern*' | xargs grep -l 'w3c\\|enterprise\\|coverage' | wc -l"
+      min_count: 1
+      ci_failure: true
+
+    - id: "P.3"
+      description: "Forbidden shapes rejected at validation (unbounded loops, etc.)"
+      command: "grep -l 'forbidden\\|reject\\|invalid.*pattern' src/validation/*.rs"
+      ci_failure: true
+
+    - id: "P.4"
+      description: "Pattern tests confirm correct execution per matrix"
+      command: "cargo test --lib patterns:: -- --nocapture 2>&1 | tail -1 | grep -q 'ok'"
+      ci_failure: true
+
+# ==========================================================================
+# 6. MAPE-K LOOP FULLY CLOSED (C3, C6)
+# ==========================================================================
+section_6_mape_k_loop:
+  criterion: "Monitor→Analyze→Plan→Execute→Knowledge wired to engine, autonomic behavior tested"
+
+  checks:
+    - id: "M.1"
+      description: "Monitor module consumes receipts/telemetry from engine"
+      command: "test -f src/mape_k/monitor.rs"
+      ci_failure: true
+
+    - id: "M.2"
+      description: "Analyze module detects SLO breaches, drift, failures"
+      command: "test -f src/mape_k/analyze.rs"
+      ci_failure: true
+
+    - id: "M.3"
+      description: "Plan module produces explicit adaptation proposals (ΔΣ_knhk)"
+      command: "test -f src/mape_k/plan.rs"
+      ci_failure: true
+
+    - id: "M.4"
+      description: "Execute module applies proposals via shadow deployments/overlays"
+      command: "test -f src/mape_k/execute.rs"
+      ci_failure: true
+
+    - id: "M.5"
+      description: "Knowledge module stores/reuses learned patterns"
+      command: "test -f src/mape_k/knowledge.rs"
+      ci_failure: true
+
+    - id: "M.6"
+      description: "Autonomic behavior tests show: failure → detection → proposal → execution → SLO restored"
+      command: "grep -c 'test.*autonomic\\|test.*mape_k.*failure\\|test.*slo.*restored' tests/ -r"
+      min_count: 3
+      ci_failure: true
+
+    - id: "M.7"
+      description: "MAPE-K loop latency documented and within doctrine bounds"
+      command: "grep -r 'MAPE_K_LATENCY\\|mape.*latency' src/ --include='*.rs' | head -1"
+      ci_failure: false  # Informational
+
+# ==========================================================================
+# 7. RECEIPTS, Γ, AND PROVENANCE FIRST-CLASS (C6)
+# ==========================================================================
+section_7_receipts_provenance:
+  criterion: "Cryptographically verifiable receipts for everything; append-only Γ store"
+
+  checks:
+    - id: "R.1"
+      description: "Receipt structure includes: inputs, pattern, transitions, guards, policy, timing"
+      command: "grep -c 'inputs\\|pattern\\|transitions\\|guards\\|policy\\|timing\\|Receipt' src/receipts/mod.rs"
+      min_count: 6
+      ci_failure: true
+
+    - id: "R.2"
+      description: "Receipts are cryptographically verifiable (hash-based, signed)"
+      command: "grep -l 'hash\\|sign\\|crypto\\|blake\\|sha' src/receipts/*.rs"
+      ci_failure: true
+
+    - id: "R.3"
+      description: "Append-only Γ store with content addressing"
+      command: "test -f src/receipts/gamma_store.rs"
+      ci_failure: true
+
+    - id: "R.4"
+      description: "Γ has chain structure for multi-step workflows"
+      command: "grep -l 'chain\\|parent\\|linked\\|previous' src/receipts/gamma_store.rs"
+      ci_failure: true
+
+    - id: "R.5"
+      description: "Queryable API: answer 'why', 'when', 'who', 'what guards'"
+      command: "grep -c 'fn.*query\\|impl.*GammaQuery\\|why\\|when\\|who\\|guards' src/receipts/gamma_store.rs"
+      min_count: 4
+      ci_failure: true
+
+    - id: "R.6"
+      description: "Tests demonstrate queryable audit trail"
+      command: "grep -c 'test.*gamma.*query\\|test.*receipt.*query\\|test.*why\\|test.*audit' tests/ -r"
+      min_count: 3
+      ci_failure: true
+
+    - id: "R.7"
+      description: "All workflow executions produce receipts and Γ entries"
+      command: "grep -c 'emit_receipt\\|gamma_append\\|receipt_sink' src/engine/*.rs"
+      min_count: 2
+      ci_failure: true
+
+# ==========================================================================
+# 8. MARKETPLACE & ONTOLOGY INTEGRATION TIGHT (Not Optional)
+# ==========================================================================
+section_8_marketplace_ontology:
+  criterion: "Marketplace validation → knhk MAPE-K loop; ontology-driven execution"
+
+  checks:
+    - id: "MP.1"
+      description: "Marketplace receipts/metrics ingested as O into MAPE-K"
+      command: "grep -l 'marketplace.*receipt\\|marketplace.*metric\\|ingest.*marketplace' src/mape_k/*.rs"
+      ci_failure: true
+
+    - id: "MP.2"
+      description: "Marketplace signals influence pattern selection, overlays, guard tightening"
+      command: "grep -c 'marketplace.*influence\\|marketplace.*pattern\\|marketplace.*guard\\|marketplace.*overlay' src/mape_k/*.rs"
+      min_count: 3
+      ci_failure: true
+
+    - id: "MP.3"
+      description: "Marketplace ontologies (packages, guards, capabilities) in Turtle"
+      command: "find registry/ -name '*marketplace*' -o -name '*packages*' | xargs test -f"
+      ci_failure: false  # Conditional on marketplace feature
+
+    - id: "MP.4"
+      description: "Marketplace ontologies validated against knhk Q"
+      command: "grep -l 'marketplace.*validate\\|marketplace.*shacl\\|marketplace.*invariant' src/validation/*.rs"
+      ci_failure: false  # Conditional
+
+    - id: "MP.5"
+      description: "Auto-promotion for high-quality items; quarantine for risky ones"
+      command: "grep -l 'auto.*promote\\|quarantine\\|policy.*promote' src/mape_k/*.rs"
+      ci_failure: false  # Advanced feature
+
+    - id: "MP.6"
+      description: "Promotion/quarantine behavior expressed as Σ/Q, not embedded"
+      command: "grep -c 'Σ.*promote\\|Q.*quarantine\\|policy.*Turtle' src/mape_k/*.rs"
+      min_count: 1
+      ci_failure: false  # Informational
+
+# ==========================================================================
+# 9. TOOLING, DOCUMENTATION, EXAMPLES CLOSE LOOP
+# ==========================================================================
+section_9_tooling_docs_examples:
+  criterion: "E2E examples, complete docs, operational readiness checklist"
+
+  checks:
+    - id: "D.1"
+      description: "End-to-end examples exist: Turtle → validation → execution → receipts"
+      command: "find examples/ -name '*.ttl' -type f | wc -l"
+      min_count: 3
+      ci_failure: true
+
+    - id: "D.2"
+      description: "Examples include failure scenario: failure → MAPE-K → overlay → SLO restored"
+      command: "find examples/ -name '*failure*' -o -name '*recovery*' -o -name '*autonomic*' | wc -l"
+      min_count: 1
+      ci_failure: false  # Desired but conditional
+
+    - id: "D.3"
+      description: "Marketplace examples: package → guards → workflows"
+      command: "find examples/ -name '*marketplace*' | wc -l"
+      min_count: 1
+      ci_failure: false  # Conditional
+
+    - id: "D.4"
+      description: "DOCTRINE_2027 exists and is current"
+      command: "test -f docs/DOCTRINE_2027.md"
+      ci_failure: true
+
+    - id: "D.5"
+      description: "DOCTRINE_COVENANT exists and cites test suites for each claim"
+      command: "test -f docs/DOCTRINE_COVENANT.md && grep -c 'test\\|Λ' docs/DOCTRINE_COVENANT.md"
+      min_count: 5
+      ci_failure: true
+
+    - id: "D.6"
+      description: "SYSTEMS_IMPLEMENTATION_COMPLETE documents status of all 9 sections"
+      command: "test -f docs/SYSTEMS_IMPLEMENTATION_COMPLETE.md"
+      ci_failure: true
+
+    - id: "D.7"
+      description: "Operational readiness checklist: build, test, coverage, perf, observability, versioning"
+      command: "grep -c 'cargo build\\|cargo test\\|coverage\\|performance\\|observability\\|version' docs/SYSTEMS_IMPLEMENTATION_COMPLETE.md"
+      min_count: 6
+      ci_failure: false  # Informational
+
+    - id: "D.8"
+      description: "All 9 sections have corresponding test suites referenced"
+      command: "grep -c 'test.*section\\|COVENANT_TESTS\\|test suite' docs/SYSTEMS_IMPLEMENTATION_COMPLETE.md"
+      min_count: 5
+      ci_failure: false  # Informational
+
+# ==========================================================================
+# BUILD & CODE QUALITY BASELINE (MANDATORY BEFORE ALL ELSE)
+# ==========================================================================
+baseline_code_quality:
+  description: "Baseline checks that must pass before any DoD criterion is evaluated"
+
+  checks:
+    - id: "B.1"
+      description: "cargo build --workspace succeeds with zero warnings"
+      command: "cargo build --workspace 2>&1 | grep -i 'warning' | wc -l"
+      expected_value: 0
+      ci_failure: true
+
+    - id: "B.2"
+      description: "cargo clippy --workspace -- -D warnings shows zero issues"
+      command: "cargo clippy --workspace -- -D warnings 2>&1 | grep -i 'error' | wc -l"
+      expected_value: 0
+      ci_failure: true
+
+    - id: "B.3"
+      description: "make build succeeds (C library)"
+      command: "make build 2>&1 | tail -1 | grep -q 'success\\|done\\|complete' || echo 'CHECK'"
+      ci_failure: true
+
+    - id: "B.4"
+      description: "No .unwrap() or .expect() in hot paths (production code)"
+      command: "grep -r '\\.unwrap()\\|\\.expect(' src/ --include='*.rs' | grep -v test | wc -l"
+      max_count: 3  # Allow minimal cases
+      ci_failure: false  # Warning
+
+    - id: "B.5"
+      description: "No println!() in production code (use tracing macros)"
+      command: "grep -r 'println!' src/ --include='*.rs' | grep -v test | wc -l"
+      expected_value: 0
+      ci_failure: false  # Warning
+
+    - id: "B.6"
+      description: "No fake Ok(()) returns from unimplemented features"
+      command: "grep -r 'Ok(())' src/ --include='*.rs' | xargs -I {} sh -c 'grep -B3 \"{}\" | grep -q \"unimplemented\" && echo \"{}\"' | wc -l"
+      expected_value: 0
+      ci_failure: false  # Code review required
+
+# ==========================================================================
+# FUNCTIONAL & INTEGRATION TESTS
+# ==========================================================================
+functional_integration_tests:
+  description: "Commands actually execute with real arguments, not just --help"
+
+  checks:
+    - id: "F.1"
+      description: "Core commands execute with real arguments and produce output"
+      command: "knhk --version 2>&1 | head -1"
+      ci_failure: false  # Conditional on CLI
+
+    - id: "F.2"
+      description: "cargo test --workspace passes completely"
+      command: "cargo test --workspace 2>&1 | tail -1 | grep -q 'ok'"
+      ci_failure: true
+
+    - id: "F.3"
+      description: "make test-chicago-v04 passes"
+      command: "make test-chicago-v04 2>&1 | tail -1 | grep -q 'ok\\|PASS\\|success'"
+      ci_failure: true
+
+    - id: "F.4"
+      description: "make test-performance-v04 passes (verifies ≤8 ticks)"
+      command: "make test-performance-v04 2>&1 | tail -1 | grep -q 'ok\\|PASS\\|success'"
+      ci_failure: true
+
+    - id: "F.5"
+      description: "make test-integration-v2 passes"
+      command: "make test-integration-v2 2>&1 | tail -1 | grep -q 'ok\\|PASS\\|success'"
+      ci_failure: true
+
+# ==========================================================================
+# WEAVER TELEMETRY VALIDATION (SOURCE OF TRUTH)
+# ==========================================================================
+weaver_validation:
+  description: "OpenTelemetry Weaver schema validation - the ONLY source of truth"
+
+  checks:
+    - id: "W.1"
+      description: "weaver registry check -r registry/ passes (schema valid)"
+      command: "weaver registry check -r registry/ 2>&1 | grep -i 'valid\\|ok\\|error' | head -1"
+      ci_failure: true
+
+    - id: "W.2"
+      description: "weaver registry live-check validates runtime telemetry against schema"
+      command: "weaver registry live-check --registry registry/ 2>&1 | grep -i 'valid\\|ok\\|error' | head -1"
+      ci_failure: true
+
+    - id: "W.3"
+      description: "All claimed OTEL spans/metrics/logs defined in schema"
+      command: "grep -r 'span\\|metric\\|log' registry/*.ttl | wc -l"
+      min_count: 5
+      ci_failure: true
+
+    - id: "W.4"
+      description: "Schema documents exact telemetry behavior"
+      command: "grep -c 'attribute\\|unit\\|type\\|description' registry/ontology.ttl"
+      min_count: 10
+      ci_failure: true
+
+# ==========================================================================
+# MASTER SUMMARY & CI/CD ENFORCEMENT
+# ==========================================================================
+ci_enforcement:
+  description: "How CI/CD must treat these checks"
+
+  rules:
+    - "If ANY criterion marked ci_failure: true is not satisfied, build FAILS"
+    - "If ANY baseline check (B.1-B.6, F.1-F.5) fails, STOP - do not evaluate DoD criteria"
+    - "Weaver validation is the SOURCE OF TRUTH - if W.1 or W.2 fails, feature is not done"
+    - "All receipts and Γ entries must be preserved and queryable in CI artifacts"
+    - "Generate a DoD report (JSON + HTML) showing which criteria are satisfied"
+    - "Block promotion/release if DoD report shows unsatisfied ci_failure: true criteria"
+
+  report_format:
+    file: "target/dod_report.json"
+    includes:
+      - timestamp
+      - commit_hash
+      - branch
+      - baseline_status
+      - section_1_through_9_status
+      - weaver_validation_status
+      - functional_test_results
+      - receipt_count_and_queryable_status
+      - recommendation: "ready_for_promotion" | "needs_work"
+
+# ==========================================================================
+# SUCCESS CRITERIA FOR "DONE"
+# ==========================================================================
+definition_of_done_final:
+  description: "knhk is DONE when ALL of the following are TRUE"
+
+  requirements:
+    - "✓ All 6 covenants are machine-checkable (Section 1)"
+    - "✓ Turtle is the single source of truth (Section 2)"
+    - "✓ SHACL invariants are mandatory and enforced (Section 3)"
+    - "✓ Workflow engine is pure state machine with τ ≤ 8 ticks (Section 4)"
+    - "✓ Pattern matrix is canonical and expressible via basis (Section 5)"
+    - "✓ MAPE-K loop is fully wired and autonomic (Section 6)"
+    - "✓ Receipts & Γ are first-class, queryable, and complete (Section 7)"
+    - "✓ Marketplace & ontology integration is tight (Section 8)"
+    - "✓ Tools, docs, examples close the loop (Section 9)"
+    - "✓ Baseline: cargo build/test/clippy all pass (Section B)"
+    - "✓ Functional tests: all real commands execute correctly (Section F)"
+    - "✓ Weaver validation: schema + runtime telemetry match (Section W)"
+    - "✓ No fake positives: help text ≠ working feature"
+    - "✓ CI/CD enforces DoD; promotion blocked if unsatisfied"
+
+  meta_principle: |
+    "Don't trust tests; trust schemas. Don't trust help text; trust execution + telemetry.
+     KNHK eliminates false positives by requiring Weaver schema validation.
+     A feature is DONE only if it can be proven via observable telemetry that conforms to declared schema."
