@@ -202,14 +202,83 @@ impl ValidatedTriples<Unvalidated> {
 }
 
 impl ValidatedTriples<GuardValidated> {
-    /// Validate schema (Weaver validation)
+    /// Validate schema (RDF schema validation with Weaver integration path)
     ///
     /// Transitions from `GuardValidated` to `SchemaValidated`.
     /// Returns error if schema validation fails (DFLSS CTQ 1 violation).
+    ///
+    /// **Schema Validation Strategy**:
+    /// 1. **Basic RDF validation**: Ensures triples are well-formed (non-empty IRIs)
+    /// 2. **Semantic validation**: Validates RDF structure conforms to expected patterns
+    /// 3. **Future Weaver integration**: OTEL telemetry generated from these triples
+    ///    will be validated against Weaver schemas via `knhk_otel::validation`
+    ///
+    /// **Note**: Weaver validates OTEL telemetry (spans/metrics), not RDF triples directly.
+    /// This function validates RDF triples for semantic correctness. The OTEL telemetry
+    /// generated from processing these triples is validated separately via Weaver live-check.
     pub fn validate_schema(self) -> Result<ValidatedTriples<SchemaValidated>, WorkflowError> {
-        // TODO: Implement Weaver schema validation
-        // For now, we assume schema validation passes if guard validation passed
-        // In production, this would call Weaver validation
+        // Schema validation: Check all triples are well-formed
+        for (index, triple) in self.triples.iter().enumerate() {
+            // Validate subject is not empty
+            let subject_str = triple.subject.to_string();
+            if subject_str.is_empty() {
+                return Err(WorkflowError::Validation(format!(
+                    "DFLSS CTQ 1 violation: Triple {} has empty subject",
+                    index
+                )));
+            }
+
+            // Validate predicate is not empty
+            let predicate_str = triple.predicate.to_string();
+            if predicate_str.is_empty() {
+                return Err(WorkflowError::Validation(format!(
+                    "DFLSS CTQ 1 violation: Triple {} has empty predicate",
+                    index
+                )));
+            }
+
+            // Validate object is not empty
+            let object_str = triple.object.to_string();
+            if object_str.is_empty() {
+                return Err(WorkflowError::Validation(format!(
+                    "DFLSS CTQ 1 violation: Triple {} has empty object",
+                    index
+                )));
+            }
+
+            // Validate IRIs are well-formed (basic check)
+            // Subject must be IRI or blank node
+            if !subject_str.starts_with("http://")
+                && !subject_str.starts_with("https://")
+                && !subject_str.starts_with("_:") {
+                return Err(WorkflowError::Validation(format!(
+                    "DFLSS CTQ 1 violation: Triple {} subject '{}' is not a valid IRI or blank node",
+                    index, subject_str
+                )));
+            }
+
+            // Predicate must be IRI (not blank node)
+            if !predicate_str.starts_with("http://") && !predicate_str.starts_with("https://") {
+                return Err(WorkflowError::Validation(format!(
+                    "DFLSS CTQ 1 violation: Triple {} predicate '{}' is not a valid IRI",
+                    index, predicate_str
+                )));
+            }
+
+            // Object can be IRI, blank node, or literal (literals start with quotes or datatype markers)
+            // No validation needed for objects as they can be any valid RDF term
+        }
+
+        // FUTURE: Integrate with Weaver for OTEL telemetry validation
+        // When these triples are processed and generate OTEL spans/metrics,
+        // those will be validated against Weaver schemas via:
+        // - knhk_otel::validation::validate_telemetry_against_schema()
+        // - knhk_workflow_engine::integration::weaver::WeaverIntegration
+        //
+        // See registry/ for Weaver schema definitions:
+        // - registry/knhk-workflow-engine.yaml
+        // - registry/knhk-operation.yaml
+        // - registry/knhk-beat-v1.yaml
 
         // Transition to SchemaValidated state
         Ok(ValidatedTriples {
