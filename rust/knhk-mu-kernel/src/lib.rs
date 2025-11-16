@@ -53,9 +53,11 @@ pub mod core;
 pub mod isa;
 pub mod sigma;
 pub mod guards;
+pub mod guards_simd;
 pub mod patterns;
 pub mod receipts;
 pub mod timing;
+pub mod timing_const;
 
 // Warm modules (μ_warm - ≤1ms, can allocate)
 pub mod overlay;
@@ -69,6 +71,10 @@ pub mod sigma_ir;
 pub mod sigma_types;
 pub mod mape;
 pub mod concurrency;
+#[cfg(any(feature = "concurrent-structures", test))]
+pub mod concurrent;
+pub mod proofs;
+pub mod protocols;
 
 // Cold modules (μ_cold - unbounded)
 pub mod analytics;
@@ -89,9 +95,14 @@ pub use core::{MuKernel, MuState, MuResult, MuError};
 pub use isa::{MuOps, MuInstruction};
 pub use sigma::{SigmaCompiled, SigmaHash};
 pub use guards::{GuardContext, GuardResult};
+pub use guards_simd::{SimdGuardBatch, SimdGuardEvaluator, evaluate_guards_batch, GuardBitmap};
 pub use patterns::{PatternId};
 pub use receipts::{Receipt, ReceiptChain};
 pub use timing::{TickCounter, TickBudget};
+pub use timing_const::{
+    ConstTickCost, SequencePattern, ParallelSplitPattern, SynchronizationPattern,
+    total_tick_cost, within_chatman, compute_task_wcet,
+};
 pub use overlay::{
     DeltaSigma, OverlayAlgebra, ProofCarryingOverlay,
     ProofAlgebra, KernelPromotion, RolloutStrategy, PromoteError,
@@ -118,6 +129,16 @@ pub use concurrency::{
     ReplayLog, Deterministic as ReplayDeterministic,
 };
 
+// Lock-free concurrent data structures (Phase 10)
+#[cfg(feature = "concurrent-structures")]
+pub use concurrent::{
+    LockFreeSkipList, HazardGuard,
+    ConcurrentHAMT,
+    TreiberStack, MichaelScottQueue,
+    Guard, Atomic,
+    AtomicArc, WeakArc, AtomicArcCell,
+};
+
 // AHI re-exports
 pub use ahi::{
     Decision, ObservationSlice, InvariantId, RiskClass,
@@ -129,6 +150,26 @@ pub use ahi::{
 pub use constitutional::{
     DoctrineAligned, ChatmanBounded, ClosedWorld, Deterministic, Constitutional,
     Doctrine, ConstitutionalReceipt,
+};
+
+// Proof re-exports
+pub use proofs::{
+    Proven, Witness, Proof, Predicate,
+    NonZero, ChatmanCompliant, Sorted, PowerOfTwo,
+    Bounded, ConstNonZero, Aligned,
+    ConstRange, ChatmanProof, PowerOfTwoProof,
+    IsWithinChatman, IsPowerOfTwo, IsSorted,
+    ProvenSorted, ProvenUnique, ProvenNonEmpty, ProvenChatmanBounded,
+    ProofExt, ProofResult, ProofError,
+    ProofChain, ProofValidator,
+};
+pub use proofs::combinators::ProofBuilder as ProofsBuilder;
+
+// Protocol re-exports
+pub use protocols::{
+    Session, SessionProtocol, StateMachine, MapeKCycle, OverlayPipeline,
+    MonitorPhase, AnalyzePhase, PlanPhase, ExecutePhase, KnowledgePhase,
+    ShadowPhase, TestPhase, ValidatePhase, PromotePhase,
 };
 
 /// The Chatman Constant - maximum ticks for hot path

@@ -16,6 +16,7 @@ minimal = []  # μ_hot only, no dependencies
 verification = ["proptest", "quickcheck"]
 simd = []
 asm = []  # Inline assembly for cycle counting
+concurrent-structures = []  # Phase 10 lock-free data structures (requires std)
 
 [dependencies]
 # Minimal dependencies for μ_hot
@@ -64,6 +65,15 @@ harness = false
 [[bench]]
 name = "guards"
 harness = false
+
+[[bench]]
+name = "simd_guards"
+harness = false
+
+[[bench]]
+name = "concurrent_structures"
+harness = false
+required-features = ["concurrent-structures"]
 
 [profile.release]
 opt-level = 3
