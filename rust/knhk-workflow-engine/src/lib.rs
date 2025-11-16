@@ -118,6 +118,11 @@ pub use autonomic::{
     AutonomicManager, AutonomicProperty, ControllerConfig, ControllerState, CycleStats,
     ExecutionResult, Executor, Fact, Goal, GoalType, HealthStatus, KnowledgeBase, KnowledgeId,
     MapeKController, MetricCollector, Monitor, MonitorEvent, Planner, Policy, Rule,
+    // ΔΣ Guarded Overlay Engine
+    DeltaSigma, OverlayId, OverlayScope, OverlayChange, ProofObligation,
+    ProofState, Unproven, ProofPending, Proven, ValidationEffort, OverlayComposition,
+    CompositionStrategy, OverlayValidator, OverlayProof, ValidationResult, ObligationResult,
+    TestResults, PerformanceMetrics,
 };
 pub use cancellation::{
     CancellationEvent, CancellationRegistry, CancellationRegion, CancellationScope, RegionId,

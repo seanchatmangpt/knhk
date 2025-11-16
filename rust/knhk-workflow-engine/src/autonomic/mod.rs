@@ -17,6 +17,21 @@
 //! - Cancellation regions (failure recovery)
 //! - Compensation handlers (rollback on errors)
 //! - OTEL telemetry (metric collection)
+//! - Session-scoped autonomic runtime (per-workflow adaptation)
+//! - Doctrine-aware failure modes (safe degradation)
+//!
+//! **Session-Scoped Adaptation**:
+//! - Per-workflow session tracking with isolation
+//! - Lock-free atomic metrics for hot-path operations
+//! - Local adaptation with global Q (doctrine) compliance
+//! - Aggregation of session metrics to global MAPE-K
+//! - Millions of concurrent sessions supported
+//!
+//! **Failure Modes**:
+//! - Safe ceiling behavior when MAPE-K loop degrades
+//! - Automatic mode degradation based on health signals
+//! - Mode-aware policy enforcement and action filtering
+//! - Observable mode changes with telemetry receipts
 
 pub mod knowledge;
 pub mod monitor;
@@ -24,13 +39,64 @@ pub mod analyze;
 pub mod plan;
 pub mod execute;
 pub mod loop_controller;
+pub mod session;
+pub mod session_adapter;
+pub mod failure_modes;
+pub mod mode_policy;
+pub mod trace_index;
+pub mod counterfactual;
+pub mod delta_sigma;
+pub mod overlay_validator;
 
+pub mod policy_lattice;
+pub mod doctrine;
 pub use knowledge::{Knowledge, KnowledgeBase, Goal, Rule, Fact};
 pub use monitor::{Monitor, MetricCollector, MonitorEvent};
 pub use analyze::{Analyzer, Anomaly, Analysis, HealthStatus};
 pub use plan::{Planner, AdaptationPlan, Action, ActionType};
 pub use execute::{Executor, ExecutionResult};
 pub use loop_controller::{MapeKController, ControllerConfig, ControllerState};
+pub use session::{
+    SessionHandle, SessionId, SessionMetrics, SessionMetricsSnapshot, SessionState, SessionTable,
+    SessionContext, TenantId, SessionTableStats,
+};
+pub use session_adapter::{
+    SessionAdapter, SessionAdapterConfig, SessionAction, SessionDecision, SessionEvent,
+    SessionAggregator, AggregatedMetrics, GlobalQ, SessionAdapterStats,
+};
+pub use failure_modes::{
+    AutonomicMode, HealthSignal, ComponentType, HealthMetrics, ModeManager, ModeChangeEvent,
+};
+pub use mode_policy::{
+    ModePolicyFilter, MinimumMode, ActionAnnotation, ActionPattern, RejectedAction,
+    ModeAwareAdaptationPlan,
+};
+pub use trace_index::{
+    TraceId, ObservableSegment, OntologySnapshot, DoctrineConfig,
+    ExecutionTrace, TraceStorage, ExecutionRecord, ActionResult,
+};
+pub use counterfactual::{
+    CounterfactualEngine, CounterfactualScenario, CounterfactualResult,
+    ExecutionMode, ActionDiff, InvariantChecks, SloAnalysis, TimingComparison,
+};
+pub use policy_lattice::{
+    PolicyElement, PolicyLattice, Lattice,
+    LatencyBound, FailureRateBound, GuardStrictness, GuardStrictnessLevel,
+    CapacityEnvelope, Strictness, PolicyId,
+};
+pub use doctrine::{
+    Doctrine, ExecutionMetrics, DoctrineAction,
+    MAX_EXEC_TICKS, MAX_RUN_LEN, MAX_CALL_DEPTH,
+};
+pub use delta_sigma::{
+    DeltaSigma, OverlayId, OverlayScope, OverlayChange, ProofObligation,
+    ProofState, Unproven, ProofPending, Proven, ValidationEffort, OverlayComposition,
+    CompositionStrategy,
+};
+pub use overlay_validator::{
+    OverlayValidator, OverlayProof, ValidationResult, ObligationResult,
+    TestResults, PerformanceMetrics,
+};
 
 use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};

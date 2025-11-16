@@ -5,6 +5,7 @@
 
 use super::analyze::Analysis;
 use super::knowledge::KnowledgeBase;
+use super::policy_lattice::PolicyElement;
 use crate::error::WorkflowResult;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -59,6 +60,9 @@ pub struct Action {
     pub expected_impact: f64,
     /// Cost/risk (0.0-1.0)
     pub cost: f64,
+    /// Policy element governing this action
+    /// Actions without policy constraints use an empty Conjunction
+    pub policy: Option<PolicyElement>,
 }
 
 impl Action {
@@ -69,7 +73,35 @@ impl Action {
             priority: 50,
             expected_impact: 0.5,
             cost: 0.3,
+            policy: None,
         }
+    }
+
+    /// Create action with policy element
+    pub fn with_policy(action_type: ActionType, policy: PolicyElement) -> Self {
+        Self {
+            id: ActionId::new(),
+            action_type,
+            priority: 50,
+            expected_impact: 0.5,
+            cost: 0.3,
+            policy: Some(policy),
+        }
+    }
+
+    /// Set policy for this action
+    pub fn set_policy(&mut self, policy: PolicyElement) {
+        self.policy = Some(policy);
+    }
+
+    /// Get policy element
+    pub fn get_policy(&self) -> Option<&PolicyElement> {
+        self.policy.as_ref()
+    }
+
+    /// Check if action has policy constraints
+    pub fn has_policy(&self) -> bool {
+        self.policy.is_some()
     }
 }
 

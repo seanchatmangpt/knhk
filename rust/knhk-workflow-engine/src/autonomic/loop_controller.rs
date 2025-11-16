@@ -5,7 +5,9 @@
 
 use super::analyze::Analyzer;
 use super::execute::Executor;
+use super::failure_modes::{AutonomicMode, ComponentType, HealthSignal, ModeManager};
 use super::knowledge::KnowledgeBase;
+use super::mode_policy::ModePolicyFilter;
 use super::monitor::Monitor;
 use super::plan::Planner;
 use super::{AutonomicManager, AutonomicProperty, CycleStats};
@@ -75,6 +77,10 @@ pub struct MapeKController {
     state: Arc<RwLock<ControllerState>>,
     /// Cycle statistics
     stats: Arc<RwLock<CycleStats>>,
+    /// Mode manager (failure modes)
+    mode_manager: Arc<ModeManager>,
+    /// Mode-aware policy filter
+    policy_filter: Arc<ModePolicyFilter>,
 }
 
 impl MapeKController {
@@ -84,6 +90,8 @@ impl MapeKController {
         let analyzer = Arc::new(Analyzer::new(knowledge.clone()));
         let planner = Arc::new(Planner::new(knowledge.clone()));
         let executor = Arc::new(Executor::new());
+        let mode_manager = Arc::new(ModeManager::new());
+        let policy_filter = Arc::new(ModePolicyFilter::new());
 
         Self {
             config,
@@ -94,6 +102,8 @@ impl MapeKController {
             executor,
             state: Arc::new(RwLock::new(ControllerState::Stopped)),
             stats: Arc::new(RwLock::new(CycleStats::default())),
+            mode_manager,
+            policy_filter,
         }
     }
 
@@ -107,9 +117,19 @@ impl MapeKController {
         self.monitor.clone()
     }
 
+    /// Get mode manager
+    pub fn mode_manager(&self) -> Arc<ModeManager> {
+        self.mode_manager.clone()
+    }
+
     /// Get current state
     pub async fn state(&self) -> ControllerState {
         *self.state.read().await
+    }
+
+    /// Get current autonomic mode
+    pub async fn autonomic_mode(&self) -> AutonomicMode {
+        self.mode_manager.current_mode().await
     }
 
     /// Start MAPE-K loop
@@ -138,6 +158,8 @@ impl MapeKController {
         let analyzer = self.analyzer.clone();
         let planner = self.planner.clone();
         let executor = self.executor.clone();
+        let mode_manager = self.mode_manager.clone();
+        let policy_filter = self.policy_filter.clone();
         let state_ref = self.state.clone();
         let stats_ref = self.stats.clone();
 
@@ -154,12 +176,14 @@ impl MapeKController {
 
                 let cycle_start = std::time::Instant::now();
 
-                // MAPE-K Cycle
+                // MAPE-K Cycle with mode management
                 match Self::execute_cycle(
                     &monitor,
                     &analyzer,
                     &planner,
                     &executor,
+                    &mode_manager,
+                    &policy_filter,
                     &config,
                 ).await {
                     Ok(cycle_result) => {
@@ -192,22 +216,54 @@ impl MapeKController {
         Ok(())
     }
 
-    /// Execute single MAPE-K cycle
+    /// Execute single MAPE-K cycle with mode management
     async fn execute_cycle(
         monitor: &Monitor,
         analyzer: &Analyzer,
         planner: &Planner,
         executor: &Executor,
+        mode_manager: &ModeManager,
+        policy_filter: &ModePolicyFilter,
         config: &ControllerConfig,
     ) -> WorkflowResult<CycleResult> {
         let mut result = CycleResult::default();
 
+        // Get current mode
+        let current_mode = mode_manager.current_mode().await;
+        result.mode = current_mode;
+
+        // In Frozen mode, only observe (no adaptations)
+        if current_mode == AutonomicMode::Frozen {
+            tracing::info!(
+                mode = ?current_mode,
+                "MAPE-K cycle running in Frozen mode (observation only)"
+            );
+            return Ok(result);
+        }
+
         // MONITOR: Collect metrics (already running)
-        // Metrics are automatically added to knowledge base
+        // Emit monitor health signal
+        let monitor_health = if monitor.is_running().await {
+            HealthSignal::new(ComponentType::Monitor, 0.9) // TODO: Calculate actual health
+        } else {
+            HealthSignal::new(ComponentType::Monitor, 0.0)
+        };
+        mode_manager.update_health(monitor_health).await?;
 
         // ANALYZE: Analyze current state
         let analysis = analyzer.analyze().await?;
         result.anomalies = analysis.anomalies.len();
+
+        // Emit analyzer health signal based on analysis quality
+        let analyzer_confidence = match analysis.health {
+            super::analyze::HealthStatus::Healthy => 1.0,
+            super::analyze::HealthStatus::Degraded => 0.7,
+            super::analyze::HealthStatus::Unhealthy => 0.4,
+            super::analyze::HealthStatus::Critical => 0.2,
+        };
+        mode_manager
+            .update_health(HealthSignal::new(ComponentType::Analyzer, analyzer_confidence))
+            .await?;
 
         if !analysis.adaptation_needed {
             return Ok(result);
@@ -216,13 +272,64 @@ impl MapeKController {
         // PLAN: Generate adaptation plan
         if let Some(plan) = planner.plan(&analysis).await? {
             result.plan_generated = true;
-            result.actions_executed = plan.actions.len();
 
-            // EXECUTE: Apply adaptation plan
-            if config.self_healing || config.self_optimization {
-                let exec_results = executor.execute(&plan).await?;
-                result.adapted = exec_results.iter().any(|r| r.success);
+            // Emit planner health signal (1.0 if plan generated successfully)
+            mode_manager
+                .update_health(HealthSignal::new(ComponentType::Planner, 1.0))
+                .await?;
+
+            // Get current mode (may have changed after health updates)
+            let execution_mode = mode_manager.current_mode().await;
+            result.mode = execution_mode;
+
+            // Filter actions based on current mode
+            let (allowed_actions, rejected_actions) =
+                policy_filter.filter_with_rejected(&plan.actions, execution_mode);
+
+            result.actions_executed = allowed_actions.len();
+            result.actions_rejected = rejected_actions.len();
+
+            // Log rejected actions
+            for rejected in &rejected_actions {
+                tracing::warn!(
+                    action_id = ?rejected.action.id,
+                    action_type = ?rejected.action.action_type,
+                    current_mode = ?rejected.current_mode,
+                    required_mode = ?rejected.required_mode,
+                    reason = %rejected.reason,
+                    "Action rejected by mode policy"
+                );
             }
+
+            // EXECUTE: Apply allowed actions
+            if config.self_healing || config.self_optimization {
+                if !allowed_actions.is_empty() {
+                    // Create filtered plan with only allowed actions
+                    let mut filtered_plan = plan.clone();
+                    filtered_plan.actions = allowed_actions;
+
+                    let exec_results = executor.execute(&filtered_plan).await?;
+                    result.adapted = exec_results.iter().any(|r| r.success);
+
+                    // Emit executor health signal based on success rate
+                    let success_rate = exec_results.iter().filter(|r| r.success).count() as f64
+                        / exec_results.len().max(1) as f64;
+                    mode_manager
+                        .update_health(HealthSignal::new(ComponentType::Executor, success_rate))
+                        .await?;
+                } else {
+                    tracing::info!(
+                        mode = ?execution_mode,
+                        total_actions = plan.actions.len(),
+                        "All actions rejected by mode policy"
+                    );
+                }
+            }
+        } else {
+            // Planner could not generate a plan - degrade health
+            mode_manager
+                .update_health(HealthSignal::new(ComponentType::Planner, 0.5))
+                .await?;
         }
 
         Ok(result)
@@ -284,12 +391,27 @@ impl AutonomicManager for MapeKController {
 }
 
 /// MAPE-K cycle result
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 struct CycleResult {
     anomalies: usize,
     plan_generated: bool,
     actions_executed: usize,
+    actions_rejected: usize,
     adapted: bool,
+    mode: AutonomicMode,
+}
+
+impl Default for CycleResult {
+    fn default() -> Self {
+        Self {
+            anomalies: 0,
+            plan_generated: false,
+            actions_executed: 0,
+            actions_rejected: 0,
+            adapted: false,
+            mode: AutonomicMode::Normal,
+        }
+    }
 }
 
 #[cfg(test)]

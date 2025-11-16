@@ -10,6 +10,8 @@
 //! - Facts: Runtime observations and measurements
 //! - Policies: Constraints on adaptations
 
+use super::doctrine::Doctrine;
+use super::policy_lattice::{PolicyElement, PolicyLattice};
 use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -215,16 +217,20 @@ pub struct KnowledgeBase {
     rules: Arc<RwLock<HashMap<KnowledgeId, Rule>>>,
     /// Facts (current observations)
     facts: Arc<RwLock<HashMap<String, Fact>>>,
-    /// Policies
+    /// Policies (legacy constraint strings)
     policies: Arc<RwLock<HashMap<KnowledgeId, Policy>>>,
     /// Historical facts (for trend analysis)
     history: Arc<RwLock<Vec<Fact>>>,
     /// Maximum history size
     max_history: usize,
+    /// Policy lattice (formal policy constraints)
+    policy_lattice: Arc<RwLock<PolicyLattice>>,
+    /// Doctrine (lawful action space)
+    doctrine: Arc<Doctrine>,
 }
 
 impl KnowledgeBase {
-    /// Create new knowledge base
+    /// Create new knowledge base with default doctrine
     pub fn new() -> Self {
         Self {
             goals: Arc::new(RwLock::new(HashMap::new())),
@@ -233,6 +239,22 @@ impl KnowledgeBase {
             policies: Arc::new(RwLock::new(HashMap::new())),
             history: Arc::new(RwLock::new(Vec::new())),
             max_history: 10000,
+            policy_lattice: Arc::new(RwLock::new(PolicyLattice::new())),
+            doctrine: Arc::new(Doctrine::new()),
+        }
+    }
+
+    /// Create knowledge base with custom doctrine
+    pub fn with_doctrine(doctrine: Doctrine) -> Self {
+        Self {
+            goals: Arc::new(RwLock::new(HashMap::new())),
+            rules: Arc::new(RwLock::new(HashMap::new())),
+            facts: Arc::new(RwLock::new(HashMap::new())),
+            policies: Arc::new(RwLock::new(HashMap::new())),
+            history: Arc::new(RwLock::new(Vec::new())),
+            max_history: 10000,
+            policy_lattice: Arc::new(RwLock::new(PolicyLattice::new())),
+            doctrine: Arc::new(doctrine),
         }
     }
 
@@ -410,6 +432,88 @@ impl KnowledgeBase {
             total_policies: policies.len(),
             enforced_policies: policies.values().filter(|p| p.enforced).count(),
         }
+    }
+
+    // ========================================================================
+    // Policy Lattice Operations
+    // ========================================================================
+
+    /// Get current policy lattice state
+    pub async fn get_policy_lattice(&self) -> PolicyLattice {
+        let lattice = self.policy_lattice.read().await;
+        lattice.clone()
+    }
+
+    /// Strengthen policy (meet with new constraint)
+    pub async fn strengthen_policy(&self, constraint: PolicyElement) -> WorkflowResult<()> {
+        let mut lattice = self.policy_lattice.write().await;
+        lattice.strengthen(constraint);
+        Ok(())
+    }
+
+    /// Relax policy (join with less strict constraint)
+    pub async fn relax_policy(&self, constraint: PolicyElement) -> WorkflowResult<()> {
+        let mut lattice = self.policy_lattice.write().await;
+        lattice.relax(constraint);
+        Ok(())
+    }
+
+    /// Check if current policy is bottom (no actions allowed)
+    pub async fn is_policy_bottom(&self) -> bool {
+        let lattice = self.policy_lattice.read().await;
+        lattice.is_bottom()
+    }
+
+    /// Reset policy to no constraints
+    pub async fn reset_policy(&self) -> WorkflowResult<()> {
+        let mut lattice = self.policy_lattice.write().await;
+        lattice.reset();
+        Ok(())
+    }
+
+    /// Get policy history
+    pub async fn get_policy_history(&self) -> Vec<PolicyElement> {
+        let lattice = self.policy_lattice.read().await;
+        lattice.get_history().to_vec()
+    }
+
+    /// Get doctrine reference
+    pub fn doctrine(&self) -> &Doctrine {
+        &self.doctrine
+    }
+
+    /// Validate action against current policy and doctrine
+    pub async fn validate_action_policy(
+        &self,
+        action_policy: &PolicyElement,
+    ) -> WorkflowResult<bool> {
+        // First check against current policy lattice
+        let lattice = self.policy_lattice.read().await;
+        let combined = lattice.current.meet(action_policy);
+
+        if combined.is_bottom() {
+            return Ok(false);
+        }
+
+        // Then validate against doctrine
+        self.doctrine.validate(&combined)
+    }
+
+    /// Project action policy through doctrine and current policy lattice
+    pub async fn project_action_policy(
+        &self,
+        action_policy: &PolicyElement,
+    ) -> WorkflowResult<Option<PolicyElement>> {
+        // First combine with current policy lattice
+        let lattice = self.policy_lattice.read().await;
+        let combined = lattice.current.meet(action_policy);
+
+        if combined.is_bottom() {
+            return Ok(None);
+        }
+
+        // Then project through doctrine
+        self.doctrine.project(&combined)
     }
 }
 

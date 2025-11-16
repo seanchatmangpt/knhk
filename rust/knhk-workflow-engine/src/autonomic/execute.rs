@@ -3,10 +3,13 @@
 //!
 //! Executes adaptation plans by applying actions to the running system.
 
+use super::doctrine::{Doctrine, ExecutionMetrics};
 use super::plan::{Action, ActionType, AdaptationPlan};
+use super::policy_lattice::PolicyElement;
 use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::RwLock;
 
 /// Execution result
@@ -22,6 +25,12 @@ pub struct ExecutionResult {
     pub actual_impact: Option<f64>,
     /// Execution duration (ms)
     pub duration_ms: u64,
+    /// Policy element that was validated (if any)
+    pub policy: Option<PolicyElement>,
+    /// Whether policy validation passed
+    pub policy_validated: bool,
+    /// Execution metrics
+    pub metrics: Option<ExecutionMetrics>,
 }
 
 /// Executor component
@@ -31,14 +40,26 @@ pub struct Executor {
     engine: Option<Arc<RwLock<crate::executor::WorkflowEngine>>>,
     /// Execution history
     history: Arc<RwLock<Vec<ExecutionResult>>>,
+    /// Doctrine for policy enforcement
+    doctrine: Arc<Doctrine>,
 }
 
 impl Executor {
-    /// Create new executor
+    /// Create new executor with default doctrine
     pub fn new() -> Self {
         Self {
             engine: None,
             history: Arc::new(RwLock::new(Vec::new())),
+            doctrine: Arc::new(Doctrine::new()),
+        }
+    }
+
+    /// Create executor with custom doctrine
+    pub fn with_doctrine(doctrine: Doctrine) -> Self {
+        Self {
+            engine: None,
+            history: Arc::new(RwLock::new(Vec::new())),
+            doctrine: Arc::new(doctrine),
         }
     }
 
@@ -48,7 +69,13 @@ impl Executor {
         Self {
             engine: Some(engine),
             history: Arc::new(RwLock::new(Vec::new())),
+            doctrine: Arc::new(Doctrine::new()),
         }
+    }
+
+    /// Get doctrine reference
+    pub fn doctrine(&self) -> &Doctrine {
+        &self.doctrine
     }
 
     /// Execute adaptation plan
@@ -67,10 +94,69 @@ impl Executor {
         Ok(results)
     }
 
-    /// Execute single action
+    /// Execute single action with policy validation
     async fn execute_action(&self, action: &Action) -> WorkflowResult<ExecutionResult> {
-        let start = std::time::Instant::now();
+        let start = Instant::now();
 
+        // Step 1: Validate policy against doctrine (if action has policy)
+        let (policy_validated, projected_policy) = if let Some(policy) = &action.policy {
+            match self.doctrine.project(policy)? {
+                Some(policy_prime) => {
+                    if policy_prime.is_bottom() {
+                        // Policy projection resulted in bottom - action is illegal
+                        tracing::warn!(
+                            action_id = ?action.id,
+                            policy = %policy,
+                            "Action rejected: policy projection resulted in ⊥"
+                        );
+                        return Ok(ExecutionResult {
+                            action_id: action.id,
+                            success: false,
+                            error: Some(
+                                "Action violates doctrine: policy projection resulted in ⊥"
+                                    .to_string(),
+                            ),
+                            actual_impact: None,
+                            duration_ms: start.elapsed().as_millis() as u64,
+                            policy: Some(policy.clone()),
+                            policy_validated: false,
+                            metrics: None,
+                        });
+                    }
+                    (true, Some(policy_prime))
+                }
+                None => {
+                    // Policy violated doctrine
+                    tracing::warn!(
+                        action_id = ?action.id,
+                        policy = %policy,
+                        "Action rejected: policy violates doctrine"
+                    );
+                    return Ok(ExecutionResult {
+                        action_id: action.id,
+                        success: false,
+                        error: Some("Action violates doctrine constraints".to_string()),
+                        actual_impact: None,
+                        duration_ms: start.elapsed().as_millis() as u64,
+                        policy: Some(policy.clone()),
+                        policy_validated: false,
+                        metrics: None,
+                    });
+                }
+            }
+        } else {
+            // No policy constraints - allowed by default
+            (true, None)
+        };
+
+        tracing::debug!(
+            action_id = ?action.id,
+            action_type = ?action.action_type,
+            policy_validated = policy_validated,
+            "Executing action"
+        );
+
+        // Step 2: Execute action
         let result = match &action.action_type {
             ActionType::ScaleInstances { delta } => self.scale_instances(*delta).await,
             ActionType::AdjustResources { resource, amount } => {
@@ -83,7 +169,30 @@ impl Executor {
             ActionType::Custom { name, params } => self.execute_custom(name, params).await,
         };
 
-        let duration_ms = start.elapsed().as_millis() as u64;
+        let duration = start.elapsed();
+        let duration_ms = duration.as_millis() as u64;
+
+        // Step 3: Create execution metrics
+        let metrics = ExecutionMetrics::from_duration(duration);
+
+        // Step 4: Validate metrics against doctrine
+        if let Err(e) = self.doctrine.validate_execution_metrics(&metrics) {
+            tracing::error!(
+                action_id = ?action.id,
+                error = %e,
+                "Action execution violated μ-kernel constraints"
+            );
+            return Ok(ExecutionResult {
+                action_id: action.id,
+                success: false,
+                error: Some(format!("μ-kernel violation: {}", e)),
+                actual_impact: None,
+                duration_ms,
+                policy: projected_policy,
+                policy_validated,
+                metrics: Some(metrics),
+            });
+        }
 
         match result {
             Ok(impact) => Ok(ExecutionResult {
@@ -92,6 +201,9 @@ impl Executor {
                 error: None,
                 actual_impact: Some(impact),
                 duration_ms,
+                policy: projected_policy,
+                policy_validated,
+                metrics: Some(metrics),
             }),
             Err(e) => Ok(ExecutionResult {
                 action_id: action.id,
@@ -99,6 +211,9 @@ impl Executor {
                 error: Some(e.to_string()),
                 actual_impact: None,
                 duration_ms,
+                policy: projected_policy,
+                policy_validated,
+                metrics: Some(metrics),
             }),
         }
     }
