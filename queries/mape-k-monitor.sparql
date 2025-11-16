@@ -1,0 +1,54 @@
+# ============================================================================
+# MAPE-K Monitor Phase: Extract Telemetry Points and Metrics
+# ============================================================================
+#
+# Purpose: Extract all monitoring points from a self-executing workflow
+# Use Case: Identify where to instrument OTEL spans, metrics, and logs
+#
+# Returns: List of telemetry points with associated metric types and thresholds
+# ============================================================================
+
+PREFIX mapek: <http://knhk.ai/ontology/mape-k#>
+PREFIX yawl: <http://www.yawlfoundation.org/yawlschema#>
+PREFIX knhk: <urn:knhk:ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT
+    ?workflow
+    ?workflowName
+    ?task
+    ?taskName
+    ?sensor
+    ?metricType
+    ?metricValue
+    ?threshold
+WHERE {
+    # Find self-executing workflows
+    ?workflow a mapek:SelfExecutingWorkflow ;
+              rdfs:label ?workflowName ;
+              mapek:hasMonitor ?monitor .
+
+    # Get tasks in workflow
+    ?workflow yawl:hasTask ?task .
+    ?task yawl:taskName ?taskName .
+
+    # Get sensors attached to monitor
+    ?monitor mapek:hasSensor ?sensor .
+
+    # Get metric type being collected
+    ?sensor mapek:collects ?metricType .
+
+    # Optional: Get current metric value
+    OPTIONAL {
+        ?sensor mapek:metricValue ?metricValue .
+    }
+
+    # Optional: Get threshold for this metric
+    OPTIONAL {
+        ?monitor mapek:hasRule ?rule .
+        ?rule mapek:hasThreshold ?thresholdObj .
+        ?thresholdObj mapek:thresholdValue ?threshold .
+    }
+}
+ORDER BY ?workflow ?task

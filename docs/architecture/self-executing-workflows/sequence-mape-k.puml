@@ -1,0 +1,457 @@
+@startuml MAPE-K Loop Sequence
+
+title Self-Executing Workflows - MAPE-K Loop Sequence Diagram
+
+autonumber
+
+actor Operator
+participant "Workflow\nEngine" as Engine
+participant "Receipt\nGenerator" as Receipt
+participant "Monitor" as Monitor
+participant "Analyzer" as Analyzer
+participant "Planner" as Planner
+participant "Executor" as Executor
+participant "Ontology\nManager" as Ontology
+participant "Knowledge\nBase" as Knowledge
+participant "Weaver" as Weaver
+
+== Workflow Execution ==
+
+Operator -> Engine : execute_case(case_id)
+activate Engine
+
+Engine -> Engine : execute_patterns()
+note right: A = μ(O)\nDeterministic execution
+
+Engine -> Receipt : generate_receipt(action, ticks)
+activate Receipt
+
+Receipt -> Receipt : compute_hash(action)
+note right: hash(A) = hash(μ(O))
+
+Receipt -> Weaver : validate_schema(receipt)
+activate Weaver
+Weaver --> Receipt : validation_result
+deactivate Weaver
+
+Receipt --> Engine : ExecutionReceipt
+deactivate Receipt
+
+Engine --> Operator : execution_complete
+deactivate Engine
+
+== Monitor Phase (≤100ms) ==
+
+Receipt -> Monitor : publish(receipt)
+activate Monitor
+
+Monitor -> Monitor : detect_anomalies(receipt)
+
+alt Chatman Constant Violation (ticks > 8)
+    Monitor -> Monitor : create_anomaly(ChatmanViolation)
+    note right: Hot path exceeded\n8 tick limit
+end
+
+alt SLA Violation (ticks > 2x expected)
+    Monitor -> Monitor : create_anomaly(SLAViolation)
+end
+
+Monitor -> Analyzer : report(anomalies, metrics)
+deactivate Monitor
+
+== Analyze Phase (≤500ms) ==
+
+activate Analyzer
+
+Analyzer -> Ontology : get_current_snapshot()
+activate Ontology
+Ontology --> Analyzer : OntologySnapshot(Σ_t)
+deactivate Ontology
+
+Analyzer -> Analyzer : analyze_gap(O, Σ_t)
+note right: Compare observations\nvs ontology expectations
+
+Analyzer -> Analyzer : detect_trends(statistics)
+note right: Time series analysis\nperformance trends
+
+Analyzer -> Analyzer : recommend_actions(gaps, trends)
+
+Analyzer -> Planner : plan_adaptation(analysis_result)
+deactivate Analyzer
+
+== Plan Phase (≤1s) ==
+
+activate Planner
+
+Planner -> Planner : generate_ontology_update(gaps)
+note right: Σ_t → Σ_{t+1}\nPlan adaptive changes
+
+Planner -> Ontology : verify_invariants(update)
+activate Ontology
+
+Ontology -> Ontology : check_invariants(Σ_{t+1})
+note right: Σ_{t+1} ⊨ Q\nVerify all invariants hold
+
+alt Invariant Violation
+    Ontology --> Planner : invariant_violation
+    Planner --> Operator : adaptation_failed(reason)
+else Invariants Preserved
+    Ontology --> Planner : invariants_valid
+    deactivate Ontology
+
+    Planner -> Executor : execute_update(update)
+    deactivate Planner
+
+    == Execute Phase (≤2s) ==
+
+    activate Executor
+
+    Executor -> Ontology : save_rollback_point()
+    activate Ontology
+    Ontology --> Executor : Snapshot(Σ_t)
+    deactivate Ontology
+
+    Executor -> Ontology : apply_update(update)
+    activate Ontology
+
+    Ontology -> Ontology : create_child_snapshot(Σ_t, update)
+    Ontology -> Ontology : validate_new_snapshot(Σ_{t+1})
+    Ontology -> Ontology : compute_hash(Σ_{t+1})
+
+    Ontology -> Ontology : atomic_swap(Σ_t, Σ_{t+1})
+    note right: Linearizable\natomic update
+
+    alt Update Successful
+        Ontology --> Executor : update_applied(Σ_{t+1})
+        deactivate Ontology
+
+        Executor -> Executor : emit_update_event()
+        Executor --> Operator : adaptation_complete(v{t+1})
+        deactivate Executor
+
+    else Update Failed
+        Ontology --> Executor : update_failed(error)
+        deactivate Ontology
+
+        Executor -> Ontology : rollback(Snapshot(Σ_t))
+        activate Ontology
+        Ontology -> Ontology : restore_snapshot(Σ_t)
+        Ontology --> Executor : rollback_complete
+        deactivate Ontology
+
+        Executor --> Operator : adaptation_failed(error)
+        deactivate Executor
+    end
+
+end
+
+== Knowledge Phase (Async) ==
+
+Monitor -> Knowledge : store_receipt(receipt)
+activate Knowledge
+
+Knowledge -> Knowledge : learn_from_history(receipts)
+note right: Extract patterns\nfrom execution history
+
+Knowledge -> Knowledge : suggest_optimizations(patterns)
+
+Knowledge -> Knowledge : generate_new_templates(optimizations)
+
+Knowledge --> Operator : learning_complete(patterns)
+deactivate Knowledge
+
+== Verification ==
+
+Operator -> Weaver : validate_system_telemetry()
+activate Weaver
+
+Weaver -> Weaver : check_all_schemas()
+note right: Source of truth\nvalidation
+
+alt All Schemas Valid
+    Weaver --> Operator : validation_passed
+else Schema Violations
+    Weaver --> Operator : validation_failed(violations)
+end
+
+deactivate Weaver
+
+note over Engine, Knowledge
+    **MAPE-K Loop Complete**
+    - Total latency: ≤4s
+    - Σ_t → Σ_{t+1}: Ontology evolved
+    - O ⊨ Σ_{t+1}: Observations respect new ontology
+    - Σ_{t+1} ⊨ Q: Invariants preserved
+    - Knowledge updated with learned patterns
+end note
+
+@enduml
+
+@startuml Receipt Validation Chain
+
+title Self-Executing Workflows - Receipt Validation Chain
+
+autonumber
+
+participant "Pattern\nExecutor" as Executor
+participant "Receipt\nGenerator" as Receipt
+participant "Structural\nValidator" as Struct
+participant "Ontology\nValidator" as Ontology
+participant "Weaver\nValidator" as Weaver
+participant "Merkle\nProver" as Merkle
+participant "Signature\nValidator" as Signature
+participant "Lockchain" as Lockchain
+
+== Receipt Generation ==
+
+Executor -> Receipt : create_receipt(action, ticks, span_id)
+activate Receipt
+
+Receipt -> Receipt : compute_action_hash(action)
+note right: hash(A) = hash(μ(O))
+
+Receipt -> Receipt : measure_execution_time()
+note right: Verify ticks ≤ 8\nfor hot path
+
+Receipt -> Receipt : extract_otel_context()
+
+Receipt -> Receipt : assign_cycle_id()
+
+== Multi-Level Validation ==
+
+Receipt -> Struct : validate_structure(receipt)
+activate Struct
+
+Struct -> Struct : check_required_fields()
+Struct -> Struct : verify_field_types()
+Struct -> Struct : validate_ranges()
+
+Struct --> Receipt : ✓ Structural validation passed
+deactivate Struct
+
+Receipt -> Ontology : validate_against_ontology(receipt)
+activate Ontology
+
+Ontology -> Ontology : verify_pattern_exists(pattern_id)
+note right: Pattern must exist in Σ
+
+Ontology -> Ontology : check_expected_ticks(pattern_id)
+note right: ticks ≤ 2x expected\n(tolerance)
+
+Ontology -> Ontology : verify_invariants(receipt)
+note right: O ⊨ Σ\nObservation respects\nontology
+
+Ontology --> Receipt : ✓ Ontology validation passed
+deactivate Ontology
+
+Receipt -> Weaver : validate_against_schema(receipt)
+activate Weaver
+
+Weaver -> Weaver : load_schema("workflow-telemetry.yaml")
+Weaver -> Weaver : validate_attributes(receipt)
+Weaver -> Weaver : check_required_fields()
+Weaver -> Weaver : verify_attribute_types()
+
+alt Schema Validation Failed
+    Weaver --> Receipt : ✗ Schema violation
+    Receipt --> Executor : ValidationError(schema_violation)
+    note right: **CRITICAL**: Feature does NOT work\nif Weaver validation fails
+else Schema Validation Passed
+    Weaver --> Receipt : ✓ Weaver validation passed (SOURCE OF TRUTH)
+    deactivate Weaver
+end
+
+== Cryptographic Proof ==
+
+Receipt -> Merkle : generate_merkle_proof(receipt)
+activate Merkle
+
+Merkle -> Merkle : compute_receipt_hash()
+Merkle -> Merkle : build_merkle_tree()
+Merkle -> Merkle : extract_proof_path()
+
+Merkle --> Receipt : MerkleProof
+deactivate Merkle
+
+Receipt -> Receipt : attach_merkle_proof(proof)
+
+== Signature (Optional) ==
+
+opt Digital Signature Required
+    Receipt -> Signature : sign_receipt(receipt, private_key)
+    activate Signature
+
+    Signature -> Signature : compute_signature(hash(receipt))
+    Signature --> Receipt : Signature
+    deactivate Signature
+
+    Receipt -> Receipt : attach_signature(signature)
+end
+
+== Provenance Recording ==
+
+Receipt -> Lockchain : record_receipt(receipt)
+activate Lockchain
+
+Lockchain -> Lockchain : append_to_chain(receipt_hash)
+Lockchain -> Lockchain : update_merkle_root()
+Lockchain -> Lockchain : persist_to_storage()
+
+Lockchain --> Receipt : ✓ Recorded in lockchain
+deactivate Lockchain
+
+Receipt --> Executor : ✓ ValidatedReceipt
+deactivate Receipt
+
+note over Executor, Lockchain
+    **Validation Chain Complete**
+    - Level 1: ✓ Structural validation
+    - Level 2: ✓ Ontology validation (O ⊨ Σ)
+    - Level 3: ✓ Weaver validation (SOURCE OF TRUTH)
+    - Level 4: ✓ Merkle proof
+    - Level 5: ✓ Signature (optional)
+    - Result: Receipt is provably valid and recorded
+end note
+
+@enduml
+
+@startuml Ontology Snapshot Update
+
+title Self-Executing Workflows - Ontology Snapshot Atomic Update
+
+autonumber
+
+participant "MAPE-K\nExecutor" as Executor
+participant "Ontology\nManager" as Manager
+participant "Snapshot\nΣ_t" as Current
+participant "Snapshot\nΣ_{t+1}" as Next
+participant "Invariant\nChecker" as Invariant
+participant "RDF\nStore" as Store
+participant "ArcSwap\n(Atomic)" as Swap
+participant "Storage" as Storage
+
+== Update Request ==
+
+Executor -> Manager : apply_update(OntologyUpdate)
+activate Manager
+
+Manager -> Swap : load_current()
+activate Swap
+Swap --> Manager : Arc<Snapshot(Σ_t)>
+deactivate Swap
+
+Manager -> Current : create_child(update)
+activate Current
+
+== Build New Snapshot ==
+
+Current -> Next : clone_snapshot()
+activate Next
+
+Next -> Next : increment_version(t → t+1)
+Next -> Next : set_timestamp()
+Next -> Next : copy_parent_hash(Σ_t.hash)
+
+Next -> Store : clone_rdf_graph()
+activate Store
+Store --> Next : RDF graph copy
+deactivate Store
+
+== Apply Updates ==
+
+Next -> Store : apply_rdf_updates(update)
+activate Store
+
+loop For each update in OntologyUpdate
+    alt Update Pattern Ticks
+        Store -> Store : update_triple(pattern, ticks, new_value)
+    else Add New Pattern
+        Store -> Store : insert_triple(new_pattern)
+    else Update MAPE-K Policy
+        Store -> Store : update_policy(policy_id, new_policy)
+    end
+end
+
+Store --> Next : RDF updates applied
+deactivate Store
+
+== Validate Invariants ==
+
+Next -> Invariant : validate_invariants(Σ_{t+1})
+activate Invariant
+
+Invariant -> Invariant : check_hot_path_constraint()
+note right: ticks ≤ 8
+
+Invariant -> Invariant : check_idempotence_invariant()
+note right: μ ∘ μ = μ
+
+Invariant -> Invariant : check_deadlock_freedom()
+
+Invariant -> Invariant : check_observation_consistency()
+note right: O ⊨ Σ_{t+1}
+
+alt Invariant Violation
+    Invariant --> Next : ✗ Invariant violated
+    Next --> Current : ✗ Child creation failed
+    deactivate Next
+    Current --> Manager : ✗ InvariantViolation
+    deactivate Current
+    Manager --> Executor : Error(InvariantViolation)
+    deactivate Manager
+else Invariants Valid
+    Invariant --> Next : ✓ Σ_{t+1} ⊨ Q
+    deactivate Invariant
+end
+
+== Compute Snapshot Hash ==
+
+Next -> Next : canonicalize_rdf()
+note right: URDNA2015\ncanonicalization
+
+Next -> Next : hash_snapshot()
+note right: SHA-256(\n  canonical_rdf +\n  version +\n  parent_hash\n)
+
+Next -> Next : set_snapshot_hash(hash)
+
+== Atomic Swap (Linearizable) ==
+
+Next --> Current : Snapshot(Σ_{t+1})
+deactivate Next
+Current --> Manager : Snapshot(Σ_{t+1})
+deactivate Current
+
+Manager -> Swap : store(Arc::new(Σ_{t+1}))
+activate Swap
+
+Swap -> Swap : atomic_swap(Σ_t → Σ_{t+1})
+note right: **LINEARIZATION POINT**\nAtomic pointer swap\nAll readers see Σ_{t+1}
+
+Swap --> Manager : ✓ Swapped
+deactivate Swap
+
+== Persist to Storage ==
+
+Manager -> Storage : persist_snapshot(Σ_{t+1})
+activate Storage
+
+Storage -> Storage : write_to_disk(snapshot)
+Storage -> Storage : create_symlink(current → Σ_{t+1})
+Storage -> Storage : add_to_history(Σ_{t+1})
+
+Storage --> Manager : ✓ Persisted
+deactivate Storage
+
+Manager --> Executor : ✓ Update applied(v{t+1})
+deactivate Manager
+
+note over Executor, Storage
+    **Atomic Update Complete**
+    - Σ_t → Σ_{t+1}: Version incremented
+    - Σ_{t+1} ⊨ Q: Invariants preserved
+    - Linearizable: All readers see consistent state
+    - Persistent: Snapshot written to storage
+    - Rollbackable: Σ_t remains in history
+end note
+
+@enduml

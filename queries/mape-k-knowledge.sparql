@@ -1,0 +1,63 @@
+# ============================================================================
+# MAPE-K Knowledge Phase: Query Historical Behavior and Learned Patterns
+# ============================================================================
+#
+# Purpose: Retrieve historical execution data and learned patterns to inform
+#          future adaptation decisions
+#
+# Use Case: Before deploying adaptation, check if similar adaptation was
+#           successful in the past (ReasoningBank-style experience replay)
+#
+# Returns: Historical behaviors, baselines, and adaptation success rates
+# ============================================================================
+
+PREFIX mapek: <http://knhk.ai/ontology/mape-k#>
+PREFIX yawl: <http://www.yawlfoundation.org/yawlschema#>
+PREFIX knhk: <urn:knhk:ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT
+    ?workflow
+    ?workflowName
+    ?historicalBehavior
+    ?baseline
+    ?baselineLatency
+    ?learnedPattern
+    ?patternDescription
+    ?adaptationHistory
+    ?actionType
+    ?successRate
+    ?timestamp
+WHERE {
+    # Find workflows with knowledge bases
+    ?workflow a mapek:SelfExecutingWorkflow ;
+              rdfs:label ?workflowName ;
+              mapek:hasKnowledge ?knowledge .
+
+    # Get historical behavior records
+    ?knowledge mapek:storesKnowledge ?historicalBehavior .
+
+    # Get performance baseline
+    OPTIONAL {
+        ?workflow mapek:hasBaseline ?baseline .
+        ?baseline mapek:baselineLatency ?baselineLatency .
+    }
+
+    # Get learned patterns
+    OPTIONAL {
+        ?knowledge mapek:hasLearnedPattern ?learnedPattern .
+        ?learnedPattern rdfs:comment ?patternDescription .
+    }
+
+    # Get adaptation history
+    OPTIONAL {
+        ?knowledge mapek:hasAdaptationHistory ?adaptationHistory .
+        ?adaptationHistory mapek:usedAction ?action .
+        ?action a ?actionType .
+        ?adaptationHistory mapek:successRate ?successRate .
+        ?adaptationHistory mapek:timestamp ?timestamp .
+    }
+}
+ORDER BY DESC(?timestamp)
+LIMIT 100

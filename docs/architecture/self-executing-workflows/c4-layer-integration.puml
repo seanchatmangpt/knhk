@@ -1,0 +1,198 @@
+@startuml Self-Executing Workflows C4 Context
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Self-Executing Workflows - C4 Context Diagram
+
+Person(user, "Workflow Designer", "Defines workflows in Turtle/RDF")
+Person(operator, "System Operator", "Monitors and manages workflows")
+
+System_Boundary(knhk, "KNHK Self-Executing Workflow System") {
+    System(ontology, "Ontology Layer (Σ)", "Source of truth: YAWL patterns, MAPE-K policies, invariants")
+    System(projection, "Projection Layer (Π)", "SPARQL + Templates → Code generation")
+    System(execution, "Execution Layer (μ)", "Workflow engine with 43 Van der Aalst patterns")
+    System(observation, "Observation Layer (O)", "OTEL telemetry + Receipts + Weaver validation")
+    System(feedback, "MAPE-K Feedback", "Autonomic control: Monitor → Analyze → Plan → Execute")
+}
+
+System_Ext(weaver, "OTel Weaver", "Schema validation (source of truth)")
+System_Ext(otel_collector, "OTEL Collector", "Telemetry collection")
+System_Ext(lockchain, "Lockchain", "Merkle provenance storage")
+
+Rel(user, ontology, "Defines workflows", "Turtle/RDF")
+Rel(operator, feedback, "Monitors", "Dashboards/Alerts")
+
+Rel(ontology, projection, "SPARQL queries", "Pattern definitions")
+Rel(projection, execution, "Generated workflows", "Turtle/RDF")
+Rel(execution, observation, "Telemetry + Receipts", "OTEL + JSON")
+Rel(observation, feedback, "Anomalies + Metrics", "Event stream")
+Rel(feedback, ontology, "Ontology updates", "Atomic snapshots")
+
+Rel(observation, weaver, "Validate schemas", "OTEL protocol")
+Rel(observation, otel_collector, "Export telemetry", "OTLP")
+Rel(observation, lockchain, "Record provenance", "Merkle proofs")
+
+SHOW_LEGEND()
+
+@enduml
+
+@startuml Self-Executing Workflows C4 Container
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Self-Executing Workflows - C4 Container Diagram
+
+Person(user, "Workflow Designer")
+Person(operator, "System Operator")
+
+System_Boundary(knhk, "KNHK Self-Executing Workflow System") {
+
+    ' Layer 1: Ontology
+    Container(ontology_store, "Ontology Store", "oxigraph::Store", "RDF graph storage with SPARQL")
+    Container(snapshot_mgr, "Snapshot Manager", "Rust", "Versioned snapshots with atomic updates")
+    ContainerDb(ontology_db, "Ontology DB", "Turtle files", "YAWL patterns, MAPE-K, sectors")
+
+    ' Layer 2: Projection
+    Container(sparql_engine, "SPARQL Engine", "oxigraph", "Query execution on ontology")
+    Container(template_engine, "Template Engine", "Tera", "Code generation from templates")
+    Container(code_gen, "Code Generator", "Rust", "Generate Rust/Turtle from ontology")
+
+    ' Layer 3: Execution
+    Container(workflow_engine, "Workflow Engine", "Rust", "Execute patterns deterministically")
+    Container(pattern_registry, "Pattern Registry", "Rust", "43 Van der Aalst patterns")
+    Container(hook_mgr, "Hook Manager", "Rust", "Pre/post-task coordination")
+    ContainerDb(state_store, "State Store", "Sled", "Workflow case persistence")
+
+    ' Layer 4: Observation
+    Container(otel_sdk, "OTEL SDK", "opentelemetry-rust", "Telemetry instrumentation")
+    Container(receipt_gen, "Receipt Generator", "Rust", "Provenance receipts")
+    Container(weaver_client, "Weaver Client", "Rust", "Schema validation client")
+    Container(lockchain_client, "Lockchain Client", "Rust", "Merkle proof generation")
+
+    ' Layer 5: MAPE-K
+    Container(monitor, "Monitor", "Rust", "Receipt stream processing")
+    Container(analyzer, "Analyzer", "Rust", "Statistical analysis O vs Σ")
+    Container(planner, "Planner", "Rust", "Generate Σ updates")
+    Container(executor, "Executor", "Rust", "Apply updates atomically")
+    Container(knowledge_base, "Knowledge Base", "Rust + SQLite", "Pattern learning")
+}
+
+System_Ext(weaver, "OTel Weaver")
+System_Ext(otel_collector, "OTEL Collector")
+System_Ext(lockchain, "Lockchain")
+
+' User interactions
+Rel(user, ontology_db, "Writes", "Turtle/RDF")
+Rel(operator, monitor, "Views", "HTTP/gRPC")
+
+' Layer 1: Ontology
+Rel(ontology_db, ontology_store, "Loads", "Turtle")
+Rel(ontology_store, snapshot_mgr, "Queries", "SPARQL")
+
+' Layer 2: Projection
+Rel(snapshot_mgr, sparql_engine, "Provides snapshot", "Arc<Store>")
+Rel(sparql_engine, template_engine, "Query results", "JSON")
+Rel(template_engine, code_gen, "Rendered templates", "String")
+
+' Layer 3: Execution
+Rel(code_gen, workflow_engine, "Workflows", "Turtle/RDF")
+Rel(workflow_engine, pattern_registry, "Execute pattern", "Pattern ID")
+Rel(workflow_engine, hook_mgr, "Pre/post hooks", "Async")
+Rel(workflow_engine, state_store, "Persist state", "Async")
+
+' Layer 4: Observation
+Rel(pattern_registry, otel_sdk, "Record metrics", "OTEL API")
+Rel(pattern_registry, receipt_gen, "Generate receipt", "ExecutionResult")
+Rel(receipt_gen, weaver_client, "Validate", "Receipt")
+Rel(receipt_gen, lockchain_client, "Record", "Receipt")
+
+' Layer 5: MAPE-K
+Rel(receipt_gen, monitor, "Receipt stream", "Async channel")
+Rel(monitor, analyzer, "Anomalies", "Event")
+Rel(analyzer, planner, "Gaps + Trends", "Analysis")
+Rel(planner, executor, "Ontology update", "Update")
+Rel(executor, snapshot_mgr, "Apply update", "Atomic swap")
+Rel(analyzer, knowledge_base, "Learn patterns", "Receipts")
+Rel(knowledge_base, template_engine, "New templates", "Generated")
+
+' External systems
+Rel(weaver_client, weaver, "Validate schema", "HTTP")
+Rel(otel_sdk, otel_collector, "Export", "OTLP")
+Rel(lockchain_client, lockchain, "Submit proof", "gRPC")
+
+SHOW_LEGEND()
+
+@enduml
+
+@startuml Self-Executing Workflows C4 Component - MAPE-K Loop
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Self-Executing Workflows - C4 Component (MAPE-K Loop)
+
+Container_Boundary(mape, "MAPE-K Feedback Layer") {
+
+    ' Monitor components
+    Component(receipt_stream, "Receipt Stream", "tokio::sync::mpsc", "Async receipt channel")
+    Component(anomaly_detector, "Anomaly Detector", "Rust", "Statistical anomaly detection")
+    Component(metrics_collector, "Metrics Collector", "Rust", "Aggregate OTEL metrics")
+
+    ' Analyze components
+    Component(statistical_analyzer, "Statistical Analyzer", "Rust", "Time series analysis")
+    Component(gap_detector, "Gap Detector", "Rust", "Compare O vs Σ")
+    Component(trend_analyzer, "Trend Analyzer", "Rust", "Detect performance trends")
+
+    ' Plan components
+    Component(update_planner, "Update Planner", "Rust", "Generate Σ updates")
+    Component(invariant_checker, "Invariant Checker", "SHACL", "Verify Σ ⊨ Q")
+    Component(optimization_engine, "Optimization Engine", "Rust", "Suggest optimizations")
+
+    ' Execute components
+    Component(atomic_executor, "Atomic Executor", "Rust + ArcSwap", "Linearizable updates")
+    Component(rollback_manager, "Rollback Manager", "Rust", "Snapshot rollback")
+    Component(event_bus, "Event Bus", "Rust", "Update notifications")
+
+    ' Knowledge components
+    Component(pattern_history, "Pattern History", "SQLite", "Execution history")
+    Component(learning_engine, "Learning Engine", "Rust", "Extract patterns")
+    Component(template_gen, "Template Generator", "Rust", "Generate new templates")
+}
+
+ContainerDb(memory_store, "Memory Store", "SQLite", "Swarm memory")
+Container(ontology_mgr, "Ontology Manager", "Rust", "Snapshot management")
+Container(receipt_gen, "Receipt Generator", "Rust", "From Layer 4")
+
+' Monitor flows
+Rel(receipt_gen, receipt_stream, "Publish", "Receipt")
+Rel(receipt_stream, anomaly_detector, "Stream", "Receipt")
+Rel(receipt_stream, metrics_collector, "Aggregate", "Receipt")
+
+' Analyze flows
+Rel(anomaly_detector, statistical_analyzer, "Anomalies", "Event")
+Rel(metrics_collector, gap_detector, "Metrics", "Summary")
+Rel(gap_detector, trend_analyzer, "Gaps", "Gap")
+
+' Plan flows
+Rel(trend_analyzer, update_planner, "Trends", "Trend")
+Rel(update_planner, invariant_checker, "Validate", "Update")
+Rel(update_planner, optimization_engine, "Optimize", "Update")
+
+' Execute flows
+Rel(invariant_checker, atomic_executor, "Valid updates", "Update")
+Rel(atomic_executor, ontology_mgr, "Apply", "Update")
+Rel(atomic_executor, rollback_manager, "Rollback on error", "Snapshot")
+Rel(atomic_executor, event_bus, "Notify", "Event")
+
+' Knowledge flows
+Rel(receipt_stream, pattern_history, "Store", "Receipt")
+Rel(pattern_history, learning_engine, "Analyze", "History")
+Rel(learning_engine, template_gen, "Generate", "Pattern")
+Rel(template_gen, memory_store, "Store", "Template")
+
+' Cross-component
+Rel(gap_detector, ontology_mgr, "Read Σ", "Snapshot")
+Rel(invariant_checker, ontology_mgr, "Read Q", "Invariants")
+
+SHOW_LEGEND()
+
+@enduml

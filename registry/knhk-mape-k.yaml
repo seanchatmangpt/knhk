@@ -1,0 +1,209 @@
+# KNHK MAPE-K Feedback Loop Telemetry Schema
+# Defines spans, metrics, and events for Monitor-Analyze-Plan-Execute-Knowledge loops
+
+groups:
+  # MAPE-K specific attributes
+  - id: knhk.mape_k.attributes
+    type: attribute_group
+    brief: "MAPE-K feedback loop attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.mape_k.cycle_id
+        type: string
+        stability: experimental
+        brief: "MAPE-K cycle identifier (UUID)"
+        examples: ["550e8400-e29b-41d4-a716-446655440000"]
+      - id: knhk.mape_k.phase
+        type: string
+        stability: experimental
+        brief: "Current MAPE-K phase"
+        examples: ["monitor", "analyze", "plan", "execute", "knowledge"]
+      - id: knhk.mape_k.observation_count
+        type: int
+        stability: experimental
+        brief: "Number of observations in monitor phase"
+        examples: [1, 10, 100]
+      - id: knhk.mape_k.anomaly_detected
+        type: boolean
+        stability: experimental
+        brief: "Whether anomaly was detected in analyze phase"
+      - id: knhk.mape_k.plan_type
+        type: string
+        stability: experimental
+        brief: "Type of adaptation plan"
+        examples: ["scale_up", "scale_down", "circuit_break", "retry", "fallback"]
+      - id: knhk.mape_k.execution_success
+        type: boolean
+        stability: experimental
+        brief: "Whether plan execution succeeded"
+      - id: knhk.mape_k.knowledge_updated
+        type: boolean
+        stability: experimental
+        brief: "Whether knowledge base was updated"
+      - id: knhk.mape_k.latency_ms
+        type: int
+        stability: experimental
+        brief: "MAPE-K cycle latency in milliseconds"
+      - id: knhk.mape_k.metric_name
+        type: string
+        stability: experimental
+        brief: "Name of monitored metric"
+        examples: ["cpu_usage", "memory_usage", "request_rate", "error_rate"]
+      - id: knhk.mape_k.metric_value
+        type: double
+        stability: experimental
+        brief: "Current value of monitored metric"
+      - id: knhk.mape_k.threshold_exceeded
+        type: boolean
+        stability: experimental
+        brief: "Whether metric exceeded threshold"
+
+  # Monitor phase span
+  - id: knhk.mape_k.monitor
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Monitor phase: Collect observations from system"
+    note: |
+      Collects runtime observations including metrics, traces, logs, and events.
+      Monitors system state for anomalies and threshold violations.
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.phase
+      - ref: knhk.mape_k.observation_count
+      - ref: knhk.mape_k.latency_ms
+
+  # Analyze phase span
+  - id: knhk.mape_k.analyze
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Analyze phase: Detect anomalies and issues"
+    note: |
+      Analyzes collected observations to detect anomalies, threshold violations,
+      performance degradation, and other issues requiring adaptation.
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.phase
+      - ref: knhk.mape_k.anomaly_detected
+      - ref: knhk.mape_k.metric_name
+      - ref: knhk.mape_k.metric_value
+      - ref: knhk.mape_k.threshold_exceeded
+      - ref: knhk.mape_k.latency_ms
+
+  # Plan phase span
+  - id: knhk.mape_k.plan
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Plan phase: Create adaptation plan"
+    note: |
+      Creates adaptation plan to address detected issues. Plans may include
+      scaling, circuit breaking, retries, fallbacks, or other adaptations.
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.phase
+      - ref: knhk.mape_k.plan_type
+      - ref: knhk.mape_k.latency_ms
+
+  # Execute phase span
+  - id: knhk.mape_k.execute
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Execute phase: Execute adaptation plan"
+    note: |
+      Executes the adaptation plan, applying changes to the system.
+      Tracks execution success and side effects.
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.phase
+      - ref: knhk.mape_k.plan_type
+      - ref: knhk.mape_k.execution_success
+      - ref: knhk.mape_k.latency_ms
+
+  # Knowledge phase span
+  - id: knhk.mape_k.knowledge
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "MAPE-K Knowledge phase: Update knowledge base"
+    note: |
+      Updates knowledge base with learnings from the MAPE-K cycle.
+      Stores patterns, decisions, and outcomes for future reference.
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.phase
+      - ref: knhk.mape_k.knowledge_updated
+      - ref: knhk.mape_k.latency_ms
+
+  # Complete MAPE-K cycle span
+  - id: knhk.mape_k.cycle
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Complete MAPE-K cycle: Monitor → Analyze → Plan → Execute → Knowledge"
+    note: |
+      Represents a complete MAPE-K feedback loop cycle.
+      Contains child spans for each phase.
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.latency_ms
+      - ref: knhk.mape_k.execution_success
+
+  # MAPE-K metrics
+  - id: metric.knhk.mape_k.cycle_count
+    type: metric
+    metric_name: knhk.mape_k.cycle_count
+    stability: experimental
+    brief: "Total number of MAPE-K cycles executed"
+    instrument: counter
+    unit: "{cycles}"
+
+  - id: metric.knhk.mape_k.cycle_latency
+    type: metric
+    metric_name: knhk.mape_k.cycle_latency
+    stability: experimental
+    brief: "MAPE-K cycle latency in milliseconds"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: knhk.mape_k.phase
+
+  - id: metric.knhk.mape_k.anomaly_rate
+    type: metric
+    metric_name: knhk.mape_k.anomaly_rate
+    stability: experimental
+    brief: "Rate of anomaly detection (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+
+  - id: metric.knhk.mape_k.adaptation_success_rate
+    type: metric
+    metric_name: knhk.mape_k.adaptation_success_rate
+    stability: experimental
+    brief: "Rate of successful adaptations (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: knhk.mape_k.plan_type
+
+  # MAPE-K events
+  - id: knhk.mape_k.event.anomaly_detected
+    type: event
+    stability: experimental
+    brief: "Event emitted when anomaly is detected"
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.metric_name
+      - ref: knhk.mape_k.metric_value
+      - ref: knhk.mape_k.threshold_exceeded
+
+  - id: knhk.mape_k.event.adaptation_executed
+    type: event
+    stability: experimental
+    brief: "Event emitted when adaptation plan is executed"
+    attributes:
+      - ref: knhk.mape_k.cycle_id
+      - ref: knhk.mape_k.plan_type
+      - ref: knhk.mape_k.execution_success

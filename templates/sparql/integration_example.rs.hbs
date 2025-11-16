@@ -1,0 +1,104 @@
+//! SPARQL Integration Example
+//!
+//! This template demonstrates how SPARQL queries are consumed in ggen templates.
+//! Generated from ontology: {{ontology_uri}}
+
+use oxigraph::store::Store;
+use oxigraph::sparql::QueryResults;
+use anyhow::Result;
+
+/// Execute SPARQL query and bind results to template
+///
+/// Query executed:
+/// ```sparql
+/// {{sparql_query}}
+/// ```
+pub fn execute_query() -> Result<Vec<QueryResult>> {
+    let store = Store::new()?;
+
+    // Load ontology
+    {{#if ontology_data}}
+    let turtle = r#"
+{{ontology_data}}
+    "#;
+    store.load_from_reader(oxigraph::io::RdfFormat::Turtle, turtle.as_bytes())?;
+    {{/if}}
+
+    // Execute query
+    let query = r#"
+{{sparql_query}}
+    "#;
+
+    let results = store.query(query)?;
+
+    // Process results
+    let mut query_results = Vec::new();
+
+    if let QueryResults::Solutions(solutions) = results {
+        for solution in solutions {
+            let solution = solution?;
+
+            {{#each sparql_variables}}
+            let {{this}} = solution.get("{{this}}")
+                .map(|term| term.to_string())
+                .unwrap_or_default();
+            {{/each}}
+
+            query_results.push(QueryResult {
+                {{#each sparql_variables}}
+                {{this}},
+                {{/each}}
+            });
+        }
+    }
+
+    Ok(query_results)
+}
+
+#[derive(Debug, Clone)]
+pub struct QueryResult {
+    {{#each sparql_variables}}
+    pub {{this}}: String,
+    {{/each}}
+}
+
+{{!-- Generate code based on query results --}}
+{{#each sparql_results}}
+/// Generated from SPARQL result {{@index}}
+pub mod result_{{@index}} {
+    {{#each this}}
+    pub const {{upper @key}}: &str = "{{this}}";
+    {{/each}}
+}
+{{/each}}
+
+{{!-- List iteration example --}}
+pub fn all_results() -> Vec<(&'static str, &'static str)> {
+    vec![
+        {{#each sparql_results}}
+        ("{{this.name}}", "{{this.value}}"),
+        {{/each}}
+    ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_query_execution() {
+        let results = execute_query().expect("Query should succeed");
+        assert!(!results.is_empty(), "Should have results");
+
+        {{#if expected_result_count}}
+        assert_eq!(results.len(), {{expected_result_count}}, "Should have {{expected_result_count}} results");
+        {{/if}}
+    }
+
+    {{#each sparql_results}}
+    #[test]
+    fn test_result_{{@index}}() {
+        assert_eq!(result_{{@index}}::{{upper (first_key this)}}, "{{first_value this}}");
+    }
+    {{/each}}
+}

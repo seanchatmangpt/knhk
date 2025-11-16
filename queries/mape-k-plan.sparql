@@ -1,0 +1,96 @@
+# ============================================================================
+# MAPE-K Plan Phase: Generate Adaptation Plans from Symptoms
+# ============================================================================
+#
+# Purpose: Generate adaptation plans to address detected symptoms
+# Use Case: When Chatman Constant is violated, plan to optimize workflow
+#           (shadow deploy alternative pattern, scale resources, etc.)
+#
+# Returns: List of adaptation plans with actions and expected improvements
+# ============================================================================
+
+PREFIX mapek: <http://knhk.ai/ontology/mape-k#>
+PREFIX yawl: <http://www.yawlfoundation.org/yawlschema#>
+PREFIX knhk: <urn:knhk:ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT
+    ?workflow
+    ?symptomType
+    ?adaptationGoal
+    ?adaptationPlan
+    ?action
+    ?actionType
+    ?strategy
+    ?expectedImprovement
+WHERE {
+    # Find workflows with planners
+    ?workflow a mapek:SelfExecutingWorkflow ;
+              mapek:hasAnalyzer ?analyzer ;
+              mapek:hasPlanner ?planner .
+
+    # Get detected symptoms (from analyze phase)
+    ?analyzer mapek:analyzesSymptom ?symptomType .
+
+    # Map symptom to adaptation goal
+    BIND(
+        IF(?symptomType = mapek:GuardViolation,
+           mapek:ImprovePerformance,
+           IF(?symptomType = mapek:SLOViolation,
+              mapek:RestoreSLOCompliance,
+              IF(?symptomType = mapek:DeadlockDetected,
+                 mapek:AvoidDeadlock,
+                 mapek:ImprovePerformance
+              )
+           )
+        ) AS ?adaptationGoal
+    )
+
+    # Generate adaptation plan based on goal
+    ?planner mapek:generatesAdaptationPlan ?adaptationPlan .
+    ?adaptationPlan mapek:hasAdaptationGoal ?adaptationGoal .
+
+    # Get actions in plan
+    ?adaptationPlan mapek:containsAction ?action .
+    ?action a ?actionType .
+
+    # Recommend actions based on symptom
+    FILTER(
+        # For Chatman Constant violations: shadow deploy or restructure
+        (?symptomType = mapek:GuardViolation &&
+         (?actionType = mapek:ShadowDeployAction ||
+          ?actionType = mapek:WorkflowRestructureAction)) ||
+
+        # For SLO violations: scale or rollback
+        (?symptomType = mapek:SLOViolation &&
+         (?actionType = mapek:ScaleAction ||
+          ?actionType = mapek:RollbackAction)) ||
+
+        # For deadlock: circuit breaker or restructure
+        (?symptomType = mapek:DeadlockDetected &&
+         (?actionType = mapek:CircuitBreakerAction ||
+          ?actionType = mapek:WorkflowRestructureAction))
+    )
+
+    # Get execution strategy
+    OPTIONAL {
+        ?workflow mapek:hasExecutor ?executor .
+        ?executor mapek:usesStrategy ?strategy .
+    }
+
+    # Estimate expected improvement
+    BIND(
+        IF(?actionType = mapek:ShadowDeployAction,
+           "Test alternative pattern with expected 2-3 tick reduction",
+           IF(?actionType = mapek:ScaleAction,
+              "Increase parallelism to reduce latency by 40-50%",
+              IF(?actionType = mapek:WorkflowRestructureAction,
+                 "Optimize pattern from XOR to AND-split for 30% speedup",
+                 "Restore to baseline performance"
+              )
+           )
+        ) AS ?expectedImprovement
+    )
+}
+ORDER BY ?workflow ?adaptationGoal

@@ -81,6 +81,14 @@ pub mod execution;
 pub mod executor;
 pub mod ggen;
 pub mod hooks;
+/// Hook engine and execution layer (μ via KNHK)
+pub mod engine;
+/// Guard enforcement system (Q invariants)
+pub mod guards;
+/// Receipt generation and storage
+pub mod receipts;
+/// Snapshot versioning (Σ)
+pub mod snapshots;
 pub mod innovation;
 #[macro_use]
 pub mod integration;

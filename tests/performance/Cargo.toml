@@ -1,0 +1,23 @@
+[package]
+name = "knhk-performance-tests"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[test]]
+name = "hot_path_latency_test"
+path = "hot_path_latency_test.rs"
+
+[[test]]
+name = "warm_path_adaptation_test"
+path = "warm_path_adaptation_test.rs"
+
+[[test]]
+name = "receipt_generation_test"
+path = "receipt_generation_test.rs"
+
+[[test]]
+name = "chatman_constant_enforcement_test"
+path = "chatman_constant_enforcement_test.rs"

@@ -1,0 +1,70 @@
+{{!--
+  SPARQL Query Template with Variable Bindings
+
+  This template demonstrates how to use SPARQL query results in ggen templates.
+  Variables from SPARQL SELECT queries are automatically bound to the template context.
+--}}
+
+//! Generated from SPARQL query results
+//! Query: {{sparql_query}}
+
+{{#each sparql_results}}
+// Result {{@index}}:
+{{#each this}}
+//   {{@key}}: {{this}}
+{{/each}}
+{{/each}}
+
+{{!--
+  Example SPARQL query:
+
+  SELECT ?taskName ?taskType ?pattern WHERE {
+    ?task a yawl:Task ;
+          rdfs:label ?taskName ;
+          yawl:taskType ?taskType ;
+          yawl:pattern ?pattern .
+  }
+
+  This binds: taskName, taskType, pattern variables to each result
+--}}
+
+{{!-- Access SPARQL results in template --}}
+{{#each sparql_results}}
+pub const TASK_{{upper (snake_case this.taskName)}}: &str = "{{this.taskName}}";
+pub const TASK_{{upper (snake_case this.taskName)}}_TYPE: &str = "{{this.taskType}}";
+pub const TASK_{{upper (snake_case this.taskName)}}_PATTERN: &str = "{{this.pattern}}";
+{{/each}}
+
+{{!--
+  Using SPARQL ASK queries:
+
+  ASK { ?workflow yawl:hasParallelism true }
+
+  Result: sparql_ask_result = true/false
+--}}
+
+{{#if sparql_ask_result}}
+// Workflow has parallelism enabled
+pub const HAS_PARALLELISM: bool = true;
+{{else}}
+// Workflow does not have parallelism
+pub const HAS_PARALLELISM: bool = false;
+{{/if}}
+
+{{!--
+  Using SPARQL CONSTRUCT queries:
+
+  CONSTRUCT {
+    ?task knhk:generatedCode ?code .
+  } WHERE {
+    ?task a yawl:Task ;
+          yawl:implementation ?impl .
+    BIND(CONCAT("impl_", STR(?impl)) AS ?code)
+  }
+
+  Result: Array of constructed triples
+--}}
+
+{{#each sparql_construct_results}}
+// Constructed: {{this.subject}} {{this.predicate}} {{this.object}}
+{{/each}}

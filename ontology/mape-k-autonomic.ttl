@@ -1,0 +1,510 @@
+@prefix mapek: <http://knhk.ai/ontology/mape-k#> .
+@prefix yawl: <http://www.yawlfoundation.org/yawlschema#> .
+@prefix knhk: <urn:knhk:ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+# ============================================================================
+# MAPE-K Autonomic Computing Ontology for Self-Executing Workflows
+# ============================================================================
+#
+# Implements the MAPE-K (Monitor, Analyze, Plan, Execute, Knowledge) feedback
+# loop for autonomic workflow systems. This ontology enables workflows to:
+#
+# 1. Monitor their own execution via telemetry and guards
+# 2. Analyze performance against SLOs and constraints
+# 3. Plan adaptations when violations occur
+# 4. Execute adaptation plans (shadow deployments, rollbacks)
+# 5. Learn from historical behavior (Knowledge base)
+#
+# Integration with YAWL: Workflows annotated with MAPE-K concepts can
+# self-adapt based on runtime telemetry and learned patterns.
+#
+# ============================================================================
+
+mapek:Ontology a owl:Ontology ;
+    rdfs:label "MAPE-K Autonomic Computing Ontology" ;
+    rdfs:comment "Self-executing workflow ontology with autonomic feedback loops" ;
+    owl:versionInfo "1.0.0" ;
+    owl:imports <http://www.yawlfoundation.org/yawlschema#> ;
+    owl:imports <urn:knhk:ontology#> .
+
+# ============================================================================
+# MAPE-K Core Classes
+# ============================================================================
+
+mapek:AutonomicElement a owl:Class ;
+    rdfs:label "Autonomic Element" ;
+    rdfs:comment "Self-managing computational element with MAPE-K loop" .
+
+mapek:ManagedElement a owl:Class ;
+    rdfs:label "Managed Element" ;
+    rdfs:comment "Workflow or component under autonomic management" ;
+    rdfs:subClassOf yawl:Specification .
+
+# ============================================================================
+# Monitor Phase
+# ============================================================================
+
+mapek:Monitor a owl:Class ;
+    rdfs:label "Monitor" ;
+    rdfs:comment "Observes managed element and collects telemetry" ;
+    rdfs:subClassOf mapek:AutonomicElement .
+
+mapek:Sensor a owl:Class ;
+    rdfs:label "Sensor" ;
+    rdfs:comment "Collects specific telemetry metrics" .
+
+mapek:TelemetryPoint a owl:Class ;
+    rdfs:label "Telemetry Point" ;
+    rdfs:comment "Location in workflow where monitoring occurs" .
+
+mapek:MetricType a owl:Class ;
+    rdfs:label "Metric Type" ;
+    rdfs:comment "Type of metric being monitored" .
+
+mapek:LatencyMetric a mapek:MetricType ;
+    rdfs:label "Latency Metric" ;
+    rdfs:comment "Execution time measurement (ticks or ms)" .
+
+mapek:ThroughputMetric a mapek:MetricType ;
+    rdfs:label "Throughput Metric" ;
+    rdfs:comment "Operations per time unit" .
+
+mapek:ErrorRateMetric a mapek:MetricType ;
+    rdfs:label "Error Rate Metric" ;
+    rdfs:comment "Failure rate percentage" .
+
+mapek:ResourceUtilizationMetric a mapek:MetricType ;
+    rdfs:label "Resource Utilization Metric" ;
+    rdfs:comment "CPU, memory, or resource usage" .
+
+mapek:SLOComplianceMetric a mapek:MetricType ;
+    rdfs:label "SLO Compliance Metric" ;
+    rdfs:comment "SLO target achievement rate" .
+
+# ============================================================================
+# Analyze Phase
+# ============================================================================
+
+mapek:Analyzer a owl:Class ;
+    rdfs:label "Analyzer" ;
+    rdfs:comment "Processes monitored data to detect issues" ;
+    rdfs:subClassOf mapek:AutonomicElement .
+
+mapek:Symptom a owl:Class ;
+    rdfs:label "Symptom" ;
+    rdfs:comment "Observable indicator of potential problem" .
+
+mapek:SLOViolation a mapek:Symptom ;
+    rdfs:label "SLO Violation" ;
+    rdfs:comment "Service level objective not met" .
+
+mapek:PerformanceDegradation a mapek:Symptom ;
+    rdfs:label "Performance Degradation" ;
+    rdfs:comment "Execution slower than baseline" .
+
+mapek:ResourceExhaustion a mapek:Symptom ;
+    rdfs:label "Resource Exhaustion" ;
+    rdfs:comment "Resource nearing capacity limits" .
+
+mapek:DeadlockDetected a mapek:Symptom ;
+    rdfs:label "Deadlock Detected" ;
+    rdfs:comment "Workflow deadlock identified" .
+
+mapek:GuardViolation a mapek:Symptom ;
+    rdfs:label "Guard Violation" ;
+    rdfs:comment "Constraint or invariant violated" .
+
+mapek:AnalysisRule a owl:Class ;
+    rdfs:label "Analysis Rule" ;
+    rdfs:comment "Rule for detecting symptoms from metrics" .
+
+mapek:Threshold a owl:Class ;
+    rdfs:label "Threshold" ;
+    rdfs:comment "Metric threshold for symptom detection" .
+
+# ============================================================================
+# Plan Phase
+# ============================================================================
+
+mapek:Planner a owl:Class ;
+    rdfs:label "Planner" ;
+    rdfs:comment "Generates adaptation plans from symptoms" ;
+    rdfs:subClassOf mapek:AutonomicElement .
+
+mapek:AdaptationGoal a owl:Class ;
+    rdfs:label "Adaptation Goal" ;
+    rdfs:comment "Desired outcome of adaptation" .
+
+mapek:RestoreSLOCompliance a mapek:AdaptationGoal ;
+    rdfs:label "Restore SLO Compliance" ;
+    rdfs:comment "Return to SLO target performance" .
+
+mapek:ImprovePerformance a mapek:AdaptationGoal ;
+    rdfs:label "Improve Performance" ;
+    rdfs:comment "Optimize execution efficiency" .
+
+mapek:AvoidDeadlock a mapek:AdaptationGoal ;
+    rdfs:label "Avoid Deadlock" ;
+    rdfs:comment "Prevent or resolve deadlock" .
+
+mapek:ReduceResourceUsage a mapek:AdaptationGoal ;
+    rdfs:label "Reduce Resource Usage" ;
+    rdfs:comment "Lower resource consumption" .
+
+mapek:AdaptationPlan a owl:Class ;
+    rdfs:label "Adaptation Plan" ;
+    rdfs:comment "Sequence of adaptation actions to achieve goal" .
+
+mapek:AdaptationAction a owl:Class ;
+    rdfs:label "Adaptation Action" ;
+    rdfs:comment "Atomic adaptation operation" .
+
+mapek:ScaleAction a mapek:AdaptationAction ;
+    rdfs:label "Scale Action" ;
+    rdfs:comment "Scale resources up or down" .
+
+mapek:RollbackAction a mapek:AdaptationAction ;
+    rdfs:label "Rollback Action" ;
+    rdfs:comment "Revert to previous stable version" .
+
+mapek:ShadowDeployAction a mapek:AdaptationAction ;
+    rdfs:label "Shadow Deploy Action" ;
+    rdfs:comment "Deploy alternative version in shadow mode" .
+
+mapek:CircuitBreakerAction a mapek:AdaptationAction ;
+    rdfs:label "Circuit Breaker Action" ;
+    rdfs:comment "Open circuit breaker to stop cascading failures" .
+
+mapek:WorkflowRestructureAction a mapek:AdaptationAction ;
+    rdfs:label "Workflow Restructure Action" ;
+    rdfs:comment "Change workflow structure (add/remove patterns)" .
+
+# ============================================================================
+# Execute Phase
+# ============================================================================
+
+mapek:Executor a owl:Class ;
+    rdfs:label "Executor" ;
+    rdfs:comment "Applies adaptation plan to managed element" ;
+    rdfs:subClassOf mapek:AutonomicElement .
+
+mapek:ExecutionStrategy a owl:Class ;
+    rdfs:label "Execution Strategy" ;
+    rdfs:comment "Strategy for applying adaptations" .
+
+mapek:ImmediateExecution a mapek:ExecutionStrategy ;
+    rdfs:label "Immediate Execution" ;
+    rdfs:comment "Apply adaptation immediately" .
+
+mapek:GradualRollout a mapek:ExecutionStrategy ;
+    rdfs:label "Gradual Rollout" ;
+    rdfs:comment "Apply adaptation incrementally (canary/blue-green)" .
+
+mapek:ScheduledExecution a mapek:ExecutionStrategy ;
+    rdfs:label "Scheduled Execution" ;
+    rdfs:comment "Apply adaptation at scheduled time" .
+
+mapek:EffectorAction a owl:Class ;
+    rdfs:label "Effector Action" ;
+    rdfs:comment "Concrete action executed on managed element" .
+
+# ============================================================================
+# Knowledge Phase
+# ============================================================================
+
+mapek:Knowledge a owl:Class ;
+    rdfs:label "Knowledge" ;
+    rdfs:comment "Shared knowledge repository for MAPE-K loop" ;
+    rdfs:subClassOf mapek:AutonomicElement .
+
+mapek:HistoricalBehavior a owl:Class ;
+    rdfs:label "Historical Behavior" ;
+    rdfs:comment "Record of past workflow execution patterns" .
+
+mapek:LearnedPattern a owl:Class ;
+    rdfs:label "Learned Pattern" ;
+    rdfs:comment "Pattern learned from historical behavior" .
+
+mapek:PerformanceBaseline a owl:Class ;
+    rdfs:label "Performance Baseline" ;
+    rdfs:comment "Expected normal performance characteristics" .
+
+mapek:AdaptationHistory a owl:Class ;
+    rdfs:label "Adaptation History" ;
+    rdfs:comment "Record of past adaptations and outcomes" .
+
+mapek:Policy a owl:Class ;
+    rdfs:label "Policy" ;
+    rdfs:comment "Rules governing autonomic behavior" .
+
+mapek:AdaptationPolicy a mapek:Policy ;
+    rdfs:label "Adaptation Policy" ;
+    rdfs:comment "When and how to adapt" .
+
+mapek:UtilityFunction a owl:Class ;
+    rdfs:label "Utility Function" ;
+    rdfs:comment "Function for evaluating adaptation quality" .
+
+# ============================================================================
+# Self-Executing Workflow Concepts
+# ============================================================================
+
+mapek:SelfExecutingWorkflow a owl:Class ;
+    rdfs:label "Self-Executing Workflow" ;
+    rdfs:comment "Workflow with integrated MAPE-K loop" ;
+    rdfs:subClassOf yawl:Specification ;
+    rdfs:subClassOf mapek:ManagedElement .
+
+mapek:AutonomicTask a owl:Class ;
+    rdfs:label "Autonomic Task" ;
+    rdfs:comment "Task with self-management capabilities" ;
+    rdfs:subClassOf yawl:Task .
+
+mapek:AdaptivePattern a owl:Class ;
+    rdfs:label "Adaptive Pattern" ;
+    rdfs:comment "Workflow pattern that can adapt at runtime" .
+
+mapek:GuardedTransition a owl:Class ;
+    rdfs:label "Guarded Transition" ;
+    rdfs:comment "Workflow transition with runtime guards" .
+
+mapek:RuntimeInvariant a owl:Class ;
+    rdfs:label "Runtime Invariant" ;
+    rdfs:comment "Property that must hold during execution" .
+
+mapek:PerformanceConstraint a owl:Class ;
+    rdfs:label "Performance Constraint" ;
+    rdfs:comment "Execution time or resource constraint" .
+
+mapek:ChatmanConstant a mapek:PerformanceConstraint ;
+    rdfs:label "Chatman Constant" ;
+    rdfs:comment "Hot path constraint: ≤8 ticks" ;
+    mapek:maxTicks 8 .
+
+# ============================================================================
+# Shadow Deployment & A/B Testing
+# ============================================================================
+
+mapek:ShadowDeployment a owl:Class ;
+    rdfs:label "Shadow Deployment" ;
+    rdfs:comment "Parallel deployment for testing adaptations" .
+
+mapek:ProductionVersion a owl:Class ;
+    rdfs:label "Production Version" ;
+    rdfs:comment "Current production workflow version" .
+
+mapek:ShadowVersion a owl:Class ;
+    rdfs:label "Shadow Version" ;
+    rdfs:comment "Alternative version running in shadow mode" .
+
+mapek:ComparisonMetrics a owl:Class ;
+    rdfs:label "Comparison Metrics" ;
+    rdfs:comment "Metrics comparing production vs shadow" .
+
+mapek:PromotionDecision a owl:Class ;
+    rdfs:label "Promotion Decision" ;
+    rdfs:comment "Decision to promote shadow to production" .
+
+# ============================================================================
+# Object Properties
+# ============================================================================
+
+mapek:monitors a owl:ObjectProperty ;
+    rdfs:label "monitors" ;
+    rdfs:comment "Monitor observes ManagedElement" ;
+    rdfs:domain mapek:Monitor ;
+    rdfs:range mapek:ManagedElement .
+
+mapek:collects a owl:ObjectProperty ;
+    rdfs:label "collects" ;
+    rdfs:comment "Sensor collects MetricType" ;
+    rdfs:domain mapek:Sensor ;
+    rdfs:range mapek:MetricType .
+
+mapek:analyzesSymptom a owl:ObjectProperty ;
+    rdfs:label "analyzes symptom" ;
+    rdfs:comment "Analyzer detects Symptom" ;
+    rdfs:domain mapek:Analyzer ;
+    rdfs:range mapek:Symptom .
+
+mapek:hasThreshold a owl:ObjectProperty ;
+    rdfs:label "has threshold" ;
+    rdfs:comment "AnalysisRule has Threshold" ;
+    rdfs:domain mapek:AnalysisRule ;
+    rdfs:range mapek:Threshold .
+
+mapek:generatesAdaptationPlan a owl:ObjectProperty ;
+    rdfs:label "generates adaptation plan" ;
+    rdfs:comment "Planner generates AdaptationPlan" ;
+    rdfs:domain mapek:Planner ;
+    rdfs:range mapek:AdaptationPlan .
+
+mapek:hasAdaptationGoal a owl:ObjectProperty ;
+    rdfs:label "has adaptation goal" ;
+    rdfs:comment "AdaptationPlan achieves AdaptationGoal" ;
+    rdfs:domain mapek:AdaptationPlan ;
+    rdfs:range mapek:AdaptationGoal .
+
+mapek:containsAction a owl:ObjectProperty ;
+    rdfs:label "contains action" ;
+    rdfs:comment "AdaptationPlan contains AdaptationAction" ;
+    rdfs:domain mapek:AdaptationPlan ;
+    rdfs:range mapek:AdaptationAction .
+
+mapek:executes a owl:ObjectProperty ;
+    rdfs:label "executes" ;
+    rdfs:comment "Executor applies AdaptationPlan" ;
+    rdfs:domain mapek:Executor ;
+    rdfs:range mapek:AdaptationPlan .
+
+mapek:usesStrategy a owl:ObjectProperty ;
+    rdfs:label "uses strategy" ;
+    rdfs:comment "Executor uses ExecutionStrategy" ;
+    rdfs:domain mapek:Executor ;
+    rdfs:range mapek:ExecutionStrategy .
+
+mapek:storesKnowledge a owl:ObjectProperty ;
+    rdfs:label "stores knowledge" ;
+    rdfs:comment "Knowledge repository stores HistoricalBehavior" ;
+    rdfs:domain mapek:Knowledge ;
+    rdfs:range mapek:HistoricalBehavior .
+
+mapek:hasBaseline a owl:ObjectProperty ;
+    rdfs:label "has baseline" ;
+    rdfs:comment "ManagedElement has PerformanceBaseline" ;
+    rdfs:domain mapek:ManagedElement ;
+    rdfs:range mapek:PerformanceBaseline .
+
+mapek:enforces a owl:ObjectProperty ;
+    rdfs:label "enforces" ;
+    rdfs:comment "ManagedElement enforces Policy" ;
+    rdfs:domain mapek:ManagedElement ;
+    rdfs:range mapek:Policy .
+
+mapek:hasInvariant a owl:ObjectProperty ;
+    rdfs:label "has invariant" ;
+    rdfs:comment "SelfExecutingWorkflow enforces RuntimeInvariant" ;
+    rdfs:domain mapek:SelfExecutingWorkflow ;
+    rdfs:range mapek:RuntimeInvariant .
+
+mapek:hasConstraint a owl:ObjectProperty ;
+    rdfs:label "has constraint" ;
+    rdfs:comment "AutonomicTask has PerformanceConstraint" ;
+    rdfs:domain mapek:AutonomicTask ;
+    rdfs:range mapek:PerformanceConstraint .
+
+mapek:shadowDeploys a owl:ObjectProperty ;
+    rdfs:label "shadow deploys" ;
+    rdfs:comment "ProductionVersion shadow deploys ShadowVersion" ;
+    rdfs:domain mapek:ProductionVersion ;
+    rdfs:range mapek:ShadowVersion .
+
+mapek:comparesUsing a owl:ObjectProperty ;
+    rdfs:label "compares using" ;
+    rdfs:comment "ShadowDeployment uses ComparisonMetrics" ;
+    rdfs:domain mapek:ShadowDeployment ;
+    rdfs:range mapek:ComparisonMetrics .
+
+# ============================================================================
+# Datatype Properties
+# ============================================================================
+
+mapek:metricValue a owl:DatatypeProperty ;
+    rdfs:label "metric value" ;
+    rdfs:comment "Current value of metric" ;
+    rdfs:domain mapek:MetricType ;
+    rdfs:range xsd:decimal .
+
+mapek:thresholdValue a owl:DatatypeProperty ;
+    rdfs:label "threshold value" ;
+    rdfs:comment "Threshold value for triggering symptom" ;
+    rdfs:domain mapek:Threshold ;
+    rdfs:range xsd:decimal .
+
+mapek:maxTicks a owl:DatatypeProperty ;
+    rdfs:label "max ticks" ;
+    rdfs:comment "Maximum ticks allowed (Chatman Constant = 8)" ;
+    rdfs:domain mapek:PerformanceConstraint ;
+    rdfs:range xsd:integer .
+
+mapek:targetSLO a owl:DatatypeProperty ;
+    rdfs:label "target SLO" ;
+    rdfs:comment "Target SLO value (e.g., P99 latency)" ;
+    rdfs:domain knhk:SLO ;
+    rdfs:range xsd:decimal .
+
+mapek:actualSLO a owl:DatatypeProperty ;
+    rdfs:label "actual SLO" ;
+    rdfs:comment "Measured SLO value" ;
+    rdfs:domain knhk:SLO ;
+    rdfs:range xsd:decimal .
+
+mapek:adaptationScore a owl:DatatypeProperty ;
+    rdfs:label "adaptation score" ;
+    rdfs:comment "Quality score for adaptation (0.0-1.0)" ;
+    rdfs:domain mapek:AdaptationPlan ;
+    rdfs:range xsd:decimal .
+
+mapek:timestamp a owl:DatatypeProperty ;
+    rdfs:label "timestamp" ;
+    rdfs:comment "Unix timestamp of event" ;
+    rdfs:range xsd:long .
+
+mapek:spanId a owl:DatatypeProperty ;
+    rdfs:label "span ID" ;
+    rdfs:comment "OpenTelemetry span identifier" ;
+    rdfs:range xsd:string .
+
+mapek:traceId a owl:DatatypeProperty ;
+    rdfs:label "trace ID" ;
+    rdfs:comment "OpenTelemetry trace identifier" ;
+    rdfs:range xsd:string .
+
+# ============================================================================
+# Example Instance: Self-Executing ATM Workflow
+# ============================================================================
+
+<http://knhk.ai/autonomic/atm-workflow> a mapek:SelfExecutingWorkflow ;
+    rdfs:label "Self-Executing ATM Workflow" ;
+    mapek:hasMonitor <http://knhk.ai/autonomic/atm-monitor> ;
+    mapek:hasAnalyzer <http://knhk.ai/autonomic/atm-analyzer> ;
+    mapek:hasPlanner <http://knhk.ai/autonomic/atm-planner> ;
+    mapek:hasExecutor <http://knhk.ai/autonomic/atm-executor> ;
+    mapek:hasKnowledge <http://knhk.ai/autonomic/atm-knowledge> ;
+    mapek:hasInvariant <http://knhk.ai/autonomic/atm-invariant-balance-consistency> ;
+    mapek:hasConstraint mapek:ChatmanConstant .
+
+<http://knhk.ai/autonomic/atm-monitor> a mapek:Monitor ;
+    mapek:monitors <http://knhk.ai/autonomic/atm-workflow> ;
+    mapek:hasSensor <http://knhk.ai/autonomic/atm-latency-sensor> ;
+    mapek:hasSensor <http://knhk.ai/autonomic/atm-error-sensor> .
+
+<http://knhk.ai/autonomic/atm-latency-sensor> a mapek:Sensor ;
+    mapek:collects mapek:LatencyMetric ;
+    mapek:metricValue 6 . # 6 ticks (within Chatman Constant)
+
+<http://knhk.ai/autonomic/atm-analyzer> a mapek:Analyzer ;
+    mapek:hasRule <http://knhk.ai/autonomic/atm-chatman-rule> .
+
+<http://knhk.ai/autonomic/atm-chatman-rule> a mapek:AnalysisRule ;
+    rdfs:comment "Detect Chatman Constant violation (>8 ticks)" ;
+    mapek:hasThreshold <http://knhk.ai/autonomic/atm-chatman-threshold> .
+
+<http://knhk.ai/autonomic/atm-chatman-threshold> a mapek:Threshold ;
+    mapek:thresholdValue 8 .
+
+<http://knhk.ai/autonomic/atm-planner> a mapek:Planner .
+
+<http://knhk.ai/autonomic/atm-executor> a mapek:Executor ;
+    mapek:usesStrategy mapek:GradualRollout .
+
+<http://knhk.ai/autonomic/atm-knowledge> a mapek:Knowledge ;
+    mapek:storesKnowledge <http://knhk.ai/autonomic/atm-historical-behavior> .
+
+<http://knhk.ai/autonomic/atm-invariant-balance-consistency> a mapek:RuntimeInvariant ;
+    rdfs:comment "Balance after withdrawal = Balance before - Withdrawal amount" .
