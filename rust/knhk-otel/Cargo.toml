@@ -37,3 +37,6 @@ default = ["std"]
 # Note: hashbrown doesn't have a "std" feature, it's always available
 std = ["rand/std", "rand/std_rng", "opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "opentelemetry-http", "opentelemetry-stdout", "tracing", "tracing-subscriber", "tracing-opentelemetry", "reqwest", "serde_json"]
 
+[dev-dependencies]
+chicago-tdd-tools = { version = "1.3.0", features = ["testing-extras", "otel", "weaver", "testcontainers", "async"] }
+tokio = { version = "1.48", features = ["full"] }

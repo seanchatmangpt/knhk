@@ -28,7 +28,7 @@ knhk-connectors = { path = "../knhk-connectors", version = "1.0.0", optional = t
 knhk-patterns = { path = "../knhk-patterns", version = "1.0.0" }
 # knhk-sidecar dependency removed to avoid circular dependency
 # Sidecar now depends on workflow engine, not the other way around
-chicago-tdd-tools = { version = "1.0.0", optional = true }
+chicago-tdd-tools = { version = "1.3.0", optional = true, features = ["testing-extras", "otel", "weaver", "testcontainers", "async"] }
 
 # RDF & Turtle parsing
 oxigraph = { workspace = true, optional = true }

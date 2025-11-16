@@ -29,3 +29,4 @@ sidecar = ["dep:knhk-sidecar", "knhk-sidecar/otel"]
 otel = []
 
 [dev-dependencies]
+chicago-tdd-tools = { version = "1.3.0", features = ["testing-extras", "otel", "weaver", "testcontainers", "async"] }

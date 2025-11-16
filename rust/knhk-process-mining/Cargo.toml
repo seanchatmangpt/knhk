@@ -36,6 +36,7 @@ hashbrown = { workspace = true }
 chrono = { workspace = true }
 
 [dev-dependencies]
+chicago-tdd-tools = { version = "1.3.0", features = ["testing-extras", "otel", "weaver", "testcontainers", "async"] }
 tokio = { workspace = true }
 tempfile = { workspace = true }
 
