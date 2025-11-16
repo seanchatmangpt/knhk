@@ -1,0 +1,31 @@
+# SPARQL Query: Extract condition (place) definitions from workflow
+# Used by: Condition/place generation in YAWL XML template
+# Purpose: Extract all conditions (equivalent to places in Petri nets)
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?condition ?conditionLabel ?conditionDescription ?isStartCondition ?isEndCondition ?initialMarking
+WHERE {
+  # Find all conditions (places) in the workflow
+  ?condition a yawl:Condition .
+
+  # Get condition metadata
+  OPTIONAL { ?condition rdfs:label ?conditionLabel . }
+  OPTIONAL { ?condition rdfs:comment ?conditionDescription . }
+
+  # Identify special conditions
+  OPTIONAL {
+    ?condition a yawl:StartCondition .
+    BIND(true AS ?isStartCondition)
+  }
+  OPTIONAL {
+    ?condition a yawl:EndCondition .
+    BIND(true AS ?isEndCondition)
+  }
+
+  # Get initial marking (token count)
+  OPTIONAL { ?condition yawl:initialMarking ?initialMarking . }
+}
+ORDER BY ?condition

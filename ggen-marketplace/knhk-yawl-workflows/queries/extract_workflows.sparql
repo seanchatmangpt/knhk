@@ -1,0 +1,22 @@
+# SPARQL Query: Extract all YAWL workflow specifications
+# Used by: YAWL XML generation template
+# Purpose: Identify all WorkflowSpecification nodes in the RDF graph
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?workflow ?workflowLabel ?workflowDescription ?startCondition ?endCondition
+WHERE {
+  # Find all workflow specifications
+  ?workflow a yawl:WorkflowSpecification .
+
+  # Get workflow metadata
+  OPTIONAL { ?workflow rdfs:label ?workflowLabel . }
+  OPTIONAL { ?workflow rdfs:comment ?workflowDescription . }
+
+  # Get start and end conditions
+  OPTIONAL { ?workflow yawl:hasStartCondition ?startCondition . }
+  OPTIONAL { ?workflow yawl:hasEndCondition ?endCondition . }
+}
+ORDER BY ?workflow

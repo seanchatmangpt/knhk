@@ -1,0 +1,28 @@
+# SPARQL Query: Extract task definitions from workflow
+# Used by: Task generation in YAWL XML template
+# Purpose: Extract all task nodes and their properties (split/join types, handlers)
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?task ?taskLabel ?taskDescription ?splitType ?joinType ?isMultiInstance ?handler
+WHERE {
+  # Find all tasks in the workflow
+  ?task a yawl:Task .
+
+  # Get task metadata
+  OPTIONAL { ?task rdfs:label ?taskLabel . }
+  OPTIONAL { ?task rdfs:comment ?taskDescription . }
+
+  # Get routing types
+  OPTIONAL { ?task yawl:hasSplitType ?splitType . }
+  OPTIONAL { ?task yawl:hasJoinType ?joinType . }
+
+  # Get multi-instance information
+  OPTIONAL { ?task yawl:isMultiInstance ?isMultiInstance . }
+
+  # Get task implementation handler
+  OPTIONAL { ?task yawl:hasHandler ?handler . }
+}
+ORDER BY ?task

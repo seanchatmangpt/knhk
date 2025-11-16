@@ -1,0 +1,31 @@
+# SPARQL Query: Extract control flows (arcs) between tasks and conditions
+# Used by: Flow/arc generation in YAWL XML template
+# Purpose: Extract all edges in the workflow graph with their predicates
+
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?source ?target ?flowLabel ?flowCondition ?flowPredicate
+WHERE {
+  # Find incoming flows (Task/Condition -> Task)
+  {
+    ?source yawl:hasOutgoingFlow ?target .
+    OPTIONAL { ?source yawl:hasOutgoingFlowLabel ?flowLabel . }
+    OPTIONAL { ?target yawl:incomingFlowPredicate ?flowPredicate . }
+  }
+  UNION
+  # Find explicit flow relationships
+  {
+    ?source yawl:flowsTo ?target .
+    OPTIONAL { ?source yawl:hasOutgoingFlowLabel ?flowLabel . }
+    OPTIONAL { ?source yawl:flowCondition ?flowCondition . }
+  }
+  UNION
+  # Find backward flows (Task -> Condition)
+  {
+    ?target yawl:hasIncomingFlow ?source .
+    OPTIONAL { ?target yawl:incomingFlowLabel ?flowLabel . }
+  }
+}
+ORDER BY ?source ?target

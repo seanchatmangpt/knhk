@@ -1,0 +1,102 @@
+{#- YAWL JSON Template -#}
+{#- Generates YAWL workflow specification in JSON format -#}
+{#- Semantic code generation from RDF ontologies via SPARQL -#}
+{
+  "version": "2.2",
+  "generator": "KNHK ggen Marketplace Template (io.knhk.yawl-workflows)",
+  "generatedAt": "{{ now | datetimeformat('%Y-%m-%dT%H:%M:%SZ') }}",
+  "workflows": [
+    {%- for workflow in workflows %}
+    {
+      "id": "{{ workflow.workflow | regex_replace('[#/:]', '_') }}",
+      "uri": "{{ workflow.workflow }}",
+      "name": "{{ workflow.workflowLabel | default('Unnamed Workflow') }}",
+      "description": "{{ workflow.workflowDescription | default('') }}",
+      "metadata": {
+        "creator": "KNHK YAWL Generator",
+        "version": "1.0",
+        "status": "{{ workflow.status | default('draft') }}"
+      },
+      "net": {
+        "id": "workflow_net",
+        "conditions": [
+          {%- for condition in conditions %}
+          {%- if condition.conditionLabel %}
+          {
+            "id": "{{ condition.condition | regex_replace('[#/:]', '_') }}",
+            "uri": "{{ condition.condition }}",
+            "name": "{{ condition.conditionLabel }}",
+            "type": "{% if condition.isStartCondition %}START{% elif condition.isEndCondition %}END{% else %}INTERNAL{% endif %}",
+            "initialMarking": {{ condition.initialMarking | default(0) | int }},
+            "description": "{{ condition.conditionDescription | default('') }}"
+          }{% if not loop.last %},{% endif %}
+
+          {%- endif %}
+          {%- endfor %}
+        ],
+        "tasks": [
+          {%- for task in tasks %}
+          {%- if task.taskLabel %}
+          {
+            "id": "{{ task.task | regex_replace('[#/:]', '_') }}",
+            "uri": "{{ task.task }}",
+            "name": "{{ task.taskLabel }}",
+            "type": "TASK",
+            "routing": {
+              "splitType": "{{ task.splitType | default('AND') }}",
+              "joinType": "{{ task.joinType | default('AND') }}"
+            },
+            "configuration": {
+              "multiInstance": {{ (task.isMultiInstance | default(false)) | lower }},
+              "handler": "{{ task.handler | default('') }}"
+            },
+            "description": "{{ task.taskDescription | default('') }}"
+          }{% if not loop.last %},{% endif %}
+
+          {%- endif %}
+          {%- endfor %}
+        ],
+        "flows": [
+          {%- for flow in flows %}
+          {
+            "id": "{{ (flow.source | regex_replace('[#/:]', '_')) ~ '_to_' ~ (flow.target | regex_replace('[#/:]', '_')) }}",
+            "source": "{{ flow.source | regex_replace('[#/:]', '_') }}",
+            "target": "{{ flow.target | regex_replace('[#/:]', '_') }}",
+            "label": "{{ flow.flowLabel | default('') }}",
+            "predicate": "{{ flow.flowPredicate | default(flow.flowCondition) | default('') }}"
+          }{% if not loop.last %},{% endif %}
+
+          {%- endfor %}
+        ]
+      },
+      "patterns": {
+        "routingPatterns": [
+          {%- for pattern in patterns %}
+          {%- if pattern.patternType in ['split', 'join'] %}
+          {
+            "element": "{{ pattern.element | regex_replace('[#/:]', '_') }}",
+            "patternName": "{{ pattern.patternName }}",
+            "type": "{{ pattern.patternType }}",
+            "routingType": "{{ pattern.routingType }}"
+          }{% if not loop.last %},{% endif %}
+
+          {%- endif %}
+          {%- endfor %}
+        ],
+        "controlFlowPatterns": [
+          {%- for pattern in patterns %}
+          {%- if pattern.patternType == 'conditional-flow' %}
+          {
+            "element": "{{ pattern.element | regex_replace('[#/:]', '_') }}",
+            "condition": "{{ pattern.routingType }}"
+          }{% if not loop.last %},{% endif %}
+
+          {%- endif %}
+          {%- endfor %}
+        ]
+      }
+    }{% if not loop.last %},{% endif %}
+
+    {%- endfor %}
+  ]
+}
