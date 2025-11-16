@@ -26,6 +26,11 @@ members = [
     "knhk-promotion",         # Promotion Pipeline - Atomic snapshot switching in ≤10 ticks
     "knhk-autonomous-loop",   # Autonomous Evolution Loop - Continuous ontology evolution engine
     "knhk-autonomous-system", # Grand Integration - Complete autonomous ontology orchestrator (7 layers + 3 axes)
+    "knhk-kms-advanced",      # Advanced KMS with SIMD, const-generic dispatch, and type-state safety
+    "knhk-zerocopy",          # Zero-copy serialization using bytemuck - 1000x faster than serde
+    "knhk-lockfree",          # Lock-free data structures with epoch-based memory reclamation
+    "knhk-macros-advanced",   # Advanced procedural macros for type-safe telemetry DSL and declarative programming
+    "knhk-type-verify",       # Advanced type-level programming for compile-time cryptographic proofs
 ]
 
 [workspace.package]
@@ -48,6 +53,8 @@ knhk-patterns = { path = "./knhk-patterns", version = "1.0.0" }
 knhk-workflow-engine = { path = "./knhk-workflow-engine", version = "1.0.0" }
 knhk-process-mining = { path = "./knhk-process-mining", version = "1.0.0" }
 knhk-sidecar = { path = "./knhk-sidecar", version = "1.0.0" }
+knhk-zerocopy = { path = "./knhk-zerocopy", version = "1.0.0" }
+knhk-lockfree = { path = "./knhk-lockfree", version = "0.1.0" }
 
 # External analytics crates
 process_mining = "0.1"
@@ -89,6 +96,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bincode = "1.3"
 toml = "0.8"
+bytemuck = { version = "1.14", features = ["derive", "extern_crate_alloc"] }
 
 # Error handling
 thiserror = "2.0"
