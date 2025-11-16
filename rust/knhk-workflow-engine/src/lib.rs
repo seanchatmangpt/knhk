@@ -64,6 +64,7 @@
 #![warn(missing_docs)]
 
 pub mod api;
+pub mod autonomic;
 pub mod cache;
 pub mod cancellation;
 pub mod capabilities;
@@ -112,6 +113,12 @@ pub mod validation;
 pub mod visualization;
 pub mod worklets;
 
+pub use autonomic::{
+    Action, ActionType, AdaptationPlan, Analysis, Analyzer, Anomaly, AnomalyType,
+    AutonomicManager, AutonomicProperty, ControllerConfig, ControllerState, CycleStats,
+    ExecutionResult, Executor, Fact, Goal, GoalType, HealthStatus, KnowledgeBase, KnowledgeId,
+    MapeKController, MetricCollector, Monitor, MonitorEvent, Planner, Policy, Rule,
+};
 pub use cancellation::{
     CancellationEvent, CancellationRegistry, CancellationRegion, CancellationScope, RegionId,
 };
