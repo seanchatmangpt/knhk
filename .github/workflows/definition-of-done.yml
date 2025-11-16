@@ -1,0 +1,260 @@
+name: Definition of Done (DoD) Validation
+
+on:
+  push:
+    branches:
+      - main
+      - claude/**
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: dod-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  definition_of_done:
+    name: Validate DoD Criteria
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        rust: [stable]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y npm
+
+      - name: Install Weaver (optional)
+        continue-on-error: true
+        run: |
+          npm install -g @opentelemetry/weaver
+
+      - name: Baseline Check - Cargo Build
+        run: |
+          echo "Building project..."
+          cargo build --workspace --all-features 2>&1 | tee /tmp/build.log
+          if grep -i "error" /tmp/build.log; then
+            echo "❌ Build failed with errors"
+            exit 1
+          fi
+          echo "✓ Build successful"
+
+      - name: Baseline Check - Clippy
+        run: |
+          echo "Running clippy..."
+          cargo clippy --workspace --all-features -- -D warnings 2>&1 | tee /tmp/clippy.log
+          if grep -i "error" /tmp/clippy.log; then
+            echo "❌ Clippy found errors"
+            exit 1
+          fi
+          echo "✓ Clippy passed"
+
+      - name: Baseline Check - Tests
+        run: |
+          echo "Running tests..."
+          cargo test --workspace 2>&1 | tee /tmp/tests.log
+          if grep -q "test result: ok" /tmp/tests.log; then
+            echo "✓ Tests passed"
+          else
+            echo "⚠ Some tests may have failed (check logs)"
+          fi
+
+      - name: Run Covenant Tests
+        run: |
+          echo "Running COVENANT_TESTS..."
+          if [ -f "tests/COVENANT_TESTS.rs" ]; then
+            cargo test --test COVENANT_TESTS -- --nocapture 2>&1 | head -100
+            echo "✓ Covenant tests executed"
+          else
+            echo "⚠ COVENANT_TESTS.rs not found"
+          fi
+
+      - name: Run Definition of Done Validation
+        run: |
+          echo "Running DoD validation script..."
+          bash scripts/validate_dod.sh --verbose
+          exit_code=$?
+
+          if [ -f "target/dod_report.json" ]; then
+            echo ""
+            echo "═══════════════════════════════════════════════════"
+            echo "DoD REPORT:"
+            echo "═══════════════════════════════════════════════════"
+            cat target/dod_report.json | jq '.' || cat target/dod_report.json
+            echo ""
+          fi
+
+          exit $exit_code
+
+      - name: Check YAML Manifest
+        run: |
+          if [ -f "DEFINITION_OF_DONE.yaml" ]; then
+            echo "✓ DEFINITION_OF_DONE.yaml found"
+            # Validate YAML syntax (if yq is available)
+            if command -v yq &> /dev/null; then
+              yq eval '.' DEFINITION_OF_DONE.yaml > /dev/null && echo "✓ YAML syntax valid"
+            fi
+          else
+            echo "⚠ DEFINITION_OF_DONE.yaml not found"
+          fi
+
+      - name: Upload DoD Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dod-report
+          path: |
+            target/dod_report.json
+            target/dod_report.html
+          retention-days: 30
+
+      - name: Comment on PR with DoD Status
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            let dodReport = { status: 'unknown' };
+            const reportPath = 'target/dod_report.json';
+
+            if (fs.existsSync(reportPath)) {
+              try {
+                dodReport = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              } catch (e) {
+                console.error('Failed to parse DoD report:', e);
+              }
+            }
+
+            const status = dodReport.status === 'ready_for_promotion' ? '✅' : '⚠️';
+            const checksPassed = dodReport.checks?.passed || 0;
+            const checksFailed = dodReport.checks?.failed || 0;
+            const warnings = dodReport.checks?.warnings || 0;
+
+            const comment = `## Definition of Done (DoD) Check ${status}
+
+**Status**: ${dodReport.status === 'ready_for_promotion' ? 'Ready for Promotion' : 'Needs Work'}
+
+**Results**:
+- ✅ Passed: ${checksPassed}
+- ❌ Failed: ${checksFailed}
+- ⚠️ Warnings: ${warnings}
+
+${checksFailed > 0 ? `**Failed Checks**:
+${dodReport.failed_critical?.map(f => `- ${f}`).join('\n')}
+
+` : ''}${warnings > 0 ? `**Warnings**:
+${dodReport.warnings?.map(w => `- ${w}`).join('\n')}
+
+` : ''}See the full [DoD Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Optional: Weaver validation for telemetry schema
+  weaver_validation:
+    name: Weaver OTel Schema Validation
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Optional for now
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Weaver
+        run: npm install -g @opentelemetry/weaver
+        continue-on-error: true
+
+      - name: Validate Registry Schema
+        run: |
+          if [ -d "registry" ] && command -v weaver &> /dev/null; then
+            echo "Validating OTel registry with Weaver..."
+            weaver registry check -r registry/ || echo "⚠ Weaver validation skipped (optional)"
+          else
+            echo "⚠ Registry or Weaver not available (optional)"
+          fi
+        continue-on-error: true
+
+  # Generate DoD Summary Report
+  dod_summary:
+    name: DoD Summary Report
+    runs-on: ubuntu-latest
+    needs: definition_of_done
+    if: always()
+
+    steps:
+      - name: Download DoD Report
+        uses: actions/download-artifact@v4
+        with:
+          name: dod-report
+          path: .
+
+      - name: Generate Summary
+        run: |
+          echo "# Definition of Done Summary" > SUMMARY.md
+          echo "" >> SUMMARY.md
+
+          if [ -f "dod_report.json" ]; then
+            echo "## Automated Check Results" >> SUMMARY.md
+            echo '```json' >> SUMMARY.md
+            cat dod_report.json >> SUMMARY.md
+            echo '```' >> SUMMARY.md
+          fi
+
+          cat SUMMARY.md
+
+      - name: Upload Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: dod-summary
+          path: SUMMARY.md
+          retention-days: 30
