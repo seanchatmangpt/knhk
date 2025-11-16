@@ -1,0 +1,80 @@
+# ============================================================================
+# Workflow Extraction: Extract Complete Workflow Definition from RDF
+# ============================================================================
+#
+# Purpose: Extract full workflow specification from Turtle/RDF for execution
+# Use Case: Load workflow into knhk-workflow-engine from ontology
+#
+# Returns: Complete workflow structure (tasks, flows, conditions, parameters)
+# ============================================================================
+
+PREFIX yawl: <http://www.yawlfoundation.org/yawlschema#>
+PREFIX mapek: <http://knhk.ai/ontology/mape-k#>
+PREFIX pattern: <http://knhk.ai/ontology/workflow-patterns#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT
+    ?workflow
+    ?workflowName
+    ?version
+    ?inputCondition
+    ?outputCondition
+    ?task
+    ?taskName
+    ?joinType
+    ?splitType
+    ?pattern
+    ?flow
+    ?flowSource
+    ?flowTarget
+    ?predicate
+    ?inputParam
+    ?outputParam
+WHERE {
+    # Get workflow specification
+    ?workflow a yawl:Specification ;
+              yawl:specName ?workflowName ;
+              yawl:version ?version ;
+              yawl:hasInputCondition ?inputCondition ;
+              yawl:hasOutputCondition ?outputCondition .
+
+    # Get all tasks
+    ?workflow yawl:hasTask ?task .
+    ?task yawl:taskName ?taskName .
+
+    # Get join/split types
+    OPTIONAL { ?task yawl:join ?joinType }
+    OPTIONAL { ?task yawl:split ?splitType }
+
+    # Get associated workflow pattern
+    OPTIONAL {
+        ?task pattern:implementsPattern ?pattern .
+        ?pattern pattern:patternNumber ?patternNum .
+    }
+
+    # Get flows
+    OPTIONAL {
+        ?workflow yawl:hasFlow ?flow .
+        ?flow yawl:flowsFrom ?flowSource ;
+              yawl:flowsInto ?flowTarget .
+
+        # Get flow predicate (for XOR/OR splits)
+        OPTIONAL {
+            ?flow yawl:predicate ?predicate .
+        }
+    }
+
+    # Get input parameters
+    OPTIONAL {
+        ?task yawl:hasInputParameter ?inputParamObj .
+        ?inputParamObj yawl:paramName ?inputParam .
+    }
+
+    # Get output parameters
+    OPTIONAL {
+        ?task yawl:hasOutputParameter ?outputParamObj .
+        ?outputParamObj yawl:paramName ?outputParam .
+    }
+}
+ORDER BY ?workflow ?task ?flow

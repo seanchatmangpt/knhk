@@ -1,0 +1,169 @@
+@startuml Self-Executing Workflows Data Flow
+
+!define RECTANGLE class
+
+title Self-Executing Workflows - Data Flow Architecture
+
+skinparam rectangle {
+    BackgroundColor<<Layer1>> LightYellow
+    BackgroundColor<<Layer2>> LightGreen
+    BackgroundColor<<Layer3>> LightBlue
+    BackgroundColor<<Layer4>> LightCoral
+    BackgroundColor<<Layer5>> LightPink
+    BorderColor Black
+    FontSize 12
+}
+
+skinparam arrow {
+    Color Black
+    FontSize 10
+}
+
+' Layer 1: Ontology (Σ)
+rectangle "**Layer 1: Ontology (Σ)**" <<Layer1>> {
+    rectangle "YAWL Patterns\n(43 Van der Aalst)" as YAWL
+    rectangle "MAPE-K Policies" as MAPE
+    rectangle "Domain Sectors\n(Finance, Mfg, etc.)" as Sectors
+    rectangle "Invariants (Q)" as Invariants
+    rectangle "Snapshot Manager\nVersioned Σ_t" as Snapshots
+
+    YAWL -[hidden]down- MAPE
+    MAPE -[hidden]down- Sectors
+    Sectors -[hidden]down- Invariants
+    Invariants -[hidden]down- Snapshots
+}
+
+' Layer 2: Projection (Π via ggen)
+rectangle "**Layer 2: Projection (Π via ggen)**" <<Layer2>> {
+    rectangle "SPARQL Queries\nExtract from Σ" as SPARQL
+    rectangle "Tera Templates\nRender Code" as Tera
+    rectangle "Code Generator\nRust/Turtle" as CodeGen
+    rectangle "Template Cache" as TemplateCache
+
+    SPARQL -[hidden]down- Tera
+    Tera -[hidden]down- CodeGen
+    CodeGen -[hidden]down- TemplateCache
+}
+
+' Layer 3: Execution (μ via KNHK)
+rectangle "**Layer 3: Execution (μ via KNHK)**" <<Layer3>> {
+    rectangle "Workflow Engine\nμ: O → A" as Engine
+    rectangle "Pattern Executors\n43 Patterns" as Patterns
+    rectangle "Hook Manager\npre/post-task" as Hooks
+    rectangle "State Store\nSled Persistence" as State
+
+    Engine -[hidden]down- Patterns
+    Patterns -[hidden]down- Hooks
+    Hooks -[hidden]down- State
+}
+
+' Layer 4: Observation (O)
+rectangle "**Layer 4: Observation (O)**" <<Layer4>> {
+    rectangle "OTEL Telemetry\nSpans/Metrics/Logs" as OTEL
+    rectangle "Receipt Generator\nhash(A), ticks, span_id" as Receipts
+    rectangle "Weaver Validator\nSource of Truth" as Weaver
+    rectangle "Lockchain\nMerkle Provenance" as Lockchain
+
+    OTEL -[hidden]down- Receipts
+    Receipts -[hidden]down- Weaver
+    Weaver -[hidden]down- Lockchain
+}
+
+' Layer 5: MAPE-K Feedback
+rectangle "**Layer 5: MAPE-K Feedback**" <<Layer5>> {
+    rectangle "Monitor\nReceipt Stream" as Monitor
+    rectangle "Analyze\nO vs Σ Gaps" as Analyze
+    rectangle "Plan\nΣ_t → Σ_{t+1}" as Plan
+    rectangle "Execute\nAtomic Updates" as Execute
+    rectangle "Knowledge Base\nLearn Patterns" as Knowledge
+
+    Monitor -[hidden]down- Analyze
+    Analyze -[hidden]down- Plan
+    Plan -[hidden]down- Execute
+    Execute -[hidden]down- Knowledge
+}
+
+' Data flows between layers
+
+' Ontology → Projection
+YAWL --> SPARQL : "SPARQL\nQueries"
+MAPE --> SPARQL : "Policy\nQueries"
+Sectors --> SPARQL : "Domain\nQueries"
+
+SPARQL --> Tera : "Query\nResults"
+Tera --> CodeGen : "Rendered\nTemplates"
+
+' Projection → Execution
+CodeGen --> Engine : "Generated\nWorkflows"
+Snapshots --> Engine : "Ontology\nSnapshot"
+
+' Execution → Observation
+Engine --> Patterns : "Execute\nPatterns"
+Patterns --> OTEL : "Emit\nTelemetry"
+Patterns --> Receipts : "Generate\nReceipts"
+Hooks --> Receipts : "Hook\nMetadata"
+
+Receipts --> Weaver : "Validate\nSchema"
+Receipts --> Lockchain : "Record\nProvenance"
+
+' Observation → Feedback
+Receipts --> Monitor : "Receipt\nStream"
+OTEL --> Monitor : "Telemetry\nStream"
+
+Monitor --> Analyze : "Anomalies &\nMetrics"
+Analyze --> Plan : "Gaps &\nTrends"
+
+' Feedback → Ontology
+Plan --> Execute : "Ontology\nUpdates"
+Execute --> Snapshots : "Σ_t → Σ_{t+1}\nAtomic Swap"
+Analyze --> Knowledge : "Learned\nPatterns"
+Knowledge --> MAPE : "New\nPolicies"
+
+' Cross-layer validation
+Weaver --> Invariants : "Validate\nO ⊨ Σ"
+Snapshots --> Invariants : "Verify\nΣ ⊨ Q"
+
+' Annotations
+note right of Snapshots
+    **Atomic Updates**
+    - Version: u64
+    - Hash: SHA-256(URDNA2015(RDF))
+    - Linearizable swaps
+    - Rollback support
+end note
+
+note right of Receipts
+    **Receipt Structure**
+    - action_hash: hash(μ(O))
+    - ticks: ≤8 for hot path
+    - span_id: OTEL correlation
+    - merkle_proof: Provenance
+end note
+
+note right of Weaver
+    **Validation Hierarchy**
+    1. Weaver (source of truth)
+    2. Compilation + Clippy
+    3. Traditional tests
+end note
+
+note right of Execute
+    **MAPE-K Properties**
+    - Monitor: ≤100ms
+    - Analyze: ≤500ms
+    - Plan: ≤1s
+    - Execute: ≤2s
+    - Total: ≤4s latency
+end note
+
+' Mathematical properties
+note bottom of Engine
+    **Mathematical Foundation**
+    - A = μ(O): Deterministic execution
+    - μ ∘ μ = μ: Idempotence
+    - O ⊨ Σ: Observations respect ontology
+    - Σ ⊨ Q: Ontology respects invariants
+    - latency(μ) ≤ 8 ticks: Chatman constant
+end note
+
+@enduml

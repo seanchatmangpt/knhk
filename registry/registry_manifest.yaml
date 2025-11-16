@@ -51,3 +51,24 @@ groups:
     note: |
       Counters, histograms, and gauges for KNHK operations, latency,
       and resource usage.
+
+  - id: knhk.mape_k
+    type: span
+    brief: "KNHK MAPE-K feedback loop telemetry"
+    note: |
+      Telemetry for Monitor-Analyze-Plan-Execute-Knowledge autonomic control loops.
+      Tracks self-adaptation, anomaly detection, and knowledge base updates.
+
+  - id: knhk.guard
+    type: span
+    brief: "KNHK guard constraint enforcement telemetry"
+    note: |
+      Telemetry for guard constraint validation and enforcement.
+      Includes Chatman Constant (≤8 ticks) verification and constraint violations.
+
+  - id: knhk.receipt
+    type: span
+    brief: "KNHK cryptographic receipt and provenance telemetry"
+    note: |
+      Telemetry for lockchain receipts, Merkle tree construction, and provenance validation.
+      Validates that hash(A) = hash(μ(O)) for cryptographic correctness proof.

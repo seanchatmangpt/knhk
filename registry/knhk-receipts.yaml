@@ -1,0 +1,188 @@
+# KNHK Receipt and Provenance Telemetry Schema
+# Defines spans, metrics, and events for cryptographic receipts and lockchain
+
+groups:
+  # Receipt-specific attributes
+  - id: knhk.receipt.attributes
+    type: attribute_group
+    brief: "Cryptographic receipt and provenance attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.receipt.id
+        type: string
+        stability: experimental
+        brief: "Receipt identifier (UUID)"
+        examples: ["550e8400-e29b-41d4-a716-446655440000"]
+      - id: knhk.receipt.hash
+        type: string
+        stability: experimental
+        brief: "Receipt hash (SHA-256)"
+        examples: ["a1b2c3d4e5f6..."]
+        note: "Cryptographic commitment to receipt content"
+      - id: knhk.receipt.parent_hash
+        type: string
+        stability: experimental
+        brief: "Parent receipt hash (for Merkle chain)"
+        examples: ["z9y8x7w6v5u4..."]
+      - id: knhk.receipt.merkle_root
+        type: string
+        stability: experimental
+        brief: "Merkle tree root hash"
+        examples: ["root123..."]
+      - id: knhk.receipt.operation
+        type: string
+        stability: experimental
+        brief: "Operation that generated receipt"
+        examples: ["hook_evaluation", "workflow_execution", "guard_validation"]
+      - id: knhk.receipt.observation_hash
+        type: string
+        stability: experimental
+        brief: "Hash of observation (O)"
+        examples: ["obs_hash_abc..."]
+        note: "Commitment to input state"
+      - id: knhk.receipt.action_hash
+        type: string
+        stability: experimental
+        brief: "Hash of action (A)"
+        examples: ["action_hash_xyz..."]
+        note: "Commitment to output state"
+      - id: knhk.receipt.verification_status
+        type: string
+        stability: experimental
+        brief: "Receipt verification status"
+        examples: ["verified", "failed", "pending"]
+      - id: knhk.receipt.canonical_form
+        type: string
+        stability: experimental
+        brief: "Canonical form used for hashing"
+        examples: ["URDNA2015", "JSON-LD"]
+        note: "Ensures deterministic hashing of RDF graphs"
+      - id: knhk.receipt.timestamp
+        type: string
+        stability: experimental
+        brief: "Receipt creation timestamp (ISO 8601)"
+        examples: ["2025-01-15T10:30:00.000Z"]
+
+  # Receipt generation span
+  - id: knhk.receipt.generate
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Generate cryptographic receipt"
+    note: |
+      Generates cryptographic receipt for operation using:
+      - URDNA2015 canonical form for RDF graphs
+      - SHA-256 for hash commitments
+      - Merkle linking to parent receipt
+    attributes:
+      - ref: knhk.receipt.id
+      - ref: knhk.receipt.hash
+      - ref: knhk.receipt.parent_hash
+      - ref: knhk.receipt.operation
+      - ref: knhk.receipt.observation_hash
+      - ref: knhk.receipt.action_hash
+      - ref: knhk.receipt.canonical_form
+      - ref: knhk.receipt.timestamp
+
+  # Receipt verification span
+  - id: knhk.receipt.verify
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Verify cryptographic receipt"
+    note: |
+      Verifies receipt integrity by:
+      - Recomputing hash from canonical form
+      - Validating Merkle chain linkage
+      - Checking provenance commitments (hash(A) = hash(μ(O)))
+    attributes:
+      - ref: knhk.receipt.id
+      - ref: knhk.receipt.hash
+      - ref: knhk.receipt.verification_status
+
+  # Merkle tree construction span
+  - id: knhk.receipt.merkle_tree
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Construct Merkle tree from receipts"
+    note: |
+      Constructs Merkle tree from receipt hashes.
+      Enables efficient batch verification and tamper detection.
+    attributes:
+      - ref: knhk.receipt.merkle_root
+      - id: knhk.receipt.leaf_count
+        type: int
+        stability: experimental
+        brief: "Number of leaves in Merkle tree"
+        examples: [1, 10, 100, 1000]
+
+  # Provenance validation span
+  - id: knhk.receipt.provenance
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Validate provenance commitment: hash(A) = hash(μ(O))"
+    note: |
+      Validates that action hash commits to hook evaluation of observation.
+      This proves correctness without re-executing the hook.
+    attributes:
+      - ref: knhk.receipt.observation_hash
+      - ref: knhk.receipt.action_hash
+      - ref: knhk.receipt.verification_status
+
+  # Receipt metrics
+  - id: metric.knhk.receipt.generation_count
+    type: metric
+    metric_name: knhk.receipt.generation_count
+    stability: experimental
+    brief: "Total number of receipts generated"
+    instrument: counter
+    unit: "{receipts}"
+    attributes:
+      - ref: knhk.receipt.operation
+
+  - id: metric.knhk.receipt.verification_count
+    type: metric
+    metric_name: knhk.receipt.verification_count
+    stability: experimental
+    brief: "Total number of receipt verifications"
+    instrument: counter
+    unit: "{verifications}"
+    attributes:
+      - ref: knhk.receipt.verification_status
+
+  - id: metric.knhk.receipt.verification_latency
+    type: metric
+    metric_name: knhk.receipt.verification_latency
+    stability: experimental
+    brief: "Receipt verification latency in milliseconds"
+    instrument: histogram
+    unit: "ms"
+
+  - id: metric.knhk.receipt.merkle_tree_depth
+    type: metric
+    metric_name: knhk.receipt.merkle_tree_depth
+    stability: experimental
+    brief: "Merkle tree depth (log2 of leaf count)"
+    instrument: gauge
+    unit: "{levels}"
+
+  # Receipt events
+  - id: knhk.receipt.event.generated
+    type: event
+    stability: experimental
+    brief: "Event emitted when receipt is generated"
+    attributes:
+      - ref: knhk.receipt.id
+      - ref: knhk.receipt.hash
+      - ref: knhk.receipt.operation
+
+  - id: knhk.receipt.event.verification_failed
+    type: event
+    stability: experimental
+    brief: "Event emitted when receipt verification fails"
+    attributes:
+      - ref: knhk.receipt.id
+      - ref: knhk.receipt.hash
+      - ref: knhk.receipt.verification_status

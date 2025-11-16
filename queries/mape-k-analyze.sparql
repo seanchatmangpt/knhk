@@ -1,0 +1,84 @@
+# ============================================================================
+# MAPE-K Analyze Phase: Detect Symptoms from Telemetry
+# ============================================================================
+#
+# Purpose: Identify symptoms (SLO violations, performance degradation) by
+#          comparing monitored metrics against thresholds and baselines
+#
+# Use Case: Detect when workflow execution violates Chatman Constant (>8 ticks),
+#           SLO targets, or other constraints
+#
+# Returns: List of symptoms with severity and affected components
+# ============================================================================
+
+PREFIX mapek: <http://knhk.ai/ontology/mape-k#>
+PREFIX yawl: <http://www.yawlfoundation.org/yawlschema#>
+PREFIX knhk: <urn:knhk:ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT
+    ?workflow
+    ?workflowName
+    ?symptomType
+    ?symptomDescription
+    ?metric
+    ?metricValue
+    ?threshold
+    ?severity
+    ?timestamp
+WHERE {
+    # Find workflows with analyzers
+    ?workflow a mapek:SelfExecutingWorkflow ;
+              rdfs:label ?workflowName ;
+              mapek:hasMonitor ?monitor ;
+              mapek:hasAnalyzer ?analyzer .
+
+    # Get sensors and their current values
+    ?monitor mapek:hasSensor ?sensor .
+    ?sensor mapek:collects ?metric ;
+            mapek:metricValue ?metricValue .
+
+    # Get analysis rules and thresholds
+    ?analyzer mapek:hasRule ?rule .
+    ?rule mapek:hasThreshold ?thresholdObj .
+    ?thresholdObj mapek:thresholdValue ?threshold .
+
+    # Detect symptoms when metric exceeds threshold
+    FILTER (?metricValue > ?threshold)
+
+    # Classify symptom type based on metric
+    BIND(
+        IF(?metric = mapek:LatencyMetric && ?threshold = 8,
+           mapek:GuardViolation,  # Chatman Constant violation
+           IF(?metric = mapek:SLOComplianceMetric,
+              mapek:SLOViolation,
+              mapek:PerformanceDegradation
+           )
+        ) AS ?symptomType
+    )
+
+    # Generate symptom description
+    BIND(
+        IF(?metric = mapek:LatencyMetric && ?threshold = 8,
+           "Chatman Constant violated: execution took more than 8 ticks",
+           IF(?metric = mapek:SLOComplianceMetric,
+              "SLO target not met",
+              "Performance degraded below baseline"
+           )
+        ) AS ?symptomDescription
+    )
+
+    # Assign severity
+    BIND(
+        IF(?metricValue > (?threshold * 2), "CRITICAL",
+           IF(?metricValue > (?threshold * 1.5), "WARNING",
+              "INFO"
+           )
+        ) AS ?severity
+    )
+
+    # Get timestamp (current time if not provided)
+    OPTIONAL { ?sensor mapek:timestamp ?timestamp }
+}
+ORDER BY DESC(?severity) ?workflow

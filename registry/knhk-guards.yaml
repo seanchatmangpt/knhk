@@ -1,0 +1,149 @@
+# KNHK Guard Constraints Telemetry Schema
+# Defines spans, metrics, and events for guard enforcement (Q ⊣ μ)
+
+groups:
+  # Guard-specific attributes
+  - id: knhk.guard.attributes
+    type: attribute_group
+    brief: "Guard constraint enforcement attributes"
+    stability: experimental
+    attributes:
+      - id: knhk.guard.constraint_id
+        type: string
+        stability: experimental
+        brief: "Guard constraint identifier"
+        examples: ["max_run_len", "chatman_constant", "epoch_bound"]
+      - id: knhk.guard.constraint_type
+        type: string
+        stability: experimental
+        brief: "Type of guard constraint"
+        examples: ["max_run_len", "time_bound", "cardinality", "datatype", "invariant"]
+      - id: knhk.guard.max_value
+        type: int
+        stability: experimental
+        brief: "Maximum allowed value for constraint"
+        examples: [8, 100, 1000]
+      - id: knhk.guard.actual_value
+        type: int
+        stability: experimental
+        brief: "Actual value observed"
+      - id: knhk.guard.violated
+        type: boolean
+        stability: experimental
+        brief: "Whether guard constraint was violated"
+      - id: knhk.guard.operation_name
+        type: string
+        stability: experimental
+        brief: "Name of guarded operation"
+        examples: ["ASK_SP", "COUNT_SP_GE", "CONSTRUCT8"]
+      - id: knhk.guard.enforcement_action
+        type: string
+        stability: experimental
+        brief: "Action taken on violation"
+        examples: ["reject", "fallback", "circuit_break", "degrade"]
+      - id: knhk.guard.chatman_constant
+        type: int
+        stability: experimental
+        brief: "Chatman constant (8 ticks = 2ns)"
+        examples: [8]
+        note: "Hot path operations must complete within ≤8 ticks"
+
+  # Guard validation span
+  - id: knhk.guard.validate
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Validate guard constraint"
+    note: |
+      Validates that operation meets guard constraints before execution.
+      Enforces max_run_len ≤ 8 (Chatman Constant) for hot path operations.
+    attributes:
+      - ref: knhk.guard.constraint_id
+      - ref: knhk.guard.constraint_type
+      - ref: knhk.guard.max_value
+      - ref: knhk.guard.actual_value
+      - ref: knhk.guard.violated
+      - ref: knhk.guard.operation_name
+
+  # Guard enforcement span
+  - id: knhk.guard.enforce
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Enforce guard constraint"
+    note: |
+      Enforces guard constraint, taking action if violated.
+      Actions include rejection, fallback, circuit breaking, or graceful degradation.
+    attributes:
+      - ref: knhk.guard.constraint_id
+      - ref: knhk.guard.violated
+      - ref: knhk.guard.enforcement_action
+
+  # Chatman constant validation span
+  - id: knhk.guard.chatman_constant
+    type: span
+    span_kind: internal
+    stability: experimental
+    brief: "Validate Chatman Constant (≤8 ticks)"
+    note: |
+      Validates that hot path operation completes within Chatman Constant (8 ticks = 2ns).
+      This is a constitutional requirement for R1 (hot path) operations.
+    attributes:
+      - ref: knhk.guard.chatman_constant
+      - ref: knhk.guard.actual_value
+      - ref: knhk.guard.violated
+      - ref: knhk.guard.operation_name
+
+  # Guard metrics
+  - id: metric.knhk.guard.validation_count
+    type: metric
+    metric_name: knhk.guard.validation_count
+    stability: experimental
+    brief: "Total number of guard validations"
+    instrument: counter
+    unit: "{validations}"
+    attributes:
+      - ref: knhk.guard.constraint_type
+
+  - id: metric.knhk.guard.violation_count
+    type: metric
+    metric_name: knhk.guard.violation_count
+    stability: experimental
+    brief: "Total number of guard violations"
+    instrument: counter
+    unit: "{violations}"
+    attributes:
+      - ref: knhk.guard.constraint_type
+      - ref: knhk.guard.enforcement_action
+
+  - id: metric.knhk.guard.violation_rate
+    type: metric
+    metric_name: knhk.guard.violation_rate
+    stability: experimental
+    brief: "Rate of guard violations (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: knhk.guard.constraint_type
+
+  - id: metric.knhk.guard.chatman_compliance
+    type: metric
+    metric_name: knhk.guard.chatman_compliance
+    stability: experimental
+    brief: "Percentage of operations meeting Chatman Constant (0.0-1.0)"
+    instrument: gauge
+    unit: "1"
+    note: "Should be 1.0 for all R1 (hot path) operations"
+
+  # Guard events
+  - id: knhk.guard.event.violation
+    type: event
+    stability: experimental
+    brief: "Event emitted when guard constraint is violated"
+    attributes:
+      - ref: knhk.guard.constraint_id
+      - ref: knhk.guard.constraint_type
+      - ref: knhk.guard.max_value
+      - ref: knhk.guard.actual_value
+      - ref: knhk.guard.operation_name
+      - ref: knhk.guard.enforcement_action

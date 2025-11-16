@@ -79,6 +79,22 @@ pub enum WorkflowError {
     /// Internal error
     #[error("Internal error: {0}")]
     Internal(String),
+
+    /// Hook execution failed
+    #[error("Hook execution failed: {0}")]
+    HookFailed(String),
+
+    /// Guard violation
+    #[error("Guard violation: {0}")]
+    GuardViolation(String),
+
+    /// Receipt generation failed
+    #[error("Receipt generation failed: {0}")]
+    ReceiptGenerationFailed(String),
+
+    /// Snapshot error
+    #[error("Snapshot error: {0}")]
+    SnapshotError(String),
 }
 
 impl From<std::io::Error> for WorkflowError {

@@ -81,6 +81,26 @@ pub mod execution;
 pub mod executor;
 pub mod ggen;
 pub mod hooks;
+/// Hook engine and execution layer (μ via KNHK)
+pub mod engine;
+/// Guard enforcement system (Q invariants)
+pub mod guards;
+/// Receipt generation and storage
+pub mod receipts;
+/// Snapshot versioning (Σ)
+pub mod snapshots;
+/// MAPE-K autonomic computing engine
+pub mod mape;
+/// Self-executing workflow orchestrator
+pub mod orchestrator;
+/// Adaptive pattern selector using MAPE-K
+pub mod adaptive_patterns;
+/// Ontology-driven workflow executor
+pub mod ontology_executor;
+/// Integration layer glue code
+pub mod integration_layer;
+/// Performance metrics collection
+pub mod performance_metrics;
 pub mod innovation;
 #[macro_use]
 pub mod integration;
