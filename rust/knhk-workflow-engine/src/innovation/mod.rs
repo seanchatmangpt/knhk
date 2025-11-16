@@ -30,6 +30,12 @@
 //! - **Cluster Types**: Distributed determinism with role-based access, quorum at compile time
 //! - **Auto-Specialization**: Hardware-adaptive kernels selected under doctrine control
 //! - **Linear Resources**: Resource quotas and priorities as linear/indexed types
+//!
+//! ## 2027 Innovations (Hyper-Advanced Rust)
+//! - **Effect System**: Track side effects at type level with algebraic effect handlers
+//! - **SIMD Kernels**: Real AVX2/AVX-512/NEON implementations for 4-16x speedup
+//! - **Custom Allocators**: Arena, bump, pool, and stack allocators for zero-allocation execution
+//! - **Async Kernel**: Non-blocking type-state machines with futures-based execution
 
 // Production features
 pub mod workflow_templates;
@@ -56,6 +62,12 @@ pub mod refinement_guards;
 pub mod cluster_types;
 pub mod auto_specialize;
 pub mod linear_resources;
+
+// 2027 Innovations (Hyper-Advanced Rust)
+pub mod effect_system;
+pub mod simd_kernels;
+pub mod custom_allocators;
+pub mod async_kernel;
 
 // Production feature exports
 pub use workflow_templates::{WorkflowTemplate, TemplateLibrary, TemplateMetadata};
@@ -121,4 +133,21 @@ pub use linear_resources::{
     ResourceToken, ConsumedToken, ResourceQuota, PriorityClass, P0, P1, P2, P3, P4,
     SloBand, Interactive, Batch, Background, ScheduledAction, HotPathScheduler,
     BackgroundScheduler, ResourcePool,
+};
+
+// 2027 Innovation exports
+pub use effect_system::{
+    Effect, Pure, Io, State, Error, Resource, EffectSet, NoEffects, AllEffects,
+    Effectful, IoHandler, StateHandler, Union, EffectfulWorkflow, Permission, EffectContext,
+};
+pub use simd_kernels::{
+    SimdWidth, Scalar, Avx2, Avx512, Neon, SimdVectorSum, SimdDispatcher, SimdReceiptValidator,
+};
+pub use custom_allocators::{
+    Arena, BumpAllocator, ObjectPool, PooledObject, StackAllocator, AllocatorStats,
+};
+pub use async_kernel::{
+    AsyncWorkflowState, AsyncPending, AsyncRunning, AsyncSuspended, AsyncCompleted, AsyncFailed,
+    AsyncWorkflow, AsyncKernelResult, AsyncKernelOp, WithTimeout, TimeoutError,
+    CancellationToken, Cancellable, Cancelled, AsyncExecutor, AsyncWorkflowBuilder,
 };
