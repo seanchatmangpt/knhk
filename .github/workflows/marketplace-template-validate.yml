@@ -1,0 +1,145 @@
+name: KNHK YAWL Marketplace Template Validation
+
+on:
+  push:
+    paths:
+      - 'ggen-marketplace/**'
+  pull_request:
+    paths:
+      - 'ggen-marketplace/**'
+
+jobs:
+  validate:
+    name: Validate Template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate template structure
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          bash scripts/validate-template.sh
+
+      - name: Verify Turtle syntax
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          for file in examples/*.ttl; do
+            echo "Checking $file..."
+            # Basic Turtle validation (check for @prefix and rdf:type)
+            if ! grep -q "^@prefix" "$file"; then
+              echo "ERROR: Missing @prefix in $file"
+              exit 1
+            fi
+            echo "✓ $file"
+          done
+
+      - name: Verify SPARQL queries
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          for file in queries/*.sparql; do
+            echo "Checking $file..."
+            # Basic SPARQL validation
+            if ! grep -q "^SELECT\|^CONSTRUCT\|^ASK\|^DESCRIBE" "$file"; then
+              echo "ERROR: Invalid SPARQL query in $file"
+              exit 1
+            fi
+            echo "✓ $file"
+          done
+
+      - name: Validate Jinja2 templates
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          for file in template/*.j2; do
+            echo "Checking $file..."
+            # Basic template validation
+            if ! grep -q "{{" "$file"; then
+              echo "WARNING: Template $file may not have variables"
+            fi
+            echo "✓ $file"
+          done
+
+      - name: Validate documentation
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          # Check all markdown files exist
+          [ -f README.md ] || (echo "Missing README.md"; exit 1)
+          [ -f docs/USAGE.md ] || (echo "Missing docs/USAGE.md"; exit 1)
+          [ -f docs/ARCHITECTURE.md ] || (echo "Missing docs/ARCHITECTURE.md"; exit 1)
+          [ -f docs/EXAMPLES.md ] || (echo "Missing docs/EXAMPLES.md"; exit 1)
+          echo "✓ Documentation complete"
+
+      - name: Validate ggen.yaml
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          # Check YAML has required fields
+          grep -q "^id:" ggen.yaml || (echo "Missing 'id' in ggen.yaml"; exit 1)
+          grep -q "^version:" ggen.yaml || (echo "Missing 'version' in ggen.yaml"; exit 1)
+          grep -q "^name:" ggen.yaml || (echo "Missing 'name' in ggen.yaml"; exit 1)
+          echo "✓ ggen.yaml valid"
+
+      - name: Count files and report
+        run: |
+          echo "=== Marketplace Template Summary ==="
+          cd ggen-marketplace/knhk-yawl-workflows
+          echo "Template files: $(find . -type f | wc -l)"
+          echo "Documentation: $(find docs -name '*.md' | wc -l) markdown files"
+          echo "Examples: $(find examples -name '*.ttl' | wc -l) workflows"
+          echo "Queries: $(find queries -name '*.sparql' | wc -l) SPARQL queries"
+          echo "Templates: $(find template -name '*.j2' | wc -l) Jinja2 templates"
+
+  test-examples:
+    name: Test Example Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate example Turtle files
+        run: |
+          cd ggen-marketplace/knhk-yawl-workflows
+          for file in examples/*.ttl; do
+            echo "Validating $file..."
+            # Check for required namespaces
+            grep -q "@prefix yawl:" "$file" || (echo "Missing yawl namespace"; exit 1)
+            grep -q "@prefix rdfs:" "$file" || (echo "Missing rdfs namespace"; exit 1)
+            # Check for workflows or tasks
+            if ! grep -q "a yawl:WorkflowSpecification\|a yawl:Task" "$file"; then
+              echo "No workflow or task definitions in $file"
+              exit 1
+            fi
+            echo "✓ $file valid"
+          done
+
+  lint:
+    name: Lint Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: ggen-marketplace/knhk-yawl-workflows/docs
+          config_file: .markdownlint.json
+        continue-on-error: true
+
+  integration-test:
+    name: Integration Test (if ggen installed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Try to install ggen
+        run: |
+          cargo install ggen 2>/dev/null || echo "Note: ggen installation optional for CI"
+
+      - name: Run integration tests if ggen available
+        run: |
+          if command -v ggen &> /dev/null; then
+            cd ggen-marketplace/knhk-yawl-workflows
+            echo "ggen found, running integration tests..."
+            bash scripts/test-examples.sh || true
+          else
+            echo "ggen not available - skipping integration tests"
+          fi
+        continue-on-error: true

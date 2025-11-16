@@ -3,9 +3,9 @@
 
 use crate::error::{SidecarError, SidecarResult};
 use crate::slo_admission::SloAdmissionController;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 use tracing::{debug, error, info, warn};
 
 /// Deployment environment
@@ -145,7 +145,10 @@ impl PromotionGateManager {
 
                 if is_canary {
                     self.canary_metrics.record_canary_request();
-                    debug!("Request {} routed to canary (hash {}%)", request_id, request_percent);
+                    debug!(
+                        "Request {} routed to canary (hash {}%)",
+                        request_id, request_percent
+                    );
 
                     RoutingDecision {
                         target_environment: Environment::Canary { traffic_percent },
@@ -158,7 +161,10 @@ impl PromotionGateManager {
                     }
                 } else {
                     self.canary_metrics.record_production_request();
-                    debug!("Request {} routed to production (hash {}%)", request_id, request_percent);
+                    debug!(
+                        "Request {} routed to production (hash {}%)",
+                        request_id, request_percent
+                    );
 
                     RoutingDecision {
                         target_environment: Environment::Production,
@@ -317,15 +323,16 @@ impl PromotionGateManager {
                     canary_p99,
                     production_p99,
                 ),
-                recommendation: self.get_canary_recommendation(
-                    canary_error_rate,
-                    production_error_rate,
-                ),
+                recommendation: self
+                    .get_canary_recommendation(canary_error_rate, production_error_rate),
             };
 
             // Auto-rollback if canary is unhealthy
             if health.health_score < 0.8 && self.config.auto_rollback_enabled {
-                warn!("Canary health score {} below threshold, considering rollback", health.health_score);
+                warn!(
+                    "Canary health score {} below threshold, considering rollback",
+                    health.health_score
+                );
 
                 if let Err(e) = self.trigger_rollback(format!(
                     "Canary health degradation: score {}",
@@ -358,7 +365,8 @@ impl PromotionGateManager {
 
         // Penalize if canary has worse latency
         if canary_p99 > production_p99 {
-            let latency_ratio = canary_p99.as_millis() as f64 / production_p99.as_millis().max(1) as f64;
+            let latency_ratio =
+                canary_p99.as_millis() as f64 / production_p99.as_millis().max(1) as f64;
             score -= ((latency_ratio - 1.0) * 0.2).min(0.3);
         }
 
@@ -366,7 +374,11 @@ impl PromotionGateManager {
     }
 
     /// Get recommendation for canary deployment
-    fn get_canary_recommendation(&self, canary_error_rate: f64, production_error_rate: f64) -> String {
+    fn get_canary_recommendation(
+        &self,
+        canary_error_rate: f64,
+        production_error_rate: f64,
+    ) -> String {
         if canary_error_rate > production_error_rate * 2.0 {
             "ROLLBACK: Canary error rate significantly higher than production".to_string()
         } else if canary_error_rate > production_error_rate * 1.5 {
@@ -391,10 +403,7 @@ impl PromotionGateManager {
         let previous_env = self.config.environment;
         self.config.environment = Environment::Production;
 
-        self.record_rollback(
-            format!("{:?}", previous_env),
-            reason
-        );
+        self.record_rollback(format!("{:?}", previous_env), reason);
 
         // Reset canary metrics
         self.canary_metrics = CanaryMetrics::default();

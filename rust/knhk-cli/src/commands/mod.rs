@@ -11,6 +11,7 @@ pub mod coverage;
 pub mod epoch;
 #[cfg(feature = "fortune5")]
 pub mod fortune5;
+pub mod gen;
 pub mod hook;
 pub mod metrics;
 pub mod pipeline;

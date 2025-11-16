@@ -237,8 +237,9 @@ impl<'a> ProcessAnalyzer<'a> {
                         "High variance (σ={:.2}ms) indicates inconsistent performance",
                         metrics.std_dev_ms
                     ),
-                    suggestion: "Investigate why execution time varies. Consider caching or optimization."
-                        .to_string(),
+                    suggestion:
+                        "Investigate why execution time varies. Consider caching or optimization."
+                            .to_string(),
                 });
             }
 
@@ -281,7 +282,8 @@ impl<'a> ProcessAnalyzer<'a> {
         let total_activities = activity_metrics.len();
         if total_activities > 10 {
             recommendations.push(
-                "Consider simplifying workflow - many activities may indicate complexity".to_string(),
+                "Consider simplifying workflow - many activities may indicate complexity"
+                    .to_string(),
             );
         }
 

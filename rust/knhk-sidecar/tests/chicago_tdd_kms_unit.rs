@@ -26,7 +26,10 @@ fn test_kms_aws_config_validation() {
 
     // Act & Assert
     let result = config.validate();
-    assert!(result.is_ok(), "Valid AWS KMS config should pass validation");
+    assert!(
+        result.is_ok(),
+        "Valid AWS KMS config should pass validation"
+    );
 }
 
 #[test]
@@ -45,7 +48,10 @@ fn test_kms_azure_config_validation() {
 
     // Act & Assert
     let result = config.validate();
-    assert!(result.is_ok(), "Valid Azure Key Vault config should pass validation");
+    assert!(
+        result.is_ok(),
+        "Valid Azure Key Vault config should pass validation"
+    );
 }
 
 #[test]
@@ -153,11 +159,11 @@ fn test_kms_key_id_format_validation() {
 fn test_kms_rotation_configuration() {
     // Arrange: Rotation policy configuration
     let rotation_intervals = vec![
-        (86400, true),      // 24h - valid
-        (604800, true),     // 7d - valid
-        (2592000, true),    // 30d - valid
-        (3600, false),      // 1h - too short
-        (1800, false),      // 30m - too short
+        (86400, true),   // 24h - valid
+        (604800, true),  // 7d - valid
+        (2592000, true), // 30d - valid
+        (3600, false),   // 1h - too short
+        (1800, false),   // 30m - too short
     ];
 
     // Act & Assert: Verify rotation intervals are validated correctly
@@ -287,7 +293,7 @@ fn test_kms_key_rotation_idempotence() {
     // Arrange: Rotation state
     let mut rotation_state = HashMap::new();
     rotation_state.insert("key-1", false); // Not rotated
-    rotation_state.insert("key-2", true);  // Already rotated
+    rotation_state.insert("key-2", true); // Already rotated
 
     // Act: Check if rotation needed (idempotent)
     let rotation_needed_1 = !rotation_state.get("key-1").unwrap_or(&true);
@@ -400,8 +406,14 @@ fn test_kms_supports_all_three_providers() {
 
     // Assert: All three configs are valid
     assert!(aws_config.validate().is_ok(), "AWS config should validate");
-    assert!(azure_config.validate().is_ok(), "Azure config should validate");
-    assert!(vault_config.validate().is_ok(), "Vault config should validate");
+    assert!(
+        azure_config.validate().is_ok(),
+        "Azure config should validate"
+    );
+    assert!(
+        vault_config.validate().is_ok(),
+        "Vault config should validate"
+    );
 }
 
 #[test]

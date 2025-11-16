@@ -16,6 +16,23 @@ use std::sync::Mutex;
 #[cfg(feature = "workflow")]
 use knhk_workflow_engine::parser::WorkflowParser;
 
+#[cfg(feature = "workflow")]
+use knhk_workflow_engine::{
+    api::{
+        models::requests::{CreateCaseRequest, ListCasesRequest},
+        service::{CaseService, PatternService},
+        transport::CliAdapter,
+    },
+    case::CaseId,
+    parser::WorkflowSpecId,
+    state::StateStore,
+    validation::ValidationFramework,
+    WorkflowEngine,
+};
+
+use serde_json::json;
+use std::sync::Arc;
+
 #[cfg(feature = "otel")]
 use tracing::instrument;
 
@@ -25,6 +42,9 @@ struct ConsoleContext {
     workflow_path: Option<String>,
     workflow_id: Option<String>,
     state_store_path: Option<String>,
+    // Cache parsed workflow spec for engine operations
+    #[cfg(feature = "workflow")]
+    workflow_spec: Option<Arc<knhk_workflow_engine::WorkflowSpec>>,
 }
 
 /// Global console context - shared across commands
@@ -36,6 +56,8 @@ fn get_context() -> &'static Mutex<ConsoleContext> {
             workflow_path: None,
             workflow_id: None,
             state_store_path: None,
+            #[cfg(feature = "workflow")]
+            workflow_spec: None,
         })
     })
 }
@@ -50,6 +72,18 @@ fn get_runtime() -> &'static tokio::runtime::Runtime {
     })
 }
 
+/// Create workflow engine with state store
+#[cfg(feature = "workflow")]
+fn create_engine(state_store_path: &Option<String>) -> CnvResult<Arc<WorkflowEngine>> {
+    let path = state_store_path.as_deref().unwrap_or("./workflow_db");
+    let state_store = StateStore::new(path).map_err(|e| {
+        clap_noun_verb::NounVerbError::execution_error(format!(
+            "Failed to create state store: {}",
+            e
+        ))
+    })?;
+    Ok(Arc::new(WorkflowEngine::new(state_store)))
+}
 
 #[derive(Serialize, Debug)]
 struct StartResult {
@@ -180,6 +214,7 @@ pub fn load(file: PathBuf, state_store: Option<String>) -> CnvResult<LoadResult>
             ctx.workflow_path = Some(file.to_string_lossy().to_string());
             ctx.workflow_id = Some(spec.id.to_string());
             ctx.state_store_path = state_store.clone();
+            ctx.workflow_spec = Some(Arc::new(spec.clone()));
             drop(ctx); // Release lock
 
             Ok((spec.id.to_string(), file.to_string_lossy().to_string()))
@@ -246,6 +281,7 @@ pub fn load(file: PathBuf, state_store: Option<String>) -> CnvResult<LoadResult>
             ctx.workflow_path = Some(file.to_string_lossy().to_string());
             ctx.workflow_id = Some(spec.id.to_string());
             ctx.state_store_path = state_store.clone();
+            ctx.workflow_spec = Some(Arc::new(spec.clone()));
             drop(ctx); // Release lock
 
             Ok((spec.id.to_string(), file.to_string_lossy().to_string()))
@@ -290,47 +326,142 @@ pub fn run(command: String) -> CnvResult<RunResult> {
             ));
         }
 
-        let output = match command.trim() {
-            "help" => vec![
-                "Available console commands:".to_string(),
-                "  help              - Show this help message".to_string(),
-                "  status            - Show loaded workflow status".to_string(),
-                "  patterns          - List all 43 Van der Aalst patterns".to_string(),
-                "  validate          - Validate loaded workflow".to_string(),
-                "  create-case       - Create new workflow case".to_string(),
-                "  list-cases        - List all workflow cases".to_string(),
-                "  quit              - Exit console".to_string(),
-            ],
-            "status" => vec![
-                format!(
-                    "Workflow ID: {}",
-                    ctx.workflow_id.clone().unwrap_or_default()
-                ),
-                format!(
-                    "Workflow Path: {}",
-                    ctx.workflow_path.clone().unwrap_or_default()
-                ),
-                format!(
-                    "State Store: {}",
-                    ctx.state_store_path.clone().unwrap_or("./workflow_db".to_string())
-                ),
-            ],
-            "patterns" => vec![
-                "Available patterns (43 Van der Aalst patterns):".to_string(),
-                "  Pattern 1: Sequence".to_string(),
-                "  Pattern 2: Parallel Split".to_string(),
-                "  Pattern 3: Synchronization".to_string(),
-                "  ... and 40 more patterns".to_string(),
-                "Use 'workflow patterns' command for full list.".to_string(),
-            ],
-            "validate" => vec!["Workflow validation passed.".to_string()],
-            "create-case" => vec!["Case created successfully.".to_string()],
-            "list-cases" => vec!["No cases found for this workflow.".to_string()],
-            _ => vec![format!(
-                "Unknown command: '{}'. Type 'help' for available commands.",
-                command
-            )],
-        }
+        let runtime = get_runtime();
+        let output = runtime.block_on(async {
+            match command.trim() {
+                "help" => vec![
+                    "Available console commands:".to_string(),
+                    "  help              - Show this help message".to_string(),
+                    "  status            - Show loaded workflow status".to_string(),
+                    "  patterns          - List all 43 Van der Aalst patterns".to_string(),
+                    "  validate          - Validate loaded workflow".to_string(),
+                    "  create-case       - Create new workflow case".to_string(),
+                    "  list-cases        - List all workflow cases".to_string(),
+                    "  quit              - Exit console".to_string(),
+                ],
+                "status" => vec![
+                    format!(
+                        "Workflow ID: {}",
+                        ctx.workflow_id.clone().unwrap_or_default()
+                    ),
+                    format!(
+                        "Workflow Path: {}",
+                        ctx.workflow_path.clone().unwrap_or_default()
+                    ),
+                    format!(
+                        "State Store: {}",
+                        ctx.state_store_path.clone().unwrap_or("./workflow_db".to_string())
+                    ),
+                ],
+                "patterns" => vec![
+                    "Available patterns (43 Van der Aalst patterns):".to_string(),
+                    "  Pattern 1: Sequence".to_string(),
+                    "  Pattern 2: Parallel Split".to_string(),
+                    "  Pattern 3: Synchronization".to_string(),
+                    "  ... and 40 more patterns".to_string(),
+                    "Use 'workflow patterns' command for full list.".to_string(),
+                ],
+                "validate" => {
+                    #[cfg(feature = "workflow")]
+                    {
+                        let spec_id_str = ctx.workflow_id.clone().unwrap();
+                        let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Invalid spec ID: {}", e)
+                            ))?;
+
+                        let engine = create_engine(&ctx.state_store_path)?;
+                        let framework = ValidationFramework::new(engine);
+                        let report = framework.run_complete_validation(spec_id).await
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Validation failed: {}", e)
+                            ))?;
+
+                        vec![
+                            format!("Validation Status: {:?}", report.summary.overall_status),
+                            format!("Passed phases: {}/{}", report.summary.passed_phases, report.summary.total_phases),
+                            format!("Failed phases: {}/{}", report.summary.failed_phases, report.summary.total_phases),
+                            format!("Warnings: {}", report.summary.warnings),
+                        ]
+                    }
+                    #[cfg(not(feature = "workflow"))]
+                    {
+                        vec!["Workflow feature not enabled".to_string()]
+                    }
+                },
+                "create-case" => {
+                    #[cfg(feature = "workflow")]
+                    {
+                        let spec_id_str = ctx.workflow_id.clone().unwrap();
+                        let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Invalid spec ID: {}", e)
+                            ))?;
+
+                        let engine = create_engine(&ctx.state_store_path)?;
+                        let service = CaseService::new(engine);
+                        let request = CreateCaseRequest {
+                            spec_id,
+                            data: json!({}),
+                        };
+                        let response = service.create_case(request).await
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                CliAdapter::format_error(&e)
+                            ))?;
+
+                        vec![
+                            format!("Case created: {}", response.case_id),
+                            format!("Spec ID: {}", spec_id_str),
+                        ]
+                    }
+                    #[cfg(not(feature = "workflow"))]
+                    {
+                        vec!["Workflow feature not enabled".to_string()]
+                    }
+                },
+                "list-cases" => {
+                    #[cfg(feature = "workflow")]
+                    {
+                        let spec_id_str = ctx.workflow_id.clone().unwrap();
+                        let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Invalid spec ID: {}", e)
+                            ))?;
+
+                        let engine = create_engine(&ctx.state_store_path)?;
+                        let service = CaseService::new(engine);
+                        let request = ListCasesRequest {
+                            spec_id: Some(spec_id),
+                        };
+                        let response = service.list_cases(request).await
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                CliAdapter::format_error(&e)
+                            ))?;
+
+                        if response.cases.is_empty() {
+                            vec!["No cases found for this workflow.".to_string()]
+                        } else {
+                            let mut lines = vec![
+                                format!("Total cases: {}", response.cases.len()),
+                                String::new(),
+                            ];
+                            for case in response.cases {
+                                lines.push(format!("  - {}", case));
+                            }
+                            lines
+                        }
+                    }
+                    #[cfg(not(feature = "workflow"))]
+                    {
+                        vec!["Workflow feature not enabled".to_string()]
+                    }
+                },
+                _ => vec![format!(
+                    "Unknown command: '{}'. Type 'help' for available commands.",
+                    command
+                )],
+            }
+        })
         .join("\n");
 
         let duration = start_time.elapsed();
@@ -367,47 +498,142 @@ pub fn run(command: String) -> CnvResult<RunResult> {
             ));
         }
 
-        let output = match command.trim() {
-            "help" => vec![
-                "Available console commands:".to_string(),
-                "  help              - Show this help message".to_string(),
-                "  status            - Show loaded workflow status".to_string(),
-                "  patterns          - List all 43 Van der Aalst patterns".to_string(),
-                "  validate          - Validate loaded workflow".to_string(),
-                "  create-case       - Create new workflow case".to_string(),
-                "  list-cases        - List all workflow cases".to_string(),
-                "  quit              - Exit console".to_string(),
-            ],
-            "status" => vec![
-                format!(
-                    "Workflow ID: {}",
-                    ctx.workflow_id.clone().unwrap_or_default()
-                ),
-                format!(
-                    "Workflow Path: {}",
-                    ctx.workflow_path.clone().unwrap_or_default()
-                ),
-                format!(
-                    "State Store: {}",
-                    ctx.state_store_path.clone().unwrap_or("./workflow_db".to_string())
-                ),
-            ],
-            "patterns" => vec![
-                "Available patterns (43 Van der Aalst patterns):".to_string(),
-                "  Pattern 1: Sequence".to_string(),
-                "  Pattern 2: Parallel Split".to_string(),
-                "  Pattern 3: Synchronization".to_string(),
-                "  ... and 40 more patterns".to_string(),
-                "Use 'workflow patterns' command for full list.".to_string(),
-            ],
-            "validate" => vec!["Workflow validation passed.".to_string()],
-            "create-case" => vec!["Case created successfully.".to_string()],
-            "list-cases" => vec!["No cases found for this workflow.".to_string()],
-            _ => vec![format!(
-                "Unknown command: '{}'. Type 'help' for available commands.",
-                command
-            )],
-        }
+        let runtime = get_runtime();
+        let output = runtime.block_on(async {
+            match command.trim() {
+                "help" => vec![
+                    "Available console commands:".to_string(),
+                    "  help              - Show this help message".to_string(),
+                    "  status            - Show loaded workflow status".to_string(),
+                    "  patterns          - List all 43 Van der Aalst patterns".to_string(),
+                    "  validate          - Validate loaded workflow".to_string(),
+                    "  create-case       - Create new workflow case".to_string(),
+                    "  list-cases        - List all workflow cases".to_string(),
+                    "  quit              - Exit console".to_string(),
+                ],
+                "status" => vec![
+                    format!(
+                        "Workflow ID: {}",
+                        ctx.workflow_id.clone().unwrap_or_default()
+                    ),
+                    format!(
+                        "Workflow Path: {}",
+                        ctx.workflow_path.clone().unwrap_or_default()
+                    ),
+                    format!(
+                        "State Store: {}",
+                        ctx.state_store_path.clone().unwrap_or("./workflow_db".to_string())
+                    ),
+                ],
+                "patterns" => vec![
+                    "Available patterns (43 Van der Aalst patterns):".to_string(),
+                    "  Pattern 1: Sequence".to_string(),
+                    "  Pattern 2: Parallel Split".to_string(),
+                    "  Pattern 3: Synchronization".to_string(),
+                    "  ... and 40 more patterns".to_string(),
+                    "Use 'workflow patterns' command for full list.".to_string(),
+                ],
+                "validate" => {
+                    #[cfg(feature = "workflow")]
+                    {
+                        let spec_id_str = ctx.workflow_id.clone().unwrap();
+                        let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Invalid spec ID: {}", e)
+                            ))?;
+
+                        let engine = create_engine(&ctx.state_store_path)?;
+                        let framework = ValidationFramework::new(engine);
+                        let report = framework.run_complete_validation(spec_id).await
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Validation failed: {}", e)
+                            ))?;
+
+                        vec![
+                            format!("Validation Status: {:?}", report.summary.overall_status),
+                            format!("Passed phases: {}/{}", report.summary.passed_phases, report.summary.total_phases),
+                            format!("Failed phases: {}/{}", report.summary.failed_phases, report.summary.total_phases),
+                            format!("Warnings: {}", report.summary.warnings),
+                        ]
+                    }
+                    #[cfg(not(feature = "workflow"))]
+                    {
+                        vec!["Workflow feature not enabled".to_string()]
+                    }
+                },
+                "create-case" => {
+                    #[cfg(feature = "workflow")]
+                    {
+                        let spec_id_str = ctx.workflow_id.clone().unwrap();
+                        let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Invalid spec ID: {}", e)
+                            ))?;
+
+                        let engine = create_engine(&ctx.state_store_path)?;
+                        let service = CaseService::new(engine);
+                        let request = CreateCaseRequest {
+                            spec_id,
+                            data: json!({}),
+                        };
+                        let response = service.create_case(request).await
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                CliAdapter::format_error(&e)
+                            ))?;
+
+                        vec![
+                            format!("Case created: {}", response.case_id),
+                            format!("Spec ID: {}", spec_id_str),
+                        ]
+                    }
+                    #[cfg(not(feature = "workflow"))]
+                    {
+                        vec!["Workflow feature not enabled".to_string()]
+                    }
+                },
+                "list-cases" => {
+                    #[cfg(feature = "workflow")]
+                    {
+                        let spec_id_str = ctx.workflow_id.clone().unwrap();
+                        let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                format!("Invalid spec ID: {}", e)
+                            ))?;
+
+                        let engine = create_engine(&ctx.state_store_path)?;
+                        let service = CaseService::new(engine);
+                        let request = ListCasesRequest {
+                            spec_id: Some(spec_id),
+                        };
+                        let response = service.list_cases(request).await
+                            .map_err(|e| clap_noun_verb::NounVerbError::execution_error(
+                                CliAdapter::format_error(&e)
+                            ))?;
+
+                        if response.cases.is_empty() {
+                            vec!["No cases found for this workflow.".to_string()]
+                        } else {
+                            let mut lines = vec![
+                                format!("Total cases: {}", response.cases.len()),
+                                String::new(),
+                            ];
+                            for case in response.cases {
+                                lines.push(format!("  - {}", case));
+                            }
+                            lines
+                        }
+                    }
+                    #[cfg(not(feature = "workflow"))]
+                    {
+                        vec!["Workflow feature not enabled".to_string()]
+                    }
+                },
+                _ => vec![format!(
+                    "Unknown command: '{}'. Type 'help' for available commands.",
+                    command
+                )],
+            }
+        })
         .join("\n");
 
         Ok(RunResult {
@@ -428,8 +654,6 @@ pub fn query(query: String) -> CnvResult<QueryResult> {
         use tracing::{error, info};
 
         let start_time = Instant::now();
-
-        // Get current context
         let ctx = get_context()
             .lock()
             .map_err(|e| {
@@ -441,7 +665,6 @@ pub fn query(query: String) -> CnvResult<QueryResult> {
             })?
             .clone();
 
-        // Check if workflow is loaded
         if ctx.workflow_id.is_none() {
             error!(query = %query, "console.query.no_workflow");
             return Err(clap_noun_verb::NounVerbError::execution_error(
@@ -449,31 +672,78 @@ pub fn query(query: String) -> CnvResult<QueryResult> {
             ));
         }
 
-        // For now, return a placeholder result
-        // In production, this would execute against the RDF store
-        let results = format!(
-            "Query executed on workflow: {}\nQuery: {}\nResults: (RDF store integration pending)",
-            ctx.workflow_id.clone().unwrap_or_default(),
-            query
-        );
+        #[cfg(feature = "workflow")]
+        {
+            let runtime = get_runtime();
+            let result = runtime.block_on(async {
+                let spec_id_str = ctx.workflow_id.clone().unwrap();
+                let engine = create_engine(&ctx.state_store_path)
+                    .map_err(|e| {
+                        error!(error = ?e, "console.query.engine_creation_failed");
+                        e
+                    })?;
 
-        let duration = start_time.elapsed();
-        info!(
-            duration_ms = duration.as_millis(),
-            query = %query,
-            "console.query.success"
-        );
+                let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                    .map_err(|e| {
+                        error!(error = ?e, "console.query.invalid_spec_id");
+                        clap_noun_verb::NounVerbError::execution_error(
+                            format!("Invalid spec ID: {}", e)
+                        )
+                    })?;
 
-        Ok(QueryResult {
-            status: "success".to_string(),
-            results,
-            query,
-        })
+                // Execute SPARQL query on RDF store
+                #[cfg(feature = "rdf")]
+                let results = {
+                    let result = engine.query_rdf(&spec_id, &query).await
+                        .map_err(|e| {
+                            error!(error = ?e, "console.query.execution_failed");
+                            clap_noun_verb::NounVerbError::execution_error(
+                                format!("Query execution failed: {}", e)
+                            )
+                        })?;
+
+                    format!("Query Results ({}): \n{:?}", result.len(), result)
+                };
+
+                #[cfg(not(feature = "rdf"))]
+                let results = "RDF feature not enabled. Recompile with --features rdf".to_string();
+
+                Ok::<String, clap_noun_verb::NounVerbError>(results)
+            })?;
+
+            let duration = start_time.elapsed();
+            info!(
+                duration_ms = duration.as_millis(),
+                query = %query,
+                "console.query.success"
+            );
+
+            Ok(QueryResult {
+                status: "success".to_string(),
+                results: result,
+                query,
+            })
+        }
+
+        #[cfg(not(feature = "workflow"))]
+        {
+            let duration = start_time.elapsed();
+            info!(
+                duration_ms = duration.as_millis(),
+                query = %query,
+                "console.query.feature_disabled"
+            );
+
+            Ok(QueryResult {
+                status: "error".to_string(),
+                results: "Workflow feature not enabled".to_string(),
+                query,
+            })
+        }
     }
 
     #[cfg(not(feature = "otel"))]
     {
-        // Get current context
         let ctx = get_context()
             .lock()
             .map_err(|e| {
@@ -484,25 +754,59 @@ pub fn query(query: String) -> CnvResult<QueryResult> {
             })?
             .clone();
 
-        // Check if workflow is loaded
         if ctx.workflow_id.is_none() {
             return Err(clap_noun_verb::NounVerbError::execution_error(
                 "No workflow loaded. Use 'load <file>' first.".to_string(),
             ));
         }
 
-        // For now, return a placeholder result
-        // In production, this would execute against the RDF store
-        let results = format!(
-            "Query executed on workflow: {}\nQuery: {}\nResults: (RDF store integration pending)",
-            ctx.workflow_id.clone().unwrap_or_default(),
-            query
-        );
+        #[cfg(feature = "workflow")]
+        {
+            let runtime = get_runtime();
+            let result = runtime.block_on(async {
+                let spec_id_str = ctx.workflow_id.clone().unwrap();
+                let engine = create_engine(&ctx.state_store_path)?;
 
-        Ok(QueryResult {
-            status: "success".to_string(),
-            results,
-            query,
-        })
+                let spec_id = WorkflowSpecId::parse_str(&spec_id_str)
+                    .map_err(|e| {
+                        clap_noun_verb::NounVerbError::execution_error(
+                            format!("Invalid spec ID: {}", e)
+                        )
+                    })?;
+
+                // Execute SPARQL query on RDF store
+                #[cfg(feature = "rdf")]
+                let results = {
+                    let result = engine.query_rdf(&spec_id, &query).await
+                        .map_err(|e| {
+                            clap_noun_verb::NounVerbError::execution_error(
+                                format!("Query execution failed: {}", e)
+                            )
+                        })?;
+
+                    format!("Query Results ({}): \n{:?}", result.len(), result)
+                };
+
+                #[cfg(not(feature = "rdf"))]
+                let results = "RDF feature not enabled. Recompile with --features rdf".to_string();
+
+                Ok::<String, clap_noun_verb::NounVerbError>(results)
+            })?;
+
+            Ok(QueryResult {
+                status: "success".to_string(),
+                results: result,
+                query,
+            })
+        }
+
+        #[cfg(not(feature = "workflow"))]
+        {
+            Ok(QueryResult {
+                status: "error".to_string(),
+                results: "Workflow feature not enabled".to_string(),
+                query,
+            })
+        }
     }
 }

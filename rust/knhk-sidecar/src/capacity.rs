@@ -99,7 +99,11 @@ impl CacheHeatMetrics {
         }
 
         let recent = self.hit_rate_history.back().map(|(_, r)| *r).unwrap_or(0.0);
-        let old = self.hit_rate_history.front().map(|(_, r)| *r).unwrap_or(0.0);
+        let old = self
+            .hit_rate_history
+            .front()
+            .map(|(_, r)| *r)
+            .unwrap_or(0.0);
 
         recent - old
     }
@@ -223,7 +227,10 @@ impl CapacityManager {
 
         // Estimate cache sizes based on working set and access patterns
         let total_predicates = self.heat_metrics.len();
-        let hot_count = hot_predicates.iter().filter(|(_, rate)| *rate > 0.8).count();
+        let hot_count = hot_predicates
+            .iter()
+            .filter(|(_, rate)| *rate > 0.8)
+            .count();
 
         // L1 should hold the hottest data (10% of working set)
         let l1_size = (working_set as f64 * 0.1).ceil() as usize;
@@ -243,7 +250,7 @@ impl CapacityManager {
         CapacityModel {
             working_set_size: working_set,
             recommended_cache_size: cache_size.max(1000), // Minimum 1000 entries
-            recommended_l1_size: l1_size.max(100), // Minimum 100 entries
+            recommended_l1_size: l1_size.max(100),        // Minimum 100 entries
             confidence,
         }
     }
@@ -270,15 +277,30 @@ impl CapacityManager {
         } else if let Some(latency) = predicted_latency {
             if latency <= slo_target {
                 // Within SLO
-                (true, format!("Predicted latency {:?} within SLO {:?}", latency, slo_target))
+                (
+                    true,
+                    format!(
+                        "Predicted latency {:?} within SLO {:?}",
+                        latency, slo_target
+                    ),
+                )
             } else {
                 // Would violate SLO
-                (false, format!("Predicted latency {:?} exceeds SLO {:?}", latency, slo_target))
+                (
+                    false,
+                    format!(
+                        "Predicted latency {:?} exceeds SLO {:?}",
+                        latency, slo_target
+                    ),
+                )
             }
         } else {
             // No prediction available, use conservative approach
             if utilization < 0.8 {
-                (true, "System has capacity, no latency prediction available".to_string())
+                (
+                    true,
+                    "System has capacity, no latency prediction available".to_string(),
+                )
             } else {
                 (false, "High utilization, cannot guarantee SLO".to_string())
             }
@@ -412,9 +434,12 @@ impl CapacityManager {
         let mut tips = Vec::new();
 
         // Analyze cache performance
-        let avg_hit_rate = self.heat_metrics.values()
+        let avg_hit_rate = self
+            .heat_metrics
+            .values()
             .map(|m| m.hit_rate())
-            .sum::<f64>() / self.heat_metrics.len().max(1) as f64;
+            .sum::<f64>()
+            / self.heat_metrics.len().max(1) as f64;
 
         if avg_hit_rate < 0.8 {
             tips.push("Cache hit rate below 80% - consider increasing cache size".to_string());
@@ -435,8 +460,7 @@ impl CapacityManager {
         if model.working_set_size > model.recommended_cache_size {
             tips.push(format!(
                 "Working set ({}) exceeds cache size ({}) - increase cache allocation",
-                model.working_set_size,
-                model.recommended_cache_size
+                model.working_set_size, model.recommended_cache_size
             ));
         }
 
@@ -505,8 +529,8 @@ impl SystemLoad {
         };
 
         let admission_rate = if self.admissions_accepted + self.admissions_rejected > 0 {
-            self.admissions_accepted as f64 /
-                (self.admissions_accepted + self.admissions_rejected) as f64
+            self.admissions_accepted as f64
+                / (self.admissions_accepted + self.admissions_rejected) as f64
         } else {
             1.0
         };
@@ -594,14 +618,16 @@ impl WorkingSetTracker {
 
     fn get_working_set(&self) -> Vec<String> {
         // Return predicates with significant access count
-        let mut predicates: Vec<_> = self.access_counts
+        let mut predicates: Vec<_> = self
+            .access_counts
             .iter()
             .filter(|(_, count)| **count > 5) // At least 5 accesses
             .map(|(pred, count)| (pred.clone(), *count))
             .collect();
 
         predicates.sort_by(|a, b| b.1.cmp(&a.1));
-        predicates.into_iter()
+        predicates
+            .into_iter()
             .take(100) // Top 100 working set
             .map(|(pred, _)| pred)
             .collect()

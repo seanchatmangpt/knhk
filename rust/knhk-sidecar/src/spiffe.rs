@@ -95,8 +95,7 @@ impl WorkloadAPIRequest {
     fn to_bytes(&self) -> Vec<u8> {
         // Simple text protocol for demonstration
         // Real SPIRE workload API uses gRPC
-        format!("X-SPIRE-WorkloadAPI: {}\r\n\r\n", self.request_type)
-            .into_bytes()
+        format!("X-SPIRE-WorkloadAPI: {}\r\n\r\n", self.request_type).into_bytes()
     }
 }
 

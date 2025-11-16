@@ -29,10 +29,7 @@ fn test_promotion_routing_concurrent_requests() {
             thread::spawn(move || {
                 for i in 0..concurrent_requests / request_threads {
                     let request_id = format!("req-t{}-{}", thread_id, i);
-                    let hash = request_id
-                        .chars()
-                        .map(|c| c as u32)
-                        .sum::<u32>() as u64;
+                    let hash = request_id.chars().map(|c| c as u32).sum::<u32>() as u64;
                     let routed_to_new = (hash % 100) < (traffic_percent as u64);
 
                     results.lock().unwrap().push(routed_to_new);
@@ -211,7 +208,10 @@ fn test_kms_concurrent_rotation_detection() {
     let final_needed = rotation_needed.lock().unwrap().clone();
 
     assert!(!final_in_progress, "Rotation should be complete");
-    assert!(!final_needed, "Rotation should not be needed after completion");
+    assert!(
+        !final_needed,
+        "Rotation should not be needed after completion"
+    );
 }
 
 // ============================================================================

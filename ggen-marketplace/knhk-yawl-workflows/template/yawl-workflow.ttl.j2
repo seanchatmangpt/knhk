@@ -1,0 +1,121 @@
+{#- YAWL Workflow Turtle Template -#}
+{#- Generates YAWL workflow specification in Turtle (RDF) format -#}
+{#- Direct output for knhk workflow engine integration -#}
+{#- SPARQL-driven semantic code generation -#}
+@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix schema: <http://schema.org/> .
+
+{#- Generate workflow specifications from RDF extraction -#}
+{%- for workflow in workflows %}
+
+{#- Workflow Specification -#}
+{{ workflow.workflow }} a yawl:WorkflowSpecification ;
+    rdfs:label "{{ workflow.workflowLabel | default('Unnamed Workflow') }}" ;
+    {%- if workflow.workflowDescription %}
+    rdfs:comment "{{ workflow.workflowDescription }}" ;
+    {%- endif %}
+    {%- if workflow.startCondition %}
+    yawl:hasStartCondition {{ workflow.startCondition }} ;
+    {%- endif %}
+    {%- if workflow.endCondition %}
+    yawl:hasEndCondition {{ workflow.endCondition }} ;
+    {%- endif %}
+    {%- for task in tasks %}
+    yawl:hasTask {{ task.task }}{%- if not loop.last %},{% else %} ;{% endif %}
+    {%- endfor %}
+    {%- for condition in conditions %}
+    yawl:hasCondition {{ condition.condition }}{%- if not loop.last %},{% else %} .{% endif %}
+    {%- endfor %}
+
+{#- Task Definitions (Transitions) -#}
+{%- for task in tasks %}
+{%- if task.taskLabel %}
+
+{{ task.task }} a yawl:Task ;
+    rdfs:label "{{ task.taskLabel }}" ;
+    {%- if task.taskDescription %}
+    rdfs:comment "{{ task.taskDescription }}" ;
+    {%- endif %}
+    {%- if task.splitType %}
+    yawl:hasSplitType yawl:{{ task.splitType }} ;
+    {%- endif %}
+    {%- if task.joinType %}
+    yawl:hasJoinType yawl:{{ task.joinType }} ;
+    {%- endif %}
+    {%- if task.isMultiInstance %}
+    yawl:isMultiInstance {{ task.isMultiInstance | lower }} ;
+    {%- endif %}
+    {%- if task.handler %}
+    yawl:hasHandler "{{ task.handler }}" ;
+    {%- endif %}
+    {#- Outgoing flows -#}
+    {%- set outgoing_flows = flows | selectattr('source', 'equalto', task.task) | list %}
+    {%- if outgoing_flows %}
+    {%- for flow in outgoing_flows %}
+    yawl:hasOutgoingFlow {{ flow.target }}{%- if not loop.last %},{% else %} ;{% endif %}
+    {%- endfor %}
+    {%- endif %}
+    {#- Incoming flows -#}
+    {%- set incoming_flows = flows | selectattr('target', 'equalto', task.task) | list %}
+    {%- if incoming_flows %}
+    {%- for flow in incoming_flows %}
+    yawl:hasIncomingFlow {{ flow.source }}{%- if not loop.last %},{% else %} .{% endif %}
+    {%- endfor %}
+    {%- endif %}
+{%- endif %}
+{%- endfor %}
+
+{#- Condition Definitions (Places) -#}
+{%- for condition in conditions %}
+{%- if condition.conditionLabel %}
+
+{{ condition.condition }} a yawl:Condition ;
+    rdfs:label "{{ condition.conditionLabel }}" ;
+    {%- if condition.conditionDescription %}
+    rdfs:comment "{{ condition.conditionDescription }}" ;
+    {%- endif %}
+    {%- if condition.isStartCondition %}
+    a yawl:StartCondition ;
+    {%- endif %}
+    {%- if condition.isEndCondition %}
+    a yawl:EndCondition ;
+    {%- endif %}
+    {%- set condition_outgoing = flows | selectattr('source', 'equalto', condition.condition) | list %}
+    {%- if condition_outgoing %}
+    {%- for flow in condition_outgoing %}
+    yawl:hasOutgoingFlow {{ flow.target }}{%- if not loop.last %},{% else %} ;{% endif %}
+    {%- endfor %}
+    {%- endif %}
+    {%- set condition_incoming = flows | selectattr('target', 'equalto', condition.condition) | list %}
+    {%- if condition_incoming %}
+    {%- for flow in condition_incoming %}
+    yawl:hasIncomingFlow {{ flow.source }}{%- if not loop.last %},{% else %} ;{% endif %}
+    {%- endfor %}
+    {%- endif %}
+    yawl:initialMarking {{ condition.initialMarking | default(0) | int }} .
+{%- endif %}
+{%- endfor %}
+
+{#- Control Flow Patterns -#}
+{%- for pattern in patterns %}
+{%- if pattern.patternType %}
+
+{{ pattern.element }} yawl:hasPattern yawl:{{ pattern.patternName }} ;
+    yawl:patternType "{{ pattern.patternType }}" ;
+    yawl:routingType "{{ pattern.routingType }}" .
+{%- endif %}
+{%- endfor %}
+
+{#- Flow Predicates (Conditional Routing) -#}
+{%- for flow in flows %}
+{%- if flow.flowPredicate or flow.flowCondition %}
+
+{{ flow.source }} yawl:flowCondition "{{ flow.flowPredicate or flow.flowCondition }}" .
+{%- endif %}
+{%- endfor %}
+
+{%- endfor %}

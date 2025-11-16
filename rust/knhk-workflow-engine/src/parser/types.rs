@@ -167,3 +167,149 @@ pub struct WorkflowSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_turtle: Option<String>,
 }
+
+impl WorkflowSpec {
+    /// Serialize workflow to Turtle format with YAWL ontology annotations
+    ///
+    /// Converts the WorkflowSpec to RDF/Turtle format using the YAWL ontology.
+    /// This is the inverse operation of `WorkflowParser::parse_turtle()`.
+    ///
+    /// # Returns
+    /// A Turtle string representing the workflow with full YAWL semantics.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let spec = WorkflowSpec { /* ... */ };
+    /// let turtle = spec.to_turtle()?;
+    /// // Can now save to file, transmit, or re-parse
+    /// ```
+    pub fn to_turtle(&self) -> WorkflowResult<String> {
+        use std::fmt::Write;
+        let mut output = String::new();
+
+        // Write Turtle prefixes
+        writeln!(&mut output, "@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .")?;
+        writeln!(&mut output, "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .")?;
+        writeln!(&mut output, "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .")?;
+        writeln!(&mut output, "@prefix workflow: <http://knhk.org/ns/workflow#> .")?;
+        writeln!(&mut output)?;
+
+        // Generate base IRI from workflow name (sanitize for IRI)
+        let base_iri = self.name.to_lowercase().replace(' ', "-");
+        let workflow_iri = format!("<http://knhk.org/workflows/{}>", base_iri);
+
+        // Write workflow specification
+        writeln!(&mut output, "{}", workflow_iri)?;
+        writeln!(&mut output, "    a yawl:WorkflowSpecification ;")?;
+        writeln!(&mut output, "    rdfs:label \"{}\" ;", self.name)?;
+
+        // Write task references
+        for task_id in self.tasks.keys() {
+            writeln!(&mut output, "    yawl:hasTask <{}> ;", task_id)?;
+        }
+
+        // Write condition references
+        for condition_id in self.conditions.keys() {
+            writeln!(&mut output, "    yawl:hasCondition <{}> ;", condition_id)?;
+        }
+
+        // Remove trailing semicolon and add period
+        output = output.trim_end().trim_end_matches(';').to_string();
+        writeln!(&mut output, " .")?;
+        writeln!(&mut output)?;
+
+        // Write conditions
+        if let Some(start_id) = &self.start_condition {
+            if let Some(condition) = self.conditions.get(start_id) {
+                writeln!(&mut output, "<{}>", condition.id)?;
+                writeln!(&mut output, "    a yawl:StartCondition ;")?;
+                writeln!(&mut output, "    rdfs:label \"{}\" .", condition.name)?;
+                writeln!(&mut output)?;
+            }
+        }
+
+        if let Some(end_id) = &self.end_condition {
+            if let Some(condition) = self.conditions.get(end_id) {
+                writeln!(&mut output, "<{}>", condition.id)?;
+                writeln!(&mut output, "    a yawl:EndCondition ;")?;
+                writeln!(&mut output, "    rdfs:label \"{}\" .", condition.name)?;
+                writeln!(&mut output)?;
+            }
+        }
+
+        // Write other conditions (not start/end)
+        for (id, condition) in &self.conditions {
+            if Some(id) != self.start_condition.as_ref() && Some(id) != self.end_condition.as_ref() {
+                writeln!(&mut output, "<{}>", condition.id)?;
+                writeln!(&mut output, "    a yawl:Condition ;")?;
+                writeln!(&mut output, "    rdfs:label \"{}\" .", condition.name)?;
+                writeln!(&mut output)?;
+            }
+        }
+
+        // Write tasks
+        for task in self.tasks.values() {
+            writeln!(&mut output, "<{}>", task.id)?;
+
+            // Task type
+            let task_type_str = match task.task_type {
+                TaskType::Atomic => "yawl:AtomicTask",
+                TaskType::Composite => "yawl:CompositeTask",
+                TaskType::MultipleInstance => "yawl:MultipleInstanceTask",
+            };
+            writeln!(&mut output, "    a {} ;", task_type_str)?;
+            writeln!(&mut output, "    rdfs:label \"{}\" ;", task.name)?;
+
+            // Split type
+            let split_type_str = match task.split_type {
+                SplitType::And => "yawl:And",
+                SplitType::Xor => "yawl:Xor",
+                SplitType::Or => "yawl:Or",
+            };
+            writeln!(&mut output, "    yawl:splitType {} ;", split_type_str)?;
+
+            // Join type
+            let join_type_str = match task.join_type {
+                JoinType::And => "yawl:And",
+                JoinType::Xor => "yawl:Xor",
+                JoinType::Or => "yawl:Or",
+            };
+            writeln!(&mut output, "    yawl:joinType {} ;", join_type_str)?;
+
+            // Performance annotations (hot path optimizations)
+            if let Some(max_ticks) = task.max_ticks {
+                writeln!(&mut output, "    yawl:maxTicks {} ;", max_ticks)?;
+            }
+            if let Some(priority) = task.priority {
+                writeln!(&mut output, "    yawl:priority {} ;", priority)?;
+            }
+            if task.use_simd {
+                writeln!(&mut output, "    yawl:useSimd true ;")?;
+            }
+
+            // Remove trailing semicolon and add period
+            output = output.trim_end().trim_end_matches(';').to_string();
+            writeln!(&mut output, " .")?;
+            writeln!(&mut output)?;
+        }
+
+        // Write flows
+        for flow in &self.flows {
+            writeln!(&mut output, "<{}>", flow.id)?;
+            writeln!(&mut output, "    a yawl:Flow ;")?;
+            writeln!(&mut output, "    yawl:from <{}> ;", flow.from)?;
+            writeln!(&mut output, "    yawl:to <{}> ;", flow.to)?;
+
+            if let Some(ref predicate) = flow.predicate {
+                writeln!(&mut output, "    yawl:predicate \"{}\" ;", predicate)?;
+            }
+
+            // Remove trailing semicolon and add period
+            output = output.trim_end().trim_end_matches(';').to_string();
+            writeln!(&mut output, " .")?;
+            writeln!(&mut output)?;
+        }
+
+        Ok(output)
+    }
+}

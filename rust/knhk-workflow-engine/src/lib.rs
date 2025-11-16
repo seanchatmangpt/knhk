@@ -95,6 +95,14 @@ pub mod integration;
 
 // Macros are exported via #[macro_export] in otel_macros.rs
 
+/// Compile-time assertion macro for const contexts
+#[macro_export]
+macro_rules! const_assert {
+    ($cond:expr) => {
+        const _: () = assert!($cond);
+    };
+}
+
 #[macro_use]
 pub mod observability;
 pub mod multi_instance;
@@ -181,7 +189,8 @@ pub use execution::{
 pub use executor::WorkflowEngine;
 pub use ggen::{
     generate_documentation_from_spec, generate_tests_from_spec, generate_workflow_from_rdf,
-    GgenGenerator,
+    GgenGenerator, NeuralPatternLearner, Pattern, PatternRecommendation, PatternStatistics,
+    TargetLanguage,
 };
 pub use innovation::{
     DeltaLogEntry, DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,

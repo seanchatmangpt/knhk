@@ -14,9 +14,11 @@
 //! - `capability`: Process capability calculations (Cp, Cpk, Sigma level)
 //! - `formal`: Formal verification (state transitions, deadlock freedom)
 //! - `report`: Validation report generation
+//! - `phases`: Advanced phase system with HKT-style composition
 
 pub mod deadlock;
 pub mod guards;
+pub mod phases;
 pub mod shacl;
 pub mod sparql;
 pub mod validated;
@@ -50,3 +52,9 @@ pub use jtbd::{
 pub use precision::PrecisionValidator;
 pub use process_mining::ProcessMiningAnalyzer;
 pub use report::{ValidationDetail, ValidationReport, ValidationResult, ValidationStatus};
+
+// Advanced phase system exports
+pub use phases::{
+    ConformanceMetricsPhase, FormalSoundnessPhase, LoadTestingPhase, PatternSemanticsPhase,
+    Phase, PhaseContext, PhaseExecutor, PhaseMetadata, PhaseRegistry, PhaseResult, PhaseStatus,
+};

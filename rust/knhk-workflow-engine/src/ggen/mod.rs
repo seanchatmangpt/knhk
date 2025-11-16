@@ -1,16 +1,50 @@
-//! ggen Integration - RDF-Driven Template Generation
+//! ggen Integration - RDF-Driven Template Generation (v2.7.1)
 //!
 //! Integrates ggen-style template generation into the workflow engine for:
 //! - Generating workflow specs from RDF/Turtle files using templates
 //! - Generating tests from workflow specs
 //! - Generating documentation from workflow specs
 //! - SPARQL query support in templates
+//! - Multi-language code generation (Rust, Python, JavaScript, Go)
+//! - Knowledge hooks generation from RDF ontologies
+//! - OTEL telemetry instrumentation generation
 //!
 //! **Architecture**: Pure RDF-driven templates with SPARQL integration
 //! - Templates contain only rendering logic (Tera syntax)
 //! - RDF files define what to generate (domain model)
 //! - SPARQL queries extract data from RDF graphs
 //! - No hardcoded data in templates
+//!
+//! # v2.7.1 Features
+//!
+//! - **SPARQL Template Engine**: LRU-cached SPARQL execution (<100μs)
+//! - **Code Generators**: Multi-language code generation from RDF
+//! - **Hooks Generator**: Knowledge hooks with Lockchain integration
+//! - **Telemetry Generator**: Auto-generate OTEL spans/metrics/logs
+
+pub mod codegen;
+pub mod distributed;
+pub mod hooks_generator;
+pub mod neural_patterns;
+pub mod self_healing;
+pub mod sparql_engine;
+pub mod telemetry_generator;
+
+pub use codegen::{CodeGenerator, GeneratedCode, GenerationContext};
+pub use distributed::{
+    ClusterHealth, DistributedGeneratedCode, DistributedGenerator, DistributedMetrics,
+    GenerationTask, TraceContext, WorkerInfo, WorkerStatus,
+};
+pub use hooks_generator::HooksGenerator;
+pub use neural_patterns::{
+    Context, NeuralPatternLearner, Pattern, PatternRecommendation, PatternStatistics,
+    TargetLanguage,
+};
+pub use self_healing::{
+    CodeError, ErrorType, Fix, HealthMetrics, SelfHealingGenerator, ValidationResult,
+};
+pub use sparql_engine::SparqlTemplateEngine;
+pub use telemetry_generator::TelemetryGenerator;
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;

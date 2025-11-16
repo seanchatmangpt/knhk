@@ -71,14 +71,8 @@ fn test_canary_routing_is_deterministic() {
     let traffic_percent = 20.0;
 
     // Act: Hash the request ID multiple times
-    let hash_1 = request_id_1
-        .chars()
-        .map(|c| c as u32)
-        .sum::<u32>() as u64;
-    let hash_1_again = request_id_1
-        .chars()
-        .map(|c| c as u32)
-        .sum::<u32>() as u64;
+    let hash_1 = request_id_1.chars().map(|c| c as u32).sum::<u32>() as u64;
+    let hash_1_again = request_id_1.chars().map(|c| c as u32).sum::<u32>() as u64;
 
     let route_to_new_1 = (hash_1 % 100) < (traffic_percent as u64);
     let route_to_new_1_again = (hash_1_again % 100) < (traffic_percent as u64);
@@ -98,14 +92,8 @@ fn test_canary_routing_different_requests_differ() {
     let traffic_percent = 50.0; // 50% so we expect mix
 
     // Act: Hash different request IDs
-    let hash_1 = request_id_1
-        .chars()
-        .map(|c| c as u32)
-        .sum::<u32>() as u64;
-    let hash_2 = request_id_2
-        .chars()
-        .map(|c| c as u32)
-        .sum::<u32>() as u64;
+    let hash_1 = request_id_1.chars().map(|c| c as u32).sum::<u32>() as u64;
+    let hash_2 = request_id_2.chars().map(|c| c as u32).sum::<u32>() as u64;
 
     let route_1 = (hash_1 % 100) < (traffic_percent as u64);
     let route_2 = (hash_2 % 100) < (traffic_percent as u64);
@@ -114,16 +102,28 @@ fn test_canary_routing_different_requests_differ() {
     // (This is probabilistic, but with 50% split and different IDs,
     // we expect at least some variation in a larger test set)
     // For this test, we just verify the logic works for both cases
-    assert!(route_1 == true || route_1 == false, "Route should be boolean");
-    assert!(route_2 == true || route_2 == false, "Route should be boolean");
+    assert!(
+        route_1 == true || route_1 == false,
+        "Route should be boolean"
+    );
+    assert!(
+        route_2 == true || route_2 == false,
+        "Route should be boolean"
+    );
 }
 
 #[test]
 fn test_canary_routing_traffic_percentage_effect() {
     // Arrange: Test that traffic percentage controls routing
     let request_ids = vec![
-        "request-00001", "request-00002", "request-00003", "request-00004",
-        "request-00005", "request-00006", "request-00007", "request-00008",
+        "request-00001",
+        "request-00002",
+        "request-00003",
+        "request-00004",
+        "request-00005",
+        "request-00006",
+        "request-00007",
+        "request-00008",
     ];
 
     // Act: Route requests with 50% traffic to new version
@@ -213,14 +213,14 @@ fn test_canary_health_status_evaluation() {
 
     let healthy_metrics = CanaryMetrics {
         total_requests: 1000,
-        errors: 20,         // 2% error rate
+        errors: 20,                     // 2% error rate
         latencies: vec![100, 150, 200], // Low latencies
         last_checked: Instant::now(),
     };
 
     let unhealthy_metrics = CanaryMetrics {
         total_requests: 1000,
-        errors: 100,        // 10% error rate
+        errors: 100,                    // 10% error rate
         latencies: vec![600, 700, 800], // High latencies
         last_checked: Instant::now(),
     };
@@ -288,10 +288,7 @@ fn test_auto_rollback_latency_violation() {
     let should_rollback = canary_p99_latency > p99_threshold;
 
     // Assert: Rollback should trigger
-    assert!(
-        should_rollback,
-        "High P99 latency should trigger rollback"
-    );
+    assert!(should_rollback, "High P99 latency should trigger rollback");
 }
 
 #[test]
@@ -425,7 +422,12 @@ fn test_promotion_supports_three_environments() {
     let production = Environment::Production;
 
     // Act & Assert: All environments can be created and matched
-    assert!(matches!(canary, Environment::Canary { traffic_percent: 5.0 }));
+    assert!(matches!(
+        canary,
+        Environment::Canary {
+            traffic_percent: 5.0
+        }
+    ));
     assert!(matches!(staging, Environment::Staging));
     assert!(matches!(production, Environment::Production));
 }
@@ -445,9 +447,18 @@ fn test_promotion_auto_rollback_prevents_bad_deployments() {
     };
 
     // Act & Assert: Config enables auto-rollback protection
-    assert!(config.auto_rollback_enabled, "Auto-rollback should be enabled");
-    assert!(config.error_rate_threshold > 0.0, "Error threshold should be set");
-    assert!(config.p99_latency_threshold_ms > 0, "Latency threshold should be set");
+    assert!(
+        config.auto_rollback_enabled,
+        "Auto-rollback should be enabled"
+    );
+    assert!(
+        config.error_rate_threshold > 0.0,
+        "Error threshold should be set"
+    );
+    assert!(
+        config.p99_latency_threshold_ms > 0,
+        "Latency threshold should be set"
+    );
 }
 
 #[test]
@@ -489,6 +500,12 @@ fn test_promotion_respects_idempotence() {
     let route_3 = (hash % 100) < (traffic_percent as u64);
 
     // Assert: Same routing decision each time (idempotence)
-    assert_eq!(route_1, route_2, "First and second routing should be identical");
-    assert_eq!(route_2, route_3, "Second and third routing should be identical");
+    assert_eq!(
+        route_1, route_2,
+        "First and second routing should be identical"
+    );
+    assert_eq!(
+        route_2, route_3,
+        "Second and third routing should be identical"
+    );
 }
