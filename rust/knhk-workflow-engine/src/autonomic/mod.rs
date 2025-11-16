@@ -50,9 +50,9 @@ pub mod overlay_validator;
 
 pub mod policy_lattice;
 pub mod doctrine;
-pub use knowledge::{Knowledge, KnowledgeBase, Goal, Rule, Fact};
+pub use knowledge::{Knowledge, KnowledgeBase, Goal, GoalType, KnowledgeId, Policy, Rule, Fact};
 pub use monitor::{Monitor, MetricCollector, MonitorEvent};
-pub use analyze::{Analyzer, Anomaly, Analysis, HealthStatus};
+pub use analyze::{Analyzer, Anomaly, AnomalyType, Analysis, HealthStatus};
 pub use plan::{Planner, AdaptationPlan, Action, ActionType};
 pub use execute::{Executor, ExecutionResult};
 pub use loop_controller::{MapeKController, ControllerConfig, ControllerState};

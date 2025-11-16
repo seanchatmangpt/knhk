@@ -6,51 +6,61 @@
 //! - Key management for nodes
 
 use super::*;
-use ed25519_dalek::{Keypair as Ed25519Keypair, PublicKey, SecretKey, Signature as Ed25519Signature, Signer, Verifier};
+use ed25519_dalek::{Signature as Ed25519Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Cryptographic key pair
 pub struct KeyPair {
-    /// Ed25519 keypair
-    keypair: Ed25519Keypair,
+    /// Ed25519 signing key
+    signing_key: SigningKey,
+    /// Ed25519 verifying key (cached from signing key)
+    verifying_key: VerifyingKey,
 }
 
 impl KeyPair {
     /// Generate a new random keypair
     pub fn generate() -> Self {
         let mut csprng = rand::rngs::OsRng;
-        let keypair = Ed25519Keypair::generate(&mut csprng);
-        Self { keypair }
+        let signing_key = SigningKey::generate(&mut csprng);
+        let verifying_key = signing_key.verifying_key();
+        Self {
+            signing_key,
+            verifying_key,
+        }
     }
 
     /// Create from secret key bytes
     pub fn from_bytes(secret_bytes: &[u8]) -> ConsensusResult<Self> {
-        let secret = SecretKey::from_bytes(secret_bytes)
-            .map_err(|e| ConsensusError::Internal(format!("Invalid secret key: {}", e)))?;
+        let signing_key = SigningKey::from_bytes(
+            secret_bytes
+                .try_into()
+                .map_err(|_| ConsensusError::Internal("Invalid secret key length".to_string()))?,
+        );
+        let verifying_key = signing_key.verifying_key();
 
-        let public = PublicKey::from(&secret);
-        let keypair = Ed25519Keypair { secret, public };
-
-        Ok(Self { keypair })
+        Ok(Self {
+            signing_key,
+            verifying_key,
+        })
     }
 
     /// Get public key bytes
     pub fn public_key_bytes(&self) -> [u8; 32] {
-        self.keypair.public.to_bytes()
+        self.verifying_key.to_bytes()
     }
 
     /// Sign a message
     pub fn sign(&self, message: &[u8]) -> Signature {
-        let signature = self.keypair.sign(message);
+        let signature = self.signing_key.sign(message);
         Signature {
             bytes: signature.to_bytes(),
         }
     }
 
     /// Get the public key
-    pub fn public_key(&self) -> PublicKey {
-        self.keypair.public
+    pub fn public_key(&self) -> &VerifyingKey {
+        &self.verifying_key
     }
 }
 
@@ -63,7 +73,7 @@ pub struct Signature {
 
 impl Signature {
     /// Verify signature against public key
-    pub fn verify(&self, message: &[u8], public_key: &PublicKey) -> bool {
+    pub fn verify(&self, message: &[u8], public_key: &VerifyingKey) -> bool {
         let signature = match Ed25519Signature::from_bytes(&self.bytes) {
             Ok(sig) => sig,
             Err(_) => return false,
@@ -76,7 +86,7 @@ impl Signature {
 /// Signature verifier for BFT consensus
 pub struct SignatureVerifier {
     /// Mapping from node ID to public key
-    public_keys: HashMap<NodeId, PublicKey>,
+    public_keys: HashMap<NodeId, VerifyingKey>,
 }
 
 impl SignatureVerifier {
@@ -88,7 +98,7 @@ impl SignatureVerifier {
     }
 
     /// Add a public key for a node
-    pub fn add_public_key(&mut self, node_id: NodeId, public_key: PublicKey) {
+    pub fn add_public_key(&mut self, node_id: NodeId, public_key: VerifyingKey) {
         self.public_keys.insert(node_id, public_key);
     }
 
@@ -153,7 +163,7 @@ impl CryptoProvider {
     }
 
     /// Add a public key for a peer
-    pub fn add_peer_key(&mut self, node_id: NodeId, public_key: PublicKey) {
+    pub fn add_peer_key(&mut self, node_id: NodeId, public_key: VerifyingKey) {
         self.verifier.add_public_key(node_id, public_key);
     }
 
@@ -178,7 +188,7 @@ impl CryptoProvider {
     }
 
     /// Get our public key
-    pub fn public_key(&self) -> PublicKey {
+    pub fn public_key(&self) -> &VerifyingKey {
         self.keypair.public_key()
     }
 }

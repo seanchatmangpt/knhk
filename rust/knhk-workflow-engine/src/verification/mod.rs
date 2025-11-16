@@ -48,15 +48,22 @@ pub mod type_level;
 
 // Re-exports for convenience
 pub use invariants::{
-    Invariant, InvariantChecker, InvariantViolation, RuntimeInvariant, SessionInvariant,
+    Invariant, InvariantChecker, InvariantContext, InvariantSeverity, InvariantViolation,
+    ModeSafetyInvariant, PolicyConsistencyInvariant, RuntimeInvariant, SessionInvariant,
+    TraceDeterminismInvariant,
 };
 pub use proof_certificates::{
-    ProofCache, ProofCertificate, ProofCertificateStore, ProofMetadata, ProofStatus,
+    ProofCache, ProofCertificate, ProofCertificateStore, ProofId, ProofMetadata, ProofStatus,
+    ProofSubject,
 };
 pub use smt_solver::{
     PolicyVerifier, SmtFormula, SmtProof, SmtResult, SmtSolver, VerificationError,
 };
-pub use type_level::{Bounds, Proven as TypeProven, Unverified, VerificationState, Verified};
+pub use type_level::{
+    Bounds, CallDepthBound, Evidence, MuKernelTickBound, PatternIdBound, Provable,
+    Proven as TypeProven, RunLengthBound, Unverified, VerificationState, Verified,
+    VerifiedMetrics, VerifiedPolicy,
+};
 
 use crate::error::{WorkflowError, WorkflowResult};
 

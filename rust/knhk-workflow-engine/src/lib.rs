@@ -146,7 +146,8 @@ pub use autonomic::{
     DeltaSigma, OverlayId, OverlayScope, OverlayChange, ProofObligation,
     ProofState, Unproven, ProofPending, Proven, ValidationEffort, OverlayComposition,
     CompositionStrategy, OverlayValidator, OverlayProof, ValidationResult, ObligationResult,
-    TestResults, PerformanceMetrics,
+    TestResults,
+    // Note: PerformanceMetrics comes from performance module, not autonomic
 };
 pub use cancellation::{
     CancellationEvent, CancellationRegistry, CancellationRegion, CancellationScope, RegionId,
@@ -194,7 +195,8 @@ pub use ggen::{
 };
 pub use innovation::{
     DeltaLogEntry, DeterministicContext, DeterministicExecutor, ExecutionStep, FormalVerifier,
-    HardwareAcceleration, HardwareAccelerator, Property, VerificationResult, Violation,
+    HardwareAcceleration, HardwareAccelerator, Property,
+    VerificationResult as InnovationVerificationResult, Violation,
     ZeroCopyBytes, ZeroCopyStr, ZeroCopyTriple, ZeroCopyTripleBatch,
 };
 pub use parser::{WorkflowParser, WorkflowSpec, WorkflowSpecId};

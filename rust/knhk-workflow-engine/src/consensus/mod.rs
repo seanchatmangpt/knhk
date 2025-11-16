@@ -99,7 +99,7 @@ pub mod hybrid;
 pub mod raft;
 pub mod replication;
 
-pub use bft::{BftCluster, BftConfig, BftProtocol};
+pub use bft::{BftCluster, BftConfig, BftProtocol, Decision};
 pub use hybrid::{HybridConsensus, ThreatLevel, ThreatModel};
 pub use raft::{RaftCluster, RaftConfig, RaftNode, RaftRole};
 pub use replication::{ReplicatedStateMachine, Snapshot, StateMachineOp};
