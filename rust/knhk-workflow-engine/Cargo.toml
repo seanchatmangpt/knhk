@@ -73,6 +73,8 @@ rayon = { workspace = true }
 fastrand = "2.0"
 sha2 = { workspace = true }
 hex = { workspace = true }
+linkme = "0.3"
+num_cpus = "1.16"
 
 # Rate limiting
 governor = "0.6"
@@ -135,6 +137,10 @@ path = "examples/weaver_real_jtbd_validation.rs"
 
 [[bench]]
 name = "fortune5_performance"
+harness = false
+
+[[bench]]
+name = "phase_performance"
 harness = false
 
 [build-dependencies]
