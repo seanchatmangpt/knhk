@@ -180,7 +180,7 @@ lint-rust:
 
 lint-c:
 	@echo "🔍 Linting C code..."
-	@echo "TODO: Implement C linting"
+	@timeout 60 bash scripts/run-lint-c.sh
 
 # Clean targets
 clean:

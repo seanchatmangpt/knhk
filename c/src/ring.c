@@ -2,6 +2,9 @@
 // Ring buffer implementation: Δ-ring (input) and A-ring (output)
 // Branchless enqueue/dequeue with atomic operations
 
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include "knhk/ring.h"
 #include "knhk/types.h"
 #include <stdlib.h>

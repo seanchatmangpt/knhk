@@ -2,9 +2,10 @@
 # Library build system
 
 CC = clang
-CFLAGS = -O3 -std=c11 -Wall -Wextra -D_POSIX_C_SOURCE=200809L
-RAPTOR_CFLAGS = $(shell pkg-config --cflags raptor2 2>/dev/null || echo "-I/opt/homebrew/Cellar/raptor/2.0.16/include")
-RAPTOR_LIBS = $(shell pkg-config --libs raptor2 2>/dev/null || echo "-L/opt/homebrew/Cellar/raptor/2.0.16/lib -lraptor2")
+CFLAGS = -O3 -std=c11 -Wall -Wextra
+# Raptor2 is optional - don't fail if it's not available
+RAPTOR_CFLAGS = $(shell pkg-config --cflags raptor2 2>/dev/null)
+RAPTOR_LIBS = $(shell pkg-config --libs raptor2 2>/dev/null)
 
 # Platform-specific flags
 ifeq ($(shell uname -m),arm64)

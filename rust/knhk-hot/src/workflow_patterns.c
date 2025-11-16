@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
 
 // ARM64 SIMD intrinsics
 #ifdef __aarch64__
@@ -472,7 +473,8 @@ PatternResult knhk_pattern_deferred_choice(
     uint64_t timeout_ticks
 ) {
     // Poll conditions until one becomes true or timeout
-    uint64_t start_tick = __builtin_readcyclecounter();
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     while (true) {
         // Check all conditions
@@ -489,7 +491,10 @@ PatternResult knhk_pattern_deferred_choice(
         }
 
         // Check timeout
-        uint64_t elapsed = __builtin_readcyclecounter() - start_tick;
+        struct timespec current_time;
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        uint64_t elapsed = (current_time.tv_sec - start_time.tv_sec) * 1000000000ULL +
+                          (current_time.tv_nsec - start_time.tv_nsec);
         if (elapsed > timeout_ticks) {
             return (PatternResult){
                 .success = false,
