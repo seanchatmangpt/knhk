@@ -1,0 +1,23 @@
+# MAPE-K Analysis Layer: Analyze metrics and identify problems
+# Detects patterns and root causes using analysis rules
+
+PREFIX mape: <http://bitflow.ai/ontology/autonomic/mape-k/v1#>
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Query: Detect Performance Degradation
+SELECT ?task ?taskLabel ?executionTime ?expectedDuration ?degradation
+WHERE {
+  ?task a yawl:Task ;
+       rdfs:label ?taskLabel ;
+       yawl-exec:executionTime ?executionTime ;
+       yawl-exec:expectedDuration ?expectedDuration .
+
+  # Calculate degradation percentage
+  BIND(ROUND((?executionTime / ?expectedDuration - 1) * 100) AS ?degradation)
+
+  # Filter for significant degradation (> 30%)
+  FILTER(?degradation > 30)
+}
+ORDER BY DESC(?degradation)

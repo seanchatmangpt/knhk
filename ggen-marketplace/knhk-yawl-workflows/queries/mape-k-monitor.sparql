@@ -1,0 +1,26 @@
+# MAPE-K Monitoring Layer: Collect metrics and detect anomalies
+# Continuously monitors workflow execution and identifies issues
+
+PREFIX mape: <http://bitflow.ai/ontology/autonomic/mape-k/v1#>
+PREFIX yawl: <http://bitflow.ai/ontology/yawl/v2#>
+PREFIX yawl-exec: <http://bitflow.ai/ontology/yawl/execution/v1#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Query 1: Collect Current Metrics
+SELECT ?metric ?metricType ?currentValue ?expectedValue ?unit ?isAnomalous
+WHERE {
+  ?metric a mape:Metric .
+
+  OPTIONAL { ?metric mape:metricType ?metricType . }
+  OPTIONAL { ?metric mape:currentValue ?currentValue . }
+  OPTIONAL { ?metric mape:expectedValue ?expectedValue . }
+  OPTIONAL { ?metric mape:unit ?unit . }
+
+  # Detect anomalies
+  OPTIONAL {
+    ?metric mape:anomalyThreshold ?threshold .
+    BIND(IF(?currentValue > ?threshold, true, false) AS ?isAnomalous)
+  }
+}
+ORDER BY ?metric
