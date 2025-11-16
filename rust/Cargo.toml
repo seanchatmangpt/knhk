@@ -20,6 +20,12 @@ members = [
     "knhk-latex-compiler",    # LaTeX to PDF compiler
     "knhk-latex",             # LaTeX CLI using clap-noun-verb
     "knhk-test-cache",        # Autonomic test cache daemon
+    "knhk-change-engine",     # Autonomous ontology evolution engine
+    "knhk-ontology",          # Σ Runtime - Immutable ontology snapshot management
+    "knhk-projections",       # Projection Compiler - Generates code, APIs, docs, telemetry from Σ
+    "knhk-promotion",         # Promotion Pipeline - Atomic snapshot switching in ≤10 ticks
+    "knhk-autonomous-loop",   # Autonomous Evolution Loop - Continuous ontology evolution engine
+    "knhk-autonomous-system", # Grand Integration - Complete autonomous ontology orchestrator (7 layers + 3 axes)
 ]
 
 [workspace.package]

@@ -1,0 +1,32 @@
+[package]
+name = "knhk-projections"
+version = "0.1.0"
+edition = "2021"
+authors = ["KNHK Team"]
+description = "Projection Compiler - Generates code, APIs, docs, and telemetry from Σ snapshots"
+license = "MIT"
+
+[dependencies]
+# Workspace dependencies
+knhk-ontology = { path = "../knhk-ontology" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Projection-specific dependencies
+serde_yaml = "0.9"
+parking_lot = "0.12"
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }
+tracing-subscriber = { workspace = true }
+tempfile = { workspace = true }
+proptest = { workspace = true }
+
+[lib]
+name = "knhk_projections"
+path = "src/lib.rs"

@@ -1,0 +1,58 @@
+[package]
+name = "knhk-autonomous-loop"
+version = "0.1.0"
+edition = "2021"
+authors = ["KNHK Contributors"]
+description = "Autonomous evolution loop - self-aware, self-healing continuous ontology evolution"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Core async runtime
+tokio = { version = "1.48", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_bytes = "0.11"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Tracing and observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+opentelemetry = "0.31"
+opentelemetry_sdk = "0.31"
+opentelemetry-otlp = "0.31"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+humantime-serde = "1.1"
+
+# Cryptography for audit trail
+sha2 = "0.10"
+ed25519-dalek = { version = "2.1", features = ["serde"] }
+rand = "0.8"
+hex = "0.4"
+
+# Concurrent data structures
+dashmap = "5.5"
+
+# Configuration
+config = "0.13"
+toml = "0.8"
+
+[dev-dependencies]
+mockall = "0.13"
+test-log = "0.2"
+tempfile = "3.14"
+tokio-test = "0.4"
+proptest = "1.4"
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[lib]
+name = "knhk_autonomous_loop"
+path = "src/lib.rs"

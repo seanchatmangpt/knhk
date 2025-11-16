@@ -1,0 +1,15 @@
+[package]
+name = "knhk-promotion-macros"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["KNHK Team"]
+description = "Procedural macros for KNHK promotion pipeline"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"

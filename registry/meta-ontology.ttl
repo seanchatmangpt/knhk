@@ -1,0 +1,1211 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix knhk: <https://knhk.io/ontology/> .
+@prefix knhk-meta: <https://knhk.io/meta/> .
+@prefix knhk-sector: <https://knhk.io/sector/> .
+@prefix knhk-projection: <https://knhk.io/projection/> .
+@prefix knhk-guard: <https://knhk.io/guard/> .
+@prefix knhk-invariant: <https://knhk.io/invariant/> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+# ============================================================================
+# SECTION 1: META-ONTOLOGY CORE
+# ============================================================================
+# This section defines the vocabulary for describing ontologies themselves.
+# These are the building blocks of Σ² - the ontology of ontologies.
+
+knhk-meta:MetaOntology a owl:Ontology ;
+    dc:title "KNHK Meta-Ontology (Σ²)" ;
+    dc:description "The constitutional framework for all KNHK ontologies. Defines what can exist, how it can change, and what invariants must hold." ;
+    owl:versionInfo "1.0.0" ;
+    dc:created "2025-11-16"^^xsd:date ;
+    dc:creator "KNHK System" ;
+    rdfs:comment "This is the foundation. Everything else derives from this." .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: OntologyClass
+# ----------------------------------------------------------------------------
+# Represents classes in domain ontologies (e.g., Contact, Ticket, Span)
+
+knhk-meta:OntologyClass a owl:Class ;
+    rdfs:label "Ontology Class" ;
+    rdfs:comment "A class definition in a domain ontology. This is a meta-class - instances are classes like Contact, Ticket, Span." ;
+    rdfs:subClassOf rdfs:Class .
+
+knhk-meta:domain a owl:ObjectProperty ;
+    rdfs:label "domain" ;
+    rdfs:comment "The conceptual domain this class belongs to (e.g., support, finance, observability)" ;
+    rdfs:domain knhk-meta:OntologyClass ;
+    rdfs:range knhk-meta:Sector .
+
+knhk-meta:cardinality a owl:DatatypeProperty ;
+    rdfs:label "cardinality" ;
+    rdfs:comment "Cardinality constraint: 1 (exactly one), * (zero or more), n..m (range)" ;
+    rdfs:domain knhk-meta:OntologyClass ;
+    rdfs:range xsd:string .
+
+knhk-meta:guard a owl:ObjectProperty ;
+    rdfs:label "guard" ;
+    rdfs:comment "Associated guard rules that must be satisfied" ;
+    rdfs:domain knhk-meta:OntologyClass ;
+    rdfs:range knhk-meta:Guard .
+
+knhk-meta:isAbstract a owl:DatatypeProperty ;
+    rdfs:label "is abstract" ;
+    rdfs:comment "Whether this class can be directly instantiated (false) or must be subclassed (true)" ;
+    rdfs:domain knhk-meta:OntologyClass ;
+    rdfs:range xsd:boolean .
+
+knhk-meta:superClass a owl:ObjectProperty ;
+    rdfs:label "super class" ;
+    rdfs:comment "Parent class in the inheritance hierarchy" ;
+    rdfs:domain knhk-meta:OntologyClass ;
+    rdfs:range knhk-meta:OntologyClass .
+
+knhk-meta:immutable a owl:DatatypeProperty ;
+    rdfs:label "immutable" ;
+    rdfs:comment "Whether instances of this class are immutable once created (e.g., receipts, snapshots)" ;
+    rdfs:domain knhk-meta:OntologyClass ;
+    rdfs:range xsd:boolean .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: OntologyProperty
+# ----------------------------------------------------------------------------
+# Represents properties/relations in domain ontologies
+
+knhk-meta:OntologyProperty a owl:Class ;
+    rdfs:label "Ontology Property" ;
+    rdfs:comment "A property/relation definition in a domain ontology" ;
+    rdfs:subClassOf rdf:Property .
+
+knhk-meta:propertyDomain a owl:ObjectProperty ;
+    rdfs:label "property domain" ;
+    rdfs:comment "The class this property applies to (from)" ;
+    rdfs:domain knhk-meta:OntologyProperty ;
+    rdfs:range knhk-meta:OntologyClass .
+
+knhk-meta:propertyRange a owl:ObjectProperty ;
+    rdfs:label "property range" ;
+    rdfs:comment "The class or datatype this property points to (to)" ;
+    rdfs:domain knhk-meta:OntologyProperty .
+
+knhk-meta:functional a owl:DatatypeProperty ;
+    rdfs:label "functional" ;
+    rdfs:comment "Whether this property is functional (at most one value per subject)" ;
+    rdfs:domain knhk-meta:OntologyProperty ;
+    rdfs:range xsd:boolean .
+
+knhk-meta:inverseFunctional a owl:DatatypeProperty ;
+    rdfs:label "inverse functional" ;
+    rdfs:comment "Whether this property is inverse functional (at most one subject per value)" ;
+    rdfs:domain knhk-meta:OntologyProperty ;
+    rdfs:range xsd:boolean .
+
+knhk-meta:inverseOf a owl:ObjectProperty ;
+    rdfs:label "inverse of" ;
+    rdfs:comment "The inverse property, if any (e.g., hasParent ⟷ hasChild)" ;
+    rdfs:domain knhk-meta:OntologyProperty ;
+    rdfs:range knhk-meta:OntologyProperty ;
+    owl:inverseOf knhk-meta:inverseOf .
+
+knhk-meta:transitive a owl:DatatypeProperty ;
+    rdfs:label "transitive" ;
+    rdfs:comment "Whether this property is transitive (if A→B and B→C then A→C)" ;
+    rdfs:domain knhk-meta:OntologyProperty ;
+    rdfs:range xsd:boolean .
+
+knhk-meta:symmetric a owl:DatatypeProperty ;
+    rdfs:label "symmetric" ;
+    rdfs:comment "Whether this property is symmetric (if A→B then B→A)" ;
+    rdfs:domain knhk-meta:OntologyProperty ;
+    rdfs:range xsd:boolean .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: Constraint
+# ----------------------------------------------------------------------------
+# Represents rules that must hold in domain ontologies
+
+knhk-meta:Constraint a owl:Class ;
+    rdfs:label "Constraint" ;
+    rdfs:comment "A rule or constraint that must be satisfied. Constraints are checked during validation." .
+
+knhk-meta:appliesTo a owl:ObjectProperty ;
+    rdfs:label "applies to" ;
+    rdfs:comment "What this constraint applies to (class, property, or individual)" ;
+    rdfs:domain knhk-meta:Constraint .
+
+knhk-meta:expression a owl:DatatypeProperty ;
+    rdfs:label "expression" ;
+    rdfs:comment "SPARQL query or logical expression defining the constraint" ;
+    rdfs:domain knhk-meta:Constraint ;
+    rdfs:range xsd:string .
+
+knhk-meta:severity a owl:DatatypeProperty ;
+    rdfs:label "severity" ;
+    rdfs:comment "Constraint severity: MUST (violation blocks), SHOULD (warning), CAN (informational)" ;
+    rdfs:domain knhk-meta:Constraint ;
+    rdfs:range xsd:string .
+
+knhk-meta:message a owl:DatatypeProperty ;
+    rdfs:label "message" ;
+    rdfs:comment "Human-readable message explaining constraint violation" ;
+    rdfs:domain knhk-meta:Constraint ;
+    rdfs:range xsd:string .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: Guard
+# ----------------------------------------------------------------------------
+# Represents safety invariants (type guards, cardinality guards, etc.)
+
+knhk-meta:Guard a owl:Class ;
+    rdfs:label "Guard" ;
+    rdfs:comment "A safety invariant that must be preserved. Guards protect against invalid states." .
+
+knhk-meta:guardType a owl:DatatypeProperty ;
+    rdfs:label "guard type" ;
+    rdfs:comment "Type of guard: type, cardinality, uniqueness, immutability, temporal, causality" ;
+    rdfs:domain knhk-meta:Guard ;
+    rdfs:range xsd:string .
+
+knhk-meta:checkedAt a owl:DatatypeProperty ;
+    rdfs:label "checked at" ;
+    rdfs:comment "When this guard is checked: compile-time, load-time, runtime" ;
+    rdfs:domain knhk-meta:Guard ;
+    rdfs:range xsd:string .
+
+knhk-meta:guardExpression a owl:DatatypeProperty ;
+    rdfs:label "guard expression" ;
+    rdfs:comment "Formal expression of the guard condition" ;
+    rdfs:domain knhk-meta:Guard ;
+    rdfs:range xsd:string .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: Sector
+# ----------------------------------------------------------------------------
+# Represents domain areas (support, finance, papers, observability, etc.)
+
+knhk-meta:Sector a owl:Class ;
+    rdfs:label "Sector" ;
+    rdfs:comment "A domain area with its own classes, properties, constraints, and SLO requirements" .
+
+knhk-meta:contains a owl:ObjectProperty ;
+    rdfs:label "contains" ;
+    rdfs:comment "What classes and properties are in this sector" ;
+    rdfs:domain knhk-meta:Sector .
+
+knhk-meta:sloLatency a owl:DatatypeProperty ;
+    rdfs:label "SLO latency" ;
+    rdfs:comment "Maximum allowed latency for operations in this sector (in ticks or milliseconds)" ;
+    rdfs:domain knhk-meta:Sector ;
+    rdfs:range xsd:integer .
+
+knhk-meta:sloAvailability a owl:DatatypeProperty ;
+    rdfs:label "SLO availability" ;
+    rdfs:comment "Required availability percentage (e.g., 99.9, 99.99)" ;
+    rdfs:domain knhk-meta:Sector ;
+    rdfs:range xsd:decimal .
+
+knhk-meta:sectorGuard a owl:ObjectProperty ;
+    rdfs:label "sector guard" ;
+    rdfs:comment "Guards that apply to all classes in this sector" ;
+    rdfs:domain knhk-meta:Sector ;
+    rdfs:range knhk-meta:Guard .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: Projection
+# ----------------------------------------------------------------------------
+# Represents how Σ → code/APIs/docs/telemetry
+
+knhk-meta:Projection a owl:Class ;
+    rdfs:label "Projection" ;
+    rdfs:comment "A transformation from ontology (Σ) to artifacts (code, APIs, docs, telemetry). All projections MUST be deterministic." .
+
+knhk-meta:source a owl:ObjectProperty ;
+    rdfs:label "source" ;
+    rdfs:comment "What part of Σ this projection operates on" ;
+    rdfs:domain knhk-meta:Projection .
+
+knhk-meta:target a owl:DatatypeProperty ;
+    rdfs:label "target" ;
+    rdfs:comment "What this projection generates: models, apis, hooks, papers, telemetry, docs" ;
+    rdfs:domain knhk-meta:Projection ;
+    rdfs:range xsd:string .
+
+knhk-meta:language a owl:DatatypeProperty ;
+    rdfs:label "language" ;
+    rdfs:comment "Target language or format: Rust, Python, OpenAPI, LaTeX, OTLP, etc." ;
+    rdfs:domain knhk-meta:Projection ;
+    rdfs:range xsd:string .
+
+knhk-meta:deterministic a owl:DatatypeProperty ;
+    rdfs:label "deterministic" ;
+    rdfs:comment "Whether this projection is deterministic (MUST be true). Same Σ + same params → same output bits." ;
+    rdfs:domain knhk-meta:Projection ;
+    rdfs:range xsd:boolean .
+
+knhk-meta:template a owl:DatatypeProperty ;
+    rdfs:label "template" ;
+    rdfs:comment "Template or algorithm describing the transformation" ;
+    rdfs:domain knhk-meta:Projection ;
+    rdfs:range xsd:string .
+
+knhk-meta:parameterizedBy a owl:DatatypeProperty ;
+    rdfs:label "parameterized by" ;
+    rdfs:comment "What parameters this projection takes (e.g., snapshotId, sector)" ;
+    rdfs:domain knhk-meta:Projection ;
+    rdfs:range xsd:string .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: Snapshot
+# ----------------------------------------------------------------------------
+# Represents immutable ontology versions
+
+knhk-meta:Snapshot a owl:Class ;
+    rdfs:label "Snapshot" ;
+    rdfs:comment "An immutable snapshot of the ontology at a point in time. Forms a DAG of versions." ;
+    rdfs:subClassOf prov:Entity .
+
+knhk-meta:snapshotId a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "snapshot ID" ;
+    rdfs:comment "Hash-based UUID uniquely identifying this snapshot (content-addressed)" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range xsd:string .
+
+knhk-meta:parentSnapshot a owl:ObjectProperty ;
+    rdfs:label "parent snapshot" ;
+    rdfs:comment "Immutable lineage - the snapshot this was derived from" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range knhk-meta:Snapshot .
+
+knhk-meta:deltaDescription a owl:DatatypeProperty ;
+    rdfs:label "delta description" ;
+    rdfs:comment "Human-readable description of what changed from parent" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range xsd:string .
+
+knhk-meta:timestamp a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "timestamp" ;
+    rdfs:comment "When this snapshot was created (ISO 8601)" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range xsd:dateTime .
+
+knhk-meta:validatedAgainstQ a owl:ObjectProperty ;
+    rdfs:label "validated against Q" ;
+    rdfs:comment "Reference to validation receipt proving this snapshot satisfies invariants Q" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range knhk-meta:ValidationReceipt .
+
+knhk-meta:backwardCompatible a owl:DatatypeProperty ;
+    rdfs:label "backward compatible" ;
+    rdfs:comment "Whether this snapshot is backward compatible with parent (no breaking changes)" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range xsd:boolean .
+
+knhk-meta:promotionDate a owl:DatatypeProperty ;
+    rdfs:label "promotion date" ;
+    rdfs:comment "When this snapshot was promoted to current/production (if applicable)" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range xsd:dateTime .
+
+knhk-meta:contentHash a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "content hash" ;
+    rdfs:comment "SHA-256 hash of canonical RDF serialization (for content addressing)" ;
+    rdfs:domain knhk-meta:Snapshot ;
+    rdfs:range xsd:string .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: DeltaSigma (ΔΣ)
+# ----------------------------------------------------------------------------
+# Represents changes to the ontology
+
+knhk-meta:DeltaSigma a owl:Class ;
+    rdfs:label "Delta Sigma (ΔΣ)" ;
+    rdfs:comment "A proposed or applied change to the ontology. Every change is a first-class RDF object." ;
+    rdfs:subClassOf prov:Activity .
+
+knhk-meta:baseSnapshot a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "base snapshot" ;
+    rdfs:comment "The snapshot this change is based on (parent)" ;
+    rdfs:domain knhk-meta:DeltaSigma ;
+    rdfs:range knhk-meta:Snapshot .
+
+knhk-meta:operation a owl:ObjectProperty ;
+    rdfs:label "operation" ;
+    rdfs:comment "Individual operations comprising this change (add/remove class/property/constraint/guard)" ;
+    rdfs:domain knhk-meta:DeltaSigma ;
+    rdfs:range knhk-meta:Operation .
+
+knhk-meta:proposedBy a owl:ObjectProperty ;
+    rdfs:label "proposed by" ;
+    rdfs:comment "Who or what proposed this change (pattern-miner, llm-refiner, policy-rule, human)" ;
+    rdfs:domain knhk-meta:DeltaSigma ;
+    rdfs:range prov:Agent .
+
+knhk-meta:validationStatus a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "validation status" ;
+    rdfs:comment "Status of validation: pending, approved, rejected" ;
+    rdfs:domain knhk-meta:DeltaSigma ;
+    rdfs:range xsd:string .
+
+knhk-meta:validationReceipt a owl:ObjectProperty ;
+    rdfs:label "validation receipt" ;
+    rdfs:comment "Links to ValidationReceipt with detailed validation results" ;
+    rdfs:domain knhk-meta:DeltaSigma ;
+    rdfs:range knhk-meta:ValidationReceipt .
+
+knhk-meta:resultingSnapshot a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "resulting snapshot" ;
+    rdfs:comment "The snapshot produced by applying this ΔΣ (if approved)" ;
+    rdfs:domain knhk-meta:DeltaSigma ;
+    rdfs:range knhk-meta:Snapshot .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: Operation
+# ----------------------------------------------------------------------------
+# Individual operations within a ΔΣ
+
+knhk-meta:Operation a owl:Class ;
+    rdfs:label "Operation" ;
+    rdfs:comment "A single operation within a change (add/remove class/property/constraint/guard)" .
+
+knhk-meta:operationType a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "operation type" ;
+    rdfs:comment "Type: AddClass, RemoveClass, AddProperty, RemoveProperty, RefineConstraint, RelaxConstraint, AddGuard, RemoveGuard" ;
+    rdfs:domain knhk-meta:Operation ;
+    rdfs:range xsd:string .
+
+knhk-meta:targetEntity a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "target entity" ;
+    rdfs:comment "What this operation targets (class, property, constraint, guard)" ;
+    rdfs:domain knhk-meta:Operation .
+
+knhk-meta:operationData a owl:DatatypeProperty ;
+    rdfs:label "operation data" ;
+    rdfs:comment "JSON or RDF data describing the operation details" ;
+    rdfs:domain knhk-meta:Operation ;
+    rdfs:range xsd:string .
+
+# ----------------------------------------------------------------------------
+# Core Meta-Class: ValidationReceipt
+# ----------------------------------------------------------------------------
+# Immutable proof that validation occurred
+
+knhk-meta:ValidationReceipt a owl:Class ;
+    rdfs:label "Validation Receipt" ;
+    rdfs:comment "Immutable cryptographic receipt proving validation was performed and results" .
+
+knhk-meta:receiptId a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "receipt ID" ;
+    rdfs:comment "Unique identifier for this receipt (UUID or hash)" ;
+    rdfs:domain knhk-meta:ValidationReceipt ;
+    rdfs:range xsd:string .
+
+knhk-meta:validatedEntity a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "validated entity" ;
+    rdfs:comment "What was validated (Snapshot or DeltaSigma)" ;
+    rdfs:domain knhk-meta:ValidationReceipt .
+
+knhk-meta:validationTime a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "validation time" ;
+    rdfs:comment "When validation was performed (ISO 8601)" ;
+    rdfs:domain knhk-meta:ValidationReceipt ;
+    rdfs:range xsd:dateTime .
+
+knhk-meta:invariantResults a owl:DatatypeProperty ;
+    rdfs:label "invariant results" ;
+    rdfs:comment "JSON array of results for each invariant in Q (pass/fail with details)" ;
+    rdfs:domain knhk-meta:ValidationReceipt ;
+    rdfs:range xsd:string .
+
+knhk-meta:overallResult a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "overall result" ;
+    rdfs:comment "Overall validation result: PASS, FAIL" ;
+    rdfs:domain knhk-meta:ValidationReceipt ;
+    rdfs:range xsd:string .
+
+knhk-meta:signature a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "signature" ;
+    rdfs:comment "Cryptographic signature of receipt (for immutability/auditability)" ;
+    rdfs:domain knhk-meta:ValidationReceipt ;
+    rdfs:range xsd:string .
+
+# ============================================================================
+# SECTION 2: INVARIANTS Q (THE CONSTITUTION)
+# ============================================================================
+# These are the hardcoded rules that EVERY ΔΣ must preserve.
+# Implemented as SHACL shapes for validation.
+
+# ----------------------------------------------------------------------------
+# Invariant Q1: Type Soundness
+# ----------------------------------------------------------------------------
+# All triples must conform to declared types
+
+knhk-invariant:Q1-TypeSoundness a sh:NodeShape ;
+    sh:targetClass knhk-meta:Snapshot ;
+    sh:name "Invariant Q1: Type Soundness" ;
+    sh:description "All triples in the ontology must conform to declared domain and range types" ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        sh:message "Type violation: {?s} {?p} {?o} violates declared types" ;
+        sh:select """
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?s ?p ?o WHERE {
+                ?s ?p ?o .
+                ?p rdfs:domain ?expectedDomain .
+                ?s rdf:type ?actualDomain .
+                FILTER NOT EXISTS {
+                    ?actualDomain rdfs:subClassOf* ?expectedDomain .
+                }
+            }
+        """ ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# Invariant Q2: No Retrocausation
+# ----------------------------------------------------------------------------
+# Later snapshots cannot affect earlier ones (immutability)
+
+knhk-invariant:Q2-NoRetrocausation a sh:NodeShape ;
+    sh:targetClass knhk-meta:Snapshot ;
+    sh:name "Invariant Q2: No Retrocausation" ;
+    sh:description "Snapshots are immutable. Later snapshots cannot modify earlier ones." ;
+    sh:severity sh:Violation ;
+    sh:property [
+        sh:path knhk-meta:snapshotId ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "Snapshot must have exactly one immutable snapshotId" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:timestamp ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "Snapshot must have exactly one immutable timestamp" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:contentHash ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-f0-9]{64}$" ;
+        sh:message "Snapshot must have exactly one SHA-256 content hash" ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# Invariant Q3: Guard Preservation
+# ----------------------------------------------------------------------------
+# All guards in Q must be preserved (cannot be removed by ΔΣ)
+
+knhk-invariant:Q3-GuardPreservation a sh:NodeShape ;
+    sh:targetClass knhk-meta:DeltaSigma ;
+    sh:name "Invariant Q3: Guard Preservation" ;
+    sh:description "Changes cannot remove or weaken guards defined in Q" ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        sh:message "Guard preservation violated: attempting to remove or weaken guard {?guard}" ;
+        sh:select """
+            PREFIX knhk-meta: <https://knhk.io/meta/>
+            PREFIX knhk-invariant: <https://knhk.io/invariant/>
+            SELECT ?guard WHERE {
+                ?deltaSigma a knhk-meta:DeltaSigma .
+                ?deltaSigma knhk-meta:operation ?op .
+                ?op knhk-meta:operationType "RemoveGuard" .
+                ?op knhk-meta:targetEntity ?guard .
+                ?guard knhk-meta:invariantGuard true .
+            }
+        """ ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# Invariant Q4: SLO Preservation
+# ----------------------------------------------------------------------------
+# Projections must meet performance budgets
+
+knhk-invariant:Q4-SLOPreservation a sh:NodeShape ;
+    sh:targetClass knhk-meta:Projection ;
+    sh:name "Invariant Q4: SLO Preservation" ;
+    sh:description "All projections must respect sector SLO constraints" ;
+    sh:severity sh:Violation ;
+    sh:message "Projection must have documented performance characteristics within sector SLO" .
+
+# ----------------------------------------------------------------------------
+# Invariant Q5: Determinism
+# ----------------------------------------------------------------------------
+# All projections Π(Σ, O) must be deterministic
+
+knhk-invariant:Q5-Determinism a sh:NodeShape ;
+    sh:targetClass knhk-meta:Projection ;
+    sh:name "Invariant Q5: Determinism" ;
+    sh:description "All projections must be deterministic: same Σ_id + same params → same output bits" ;
+    sh:severity sh:Violation ;
+    sh:property [
+        sh:path knhk-meta:deterministic ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:hasValue true ;
+        sh:message "All projections MUST be deterministic (knhk-meta:deterministic must be true)" ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# Invariant Q6: Acyclic Snapshot Lineage
+# ----------------------------------------------------------------------------
+# Snapshot lineage must form a DAG (no cycles)
+
+knhk-invariant:Q6-AcyclicLineage a sh:NodeShape ;
+    sh:targetClass knhk-meta:Snapshot ;
+    sh:name "Invariant Q6: Acyclic Snapshot Lineage" ;
+    sh:description "Snapshot parentSnapshot links must form a DAG (no cycles)" ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        sh:message "Cycle detected in snapshot lineage involving {?snapshot}" ;
+        sh:select """
+            PREFIX knhk-meta: <https://knhk.io/meta/>
+            SELECT ?snapshot WHERE {
+                ?snapshot a knhk-meta:Snapshot .
+                ?snapshot knhk-meta:parentSnapshot+ ?snapshot .
+            }
+        """ ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# Invariant Q7: Validated Changes Only
+# ----------------------------------------------------------------------------
+# Only validated ΔΣ can produce snapshots
+
+knhk-invariant:Q7-ValidatedChangesOnly a sh:NodeShape ;
+    sh:targetClass knhk-meta:Snapshot ;
+    sh:name "Invariant Q7: Validated Changes Only" ;
+    sh:description "Snapshots can only be created from validated ΔΣ" ;
+    sh:severity sh:Violation ;
+    sh:property [
+        sh:path knhk-meta:validatedAgainstQ ;
+        sh:minCount 1 ;
+        sh:message "Every snapshot must have a validation receipt" ;
+    ] .
+
+# ============================================================================
+# SECTION 3: SECTOR DEFINITIONS
+# ============================================================================
+# Pre-defined sectors with their own constraints and SLO requirements
+
+# ----------------------------------------------------------------------------
+# Sector: Support
+# ----------------------------------------------------------------------------
+
+knhk-sector:support a knhk-meta:Sector ;
+    rdfs:label "Support Sector" ;
+    rdfs:comment "Customer support domain: contacts, tickets, resolutions, SLA tracking" ;
+    knhk-meta:sloLatency 500 ; # 500ms max latency
+    knhk-meta:sloAvailability 99.9 ; # 99.9% availability
+    knhk-meta:sectorGuard knhk-guard:support-pii-masking ;
+    knhk-meta:sectorGuard knhk-guard:support-audit-logging ;
+    knhk-meta:sectorGuard knhk-guard:support-rate-limiting .
+
+knhk-guard:support-pii-masking a knhk-meta:Guard ;
+    rdfs:label "PII Masking Guard" ;
+    knhk-meta:guardType "privacy" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "All PII fields must be masked in logs and non-privileged APIs" .
+
+knhk-guard:support-audit-logging a knhk-meta:Guard ;
+    rdfs:label "Audit Logging Guard" ;
+    knhk-meta:guardType "compliance" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "All data access must be logged with user, timestamp, and operation" .
+
+knhk-guard:support-rate-limiting a knhk-meta:Guard ;
+    rdfs:label "Rate Limiting Guard" ;
+    knhk-meta:guardType "availability" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "API calls must be rate-limited to prevent abuse" .
+
+# ----------------------------------------------------------------------------
+# Sector: Finance
+# ----------------------------------------------------------------------------
+
+knhk-sector:finance a knhk-meta:Sector ;
+    rdfs:label "Finance Sector" ;
+    rdfs:comment "Financial transactions: accounts, ledgers, transactions, reconciliation" ;
+    knhk-meta:sloLatency 8 ; # ≤8 ticks (Chatman Constant)
+    knhk-meta:sloAvailability 99.99 ; # 99.99% availability
+    knhk-meta:sectorGuard knhk-guard:finance-no-retrocausation ;
+    knhk-meta:sectorGuard knhk-guard:finance-immutable-receipts ;
+    knhk-meta:sectorGuard knhk-guard:finance-double-entry ;
+    knhk-meta:sectorGuard knhk-guard:finance-compliance .
+
+knhk-guard:finance-no-retrocausation a knhk-meta:Guard ;
+    rdfs:label "No Retrocausation Guard" ;
+    knhk-meta:guardType "temporal" ;
+    knhk-meta:checkedAt "compile-time" ;
+    knhk-meta:guardExpression "Financial records cannot be modified after creation" ;
+    knhk-meta:invariantGuard true .
+
+knhk-guard:finance-immutable-receipts a knhk-meta:Guard ;
+    rdfs:label "Immutable Receipts Guard" ;
+    knhk-meta:guardType "immutability" ;
+    knhk-meta:checkedAt "compile-time" ;
+    knhk-meta:guardExpression "All transaction receipts must be immutable and content-addressed" ;
+    knhk-meta:invariantGuard true .
+
+knhk-guard:finance-double-entry a knhk-meta:Guard ;
+    rdfs:label "Double-Entry Bookkeeping Guard" ;
+    knhk-meta:guardType "consistency" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "All transactions must balance (sum of debits = sum of credits)" .
+
+knhk-guard:finance-compliance a knhk-meta:Guard ;
+    rdfs:label "Financial Compliance Guard" ;
+    knhk-meta:guardType "compliance" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "All operations must comply with SOX, PCI-DSS, and relevant regulations" .
+
+# ----------------------------------------------------------------------------
+# Sector: Papers (Scientific Publications)
+# ----------------------------------------------------------------------------
+
+knhk-sector:papers a knhk-meta:Sector ;
+    rdfs:label "Papers Sector" ;
+    rdfs:comment "Scientific papers and research: publications, citations, authors, venues" ;
+    knhk-meta:sloLatency 1000 ; # 1000ms max latency (search/analysis)
+    knhk-meta:sloAvailability 99.5 ; # 99.5% availability
+    knhk-meta:sectorGuard knhk-guard:papers-citation-integrity ;
+    knhk-meta:sectorGuard knhk-guard:papers-version-tracking .
+
+knhk-guard:papers-citation-integrity a knhk-meta:Guard ;
+    rdfs:label "Citation Integrity Guard" ;
+    knhk-meta:guardType "referential-integrity" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "Citations must reference existing papers with valid DOIs or identifiers" .
+
+knhk-guard:papers-version-tracking a knhk-meta:Guard ;
+    rdfs:label "Version Tracking Guard" ;
+    knhk-meta:guardType "versioning" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "Paper versions (preprint, published, errata) must be tracked immutably" .
+
+# ----------------------------------------------------------------------------
+# Sector: Observability (Telemetry)
+# ----------------------------------------------------------------------------
+
+knhk-sector:observability a knhk-meta:Sector ;
+    rdfs:label "Observability Sector" ;
+    rdfs:comment "OpenTelemetry: spans, metrics, logs, traces, resources" ;
+    knhk-meta:sloLatency 8 ; # ≤8 ticks for hot path
+    knhk-meta:sloAvailability 99.9 ; # 99.9% availability
+    knhk-meta:sectorGuard knhk-guard:otel-schema-compliance ;
+    knhk-meta:sectorGuard knhk-guard:otel-weaver-validation ;
+    knhk-meta:sectorGuard knhk-guard:otel-no-fake-green .
+
+knhk-guard:otel-schema-compliance a knhk-meta:Guard ;
+    rdfs:label "OTEL Schema Compliance Guard" ;
+    knhk-meta:guardType "schema" ;
+    knhk-meta:checkedAt "compile-time" ;
+    knhk-meta:guardExpression "All telemetry must conform to OpenTelemetry semantic conventions" ;
+    knhk-meta:invariantGuard true .
+
+knhk-guard:otel-weaver-validation a knhk-meta:Guard ;
+    rdfs:label "Weaver Validation Guard" ;
+    knhk-meta:guardType "validation" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "Runtime telemetry must pass weaver registry live-check" ;
+    knhk-meta:invariantGuard true .
+
+knhk-guard:otel-no-fake-green a knhk-meta:Guard ;
+    rdfs:label "No Fake-Green Tests Guard" ;
+    knhk-meta:guardType "validation" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "Tests must validate actual runtime behavior via Weaver, not just test code" ;
+    knhk-meta:invariantGuard true .
+
+# ----------------------------------------------------------------------------
+# Sector: Infrastructure
+# ----------------------------------------------------------------------------
+
+knhk-sector:infrastructure a knhk-meta:Sector ;
+    rdfs:label "Infrastructure Sector" ;
+    rdfs:comment "System infrastructure: deployments, containers, networks, storage" ;
+    knhk-meta:sloLatency 100 ; # 100ms max latency
+    knhk-meta:sloAvailability 99.99 ; # 99.99% availability
+    knhk-meta:sectorGuard knhk-guard:infra-idempotency ;
+    knhk-meta:sectorGuard knhk-guard:infra-declarative .
+
+knhk-guard:infra-idempotency a knhk-meta:Guard ;
+    rdfs:label "Idempotency Guard" ;
+    knhk-meta:guardType "operational" ;
+    knhk-meta:checkedAt "runtime" ;
+    knhk-meta:guardExpression "Infrastructure operations must be idempotent (apply multiple times = apply once)" .
+
+knhk-guard:infra-declarative a knhk-meta:Guard ;
+    rdfs:label "Declarative Infrastructure Guard" ;
+    knhk-meta:guardType "design" ;
+    knhk-meta:checkedAt "compile-time" ;
+    knhk-meta:guardExpression "Infrastructure must be declarative (what, not how)" .
+
+# ============================================================================
+# SECTION 4: PROJECTION TEMPLATES
+# ============================================================================
+# How Σ maps to code, APIs, docs, telemetry
+
+# ----------------------------------------------------------------------------
+# Projection: Rust Models
+# ----------------------------------------------------------------------------
+
+knhk-projection:rust-models a knhk-meta:Projection ;
+    rdfs:label "Rust Models Projection" ;
+    rdfs:comment "Generates Rust structs/enums from ontology classes" ;
+    knhk-meta:source knhk-meta:OntologyClass ;
+    knhk-meta:target "models" ;
+    knhk-meta:language "Rust" ;
+    knhk-meta:deterministic true ;
+    knhk-meta:parameterizedBy "snapshotId, sector, deriveMacros" ;
+    knhk-meta:template """
+        For each OntologyClass C in sector S from snapshot Σ_id:
+          1. Generate: #[derive(Debug, Clone, Serialize, Deserialize)]
+          2. If immutable: add #[readonly::make]
+          3. Generate: pub struct {C.name} {
+               for each property P where domain=C:
+                 {P.name}: {map_type(P.range)},
+             }
+          4. If class has guards, generate: impl Validate for {C.name}
+          5. Hash: SHA-256(canonical Rust source)
+
+        Determinism: Same Σ_id + sector → same source code hash
+    """ .
+
+# ----------------------------------------------------------------------------
+# Projection: OpenAPI Specification
+# ----------------------------------------------------------------------------
+
+knhk-projection:openapi-spec a knhk-meta:Projection ;
+    rdfs:label "OpenAPI Specification Projection" ;
+    rdfs:comment "Generates OpenAPI 3.1 spec from ontology classes and properties" ;
+    knhk-meta:source knhk-meta:OntologyClass ;
+    knhk-meta:target "apis" ;
+    knhk-meta:language "OpenAPI" ;
+    knhk-meta:deterministic true ;
+    knhk-meta:parameterizedBy "snapshotId, sector, apiVersion" ;
+    knhk-meta:template """
+        For each OntologyClass C in sector S from snapshot Σ_id:
+          1. Generate schema:
+             components.schemas.{C.name}:
+               type: object
+               properties: {map each property P to JSON schema}
+               required: [functional properties]
+
+          2. Generate paths:
+             /api/v{version}/{plural(C.name)}:
+               get: list resources
+               post: create resource
+             /api/v{version}/{plural(C.name)}/{id}:
+               get: read resource
+               put: update resource
+               delete: delete resource
+
+          3. Hash: SHA-256(canonical OpenAPI YAML)
+
+        Determinism: Same Σ_id + sector + version → same OpenAPI hash
+    """ .
+
+# ----------------------------------------------------------------------------
+# Projection: Hooks (Pre/Post Operation)
+# ----------------------------------------------------------------------------
+
+knhk-projection:hooks a knhk-meta:Projection ;
+    rdfs:label "Hooks Projection" ;
+    rdfs:comment "Generates pre/post operation hooks from guards and constraints" ;
+    knhk-meta:source knhk-meta:Guard ;
+    knhk-meta:target "hooks" ;
+    knhk-meta:language "Rust" ;
+    knhk-meta:deterministic true ;
+    knhk-meta:parameterizedBy "snapshotId, sector, operation" ;
+    knhk-meta:template """
+        For each Guard G in sector S from snapshot Σ_id:
+          1. If checkedAt = compile-time:
+               Generate trait bound or type constraint
+          2. If checkedAt = runtime:
+               Generate hook function:
+                 pub fn check_{G.name}(ctx: &Context) -> Result<(), GuardError> {
+                   // evaluate G.guardExpression
+                 }
+          3. Register hook in appropriate lifecycle (pre/post operation)
+          4. Hash: SHA-256(canonical hook source)
+
+        Determinism: Same Σ_id + sector + operation → same hook code hash
+    """ .
+
+# ----------------------------------------------------------------------------
+# Projection: LaTeX Papers
+# ----------------------------------------------------------------------------
+
+knhk-projection:latex-papers a knhk-meta:Projection ;
+    rdfs:label "LaTeX Papers Projection" ;
+    rdfs:comment "Generates LaTeX documentation/papers from ontology documentation" ;
+    knhk-meta:source knhk-meta:Sector ;
+    knhk-meta:target "papers" ;
+    knhk-meta:language "LaTeX" ;
+    knhk-meta:deterministic true ;
+    knhk-meta:parameterizedBy "snapshotId, sector, template" ;
+    knhk-meta:template """
+        For sector S from snapshot Σ_id:
+          1. Generate preamble with metadata
+          2. For each class C in S:
+               \\section{{C.name}}
+               \\subsection{Description}
+               {C.comment}
+               \\subsection{Properties}
+               \\begin{itemize}
+                 for each property P: \\item {P.name}: {P.comment}
+               \\end{itemize}
+          3. Generate appendix with guards and constraints
+          4. Hash: SHA-256(canonical LaTeX source)
+
+        Determinism: Same Σ_id + sector + template → same LaTeX hash
+    """ .
+
+# ----------------------------------------------------------------------------
+# Projection: OpenTelemetry Schema
+# ----------------------------------------------------------------------------
+
+knhk-projection:otel-schema a knhk-meta:Projection ;
+    rdfs:label "OpenTelemetry Schema Projection" ;
+    rdfs:comment "Generates OTEL schema YAML from observability sector" ;
+    knhk-meta:source knhk-meta:OntologyClass ;
+    knhk-meta:target "telemetry" ;
+    knhk-meta:language "OTLP" ;
+    knhk-meta:deterministic true ;
+    knhk-meta:parameterizedBy "snapshotId, sector" ;
+    knhk-meta:template """
+        For each OntologyClass C in observability sector from snapshot Σ_id:
+          1. Generate semantic convention:
+             groups:
+               - id: {C.name}
+                 type: {map to span|metric|log}
+                 brief: {C.comment}
+                 attributes:
+                   for each property P:
+                     - id: {P.name}
+                       type: {map_otel_type(P.range)}
+                       requirement_level: {functional ? required : recommended}
+                       brief: {P.comment}
+          2. Hash: SHA-256(canonical YAML)
+
+        Determinism: Same Σ_id → same OTEL schema hash
+        Validation: Output must pass weaver registry check
+    """ .
+
+# ----------------------------------------------------------------------------
+# Projection: Documentation (Markdown)
+# ----------------------------------------------------------------------------
+
+knhk-projection:markdown-docs a knhk-meta:Projection ;
+    rdfs:label "Markdown Documentation Projection" ;
+    rdfs:comment "Generates Markdown documentation from ontology" ;
+    knhk-meta:source knhk-meta:Sector ;
+    knhk-meta:target "docs" ;
+    knhk-meta:language "Markdown" ;
+    knhk-meta:deterministic true ;
+    knhk-meta:parameterizedBy "snapshotId, sector, style" ;
+    knhk-meta:template """
+        For sector S from snapshot Σ_id:
+          1. Generate # {S.name} Sector
+          2. Generate ## Overview with S.comment
+          3. Generate ## Classes section
+          4. For each class C:
+               ### {C.name}
+               {C.comment}
+               **Properties:**
+               - {list all properties with types and descriptions}
+          5. Generate ## Guards section
+          6. Generate ## SLO Requirements
+          7. Hash: SHA-256(canonical markdown)
+
+        Determinism: Same Σ_id + sector + style → same markdown hash
+    """ .
+
+# ============================================================================
+# SECTION 5: VERSION AND COMPATIBILITY RULES
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Backward Compatibility Definition
+# ----------------------------------------------------------------------------
+
+knhk-meta:BackwardCompatibilityRules a sh:NodeShape ;
+    sh:targetClass knhk-meta:DeltaSigma ;
+    rdfs:label "Backward Compatibility Rules" ;
+    rdfs:comment "Defines what changes are backward compatible" ;
+    sh:description """
+        A change ΔΣ is backward compatible if:
+        1. No classes are removed
+        2. No required properties are removed
+        3. No property ranges are narrowed
+        4. No constraints are strengthened (refinement only)
+        5. No guards are removed or weakened
+
+        Allowed backward-compatible changes:
+        - Add new classes
+        - Add new optional properties
+        - Widen property ranges (e.g., xsd:integer → xsd:decimal)
+        - Relax constraints (e.g., MUST → SHOULD)
+        - Add new guards (strengthening)
+        - Add documentation/comments
+    """ .
+
+# ----------------------------------------------------------------------------
+# Snapshot Promotion Rules
+# ----------------------------------------------------------------------------
+
+knhk-meta:SnapshotPromotionRules a sh:NodeShape ;
+    sh:targetClass knhk-meta:Snapshot ;
+    rdfs:label "Snapshot Promotion Rules" ;
+    rdfs:comment "Defines when a snapshot can be promoted to current/production" ;
+    sh:description """
+        A snapshot can be promoted to current if:
+        1. It has passed all validation (has validationReceipt with PASS)
+        2. All projections have been generated successfully
+        3. All sector SLOs are satisfied
+        4. If in production, it must be backward compatible OR
+           have explicit migration plan
+        5. All automated tests pass (unit, integration, performance)
+        6. Weaver validation passes (for observability sector)
+    """ .
+
+# ============================================================================
+# SECTION 6: CHANGE SCHEMA (ΔΣ Operations)
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Operation Types
+# ----------------------------------------------------------------------------
+
+knhk-meta:AddClass a knhk-meta:Operation ;
+    rdfs:label "Add Class" ;
+    knhk-meta:operationType "AddClass" ;
+    rdfs:comment "Adds a new class to the ontology. Always backward compatible." .
+
+knhk-meta:RemoveClass a knhk-meta:Operation ;
+    rdfs:label "Remove Class" ;
+    knhk-meta:operationType "RemoveClass" ;
+    rdfs:comment "Removes a class from the ontology. BREAKING CHANGE." .
+
+knhk-meta:AddProperty a knhk-meta:Operation ;
+    rdfs:label "Add Property" ;
+    knhk-meta:operationType "AddProperty" ;
+    rdfs:comment "Adds a new property to a class. Backward compatible if optional." .
+
+knhk-meta:RemoveProperty a knhk-meta:Operation ;
+    rdfs:label "Remove Property" ;
+    knhk-meta:operationType "RemoveProperty" ;
+    rdfs:comment "Removes a property from a class. BREAKING CHANGE if required." .
+
+knhk-meta:RefineConstraint a knhk-meta:Operation ;
+    rdfs:label "Refine Constraint" ;
+    knhk-meta:operationType "RefineConstraint" ;
+    rdfs:comment "Makes a constraint stricter (e.g., SHOULD → MUST). BREAKING CHANGE." .
+
+knhk-meta:RelaxConstraint a knhk-meta:Operation ;
+    rdfs:label "Relax Constraint" ;
+    knhk-meta:operationType "RelaxConstraint" ;
+    rdfs:comment "Makes a constraint looser (e.g., MUST → SHOULD). Backward compatible." .
+
+knhk-meta:AddGuard a knhk-meta:Operation ;
+    rdfs:label "Add Guard" ;
+    knhk-meta:operationType "AddGuard" ;
+    rdfs:comment "Adds a new guard. Backward compatible (strengthens safety)." .
+
+knhk-meta:RemoveGuard a knhk-meta:Operation ;
+    rdfs:label "Remove Guard" ;
+    knhk-meta:operationType "RemoveGuard" ;
+    rdfs:comment "Removes a guard. FORBIDDEN for invariant guards. BREAKING CHANGE otherwise." .
+
+# ============================================================================
+# SECTION 7: VALIDATION RULES
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Meta-Validation: Meta-Ontology Self-Consistency
+# ----------------------------------------------------------------------------
+
+knhk-meta:MetaOntologySelfConsistency a sh:NodeShape ;
+    sh:targetClass knhk-meta:OntologyClass ;
+    rdfs:label "Meta-Ontology Self-Consistency" ;
+    rdfs:comment "The meta-ontology must be self-consistent and complete" ;
+    sh:description """
+        The meta-ontology Σ² must satisfy:
+        1. All meta-classes are properly defined
+        2. All invariants Q are expressible in SHACL/SPARQL
+        3. All projections are deterministic
+        4. All sectors have SLO constraints
+        5. All guards have clear semantics
+        6. The meta-ontology itself validates against these rules
+    """ .
+
+# ----------------------------------------------------------------------------
+# Snapshot Validation Requirements
+# ----------------------------------------------------------------------------
+
+knhk-meta:SnapshotValidationShape a sh:NodeShape ;
+    sh:targetClass knhk-meta:Snapshot ;
+    rdfs:label "Snapshot Validation Shape" ;
+    rdfs:comment "All snapshots must satisfy these constraints" ;
+    sh:property [
+        sh:path knhk-meta:snapshotId ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" ;
+        sh:message "Snapshot must have valid UUID" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:contentHash ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-f0-9]{64}$" ;
+        sh:message "Snapshot must have SHA-256 content hash" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:timestamp ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:validatedAgainstQ ;
+        sh:minCount 1 ;
+        sh:class knhk-meta:ValidationReceipt ;
+        sh:message "Snapshot must have validation receipt" ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# DeltaSigma Validation Requirements
+# ----------------------------------------------------------------------------
+
+knhk-meta:DeltaSigmaValidationShape a sh:NodeShape ;
+    sh:targetClass knhk-meta:DeltaSigma ;
+    rdfs:label "DeltaSigma Validation Shape" ;
+    rdfs:comment "All changes must satisfy these constraints" ;
+    sh:property [
+        sh:path knhk-meta:baseSnapshot ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class knhk-meta:Snapshot ;
+        sh:message "DeltaSigma must have exactly one base snapshot" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:operation ;
+        sh:minCount 1 ;
+        sh:class knhk-meta:Operation ;
+        sh:message "DeltaSigma must have at least one operation" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:validationStatus ;
+        sh:in ( "pending" "approved" "rejected" ) ;
+        sh:message "DeltaSigma must have valid status: pending, approved, or rejected" ;
+    ] .
+
+# ----------------------------------------------------------------------------
+# Projection Validation Requirements
+# ----------------------------------------------------------------------------
+
+knhk-meta:ProjectionValidationShape a sh:NodeShape ;
+    sh:targetClass knhk-meta:Projection ;
+    rdfs:label "Projection Validation Shape" ;
+    rdfs:comment "All projections must satisfy these constraints" ;
+    sh:property [
+        sh:path knhk-meta:deterministic ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:hasValue true ;
+        sh:message "All projections MUST be deterministic" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:target ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "models" "apis" "hooks" "papers" "telemetry" "docs" ) ;
+        sh:message "Projection must have valid target" ;
+    ] ;
+    sh:property [
+        sh:path knhk-meta:language ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Projection must specify target language/format" ;
+    ] .
+
+# ============================================================================
+# SECTION 8: PROVENANCE AND LINEAGE
+# ============================================================================
+
+# Snapshots and DeltaSigmas are PROV entities/activities for full auditability
+
+knhk-meta:Snapshot rdfs:subClassOf prov:Entity .
+knhk-meta:DeltaSigma rdfs:subClassOf prov:Activity .
+
+knhk-meta:resultingSnapshot rdfs:subPropertyOf prov:generated .
+knhk-meta:baseSnapshot rdfs:subPropertyOf prov:used .
+knhk-meta:proposedBy rdfs:subPropertyOf prov:wasAssociatedWith .
+
+# ============================================================================
+# SECTION 9: EXAMPLE INSTANCE DATA (For Reference)
+# ============================================================================
+# This shows how the meta-ontology would be used in practice
+
+# Example Snapshot
+knhk-meta:Snapshot-Example a knhk-meta:Snapshot ;
+    knhk-meta:snapshotId "550e8400-e29b-41d4-a716-446655440000" ;
+    knhk-meta:contentHash "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ;
+    knhk-meta:timestamp "2025-11-16T00:00:00Z"^^xsd:dateTime ;
+    knhk-meta:parentSnapshot knhk-meta:Snapshot-Genesis ;
+    knhk-meta:deltaDescription "Added support sector classes: Contact, Ticket, Resolution" ;
+    knhk-meta:backwardCompatible true ;
+    knhk-meta:validatedAgainstQ knhk-meta:ValidationReceipt-Example ;
+    rdfs:comment "Example snapshot showing structure. Real snapshots contain full ontology RDF." .
+
+# Example ValidationReceipt
+knhk-meta:ValidationReceipt-Example a knhk-meta:ValidationReceipt ;
+    knhk-meta:receiptId "receipt-2025-11-16-001" ;
+    knhk-meta:validatedEntity knhk-meta:Snapshot-Example ;
+    knhk-meta:validationTime "2025-11-16T00:01:00Z"^^xsd:dateTime ;
+    knhk-meta:invariantResults """[
+        {"invariant": "Q1-TypeSoundness", "result": "PASS"},
+        {"invariant": "Q2-NoRetrocausation", "result": "PASS"},
+        {"invariant": "Q3-GuardPreservation", "result": "PASS"},
+        {"invariant": "Q4-SLOPreservation", "result": "PASS"},
+        {"invariant": "Q5-Determinism", "result": "PASS"}
+    ]""" ;
+    knhk-meta:overallResult "PASS" ;
+    knhk-meta:signature "sha256:1234567890abcdef..." ;
+    rdfs:comment "Example validation receipt. Real receipts include full validation logs." .
+
+# ============================================================================
+# END OF META-ONTOLOGY
+# ============================================================================
+# This meta-ontology (Σ²) is the constitution for all KNHK ontologies.
+# Everything else - domain ontologies, code, APIs, docs, telemetry - derives
+# from this foundation through deterministic projections.
+#
+# Key properties:
+# 1. Pure declarative RDF/SHACL (no procedural logic)
+# 2. All invariants Q are explicit and validatable
+# 3. All projections are deterministic
+# 4. All changes are versioned and tracked
+# 5. Full provenance and auditability
+# 6. Sector-aware with SLO constraints
+# 7. Guard-based safety guarantees
+#
+# Usage:
+# - Load this file into any RDF triple store
+# - Use SHACL validation to check snapshots against Q
+# - Use projection templates to generate code/APIs/docs
+# - Track all changes through DeltaSigma objects
+# - Maintain immutable audit trail through snapshots
+#
+# This is not code. This is knowledge. The knowledge IS the system.

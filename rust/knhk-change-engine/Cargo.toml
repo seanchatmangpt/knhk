@@ -1,0 +1,59 @@
+[package]
+name = "knhk-change-engine"
+version = "1.0.0"
+edition = "2021"
+description = "Autonomous ontology evolution engine - detects patterns and proposes schema changes"
+repository = "https://github.com/yourusername/knhk"
+homepage = "https://github.com/yourusername/knhk"
+documentation = "https://docs.rs/knhk-change-engine"
+keywords = ["ontology", "evolution", "schema", "automation", "llm"]
+categories = ["development-tools", "data-structures"]
+license = "MIT"
+authors = ["KNHK Team"]
+
+[lib]
+name = "knhk_change_engine"
+path = "src/lib.rs"
+
+[dependencies]
+# KNHK infrastructure
+knhk-otel = { workspace = true }
+knhk-lockchain = { workspace = true }
+knhk-validation = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Collections & utilities
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde"] }
+hashbrown = { workspace = true }
+parking_lot = "0.12"
+dashmap = "5.5"
+
+# Tracing & observability
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+# HTTP client (for LLM API calls)
+reqwest = { workspace = true, features = ["json"] }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+proptest = { workspace = true }
+tempfile = { workspace = true }
+criterion = { workspace = true, features = ["html_reports"] }
+
+[features]
+default = []
+llm = [] # Enable LLM-based proposal generation

@@ -1,0 +1,54 @@
+[package]
+name = "knhk-autonomous-system"
+version = "0.1.0"
+edition = "2021"
+authors = ["KNHK Team"]
+description = "Complete autonomous ontology orchestrator - integrates all 7 layers with τ, μ, Γ axis verification"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Internal crates - layers 1-5 (working) and layer 6 (stubbed due to type issues)
+knhk-ontology = { path = "../knhk-ontology" }
+knhk-change-engine = { path = "../knhk-change-engine" }
+knhk-projections = { path = "../knhk-projections" }
+knhk-promotion = { path = "../knhk-promotion" }
+# knhk-autonomous-loop = { path = "../knhk-autonomous-loop" }  # Temporarily disabled due to type incompatibilities
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Telemetry (OpenTelemetry)
+opentelemetry = "0.21"
+opentelemetry_sdk = "0.21"
+opentelemetry-otlp = "0.14"
+opentelemetry-stdout = "0.2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-opentelemetry = "0.22"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Cryptography for axis verification
+sha2 = "0.10"
+hex = "0.4"
+
+# Time
+chrono = "0.4"
+
+# Sync primitives
+parking_lot = "0.12"
+
+[dev-dependencies]
+criterion = "0.5"
+tempfile = "3.8"
+
+[features]
+default = []
+otel-stdout = [] # Emit OTEL to stdout for testing
+otel-otlp = [] # Emit OTEL via OTLP
