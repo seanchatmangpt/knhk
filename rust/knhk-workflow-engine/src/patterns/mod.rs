@@ -6,9 +6,11 @@ pub mod advanced_control;
 pub mod basic;
 pub mod cancellation;
 pub mod combinatorics;
+pub mod combinatorics_advanced;
 pub mod joins;
 pub mod mi;
 pub mod multiple_instance;
+pub mod permutation_engine;
 pub mod permutations;
 pub mod rdf;
 pub mod state_based;
@@ -332,8 +334,25 @@ pub fn register_all_patterns(registry: &mut PatternRegistry) {
 pub use rdf::{
     deserialize_context_from_rdf, deserialize_metadata_from_rdf, deserialize_result_from_rdf,
 };
+// Export combinatorics module (new advanced implementation)
+pub use combinatorics::{
+    CompatibilityMatrix as PatternCompatibilityMatrix,
+    JoinType as CombinatoricsJoinType,
+    PatternCombination,
+    PatternCombinationOptimizer as CombinatoricsOptimizer,
+    PatternModifiers,
+    PatternPermutationGenerator as CombinatoricsGenerator,
+    PatternPermutationStats,
+    SplitType as CombinatoricsSplitType,
+};
+// Export existing permutations module (check actual exports)
+pub use permutations::{
+    CombinationStrategy, PatternCompatibility, PatternExecutionPlan, PatternPermutationGenerator,
+    PatternPermutationIterator,
+};
 pub use rdf::{
     get_all_pattern_metadata, load_all_metadata_from_rdf, serialize_context_to_rdf,
     serialize_metadata_to_rdf, serialize_result_to_rdf, PatternMetadata, WORKFLOW_PATTERN_NS,
     YAWL_NS,
 };
+pub use validation::PatternValidator;

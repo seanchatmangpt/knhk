@@ -100,7 +100,7 @@ impl SeparationOfDuties {
                     resource_id: resource_id.clone(),
                     conflict_id: format!("{}<->{}", task1, task2),
                     message: format!(
-                        "Resource {} cannot perform both '{}' and '{}' (SOD violation)",
+                        "Resource {:?} cannot perform both '{}' and '{}' (SOD violation)",
                         resource_id, task1, task2
                     ),
                 });
@@ -118,7 +118,7 @@ impl SeparationOfDuties {
                     resource_id: resource_id.clone(),
                     conflict_id: format!("{}<->{}", role1, role2),
                     message: format!(
-                        "Resource {} cannot have both roles '{}' and '{}' (Segregation violation)",
+                        "Resource {:?} cannot have both roles '{}' and '{}' (Segregation violation)",
                         resource_id, role1, role2
                     ),
                 });
