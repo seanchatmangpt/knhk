@@ -2,7 +2,7 @@
 // Implements defense-in-depth constraint enforcement for autonomous evolution
 
 use crate::doctrine::{DoctrineRule, DoctrineStore};
-use crate::governance::{Guard, GuardProfile};
+use crate::governance::Guard;
 use crate::invariants::HardInvariants;
 use crate::observation::DetectedPattern;
 use crate::receipt::{Receipt, ReceiptStore, ReceiptOperation, ReceiptOutcome};
@@ -72,6 +72,7 @@ impl std::fmt::Display for Sector {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProposalRequest {
     pub pattern: DetectedPattern,
+    pub sector: Sector,
     pub current_snapshot_id: String,
     pub doctrines: Vec<DoctrineRule>,
     pub invariants: HardInvariants,
@@ -145,6 +146,7 @@ pub struct Proposal {
     pub id: String,
     pub pattern_id: String,
     pub pattern: DetectedPattern,        // Original pattern that triggered this proposal
+    pub sector: Sector,                  // Sector context for this proposal
     pub llm_prompt: String,              // Full prompt sent to LLM
     pub llm_response: String,            // Raw LLM output
     pub delta_sigma: SigmaDiff,          // Parsed ontology change
@@ -331,7 +333,7 @@ impl OllamaLLMProposer {
         }
     }
 
-    #[tracing::instrument(skip(self, pattern), fields(pattern_id = %pattern.id))]
+    #[tracing::instrument(skip(self, pattern), fields(pattern_name = %pattern.name))]
     async fn generate_proposal_internal(
         &self,
         pattern: &DetectedPattern,
@@ -342,15 +344,23 @@ impl OllamaLLMProposer {
         // Build request
         let request = ProposalRequest {
             pattern: pattern.clone(),
-            current_snapshot_id: "current".to_string(), // TODO: Get from snapshot manager
+            sector: pattern.sector.clone(),
+            current_snapshot_id: format!(
+                "snapshot-{}",
+                pattern.timestamp.timestamp_millis()
+            ),
             doctrines: doctrines.to_vec(),
             invariants: invariants.clone(),
             guard_profile: guards.clone(),
-            performance_budget: PerformanceBudget::new(8, 0), // TODO: Calculate from current state
+            performance_budget: PerformanceBudget::new(
+                guards.max_run_len as u32,
+                (guards.max_run_len as u32) / 2
+            ),
         };
 
         // Generate constraint-aware prompt
-        let prompt = self.prompt_engine.build_full_prompt(&request)?;
+        let prompt = self.prompt_engine.build_full_prompt(&request)
+            .map_err(|e| ProposerError::Internal(e.to_string()))?;
 
         // Check token budget
         self.cost_controller.write().await
@@ -419,17 +429,52 @@ impl OllamaLLMProposer {
             id: format!("prop-{}", uuid::Uuid::new_v4()),
             pattern_id: pattern.id.clone(),
             pattern: pattern.clone(),
-            llm_prompt: String::new(), // TODO: Store actual prompt
+            sector: request.sector.clone(),
+            llm_prompt: prompt.clone(),
             llm_response: response.to_string(),
-            delta_sigma,
+            delta_sigma: delta_sigma.clone(),
             reasoning,
             confidence,
             estimated_ticks,
             doctrines_satisfied,
             invariants_satisfied,
-            can_rollback: true, // TODO: Analyze rollback capability
+            can_rollback: Self::analyze_rollback_capability(&delta_sigma),
             timestamp: Utc::now(),
         })
+    }
+
+    fn analyze_rollback_capability(delta: &SigmaDiff) -> bool {
+        // A change is reversible if:
+        // 1. It only adds elements (no removals) - always reversible
+        // 2. It modifies shapes but doesn't remove constraints - reversible
+        // 3. It removes elements - may not be reversible if data exists
+
+        // If we're only adding things, always safe to rollback
+        if delta.removed_classes.is_empty() && delta.removed_properties.is_empty() {
+            return true;
+        }
+
+        // If we're removing classes or properties, rollback is risky
+        if !delta.removed_classes.is_empty() || !delta.removed_properties.is_empty() {
+            tracing::warn!(
+                "Rollback analysis: proposal removes {} classes and {} properties - may not be reversible",
+                delta.removed_classes.len(),
+                delta.removed_properties.len()
+            );
+            return false;
+        }
+
+        // Shape modifications are usually reversible
+        for shape_mod in &delta.modified_shapes {
+            if !shape_mod.removed_constraints.is_empty() {
+                tracing::debug!(
+                    "Rollback analysis: shape {} removes constraints - may affect data validity",
+                    shape_mod.uri
+                );
+            }
+        }
+
+        true
     }
 
     async fn validate_all_constraints(
@@ -515,8 +560,18 @@ impl LLMProposer for OllamaLLMProposer {
     }
 
     fn get_examples(&self, sector: &Sector, count: usize) -> Vec<FewShotExample> {
-        // TODO: Implement blocking lock or async version
-        Vec::new()
+        match self.learning_system.try_read() {
+            Some(learning) => {
+                learning.get_successful_examples(sector, count)
+                    .unwrap_or_else(|_| Vec::new())
+            }
+            None => {
+                tracing::warn!(
+                    "Failed to acquire learning system lock for examples, returning empty"
+                );
+                Vec::new()
+            }
+        }
     }
 }
 

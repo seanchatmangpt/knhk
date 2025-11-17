@@ -54,7 +54,7 @@ impl PromptEngine {
         let mut sections = Vec::new();
 
         // System prompt (role definition)
-        sections.push(self.build_system_prompt(&request.pattern.sector)?);
+        sections.push(self.build_system_prompt(&request.sector)?);
 
         // Constraint section (Q1-Q5, doctrines, guards)
         sections.push(self.build_constraint_section(request)?);
@@ -69,7 +69,7 @@ impl PromptEngine {
         sections.push(self.build_output_schema()?);
 
         // Few-shot examples
-        sections.push(self.build_few_shot_section(&request.pattern.sector)?);
+        sections.push(self.build_few_shot_section(&request.sector)?);
 
         Ok(sections.join("\n\n"))
     }
@@ -107,7 +107,7 @@ CRITICAL RULES:
         section.push_str("\n");
 
         // 2. Sector Doctrines
-        section.push_str(&format!("2. Sector Doctrines ({}):\n", request.pattern.sector));
+        section.push_str(&format!("2. Sector Doctrines ({}):\n", request.sector));
         if request.doctrines.is_empty() {
             section.push_str("   - No sector-specific doctrines\n");
         } else {
@@ -156,10 +156,12 @@ CRITICAL RULES:
    - Q4: SLO Compliance - Hot path execution time must be ≤8 CPU ticks
    - Q5: Performance Bounds - No performance regression >10% on existing benchmarks
    Current status: {}"#,
-            if invariants.all_preserved() {
-                "✅ All invariants preserved"
-            } else {
-                &format!("⚠️ Violations: {:?}", invariants.which_violated())
+            {
+                if invariants.all_preserved() {
+                    "✅ All invariants preserved".to_string()
+                } else {
+                    format!("⚠️ Violations: {:?}", invariants.which_violated())
+                }
             }
         )
     }
@@ -214,15 +216,15 @@ CRITICAL RULES:
 Pattern Details:
 - Sector: {}
 - Confidence: {:.2}
-- Pattern ID: {}
-- Timestamp: {}
+- Evidence Count: {}
+- Detected At: {}
 
-Recommended Action: {}"#,
-            pattern.description,
-            pattern.sector,
+Recommended Action: {:?}"#,
+            pattern.name,
+            request.sector,
             pattern.confidence,
-            pattern.id,
-            pattern.timestamp,
+            pattern.evidence_count,
+            pattern.detected_at,
             pattern.recommended_action
         ))
     }

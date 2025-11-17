@@ -139,14 +139,14 @@ impl LearningSystem {
             // Extract as few-shot example
             let example = self.create_few_shot_example(&outcome);
             self.corpus.sector_examples
-                .entry(proposal.pattern.sector.clone())
+                .entry(proposal.sector.clone())
                 .or_default()
                 .push(example);
 
             tracing::info!(
                 proposal_id = %proposal.id,
                 confidence = proposal.confidence,
-                sector = %proposal.pattern.sector,
+                sector = %proposal.sector,
                 "Accepted proposal recorded for learning"
             );
         } else {
@@ -181,7 +181,7 @@ impl LearningSystem {
 
     fn create_few_shot_example(&self, outcome: &ProposalOutcome) -> FewShotExample {
         FewShotExample {
-            pattern: outcome.proposal.pattern.description.clone(),
+            pattern: outcome.proposal.pattern.name.clone(),
             proposal: outcome.proposal.delta_sigma.clone(),
             reasoning: outcome.proposal.reasoning.clone(),
             confidence: outcome.proposal.confidence,
