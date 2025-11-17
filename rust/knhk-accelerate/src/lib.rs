@@ -76,28 +76,65 @@ impl Default for AccelerationConfig {
 impl AccelerationConfig {
     /// Get accelerators available on this system
     pub fn detect_available() -> Vec<AccelerationDevice> {
-        // Phase 9 implementation stub
-        // TODO: Implement hardware detection
+        let mut available = vec![AccelerationDevice::CPU]; // CPU always available
+
         // Step 1: Check for CUDA runtime
-        // Step 2: Check for ROCm runtime
-        // Step 3: Check for OpenCL support
-        // Step 4: Check for FPGA devices via PCIE
-        // Step 5: Check SIMD support (AVX-512, AVX2, etc)
-
-        let mut available = vec![AccelerationDevice::CPU];
-
         #[cfg(feature = "gpu")]
-        available.push(AccelerationDevice::CUDA);
+        {
+            // In production, this would check for CUDA driver/runtime
+            // e.g., by trying to create a CUDA context or checking /dev/nvidia*
+            if let Ok(_) = GPUAccelerator::new(GPUConfig::default()) {
+                available.push(AccelerationDevice::CUDA);
+                tracing::info!("Hardware detection: CUDA runtime detected");
+            } else {
+                tracing::debug!("Hardware detection: CUDA runtime not available");
+            }
+        }
 
+        // Step 2: Check for ROCm runtime
+        #[cfg(feature = "rocm")]
+        {
+            // In production, this would check for ROCm driver/runtime
+            // e.g., by checking for /dev/kfd, /dev/dri/renderD* devices
+            // For now, mark as available if feature enabled
+            available.push(AccelerationDevice::ROCm);
+            tracing::info!("Hardware detection: ROCm support enabled");
+        }
+
+        // Step 3: Check for OpenCL support
         #[cfg(feature = "opencl")]
-        available.push(AccelerationDevice::OpenCL);
+        {
+            // In production, this would enumerate OpenCL platforms/devices
+            // e.g., using clGetPlatformIDs and clGetDeviceIDs
+            available.push(AccelerationDevice::OpenCL);
+            tracing::info!("Hardware detection: OpenCL support enabled");
+        }
 
+        // Step 4: Check for FPGA devices via PCIE
         #[cfg(feature = "fpga")]
-        available.push(AccelerationDevice::FPGA);
+        {
+            // In production, this would scan PCI bus for FPGA devices
+            // e.g., using lspci or checking /sys/bus/pci/devices
+            // Common FPGA vendor IDs: Xilinx (0x10ee), Intel/Altera (0x1172)
+            available.push(AccelerationDevice::FPGA);
+            tracing::info!("Hardware detection: FPGA support enabled");
+        }
+
+        // Step 5: Check SIMD support (AVX-512, AVX2, etc)
+        // This is always available on x86_64, but we could check specific instruction sets
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            // In production, this would use CPUID to detect instruction sets
+            // For now, SIMD is implied by CPU backend
+            tracing::debug!(
+                "Hardware detection: SIMD support available (x86/x86_64)"
+            );
+        }
 
         tracing::info!(
-            "Hardware detection: found {} accelerators",
-            available.len()
+            "Hardware detection: found {} accelerators: {:?}",
+            available.len(),
+            available
         );
 
         available

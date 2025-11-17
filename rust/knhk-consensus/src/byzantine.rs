@@ -58,16 +58,22 @@ impl ByzantineFaultDetector {
 
     /// Detect equivocation (conflicting messages)
     pub fn detect_equivocation(&mut self, replica_id: usize, msg1: &[u8], msg2: &[u8]) -> Result<(), ByzantineError> {
-        // Phase 8 implementation stub
-        // TODO: Implement equivocation detection
-        // Step 1: Verify messages are from same view/sequence
-        // Step 2: Verify messages have same hash (should be identical)
-        // Step 3: If different, replica is equivocating
-        // Step 4: Create fault report
+        // Phase 8 implementation: Equivocation detection
+        // Equivocation = sending different messages for the same slot/sequence
 
+        // Step 1: Verify messages are from same view/sequence
+        // (In production: would parse message headers to verify view/sequence numbers)
+        // For now, we assume caller verified they should be identical
+
+        // Step 2: Verify messages have same content (should be identical for same slot)
+        // If they differ, this is equivocation - replica is sending conflicting messages
         if msg1 != msg2 {
+            // Step 3: Replica is equivocating - this is a Byzantine fault
+            // Step 4: Create fault report with evidence of both conflicting messages
             let mut evidence = Vec::new();
+            evidence.extend_from_slice(b"MSG1:");
             evidence.extend_from_slice(msg1);
+            evidence.extend_from_slice(b"|MSG2:");
             evidence.extend_from_slice(msg2);
 
             let report = FaultReport {
@@ -75,14 +81,25 @@ impl ByzantineFaultDetector {
                 fault_type: FaultType::EquivocationFault,
                 evidence,
                 timestamp: chrono::Utc::now().timestamp_millis() as u64,
-                severity: 9,
+                severity: 9, // High severity - equivocation is critical
             };
 
             self.known_faults.push(report);
-            self.suspected_replicas.push(replica_id);
+
+            // Track this replica as suspected if not already tracked
+            if !self.suspected_replicas.contains(&replica_id) {
+                self.suspected_replicas.push(replica_id);
+            }
 
             tracing::warn!(
-                "Byzantine detector: equivocation detected from replica {}",
+                "Byzantine detector: equivocation detected from replica {} (msg1_len={}, msg2_len={})",
+                replica_id,
+                msg1.len(),
+                msg2.len()
+            );
+        } else {
+            tracing::trace!(
+                "Byzantine detector: no equivocation from replica {} (messages identical)",
                 replica_id
             );
         }
@@ -92,26 +109,48 @@ impl ByzantineFaultDetector {
 
     /// Detect silent faults (missing messages)
     pub fn detect_silent_fault(&mut self, replica_id: usize, timeout_ms: u64) -> Result<(), ByzantineError> {
-        // Phase 8 implementation stub
-        // TODO: Implement silent fault detection
-        // Step 1: Check if replica missed expected message
-        // Step 2: Check if timeout exceeded
-        // Step 3: Create fault report
+        // Phase 8 implementation: Silent fault detection
+        // Silent fault = replica fails to respond to messages within expected timeframe
 
+        // Step 1: Check if replica missed expected message
+        // (In production: would track expected message timestamps per replica)
+        // Caller indicates replica_id has not responded
+
+        // Step 2: Check if timeout exceeded
+        // Timeout provided by caller indicates how long replica has been silent
+        // Classify severity based on timeout duration
+        let severity = if timeout_ms > 10000 {
+            8 // Very severe - > 10s silence
+        } else if timeout_ms > 5000 {
+            6 // Moderate - 5-10s silence
+        } else {
+            5 // Low - < 5s silence
+        };
+
+        // Step 3: Create fault report documenting the silence
         let report = FaultReport {
             faulty_replica: replica_id,
             fault_type: FaultType::SilentFault,
-            evidence: format!("Missing messages for {}ms", timeout_ms).into_bytes(),
+            evidence: format!(
+                "Replica {} silent for {}ms (threshold may indicate crash or network partition)",
+                replica_id, timeout_ms
+            ).into_bytes(),
             timestamp: chrono::Utc::now().timestamp_millis() as u64,
-            severity: 5,
+            severity,
         };
 
         self.known_faults.push(report);
 
+        // Track as suspected replica
+        if !self.suspected_replicas.contains(&replica_id) {
+            self.suspected_replicas.push(replica_id);
+        }
+
         tracing::warn!(
-            "Byzantine detector: silent fault detected from replica {} (timeout: {}ms)",
+            "Byzantine detector: silent fault detected from replica {} (timeout: {}ms, severity: {})",
             replica_id,
-            timeout_ms
+            timeout_ms,
+            severity
         );
 
         Ok(())
@@ -119,23 +158,57 @@ impl ByzantineFaultDetector {
 
     /// Detect ordering faults (out-of-order messages)
     pub fn detect_ordering_fault(&mut self, replica_id: usize, expected: u64, actual: u64) -> Result<(), ByzantineError> {
-        // Phase 8 implementation stub
-        // TODO: Implement ordering fault detection
+        // Phase 8 implementation: Ordering fault detection
+        // Ordering fault = replica sends messages with incorrect sequence numbers
 
+        // Step 1: Compare actual sequence number to expected
         if actual != expected {
+            // Step 2: Determine fault severity based on sequence gap
+            let gap = if actual > expected {
+                actual - expected
+            } else {
+                expected - actual
+            };
+
+            let severity = if gap > 100 {
+                8 // Severe - major sequence violation
+            } else if gap > 10 {
+                7 // Moderate - significant gap
+            } else {
+                6 // Low - minor ordering issue
+            };
+
+            // Step 3: Create fault report with sequence violation details
             let report = FaultReport {
                 faulty_replica: replica_id,
                 fault_type: FaultType::OrderingFault,
-                evidence: format!("Expected sequence {}, got {}", expected, actual).into_bytes(),
+                evidence: format!(
+                    "Sequence violation: expected {}, got {} (gap: {})",
+                    expected, actual, gap
+                ).into_bytes(),
                 timestamp: chrono::Utc::now().timestamp_millis() as u64,
-                severity: 6,
+                severity,
             };
 
             self.known_faults.push(report);
 
+            // Track as suspected replica
+            if !self.suspected_replicas.contains(&replica_id) {
+                self.suspected_replicas.push(replica_id);
+            }
+
             tracing::warn!(
-                "Byzantine detector: ordering fault detected from replica {}",
-                replica_id
+                "Byzantine detector: ordering fault detected from replica {} (expected: {}, actual: {}, gap: {})",
+                replica_id,
+                expected,
+                actual,
+                gap
+            );
+        } else {
+            tracing::trace!(
+                "Byzantine detector: sequence number correct for replica {} (seq: {})",
+                replica_id,
+                actual
             );
         }
 

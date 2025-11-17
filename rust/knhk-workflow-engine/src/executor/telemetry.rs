@@ -108,8 +108,11 @@ impl WorkflowTelemetry {
                     instance_id = %instance_id,
                     "Workflow started"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("workflow_started_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("workflow_started_total",
+                    "workflow_id" => workflow_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
             }
             WorkflowEvent::Completed { ref workflow_id, ref instance_id } => {
                 info!(
@@ -117,8 +120,11 @@ impl WorkflowTelemetry {
                     instance_id = %instance_id,
                     "Workflow completed"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("workflow_completed_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("workflow_completed_total",
+                    "workflow_id" => workflow_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
             }
             WorkflowEvent::Failed { ref workflow_id, ref instance_id, ref error } => {
                 warn!(
@@ -127,8 +133,12 @@ impl WorkflowTelemetry {
                     error = %error,
                     "Workflow failed"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("workflow_failed_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("workflow_failed_total",
+                    "workflow_id" => workflow_id.clone(),
+                    "instance_id" => instance_id.clone(),
+                    "error" => error.clone()
+                ).increment(1);
             }
             WorkflowEvent::Cancelled { ref workflow_id, ref instance_id } => {
                 info!(
@@ -136,8 +146,11 @@ impl WorkflowTelemetry {
                     instance_id = %instance_id,
                     "Workflow cancelled"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("workflow_cancelled_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("workflow_cancelled_total",
+                    "workflow_id" => workflow_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
             }
         }
     }
@@ -159,8 +172,11 @@ impl WorkflowTelemetry {
                     instance_id = %instance_id,
                     "Task enabled"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("task_enabled_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("task_enabled_total",
+                    "task_id" => task_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
             }
             TaskEvent::Started { ref task_id, ref instance_id } => {
                 info!(
@@ -168,8 +184,11 @@ impl WorkflowTelemetry {
                     instance_id = %instance_id,
                     "Task started"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("task_started_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("task_started_total",
+                    "task_id" => task_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
             }
             TaskEvent::Completed { ref task_id, ref instance_id, duration } => {
                 info!(
@@ -178,16 +197,26 @@ impl WorkflowTelemetry {
                     duration_us = duration.map(|d| d.as_micros()),
                     "Task completed"
                 );
-                // TODO: Emit OTEL metrics
-                // metrics::counter!("task_completed_total").increment(1);
-                // if let Some(d) = duration {
-                //     metrics::histogram!("task_duration_seconds").record(d.as_secs_f64());
-                //
-                //     // Covenant 5: Check against Chatman constant (8 ticks)
-                //     if d.as_nanos() > 8 {
-                //         warn!("Task {} exceeded 8 tick limit: {} ns", task_id, d.as_nanos());
-                //     }
-                // }
+                // Emit OTEL metrics
+                metrics::counter!("task_completed_total",
+                    "task_id" => task_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
+
+                if let Some(d) = duration {
+                    metrics::histogram!("task_duration_seconds",
+                        "task_id" => task_id.clone(),
+                        "instance_id" => instance_id.clone()
+                    ).record(d.as_secs_f64());
+
+                    // Covenant 5: Check against Chatman constant (8 ticks)
+                    if d.as_nanos() > 8 {
+                        warn!("Task {} exceeded 8 tick limit: {} ns", task_id, d.as_nanos());
+                        metrics::counter!("task_chatman_violations_total",
+                            "task_id" => task_id.clone()
+                        ).increment(1);
+                    }
+                }
             }
             TaskEvent::Failed { ref task_id, ref instance_id, ref error } => {
                 warn!(
@@ -196,8 +225,12 @@ impl WorkflowTelemetry {
                     error = ?error,
                     "Task failed"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("task_failed_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("task_failed_total",
+                    "task_id" => task_id.clone(),
+                    "instance_id" => instance_id.clone(),
+                    "error" => error.as_ref().unwrap_or(&"unknown".to_string()).clone()
+                ).increment(1);
             }
             TaskEvent::Cancelled { ref task_id, ref instance_id } => {
                 info!(
@@ -205,8 +238,11 @@ impl WorkflowTelemetry {
                     instance_id = %instance_id,
                     "Task cancelled"
                 );
-                // TODO: Emit OTEL metric
-                // metrics::counter!("task_cancelled_total").increment(1);
+                // Emit OTEL metric
+                metrics::counter!("task_cancelled_total",
+                    "task_id" => task_id.clone(),
+                    "instance_id" => instance_id.clone()
+                ).increment(1);
             }
         }
     }
@@ -251,9 +287,10 @@ impl WorkflowTelemetry {
             "State transition latency"
         );
 
-        // TODO: Emit OTEL histogram
-        // metrics::histogram!("workflow_transition_duration_seconds", "operation" => operation)
-        //     .record(duration.as_secs_f64());
+        // Emit OTEL histogram
+        metrics::histogram!("workflow_transition_duration_seconds",
+            "operation" => operation.to_string()
+        ).record(duration.as_secs_f64());
 
         // Covenant 5: Check against Chatman constant
         const CHATMAN_CONSTANT_NS: u128 = 8;
@@ -263,6 +300,9 @@ impl WorkflowTelemetry {
                 duration_ns = duration.as_nanos(),
                 "State transition exceeded 8-tick limit"
             );
+            metrics::counter!("workflow_chatman_violations_total",
+                "operation" => operation.to_string()
+            ).increment(1);
         }
     }
 
@@ -276,9 +316,9 @@ impl WorkflowTelemetry {
             "Workflow throughput"
         );
 
-        // TODO: Emit OTEL gauge
-        // metrics::gauge!("workflow_throughput_tasks_per_second")
-        //     .set(throughput);
+        // Emit OTEL gauge
+        metrics::gauge!("workflow_throughput_tasks_per_second")
+            .set(throughput);
     }
 
     /// Record resource usage metrics
@@ -289,9 +329,9 @@ impl WorkflowTelemetry {
             "Resource usage"
         );
 
-        // TODO: Emit OTEL gauges
-        // metrics::gauge!("workflow_memory_bytes").set(memory_bytes as f64);
-        // metrics::gauge!("workflow_cpu_percent").set(cpu_percent);
+        // Emit OTEL gauges
+        metrics::gauge!("workflow_memory_bytes").set(memory_bytes as f64);
+        metrics::gauge!("workflow_cpu_percent").set(cpu_percent);
     }
 }
 
