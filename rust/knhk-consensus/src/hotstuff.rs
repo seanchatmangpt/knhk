@@ -285,14 +285,17 @@ impl HotStuffNode {
         config: &HotStuffConfig,
     ) -> Result<Option<QuorumCertificate>> {
         let count = self.vote_count.entry(view).or_insert(0);
-        *count += 1;
+        let updated_count = {
+            *count += 1;
+            *count
+        };
 
-        if config.verify_quorum(*count) {
+        if config.verify_quorum(updated_count) {
             // Create QC
             let qc = QuorumCertificate {
                 block_hash: block_hash.clone(),
                 view,
-                vote_count: *count,
+                vote_count: updated_count,
                 block_height: self.commit_height,
             };
 

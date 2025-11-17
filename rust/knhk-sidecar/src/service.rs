@@ -15,18 +15,110 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
-// Include generated proto code
+// Protobuf generation conditional - only when grpc feature enabled
+#[cfg(feature = "grpc")]
 pub mod proto {
     tonic::include_proto!("kgc.sidecar.v1");
 }
 
 use crate::json_parser::parse_json_triples;
-use proto::{
-    kgc_sidecar_server::KgcSidecar, ApplyTransactionRequest, ApplyTransactionResponse,
-    EvaluateHookRequest, EvaluateHookResponse, GetMetricsRequest, GetMetricsResponse,
-    HealthCheckRequest, HealthCheckResponse, QueryRequest, QueryResponse, SidecarMetrics,
-    ValidateGraphRequest, ValidateGraphResponse,
-};
+
+// Stub proto types for when grpc feature is disabled
+#[cfg(not(feature = "grpc"))]
+pub mod proto {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Clone, Debug, Serialize, Deserialize)]
+    pub struct Receipt {
+        pub txn_id: String,
+        pub timestamp: i64,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct ApplyTransactionRequest {}
+    #[derive(Clone, Debug)]
+    pub struct ApplyTransactionResponse {
+        pub success: bool,
+        pub receipt: Option<Receipt>,
+    }
+    #[derive(Clone, Debug)]
+    pub struct QueryRequest {}
+    #[derive(Clone, Debug)]
+    pub struct QueryResponse {}
+    #[derive(Clone, Debug)]
+    pub struct ValidateGraphRequest {}
+    #[derive(Clone, Debug)]
+    pub struct ValidateGraphResponse {}
+    #[derive(Clone, Debug)]
+    pub struct EvaluateHookRequest {}
+    #[derive(Clone, Debug)]
+    pub struct EvaluateHookResponse {}
+    #[derive(Clone, Debug)]
+    pub struct HealthCheckRequest {}
+    #[derive(Clone, Debug)]
+    pub struct HealthCheckResponse {}
+    #[derive(Clone, Debug)]
+    pub struct GetMetricsRequest {}
+    #[derive(Clone, Debug)]
+    pub struct GetMetricsResponse {}
+    #[derive(Clone, Debug)]
+    pub struct SidecarMetrics {}
+
+    pub mod kgc_sidecar_server {
+        use super::*;
+        use tonic::async_trait;
+
+        #[async_trait]
+        pub trait KgcSidecar: Send + Sync + 'static {
+            async fn apply_transaction(
+                &self,
+                request: tonic::Request<ApplyTransactionRequest>,
+            ) -> Result<tonic::Response<ApplyTransactionResponse>, tonic::Status>;
+
+            async fn query(
+                &self,
+                request: tonic::Request<QueryRequest>,
+            ) -> Result<tonic::Response<QueryResponse>, tonic::Status>;
+
+            async fn validate_graph(
+                &self,
+                request: tonic::Request<ValidateGraphRequest>,
+            ) -> Result<tonic::Response<ValidateGraphResponse>, tonic::Status>;
+
+            async fn evaluate_hook(
+                &self,
+                request: tonic::Request<EvaluateHookRequest>,
+            ) -> Result<tonic::Response<EvaluateHookResponse>, tonic::Status>;
+
+            async fn health_check(
+                &self,
+                request: tonic::Request<HealthCheckRequest>,
+            ) -> Result<tonic::Response<HealthCheckResponse>, tonic::Status>;
+
+            async fn get_metrics(
+                &self,
+                request: tonic::Request<GetMetricsRequest>,
+            ) -> Result<tonic::Response<GetMetricsResponse>, tonic::Status>;
+        }
+
+        pub struct KgcSidecarServer<T> {
+            _phantom: std::marker::PhantomData<T>,
+        }
+
+        impl<T: KgcSidecar> KgcSidecarServer<T> {
+            pub fn new(_inner: T) -> Self {
+                Self {
+                    _phantom: std::marker::PhantomData,
+                }
+            }
+        }
+    }
+
+    pub mod transport {
+        pub struct ServerTlsConfig;
+        pub struct ClientTlsConfig;
+    }
+}
 
 pub struct KgcSidecarService {
     config: SidecarConfig,

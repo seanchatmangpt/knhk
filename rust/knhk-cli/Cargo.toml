@@ -70,13 +70,14 @@ opentelemetry-semantic-conventions = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true, features = ["json", "blocking"] }
 
 [features]
-default = ["std", "otel"]
+default = ["std", "otel", "oxigraph"]
 std = []
 minimal = ["std"] # Core only, no optional deps
 workflow = ["knhk-workflow-engine"]
 etl = ["knhk-etl"]
 connectors = ["knhk-connectors"]
 fortune5 = ["knhk-sidecar"]
+oxigraph = ["dep:oxigraph"]
 otel = [
   "knhk-otel",
   "opentelemetry",

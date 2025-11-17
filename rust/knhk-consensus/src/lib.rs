@@ -138,7 +138,7 @@ impl Default for ConsensusConfig {
 
 impl ConsensusConfig {
     /// Validate configuration constraints
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> std::result::Result<(), String> {
         if self.total_nodes < 3 {
             return Err("Cluster must have at least 3 nodes".to_string());
         }

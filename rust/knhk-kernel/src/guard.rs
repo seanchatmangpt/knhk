@@ -160,6 +160,7 @@ impl Guard {
     }
 
     /// Alias for negate() - creates a NOT guard
+    #[allow(clippy::should_implement_trait)]
     #[inline]
     pub fn not(guard: Guard) -> Self {
         Self::negate(guard)

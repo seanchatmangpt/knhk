@@ -232,10 +232,13 @@ impl PBFTNode {
     ) -> Result<Option<BFTMessage>> {
         let key = (sequence, digest.clone());
         let count = self.prepare_count.entry(key.clone()).or_insert(0);
-        *count += 1;
+        let updated_count = {
+            *count += 1;
+            *count
+        };
 
         // Need 2f+1 prepares to move to commit
-        if *count >= config.quorum_size() {
+        if updated_count >= config.quorum_size() {
             let commit_msg = BFTMessage::Commit {
                 sequence,
                 digest: digest.clone(),

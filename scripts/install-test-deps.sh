@@ -73,3 +73,4 @@ echo -e "${BLUE}Next steps:${NC}"
 echo -e "${BLUE}  1. Start test cache daemon: ./scripts/test-cache-daemon.sh start${NC}"
 echo -e "${BLUE}  2. Run optimized tests: ./scripts/test-runner-optimized.sh${NC}"
 
+

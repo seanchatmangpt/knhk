@@ -51,16 +51,20 @@ impl SelfExecutingOrchestrator {
     /// Create a new self-executing orchestrator
     pub fn new(snapshot_dir: &str, receipt_dir: &str) -> WorkflowResult<Self> {
         // Create receipt store
-        let receipt_store = Arc::new(ReceiptStore::new(receipt_dir)?);
+        let receipt_store = Arc::new(ReceiptStore::new());
 
         // Create snapshot versioning
-        let snapshot_versioning = Arc::new(SnapshotVersioning::new(snapshot_dir));
+        let snapshot_versioning = Arc::new(SnapshotVersioning::new());
 
         // Create pattern library
         let pattern_library = Arc::new(PatternLibrary::new());
 
+        // Create hook registry and tracer for hook engine
+        let hook_registry = Arc::new(HookRegistry::new());
+        let tracer = Arc::new(RwLock::new(Tracer::new()));
+
         // Create hook engine
-        let hook_engine = Arc::new(HookEngine::new());
+        let hook_engine = Arc::new(HookEngine::new(hook_registry.clone(), tracer.clone()));
 
         // Create scheduler
         let scheduler = Arc::new(LatencyBoundedScheduler::new(8)); // Chatman Constant
