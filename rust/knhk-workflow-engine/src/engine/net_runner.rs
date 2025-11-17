@@ -62,10 +62,10 @@ impl ExecutionPlan {
     pub fn from_spec(spec: &WorkflowSpec) -> WorkflowResult<Self> {
         // Build dependency graph from flows (TRIZ Principle 24: Intermediary)
         let dependency_graph = Self::build_dependency_graph(spec)?;
-        
+
         // Topological sort to determine execution order
         let execution_order = Self::topological_sort(&dependency_graph, spec)?;
-        
+
         let mut steps = Vec::new();
         let mut step_index = HashMap::new();
 
@@ -75,7 +75,10 @@ impl ExecutionPlan {
             let step = ExecutionStep {
                 step_id: step_id.clone(),
                 task_id: task_id.clone(),
-                dependencies: dependencies.into_iter().map(|dep| format!("step-{}", dep)).collect(),
+                dependencies: dependencies
+                    .into_iter()
+                    .map(|dep| format!("step-{}", dep))
+                    .collect(),
                 order: order as u32,
             };
 
@@ -96,12 +99,12 @@ impl ExecutionPlan {
     /// Hyper-Advanced Rust: Zero-copy graph using references and efficient data structures
     fn build_dependency_graph(spec: &WorkflowSpec) -> WorkflowResult<HashMap<String, Vec<String>>> {
         let mut graph: HashMap<String, Vec<String>> = HashMap::new();
-        
+
         // Initialize all tasks with empty dependencies
         for task_id in spec.tasks.keys() {
             graph.insert(task_id.clone(), Vec::new());
         }
-        
+
         // Build graph from flows
         for flow in &spec.flows {
             // Flow: from -> to means 'to' depends on 'from'
@@ -110,7 +113,7 @@ impl ExecutionPlan {
                 .or_insert_with(Vec::new)
                 .push(flow.from.clone());
         }
-        
+
         // Also consider task-level incoming_flows for backward compatibility
         for (task_id, task) in &spec.tasks {
             for incoming in &task.incoming_flows {
@@ -120,7 +123,7 @@ impl ExecutionPlan {
                     .push(incoming.clone());
             }
         }
-        
+
         Ok(graph)
     }
 
@@ -133,12 +136,12 @@ impl ExecutionPlan {
     ) -> WorkflowResult<Vec<(String, Vec<String>)>> {
         // Compute in-degree for each node (how many dependencies each node has)
         let mut in_degree: HashMap<String, usize> = HashMap::new();
-        
+
         // Initialize in-degree to 0 for all tasks
         for task_id in spec.tasks.keys() {
             in_degree.insert(task_id.clone(), 0);
         }
-        
+
         // Compute in-degrees: count how many nodes depend on each node
         // If A -> B, then B's in-degree increases (B depends on A)
         for (node, deps) in graph.iter() {
@@ -149,21 +152,21 @@ impl ExecutionPlan {
             // Also ensure the node itself is in the map
             in_degree.entry(node.clone()).or_insert(0);
         }
-        
+
         // Find nodes with zero in-degree (can start immediately - no dependencies)
         let mut queue: std::collections::VecDeque<String> = in_degree
             .iter()
             .filter(|(_, &degree)| degree == 0)
             .map(|(node, _)| node.clone())
             .collect();
-        
+
         let mut result = Vec::new();
-        
+
         // Kahn's algorithm: process nodes with no dependencies first
         while let Some(node) = queue.pop_front() {
             let dependencies = graph.get(&node).cloned().unwrap_or_default();
             result.push((node.clone(), dependencies));
-            
+
             // For each node that depends on this one, reduce their in-degree
             // Find all nodes that have this node as a dependency
             for (dependent_node, deps) in graph.iter() {
@@ -177,14 +180,14 @@ impl ExecutionPlan {
                 }
             }
         }
-        
+
         // Check for cycles (if result length < total nodes, there's a cycle)
         if result.len() < spec.tasks.len() {
             return Err(WorkflowError::InvalidSpecification(
                 "Workflow contains cycles - cannot compute execution order".to_string(),
             ));
         }
-        
+
         Ok(result)
     }
 

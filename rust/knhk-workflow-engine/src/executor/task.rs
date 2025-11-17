@@ -27,25 +27,24 @@ pub(super) async fn execute_task_with_allocation(
 ) -> WorkflowResult<()> {
     let task_start_time = Instant::now();
 
-        // Start OTEL span for task execution
-        let span_ctx: Option<SpanContext> = if let Some(ref otel) = engine.otel_integration {
-            // Use pre-compiled pattern ID (TRIZ Principle 10: Prior Action)
-            // Pattern was computed at registration time to avoid runtime overhead
-            let pattern_id = task.pattern_id
-                .unwrap_or_else(|| {
-                    // Fallback to runtime identification if not pre-compiled
-                    if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
-                        PatternId(12) // MI Without Sync
-                    } else {
-                        // Map split/join to pattern (simplified)
-                        match (task.split_type, task.join_type) {
-                            (crate::parser::SplitType::And, crate::parser::JoinType::And) => PatternId(1),
-                            (crate::parser::SplitType::Xor, crate::parser::JoinType::Xor) => PatternId(2),
-                            (crate::parser::SplitType::Or, crate::parser::JoinType::Or) => PatternId(3),
-                            _ => PatternId(1), // Default to Sequence
-                        }
-                    }
-                });
+    // Start OTEL span for task execution
+    let span_ctx: Option<SpanContext> = if let Some(ref otel) = engine.otel_integration {
+        // Use pre-compiled pattern ID (TRIZ Principle 10: Prior Action)
+        // Pattern was computed at registration time to avoid runtime overhead
+        let pattern_id = task.pattern_id.unwrap_or_else(|| {
+            // Fallback to runtime identification if not pre-compiled
+            if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
+                PatternId(12) // MI Without Sync
+            } else {
+                // Map split/join to pattern (simplified)
+                match (task.split_type, task.join_type) {
+                    (crate::parser::SplitType::And, crate::parser::JoinType::And) => PatternId(1),
+                    (crate::parser::SplitType::Xor, crate::parser::JoinType::Xor) => PatternId(2),
+                    (crate::parser::SplitType::Or, crate::parser::JoinType::Or) => PatternId(3),
+                    _ => PatternId(1), // Default to Sequence
+                }
+            }
+        });
         otel_span!(
             otel,
             "knhk.workflow_engine.execute_task",

@@ -155,10 +155,7 @@ impl RDREngine {
     /// Select worklet using RDR (TRIZ Principle 24: Intermediary)
     ///
     /// Creates intermediate selection plan instead of direct selection
-    pub fn select_worklet(
-        &self,
-        context: &ExceptionContext,
-    ) -> WorkflowResult<RDRSelectionPlan> {
+    pub fn select_worklet(&self, context: &ExceptionContext) -> WorkflowResult<RDRSelectionPlan> {
         // Build selection plan (TRIZ Principle 24: Intermediary)
         let mut matched_rules = Vec::new();
         self.evaluate_rules(&self.root, context, &mut matched_rules)?;
@@ -207,7 +204,11 @@ impl RDREngine {
     /// Evaluate condition (simplified implementation)
     ///
     /// In production, would use a proper expression evaluator
-    fn evaluate_condition(&self, condition: &str, context: &ExceptionContext) -> WorkflowResult<bool> {
+    fn evaluate_condition(
+        &self,
+        condition: &str,
+        context: &ExceptionContext,
+    ) -> WorkflowResult<bool> {
         // Simple condition evaluation
         // In production, use proper expression evaluator (e.g., evalexpr, rhai)
         if condition == "true" {
@@ -220,7 +221,11 @@ impl RDREngine {
             let expected_type = condition_lower
                 .split("==")
                 .nth(1)
-                .and_then(|s| s.trim().strip_prefix('\'').and_then(|s| s.strip_suffix('\'')))
+                .and_then(|s| {
+                    s.trim()
+                        .strip_prefix('\'')
+                        .and_then(|s| s.strip_suffix('\''))
+                })
                 .unwrap_or("");
             return Ok(context.exception_type == expected_type);
         }
@@ -229,7 +234,11 @@ impl RDREngine {
             let expected_task = condition_lower
                 .split("==")
                 .nth(1)
-                .and_then(|s| s.trim().strip_prefix('\'').and_then(|s| s.strip_suffix('\'')))
+                .and_then(|s| {
+                    s.trim()
+                        .strip_prefix('\'')
+                        .and_then(|s| s.strip_suffix('\''))
+                })
                 .unwrap_or("");
             return Ok(context.task_id == expected_task);
         }
@@ -310,4 +319,3 @@ mod tests {
         assert_eq!(plan.selected_worklet, Some("timeout-handler".to_string()));
     }
 }
-

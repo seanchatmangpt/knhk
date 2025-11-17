@@ -40,6 +40,19 @@ impl PatternMetadata {
     }
 }
 
+impl Default for PatternMetadata {
+    fn default() -> Self {
+        Self {
+            pattern_id: 1,
+            name: "Default Pattern".to_string(),
+            description: "Default pattern metadata".to_string(),
+            category: "Basic Control Flow".to_string(),
+            complexity: "Simple".to_string(),
+            dependencies: vec![],
+        }
+    }
+}
+
 /// Get all pattern metadata
 pub fn get_all_pattern_metadata() -> Vec<PatternMetadata> {
     vec![

@@ -18,8 +18,8 @@
 use crate::case::CaseId;
 use crate::parser::WorkflowSpecId;
 use crate::patterns::{PatternExecutionContext, PatternId, PatternRegistry};
-use crate::services::TimerFired;
 use crate::services::work_items::WorkItemState;
+use crate::services::TimerFired;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -235,10 +235,12 @@ pub(crate) fn start_work_item_loop(
                 WorkItemEventType::HumanCancelled => {
                     // Patterns 19, 20: Human task cancellation
                     // Pattern 19: Cancel Activity
-                    ctx.variables.insert("cancellation_type".to_string(), "activity".to_string());
+                    ctx.variables
+                        .insert("cancellation_type".to_string(), "activity".to_string());
                     let _ = registry.execute(&PatternId(19), &ctx);
                     // Pattern 20: Cancel Case
-                    ctx.variables.insert("cancellation_type".to_string(), "case".to_string());
+                    ctx.variables
+                        .insert("cancellation_type".to_string(), "case".to_string());
                     let _ = registry.execute(&PatternId(20), &ctx);
                 }
                 WorkItemEventType::HumanClaimed => {
@@ -334,4 +336,3 @@ pub(crate) fn start_dual_clock_projection(
         }
     });
 }
-

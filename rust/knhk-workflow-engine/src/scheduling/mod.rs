@@ -5,5 +5,6 @@
 
 pub mod calendar;
 
-pub use calendar::{CalendarEntry, CalendarEntryType, CalendarService, ResourceCalendar, WorkingHours};
-
+pub use calendar::{
+    CalendarEntry, CalendarEntryType, CalendarService, ResourceCalendar, WorkingHours,
+};

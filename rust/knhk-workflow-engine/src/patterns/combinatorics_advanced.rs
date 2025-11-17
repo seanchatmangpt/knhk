@@ -142,13 +142,7 @@ impl PatternCombinator {
             return;
         }
 
-        self.generate_combinations_recursive(
-            patterns,
-            size,
-            0,
-            &mut vec![],
-            combinations,
-        );
+        self.generate_combinations_recursive(patterns, size, 0, &mut vec![], combinations);
     }
 
     /// Recursive combination generation with compatibility validation
@@ -173,7 +167,10 @@ impl PatternCombinator {
 
         for i in start..patterns.len() {
             let pattern = patterns[i];
-            if current.iter().all(|&p| self.compatibility.are_compatible(p, pattern)) {
+            if current
+                .iter()
+                .all(|&p| self.compatibility.are_compatible(p, pattern))
+            {
                 current.push(pattern);
                 self.generate_combinations_recursive(patterns, size, i + 1, current, combinations);
                 current.pop();
@@ -251,7 +248,10 @@ impl PatternCombinator {
     /// Check if a permutation is valid
     fn is_valid_permutation(&self, patterns: &[PatternId]) -> bool {
         for i in 0..patterns.len().saturating_sub(1) {
-            if !self.compatibility.are_compatible(patterns[i], patterns[i + 1]) {
+            if !self
+                .compatibility
+                .are_compatible(patterns[i], patterns[i + 1])
+            {
                 return false;
             }
         }
@@ -377,4 +377,3 @@ pub struct PatternPermutationResult {
     /// Final variables
     pub final_variables: HashMap<String, String>,
 }
-

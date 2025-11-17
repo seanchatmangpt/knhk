@@ -8,7 +8,7 @@
 //! - Advanced trait bounds for maximum flexibility
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::types::{WorkflowSpec, WorkflowSpecId};
+use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
@@ -240,4 +240,3 @@ mod tests {
         assert!(!quota.can_allocate(6));
     }
 }
-

@@ -118,7 +118,9 @@ where
     /// Use with caution in hot paths.
     pub fn iter(&self) -> impl Iterator<Item = (K, V)> + '_ {
         self.shards.iter().flat_map(|shard| {
-            shard.iter().map(|entry| (entry.key().clone(), entry.value().clone()))
+            shard
+                .iter()
+                .map(|entry| (entry.key().clone(), entry.value().clone()))
         })
     }
 }
@@ -221,4 +223,3 @@ mod tests {
         assert_eq!(counter.total(), 2);
     }
 }
-

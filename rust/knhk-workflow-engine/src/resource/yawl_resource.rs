@@ -157,7 +157,9 @@ pub struct TimeBasedFilter {
 impl TimeBasedFilter {
     /// Create new time-based filter
     pub fn new(availability_window: Option<(u8, u8)>) -> Self {
-        Self { availability_window }
+        Self {
+            availability_window,
+        }
     }
 }
 
@@ -203,7 +205,9 @@ pub struct ConstraintFilter {
 impl ConstraintFilter {
     /// Create new constraint filter
     pub fn new(
-        compliance_manager: Arc<tokio::sync::RwLock<crate::resource::compliance::ComplianceManager>>,
+        compliance_manager: Arc<
+            tokio::sync::RwLock<crate::resource::compliance::ComplianceManager>,
+        >,
         task_id: String,
     ) -> Self {
         Self {
@@ -301,9 +305,7 @@ impl AllocationAlgorithm for ShortestQueueAllocator {
         // Find resource with minimum workload
         let selected = offered
             .iter()
-            .min_by_key(|&resource_id| {
-                context.workload.get(resource_id).copied().unwrap_or(0)
-            })
+            .min_by_key(|&resource_id| context.workload.get(resource_id).copied().unwrap_or(0))
             .cloned();
 
         Ok(selected)
@@ -342,7 +344,9 @@ impl AllocationAlgorithm for FastestResourceAllocator {
             .min_by(|&a, &b| {
                 let time_a = times.get(a).copied().unwrap_or(f64::MAX);
                 let time_b = times.get(b).copied().unwrap_or(f64::MAX);
-                time_a.partial_cmp(&time_b).unwrap_or(std::cmp::Ordering::Equal)
+                time_a
+                    .partial_cmp(&time_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             })
             .cloned();
 
@@ -408,10 +412,7 @@ impl YawlResourceManager {
         drop(resources);
 
         // Phase 1: Offer - Apply filters to find eligible participants
-        let mut offered: HashSet<ResourceId> = resource_vec
-            .iter()
-            .map(|r| r.id.clone())
-            .collect();
+        let mut offered: HashSet<ResourceId> = resource_vec.iter().map(|r| r.id.clone()).collect();
 
         for filter in &self.filters {
             let filtered = filter.filter(&resource_vec, context);
@@ -432,9 +433,9 @@ impl YawlResourceManager {
             workload: workload.clone(),
         };
 
-        let allocated = self
-            .default_allocator
-            .allocate(&offered_vec, &resources, &allocation_context)?;
+        let allocated =
+            self.default_allocator
+                .allocate(&offered_vec, &resources, &allocation_context)?;
 
         // Phase 3: Start - Launch mode is provided by caller
         Ok(AllocationResult {
@@ -562,4 +563,3 @@ mod tests {
         assert_eq!(filtered.len(), 1);
     }
 }
-

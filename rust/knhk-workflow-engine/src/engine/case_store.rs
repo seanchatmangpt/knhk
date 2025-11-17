@@ -52,7 +52,9 @@ impl CaseStore {
 
     /// Get case ID by case number
     pub fn get_case_id(&self, case_number: u32) -> Option<String> {
-        self.case_number_map.get(&case_number).map(|entry| entry.clone())
+        self.case_number_map
+            .get(&case_number)
+            .map(|entry| entry.clone())
     }
 
     /// Get case number by case ID
@@ -69,7 +71,10 @@ impl CaseStore {
     pub async fn set_case_number(&self, case_number: u32) -> WorkflowResult<()> {
         let mut next = self.next_case_number.write().await;
         *next = case_number.max(*next);
-        self.case_counter.store(case_number.max(self.case_counter.load(Ordering::SeqCst)), Ordering::SeqCst);
+        self.case_counter.store(
+            case_number.max(self.case_counter.load(Ordering::SeqCst)),
+            Ordering::SeqCst,
+        );
         Ok(())
     }
 }
@@ -102,11 +107,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(
-            store.get_case_id(case_number),
-            Some("case-123".to_string())
-        );
+        assert_eq!(store.get_case_id(case_number), Some("case-123".to_string()));
         assert_eq!(store.get_case_number("case-123"), Some(case_number));
     }
 }
-

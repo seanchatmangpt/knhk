@@ -94,7 +94,7 @@ impl Constraint for SeparationOfDuties {
         let task_pairs = self.task_pairs.clone();
         let assignment_history = self.assignment_history.clone();
         let task_id = context.task_id.clone();
-        let resource_id = *resource_id;
+        let resource_id = resource_id.clone();
 
         Box::pin(async move {
             // Check if this task is part of a separation pair
@@ -102,7 +102,7 @@ impl Constraint for SeparationOfDuties {
                 if task_id == *task1 {
                     // Check if task2 was assigned to the same resource
                     if let Some(assigned_resource) = assignment_history.get(task2) {
-                        if *assigned_resource.value() == resource_id {
+                        if assigned_resource.value() == &resource_id {
                             return Ok(ConstraintResult {
                                 satisfied: false,
                                 reason: Some(format!(
@@ -115,7 +115,7 @@ impl Constraint for SeparationOfDuties {
                 } else if task_id == *task2 {
                     // Check if task1 was assigned to the same resource
                     if let Some(assigned_resource) = assignment_history.get(task1) {
-                        if *assigned_resource.value() == *resource_id {
+                        if assigned_resource.value() == &resource_id {
                             return Ok(ConstraintResult {
                                 satisfied: false,
                                 reason: Some(format!(
@@ -164,13 +164,15 @@ impl Constraint for FourEyesPrinciple {
     {
         let assignment_history = self.assignment_history.clone();
         let case_id = context.case_id.clone();
-        let resource_id = *resource_id;
+        let resource_id = resource_id.clone();
 
         Box::pin(async move {
             // Check if another resource has already been assigned to this case
             let mut other_assignments = 0;
-            for (key, assigned_resource) in assignment_history.iter() {
-                if key.contains(&case_id) && *assigned_resource.value() != resource_id {
+            for entry in assignment_history.iter() {
+                let key = entry.key();
+                let assigned_resource = entry.value();
+                if key.contains(&case_id) && assigned_resource != &resource_id {
                     other_assignments += 1;
                 }
             }
@@ -179,7 +181,9 @@ impl Constraint for FourEyesPrinciple {
             if other_assignments == 0 {
                 Ok(ConstraintResult {
                     satisfied: false,
-                    reason: Some("4-eyes principle requires at least one other approver".to_string()),
+                    reason: Some(
+                        "4-eyes principle requires at least one other approver".to_string(),
+                    ),
                 })
             } else {
                 Ok(ConstraintResult {
@@ -212,7 +216,7 @@ impl Constraint for CompositeConstraint {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = WorkflowResult<ConstraintResult>> + Send>>
     {
         let constraints = self.constraints.clone();
-        let resource_id = *resource_id;
+        let resource_id = resource_id.clone();
         let context = context.clone();
 
         Box::pin(async move {
@@ -237,9 +241,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_separation_of_duties() {
-        let constraint = SeparationOfDuties::new(vec![
-            ("task1".to_string(), "task2".to_string()),
-        ]);
+        let constraint = SeparationOfDuties::new(vec![("task1".to_string(), "task2".to_string())]);
 
         let context = ConstraintContext {
             task_id: "task1".to_string(),
@@ -254,4 +256,3 @@ mod tests {
         assert!(result.satisfied);
     }
 }
-

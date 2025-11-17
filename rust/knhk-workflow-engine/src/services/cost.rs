@@ -106,7 +106,11 @@ impl CostService {
     /// Record activity cost
     ///
     /// Records the cost of executing a task.
-    pub async fn record_activity_cost(&self, cost: ActivityCost, case_id: CaseId) -> WorkflowResult<()> {
+    pub async fn record_activity_cost(
+        &self,
+        cost: ActivityCost,
+        case_id: CaseId,
+    ) -> WorkflowResult<()> {
         let mut costs = self.case_costs.write().await;
         costs.entry(case_id).or_insert_with(Vec::new).push(cost);
         debug!("CostService: Recorded activity cost for case {}", case_id);
@@ -143,7 +147,10 @@ impl CostService {
     pub async fn set_resource_rate(&self, resource_id: ResourceId, rate_per_hour: f64) {
         let mut rates = self.resource_rates.write().await;
         rates.insert(resource_id, rate_per_hour);
-        info!("CostService: Set resource rate to {} per hour", rate_per_hour);
+        info!(
+            "CostService: Set resource rate to {} per hour",
+            rate_per_hour
+        );
     }
 
     /// Get resource cost rate
@@ -183,4 +190,3 @@ mod tests {
         assert_eq!(summary.total_cost, 100.0);
     }
 }
-

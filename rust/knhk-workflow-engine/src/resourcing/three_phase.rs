@@ -7,9 +7,9 @@
 //!
 //! Based on: org.yawlfoundation.yawl.resourcing.ResourceAllocation
 
+use super::filters::ResourceFilter;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::resource::allocation::types::{Resource, ResourceId};
-use super::filters::ResourceFilter;
 use dashmap::DashMap;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -174,7 +174,8 @@ impl ThreePhaseAllocator {
         let selected_resource = policy.value().allocate(eligible_resources, context)?;
 
         // Record allocation
-        self.allocations.insert(selected_resource.clone(), context.clone());
+        self.allocations
+            .insert(selected_resource.clone(), context.clone());
 
         Ok(AllocateResult {
             selected_resource: selected_resource.clone(),
@@ -219,11 +220,7 @@ impl ThreePhaseAllocator {
     }
 
     /// Register allocation policy (TRIZ Principle 40: Composite Materials)
-    pub fn register_policy(
-        &self,
-        name: String,
-        policy: Box<dyn AllocationStrategy + Send + Sync>,
-    ) {
+    pub fn register_policy(&self, name: String, policy: Box<dyn AllocationStrategy + Send + Sync>) {
         self.allocation_policies.insert(name, policy);
     }
 
@@ -318,9 +315,9 @@ impl AllocationStrategy for ShortestQueueStrategy {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::resource::ResourcePool as CoreResourcePool;
     use crate::resource::{Capability, Role};
     use crate::resourcing::ResourcePoolWrapper;
-    use crate::resource::ResourcePool as CoreResourcePool;
 
     /// Test resource pool implementation
     struct TestResourcePool {
@@ -336,9 +333,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_three_phase_allocation() {
-        let test_pool = Arc::new(TestResourcePool {
-            resources: vec![],
-        });
+        let test_pool = Arc::new(TestResourcePool { resources: vec![] });
         let allocator = ThreePhaseAllocator::new(test_pool);
 
         let context = AllocationContext {

@@ -99,11 +99,7 @@ pub struct YawlException {
 
 impl YawlException {
     /// Create a new YAWL exception
-    pub fn new(
-        message: String,
-        category: ExceptionCategory,
-        severity: ExceptionSeverity,
-    ) -> Self {
+    pub fn new(message: String, category: ExceptionCategory, severity: ExceptionSeverity) -> Self {
         Self {
             message,
             category,
@@ -129,7 +125,11 @@ impl YawlException {
 
     /// Create a persistence exception
     pub fn persistence(message: String) -> Self {
-        Self::new(message, ExceptionCategory::Persistence, ExceptionSeverity::High)
+        Self::new(
+            message,
+            ExceptionCategory::Persistence,
+            ExceptionSeverity::High,
+        )
     }
 
     /// Create a query exception
@@ -139,22 +139,38 @@ impl YawlException {
 
     /// Create an authentication exception
     pub fn authentication(message: String) -> Self {
-        Self::new(message, ExceptionCategory::Authentication, ExceptionSeverity::High)
+        Self::new(
+            message,
+            ExceptionCategory::Authentication,
+            ExceptionSeverity::High,
+        )
     }
 
     /// Create a connectivity exception
     pub fn connectivity(message: String) -> Self {
-        Self::new(message, ExceptionCategory::Connectivity, ExceptionSeverity::Medium)
+        Self::new(
+            message,
+            ExceptionCategory::Connectivity,
+            ExceptionSeverity::Medium,
+        )
     }
 
     /// Create a validation exception
     pub fn validation(message: String) -> Self {
-        Self::new(message, ExceptionCategory::Validation, ExceptionSeverity::Medium)
+        Self::new(
+            message,
+            ExceptionCategory::Validation,
+            ExceptionSeverity::Medium,
+        )
     }
 
     /// Create an engine state exception
     pub fn engine_state(message: String) -> Self {
-        Self::new(message, ExceptionCategory::EngineState, ExceptionSeverity::High)
+        Self::new(
+            message,
+            ExceptionCategory::EngineState,
+            ExceptionSeverity::High,
+        )
     }
 
     /// Set case ID
@@ -200,7 +216,9 @@ impl std::fmt::Display for YawlException {
 
 impl std::error::Error for YawlException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.cause.as_ref().map(|e| e.as_ref() as &dyn std::error::Error)
+        self.cause
+            .as_ref()
+            .map(|e| e.as_ref() as &dyn std::error::Error)
     }
 }
 
@@ -271,11 +289,7 @@ impl CompensationHandler {
     }
 
     /// Register a compensation workflow for an exception category
-    pub fn register_compensation(
-        &mut self,
-        category: ExceptionCategory,
-        worklet_id: WorkletId,
-    ) {
+    pub fn register_compensation(&mut self, category: ExceptionCategory, worklet_id: WorkletId) {
         self.compensation_workflows.insert(category, worklet_id);
     }
 }
@@ -298,7 +312,8 @@ impl ExceptionHandler for CompensationHandler {
     }
 
     fn can_handle(&self, exception: &YawlException) -> bool {
-        self.compensation_workflows.contains_key(&exception.category)
+        self.compensation_workflows
+            .contains_key(&exception.category)
     }
 }
 
@@ -368,7 +383,10 @@ impl YawlExceptionManager {
         }
 
         // No handler succeeded
-        error!("YawlExceptionManager: No handler could handle exception: {}", exception);
+        error!(
+            "YawlExceptionManager: No handler could handle exception: {}",
+            exception
+        );
         self.record_exception(exception).await;
         Err(WorkflowError::ExceptionHandlingFailed(
             "No handler could handle the exception".to_string(),
@@ -457,4 +475,3 @@ mod tests {
         assert!(analytics.total_exceptions > 0);
     }
 }
-

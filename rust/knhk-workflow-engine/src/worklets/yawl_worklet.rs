@@ -164,7 +164,7 @@ impl RdrTree {
             if let Some(pos) = expr.find(op) {
                 let var = expr[..pos].trim();
                 let value_str = expr[pos + op.len()..].trim().trim_matches('"');
-                
+
                 if let Some(var_value) = context.data.get(var) {
                     return match op {
                         "==" => self.compare_values(var_value, value_str, |a, b| a == b),
@@ -185,7 +185,8 @@ impl RdrTree {
             let var = expr[..pos].trim();
             if let Some(start) = expr[pos + 10..].find('(') {
                 if let Some(end) = expr[pos + 10 + start + 1..].find(')') {
-                    let value = expr[pos + 10 + start + 1..pos + 10 + start + 1 + end].trim_matches('"');
+                    let value =
+                        expr[pos + 10 + start + 1..pos + 10 + start + 1 + end].trim_matches('"');
                     if let Some(var_value) = context.data.get(var) {
                         if let Some(s) = var_value.as_str() {
                             return s.contains(value);
@@ -249,7 +250,13 @@ impl RdrTree {
         let var_str = match var_value {
             serde_json::Value::String(s) => s.as_str(),
             serde_json::Value::Number(n) => n.to_string().as_str(),
-            serde_json::Value::Bool(b) => if *b { "true" } else { "false" },
+            serde_json::Value::Bool(b) => {
+                if *b {
+                    "true"
+                } else {
+                    "false"
+                }
+            }
             _ => return false,
         };
         cmp(var_str, value_str)
@@ -398,7 +405,9 @@ impl YawlWorkletService {
             .repository
             .get_worklet(worklet_id)
             .await
-            .ok_or_else(|| WorkflowError::WorkletNotFound(format!("Worklet {} not found", worklet_id)))?;
+            .ok_or_else(|| {
+                WorkflowError::WorkletNotFound(format!("Worklet {} not found", worklet_id))
+            })?;
 
         // Return worklet's workflow spec for execution
         // Note: Execution is handled via dependency injection in WorkletExecutor::execute_worklet
@@ -499,4 +508,3 @@ mod tests {
         assert!(selected.is_some());
     }
 }
-

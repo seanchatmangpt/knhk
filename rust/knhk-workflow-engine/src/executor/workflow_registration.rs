@@ -7,7 +7,7 @@
 //! enabling ≤8 tick hot path execution.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{SplitType, JoinType, TaskType, Task, WorkflowSpec};
+use crate::parser::{JoinType, SplitType, Task, TaskType, WorkflowSpec};
 use crate::patterns::PatternId;
 use crate::validation::DeadlockDetector;
 #[allow(unused_imports)]

@@ -35,4 +35,3 @@ impl ResourcePoolTrait for ResourcePoolWrapper {
         self.pool.get_all_resources().await
     }
 }
-

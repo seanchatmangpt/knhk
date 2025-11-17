@@ -26,7 +26,7 @@ impl WorkflowEngine {
         context: PatternExecutionContext,
     ) -> WorkflowResult<PatternExecutionResult> {
         let start_time = Instant::now();
-        
+
         // Measure ticks for hot path compliance (Chatman Constant: ≤8 ticks)
         let tick_counter = crate::performance::tick_budget::TickCounter::start();
 

@@ -23,12 +23,16 @@ use std::collections::HashMap;
 /// GATs allow associated types to be generic, enabling type-safe query builders.
 pub trait ResourceQuery {
     /// Query result type (GAT)
-    type Result<'a>
+    type Result<'a>: 'a
     where
         Self: 'a;
 
     /// Execute query against resources
-    fn execute<'a>(&self, resources: &'a [Resource], context: &'a FilterContext) -> Self::Result<'a>;
+    fn execute<'a>(
+        &self,
+        resources: &'a [Resource],
+        context: &'a FilterContext,
+    ) -> Self::Result<'a>;
 }
 
 /// Simple filter query - returns matching resource IDs
@@ -55,7 +59,11 @@ where
 {
     type Result<'a> = Vec<ResourceId>;
 
-    fn execute<'a>(&self, resources: &'a [Resource], context: &'a FilterContext) -> Self::Result<'a> {
+    fn execute<'a>(
+        &self,
+        resources: &'a [Resource],
+        context: &'a FilterContext,
+    ) -> Self::Result<'a> {
         resources
             .iter()
             .filter(|resource| (self.filter)(resource, context))
@@ -92,8 +100,8 @@ pub enum QueryCompositeOperator {
 
 impl<Q1, Q2> CompositeQuery<Q1, Q2>
 where
-    Q1: ResourceQuery<Result<'a> = Vec<ResourceId>>,
-    Q2: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    for<'a> Q1: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    for<'a> Q2: ResourceQuery<Result<'a> = Vec<ResourceId>>,
 {
     /// Create new composite query
     pub fn new(query1: Q1, query2: Q2, operator: QueryCompositeOperator) -> Self {
@@ -107,12 +115,16 @@ where
 
 impl<Q1, Q2> ResourceQuery for CompositeQuery<Q1, Q2>
 where
-    Q1: ResourceQuery<Result<'a> = Vec<ResourceId>>,
-    Q2: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    for<'a> Q1: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    for<'a> Q2: ResourceQuery<Result<'a> = Vec<ResourceId>>,
 {
     type Result<'a> = Vec<ResourceId>;
 
-    fn execute<'a>(&self, resources: &'a [Resource], context: &'a FilterContext) -> Self::Result<'a> {
+    fn execute<'a>(
+        &self,
+        resources: &'a [Resource],
+        context: &'a FilterContext,
+    ) -> Self::Result<'a> {
         let result1 = self.query1.execute(resources, context);
         let result2 = self.query2.execute(resources, context);
 
@@ -169,18 +181,22 @@ where
 
 impl<const OPTIMIZE: bool, Q> ResourceQuery for OptimizedQuery<OPTIMIZE, Q>
 where
-    Q: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    for<'a> Q: ResourceQuery<Result<'a> = Vec<ResourceId>>,
 {
     type Result<'a> = Vec<ResourceId>;
 
-    fn execute<'a>(&self, resources: &'a [Resource], context: &'a FilterContext) -> Self::Result<'a> {
+    fn execute<'a>(
+        &self,
+        resources: &'a [Resource],
+        context: &'a FilterContext,
+    ) -> Self::Result<'a> {
         let result = self.query.execute(resources, context);
 
         // Compile-time optimization: if OPTIMIZE is true, sort results for cache efficiency
         if OPTIMIZE {
-            // Sort by resource ID for better cache locality
+            // Sort by resource ID for better cache locality (using Debug for comparison)
             let mut sorted = result;
-            sorted.sort();
+            sorted.sort_by(|a, b| format!("{:?}", a).cmp(&format!("{:?}", b)));
             sorted
         } else {
             result
@@ -204,25 +220,31 @@ impl QueryBuilder {
     }
 
     /// Filter by capability
-    pub fn with_capability(self, capability: String) -> FilterQuery<impl Fn(&Resource, &FilterContext) -> bool> {
+    pub fn with_capability(
+        self,
+        capability: String,
+    ) -> FilterQuery<impl Fn(&Resource, &FilterContext) -> bool> {
         FilterQuery::new(move |resource, _context| {
-            resource
-                .capabilities
-                .iter()
-                .any(|c| c.name == capability)
+            resource.capabilities.iter().any(|c| c.name == capability)
         })
     }
 
     /// Filter by role
-    pub fn with_role(self, role: String) -> FilterQuery<impl Fn(&Resource, &FilterContext) -> bool> {
+    pub fn with_role(
+        self,
+        role: String,
+    ) -> FilterQuery<impl Fn(&Resource, &FilterContext) -> bool> {
         FilterQuery::new(move |resource, _context| {
             resource.roles.iter().any(|r| r.id.to_string() == role)
         })
     }
 
     /// Filter by workload threshold
-    pub fn with_max_workload(self, max_workload: usize) -> FilterQuery<impl Fn(&Resource, &FilterContext) -> bool> {
-        FilterQuery::new(move |resource, _context| resource.queue_length <= max_workload)
+    pub fn with_max_workload(
+        self,
+        max_workload: usize,
+    ) -> FilterQuery<impl Fn(&Resource, &FilterContext) -> bool + 'static> {
+        FilterQuery::new(move |resource, _context| resource.queue_length <= max_workload as u32)
     }
 
     /// Filter by availability
@@ -233,7 +255,7 @@ impl QueryBuilder {
     /// Execute query and return matching resources
     pub fn execute<Q>(&self, query: Q, context: &FilterContext) -> WorkflowResult<Vec<Resource>>
     where
-        Q: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+        for<'a> Q: ResourceQuery<Result<'a> = Vec<ResourceId>>,
     {
         let resource_ids = query.execute(&self.resources, context);
         let mut results = Vec::new();
@@ -288,10 +310,7 @@ mod tests {
         };
 
         let query = FilterQuery::new(|resource, _context| {
-            resource
-                .capabilities
-                .iter()
-                .any(|c| c.name == "skill1")
+            resource.capabilities.iter().any(|c| c.name == "skill1")
         });
 
         let results = query.execute(&resources, &context);
@@ -314,16 +333,10 @@ mod tests {
         };
 
         let query1 = FilterQuery::new(|resource, _context| {
-            resource
-                .capabilities
-                .iter()
-                .any(|c| c.name == "skill1")
+            resource.capabilities.iter().any(|c| c.name == "skill1")
         });
         let query2 = FilterQuery::new(|resource, _context| {
-            resource
-                .capabilities
-                .iter()
-                .any(|c| c.name == "skill2")
+            resource.capabilities.iter().any(|c| c.name == "skill2")
         });
 
         let composite = CompositeQuery::new(query1, query2, QueryCompositeOperator::And);
@@ -346,10 +359,7 @@ mod tests {
         };
 
         let query = FilterQuery::new(|resource, _context| {
-            resource
-                .capabilities
-                .iter()
-                .any(|c| c.name == "skill1")
+            resource.capabilities.iter().any(|c| c.name == "skill1")
         });
 
         let optimized = OptimizedQuery::<true, _>::new(query);
@@ -359,4 +369,3 @@ mod tests {
         assert!(results[0] <= results[1]);
     }
 }
-

@@ -238,7 +238,7 @@ impl HookEngine {
         // Simple workflow execution - execute all tasks in order
         // In full implementation, this would use pattern library and hooks
         let mut output_data = input_data.clone();
-        
+
         // For now, just return input as output
         // Full implementation would execute tasks through pattern library
         Ok(output_data)

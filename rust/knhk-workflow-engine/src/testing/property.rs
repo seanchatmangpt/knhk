@@ -74,6 +74,7 @@ impl PropertyTestGenerator {
                 },
                 split_type: self.random_split_type(&mut rng),
                 join_type: self.random_join_type(&mut rng),
+                pattern_id: None,
                 max_ticks: if rng.next().is_multiple_of(3) {
                     Some(8)
                 } else {

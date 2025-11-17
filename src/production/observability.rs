@@ -186,10 +186,10 @@ impl ObservabilityLayer {
                 .with_period(METRICS_FLUSH_INTERVAL)
                 .build()?
         } else {
-            sdkmetrics::SdkMeterProvider::builder()
+            opentelemetry_sdk::metrics::MeterProvider::builder()
                 .with_resource(resource)
                 .with_reader(
-                    sdkmetrics::PeriodicReader::builder(
+                    opentelemetry_sdk::metrics::PeriodicReader::builder(
                         opentelemetry_stdout::MetricsExporter::default(),
                         opentelemetry_sdk::runtime::Tokio,
                     ).build()

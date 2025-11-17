@@ -600,6 +600,7 @@ impl TaskBuilder {
                 task_type: TaskType::Atomic,
                 split_type: SplitType::And,
                 join_type: JoinType::And,
+                pattern_id: None,
                 max_ticks: None,
                 priority: None,
                 use_simd: false,

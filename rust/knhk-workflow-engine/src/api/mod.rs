@@ -16,10 +16,10 @@ pub mod service;
 pub mod transport;
 
 // Re-export service layer for convenience
-pub use service::{CaseService, PatternService, WorkflowService};
 pub use interface_b::{
     InterfaceB, LaunchMode, SessionHandle, UserId, WorkItemNotification, WorkItemRecord,
 };
+pub use service::{CaseService, PatternService, WorkflowService};
 
 /// Workflow engine API placeholder
 pub struct WorkflowEngineApi;

@@ -89,10 +89,8 @@ impl SeparationOfDuties {
     ) -> Option<ConstraintViolation> {
         // Check task conflicts
         for (task1, task2) in &self.conflicting_tasks {
-            let has_task1 = resource_history.has_performed_task(task1)
-                || (current_task == task1);
-            let has_task2 = resource_history.has_performed_task(task2)
-                || (current_task == task2);
+            let has_task1 = resource_history.has_performed_task(task1) || (current_task == task1);
+            let has_task2 = resource_history.has_performed_task(task2) || (current_task == task2);
 
             if has_task1 && has_task2 {
                 return Some(ConstraintViolation {
@@ -323,7 +321,10 @@ impl ComplianceManager {
         drop(histories);
 
         // Check SOD constraint
-        if let Some(violation) = self.sod.check_violation(resource_id, &resource_history, task) {
+        if let Some(violation) = self
+            .sod
+            .check_violation(resource_id, &resource_history, task)
+        {
             return Err(WorkflowError::ConstraintViolation(violation.message));
         }
 
@@ -429,10 +430,7 @@ mod tests {
             .validate_allocation(&resource_id, "approve_po")
             .await;
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("SOD violation"));
+        assert!(result.unwrap_err().to_string().contains("SOD violation"));
     }
 
     #[tokio::test]
@@ -477,10 +475,6 @@ mod tests {
 
         let result = manager.validate_four_eyes("approve_transaction").await;
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("4-eyes violation"));
+        assert!(result.unwrap_err().to_string().contains("4-eyes violation"));
     }
 }
-

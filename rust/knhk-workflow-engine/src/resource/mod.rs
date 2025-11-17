@@ -24,11 +24,12 @@ pub use compliance::{
 };
 pub use pool::*;
 pub use query::{
-    CompositeQuery, FilterQuery, OptimizedQuery, QueryBuilder, QueryCompositeOperator, ResourceQuery,
+    CompositeQuery, FilterQuery, OptimizedQuery, QueryBuilder, QueryCompositeOperator,
+    ResourceQuery,
 };
 pub use three_phase::{
     AllocatePhase, AllocationStrategy, CompositeOperator, OfferCriteria, OfferPhase,
-    ResourceMetadata, StartPhase, ThreePhaseAllocator, ThreePhaseAllocation,
+    ResourceMetadata, StartPhase, ThreePhaseAllocation, ThreePhaseAllocator,
 };
 pub use yawl_resource::{
     AllocationAlgorithm, AllocationContext, AllocationResult as YawlAllocationResult,

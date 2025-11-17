@@ -336,13 +336,9 @@ pub use rdf::{
 };
 // Export combinatorics module (new advanced implementation)
 pub use combinatorics::{
-    CompatibilityMatrix as PatternCompatibilityMatrix,
-    JoinType as CombinatoricsJoinType,
-    PatternCombination,
-    PatternCombinationOptimizer as CombinatoricsOptimizer,
-    PatternModifiers,
-    PatternPermutationGenerator as CombinatoricsGenerator,
-    PatternPermutationStats,
+    CompatibilityMatrix as PatternCompatibilityMatrix, JoinType as CombinatoricsJoinType,
+    PatternCombination, PatternCombinationOptimizer as CombinatoricsOptimizer, PatternModifiers,
+    PatternPermutationGenerator as CombinatoricsGenerator, PatternPermutationStats,
     SplitType as CombinatoricsSplitType,
 };
 // Export existing permutations module (check actual exports)

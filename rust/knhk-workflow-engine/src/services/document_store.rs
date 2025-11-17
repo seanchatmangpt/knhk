@@ -141,9 +141,15 @@ impl DocumentStore {
         docs.insert(doc_id.clone(), metadata);
 
         let mut case_docs = self.case_documents.write().await;
-        case_docs.entry(case_id).or_insert_with(Vec::new).push(doc_id.clone());
+        case_docs
+            .entry(case_id)
+            .or_insert_with(Vec::new)
+            .push(doc_id.clone());
 
-        info!("DocumentStore: Stored document {} for case {}", doc_id.0, case_id);
+        info!(
+            "DocumentStore: Stored document {} for case {}",
+            doc_id.0, case_id
+        );
         Ok(doc_id)
     }
 
@@ -157,9 +163,9 @@ impl DocumentStore {
         })?;
 
         let file_path = self.storage_root.join(format!("{}.bin", doc_id.0));
-        let content = tokio::fs::read(&file_path).await.map_err(|e| {
-            WorkflowError::Internal(format!("Failed to read document file: {}", e))
-        })?;
+        let content = tokio::fs::read(&file_path)
+            .await
+            .map_err(|e| WorkflowError::Internal(format!("Failed to read document file: {}", e)))?;
 
         Ok(content)
     }
@@ -224,7 +230,12 @@ mod tests {
 
         let content = b"test document content";
         let doc_id = store
-            .store_document(case_id, "test.txt".to_string(), "text/plain".to_string(), content)
+            .store_document(
+                case_id,
+                "test.txt".to_string(),
+                "text/plain".to_string(),
+                content,
+            )
             .await
             .unwrap();
 
@@ -235,4 +246,3 @@ mod tests {
         assert_eq!(metadata.name, "test.txt");
     }
 }
-

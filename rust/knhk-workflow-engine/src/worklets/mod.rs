@@ -9,29 +9,29 @@
 //!
 //! - TRIZ Principle 24: Intermediary - RDR selection plan
 //! - TRIZ Principle 19: Periodic Action - Periodic repository sync
+/// WorkletExecutionBackend implementation for WorkflowEngine
+pub mod backend_impl;
 /// Ripple Down Rules (RDR) engine for worklet selection
 pub mod rdr;
 /// YAWL worklet service implementation
 pub mod yawl_worklet;
-/// WorkletExecutionBackend implementation for WorkflowEngine
-pub mod backend_impl;
 
-//! # YAWL Worklet System
-//!
-//! - `yawl_worklet.rs`: YAWL worklet service with RDR selection and TRIZ enhancements
+// # YAWL Worklet System
+//
+// - `yawl_worklet.rs`: YAWL worklet service with RDR selection and TRIZ enhancements
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
-pub use rdr::{ExceptionContext, RDREngine, RDRRule, RDRSelectionPlan};
-pub use yawl_worklet::{RdrNode, RdrTree, WorkletContext, YawlWorkletService};
 use async_trait::async_trait;
+pub use rdr::{ExceptionContext, RDREngine, RDRRule, RDRSelectionPlan};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::time::{interval, Duration};
 use uuid::Uuid;
+pub use yawl_worklet::{RdrNode, RdrTree, WorkletContext, YawlWorkletService};
 
 /// Worklet identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -429,7 +429,7 @@ impl Default for WorkletRepository {
 
 /// Worklet executor
 /// Trait for worklet execution backend - breaks circular dependency
-/// 
+///
 /// This trait allows WorkletExecutor to execute worklets without directly
 /// depending on WorkflowEngine, enabling dependency injection.
 #[async_trait::async_trait]

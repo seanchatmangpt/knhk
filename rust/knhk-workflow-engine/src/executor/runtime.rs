@@ -626,7 +626,7 @@ impl WorkflowRuntime {
             }
             Some(JoinType::Discriminator) => {
                 // Discriminator: enable on FIRST, ignore rest
-                completed_incoming == 1
+                completed_incoming >= 1
             }
             None => {
                 // No join: simple sequence (enable when predecessor completes)

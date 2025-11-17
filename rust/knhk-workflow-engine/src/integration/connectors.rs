@@ -354,7 +354,7 @@ impl ConnectorIntegration {
         // 3. Serialize data to protobuf
         // 4. Invoke method via reflection or generated stubs
         // 5. Deserialize response to JSON
-        
+
         Err(WorkflowError::ExternalSystem(format!(
             "gRPC connector requires proto definitions: service='{}', method='{}', endpoint='{}'. \
              Proto files must be registered via ConnectorRegistry::register_proto() before use. \

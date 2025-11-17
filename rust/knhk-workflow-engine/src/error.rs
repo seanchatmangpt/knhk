@@ -110,10 +110,7 @@ pub enum WorkflowError {
 
     /// Tick budget exceeded
     #[error("Tick budget exceeded: used {used}, limit {limit}")]
-    TickBudgetExceeded {
-        used: u32,
-        limit: u32,
-    },
+    TickBudgetExceeded { used: u32, limit: u32 },
 
     /// Specification not found
     #[error("Specification {0} not found")]

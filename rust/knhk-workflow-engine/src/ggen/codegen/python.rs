@@ -173,7 +173,7 @@ class {}:
 
         let route_path = context
             .get("route_path")
-            .map(|s| s.as_str().unwrap_or("/api/resource"))
+            .and_then(|v| v.as_str())
             .unwrap_or("/api/resource");
 
         let code = format!(

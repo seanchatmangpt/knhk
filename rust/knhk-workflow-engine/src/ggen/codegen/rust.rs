@@ -146,8 +146,9 @@ pub enum {} {{
             WorkflowError::Internal("Missing handler_name in context".to_string())
         })?;
 
-        let route = context.get("route")
-            .map(|s| s.as_str().unwrap_or("/api/resource"))
+        let route = context
+            .get("route")
+            .and_then(|v| v.as_str())
             .unwrap_or("/api/resource");
 
         let code = format!(

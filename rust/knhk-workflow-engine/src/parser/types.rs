@@ -49,7 +49,7 @@ pub enum SplitType {
     Or,
 }
 
-/// Join type (AND, XOR, OR)
+/// Join type (AND, XOR, OR, Discriminator)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum JoinType {
     /// AND-join: wait for all branches
@@ -58,6 +58,11 @@ pub enum JoinType {
     Xor,
     /// OR-join: wait for all active branches
     Or,
+    /// Discriminator join: wait for first N branches (Pattern 9)
+    Discriminator {
+        /// Quorum: number of branches needed
+        quorum: usize,
+    },
 }
 
 /// Task type
@@ -120,7 +125,7 @@ pub struct Task {
     /// Worklet ID for exception handling (optional)
     pub exception_worklet: Option<crate::worklets::WorkletId>,
     /// Pre-compiled pattern ID (TRIZ Principle 10: Prior Action)
-    /// 
+    ///
     /// Pattern identification is computed at registration time to avoid
     /// runtime overhead. This enables ≤8 tick hot path execution.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -293,6 +298,7 @@ impl WorkflowSpec {
                 JoinType::And => "yawl:And",
                 JoinType::Xor => "yawl:Xor",
                 JoinType::Or => "yawl:Or",
+                JoinType::Discriminator { .. } => "yawl:Discriminator",
             };
             writeln!(&mut output, "    yawl:joinType {} ;", join_type_str)?;
 

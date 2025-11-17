@@ -130,7 +130,10 @@ impl InterfaceX {
         Ok(HashMap::from([
             ("status".to_string(), serde_json::json!("running")),
             ("queue_size".to_string(), serde_json::json!(queue_size)),
-            ("load_temperature".to_string(), serde_json::json!(temperature)),
+            (
+                "load_temperature".to_string(),
+                serde_json::json!(temperature),
+            ),
         ]))
     }
 
@@ -209,4 +212,3 @@ mod tests {
         assert!(result.is_ok());
     }
 }
-

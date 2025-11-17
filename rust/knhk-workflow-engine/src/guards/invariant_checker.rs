@@ -164,7 +164,10 @@ impl InvariantChecker {
     }
 
     /// Validate workflow specification
-    pub fn validate_workflow_spec(&self, _spec: &crate::parser::WorkflowSpec) -> WorkflowResult<()> {
+    pub fn validate_workflow_spec(
+        &self,
+        _spec: &crate::parser::WorkflowSpec,
+    ) -> WorkflowResult<()> {
         // For now, basic validation - can be extended
         Ok(())
     }

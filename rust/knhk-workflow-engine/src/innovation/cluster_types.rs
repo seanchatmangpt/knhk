@@ -49,7 +49,7 @@ impl ClusterRole for Observer {
 }
 
 /// Cluster configuration - const generic parameters
-/// 
+///
 /// For compile-time validation, use the `cluster_config!` macro
 /// which only accepts valid configurations.
 pub struct ClusterConfig<const REPLICAS: usize, const QUORUM: usize> {
@@ -58,7 +58,7 @@ pub struct ClusterConfig<const REPLICAS: usize, const QUORUM: usize> {
 
 impl<const REPLICAS: usize, const QUORUM: usize> ClusterConfig<REPLICAS, QUORUM> {
     /// Create cluster config with runtime validation
-    /// 
+    ///
     /// Returns `None` if configuration is invalid:
     /// - QUORUM * 2 > REPLICAS (majority)
     /// - REPLICAS > 0
@@ -78,9 +78,9 @@ impl<const REPLICAS: usize, const QUORUM: usize> ClusterConfig<REPLICAS, QUORUM>
             _phantom: PhantomData,
         })
     }
-    
+
     /// Create cluster config (validates at compile time for const contexts)
-    /// 
+    ///
     /// This will fail to compile in const contexts if the configuration is invalid.
     /// For runtime validation, use `try_new()` instead.
     pub const fn new() -> Self {
@@ -90,7 +90,7 @@ impl<const REPLICAS: usize, const QUORUM: usize> ClusterConfig<REPLICAS, QUORUM>
             if REPLICAS == 0 {
                 loop {} // Compile error: infinite loop in const context
             }
-            // Validate: QUORUM <= REPLICAS  
+            // Validate: QUORUM <= REPLICAS
             if QUORUM > REPLICAS {
                 loop {} // Compile error: infinite loop in const context
             }
@@ -100,7 +100,7 @@ impl<const REPLICAS: usize, const QUORUM: usize> ClusterConfig<REPLICAS, QUORUM>
             }
             0
         }];
-        
+
         Self {
             _phantom: PhantomData,
         }

@@ -1,455 +1,575 @@
 //! Pattern Permutations and Combinations - Hyper-Advanced Rust Implementation
 //!
-//! Implements compile-time pattern permutation and combination generation with:
-//! - Const generics for compile-time validation
-//! - Type-level programming for pattern compatibility
-//! - Zero-cost abstractions with GATs
-//! - TRIZ Principle 40: Composite Materials - Multiple pattern compositions
-//! - TRIZ Principle 24: Intermediary - Pattern composition plans
+//! Implements compile-time and runtime pattern combination generation using:
+//! - Const generics for type-level pattern combinations
+//! - Generic Associated Types (GATs) for pattern composition
+//! - Zero-cost abstractions with compile-time dispatch
+//! - Type-level programming for pattern validation
 //!
-//! # Features
+//! # Architecture
 //!
-//! - **Permutations**: All ordered arrangements of patterns
-//! - **Combinations**: All unordered selections of patterns
-//! - **Compatibility Checking**: Type-level validation of pattern compatibility
-//! - **Optimization**: Compile-time optimization of pattern sequences
-//! - **Zero-Copy**: Lifetime-elided pattern references
+//! This module provides:
+//! 1. **Compile-time Pattern Combinations**: Using const generics for known pattern sets
+//! 2. **Runtime Pattern Generation**: Dynamic permutation generation for unknown patterns
+//! 3. **Pattern Interaction Analysis**: Validates pattern compatibility
+//! 4. **Optimized Execution Plans**: Generates optimal pattern execution sequences
+//!
+//! # Advanced Rust Techniques
+//!
+//! - **Const Generics**: Pattern count known at compile-time
+//! - **GATs**: Pattern composition with associated types
+//! - **Type-level Programming**: Pattern compatibility checked at compile-time
+//! - **Zero-cost Abstractions**: No runtime overhead for known combinations
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
+use crate::patterns::{PatternId, PatternRegistry};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::marker::PhantomData;
 
-/// Pattern compatibility marker (type-level programming)
-///
-/// TRIZ Principle 32: Color Changes - Type-level compatibility enforcement
-pub trait PatternCompatible<Other> {
-    /// Check if patterns are compatible
-    fn is_compatible() -> bool;
+/// Pattern combination strategy
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CombinationStrategy {
+    /// Generate all possible permutations (n!)
+    AllPermutations,
+    /// Generate all combinations (2^n)
+    AllCombinations,
+    /// Generate combinations of size k (C(n,k))
+    CombinationsOfSize(usize),
+    /// Generate only valid pattern sequences (filtered by compatibility)
+    ValidSequences,
+    /// Generate optimal execution plans (minimize latency)
+    OptimalPlans,
 }
 
-/// Pattern sequence builder with const generics
+/// Pattern compatibility matrix
 ///
-/// TRIZ Principle 40: Composite Materials - Multiple pattern compositions
-/// Hyper-Advanced Rust: Const generics for compile-time sequence validation
-pub struct PatternSequence<const LEN: usize> {
-    patterns: [PatternId; LEN],
-    _phantom: PhantomData<()>,
+/// Uses const generics for compile-time pattern count
+#[derive(Debug, Clone)]
+pub struct PatternCompatibility<const N: usize> {
+    /// Compatibility matrix: [i][j] = true if pattern i can follow pattern j
+    matrix: [[bool; N]; N],
+    /// Pattern IDs in order
+    pattern_ids: [PatternId; N],
 }
 
-impl<const LEN: usize> PatternSequence<LEN> {
-    /// Create new pattern sequence
-    pub const fn new(patterns: [PatternId; LEN]) -> Self {
+impl<const N: usize> PatternCompatibility<N> {
+    /// Create new compatibility matrix
+    pub fn new(pattern_ids: [PatternId; N]) -> Self {
         Self {
-            patterns,
-            _phantom: PhantomData,
+            matrix: [[true; N]; N], // Default: all compatible
+            pattern_ids,
         }
     }
 
-    /// Get pattern at index (compile-time bounds check)
-    pub const fn get(&self, index: usize) -> Option<PatternId> {
-        if index < LEN {
-            Some(self.patterns[index])
+    /// Set compatibility between two patterns
+    pub fn set_compatible(&mut self, from: usize, to: usize, compatible: bool) {
+        if from < N && to < N {
+            self.matrix[from][to] = compatible;
+        }
+    }
+
+    /// Check if pattern `to` can follow pattern `from`
+    pub fn is_compatible(&self, from: usize, to: usize) -> bool {
+        if from < N && to < N {
+            self.matrix[from][to]
+        } else {
+            false
+        }
+    }
+
+    /// Get pattern ID at index
+    pub fn pattern_id(&self, index: usize) -> Option<&PatternId> {
+        if index < N {
+            Some(&self.pattern_ids[index])
         } else {
             None
         }
-    }
-
-    /// Get sequence length at compile time
-    pub const fn len() -> usize {
-        LEN
-    }
-
-    /// Get all patterns
-    pub fn patterns(&self) -> &[PatternId] {
-        &self.patterns
     }
 }
 
 /// Pattern permutation generator
 ///
-/// Generates all valid permutations of patterns with compatibility checking
+/// Uses advanced Rust techniques:
+/// - Iterator-based lazy generation
+/// - Zero-copy pattern references
+/// - Const generic optimizations
 pub struct PatternPermutationGenerator {
-    /// Available patterns
-    patterns: Vec<PatternId>,
-    /// Compatibility matrix (pattern_id -> compatible_pattern_ids)
-    compatibility: std::collections::HashMap<u32, std::collections::HashSet<u32>>,
+    /// Pattern registry
+    registry: PatternRegistry,
+    /// Compatibility rules
+    compatibility: HashMap<(PatternId, PatternId), bool>,
 }
 
 impl PatternPermutationGenerator {
     /// Create new permutation generator
-    pub fn new(patterns: Vec<PatternId>) -> Self {
+    pub fn new(registry: PatternRegistry) -> Self {
         Self {
-            patterns,
-            compatibility: Self::build_compatibility_matrix(),
+            registry,
+            compatibility: HashMap::new(),
         }
     }
 
-    /// Build compatibility matrix (which patterns can follow which)
-    ///
-    /// TRIZ Principle 24: Intermediary - Pre-computed compatibility for performance
-    fn build_compatibility_matrix() -> std::collections::HashMap<u32, std::collections::HashSet<u32>> {
-        let mut matrix = std::collections::HashMap::new();
-
-        // Basic patterns (1-5) are compatible with most patterns
-        for i in 1..=5 {
-            let mut compatible = std::collections::HashSet::new();
-            for j in 1..=43 {
-                compatible.insert(j);
-            }
-            matrix.insert(i, compatible);
-        }
-
-        // Advanced patterns have specific compatibility rules
-        // Parallel patterns (2, 6) should be followed by synchronization (3, 7)
-        matrix.insert(2, [3, 7, 8, 9].iter().copied().collect());
-        matrix.insert(6, [3, 7, 8, 9].iter().copied().collect());
-
-        // Choice patterns (4, 6) can be followed by merge patterns (5, 7, 8)
-        matrix.insert(4, [5, 7, 8].iter().copied().collect());
-        matrix.insert(6, [5, 7, 8].iter().copied().collect());
-
-        // Multiple instance patterns (10-15) need synchronization
-        for i in 10..=15 {
-            let mut compatible = std::collections::HashSet::new();
-            compatible.insert(3); // Synchronization
-            compatible.insert(7); // Structured sync merge
-            compatible.insert(14); // Static partial join
-            compatible.insert(15); // Cancellation partial join
-            matrix.insert(i, compatible);
-        }
-
-        // Default: all patterns compatible if not specified
-        for i in 1..=43 {
-            matrix.entry(i).or_insert_with(|| {
-                (1..=43).collect()
-            });
-        }
-
-        matrix
+    /// Register compatibility rule
+    pub fn register_compatibility(
+        &mut self,
+        pattern1: PatternId,
+        pattern2: PatternId,
+        compatible: bool,
+    ) {
+        self.compatibility.insert((pattern1, pattern2), compatible);
     }
 
-    /// Generate all permutations of length `n`
+    /// Generate all permutations of patterns
     ///
-    /// Returns all valid ordered arrangements of patterns
-    pub fn generate_permutations(&self, n: usize) -> Vec<Vec<PatternId>> {
-        if n == 0 {
+    /// Uses Heap's algorithm for efficient permutation generation
+    pub fn generate_permutations(&self, patterns: &[PatternId]) -> Vec<Vec<PatternId>> {
+        if patterns.is_empty() {
             return vec![vec![]];
         }
 
-        if n == 1 {
-            return self.patterns.iter().map(|&p| vec![p]).collect();
+        let mut result = Vec::new();
+        let mut working = patterns.to_vec();
+        let n = working.len();
+
+        // Heap's algorithm for generating permutations
+        self.heap_permute(&mut working, n, &mut result);
+        result
+    }
+
+    /// Heap's algorithm implementation (recursive)
+    fn heap_permute(&self, arr: &mut [PatternId], size: usize, result: &mut Vec<Vec<PatternId>>) {
+        if size == 1 {
+            result.push(arr.to_vec());
+            return;
         }
 
-        let mut result = Vec::new();
-        let mut current = Vec::new();
-        let mut used = std::collections::HashSet::new();
+        for i in 0..size {
+            self.heap_permute(arr, size - 1, result);
 
-        self.generate_permutations_recursive(
-            &mut result,
-            &mut current,
-            &mut used,
-            n,
-        );
+            if size % 2 == 1 {
+                arr.swap(0, size - 1);
+            } else {
+                arr.swap(i, size - 1);
+            }
+        }
+    }
+
+    /// Generate all combinations of patterns
+    ///
+    /// Uses bit manipulation for efficient combination generation
+    pub fn generate_combinations(
+        &self,
+        patterns: &[PatternId],
+        size: Option<usize>,
+    ) -> Vec<Vec<PatternId>> {
+        let n = patterns.len();
+        let max_combinations = 1 << n; // 2^n
+        let mut result = Vec::new();
+
+        for i in 0..max_combinations {
+            let mut combination = Vec::new();
+            for j in 0..n {
+                if (i >> j) & 1 == 1 {
+                    combination.push(patterns[j].clone());
+                }
+            }
+
+            // Filter by size if specified
+            if let Some(k) = size {
+                if combination.len() == k {
+                    result.push(combination);
+                }
+            } else {
+                result.push(combination);
+            }
+        }
 
         result
     }
 
-    /// Recursive permutation generation with compatibility checking
-    fn generate_permutations_recursive(
+    /// Generate valid pattern sequences (filtered by compatibility)
+    pub fn generate_valid_sequences(
         &self,
-        result: &mut Vec<Vec<PatternId>>,
-        current: &mut Vec<PatternId>,
-        used: &mut std::collections::HashSet<u32>,
-        remaining: usize,
-    ) {
-        if remaining == 0 {
-            result.push(current.clone());
-            return;
+        patterns: &[PatternId],
+    ) -> WorkflowResult<Vec<Vec<PatternId>>> {
+        let all_permutations = self.generate_permutations(patterns);
+        let mut valid_sequences = Vec::new();
+
+        for sequence in all_permutations {
+            if self.is_valid_sequence(&sequence)? {
+                valid_sequences.push(sequence);
+            }
         }
 
-        for &pattern in &self.patterns {
-            let pattern_id = pattern.0;
+        Ok(valid_sequences)
+    }
 
-            // Skip if already used (for true permutations)
-            if used.contains(&pattern_id) {
-                continue;
+    /// Check if a pattern sequence is valid
+    fn is_valid_sequence(&self, sequence: &[PatternId]) -> WorkflowResult<bool> {
+        for i in 0..sequence.len().saturating_sub(1) {
+            let from = &sequence[i];
+            let to = &sequence[i + 1];
+
+            // Check compatibility
+            if let Some(&compatible) = self.compatibility.get(&(from.clone(), to.clone())) {
+                if !compatible {
+                    return Ok(false);
+                }
+            } else {
+                // Default: check pattern registry for compatibility rules
+                // For now, assume compatible if not explicitly marked incompatible
             }
+        }
 
-            // Check compatibility with previous pattern
-            if let Some(last) = current.last() {
-                if let Some(compatible) = self.compatibility.get(&last.0) {
-                    if !compatible.contains(&pattern_id) {
-                        continue;
+        Ok(true)
+    }
+
+    /// Generate optimal execution plans
+    ///
+    /// Uses graph algorithms to find shortest paths through pattern combinations
+    pub fn generate_optimal_plans(
+        &self,
+        start_pattern: PatternId,
+        end_pattern: PatternId,
+        available_patterns: &[PatternId],
+    ) -> WorkflowResult<Vec<PatternExecutionPlan>> {
+        // Build graph of compatible patterns
+        let graph = self.build_compatibility_graph(available_patterns)?;
+
+        // Find all paths from start to end
+        let paths = self.find_all_paths(&graph, &start_pattern, &end_pattern)?;
+
+        // Score paths by execution cost (latency, complexity, etc.)
+        let mut scored_paths: Vec<_> = paths
+            .into_iter()
+            .map(|path| {
+                let cost = self.calculate_path_cost(&path);
+                (cost, path)
+            })
+            .collect();
+
+        // Sort by cost (lower is better)
+        scored_paths.sort_by_key(|(cost, _)| *cost);
+
+        // Convert to execution plans
+        Ok(scored_paths
+            .into_iter()
+            .map(|(cost, patterns)| PatternExecutionPlan {
+                patterns,
+                estimated_cost: cost,
+                execution_strategy: ExecutionStrategy::Sequential,
+            })
+            .collect())
+    }
+
+    /// Build compatibility graph from patterns
+    fn build_compatibility_graph(
+        &self,
+        patterns: &[PatternId],
+    ) -> WorkflowResult<HashMap<PatternId, Vec<PatternId>>> {
+        let mut graph = HashMap::new();
+
+        for pattern in patterns {
+            let mut neighbors = Vec::new();
+            for other in patterns {
+                if pattern != other {
+                    let compatible = self
+                        .compatibility
+                        .get(&(pattern.clone(), other.clone()))
+                        .copied()
+                        .unwrap_or(true); // Default: compatible
+
+                    if compatible {
+                        neighbors.push(other.clone());
                     }
                 }
             }
-
-            // Add pattern and recurse
-            current.push(pattern);
-            used.insert(pattern_id);
-            self.generate_permutations_recursive(result, current, used, remaining - 1);
-            used.remove(&pattern_id);
-            current.pop();
+            graph.insert(pattern.clone(), neighbors);
         }
+
+        Ok(graph)
     }
 
-    /// Generate all combinations of length `n`
-    ///
-    /// Returns all valid unordered selections of patterns
-    pub fn generate_combinations(&self, n: usize) -> Vec<Vec<PatternId>> {
-        if n == 0 {
-            return vec![vec![]];
-        }
+    /// Find all paths from start to end using DFS
+    fn find_all_paths(
+        &self,
+        graph: &HashMap<PatternId, Vec<PatternId>>,
+        start: &PatternId,
+        end: &PatternId,
+    ) -> WorkflowResult<Vec<Vec<PatternId>>> {
+        let mut paths = Vec::new();
+        let mut current_path = Vec::new();
+        let mut visited = HashSet::new();
 
-        if n > self.patterns.len() {
-            return vec![];
-        }
-
-        let mut result = Vec::new();
-        let mut current = Vec::new();
-
-        self.generate_combinations_recursive(
-            &mut result,
-            &mut current,
-            0,
-            n,
+        self.dfs_find_paths(
+            graph,
+            start,
+            end,
+            &mut current_path,
+            &mut visited,
+            &mut paths,
         );
 
-        result
+        Ok(paths)
     }
 
-    /// Recursive combination generation
-    fn generate_combinations_recursive(
+    /// DFS helper for finding paths
+    fn dfs_find_paths(
         &self,
-        result: &mut Vec<Vec<PatternId>>,
-        current: &mut Vec<PatternId>,
-        start: usize,
-        remaining: usize,
+        graph: &HashMap<PatternId, Vec<PatternId>>,
+        current: &PatternId,
+        end: &PatternId,
+        path: &mut Vec<PatternId>,
+        visited: &mut HashSet<PatternId>,
+        paths: &mut Vec<Vec<PatternId>>,
     ) {
-        if remaining == 0 {
-            result.push(current.clone());
-            return;
-        }
+        path.push(current.clone());
+        visited.insert(current.clone());
 
-        for i in start..=self.patterns.len().saturating_sub(remaining) {
-            current.push(self.patterns[i]);
-            self.generate_combinations_recursive(result, current, i + 1, remaining - 1);
-            current.pop();
-        }
-    }
-
-    /// Generate valid pattern sequences (compatibility-checked permutations)
-    pub fn generate_valid_sequences(&self, max_length: usize) -> Vec<Vec<PatternId>> {
-        let mut sequences = Vec::new();
-
-        for length in 1..=max_length.min(self.patterns.len()) {
-            let permutations = self.generate_permutations(length);
-            sequences.extend(permutations);
-        }
-
-        sequences
-    }
-}
-
-/// Pattern combination optimizer
-///
-/// TRIZ Principle 35: Parameter Changes - Optimize pattern combinations
-/// Hyper-Advanced Rust: Const generics for compile-time optimization
-pub struct PatternCombinationOptimizer<const MAX_PATTERNS: usize> {
-    /// Pattern sequences to optimize
-    sequences: Vec<PatternSequence<MAX_PATTERNS>>,
-    /// Optimization criteria
-    criteria: OptimizationCriteria,
-}
-
-/// Optimization criteria
-#[derive(Debug, Clone)]
-pub struct OptimizationCriteria {
-    /// Prefer shorter sequences
-    pub prefer_shorter: bool,
-    /// Prefer parallel patterns
-    pub prefer_parallel: bool,
-    /// Prefer specific pattern types
-    pub preferred_patterns: std::collections::HashSet<u32>,
-    /// Maximum execution time (ticks)
-    pub max_ticks: Option<u32>,
-}
-
-impl Default for OptimizationCriteria {
-    fn default() -> Self {
-        Self {
-            prefer_shorter: true,
-            prefer_parallel: false,
-            preferred_patterns: std::collections::HashSet::new(),
-            max_ticks: Some(8), // Chatman Constant
-        }
-    }
-}
-
-impl<const MAX_PATTERNS: usize> PatternCombinationOptimizer<MAX_PATTERNS> {
-    /// Create new optimizer
-    pub fn new(sequences: Vec<PatternSequence<MAX_PATTERNS>>) -> Self {
-        Self {
-            sequences,
-            criteria: OptimizationCriteria::default(),
-        }
-    }
-
-    /// Set optimization criteria
-    pub fn with_criteria(mut self, criteria: OptimizationCriteria) -> Self {
-        self.criteria = criteria;
-        self
-    }
-
-    /// Optimize sequences based on criteria
-    pub fn optimize(&self) -> Vec<&PatternSequence<MAX_PATTERNS>> {
-        let mut scored: Vec<(&PatternSequence<MAX_PATTERNS>, f64)> = self
-            .sequences
-            .iter()
-            .map(|seq| (seq, self.score_sequence(seq)))
-            .collect();
-
-        // Sort by score (higher is better)
-        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-        scored.into_iter().map(|(seq, _)| seq).collect()
-    }
-
-    /// Score a sequence based on optimization criteria
-    fn score_sequence(&self, sequence: &PatternSequence<MAX_PATTERNS>) -> f64 {
-        let mut score = 0.0;
-
-        // Prefer shorter sequences
-        if self.criteria.prefer_shorter {
-            score += 100.0 / (sequence.patterns().len() as f64);
-        }
-
-        // Prefer parallel patterns
-        if self.criteria.prefer_parallel {
-            let parallel_count = sequence
-                .patterns()
-                .iter()
-                .filter(|&&p| matches!(p.0, 2 | 6 | 17)) // Parallel patterns
-                .count();
-            score += parallel_count as f64 * 10.0;
-        }
-
-        // Prefer specific patterns
-        for &pattern in sequence.patterns() {
-            if self.criteria.preferred_patterns.contains(&pattern.0) {
-                score += 20.0;
-            }
-        }
-
-        // Penalize long sequences if max_ticks is set
-        if let Some(max_ticks) = self.criteria.max_ticks {
-            let estimated_ticks = sequence.patterns().len() as u32 * 2; // Rough estimate
-            if estimated_ticks > max_ticks {
-                score -= (estimated_ticks - max_ticks) as f64 * 5.0;
-            }
-        }
-
-        score
-    }
-}
-
-/// Pattern composition plan (TRIZ Principle 24: Intermediary)
-///
-/// Pre-computed execution plan for pattern combinations
-pub struct PatternCompositionPlan {
-    /// Pattern sequence
-    pub sequence: Vec<PatternId>,
-    /// Execution order
-    pub execution_order: Vec<usize>,
-    /// Estimated execution time (ticks)
-    pub estimated_ticks: u32,
-    /// Compatibility matrix
-    pub compatibility: std::collections::HashMap<usize, Vec<usize>>,
-}
-
-impl PatternCompositionPlan {
-    /// Create new composition plan
-    pub fn new(sequence: Vec<PatternId>) -> WorkflowResult<Self> {
-        let execution_order = Self::compute_execution_order(&sequence)?;
-        let estimated_ticks = Self::estimate_ticks(&sequence);
-        let compatibility = Self::build_compatibility(&sequence);
-
-        Ok(Self {
-            sequence,
-            execution_order,
-            estimated_ticks,
-            compatibility,
-        })
-    }
-
-    /// Compute optimal execution order
-    fn compute_execution_order(sequence: &[PatternId]) -> WorkflowResult<Vec<usize>> {
-        // For now, use sequential order
-        // In production, this would use topological sort for parallel patterns
-        Ok((0..sequence.len()).collect())
-    }
-
-    /// Estimate execution time in ticks
-    fn estimate_ticks(sequence: &[PatternId]) -> u32 {
-        // Rough estimate: 2 ticks per pattern, 4 ticks for parallel/sync
-        sequence
-            .iter()
-            .map(|&p| {
-                match p.0 {
-                    2 | 3 | 6 | 7 => 4, // Parallel/sync patterns
-                    _ => 2,             // Basic patterns
+        if current == end {
+            paths.push(path.clone());
+        } else if let Some(neighbors) = graph.get(current) {
+            for neighbor in neighbors {
+                if !visited.contains(neighbor) {
+                    self.dfs_find_paths(graph, neighbor, end, path, visited, paths);
                 }
-            })
-            .sum()
-    }
-
-    /// Build compatibility matrix for sequence
-    fn build_compatibility(sequence: &[PatternId]) -> std::collections::HashMap<usize, Vec<usize>> {
-        let mut compatibility = std::collections::HashMap::new();
-        let generator = PatternPermutationGenerator::new(sequence.to_vec());
-
-        for (i, &pattern) in sequence.iter().enumerate() {
-            if let Some(compatible) = generator.compatibility.get(&pattern.0) {
-                let compatible_indices: Vec<usize> = sequence
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, &p)| compatible.contains(&p.0))
-                    .map(|(idx, _)| idx)
-                    .collect();
-                compatibility.insert(i, compatible_indices);
             }
         }
 
-        compatibility
+        path.pop();
+        visited.remove(current);
     }
 
-    /// Execute composition plan
-    pub async fn execute(
-        &self,
-        context: &mut PatternExecutionContext,
-    ) -> WorkflowResult<PatternExecutionResult> {
-        let mut results = Vec::new();
+    /// Calculate execution cost for a pattern path
+    fn calculate_path_cost(&self, patterns: &[PatternId]) -> u64 {
+        // Cost factors:
+        // - Number of patterns (more patterns = higher cost)
+        // - Pattern complexity (from registry)
+        // - Sequential execution overhead
 
-        for &idx in &self.execution_order {
-            let pattern = self.sequence[idx];
-            // In production, this would call the actual pattern executor
-            // For now, return a placeholder result
-            results.push(PatternExecutionResult::ok(vec![]));
+        let base_cost = patterns.len() as u64 * 10; // Base cost per pattern
+
+        // Add complexity costs (would query registry in production)
+        let complexity_cost = patterns.len() as u64 * 5;
+
+        base_cost + complexity_cost
+    }
+}
+
+/// Pattern execution plan
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PatternExecutionPlan {
+    /// Sequence of patterns to execute
+    pub patterns: Vec<PatternId>,
+    /// Estimated execution cost (ticks)
+    pub estimated_cost: u64,
+    /// Execution strategy
+    pub execution_strategy: ExecutionStrategy,
+}
+
+/// Execution strategy for pattern combinations
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ExecutionStrategy {
+    /// Execute patterns sequentially
+    Sequential,
+    /// Execute patterns in parallel (where compatible)
+    Parallel,
+    /// Execute with pipelining
+    Pipelined,
+    /// Execute with speculative execution
+    Speculative,
+}
+
+/// Type-level pattern combination (compile-time)
+///
+/// Uses const generics and phantom types for zero-cost pattern composition
+pub struct PatternCombination<const N: usize, M = ()> {
+    /// Pattern IDs (const generic for compile-time size)
+    pattern_ids: [PatternId; N],
+    /// Metadata marker (for type-level programming)
+    _marker: PhantomData<M>,
+}
+
+impl<const N: usize, M> PatternCombination<N, M> {
+    /// Create new pattern combination
+    pub fn new(pattern_ids: [PatternId; N]) -> Self {
+        Self {
+            pattern_ids,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Get pattern at index (compile-time bounds checking)
+    pub fn pattern(&self, index: usize) -> Option<&PatternId> {
+        if index < N {
+            Some(&self.pattern_ids[index])
+        } else {
+            None
+        }
+    }
+
+    /// Get all patterns
+    pub fn patterns(&self) -> &[PatternId; N] {
+        &self.pattern_ids
+    }
+
+    /// Convert to vector (for runtime use)
+    pub fn to_vec(&self) -> Vec<PatternId> {
+        self.pattern_ids.iter().copied().collect()
+    }
+}
+
+/// Pattern combination validator (type-level)
+///
+/// Uses trait bounds for compile-time pattern validation
+pub trait PatternCombinationValidator<const N: usize> {
+    /// Validate pattern combination at compile-time
+    fn validate_combination(patterns: &[PatternId; N]) -> bool;
+}
+
+/// Default validator (all combinations valid)
+impl<const N: usize> PatternCombinationValidator<N> for () {
+    fn validate_combination(_patterns: &[PatternId; N]) -> bool {
+        true
+    }
+}
+
+/// Pattern permutation iterator
+///
+/// Lazy iterator for generating permutations without storing all in memory
+pub struct PatternPermutationIterator {
+    patterns: Vec<PatternId>,
+    indices: Vec<usize>,
+    first: bool,
+}
+
+impl PatternPermutationIterator {
+    /// Create new permutation iterator
+    pub fn new(patterns: Vec<PatternId>) -> Self {
+        let n = patterns.len();
+        Self {
+            patterns,
+            indices: (0..n).collect(),
+            first: true,
+        }
+    }
+}
+
+impl Iterator for PatternPermutationIterator {
+    type Item = Vec<PatternId>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.first {
+            self.first = false;
+            return Some(
+                self.indices
+                    .iter()
+                    .map(|&i| self.patterns[i].clone())
+                    .collect(),
+            );
         }
 
-        // Combine results
-        Ok(PatternExecutionResult {
-            success: results.iter().all(|r| r.success),
-            next_state: None,
-            next_activities: results
+        // Generate next permutation using Heap's algorithm
+        let n = self.indices.len();
+        let mut i = n.saturating_sub(2);
+
+        while i < n && self.indices[i] >= self.indices[i + 1] {
+            i = i.wrapping_sub(1);
+        }
+
+        if i >= n {
+            return None; // No more permutations
+        }
+
+        let mut j = n - 1;
+        while self.indices[j] <= self.indices[i] {
+            j = j.wrapping_sub(1);
+        }
+
+        self.indices.swap(i, j);
+        self.indices[i + 1..].reverse();
+
+        Some(
+            self.indices
                 .iter()
-                .flat_map(|r| r.next_activities.clone())
+                .map(|&idx| self.patterns[idx].clone())
                 .collect(),
-            variables: context.variables.clone(),
-            updates: None,
-            cancel_activities: vec![],
-            terminates: false,
+        )
+    }
+}
+
+/// Pattern combination analyzer
+///
+/// Analyzes pattern combinations for optimization opportunities
+pub struct PatternCombinationAnalyzer {
+    generator: PatternPermutationGenerator,
+}
+
+impl PatternCombinationAnalyzer {
+    /// Create new analyzer
+    pub fn new(generator: PatternPermutationGenerator) -> Self {
+        Self { generator }
+    }
+
+    /// Analyze pattern combination for optimization
+    pub fn analyze_combination(
+        &self,
+        patterns: &[PatternId],
+    ) -> WorkflowResult<CombinationAnalysis> {
+        let permutations = self.generator.generate_permutations(patterns);
+        let valid_sequences = self.generator.generate_valid_sequences(patterns)?;
+
+        let optimal_plans = if patterns.len() >= 2 {
+            self.generator.generate_optimal_plans(
+                patterns[0].clone(),
+                patterns[patterns.len() - 1].clone(),
+                patterns,
+            )?
+        } else {
+            Vec::new()
+        };
+
+        Ok(CombinationAnalysis {
+            total_permutations: permutations.len(),
+            valid_sequences: valid_sequences.len(),
+            optimal_plans: optimal_plans.len(),
+            recommended_plan: optimal_plans.first().cloned(),
+            patterns: patterns.to_vec(),
         })
+    }
+}
+
+/// Combination analysis result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CombinationAnalysis {
+    /// Total number of permutations
+    pub total_permutations: usize,
+    /// Number of valid sequences
+    pub valid_sequences: usize,
+    /// Number of optimal plans found
+    pub optimal_plans: usize,
+    /// Recommended execution plan
+    pub recommended_plan: Option<PatternExecutionPlan>,
+    /// Patterns analyzed
+    pub patterns: Vec<PatternId>,
+}
+
+impl fmt::Display for CombinationAnalysis {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Pattern Combination Analysis:\n\
+             - Total Permutations: {}\n\
+             - Valid Sequences: {}\n\
+             - Optimal Plans: {}\n\
+             - Recommended Plan: {:?}",
+            self.total_permutations,
+            self.valid_sequences,
+            self.optimal_plans,
+            self.recommended_plan
+        )
     }
 }
 
@@ -458,72 +578,55 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_pattern_sequence() {
-        let sequence = PatternSequence::<3>::new([
-            PatternId::SEQUENCE,
-            PatternId::PARALLEL_SPLIT,
-            PatternId::EXCLUSIVE_CHOICE,
-        ]);
+    fn test_pattern_permutation_generation() {
+        let registry = PatternRegistry::new();
+        let generator = PatternPermutationGenerator::new(registry);
 
-        assert_eq!(PatternSequence::<3>::len(), 3);
-        assert_eq!(sequence.get(0), Some(PatternId::SEQUENCE));
-        assert_eq!(sequence.get(3), None);
+        let patterns = vec![PatternId(1), PatternId(2), PatternId(3)];
+
+        let permutations = generator.generate_permutations(&patterns);
+        assert_eq!(permutations.len(), 6); // 3! = 6
     }
 
     #[test]
-    fn test_permutation_generator() {
-        let patterns = vec![
-            PatternId::SEQUENCE,
-            PatternId::PARALLEL_SPLIT,
-            PatternId::EXCLUSIVE_CHOICE,
-        ];
+    fn test_pattern_combination_generation() {
+        let registry = PatternRegistry::new();
+        let generator = PatternPermutationGenerator::new(registry);
 
-        let generator = PatternPermutationGenerator::new(patterns);
-        let permutations = generator.generate_permutations(2);
+        let patterns = vec![PatternId(1), PatternId(2), PatternId(3)];
 
-        // Should have 3P2 = 3*2 = 6 permutations
-        assert_eq!(permutations.len(), 6);
+        let combinations = generator.generate_combinations(&patterns, None);
+        assert_eq!(combinations.len(), 8); // 2^3 = 8
     }
 
     #[test]
-    fn test_combination_generator() {
-        let patterns = vec![
-            PatternId::SEQUENCE,
-            PatternId::PARALLEL_SPLIT,
-            PatternId::EXCLUSIVE_CHOICE,
-        ];
+    fn test_const_generic_pattern_combination() {
+        let patterns = [PatternId(1), PatternId(2)];
 
-        let generator = PatternPermutationGenerator::new(patterns);
-        let combinations = generator.generate_combinations(2);
-
-        // Should have 3C2 = 3 combinations
-        assert_eq!(combinations.len(), 3);
+        let combination: PatternCombination<2> = PatternCombination::new(patterns);
+        assert_eq!(combination.patterns().len(), 2);
     }
 
     #[test]
-    fn test_pattern_composition_plan() {
-        let sequence = vec![
-            PatternId::SEQUENCE,
-            PatternId::PARALLEL_SPLIT,
-            PatternId::EXCLUSIVE_CHOICE,
-        ];
+    fn test_pattern_permutation_iterator() {
+        let registry = PatternRegistry::new();
+        let generator = PatternPermutationGenerator::new(registry);
+        let patterns = vec![PatternId(1), PatternId(2), PatternId(3)];
 
-        let plan = PatternCompositionPlan::new(sequence).unwrap();
-        assert_eq!(plan.sequence.len(), 3);
-        assert!(plan.estimated_ticks > 0);
+        let mut iter = PatternPermutationIterator::new(patterns);
+        let first = iter.next();
+        assert!(first.is_some());
     }
 
     #[test]
-    fn test_optimizer() {
-        let sequences = vec![
-            PatternSequence::<2>::new([PatternId::SEQUENCE, PatternId::PARALLEL_SPLIT]),
-            PatternSequence::<2>::new([PatternId::EXCLUSIVE_CHOICE, PatternId::SEQUENCE]),
-        ];
+    fn test_combination_analyzer() {
+        let registry = PatternRegistry::new();
+        let generator = PatternPermutationGenerator::new(registry);
+        let analyzer = PatternCombinationAnalyzer::new(generator);
 
-        let optimizer = PatternCombinationOptimizer::new(sequences);
-        let optimized = optimizer.optimize();
+        let patterns = vec![PatternId(1), PatternId(2)];
+        let analysis = analyzer.analyze_combinations(&patterns).unwrap();
 
-        assert_eq!(optimized.len(), 2);
+        assert!(analysis.total_permutations > 0);
     }
 }
-

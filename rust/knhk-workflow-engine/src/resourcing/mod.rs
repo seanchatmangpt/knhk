@@ -19,4 +19,3 @@ pub use constraints::{
 pub use filters::{FilterResult, FilterType, ResourceFilter};
 pub use resource_pool_impl::ResourcePoolWrapper;
 pub use three_phase::{AllocationPhase, ResourcePool as ResourcePoolTrait, ThreePhaseAllocator};
-

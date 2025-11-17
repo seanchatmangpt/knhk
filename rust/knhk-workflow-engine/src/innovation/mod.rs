@@ -46,13 +46,13 @@
 
 // Production features
 pub mod ab_testing;
-pub mod hyper_advanced;
 pub mod adaptive_optimizer;
 pub mod analytics;
 pub mod deterministic;
 pub mod experiment;
 pub mod formal;
 pub mod hardware;
+pub mod hyper_advanced;
 pub mod workflow_templates;
 pub mod zero_copy;
 

@@ -234,4 +234,3 @@ mod tests {
         assert!(true); // Calendar structure works
     }
 }
-

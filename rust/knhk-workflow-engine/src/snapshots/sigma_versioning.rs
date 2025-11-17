@@ -236,14 +236,17 @@ impl SnapshotVersioning {
     }
 
     /// Create shadow snapshot for testing
-    pub async fn create_shadow_snapshot(&self, content: serde_json::Value) -> WorkflowResult<SnapshotId> {
+    pub async fn create_shadow_snapshot(
+        &self,
+        content: serde_json::Value,
+    ) -> WorkflowResult<SnapshotId> {
         // Create snapshot without updating manifest (shadow)
         let snapshot = Snapshot::new(content, None, 0);
         let snapshot_id = snapshot.id.clone();
-        
+
         let mut snapshots = self.snapshots.write().await;
         snapshots.insert(snapshot_id.clone(), snapshot);
-        
+
         Ok(snapshot_id)
     }
 

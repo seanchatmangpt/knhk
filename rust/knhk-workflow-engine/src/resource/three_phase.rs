@@ -70,9 +70,7 @@ pub enum OfferCriteria {
         department: Option<String>,
     },
     /// Organizational group selection
-    OrgGroupBased {
-        group_id: String,
-    },
+    OrgGroupBased { group_id: String },
     /// Composite criteria (TRIZ Principle 40)
     Composite {
         criteria: Vec<OfferCriteria>,
@@ -199,10 +197,7 @@ impl ThreePhaseAllocator {
     }
 
     /// Phase 1: Offer - Select eligible participants
-    pub async fn offer_phase(
-        &self,
-        criteria: &OfferCriteria,
-    ) -> WorkflowResult<OfferPhase> {
+    pub async fn offer_phase(&self, criteria: &OfferCriteria) -> WorkflowResult<OfferPhase> {
         let resources = self.resources.read().await;
         let mut eligible_users = Vec::new();
 
@@ -219,7 +214,9 @@ impl ThreePhaseAllocator {
                     }
                 }
             }
-            OfferCriteria::CapabilityBased { required_capabilities } => {
+            OfferCriteria::CapabilityBased {
+                required_capabilities,
+            } => {
                 for (user_id, metadata) in resources.iter() {
                     if required_capabilities
                         .iter()
@@ -314,53 +311,54 @@ impl ThreePhaseAllocator {
                 let idx = (chrono::Utc::now().timestamp_millis() as usize) % eligible_users.len();
                 eligible_users[idx].clone()
             }
-            AllocationStrategy::ShortestQueue => {
-                eligible_users
-                    .iter()
-                    .min_by_key(|user_id| {
-                        resources
-                            .get(*user_id)
-                            .map(|r| r.queue_length)
-                            .unwrap_or(u32::MAX)
-                    })
-                    .ok_or_else(|| WorkflowError::Internal("No users available".to_string()))?
-                    .clone()
-            }
-            AllocationStrategy::LeastBusy => {
-                eligible_users
-                    .iter()
-                    .min_by_key(|user_id| {
-                        resources
-                            .get(*user_id)
-                            .map(|r| r.current_workload)
-                            .unwrap_or(u32::MAX)
-                    })
-                    .ok_or_else(|| WorkflowError::Internal("No users available".to_string()))?
-                    .clone()
-            }
-            AllocationStrategy::FastestCompletion => {
-                eligible_users
-                    .iter()
-                    .min_by(|a, b| {
-                        let time_a = resources
-                            .get(a)
-                            .map(|r| r.avg_completion_time)
-                            .unwrap_or(f64::MAX);
-                        let time_b = resources
-                            .get(b)
-                            .map(|r| r.avg_completion_time)
-                            .unwrap_or(f64::MAX);
-                        time_a.partial_cmp(&time_b).unwrap_or(std::cmp::Ordering::Equal)
-                    })
-                    .ok_or_else(|| WorkflowError::Internal("No users available".to_string()))?
-                    .clone()
-            }
-            AllocationStrategy::Composite { strategies, weights } => {
+            AllocationStrategy::ShortestQueue => eligible_users
+                .iter()
+                .min_by_key(|user_id| {
+                    resources
+                        .get(*user_id)
+                        .map(|r| r.queue_length)
+                        .unwrap_or(u32::MAX)
+                })
+                .ok_or_else(|| WorkflowError::Internal("No users available".to_string()))?
+                .clone(),
+            AllocationStrategy::LeastBusy => eligible_users
+                .iter()
+                .min_by_key(|user_id| {
+                    resources
+                        .get(*user_id)
+                        .map(|r| r.current_workload)
+                        .unwrap_or(u32::MAX)
+                })
+                .ok_or_else(|| WorkflowError::Internal("No users available".to_string()))?
+                .clone(),
+            AllocationStrategy::FastestCompletion => eligible_users
+                .iter()
+                .min_by(|a, b| {
+                    let time_a = resources
+                        .get(a)
+                        .map(|r| r.avg_completion_time)
+                        .unwrap_or(f64::MAX);
+                    let time_b = resources
+                        .get(b)
+                        .map(|r| r.avg_completion_time)
+                        .unwrap_or(f64::MAX);
+                    time_a
+                        .partial_cmp(&time_b)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .ok_or_else(|| WorkflowError::Internal("No users available".to_string()))?
+                .clone(),
+            AllocationStrategy::Composite {
+                strategies,
+                weights,
+            } => {
                 // TRIZ Principle 40: Composite Materials - Weighted combination
                 let mut scores: HashMap<UserId, f64> = HashMap::new();
 
                 for (strategy, weight) in strategies.iter().zip(weights.iter()) {
-                    let phase = self.allocate_phase(eligible_users, *strategy, role_id.clone()).await?;
+                    let phase = self
+                        .allocate_phase(eligible_users, *strategy, role_id.clone())
+                        .await?;
                     *scores.entry(phase.allocated_user).or_insert(0.0) += weight;
                 }
 
@@ -488,7 +486,11 @@ mod tests {
 
         // Test Phase 2: Allocate (shortest queue)
         let allocate = allocator
-            .allocate_phase(&offer.eligible_users, AllocationStrategy::ShortestQueue, None)
+            .allocate_phase(
+                &offer.eligible_users,
+                AllocationStrategy::ShortestQueue,
+                None,
+            )
             .await
             .unwrap();
         assert_eq!(allocate.allocated_user, "user2"); // user2 has shorter queue
@@ -507,4 +509,3 @@ mod tests {
         assert!(result.final_user.is_some());
     }
 }
-

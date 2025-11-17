@@ -92,6 +92,8 @@ pub mod innovation;
 pub mod integration_layer;
 /// MAPE-K autonomic computing engine
 pub mod mape;
+/// Monitoring and observability - Andon & Gemba systems
+pub mod monitoring;
 /// Ontology-driven workflow executor
 pub mod ontology_executor;
 /// Self-executing workflow orchestrator

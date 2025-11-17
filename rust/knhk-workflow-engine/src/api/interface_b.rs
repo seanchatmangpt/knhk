@@ -269,13 +269,9 @@ impl InterfaceB {
         let item_key = item_id.to_string();
 
         // Verify checkout
-        let checkout = self
-            .checked_out_items
-            .get(&item_key)
-            .ok_or_else(|| WorkflowError::Validation(format!(
-                "Work item {} not checked out",
-                item_key
-            )))?;
+        let checkout = self.checked_out_items.get(&item_key).ok_or_else(|| {
+            WorkflowError::Validation(format!("Work item {} not checked out", item_key))
+        })?;
 
         if checkout.0 != *user_id {
             return Err(WorkflowError::Validation(format!(
@@ -543,7 +539,11 @@ impl InterfaceB {
                     .insert(item_key.clone());
             }
 
-            Ok(format!("Work item {} reoffered to {} users", item_key, user_ids.len()))
+            Ok(format!(
+                "Work item {} reoffered to {} users",
+                item_key,
+                user_ids.len()
+            ))
         } else {
             Err(WorkflowError::CaseNotFound(item_key))
         }
@@ -569,7 +569,10 @@ impl InterfaceB {
                 }
             }
 
-            Ok(format!("Work item {} deallocated from {}", item_key, user_id))
+            Ok(format!(
+                "Work item {} deallocated from {}",
+                item_key, user_id
+            ))
         } else {
             Err(WorkflowError::CaseNotFound(item_key))
         }
@@ -622,9 +625,7 @@ impl InterfaceB {
         if let Some(user_items) = self.user_work_items.get(user_id) {
             user_items
                 .iter()
-                .filter_map(|item_key| {
-                    self.work_items.get(item_key).map(|item| item.clone())
-                })
+                .filter_map(|item_key| self.work_items.get(item_key).map(|item| item.clone()))
                 .collect()
         } else {
             vec![]
@@ -640,9 +641,7 @@ impl InterfaceB {
         if let Some(case_items) = self.case_work_items.get(case_id) {
             case_items
                 .iter()
-                .filter_map(|item_key| {
-                    self.work_items.get(item_key).map(|item| item.clone())
-                })
+                .filter_map(|item_key| self.work_items.get(item_key).map(|item| item.clone()))
                 .collect()
         } else {
             vec![]
@@ -658,9 +657,7 @@ impl InterfaceB {
         if let Some(spec_items) = self.spec_work_items.get(spec_id) {
             spec_items
                 .iter()
-                .filter_map(|item_key| {
-                    self.work_items.get(item_key).map(|item| item.clone())
-                })
+                .filter_map(|item_key| self.work_items.get(item_key).map(|item| item.clone()))
                 .collect()
         } else {
             vec![]
@@ -805,4 +802,3 @@ mod tests {
         assert!(result.is_ok());
     }
 }
-

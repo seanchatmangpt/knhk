@@ -6,7 +6,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, RwLock, atomic::{AtomicU64, Ordering}};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Serialize, Deserialize};
-use tracing::{info, debug, instrument};
+use tracing::{info, warn, debug, instrument};
 use dashmap::DashMap;
 use crate::autonomic::Receipt;
 

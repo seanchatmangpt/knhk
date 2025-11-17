@@ -48,7 +48,12 @@ macro_rules! register_phase {
     };
     // Backward compatibility - try to extract metadata from type
     ($phase_type:ty, $factory:expr) => {
-        register_phase!($phase_type, $factory, stringify!($phase_type), "Validation phase");
+        register_phase!(
+            $phase_type,
+            $factory,
+            stringify!($phase_type),
+            "Validation phase"
+        );
     };
 }
 

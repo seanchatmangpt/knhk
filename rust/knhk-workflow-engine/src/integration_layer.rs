@@ -113,15 +113,21 @@ impl SnapshotVersioningExt for SnapshotVersioning {
         let rdf_data = serialize_spec_to_rdf(spec)?;
 
         // Create snapshot
-        let snapshot_id = self.create_snapshot(serde_json::json!({"rdf": rdf_data})).await?;
+        let snapshot_id = self
+            .create_snapshot(serde_json::json!({"rdf": rdf_data}))
+            .await?;
         Ok(snapshot_id.to_string())
     }
 
     async fn load_spec_from_snapshot(&self, snapshot_id: &str) -> WorkflowResult<WorkflowSpec> {
         // Load snapshot
         let snapshot_id_parsed: SnapshotId = snapshot_id.to_string();
-        let snapshot = self.get_snapshot(&snapshot_id_parsed).await
-            .ok_or_else(|| WorkflowError::Internal(format!("Snapshot {} not found", snapshot_id)))?;
+        let snapshot = self
+            .get_snapshot(&snapshot_id_parsed)
+            .await
+            .ok_or_else(|| {
+                WorkflowError::Internal(format!("Snapshot {} not found", snapshot_id))
+            })?;
 
         // Parse RDF back to spec - snapshot.content is serde_json::Value
         if let Some(rdf_str) = snapshot.content.get("rdf").and_then(|v| v.as_str()) {
@@ -131,7 +137,9 @@ impl SnapshotVersioningExt for SnapshotVersioning {
             if let Some(rdf_str) = snapshot.content.as_str() {
                 parse_rdf_to_spec(rdf_str)
             } else {
-                Err(WorkflowError::Parse("No RDF content in snapshot".to_string()))
+                Err(WorkflowError::Parse(
+                    "No RDF content in snapshot".to_string(),
+                ))
             }
         }
     }
@@ -164,7 +172,8 @@ fn parse_rdf_to_spec(rdf: &str) -> WorkflowResult<WorkflowSpec> {
     // Simple RDF parsing (would use proper SPARQL in production)
     // For now, create a minimal spec
     Ok(WorkflowSpec {
-        id: WorkflowSpecId::parse_str("00000000-0000-0000-0000-000000000000").unwrap_or_else(|_| WorkflowSpecId::new()),
+        id: WorkflowSpecId::parse_str("00000000-0000-0000-0000-000000000000")
+            .unwrap_or_else(|_| WorkflowSpecId::new()),
         name: "Parsed Workflow".to_string(),
         tasks: std::collections::HashMap::new(),
         conditions: std::collections::HashMap::new(),

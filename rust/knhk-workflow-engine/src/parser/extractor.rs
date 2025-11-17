@@ -287,6 +287,7 @@ pub fn extract_tasks(
                 task_type,
                 split_type,
                 join_type,
+                pattern_id: None, // Will be computed at registration time
                 max_ticks,
                 priority,
                 use_simd,

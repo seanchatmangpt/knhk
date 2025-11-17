@@ -72,10 +72,20 @@ pub struct SimdHashVerifier {
 
 impl SimdHashVerifier {
     /// Create a new SIMD hash verifier with runtime feature detection.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub fn new() -> Self {
         Self {
             has_avx2: is_x86_feature_detected!("avx2"),
             has_avx512: is_x86_feature_detected!("avx512f"),
+        }
+    }
+
+    /// Create a new SIMD hash verifier (non-x86 fallback).
+    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+    pub fn new() -> Self {
+        Self {
+            has_avx2: false,
+            has_avx512: false,
         }
     }
 
