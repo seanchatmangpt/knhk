@@ -30,14 +30,7 @@ pub struct HotPathStats {
 
 impl HotPathStats {
     pub fn new() -> Self {
-        Self {
-            cycles_total: AtomicU64::new(0),
-            cycles_min: AtomicU64::new(u64::MAX),
-            cycles_max: AtomicU64::new(0),
-            executions: AtomicU64::new(0),
-            queue_depth: AtomicU64::new(0),
-            stratum_switches: AtomicU64::new(0),
-        }
+        Self::default()
     }
 
     #[inline]
@@ -74,6 +67,19 @@ impl HotPathStats {
     }
 }
 
+impl Default for HotPathStats {
+    fn default() -> Self {
+        Self {
+            cycles_total: AtomicU64::new(0),
+            cycles_min: AtomicU64::new(u64::MAX),
+            cycles_max: AtomicU64::new(0),
+            executions: AtomicU64::new(0),
+            queue_depth: AtomicU64::new(0),
+            stratum_switches: AtomicU64::new(0),
+        }
+    }
+}
+
 /// Stratum for execution isolation
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,7 +100,7 @@ pub struct HotPath {
     /// Task queue (lock-free)
     hot_queue: ArrayQueue<Box<Task>>,
     warm_queue: ArrayQueue<Box<Task>>,
-    cold_queue: RwLock<Vec<Box<Task>>>,
+    cold_queue: RwLock<Vec<Task>>,
 
     /// Receipt store
     receipt_store: RwLock<ReceiptStore>,
@@ -104,23 +110,11 @@ pub struct HotPath {
 
     /// Running flag
     running: AtomicBool,
-
-    /// Current stratum
-    current_stratum: AtomicU64,
 }
 
 impl HotPath {
     pub fn new() -> Self {
-        Self {
-            executor: Executor::new(),
-            hot_queue: ArrayQueue::new(MAX_QUEUE_DEPTH),
-            warm_queue: ArrayQueue::new(MAX_QUEUE_DEPTH),
-            cold_queue: RwLock::new(Vec::new()),
-            receipt_store: RwLock::new(ReceiptStore::new(10000)),
-            stats: HotPathStats::new(),
-            running: AtomicBool::new(false),
-            current_stratum: AtomicU64::new(Stratum::Hot as u64),
-        }
+        Self::default()
     }
 
     /// Submit task to hot path
@@ -133,7 +127,7 @@ impl HotPath {
             Stratum::Hot => self.hot_queue.push(task),
             Stratum::Warm => self.warm_queue.push(task),
             Stratum::Cold => {
-                self.cold_queue.write().push(task);
+                self.cold_queue.write().push(*task);
                 Ok(())
             }
         }
@@ -219,7 +213,7 @@ impl HotPath {
 
             // Check for stratum change
             if cycles > 100 && task.get_state() != TaskState::Completed {
-                self.cold_queue.write().push(task);
+                self.cold_queue.write().push(*task);
                 self.stats.stratum_switches.fetch_add(1, Ordering::Relaxed);
             }
 
@@ -351,6 +345,29 @@ impl HotPath {
     }
 }
 
+impl Default for HotPath {
+    fn default() -> Self {
+        Self {
+            executor: Executor::new(),
+            hot_queue: ArrayQueue::new(MAX_QUEUE_DEPTH),
+            warm_queue: ArrayQueue::new(MAX_QUEUE_DEPTH),
+            cold_queue: RwLock::new(Vec::new()),
+            receipt_store: RwLock::new(ReceiptStore::new(10000)),
+            stats: HotPathStats::new(),
+            running: AtomicBool::new(false),
+        }
+    }
+}
+
+impl Default for HotPathRunner {
+    fn default() -> Self {
+        Self {
+            hot_path: Arc::new(HotPath::new()),
+            thread_handle: None,
+        }
+    }
+}
+
 /// Snapshot of hot path statistics
 #[derive(Debug, Clone)]
 pub struct HotPathStatsSnapshot {
@@ -385,10 +402,7 @@ pub struct HotPathRunner {
 
 impl HotPathRunner {
     pub fn new() -> Self {
-        Self {
-            hot_path: Arc::new(HotPath::new()),
-            thread_handle: None,
-        }
+        Self::default()
     }
 
     /// Start hot path in background thread

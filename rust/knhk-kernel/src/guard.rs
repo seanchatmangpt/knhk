@@ -149,7 +149,7 @@ impl Guard {
 
     /// Create a NOT guard
     #[inline]
-    pub fn not(guard: Guard) -> Self {
+    pub fn negate(guard: Guard) -> Self {
         Self {
             guard_type: GuardType::Not,
             predicate: Predicate::Equal,
@@ -335,7 +335,7 @@ pub struct GuardCompiler;
 
 impl GuardCompiler {
     /// Compile guard to optimized evaluation function
-    pub fn compile(guard: &Guard) -> Box<dyn Fn(&ExecutionContext) -> bool + '_> {
+    pub fn compile(guard: &Guard) -> Box<dyn for<'a> Fn(&'a ExecutionContext) -> bool + '_> {
         match guard.guard_type {
             GuardType::Predicate => {
                 let pred = guard.predicate;

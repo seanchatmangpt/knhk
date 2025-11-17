@@ -201,12 +201,13 @@ impl KernelExecutor {
     }
 
     /// Compile kernel source code
-    pub fn compile(&self, name: &str, _source: &str) -> Result<Vec<u8>, KernelError> {
+    pub fn compile(&self, name: &str, source: &str) -> Result<Vec<u8>, KernelError> {
+        let _ = source; // Mark as intentionally unused
         // Phase 9 stub: Would call NVCC/HIPCC/OpenCL compiler
         tracing::info!("Kernel executor: compiling kernel '{}'", name);
 
         // Optimization flags based on level
-        let _flags = match self.optimization_level {
+        let flags = match self.optimization_level {
             OptimizationLevel::Debug => vec!["--device-debug".to_string()],
             OptimizationLevel::Standard => vec!["-O2".to_string()],
             OptimizationLevel::Aggressive => vec!["-O3".to_string(), "-march=sm_90".to_string()],
@@ -216,6 +217,7 @@ impl KernelExecutor {
                 "-lineinfo".to_string(),
             ],
         };
+        let _ = flags; // Mark as intentionally unused
 
         // In real implementation, would call nvcc/hipcc
         let binary = format!("compiled_kernel_{}", name).into_bytes();
@@ -278,18 +280,20 @@ impl KernelExecutor {
     /// Launch activation function kernel
     pub fn launch_activation(
         &self,
-        _input: *const f32,
-        _output: *mut f32,
+        input: *const f32,
+        output: *mut f32,
         size: usize,
         activation: ActivationType,
     ) -> Result<(), KernelError> {
-        let _params = self.autotune("activation", size)?;
+        let _ = (input, output); // Mark as intentionally unused
+        let params = self.autotune("activation", size)?;
 
         tracing::info!(
             "Kernel executor: launching activation {:?} on {} elements",
             activation,
             size
         );
+        let _ = params; // Mark as intentionally unused
 
         // Phase 9 stub: Would launch CUDA kernel
         Ok(())
@@ -298,14 +302,16 @@ impl KernelExecutor {
     /// Launch softmax kernel
     pub fn launch_softmax(
         &self,
-        _input: *const f32,
-        _output: *mut f32,
+        input: *const f32,
+        output: *mut f32,
         rows: usize,
         cols: usize,
     ) -> Result<(), KernelError> {
-        let _params = self.autotune("softmax", rows * cols)?;
+        let _ = (input, output); // Mark as intentionally unused
+        let params = self.autotune("softmax", rows * cols)?;
 
         tracing::info!("Kernel executor: launching softmax {}x{}", rows, cols);
+        let _ = params; // Mark as intentionally unused
 
         // Phase 9 stub: Would launch CUDA kernel
         Ok(())
@@ -314,19 +320,21 @@ impl KernelExecutor {
     /// Launch pattern dispatch kernel
     pub fn launch_pattern_dispatch(
         &self,
-        _patterns: *const u8,
-        _data: *const u8,
-        _matches: *mut u64,
+        patterns: *const u8,
+        data: *const u8,
+        matches: *mut u64,
         pattern_count: usize,
         data_size: usize,
     ) -> Result<usize, KernelError> {
-        let _params = self.autotune("pattern_dispatch", data_size)?;
+        let _ = (patterns, data, matches); // Mark as intentionally unused
+        let params = self.autotune("pattern_dispatch", data_size)?;
 
         tracing::info!(
             "Kernel executor: launching pattern dispatch {} patterns on {} bytes",
             pattern_count,
             data_size
         );
+        let _ = params; // Mark as intentionally unused
 
         // Phase 9 stub: Would launch pattern matching kernel
         Ok(0)
@@ -335,17 +343,19 @@ impl KernelExecutor {
     /// Launch descriptor processing kernel
     pub fn launch_descriptor_process(
         &self,
-        _descriptors: *const u8,
-        _output: *mut u8,
+        descriptors: *const u8,
+        output: *mut u8,
         count: usize,
         descriptor_size: usize,
     ) -> Result<(), KernelError> {
-        let _params = self.autotune("descriptor", count * descriptor_size)?;
+        let _ = (descriptors, output); // Mark as intentionally unused
+        let params = self.autotune("descriptor", count * descriptor_size)?;
 
         tracing::info!(
             "Kernel executor: launching descriptor processing {} descriptors",
             count
         );
+        let _ = params; // Mark as intentionally unused
 
         // Phase 9 stub: Would launch descriptor processing kernel
         Ok(())

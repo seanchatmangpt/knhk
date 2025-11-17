@@ -93,8 +93,8 @@ impl AccelerationConfig {
             }
         }
 
-        // Step 2: Check for ROCm runtime
-        #[cfg(feature = "rocm")]
+        // Step 2: Check for ROCm runtime (commented out until feature is added to Cargo.toml)
+        #[cfg(all(feature = "gpu", target_os = "linux"))]
         {
             // In production, this would check for ROCm driver/runtime
             // e.g., by checking for /dev/kfd, /dev/dri/renderD* devices

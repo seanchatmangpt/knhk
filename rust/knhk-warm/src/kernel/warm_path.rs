@@ -76,15 +76,41 @@ pub struct WarmPathStats {
 impl Clone for WarmPathStats {
     fn clone(&self) -> Self {
         Self {
-            total_executions: AtomicU64::new(self.total_executions.load(std::sync::atomic::Ordering::Relaxed)),
-            successful_executions: AtomicU64::new(self.successful_executions.load(std::sync::atomic::Ordering::Relaxed)),
-            degraded_executions: AtomicU64::new(self.degraded_executions.load(std::sync::atomic::Ordering::Relaxed)),
-            failed_executions: AtomicU64::new(self.failed_executions.load(std::sync::atomic::Ordering::Relaxed)),
-            total_execution_time_us: AtomicU64::new(self.total_execution_time_us.load(std::sync::atomic::Ordering::Relaxed)),
-            items_processed: AtomicU64::new(self.items_processed.load(std::sync::atomic::Ordering::Relaxed)),
-            telemetry_emitted: AtomicU64::new(self.telemetry_emitted.load(std::sync::atomic::Ordering::Relaxed)),
-            budget_violations: AtomicU64::new(self.budget_violations.load(std::sync::atomic::Ordering::Relaxed)),
-            current_load: AtomicU64::new(self.current_load.load(std::sync::atomic::Ordering::Relaxed)),
+            total_executions: AtomicU64::new(
+                self.total_executions
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            successful_executions: AtomicU64::new(
+                self.successful_executions
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            degraded_executions: AtomicU64::new(
+                self.degraded_executions
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            failed_executions: AtomicU64::new(
+                self.failed_executions
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            total_execution_time_us: AtomicU64::new(
+                self.total_execution_time_us
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            items_processed: AtomicU64::new(
+                self.items_processed
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            telemetry_emitted: AtomicU64::new(
+                self.telemetry_emitted
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            budget_violations: AtomicU64::new(
+                self.budget_violations
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            ),
+            current_load: AtomicU64::new(
+                self.current_load.load(std::sync::atomic::Ordering::Relaxed),
+            ),
             peak_load: AtomicU64::new(self.peak_load.load(std::sync::atomic::Ordering::Relaxed)),
         }
     }
@@ -261,7 +287,12 @@ unsafe impl Sync for WarmPathAllocator {}
 
 impl WarmPathAllocator {
     pub fn new(size: usize) -> Self {
-        let layout = Layout::from_size_align(size, 64).expect("Invalid layout");
+        let layout = Layout::from_size_align(size, 64)
+            .unwrap_or_else(|_| {
+                // Fallback: try smaller alignment if 64 fails
+                Layout::from_size_align(size, 8)
+                    .unwrap_or_else(|_| panic!("FATAL: Cannot create memory layout for size {}", size))
+            });
         let slab = unsafe { alloc(layout) };
 
         if slab.is_null() {

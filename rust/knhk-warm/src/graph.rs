@@ -26,7 +26,6 @@
 #![allow(clippy::expect_used)]
 // Allow deprecated oxigraph::sparql::Query - migration planned for v2.0 (see deprecation notice above)
 #![allow(deprecated)]
-
 #![cfg_attr(feature = "rdf", allow(deprecated))]
 
 use ahash::AHasher;

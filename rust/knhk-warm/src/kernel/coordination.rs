@@ -351,6 +351,12 @@ impl Default for BackpressureThresholds {
     }
 }
 
+impl Default for BackpressureController {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BackpressureController {
     pub fn new() -> Self {
         Self {
@@ -443,6 +449,12 @@ enum ComponentState {
     Running,
     Stopping,
     Stopped,
+}
+
+impl Default for ShutdownCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ShutdownCoordinator {

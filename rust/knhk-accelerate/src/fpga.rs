@@ -336,7 +336,7 @@ impl FPGAOffload {
         // 5. Return aggregated results
 
         // Simulate collecting pattern IDs that matched
-        let patterns_matched = Vec::new();
+        let patterns_matched: Vec<usize> = Vec::new();
         // In production, this would come from FPGA match data
         // For now, simulate that no patterns matched
 

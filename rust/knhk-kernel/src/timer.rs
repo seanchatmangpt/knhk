@@ -211,10 +211,8 @@ pub struct TickBudget {
 }
 
 impl TickBudget {
-    /// Create a new tick budget (default 8 ticks)
-    #[inline]
     pub fn new() -> Self {
-        Self::with_budget(8)
+        Self::default()
     }
 
     /// Create with custom budget
@@ -264,6 +262,12 @@ impl TickBudget {
     /// Get breakdown of operations
     pub fn breakdown(&self) -> &[(&'static str, u64)] {
         &self.operations
+    }
+}
+
+impl Default for TickBudget {
+    fn default() -> Self {
+        Self::with_budget(8)
     }
 }
 

@@ -268,7 +268,7 @@ impl MapEKCoordinator {
     /// Phase 2: Analyze - Detect patterns
     async fn phase_analyze(
         &self,
-        cycle: &mut LoopCycle,
+        _cycle: &mut LoopCycle,
         cycle_id: &str,
     ) -> Result<(Vec<crate::observation::DetectedPattern>, String), CoordinationError> {
         let patterns = self.pattern_detector.detect_patterns().await;

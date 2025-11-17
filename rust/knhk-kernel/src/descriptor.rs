@@ -241,6 +241,12 @@ impl Descriptor {
     }
 }
 
+impl Default for Descriptor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Descriptor manager for atomic hot-swap
 pub struct DescriptorManager;
 
@@ -315,9 +321,7 @@ pub struct DescriptorBuilder {
 
 impl DescriptorBuilder {
     pub fn new() -> Self {
-        Self {
-            descriptor: Descriptor::new(),
-        }
+        Self::default()
     }
 
     pub fn with_tick_budget(mut self, budget: u32) -> Self {
@@ -339,6 +343,15 @@ impl DescriptorBuilder {
         self.descriptor.optimize_layout();
         self.descriptor.compute_hash();
         self.descriptor
+    }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for DescriptorBuilder {
+    fn default() -> Self {
+        Self {
+            descriptor: Descriptor::new(),
+        }
     }
 }
 

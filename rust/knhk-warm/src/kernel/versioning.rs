@@ -3,13 +3,13 @@
 // DOCTRINE: Covenant 2 (Invariants Are Law) - Version integrity must be preserved
 
 use blake3;
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use parking_lot::RwLock;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{debug, error, info, warn};
 
 /// Version metadata with full tracking
@@ -81,6 +81,12 @@ pub struct VersionGraph {
     branches: RwLock<HashMap<String, u64>>,
     current_branch: RwLock<String>,
     head: RwLock<u64>,
+}
+
+impl Default for VersionGraph {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VersionGraph {
@@ -234,6 +240,12 @@ pub struct VersionSigner {
     signing_key: SigningKey,
 }
 
+impl Default for VersionSigner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VersionSigner {
     pub fn new() -> Self {
         use rand::RngCore;
@@ -246,7 +258,8 @@ impl VersionSigner {
 
     pub fn from_keys(secret: &[u8]) -> Result<Self, String> {
         let signing_key = SigningKey::from_bytes(
-            <&[u8; 32]>::try_from(secret).map_err(|e| format!("Invalid secret key length: {}", e))?,
+            <&[u8; 32]>::try_from(secret)
+                .map_err(|e| format!("Invalid secret key length: {}", e))?,
         );
 
         Ok(Self { signing_key })
@@ -318,7 +331,7 @@ impl RollbackManager {
             version_id,
             created_at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| Duration::from_secs(0))
                 .as_secs(),
             reason,
             automatic,
@@ -519,7 +532,7 @@ impl TimeTravelExecutor {
             version_id,
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| Duration::from_secs(0))
                 .as_secs(),
             state,
             metadata: HashMap::new(),

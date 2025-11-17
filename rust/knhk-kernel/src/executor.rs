@@ -2,13 +2,11 @@
 // Finite, deterministic state transitions with ≤8 tick guarantee
 
 use crate::{
-    descriptor::{
-        DescriptorManager, ExecutionContext, ObservationBuffer, ResourceState,
-    },
+    descriptor::{DescriptorManager, ExecutionContext, ObservationBuffer, ResourceState},
     guard::StateFlags,
     pattern::{PatternContext, PatternDispatcher},
     receipt::{Receipt, ReceiptBuilder, ReceiptStatus},
-    timer::{HotPathTimer, TickBudget},
+    timer::HotPathTimer,
 };
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
@@ -175,11 +173,11 @@ impl Executor {
     #[inline(always)]
     pub fn execute(&self, task: &Task) -> Receipt {
         let timer = HotPathTimer::start();
-        let mut budget = TickBudget::with_budget(task.tick_budget as u64);
+        let mut budget = crate::timer::TickBudget::with_budget(task.tick_budget as u64);
 
         // Start receipt
         let mut receipt = ReceiptBuilder::new(task.pattern_id, task.task_id)
-            .with_budget(task.tick_budget as u32)
+            .with_budget(task.tick_budget)
             .with_state(task.get_state() as u32, 0)
             .with_inputs(&task.observations[..task.observation_count as usize]);
 
@@ -356,6 +354,12 @@ impl Executor {
             total_ticks: self.stats.total_ticks.load(Ordering::Relaxed),
             budget_violations: self.stats.budget_violations.load(Ordering::Relaxed),
         }
+    }
+}
+
+impl Default for Executor {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

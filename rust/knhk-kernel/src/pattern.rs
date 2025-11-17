@@ -138,26 +138,12 @@ pub struct PatternResult {
 }
 
 impl PatternDispatcher {
-    /// Create a new dispatcher with all pattern handlers
     pub fn new() -> Self {
-        let mut dispatch_table: [PatternHandler; 44] = [pattern_noop; 44];
-
-        // Register all pattern handlers
-        dispatch_table[PatternType::Sequence as usize] = pattern_sequence;
-        dispatch_table[PatternType::ParallelSplit as usize] = pattern_parallel_split;
-        dispatch_table[PatternType::Synchronization as usize] = pattern_synchronization;
-        dispatch_table[PatternType::ExclusiveChoice as usize] = pattern_exclusive_choice;
-        dispatch_table[PatternType::SimpleMerge as usize] = pattern_simple_merge;
-        dispatch_table[PatternType::MultiChoice as usize] = pattern_multi_choice;
-        dispatch_table[PatternType::StructuredSyncMerge as usize] = pattern_structured_sync_merge;
-        dispatch_table[PatternType::MultiMerge as usize] = pattern_multi_merge;
-        dispatch_table[PatternType::StructuredDiscriminator as usize] =
-            pattern_structured_discriminator;
-        // ... (register all 43 patterns)
-
-        Self { dispatch_table }
+        Self::default()
     }
+}
 
+impl PatternDispatcher {
     /// Dispatch pattern execution (hot path, no branches)
     #[inline(always)]
     pub fn dispatch(&self, context: &PatternContext) -> PatternResult {
@@ -176,6 +162,27 @@ impl PatternDispatcher {
     pub fn validate_pattern(&self, pattern_type: PatternType) -> bool {
         let index = pattern_type as usize;
         index > 0 && index < 44
+    }
+}
+
+impl Default for PatternDispatcher {
+    fn default() -> Self {
+        let mut dispatch_table: [PatternHandler; 44] = [pattern_noop; 44];
+
+        // Register all pattern handlers
+        dispatch_table[PatternType::Sequence as usize] = pattern_sequence;
+        dispatch_table[PatternType::ParallelSplit as usize] = pattern_parallel_split;
+        dispatch_table[PatternType::Synchronization as usize] = pattern_synchronization;
+        dispatch_table[PatternType::ExclusiveChoice as usize] = pattern_exclusive_choice;
+        dispatch_table[PatternType::SimpleMerge as usize] = pattern_simple_merge;
+        dispatch_table[PatternType::MultiChoice as usize] = pattern_multi_choice;
+        dispatch_table[PatternType::StructuredSyncMerge as usize] = pattern_structured_sync_merge;
+        dispatch_table[PatternType::MultiMerge as usize] = pattern_multi_merge;
+        dispatch_table[PatternType::StructuredDiscriminator as usize] =
+            pattern_structured_discriminator;
+        // ... (register all 43 patterns)
+
+        Self { dispatch_table }
     }
 }
 
@@ -478,7 +485,7 @@ impl PatternValidator {
     pub fn check_permutation_matrix(pattern_type: PatternType) -> bool {
         // All 43 patterns are valid
         let index = pattern_type as usize;
-        index >= 1 && index <= 43
+        (1..=43).contains(&index)
     }
 }
 

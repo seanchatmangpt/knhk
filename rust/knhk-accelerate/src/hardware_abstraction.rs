@@ -121,7 +121,7 @@ impl HardwareAbstraction {
         // Step 1: Detect available backends
         let mut available = vec![AccelerationBackend::CPU]; // CPU always available
         let mut gpu = None;
-        let fpga = None;
+        let _fpga = None;
         let simd = Some(SIMDKernel::new(crate::kernels::KernelType::Custom));
 
         // Step 2: Initialize preferred backend (try GPU first if requested/auto)
@@ -184,7 +184,7 @@ impl HardwareAbstraction {
             available_backends: available,
             active_backend,
             gpu,
-            fpga,
+            fpga: _fpga,
             simd,
         })
     }

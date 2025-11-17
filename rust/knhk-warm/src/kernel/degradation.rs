@@ -67,6 +67,12 @@ struct DegradationMetrics {
     feature_reductions: AtomicU64,
 }
 
+impl Default for DegradationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DegradationManager {
     pub fn new() -> Self {
         let levels = vec![
@@ -290,11 +296,9 @@ impl DegradationManager {
         if let Some(cb_ref) = self.circuit_breakers.get(component) {
             Arc::new(cb_ref.value().clone())
         } else {
-            let cb = CircuitBreaker::new(
-                component.to_string(),
-                CircuitBreakerConfig::default(),
-            );
-            self.circuit_breakers.insert(component.to_string(), cb.clone());
+            let cb = CircuitBreaker::new(component.to_string(), CircuitBreakerConfig::default());
+            self.circuit_breakers
+                .insert(component.to_string(), cb.clone());
             Arc::new(cb)
         }
     }
@@ -548,7 +552,7 @@ pub struct ErrorRecovery {
     backoff: ExponentialBackoff,
 }
 
-trait RecoveryStrategy: Send + Sync {
+pub trait RecoveryStrategy: Send + Sync {
     fn attempt_recovery(&self, error: &str) -> Result<(), String>;
 }
 

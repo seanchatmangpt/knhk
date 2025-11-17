@@ -81,6 +81,12 @@ pub struct TraceContext {
     pub baggage: HashMap<String, String>,
 }
 
+impl Default for TraceContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TraceContext {
     pub fn new() -> Self {
         Self {
@@ -271,13 +277,13 @@ impl EventCorrelator {
         // Add to trace map
         self.trace_map
             .entry(event.trace_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(event.clone());
 
         // Add to correlation map
         self.correlation_map
             .entry(event.correlation_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(event.id.clone());
     }
 
@@ -298,9 +304,9 @@ impl EventCorrelator {
     pub fn cleanup_old_events(&self, older_than: Instant) {
         let cutoff = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_else(|_| Duration::from_secs(0))
             .as_secs()
-            - older_than.elapsed().as_secs();
+            .saturating_sub(older_than.elapsed().as_secs());
 
         self.trace_map.retain(|_, events| {
             events.retain(|e| e.timestamp > cutoff);
@@ -424,7 +430,7 @@ impl TelemetryPipeline {
             batch_id: generate_batch_id(),
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| Duration::from_secs(0))
                 .as_secs(),
         };
 
@@ -528,6 +534,12 @@ trait ContextExtractor: Send + Sync {
 
 trait ContextInjector: Send + Sync {
     fn inject(&self, context: &TraceContext, carrier: &mut dyn std::any::Any);
+}
+
+impl Default for ContextPropagator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ContextPropagator {

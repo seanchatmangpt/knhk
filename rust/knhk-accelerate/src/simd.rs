@@ -160,7 +160,7 @@ impl SIMDKernel {
 
             // SSE2 is baseline for x86_64
             tracing::debug!("SIMD: Using SSE2 baseline");
-            return Ok(SIMDLevel::SSE);
+            Ok(SIMDLevel::SSE)
         }
 
         #[cfg(target_arch = "aarch64")]
@@ -569,9 +569,7 @@ impl SIMDKernel {
         }
 
         // Initialize result matrix to zero
-        for cell in c.iter_mut() {
-            *cell = 0.0;
-        }
+        c.iter_mut().for_each(|cell| *cell = 0.0);
 
         #[cfg(target_arch = "x86_64")]
         {

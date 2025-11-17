@@ -210,14 +210,12 @@ CRITICAL RULES:
 Pattern Details:
 - Sector: {}
 - Confidence: {:.2}
-- Evidence Count: {}
 - Detected At: {}
 
 Recommended Action: {:?}"#,
             pattern.name,
             request.sector,
             pattern.confidence,
-            pattern.evidence_count,
             pattern.detected_at,
             pattern.recommended_action
         ))
@@ -565,17 +563,16 @@ mod tests {
     fn create_test_request() -> ProposalRequest {
         ProposalRequest {
             pattern: DetectedPattern {
-                id: "test-pattern".to_string(),
                 name: "Test Pattern".to_string(),
-                description: "Test pattern description".to_string(),
-                sector: Sector::Finance,
                 confidence: 0.85,
-                observations: vec![],
-                timestamp: Utc::now(),
+                detected_at: Utc::now().timestamp_millis() as u64,
+                evidence_count: 5,
+                evidence_ids: vec!["obs-1".to_string(), "obs-2".to_string()],
                 recommended_action: PatternAction::ProposeChange {
                     description: "Add new class".to_string(),
                 },
             },
+            sector: Sector::Finance,
             current_snapshot_id: "snapshot-123".to_string(),
             doctrines: vec![],
             invariants: HardInvariants::default(),

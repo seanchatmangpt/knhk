@@ -126,6 +126,12 @@ struct KnowledgeStats {
     learning_iterations: AtomicU64,
 }
 
+impl Default for KnowledgeBase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KnowledgeBase {
     pub fn new() -> Self {
         Self {
@@ -155,7 +161,7 @@ impl KnowledgeBase {
                 p.occurrences += 1;
                 p.last_seen = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or_else(|_| Duration::from_secs(0))
                     .as_secs();
                 p.confidence = (p.confidence * p.occurrences as f64 + pattern.confidence)
                     / (p.occurrences + 1) as f64;
@@ -180,7 +186,7 @@ impl KnowledgeBase {
             id: format!("pred-{}", uuid::Uuid::new_v4()),
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| Duration::from_secs(0))
                 .as_secs(),
             predicted_value: prediction_value,
             confidence,
@@ -200,9 +206,10 @@ impl KnowledgeBase {
     pub fn provide_feedback(&self, prediction_id: String, actual_value: f64) {
         if let Some(mut prediction) = self.predictions.get_mut(&prediction_id) {
             prediction.actual_value = Some(actual_value);
-            prediction.error = Some((prediction.predicted_value - actual_value).abs());
+            let error = (prediction.predicted_value - actual_value).abs();
+            prediction.error = Some(error);
 
-            if prediction.error.unwrap() < 0.1 {
+            if error < 0.1 {
                 self.stats
                     .successful_predictions
                     .fetch_add(1, Ordering::Relaxed);
@@ -214,7 +221,7 @@ impl KnowledgeBase {
             actual_value,
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| Duration::from_secs(0))
                 .as_secs(),
             context: HashMap::new(),
         };
@@ -454,7 +461,7 @@ impl MAPEKIntegration {
             phase: hook.phase,
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| Duration::from_secs(0))
                 .as_secs(),
             duration_us: duration,
             success: result.is_ok(),
@@ -494,7 +501,7 @@ impl MAPEKIntegration {
                 value: FeatureValue::Numeric(
                     (SystemTime::now()
                         .duration_since(UNIX_EPOCH)
-                        .unwrap()
+                        .unwrap_or_else(|_| Duration::from_secs(0))
                         .as_secs()
                         / 3600
                         % 24) as f64,

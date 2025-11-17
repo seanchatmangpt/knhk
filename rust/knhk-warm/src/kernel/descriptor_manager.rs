@@ -272,7 +272,9 @@ impl DescriptorManager {
         let current = self.current_descriptor.load(guard);
 
         unsafe {
-            let current_ref = current.as_ref().unwrap();
+            let current_ref = current
+                .as_ref()
+                .ok_or_else(|| "No current descriptor available".to_string())?;
             if !self
                 .compatibility_checker
                 .check_compatibility(&current_ref.content, &new_descriptor.content)
@@ -302,7 +304,7 @@ impl DescriptorManager {
             to_version: new_version,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| std::time::Duration::from_secs(0))
                 .as_secs(),
             transition_type: TransitionType::HotSwap,
             duration_us,
@@ -343,7 +345,7 @@ impl DescriptorManager {
             to_version: rollback_version,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| std::time::Duration::from_secs(0))
                 .as_secs(),
             transition_type: TransitionType::Rollback,
             duration_us: 0,
@@ -369,7 +371,7 @@ impl DescriptorManager {
     pub fn process_pending_updates(&self) -> Vec<Result<u64, String>> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_else(|_| std::time::Duration::from_secs(0))
             .as_secs();
 
         let mut updates = self.pending_updates.write();
@@ -507,7 +509,7 @@ impl DescriptorManager {
             to_version: version,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| std::time::Duration::from_secs(0))
                 .as_secs(),
             transition_type: TransitionType::Emergency,
             duration_us: 0,
@@ -526,7 +528,9 @@ impl DescriptorManager {
         let current = self.current_descriptor.load(guard);
 
         let new_content = unsafe {
-            let current_ref = current.as_ref().unwrap();
+            let current_ref = current
+                .as_ref()
+                .ok_or_else(|| "No current descriptor available".to_string())?;
             transition_fn(&current_ref.content)?
         };
 
@@ -534,7 +538,7 @@ impl DescriptorManager {
             version: self.current_descriptor.version() + 1,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| std::time::Duration::from_secs(0))
                 .as_secs(),
             hash: self.compute_hash(&new_content),
             parent_version: Some(self.current_descriptor.version()),
