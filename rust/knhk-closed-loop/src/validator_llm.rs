@@ -2,8 +2,7 @@
 // Validates schema, invariants (Q1-Q5), doctrines, and guard constraints
 
 use crate::doctrine::DoctrineRule;
-use crate::invariants::HardInvariants;
-use crate::proposer::{Proposal, ValidationReport, ValidationStage, GuardProfile, SigmaDiff};
+use crate::proposer::{GuardProfile, Proposal, SigmaDiff, ValidationReport};
 use async_trait::async_trait;
 use thiserror::Error;
 
@@ -40,7 +39,11 @@ pub trait ProposalValidator: Send + Sync {
     async fn validate_invariants(&self, proposal: &Proposal) -> Result<()>;
 
     /// Validate doctrine compliance
-    async fn validate_doctrines(&self, proposal: &Proposal, doctrines: &[DoctrineRule]) -> Result<()>;
+    async fn validate_doctrines(
+        &self,
+        proposal: &Proposal,
+        doctrines: &[DoctrineRule],
+    ) -> Result<()>;
 
     /// Validate guard constraints
     async fn validate_guards(&self, proposal: &Proposal, guards: &GuardProfile) -> Result<()>;
@@ -91,7 +94,11 @@ impl ProposalValidator for ValidationPipeline {
         Ok(())
     }
 
-    async fn validate_doctrines(&self, proposal: &Proposal, doctrines: &[DoctrineRule]) -> Result<()> {
+    async fn validate_doctrines(
+        &self,
+        proposal: &Proposal,
+        doctrines: &[DoctrineRule],
+    ) -> Result<()> {
         for doctrine in doctrines {
             validate_single_doctrine(proposal, doctrine)?;
         }
@@ -123,8 +130,7 @@ impl ProposalValidator for ValidationPipeline {
         if proposal.estimated_ticks > guards.max_run_len as u32 {
             return Err(ValidationError::GuardViolation(format!(
                 "Estimated ticks ({}) exceeds max_run_len ({})",
-                proposal.estimated_ticks,
-                guards.max_run_len
+                proposal.estimated_ticks, guards.max_run_len
             )));
         }
 
@@ -210,7 +216,10 @@ impl SchemaValidator {
         Ok(())
     }
 
-    fn validate_property_definition(&self, prop: &crate::proposer::PropertyDefinition) -> Result<()> {
+    fn validate_property_definition(
+        &self,
+        prop: &crate::proposer::PropertyDefinition,
+    ) -> Result<()> {
         // Check URI format
         if !prop.uri.contains(':') {
             return Err(ValidationError::SchemaValidationFailed(format!(
@@ -265,10 +274,13 @@ impl InvariantChecker for Q1NoRetrocausationChecker {
 
         // For now, check that proposal doesn't claim to modify historical data
         if proposal.reasoning.to_lowercase().contains("retroactive")
-            || proposal.reasoning.to_lowercase().contains("historical modification")
+            || proposal
+                .reasoning
+                .to_lowercase()
+                .contains("historical modification")
         {
             return Err(ValidationError::InvariantViolation(
-                "Q1 violation: proposal suggests retroactive changes".to_string()
+                "Q1 violation: proposal suggests retroactive changes".to_string(),
             ));
         }
 
@@ -399,7 +411,7 @@ fn is_valid_type_uri(uri: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::proposer::{ClassDefinition, PropertyDefinition, Cardinality};
+    use crate::proposer::{Cardinality, ClassDefinition, PropertyDefinition};
     use chrono::Utc;
 
     fn create_test_proposal() -> Proposal {
@@ -503,6 +515,9 @@ mod tests {
         let report = pipeline.validate_all(&proposal).await.unwrap();
 
         assert!(!report.passed);
-        assert!(report.stages.iter().any(|s| s.name.contains("Q3") && !s.passed));
+        assert!(report
+            .stages
+            .iter()
+            .any(|s| s.name.contains("Q3") && !s.passed));
     }
 }

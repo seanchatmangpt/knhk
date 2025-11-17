@@ -1,13 +1,10 @@
 // Prompt Engine: Constraint-aware prompt generation for LLM proposer
 // Encodes Q1-Q5 invariants, doctrines, guards, and performance budgets into prompts
 
-use crate::doctrine::DoctrineRule;
 use crate::invariants::HardInvariants;
 use crate::proposer::{
-    ProposalRequest, GuardProfile, PerformanceBudget, PerformanceTier,
-    Sector, FewShotExample,
+    GuardProfile, PerformanceBudget, ProposalRequest, Sector,
 };
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub type Result<T> = std::result::Result<T, PromptEngineError>;
@@ -75,8 +72,9 @@ impl PromptEngine {
     }
 
     pub fn build_system_prompt(&self, sector: &Sector) -> Result<String> {
-        let template = self.sector_templates.get(sector)
-            .ok_or_else(|| PromptEngineError::MissingField(format!("sector template: {}", sector)))?;
+        let template = self.sector_templates.get(sector).ok_or_else(|| {
+            PromptEngineError::MissingField(format!("sector template: {}", sector))
+        })?;
 
         Ok(format!(
             r#"You are an ontology evolution assistant for the KNHK knowledge graph system.
@@ -93,8 +91,7 @@ CRITICAL RULES:
 - NEVER violate hard invariants (Q1-Q5)
 - NEVER remove protected classes or properties
 - ALWAYS stay within performance budget"#,
-            sector,
-            template.context
+            sector, template.context
         ))
     }
 
@@ -112,11 +109,7 @@ CRITICAL RULES:
             section.push_str("   - No sector-specific doctrines\n");
         } else {
             for doctrine in &request.doctrines {
-                section.push_str(&format!(
-                    "   - {}: {}\n",
-                    doctrine.id,
-                    doctrine.description
-                ));
+                section.push_str(&format!("   - {}: {}\n", doctrine.id, doctrine.description));
             }
         }
         section.push_str("\n");
@@ -127,7 +120,10 @@ CRITICAL RULES:
         section.push_str("\n");
 
         // 4. Performance Budget
-        let emphasis = self.emphasis_weights.get("performance_budget").unwrap_or(&1.0);
+        let emphasis = self
+            .emphasis_weights
+            .get("performance_budget")
+            .unwrap_or(&1.0);
         let header = if *emphasis > 1.5 {
             "4. ⚠️ CRITICAL PERFORMANCE BUDGET (FREQUENTLY VIOLATED):"
         } else {
@@ -304,8 +300,9 @@ IMPORTANT:
     }
 
     pub fn build_few_shot_section(&self, sector: &Sector) -> Result<String> {
-        let template = self.sector_templates.get(sector)
-            .ok_or_else(|| PromptEngineError::MissingField(format!("sector template: {}", sector)))?;
+        let template = self.sector_templates.get(sector).ok_or_else(|| {
+            PromptEngineError::MissingField(format!("sector template: {}", sector))
+        })?;
 
         let mut section = String::from("EXAMPLES:\n\n");
 
@@ -456,8 +453,7 @@ Result: ✅ ACCEPTED"#.to_string(),
     pub fn generic() -> Self {
         SectorTemplate {
             context: "Generic sector with minimal constraints".to_string(),
-            examples: vec![
-                r#"Pattern: "New entity type observed"
+            examples: vec![r#"Pattern: "New entity type observed"
 Proposal: {
   "reasoning": "Add new class to represent observed entity pattern. Minimal overhead.",
   "confidence": 0.70,
@@ -471,8 +467,8 @@ Proposal: {
     }]
   }
 }
-Result: ✅ ACCEPTED"#.to_string(),
-            ],
+Result: ✅ ACCEPTED"#
+                .to_string()],
         }
     }
 }

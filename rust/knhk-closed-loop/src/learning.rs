@@ -1,7 +1,7 @@
 // Learning System: Continuous improvement from proposal outcomes
 // Tracks accepted/rejected proposals, adapts prompts, builds few-shot corpus
 
-use crate::proposer::{Proposal, ValidationReport, Sector, FewShotExample, SigmaDiff};
+use crate::proposer::{FewShotExample, Proposal, Sector, ValidationReport};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -125,11 +125,7 @@ impl LearningSystem {
     }
 
     /// Record a proposal outcome (accepted or rejected)
-    pub fn record_outcome(
-        &mut self,
-        proposal: Proposal,
-        report: ValidationReport,
-    ) -> Result<()> {
+    pub fn record_outcome(&mut self, proposal: Proposal, report: ValidationReport) -> Result<()> {
         let outcome = ProposalOutcome::from_proposal(proposal.clone(), report.clone());
 
         if report.passed {
@@ -138,7 +134,8 @@ impl LearningSystem {
 
             // Extract as few-shot example
             let example = self.create_few_shot_example(&outcome);
-            self.corpus.sector_examples
+            self.corpus
+                .sector_examples
                 .entry(proposal.sector.clone())
                 .or_default()
                 .push(example);
@@ -156,7 +153,8 @@ impl LearningSystem {
             // Track constraint violations
             for stage in &report.stages {
                 if !stage.passed {
-                    self.corpus.constraint_violations
+                    self.corpus
+                        .constraint_violations
                         .entry(stage.name.clone())
                         .or_default()
                         .push(proposal.id.clone());
@@ -190,7 +188,9 @@ impl LearningSystem {
     }
 
     fn get_violations(&self, report: &ValidationReport) -> Vec<String> {
-        report.stages.iter()
+        report
+            .stages
+            .iter()
             .filter(|s| !s.passed)
             .map(|s| s.name.clone())
             .collect()
@@ -208,20 +208,24 @@ impl LearningSystem {
             self.corpus.accepted_proposals.len() as f64 / total as f64;
 
         // Track trend
-        self.corpus.metrics.acceptance_rate_trend.push((
-            Utc::now(),
-            self.corpus.metrics.acceptance_rate,
-        ));
+        self.corpus
+            .metrics
+            .acceptance_rate_trend
+            .push((Utc::now(), self.corpus.metrics.acceptance_rate));
 
         // Q3 violation rate
-        let q3_violations = self.corpus.constraint_violations
+        let q3_violations = self
+            .corpus
+            .constraint_violations
             .get("invariant_Q3")
             .map(|v| v.len())
             .unwrap_or(0);
         self.corpus.metrics.q3_violation_rate = q3_violations as f64 / total as f64;
 
         // Doctrine violation rate
-        let doctrine_violations = self.corpus.constraint_violations
+        let doctrine_violations = self
+            .corpus
+            .constraint_violations
             .get("doctrine_check")
             .map(|v| v.len())
             .unwrap_or(0);
@@ -229,18 +233,24 @@ impl LearningSystem {
 
         // Average confidence (accepted)
         if !self.corpus.accepted_proposals.is_empty() {
-            self.corpus.metrics.avg_confidence_accepted =
-                self.corpus.accepted_proposals.iter()
-                    .map(|o| o.proposal.confidence)
-                    .sum::<f64>() / self.corpus.accepted_proposals.len() as f64;
+            self.corpus.metrics.avg_confidence_accepted = self
+                .corpus
+                .accepted_proposals
+                .iter()
+                .map(|o| o.proposal.confidence)
+                .sum::<f64>()
+                / self.corpus.accepted_proposals.len() as f64;
         }
 
         // Average confidence (rejected)
         if !self.corpus.rejected_proposals.is_empty() {
-            self.corpus.metrics.avg_confidence_rejected =
-                self.corpus.rejected_proposals.iter()
-                    .map(|o| o.proposal.confidence)
-                    .sum::<f64>() / self.corpus.rejected_proposals.len() as f64;
+            self.corpus.metrics.avg_confidence_rejected = self
+                .corpus
+                .rejected_proposals
+                .iter()
+                .map(|o| o.proposal.confidence)
+                .sum::<f64>()
+                / self.corpus.rejected_proposals.len() as f64;
         }
 
         tracing::debug!(
@@ -253,14 +263,13 @@ impl LearningSystem {
     fn adapt_prompts_from_patterns(&mut self) -> Result<()> {
         // If Q3 is frequently violated, increase emphasis
         if self.corpus.metrics.q3_violation_rate > 0.2 {
-            self.prompt_adapter.increase_emphasis("performance_budget", 1.5);
+            self.prompt_adapter
+                .increase_emphasis("performance_budget", 1.5);
             tracing::info!("Increasing prompt emphasis on performance budget due to Q3 violations");
         }
 
         // If acceptance rate is low, add more examples
-        if self.corpus.metrics.acceptance_rate < 0.5
-            && self.corpus.accepted_proposals.len() > 10
-        {
+        if self.corpus.metrics.acceptance_rate < 0.5 && self.corpus.accepted_proposals.len() > 10 {
             self.prompt_adapter.set_example_count(5);
             tracing::info!("Increasing few-shot example count to 5");
         }
@@ -275,12 +284,9 @@ impl LearningSystem {
     }
 
     /// Get few-shot examples for a specific sector
-    pub fn get_few_shot_examples(
-        &self,
-        sector: &Sector,
-        count: usize,
-    ) -> Vec<FewShotExample> {
-        self.corpus.sector_examples
+    pub fn get_few_shot_examples(&self, sector: &Sector, count: usize) -> Vec<FewShotExample> {
+        self.corpus
+            .sector_examples
             .get(sector)
             .cloned()
             .unwrap_or_default()
@@ -329,8 +335,15 @@ impl PromptAdapter {
     }
 
     pub fn increase_emphasis(&mut self, section: &str, weight: f64) {
-        *self.emphasis_weights.entry(section.to_string()).or_insert(1.0) = weight;
-        tracing::debug!(section = section, weight = weight, "Updated prompt emphasis");
+        *self
+            .emphasis_weights
+            .entry(section.to_string())
+            .or_insert(1.0) = weight;
+        tracing::debug!(
+            section = section,
+            weight = weight,
+            "Updated prompt emphasis"
+        );
     }
 
     pub fn set_example_count(&mut self, count: usize) {
@@ -356,8 +369,8 @@ impl Default for PromptAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::proposer::ValidationStage;
     use crate::observation::{DetectedPattern, PatternAction};
+    use crate::proposer::ValidationStage;
 
     fn create_test_proposal(sector: Sector, estimated_ticks: u32) -> Proposal {
         Proposal {
@@ -430,7 +443,10 @@ mod tests {
         assert_eq!(learning.corpus.metrics.acceptance_rate, 0.0);
 
         // Check Q3 violation tracked
-        assert!(learning.corpus.constraint_violations.contains_key("invariant_Q3"));
+        assert!(learning
+            .corpus
+            .constraint_violations
+            .contains_key("invariant_Q3"));
     }
 
     #[test]

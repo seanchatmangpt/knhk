@@ -1,13 +1,12 @@
 // LLM-Based Proposer: Constraint-aware ontology change proposal generation
 // Implements defense-in-depth constraint enforcement for autonomous evolution
 
-use crate::doctrine::{DoctrineRule, DoctrineStore};
-use crate::governance::Guard;
+use crate::doctrine::DoctrineRule;
 use crate::invariants::HardInvariants;
+use crate::learning::LearningSystem;
 use crate::observation::DetectedPattern;
-use crate::receipt::{Receipt, ReceiptStore, ReceiptOperation, ReceiptOutcome};
-use crate::learning::{LearningSystem, ProposalOutcome};
 use crate::prompt_engine::PromptEngine;
+use crate::receipt::ReceiptStore;
 use crate::validator_llm::ProposalValidator;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -106,7 +105,8 @@ impl PerformanceBudget {
     pub fn estimate_cost(&self, diff: &SigmaDiff) -> u32 {
         let class_cost = (diff.added_classes.len() as f64 * self.cost_per_class).ceil() as u32;
         let prop_cost = (diff.added_properties.len() as f64 * self.cost_per_property).ceil() as u32;
-        let validation_cost = (diff.modified_shapes.len() as f64 * self.cost_per_validation).ceil() as u32;
+        let validation_cost =
+            (diff.modified_shapes.len() as f64 * self.cost_per_validation).ceil() as u32;
 
         class_cost + prop_cost + validation_cost
     }
@@ -135,9 +135,9 @@ pub struct GuardProfile {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PerformanceTier {
-    HotPath,   // ≤8 ticks (branchless C)
-    WarmPath,  // ≤1ms (Rust)
-    ColdPath,  // ≤100ms (Python/validation)
+    HotPath,  // ≤8 ticks (branchless C)
+    WarmPath, // ≤1ms (Rust)
+    ColdPath, // ≤100ms (Python/validation)
 }
 
 /// LLM-generated proposal for ontology change
@@ -145,17 +145,17 @@ pub enum PerformanceTier {
 pub struct Proposal {
     pub id: String,
     pub pattern_id: String,
-    pub pattern: DetectedPattern,        // Original pattern that triggered this proposal
-    pub sector: Sector,                  // Sector context for this proposal
-    pub llm_prompt: String,              // Full prompt sent to LLM
-    pub llm_response: String,            // Raw LLM output
-    pub delta_sigma: SigmaDiff,          // Parsed ontology change
-    pub reasoning: String,               // LLM's explanation
-    pub confidence: f64,                 // LLM's confidence score (0.0-1.0)
-    pub estimated_ticks: u32,            // Predicted execution time
+    pub pattern: DetectedPattern, // Original pattern that triggered this proposal
+    pub sector: Sector,           // Sector context for this proposal
+    pub llm_prompt: String,       // Full prompt sent to LLM
+    pub llm_response: String,     // Raw LLM output
+    pub delta_sigma: SigmaDiff,   // Parsed ontology change
+    pub reasoning: String,        // LLM's explanation
+    pub confidence: f64,          // LLM's confidence score (0.0-1.0)
+    pub estimated_ticks: u32,     // Predicted execution time
     pub doctrines_satisfied: Vec<String>, // Doctrine IDs claimed
     pub invariants_satisfied: Vec<String>, // Q1-Q5 claimed
-    pub can_rollback: bool,              // Is this reversible?
+    pub can_rollback: bool,       // Is this reversible?
     pub timestamp: DateTime<Utc>,
 }
 
@@ -163,10 +163,10 @@ pub struct Proposal {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct SigmaDiff {
     pub added_classes: Vec<ClassDefinition>,
-    pub removed_classes: Vec<String>,  // URIs
+    pub removed_classes: Vec<String>, // URIs
     pub added_properties: Vec<PropertyDefinition>,
-    pub removed_properties: Vec<String>,  // URIs
-    pub modified_shapes: Vec<ShapeDefinition>,  // SHACL updates
+    pub removed_properties: Vec<String>,       // URIs
+    pub modified_shapes: Vec<ShapeDefinition>, // SHACL updates
 }
 
 impl std::fmt::Display for SigmaDiff {
@@ -196,18 +196,18 @@ pub struct ClassDefinition {
 pub struct PropertyDefinition {
     pub uri: String,
     pub label: String,
-    pub domain: String,  // Class URI
-    pub range: String,   // Datatype or Class URI
+    pub domain: String, // Class URI
+    pub range: String,  // Datatype or Class URI
     pub required: bool,
     pub cardinality: Cardinality,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Cardinality {
-    One,           // Exactly 1
-    ZeroOrOne,     // Optional
-    ZeroOrMore,    // List
-    OneOrMore,     // Non-empty list
+    One,        // Exactly 1
+    ZeroOrOne,  // Optional
+    ZeroOrMore, // List
+    OneOrMore,  // Non-empty list
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -274,17 +274,10 @@ pub trait LLMProposer: Send + Sync {
     ) -> Result<Proposal>;
 
     /// Validate a proposal against constraints
-    async fn validate_proposal(
-        &self,
-        proposal: &Proposal,
-    ) -> Result<ValidationReport>;
+    async fn validate_proposal(&self, proposal: &Proposal) -> Result<ValidationReport>;
 
     /// Record proposal outcome for learning
-    async fn record_outcome(
-        &self,
-        proposal: Proposal,
-        report: ValidationReport,
-    ) -> Result<()>;
+    async fn record_outcome(&self, proposal: Proposal, report: ValidationReport) -> Result<()>;
 
     /// Get few-shot examples for a sector
     fn get_examples(&self, sector: &Sector, count: usize) -> Vec<FewShotExample>;
@@ -341,47 +334,53 @@ impl OllamaLLMProposer {
         invariants: &HardInvariants,
         guards: &GuardProfile,
     ) -> Result<Proposal> {
+        // Determine sector from pattern name/evidence
+        let sector = Sector::Generic;
+
         // Build request
         let request = ProposalRequest {
             pattern: pattern.clone(),
-            sector: pattern.sector.clone(),
-            current_snapshot_id: format!(
-                "snapshot-{}",
-                pattern.timestamp.timestamp_millis()
-            ),
+            sector: sector.clone(),
+            current_snapshot_id: format!("snapshot-{}", pattern.detected_at),
             doctrines: doctrines.to_vec(),
             invariants: invariants.clone(),
             guard_profile: guards.clone(),
             performance_budget: PerformanceBudget::new(
                 guards.max_run_len as u32,
-                (guards.max_run_len as u32) / 2
+                (guards.max_run_len as u32) / 2,
             ),
         };
 
         // Generate constraint-aware prompt
-        let prompt = self.prompt_engine.build_full_prompt(&request)
+        let prompt = self
+            .prompt_engine
+            .build_full_prompt(&request)
             .map_err(|e| ProposerError::Internal(e.to_string()))?;
 
         // Check token budget
-        self.cost_controller.write().await
+        self.cost_controller
+            .write()
+            .await
             .check_token_budget(estimate_token_count(&prompt))
             .map_err(|e| ProposerError::TokenBudgetExceeded(e.to_string()))?;
 
         // Call LLM with timeout
         let llm_response = tokio::time::timeout(
             std::time::Duration::from_secs(30),
-            self.llm_client.generate(&prompt)
+            self.llm_client.generate(&prompt),
         )
         .await
         .map_err(|_| ProposerError::Timeout("LLM generation timed out".to_string()))?
         .map_err(|e| ProposerError::LLMGenerationFailed(e.to_string()))?;
 
         // Record token usage
-        self.cost_controller.write().await
+        self.cost_controller
+            .write()
+            .await
             .record_usage(estimate_token_count(&llm_response));
 
         // Parse LLM response
-        let proposal = self.parse_proposal_response(&llm_response, pattern)?;
+        let proposal = self.parse_proposal_response(&llm_response, pattern, &request, &prompt)?;
 
         // Post-hoc validation
         self.validate_all_constraints(&proposal, &request).await?;
@@ -393,44 +392,55 @@ impl OllamaLLMProposer {
         &self,
         response: &str,
         pattern: &DetectedPattern,
+        request: &ProposalRequest,
+        prompt: &str,
     ) -> Result<Proposal> {
         // Parse JSON response
         let parsed: serde_json::Value = serde_json::from_str(response)
             .map_err(|e| ProposerError::ParsingFailed(e.to_string()))?;
 
         // Extract fields
-        let reasoning = parsed["reasoning"].as_str()
+        let reasoning = parsed["reasoning"]
+            .as_str()
             .ok_or_else(|| ProposerError::ParsingFailed("Missing 'reasoning' field".to_string()))?
             .to_string();
 
-        let confidence = parsed["confidence"].as_f64()
-            .ok_or_else(|| ProposerError::ParsingFailed("Missing 'confidence' field".to_string()))?;
+        let confidence = parsed["confidence"].as_f64().ok_or_else(|| {
+            ProposerError::ParsingFailed("Missing 'confidence' field".to_string())
+        })?;
 
-        let estimated_ticks = parsed["estimated_ticks"].as_u64()
-            .ok_or_else(|| ProposerError::ParsingFailed("Missing 'estimated_ticks' field".to_string()))? as u32;
+        let estimated_ticks = parsed["estimated_ticks"].as_u64().ok_or_else(|| {
+            ProposerError::ParsingFailed("Missing 'estimated_ticks' field".to_string())
+        })? as u32;
 
         // Parse delta_sigma
         let delta_sigma: SigmaDiff = serde_json::from_value(parsed["delta_sigma"].clone())
             .map_err(|e| ProposerError::ParsingFailed(format!("Invalid delta_sigma: {}", e)))?;
 
-        let doctrines_satisfied = parsed["doctrines_satisfied"].as_array()
-            .map(|arr| arr.iter()
-                .filter_map(|v| v.as_str().map(String::from))
-                .collect())
+        let doctrines_satisfied = parsed["doctrines_satisfied"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
             .unwrap_or_default();
 
-        let invariants_satisfied = parsed["invariants_satisfied"].as_array()
-            .map(|arr| arr.iter()
-                .filter_map(|v| v.as_str().map(String::from))
-                .collect())
+        let invariants_satisfied = parsed["invariants_satisfied"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
             .unwrap_or_default();
 
         Ok(Proposal {
             id: format!("prop-{}", uuid::Uuid::new_v4()),
-            pattern_id: pattern.id.clone(),
+            pattern_id: pattern.name.clone(),
             pattern: pattern.clone(),
             sector: request.sector.clone(),
-            llm_prompt: prompt.clone(),
+            llm_prompt: prompt.to_string(),
             llm_response: response.to_string(),
             delta_sigma: delta_sigma.clone(),
             reasoning,
@@ -486,7 +496,9 @@ impl OllamaLLMProposer {
         if !request.performance_budget.can_afford(&proposal.delta_sigma) {
             return Err(ProposerError::ConstraintViolation(format!(
                 "Performance budget exceeded: estimated {} ticks, remaining {}",
-                request.performance_budget.estimate_cost(&proposal.delta_sigma),
+                request
+                    .performance_budget
+                    .estimate_cost(&proposal.delta_sigma),
                 request.performance_budget.remaining_ticks
             )));
         }
@@ -495,14 +507,17 @@ impl OllamaLLMProposer {
         if proposal.estimated_ticks > request.performance_budget.max_ticks {
             return Err(ProposerError::ConstraintViolation(format!(
                 "Q3 violation: estimated {} ticks > max {}",
-                proposal.estimated_ticks,
-                request.performance_budget.max_ticks
+                proposal.estimated_ticks, request.performance_budget.max_ticks
             )));
         }
 
         // Validate no protected elements removed
         for removed_class in &proposal.delta_sigma.removed_classes {
-            if request.guard_profile.protected_classes.contains(removed_class) {
+            if request
+                .guard_profile
+                .protected_classes
+                .contains(removed_class)
+            {
                 return Err(ProposerError::ConstraintViolation(format!(
                     "Guard violation: cannot remove protected class '{}'",
                     removed_class
@@ -511,7 +526,11 @@ impl OllamaLLMProposer {
         }
 
         for removed_prop in &proposal.delta_sigma.removed_properties {
-            if request.guard_profile.protected_properties.contains(removed_prop) {
+            if request
+                .guard_profile
+                .protected_properties
+                .contains(removed_prop)
+            {
                 return Err(ProposerError::ConstraintViolation(format!(
                     "Guard violation: cannot remove protected property '{}'",
                     removed_prop
@@ -533,39 +552,35 @@ impl LLMProposer for OllamaLLMProposer {
         guards: &GuardProfile,
     ) -> Result<Proposal> {
         // Check rate limit
-        self.rate_limiter.write().await
+        self.rate_limiter
+            .write()
+            .await
             .check_rate_limit()
             .map_err(|e| ProposerError::RateLimitExceeded(e.to_string()))?;
 
         // Generate proposal
-        self.generate_proposal_internal(pattern, doctrines, invariants, guards).await
+        self.generate_proposal_internal(pattern, doctrines, invariants, guards)
+            .await
     }
 
-    async fn validate_proposal(
-        &self,
-        proposal: &Proposal,
-    ) -> Result<ValidationReport> {
-        self.validator.validate_all(proposal).await
+    async fn validate_proposal(&self, proposal: &Proposal) -> Result<ValidationReport> {
+        self.validator
+            .validate_all(proposal)
+            .await
             .map_err(|e| ProposerError::ValidationFailed(e.to_string()))
     }
 
-    async fn record_outcome(
-        &self,
-        proposal: Proposal,
-        report: ValidationReport,
-    ) -> Result<()> {
+    async fn record_outcome(&self, proposal: Proposal, report: ValidationReport) -> Result<()> {
         let mut learning = self.learning_system.write().await;
-        learning.record_outcome(proposal, report)
+        learning
+            .record_outcome(proposal, report)
             .map_err(|e| ProposerError::Internal(e.to_string()))
     }
 
     fn get_examples(&self, sector: &Sector, count: usize) -> Vec<FewShotExample> {
         match self.learning_system.try_read() {
-            Some(learning) => {
-                learning.get_successful_examples(sector, count)
-                    .unwrap_or_else(|_| Vec::new())
-            }
-            None => {
+            Ok(learning) => learning.get_few_shot_examples(sector, count),
+            Err(_) => {
                 tracing::warn!(
                     "Failed to acquire learning system lock for examples, returning empty"
                 );
@@ -578,7 +593,10 @@ impl LLMProposer for OllamaLLMProposer {
 /// LLM client trait for API abstraction
 #[async_trait]
 pub trait LLMClient: Send + Sync {
-    async fn generate(&self, prompt: &str) -> std::result::Result<String, Box<dyn std::error::Error + Send + Sync>>;
+    async fn generate(
+        &self,
+        prompt: &str,
+    ) -> std::result::Result<String, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// Rate limiter for proposal generation
@@ -633,17 +651,14 @@ impl CostController {
         if prompt_tokens > self.max_tokens_per_proposal {
             return Err(format!(
                 "Prompt too large: {} tokens (max: {})",
-                prompt_tokens,
-                self.max_tokens_per_proposal
+                prompt_tokens, self.max_tokens_per_proposal
             ));
         }
 
         if self.total_tokens_used + prompt_tokens > self.budget_limit_tokens {
             return Err(format!(
                 "Token budget exceeded: {} + {} > {}",
-                self.total_tokens_used,
-                prompt_tokens,
-                self.budget_limit_tokens
+                self.total_tokens_used, prompt_tokens, self.budget_limit_tokens
             ));
         }
 
