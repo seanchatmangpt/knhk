@@ -252,8 +252,9 @@ impl NetworkNode {
             ));
         }
 
+        let source = msg.source.clone();
         self.received.insert(msg.sequence, msg);
-        self.discovery.update_peer_seen(&msg.source)?;
+        self.discovery.update_peer_seen(&source)?;
 
         Ok(())
     }

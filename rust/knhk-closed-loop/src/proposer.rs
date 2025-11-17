@@ -1,8 +1,8 @@
 // LLM-Based Proposer: Constraint-aware ontology change proposal generation
 // Implements defense-in-depth constraint enforcement for autonomous evolution
 
-use crate::doctrine::{DoctrineRule, DoctrineStore};
-use crate::governance::{Guard, GuardProfile};
+use crate::doctrine::DoctrineRule;
+use crate::governance::Guard;
 use crate::invariants::HardInvariants;
 use crate::observation::DetectedPattern;
 use crate::receipt::{Receipt, ReceiptStore, ReceiptOperation, ReceiptOutcome};
@@ -39,6 +39,9 @@ pub enum ProposerError {
 
     #[error("Constraint violation: {0}")]
     ConstraintViolation(String),
+
+    #[error("Prompt engine error: {0}")]
+    PromptEngine(#[from] crate::prompt_engine::PromptEngineError),
 
     #[error("Internal error: {0}")]
     Internal(String),
@@ -331,7 +334,7 @@ impl OllamaLLMProposer {
         }
     }
 
-    #[tracing::instrument(skip(self, pattern), fields(pattern_id = %pattern.id))]
+    #[tracing::instrument(skip(self, pattern), fields(pattern_name = %pattern.name))]
     async fn generate_proposal_internal(
         &self,
         pattern: &DetectedPattern,
@@ -345,7 +348,7 @@ impl OllamaLLMProposer {
             // Get current snapshot ID from pattern metadata or use timestamp-based ID
             current_snapshot_id: format!(
                 "snapshot-{}",
-                pattern.timestamp.timestamp_millis()
+                pattern.detected_at
             ),
             doctrines: doctrines.to_vec(),
             invariants: invariants.clone(),
@@ -426,7 +429,7 @@ impl OllamaLLMProposer {
 
         Ok(Proposal {
             id: format!("prop-{}", uuid::Uuid::new_v4()),
-            pattern_id: pattern.id.clone(),
+            pattern_id: pattern.name.clone(),
             pattern: pattern.clone(),
             llm_prompt: parsed.get("original_prompt")
                 .and_then(|v| v.as_str())
@@ -566,15 +569,14 @@ impl LLMProposer for OllamaLLMProposer {
     }
 
     fn get_examples(&self, sector: &Sector, count: usize) -> Vec<FewShotExample> {
-        // Handle async lock appropriately using blocking_lock() for sync context
+        // Handle async lock appropriately using try_read() for sync context
         // This is safe because we're in a sync trait method
         match self.learning_system.try_read() {
-            Some(learning) => {
+            Ok(learning) => {
                 // Successfully acquired read lock, get examples
-                learning.get_successful_examples(sector, count)
-                    .unwrap_or_else(|_| Vec::new())
+                learning.get_few_shot_examples(sector, count)
             }
-            None => {
+            Err(_) => {
                 // Lock contention, return empty to avoid blocking
                 tracing::warn!(
                     "Failed to acquire learning system lock for examples, returning empty"

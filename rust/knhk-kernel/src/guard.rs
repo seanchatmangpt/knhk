@@ -361,7 +361,10 @@ impl GuardCompiler {
                     }
                 })
             }
-            _ => Box::new(move |ctx| guard.evaluate(ctx)),
+            _ => {
+                let guard = guard.clone();
+                Box::new(move |ctx| guard.evaluate(ctx))
+            },
         }
     }
 }

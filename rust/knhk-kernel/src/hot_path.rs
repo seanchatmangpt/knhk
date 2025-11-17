@@ -319,8 +319,8 @@ impl HotPath {
     pub fn recent_receipts(&self, count: usize) -> Vec<Receipt> {
         self.receipt_store.read()
             .get_recent(count)
-            .iter()
-            .cloned()
+            .into_iter()
+            .map(|r| r.clone())
             .collect()
     }
 }

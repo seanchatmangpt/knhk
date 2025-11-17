@@ -170,7 +170,7 @@ impl Executor {
     #[inline(always)]
     pub fn execute(&self, task: &Task) -> Receipt {
         let timer = HotPathTimer::start();
-        let mut budget = TickBudget::with_budget(task.tick_budget);
+        let mut budget = TickBudget::with_budget(task.tick_budget as u64);
 
         // Start receipt
         let mut receipt = ReceiptBuilder::new(task.pattern_id, task.task_id)

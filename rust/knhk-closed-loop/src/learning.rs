@@ -138,15 +138,17 @@ impl LearningSystem {
 
             // Extract as few-shot example
             let example = self.create_few_shot_example(&outcome);
+            // Infer sector from pattern name
+            let sector = Self::infer_sector(&proposal.pattern.name);
             self.corpus.sector_examples
-                .entry(proposal.pattern.sector.clone())
+                .entry(sector)
                 .or_default()
                 .push(example);
 
             tracing::info!(
                 proposal_id = %proposal.id,
                 confidence = proposal.confidence,
-                sector = %proposal.pattern.sector,
+                pattern_name = %proposal.pattern.name,
                 "Accepted proposal recorded for learning"
             );
         } else {
@@ -180,12 +182,37 @@ impl LearningSystem {
     }
 
     fn create_few_shot_example(&self, outcome: &ProposalOutcome) -> FewShotExample {
+        // Generate description from pattern name
+        let pattern_description = format!(
+            "{} (confidence: {:.2}, evidence: {})",
+            outcome.proposal.pattern.name,
+            outcome.proposal.pattern.confidence,
+            outcome.proposal.pattern.evidence_count
+        );
+
         FewShotExample {
-            pattern: outcome.proposal.pattern.description.clone(),
+            pattern: pattern_description,
             proposal: outcome.proposal.delta_sigma.clone(),
             reasoning: outcome.proposal.reasoning.clone(),
             confidence: outcome.proposal.confidence,
             validation_result: outcome.validation_report.clone(),
+        }
+    }
+
+    /// Infer sector from pattern name
+    fn infer_sector(pattern_name: &str) -> Sector {
+        let name_lower = pattern_name.to_lowercase();
+
+        if name_lower.contains("finance") || name_lower.contains("payment") || name_lower.contains("account") {
+            Sector::Finance
+        } else if name_lower.contains("health") || name_lower.contains("patient") || name_lower.contains("medical") {
+            Sector::Healthcare
+        } else if name_lower.contains("manufacturing") || name_lower.contains("equipment") || name_lower.contains("production") {
+            Sector::Manufacturing
+        } else if name_lower.contains("logistics") || name_lower.contains("shipment") || name_lower.contains("delivery") {
+            Sector::Logistics
+        } else {
+            Sector::Generic
         }
     }
 

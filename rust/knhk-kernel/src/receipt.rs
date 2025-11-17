@@ -31,6 +31,7 @@ pub struct GuardResult {
 
 /// Receipt structure (stack-allocated for hot path)
 #[repr(C, align(64))]
+#[derive(Clone)]
 pub struct Receipt {
     /// Unique receipt ID
     pub receipt_id: u64,

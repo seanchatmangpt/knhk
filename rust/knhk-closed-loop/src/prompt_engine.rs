@@ -53,11 +53,14 @@ impl PromptEngine {
     pub fn build_full_prompt(&self, request: &ProposalRequest) -> Result<String> {
         let mut sections = Vec::new();
 
+        // Derive sector from pattern name or use Generic as default
+        let sector = Self::infer_sector_from_pattern(&request.pattern);
+
         // System prompt (role definition)
-        sections.push(self.build_system_prompt(&request.pattern.sector)?);
+        sections.push(self.build_system_prompt(&sector)?);
 
         // Constraint section (Q1-Q5, doctrines, guards)
-        sections.push(self.build_constraint_section(request)?);
+        sections.push(self.build_constraint_section(request, &sector)?);
 
         // Pattern section (observed pattern description)
         sections.push(self.build_pattern_section(request)?);
@@ -69,9 +72,26 @@ impl PromptEngine {
         sections.push(self.build_output_schema()?);
 
         // Few-shot examples
-        sections.push(self.build_few_shot_section(&request.pattern.sector)?);
+        sections.push(self.build_few_shot_section(&sector)?);
 
         Ok(sections.join("\n\n"))
+    }
+
+    /// Infer sector from pattern characteristics
+    fn infer_sector_from_pattern(pattern: &crate::observation::DetectedPattern) -> Sector {
+        let name_lower = pattern.name.to_lowercase();
+
+        if name_lower.contains("finance") || name_lower.contains("payment") || name_lower.contains("account") {
+            Sector::Finance
+        } else if name_lower.contains("health") || name_lower.contains("patient") || name_lower.contains("medical") {
+            Sector::Healthcare
+        } else if name_lower.contains("manufacturing") || name_lower.contains("equipment") || name_lower.contains("production") {
+            Sector::Manufacturing
+        } else if name_lower.contains("logistics") || name_lower.contains("shipment") || name_lower.contains("delivery") {
+            Sector::Logistics
+        } else {
+            Sector::Generic
+        }
     }
 
     pub fn build_system_prompt(&self, sector: &Sector) -> Result<String> {
@@ -98,7 +118,7 @@ CRITICAL RULES:
         ))
     }
 
-    pub fn build_constraint_section(&self, request: &ProposalRequest) -> Result<String> {
+    pub fn build_constraint_section(&self, request: &ProposalRequest, sector: &Sector) -> Result<String> {
         let mut section = String::from("CRITICAL CONSTRAINTS (MUST NEVER VIOLATE):\n\n");
 
         // 1. Hard Invariants (Q1-Q5)
@@ -107,7 +127,7 @@ CRITICAL RULES:
         section.push_str("\n");
 
         // 2. Sector Doctrines
-        section.push_str(&format!("2. Sector Doctrines ({}):\n", request.pattern.sector));
+        section.push_str(&format!("2. Sector Doctrines ({}):\n", sector));
         if request.doctrines.is_empty() {
             section.push_str("   - No sector-specific doctrines\n");
         } else {
@@ -149,6 +169,12 @@ CRITICAL RULES:
     }
 
     fn format_invariants(&self, invariants: &HardInvariants) -> String {
+        let status = if invariants.all_preserved() {
+            "✅ All invariants preserved".to_string()
+        } else {
+            format!("⚠️ Violations: {:?}", invariants.which_violated())
+        };
+
         format!(
             r#"   - Q1: No Retrocausation - Time flows forward only, no temporal cycles
    - Q2: Type Soundness - All properties must have valid domain/range types
@@ -156,11 +182,7 @@ CRITICAL RULES:
    - Q4: SLO Compliance - Hot path execution time must be ≤8 CPU ticks
    - Q5: Performance Bounds - No performance regression >10% on existing benchmarks
    Current status: {}"#,
-            if invariants.all_preserved() {
-                "✅ All invariants preserved"
-            } else {
-                &format!("⚠️ Violations: {:?}", invariants.which_violated())
-            }
+            status
         )
     }
 
@@ -206,6 +228,14 @@ CRITICAL RULES:
 
     pub fn build_pattern_section(&self, request: &ProposalRequest) -> Result<String> {
         let pattern = &request.pattern;
+        let sector = Self::infer_sector_from_pattern(pattern);
+
+        // Generate description from pattern name and recommended action
+        let description = format!(
+            "{} (detected {} observations)",
+            pattern.name,
+            pattern.evidence_count
+        );
 
         Ok(format!(
             r#"OBSERVED PATTERN:
@@ -214,15 +244,17 @@ CRITICAL RULES:
 Pattern Details:
 - Sector: {}
 - Confidence: {:.2}
-- Pattern ID: {}
-- Timestamp: {}
+- Pattern Name: {}
+- Detected At: {}
+- Evidence Count: {}
 
-Recommended Action: {}"#,
-            pattern.description,
-            pattern.sector,
+Recommended Action: {:?}"#,
+            description,
+            sector,
             pattern.confidence,
-            pattern.id,
-            pattern.timestamp,
+            pattern.name,
+            pattern.detected_at,
+            pattern.evidence_count,
             pattern.recommended_action
         ))
     }
@@ -279,8 +311,8 @@ Current Performance Profile:
         let mut classes = Vec::new();
         let mut properties = Vec::new();
 
-        // Extract from pattern description using keyword analysis
-        let description = request.pattern.description.to_lowercase();
+        // Extract from pattern name using keyword analysis
+        let description = request.pattern.name.to_lowercase();
 
         // Heuristic: Look for class-like terms (capitalized words, "account", "order", etc.)
         // In production, this would query the actual ontology snapshot
@@ -309,7 +341,8 @@ Current Performance Profile:
         }
 
         // Add sector-specific context
-        match request.pattern.sector {
+        let sector = Self::infer_sector_from_pattern(&request.pattern);
+        match sector {
             Sector::Finance => {
                 if classes.is_empty() {
                     classes.push("finance:Account (financial account base)".to_string());

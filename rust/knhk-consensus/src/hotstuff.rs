@@ -243,7 +243,7 @@ impl HotStuffNode {
         &mut self,
         block_hash: Vec<u8>,
         view: ViewNumber,
-        config: &HotStuffConfig,
+        _config: &HotStuffConfig,
     ) -> Result<Option<HotStuffMessage>> {
         // Check view
         if view < self.view {
@@ -284,7 +284,7 @@ impl HotStuffNode {
         view: ViewNumber,
         config: &HotStuffConfig,
     ) -> Result<Option<QuorumCertificate>> {
-        let count = self.vote_count.entry(view).or_insert(0);
+        let mut count = self.vote_count.entry(view).or_insert(0);
         *count += 1;
 
         if config.verify_quorum(*count) {
@@ -313,7 +313,7 @@ impl HotStuffNode {
     pub fn generic_commit(
         &mut self,
         qc: QuorumCertificate,
-        config: &HotStuffConfig,
+        _config: &HotStuffConfig,
     ) -> Result<Option<Vec<u8>>> {
         // Update locked QC
         if qc.view > self.view {
