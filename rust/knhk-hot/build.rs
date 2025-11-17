@@ -11,7 +11,7 @@ fn main() {
     let c_files_exist = Path::new(&format!("{}/src/workflow_patterns.c", manifest_dir)).exists()
         && Path::new(&format!("{}/src/ring_buffer.c", manifest_dir)).exists();
 
-    let c_optimization_enabled = cfg!(feature = "c-optimization");
+    let _c_optimization_enabled = cfg!(feature = "c-optimization");
 
     #[cfg(feature = "c-optimization")]
     {

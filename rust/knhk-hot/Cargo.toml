@@ -30,14 +30,15 @@ iai-callgrind = "0.16"
 perf-event = "0.4"
 
 [build-dependencies]
-# cc is optional - only used if c-optimization feature is enabled
-cc = { version = "1.0", optional = true }
+# cc is required for knhk-hot (FFI wrapper library needs C compiler)
+cc = { version = "1.0" }
 
 [features]
-# Default: Pure Rust implementation (works everywhere)
-default = []
-# Optional: C SIMD optimization (requires C compiler)
-c-optimization = ["cc"]
+# knhk-hot is fundamentally a Rust wrapper around C FFI
+# C compilation is required for all functionality
+# Pure Rust rewrite would require complete reimplementation
+default = ["c-optimization"]
+c-optimization = []
 
 [[bench]]
 name = "hot_path_bench"
