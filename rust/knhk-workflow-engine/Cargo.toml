@@ -52,10 +52,7 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 
 # HTTP & gRPC (optional)
-tonic = { workspace = true, optional = true }
-tonic-build = { workspace = true, optional = true }
-tonic-prost-build = { workspace = true, optional = true }
-tonic-prost = { workspace = true, optional = true }
+
 prost = { workspace = true, optional = true }
 prost-types = { workspace = true, optional = true }
 axum = { workspace = true, features = ["json", "multipart"], optional = true }
@@ -112,23 +109,16 @@ default = [
   "testing",
   "connectors",
   "http",
-] # Enable core features by default
+] # Enable core features by default (80/20: grpc removed for build simplicity)
 minimal = [] # Core only, no optional deps
 rdf = ["oxigraph"]
 storage = ["sled"]
-grpc = [
-  "dep:tonic",
-  "dep:tonic-build",
-  "dep:tonic-prost-build",
-  "dep:tonic-prost",
-  "dep:prost",
-  "dep:prost-types",
-]
+# grpc feature removed - using HTTP/REST only (80/20 pragmatism)
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 connectors = ["dep:knhk-connectors"]
 testing = ["dep:chicago-tdd-tools"]
-full = ["rdf", "storage", "grpc", "http", "connectors", "testing"]
-# sidecar feature removed to avoid circular dependency
+full = ["rdf", "storage", "http", "connectors", "testing"]
+# sidecar and grpc features removed to avoid build complexity
 
 [[example]]
 name = "workflow_weaver_livecheck"
@@ -155,7 +145,6 @@ name = "phase_performance"
 harness = false
 
 [build-dependencies]
-tonic-prost-build = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }

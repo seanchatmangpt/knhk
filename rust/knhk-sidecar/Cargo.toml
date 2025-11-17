@@ -9,8 +9,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 knhk-etl = { path = "../knhk-etl", version = "1.0.0", features = ["std"] }
 tokio = { workspace = true, features = ["full"] }
-tonic = { workspace = true, default-features = true }
-tonic-prost = { workspace = true }
+
 prost = { workspace = true }
 prost-types = { workspace = true }
 rustls = { workspace = true }
@@ -49,7 +48,6 @@ fortune5 = ["aws-sdk-kms", "aws-config", "reqwest"]
 rest-api = ["knhk-workflow-engine", "axum"]
 
 [build-dependencies]
-tonic-prost-build = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.11", features = ["blocking"] }

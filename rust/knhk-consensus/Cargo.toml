@@ -44,7 +44,7 @@ prometheus = "0.13"
 
 # Networking
 axum = "0.7"
-tonic = "0.10"
+
 prost = "0.12"
 hyper = "1.0"
 
