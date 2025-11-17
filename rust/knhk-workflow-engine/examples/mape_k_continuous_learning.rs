@@ -3,8 +3,8 @@
 //! Demonstrates continuous autonomic adaptation using the MAPE-K loop.
 //! Shows how workflows self-optimize based on runtime observations.
 
-use knhk_workflow_engine::orchestrator::SelfExecutingOrchestrator;
 use knhk_workflow_engine::error::WorkflowResult;
+use knhk_workflow_engine::orchestrator::SelfExecutingOrchestrator;
 use serde_json::json;
 use tokio::time::{sleep, Duration};
 
@@ -21,9 +21,9 @@ async fn main() -> WorkflowResult<()> {
     let mut orchestrator = SelfExecutingOrchestrator::new("./snapshots", "./receipts")?;
 
     // Load a workflow
-    let workflow_id = orchestrator.load_workflow_from_ontology(
-        "ontology/workflows/examples/simple-sequence.ttl"
-    ).await?;
+    let workflow_id = orchestrator
+        .load_workflow_from_ontology("ontology/workflows/examples/simple-sequence.ttl")
+        .await?;
 
     println!("✓ Loaded workflow: {}\n", workflow_id);
 
@@ -43,9 +43,7 @@ async fn main() -> WorkflowResult<()> {
                 if i % 10 == 0 {
                     println!(
                         "  Execution {}: {} ticks, receipt: {}",
-                        i,
-                        result.ticks_used,
-                        result.receipt_id
+                        i, result.ticks_used, result.receipt_id
                     );
                 }
             }
@@ -69,14 +67,22 @@ async fn main() -> WorkflowResult<()> {
 
         match orchestrator.run_mape_k_cycle().await {
             Ok(metrics) => {
-                println!("  Monitor:  Collected {} observations in {}ms",
-                    metrics.observations_count, metrics.monitor_duration_ms);
-                println!("  Analyze:  Detected {} symptoms in {}ms",
-                    metrics.symptoms_detected, metrics.analyze_duration_ms);
-                println!("  Plan:     Generated {} plans in {}ms",
-                    metrics.plans_generated, metrics.plan_duration_ms);
-                println!("  Execute:  Applied adaptations in {}ms",
-                    metrics.execute_duration_ms);
+                println!(
+                    "  Monitor:  Collected {} observations in {}ms",
+                    metrics.observations_count, metrics.monitor_duration_ms
+                );
+                println!(
+                    "  Analyze:  Detected {} symptoms in {}ms",
+                    metrics.symptoms_detected, metrics.analyze_duration_ms
+                );
+                println!(
+                    "  Plan:     Generated {} plans in {}ms",
+                    metrics.plans_generated, metrics.plan_duration_ms
+                );
+                println!(
+                    "  Execute:  Applied adaptations in {}ms",
+                    metrics.execute_duration_ms
+                );
                 println!("  Total:    {}ms\n", metrics.total_duration_ms);
 
                 if metrics.symptoms_detected > 0 {

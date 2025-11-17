@@ -26,7 +26,7 @@ knhk-workflow-engine = { path = "../knhk-workflow-engine" }
 knhk-sidecar = { path = "../knhk-sidecar", optional = true }
 
 # RDF and semantic web
-oxigraph = { workspace = true }
+oxigraph = { workspace = true, optional = true }
 
 # Utilities
 anyhow = "1.0"
@@ -34,6 +34,7 @@ anyhow = "1.0"
 [features]
 sidecar = ["dep:knhk-sidecar", "knhk-sidecar/otel"]
 otel = []
+rdf = ["oxigraph"]
 default = []
 
 [dev-dependencies]

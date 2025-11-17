@@ -3,9 +3,9 @@
 //! This module defines type-level predicates for encoding complex
 //! compile-time properties and constraints.
 
-use core::marker::PhantomData;
-use alloc::vec::Vec;
 use alloc::collections::BTreeSet;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// Trait for type-level predicates
 pub trait TypePredicate {
@@ -416,7 +416,11 @@ mod tests {
     #[test]
     fn test_within_chatman() {
         // These compile because they implement IsWithinChatman
-        fn assert_chatman<const N: u64>() where (): IsWithinChatman<N> {}
+        fn assert_chatman<const N: u64>()
+        where
+            (): IsWithinChatman<N>,
+        {
+        }
 
         assert_chatman::<0>();
         assert_chatman::<8>();
@@ -427,7 +431,11 @@ mod tests {
 
     #[test]
     fn test_power_of_two() {
-        fn assert_pot<const N: usize>() where (): IsPowerOfTwo<N> {}
+        fn assert_pot<const N: usize>()
+        where
+            (): IsPowerOfTwo<N>,
+        {
+        }
 
         assert_pot::<1>();
         assert_pot::<16>();

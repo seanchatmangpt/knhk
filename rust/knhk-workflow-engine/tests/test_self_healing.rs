@@ -6,17 +6,20 @@
 //! - Automatic code repair
 //! - Health metrics tracking
 
-use knhk_workflow_engine::ggen::self_healing::{
-    SelfHealingGenerator, CodeError, ErrorType, Fix, ValidationResult, HealthMetrics,
-};
 use knhk_workflow_engine::ggen::neural_patterns::TargetLanguage;
+use knhk_workflow_engine::ggen::self_healing::{
+    CodeError, ErrorType, Fix, HealthMetrics, SelfHealingGenerator, ValidationResult,
+};
 use std::time::Duration;
 
 #[test]
 fn test_generator_creation() {
     // Valid creation
     let generator = SelfHealingGenerator::new(3);
-    assert!(generator.is_ok(), "Generator should be created successfully");
+    assert!(
+        generator.is_ok(),
+        "Generator should be created successfully"
+    );
 
     // Invalid creation (zero retries)
     let generator = SelfHealingGenerator::new(0);
@@ -123,8 +126,14 @@ async fn test_apply_fix_missing_import() {
     );
 
     let fixed_code = generator.apply_fix(code, &fix).await.unwrap();
-    assert!(fixed_code.contains("use std::collections::HashMap;"), "Should add import");
-    assert!(fixed_code.contains("fn main()"), "Should preserve original code");
+    assert!(
+        fixed_code.contains("use std::collections::HashMap;"),
+        "Should add import"
+    );
+    assert!(
+        fixed_code.contains("fn main()"),
+        "Should preserve original code"
+    );
 }
 
 #[tokio::test]

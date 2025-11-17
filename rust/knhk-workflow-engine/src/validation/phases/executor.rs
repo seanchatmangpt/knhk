@@ -83,7 +83,10 @@ impl PhaseExecutor {
     /// Vector of phase results in execution order
     pub async fn execute_phases<T>(
         &self,
-        phases: Vec<(String, Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>)>,
+        phases: Vec<(
+            String,
+            Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>,
+        )>,
         ctx: PhaseContext,
     ) -> WorkflowResult<Vec<PhaseResult<T>>>
     where
@@ -146,7 +149,10 @@ impl PhaseExecutor {
     /// Execute phases sequentially
     async fn execute_sequential<T>(
         &self,
-        phases: Vec<(String, Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>)>,
+        phases: Vec<(
+            String,
+            Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>,
+        )>,
         ctx: PhaseContext,
     ) -> WorkflowResult<Vec<PhaseResult<T>>>
     where
@@ -170,7 +176,11 @@ impl PhaseExecutor {
     /// Independent phases can run in parallel.
     pub async fn execute_with_dependencies<T>(
         &self,
-        phases: Vec<(String, Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>, Vec<String>)>,
+        phases: Vec<(
+            String,
+            Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>,
+            Vec<String>,
+        )>,
         ctx: PhaseContext,
     ) -> WorkflowResult<HashMap<String, PhaseResult<T>>>
     where
@@ -179,8 +189,10 @@ impl PhaseExecutor {
         // Build dependency graph
         let mut graph: HashMap<String, Vec<String>> = HashMap::new();
         let mut in_degree: HashMap<String, usize> = HashMap::new();
-        let mut phase_map: HashMap<String, Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>> =
-            HashMap::new();
+        let mut phase_map: HashMap<
+            String,
+            Arc<dyn Phase<T, Output = WorkflowResult<PhaseResult<T>>> + Send + Sync>,
+        > = HashMap::new();
 
         for (name, phase, deps) in phases {
             graph.insert(name.clone(), deps.clone());

@@ -4,10 +4,10 @@
 //! μ-kernel operations. All analysis is performed at compile time,
 //! providing static timing guarantees.
 
-use core::marker::PhantomData;
+use super::{total_tick_cost, ConstTickCost};
 use crate::patterns::PatternId;
 use crate::CHATMAN_CONSTANT;
-use super::{ConstTickCost, total_tick_cost};
+use core::marker::PhantomData;
 
 /// WCET analysis result
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,7 +58,11 @@ pub struct WcetPhase {
 impl WcetPhase {
     /// Create a new WCET phase
     pub const fn new(name: &'static str, wcet: u64, required: bool) -> Self {
-        Self { name, wcet, required }
+        Self {
+            name,
+            wcet,
+            required,
+        }
     }
 }
 
@@ -95,10 +99,7 @@ impl WcetAnalyzer {
     }
 
     /// Analyze WCET for a complete task
-    pub const fn analyze_task(
-        pattern_id: PatternId,
-        guard_count: u64,
-    ) -> WcetResult {
+    pub const fn analyze_task(pattern_id: PatternId, guard_count: u64) -> WcetResult {
         // Task phases:
         // 1. Load Σ* descriptor (1 tick)
         // 2. Dispatch pattern (1 tick)
@@ -120,9 +121,7 @@ impl WcetAnalyzer {
     }
 
     /// Analyze WCET for sequential composition
-    pub const fn analyze_sequential<const N: usize>(
-        phases: [WcetPhase; N],
-    ) -> WcetResult {
+    pub const fn analyze_sequential<const N: usize>(phases: [WcetPhase; N]) -> WcetResult {
         let mut worst = 0;
         let mut best = 0;
         let mut average = 0;
@@ -145,9 +144,7 @@ impl WcetAnalyzer {
     }
 
     /// Analyze WCET for parallel composition
-    pub const fn analyze_parallel<const N: usize>(
-        branch_wcets: [u64; N],
-    ) -> WcetResult {
+    pub const fn analyze_parallel<const N: usize>(branch_wcets: [u64; N]) -> WcetResult {
         // For parallel execution, WCET is max of all branches
         let mut worst = 0;
         let mut best = u64::MAX;
@@ -197,10 +194,7 @@ impl WcetAnalyzer {
     }
 
     /// Analyze WCET for loop (bounded)
-    pub const fn analyze_bounded_loop(
-        iteration_wcet: u64,
-        max_iterations: u64,
-    ) -> WcetResult {
+    pub const fn analyze_bounded_loop(iteration_wcet: u64, max_iterations: u64) -> WcetResult {
         let worst = iteration_wcet * max_iterations;
         let best = iteration_wcet; // Minimum 1 iteration
         let average = iteration_wcet * (max_iterations / 2);
@@ -241,10 +235,7 @@ pub const fn parallel_wcet(wcet1: WcetResult, wcet2: WcetResult) -> WcetResult {
 ///
 /// Encodes WCET in the type system for compile-time verification
 pub struct WcetProof<const WORST: u64, const BEST: u64> {
-    _marker: PhantomData<(
-        [(); WORST as usize],
-        [(); BEST as usize],
-    )>,
+    _marker: PhantomData<([(); WORST as usize], [(); BEST as usize])>,
 }
 
 impl<const WORST: u64, const BEST: u64> WcetProof<WORST, BEST> {
@@ -327,10 +318,7 @@ mod tests {
     #[test]
     fn test_analyze_task() {
         // Sequence pattern with 2 guards
-        const TASK_WCET: WcetResult = WcetAnalyzer::analyze_task(
-            PatternId::Sequence,
-            2,
-        );
+        const TASK_WCET: WcetResult = WcetAnalyzer::analyze_task(PatternId::Sequence, 2);
 
         // load(1) + dispatch(1) + guards(2) + pattern(1) + receipt(1) = 6
         assert_eq!(TASK_WCET.worst_case_ticks, 6);
@@ -348,7 +336,7 @@ mod tests {
         const RESULT: WcetResult = WcetAnalyzer::analyze_sequential(PHASES);
 
         assert_eq!(RESULT.worst_case_ticks, 6); // All phases
-        assert_eq!(RESULT.best_case_ticks, 5);  // Required only
+        assert_eq!(RESULT.best_case_ticks, 5); // Required only
     }
 
     #[test]
@@ -357,19 +345,19 @@ mod tests {
         const RESULT: WcetResult = WcetAnalyzer::analyze_parallel(BRANCHES);
 
         assert_eq!(RESULT.worst_case_ticks, 5); // Max branch
-        assert_eq!(RESULT.best_case_ticks, 2);  // Min branch
+        assert_eq!(RESULT.best_case_ticks, 2); // Min branch
     }
 
     #[test]
     fn test_analyze_conditional() {
         const RESULT: WcetResult = WcetAnalyzer::analyze_conditional(
-            1,  // condition cost
-            4,  // true branch
-            3,  // false branch
+            1, // condition cost
+            4, // true branch
+            3, // false branch
         );
 
         assert_eq!(RESULT.worst_case_ticks, 5); // condition + max(4, 3)
-        assert_eq!(RESULT.best_case_ticks, 4);  // condition + min(4, 3)
+        assert_eq!(RESULT.best_case_ticks, 4); // condition + min(4, 3)
     }
 
     #[test]
@@ -389,7 +377,7 @@ mod tests {
         const PARALLEL: WcetResult = parallel_wcet(WCET1, WCET2);
 
         assert_eq!(PARALLEL.worst_case_ticks, 5); // Max worst
-        assert_eq!(PARALLEL.best_case_ticks, 2);  // Min best
+        assert_eq!(PARALLEL.best_case_ticks, 2); // Min best
     }
 
     #[test]
@@ -413,11 +401,11 @@ mod tests {
     #[test]
     fn test_analyze_bounded_loop() {
         const LOOP_WCET: WcetResult = WcetAnalyzer::analyze_bounded_loop(
-            2,  // iteration cost
-            4,  // max iterations
+            2, // iteration cost
+            4, // max iterations
         );
 
         assert_eq!(LOOP_WCET.worst_case_ticks, 8); // 2 * 4
-        assert_eq!(LOOP_WCET.best_case_ticks, 2);  // 1 iteration
+        assert_eq!(LOOP_WCET.best_case_ticks, 2); // 1 iteration
     }
 }

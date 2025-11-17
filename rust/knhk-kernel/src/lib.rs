@@ -53,40 +53,39 @@
 //! assert!(receipt.within_budget());
 //! ```
 
-pub mod timer;
 pub mod descriptor;
-pub mod guard;
-pub mod pattern;
-pub mod receipt;
 pub mod executor;
+pub mod guard;
 pub mod hot_path;
 pub mod macros;
+pub mod pattern;
+pub mod receipt;
+pub mod timer;
 
 // Re-exports for convenience
-pub use timer::{HotPathTimer, TickBudget, calibrate_tsc, read_tsc};
 pub use descriptor::{
-    Descriptor, DescriptorBuilder, DescriptorManager,
-    ExecutionContext, PatternEntry, ResourceState
+    Descriptor, DescriptorBuilder, DescriptorManager, ExecutionContext, PatternEntry, ResourceState,
 };
-pub use guard::{Guard, GuardType, GuardConfig, StateFlags, Predicate};
+pub use executor::{Executor, StateMachine, Task, TaskState};
+pub use guard::{Guard, GuardConfig, GuardType, Predicate, StateFlags};
+pub use hot_path::{HotPath, HotPathRunner, Stratum};
 pub use pattern::{
-    PatternType, PatternContext, PatternResult, PatternDispatcher,
-    PatternFactory, PatternConfig, PatternFlags
+    PatternConfig, PatternContext, PatternDispatcher, PatternFactory, PatternFlags, PatternResult,
+    PatternType,
 };
 pub use receipt::{Receipt, ReceiptBuilder, ReceiptStatus, ReceiptStore};
-pub use executor::{Executor, Task, TaskState, StateMachine};
-pub use hot_path::{HotPath, HotPathRunner, Stratum};
+pub use timer::{calibrate_tsc, read_tsc, HotPathTimer, TickBudget};
 
 /// Prelude for common imports
 pub mod prelude {
     pub use crate::{
-        timer::{HotPathTimer, TickBudget, read_tsc},
         descriptor::{DescriptorBuilder, DescriptorManager},
-        guard::Guard,
-        pattern::{PatternType, PatternConfig},
-        receipt::{Receipt, ReceiptStatus},
         executor::{Executor, Task, TaskState},
+        guard::Guard,
         hot_path::{HotPath, HotPathRunner},
+        pattern::{PatternConfig, PatternType},
+        receipt::{Receipt, ReceiptStatus},
+        timer::{read_tsc, HotPathTimer, TickBudget},
     };
 }
 
@@ -130,7 +129,7 @@ pub fn verify_compliance() -> Result<(), Vec<String>> {
         let ctx = pattern::PatternFactory::create(
             pattern_type,
             i as u32,
-            pattern::PatternConfig::default()
+            pattern::PatternConfig::default(),
         );
 
         let timer = timer::HotPathTimer::start();

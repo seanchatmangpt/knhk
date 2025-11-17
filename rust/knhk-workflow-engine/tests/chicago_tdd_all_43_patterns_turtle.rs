@@ -19,7 +19,11 @@ use std::path::PathBuf;
 
 /// Helper to verify pattern support
 fn assert_pattern_supported(pattern_id: u32, pattern_name: &str) {
-    assert!(pattern_id >= 1 && pattern_id <= 43, "Pattern ID {} out of range", pattern_id);
+    assert!(
+        pattern_id >= 1 && pattern_id <= 43,
+        "Pattern ID {} out of range",
+        pattern_id
+    );
     println!("✓ Pattern {}: {} supported", pattern_id, pattern_name);
 }
 

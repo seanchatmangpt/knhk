@@ -10,7 +10,7 @@
 //! - Portability to all platforms
 //! - Fallback for runtime CPU feature detection
 
-use super::{SimdGuardBatch, GuardBitmap, SIMD_BATCH_SIZE};
+use super::{GuardBitmap, SimdGuardBatch, SIMD_BATCH_SIZE};
 use crate::guards::GuardResult;
 
 /// Scalar guard evaluation (fallback for non-SIMD platforms)
@@ -167,11 +167,7 @@ pub fn select_scalar(
 
     for i in 0..SIMD_BATCH_SIZE {
         let bit_set = (mask & (1 << i)) != 0;
-        result[i] = if bit_set {
-            true_vals[i]
-        } else {
-            false_vals[i]
-        };
+        result[i] = if bit_set { true_vals[i] } else { false_vals[i] };
     }
 
     result
@@ -201,9 +197,7 @@ pub fn select_branchless_scalar(
         let true_val = true_vals[i];
 
         // Arithmetic select (no branches)
-        result[i] = false_val.wrapping_add(
-            bit_set.wrapping_mul(true_val.wrapping_sub(false_val))
-        );
+        result[i] = false_val.wrapping_add(bit_set.wrapping_mul(true_val.wrapping_sub(false_val)));
     }
 
     result
@@ -270,13 +264,13 @@ impl CpuFeatures {
     #[inline(always)]
     pub const fn recommended_batch_size(&self) -> usize {
         if self.avx512 {
-            16  // AVX512 can handle 16 u64s
+            16 // AVX512 can handle 16 u64s
         } else if self.avx2 {
-            8   // AVX2 handles 8 u64s
+            8 // AVX2 handles 8 u64s
         } else if self.neon {
-            4   // NEON handles 4 u64s (128-bit)
+            4 // NEON handles 4 u64s (128-bit)
         } else {
-            1   // Scalar fallback
+            1 // Scalar fallback
         }
     }
 }
@@ -303,7 +297,7 @@ impl DynamicGuardEvaluator {
         #[cfg(all(feature = "simd", target_feature = "avx2"))]
         {
             if self.features.avx2 {
-                return batch.evaluate();  // Use SIMD
+                return batch.evaluate(); // Use SIMD
             }
         }
 
@@ -397,9 +391,15 @@ mod tests {
 
     #[test]
     fn test_bitmask_check_scalar() {
-        let values = [0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111];
-        let masks = [0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111];
-        let expected = [0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111];
+        let values = [
+            0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111,
+        ];
+        let masks = [
+            0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111,
+        ];
+        let expected = [
+            0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111,
+        ];
 
         let bitmap = bitmask_check_scalar(&values, &masks, &expected);
         assert_eq!(bitmap, 0xFF);

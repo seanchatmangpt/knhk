@@ -28,15 +28,14 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::executor::loader::{
-    WorkflowDefinition, TaskDefinition, FlowDefinition,
-    SplitType, JoinType, ExecutionMode,
+    ExecutionMode, FlowDefinition, JoinType, SplitType, TaskDefinition, WorkflowDefinition,
 };
-use crate::executor::telemetry::{WorkflowTelemetry, TaskEvent, WorkflowEvent};
+use crate::executor::telemetry::{TaskEvent, WorkflowEvent, WorkflowTelemetry};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, warn, error, debug, instrument};
+use tracing::{debug, error, info, instrument, warn};
 use uuid;
 
 /// Evaluate a predicate against workflow data
@@ -249,10 +248,12 @@ impl WorkflowRuntime {
         state.start_time = Some(chrono::Utc::now());
 
         // Emit telemetry
-        self.telemetry.emit_workflow_event(WorkflowEvent::Started {
-            workflow_id: self.definition.id.clone(),
-            instance_id: state.instance_id.clone(),
-        }).await;
+        self.telemetry
+            .emit_workflow_event(WorkflowEvent::Started {
+                workflow_id: self.definition.id.clone(),
+                instance_id: state.instance_id.clone(),
+            })
+            .await;
 
         // Enable initial tasks (from input condition)
         if let Some(ref input_condition) = self.definition.input_condition {
@@ -262,20 +263,26 @@ impl WorkflowRuntime {
                     state.enabled_tasks.insert(flow.to.clone());
                     debug!("Enabled initial task: {}", flow.to);
 
-                    self.telemetry.emit_task_event(TaskEvent::Enabled {
-                        task_id: flow.to.clone(),
-                        instance_id: state.instance_id.clone(),
-                    }).await;
+                    self.telemetry
+                        .emit_task_event(TaskEvent::Enabled {
+                            task_id: flow.to.clone(),
+                            instance_id: state.instance_id.clone(),
+                        })
+                        .await;
                 }
             }
         } else {
             // No input condition defined - this violates Covenant 1
             return Err(WorkflowError::InvalidSpecification(
-                "No input condition defined in Turtle. Cannot determine where to start.".to_string()
+                "No input condition defined in Turtle. Cannot determine where to start."
+                    .to_string(),
             ));
         }
 
-        info!("Workflow started with {} enabled tasks", state.enabled_tasks.len());
+        info!(
+            "Workflow started with {} enabled tasks",
+            state.enabled_tasks.len()
+        );
 
         Ok(())
     }
@@ -310,9 +317,14 @@ impl WorkflowRuntime {
         info!("Executing task: {}", task_id);
 
         // Find task definition
-        let task = self.definition.tasks.iter()
+        let task = self
+            .definition
+            .tasks
+            .iter()
             .find(|t| t.id == task_id)
-            .ok_or_else(|| WorkflowError::Internal(format!("Task {} not found in definition", task_id)))?;
+            .ok_or_else(|| {
+                WorkflowError::Internal(format!("Task {} not found in definition", task_id))
+            })?;
 
         // Move from enabled to running
         {
@@ -320,10 +332,12 @@ impl WorkflowRuntime {
             state.enabled_tasks.remove(task_id);
             state.running_tasks.insert(task_id.to_string());
 
-            self.telemetry.emit_task_event(TaskEvent::Started {
-                task_id: task_id.to_string(),
-                instance_id: state.instance_id.clone(),
-            }).await;
+            self.telemetry
+                .emit_task_event(TaskEvent::Started {
+                    task_id: task_id.to_string(),
+                    instance_id: state.instance_id.clone(),
+                })
+                .await;
         }
 
         // Execute task (if executor provided)
@@ -352,7 +366,10 @@ impl WorkflowRuntime {
     /// Extracts relevant data from workflow context based on task metadata.
     /// If task has input mappings defined in metadata, only those variables are extracted.
     /// Otherwise, the entire workflow data context is provided.
-    async fn get_task_input(&self, task: &TaskDefinition) -> WorkflowResult<HashMap<String, serde_json::Value>> {
+    async fn get_task_input(
+        &self,
+        task: &TaskDefinition,
+    ) -> WorkflowResult<HashMap<String, serde_json::Value>> {
         let state = self.state.read().await;
 
         // Check if task has input variable mappings in metadata
@@ -382,7 +399,11 @@ impl WorkflowRuntime {
 
     /// Handle task completion
     #[instrument(skip(self, task, result))]
-    async fn handle_task_completion(&self, task: &TaskDefinition, result: TaskResult) -> WorkflowResult<()> {
+    async fn handle_task_completion(
+        &self,
+        task: &TaskDefinition,
+        result: TaskResult,
+    ) -> WorkflowResult<()> {
         info!("Task {} completed: success={}", task.id, result.success);
 
         let mut state = self.state.write().await;
@@ -395,24 +416,27 @@ impl WorkflowRuntime {
             state.data.extend(result.output);
 
             // Emit telemetry
-            self.telemetry.emit_task_event(TaskEvent::Completed {
-                task_id: task.id.clone(),
-                instance_id: state.instance_id.clone(),
-                duration: result.duration,
-            }).await;
+            self.telemetry
+                .emit_task_event(TaskEvent::Completed {
+                    task_id: task.id.clone(),
+                    instance_id: state.instance_id.clone(),
+                    duration: result.duration,
+                })
+                .await;
 
             // Handle split: enable outgoing flows
             self.handle_split(&mut state, task)?;
-
         } else {
             state.failed_tasks.insert(task.id.clone());
 
             // Emit telemetry
-            self.telemetry.emit_task_event(TaskEvent::Failed {
-                task_id: task.id.clone(),
-                instance_id: state.instance_id.clone(),
-                error: result.error.clone(),
-            }).await;
+            self.telemetry
+                .emit_task_event(TaskEvent::Failed {
+                    task_id: task.id.clone(),
+                    instance_id: state.instance_id.clone(),
+                    error: result.error.clone(),
+                })
+                .await;
 
             // Fail workflow
             state.state = WorkflowState::Failed;
@@ -424,9 +448,16 @@ impl WorkflowRuntime {
     }
 
     /// Handle task split: enable outgoing flows
-    fn handle_split(&self, state: &mut ExecutionState, task: &TaskDefinition) -> WorkflowResult<()> {
+    fn handle_split(
+        &self,
+        state: &mut ExecutionState,
+        task: &TaskDefinition,
+    ) -> WorkflowResult<()> {
         // Find outgoing flows
-        let outgoing: Vec<_> = self.definition.flows.iter()
+        let outgoing: Vec<_> = self
+            .definition
+            .flows
+            .iter()
             .filter(|f| f.from == task.id)
             .collect();
 
@@ -525,11 +556,15 @@ impl WorkflowRuntime {
         };
 
         // Count incoming tokens
-        let incoming: Vec<_> = self.definition.flows.iter()
+        let incoming: Vec<_> = self
+            .definition
+            .flows
+            .iter()
             .filter(|f| f.to == task_id)
             .collect();
 
-        let completed_incoming = incoming.iter()
+        let completed_incoming = incoming
+            .iter()
             .filter(|f| state.completed_tasks.contains(&f.from))
             .count();
 
@@ -571,10 +606,12 @@ impl WorkflowRuntime {
                 //
                 // Simplified logic: enable when we have at least one token
                 // and all completed incoming flows are accounted for.
-                let all_completed = incoming.iter()
+                let all_completed = incoming
+                    .iter()
                     .filter(|f| state.completed_tasks.contains(&f.from))
-                    .count() == incoming.len() ||
-                    completed_incoming >= 1;
+                    .count()
+                    == incoming.len()
+                    || completed_incoming >= 1;
 
                 if all_completed {
                     debug!(
@@ -610,21 +647,27 @@ impl WorkflowRuntime {
         // Check if output condition is reached
         if let Some(ref output_condition) = self.definition.output_condition {
             // Check if all tasks leading to output condition are completed
-            let incoming: Vec<_> = self.definition.flows.iter()
+            let incoming: Vec<_> = self
+                .definition
+                .flows
+                .iter()
                 .filter(|f| &f.to == output_condition)
                 .collect();
 
-            let all_complete = incoming.iter()
+            let all_complete = incoming
+                .iter()
                 .all(|f| state.completed_tasks.contains(&f.from));
 
             if all_complete {
                 state.state = WorkflowState::Completed;
                 state.end_time = Some(chrono::Utc::now());
 
-                self.telemetry.emit_workflow_event(WorkflowEvent::Completed {
-                    workflow_id: self.definition.id.clone(),
-                    instance_id: state.instance_id.clone(),
-                }).await;
+                self.telemetry
+                    .emit_workflow_event(WorkflowEvent::Completed {
+                        workflow_id: self.definition.id.clone(),
+                        instance_id: state.instance_id.clone(),
+                    })
+                    .await;
 
                 info!("Workflow completed successfully");
                 return Ok(false); // Stop execution
@@ -637,10 +680,12 @@ impl WorkflowRuntime {
             state.state = WorkflowState::Completed;
             state.end_time = Some(chrono::Utc::now());
 
-            self.telemetry.emit_workflow_event(WorkflowEvent::Completed {
-                workflow_id: self.definition.id.clone(),
-                instance_id: state.instance_id.clone(),
-            }).await;
+            self.telemetry
+                .emit_workflow_event(WorkflowEvent::Completed {
+                    workflow_id: self.definition.id.clone(),
+                    instance_id: state.instance_id.clone(),
+                })
+                .await;
 
             info!("Workflow completed (implicit termination)");
             return Ok(false); // Stop execution
@@ -664,9 +709,10 @@ impl WorkflowRuntime {
         loop {
             iterations += 1;
             if iterations > MAX_ITERATIONS {
-                return Err(WorkflowError::Internal(
-                    format!("Workflow exceeded maximum iterations ({})", MAX_ITERATIONS)
-                ));
+                return Err(WorkflowError::Internal(format!(
+                    "Workflow exceeded maximum iterations ({})",
+                    MAX_ITERATIONS
+                )));
             }
 
             let should_continue = self.step().await?;
@@ -696,10 +742,12 @@ impl WorkflowRuntime {
         state.state = WorkflowState::Cancelled;
         state.end_time = Some(chrono::Utc::now());
 
-        self.telemetry.emit_workflow_event(WorkflowEvent::Cancelled {
-            workflow_id: self.definition.id.clone(),
-            instance_id: state.instance_id.clone(),
-        }).await;
+        self.telemetry
+            .emit_workflow_event(WorkflowEvent::Cancelled {
+                workflow_id: self.definition.id.clone(),
+                instance_id: state.instance_id.clone(),
+            })
+            .await;
 
         Ok(())
     }

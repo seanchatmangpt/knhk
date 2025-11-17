@@ -2,11 +2,11 @@
 //!
 //! Enforces core-local vs shared data at compile time using Rust's type system.
 
+use crate::guards::GuardId;
+use alloc::sync::Arc;
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicU64, Ordering};
-use alloc::sync::Arc;
-use crate::guards::GuardId;
 
 /// Marker trait: Type is NOT Send (cannot cross thread boundaries)
 pub struct NotSend(PhantomData<*const ()>);
@@ -43,7 +43,7 @@ pub struct NotSync(PhantomData<UnsafeCell<()>>);
 ///     data.local_counter += 1;
 /// });
 /// ```
-#[repr(C, align(64))]  // Cache-line aligned to prevent false sharing
+#[repr(C, align(64))] // Cache-line aligned to prevent false sharing
 pub struct CoreLocal<T> {
     data: UnsafeCell<T>,
     _not_send: PhantomData<NotSend>,
@@ -185,17 +185,9 @@ impl Shared<AtomicU64> {
 
     /// Atomic compare-exchange
     #[inline]
-    pub fn compare_exchange(
-        &self,
-        current: u64,
-        new: u64,
-    ) -> Result<u64, u64> {
-        self.data.compare_exchange(
-            current,
-            new,
-            self.ordering.into(),
-            Ordering::Relaxed,
-        )
+    pub fn compare_exchange(&self, current: u64, new: u64) -> Result<u64, u64> {
+        self.data
+            .compare_exchange(current, new, self.ordering.into(), Ordering::Relaxed)
     }
 }
 

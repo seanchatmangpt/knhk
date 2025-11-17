@@ -4,11 +4,11 @@
 //! based on runtime observations.
 
 use crate::error::WorkflowResult;
+use crate::mape::{KnowledgeBase, Observation};
 use crate::patterns::PatternId;
-use crate::mape::{Observation, KnowledgeBase};
-use std::sync::Arc;
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Adaptive pattern selector that learns from execution history
 pub struct AdaptivePatternSelector {
@@ -63,7 +63,8 @@ impl AdaptivePatternSelector {
 
     /// Update pattern performance based on execution observation
     pub fn record_execution(&mut self, pattern: PatternId, observation: &Observation) {
-        let perf = self.pattern_performance
+        let perf = self
+            .pattern_performance
             .entry(pattern)
             .or_insert_with(|| PatternPerformance::default());
 
@@ -94,10 +95,7 @@ impl AdaptivePatternSelector {
                 PatternId::DeferredChoice,
             ]
         } else {
-            vec![
-                PatternId::Sequence,
-                PatternId::ParallelSplit,
-            ]
+            vec![PatternId::Sequence, PatternId::ParallelSplit]
         }
     }
 
@@ -127,16 +125,32 @@ impl AdaptivePatternSelector {
     fn context_affinity(&self, pattern: &PatternId, context: &PatternSelectionContext) -> f64 {
         match pattern {
             PatternId::ParallelSplit => {
-                if context.requires_parallelism { 1.0 } else { 0.3 }
+                if context.requires_parallelism {
+                    1.0
+                } else {
+                    0.3
+                }
             }
             PatternId::ExclusiveChoice => {
-                if context.requires_exclusive_choice { 1.0 } else { 0.5 }
+                if context.requires_exclusive_choice {
+                    1.0
+                } else {
+                    0.5
+                }
             }
             PatternId::MultiChoice => {
-                if context.concurrency_level > 2 { 0.9 } else { 0.4 }
+                if context.concurrency_level > 2 {
+                    0.9
+                } else {
+                    0.4
+                }
             }
             PatternId::Sequence => {
-                if !context.requires_parallelism { 1.0 } else { 0.2 }
+                if !context.requires_parallelism {
+                    1.0
+                } else {
+                    0.2
+                }
             }
             _ => 0.5, // Neutral affinity
         }
@@ -148,10 +162,18 @@ impl AdaptivePatternSelector {
         match pattern {
             PatternId::Sequence => 0.7, // Safe default
             PatternId::ParallelSplit => {
-                if context.requires_parallelism { 0.8 } else { 0.3 }
+                if context.requires_parallelism {
+                    0.8
+                } else {
+                    0.3
+                }
             }
             PatternId::ExclusiveChoice => {
-                if context.requires_exclusive_choice { 0.8 } else { 0.4 }
+                if context.requires_exclusive_choice {
+                    0.8
+                } else {
+                    0.4
+                }
             }
             _ => 0.5,
         }
@@ -159,12 +181,14 @@ impl AdaptivePatternSelector {
 
     /// Get pattern performance statistics
     pub fn get_pattern_stats(&self, pattern: &PatternId) -> Option<PatternPerformanceStats> {
-        self.pattern_performance.get(pattern).map(|p| PatternPerformanceStats {
-            total_executions: p.total_executions,
-            avg_ticks: p.avg_ticks,
-            success_rate: p.success_rate,
-            failures: p.failures,
-        })
+        self.pattern_performance
+            .get(pattern)
+            .map(|p| PatternPerformanceStats {
+                total_executions: p.total_executions,
+                avg_ticks: p.avg_ticks,
+                success_rate: p.success_rate,
+                failures: p.failures,
+            })
     }
 }
 
@@ -224,7 +248,9 @@ mod tests {
         // Should select a parallel pattern
         assert!(matches!(
             pattern,
-            PatternId::ParallelSplit | PatternId::MultiChoice | PatternId::MultipleInstancesWithDesignTimeKnowledge
+            PatternId::ParallelSplit
+                | PatternId::MultiChoice
+                | PatternId::MultipleInstancesWithDesignTimeKnowledge
         ));
     }
 

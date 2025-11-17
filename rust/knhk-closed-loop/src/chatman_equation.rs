@@ -60,9 +60,9 @@ pub struct Action {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ResourceBudget {
-    pub max_ticks: u32,          // Chatman constant: 8
-    pub max_memory_mb: u32,      // Per-action budget
-    pub max_latency_ms: u32,     // Warm path budget
+    pub max_ticks: u32,      // Chatman constant: 8
+    pub max_memory_mb: u32,  // Per-action budget
+    pub max_latency_ms: u32, // Warm path budget
 }
 
 impl ChatmanEquation {
@@ -113,7 +113,7 @@ impl ChatmanEquation {
                 "Q4" => {
                     // SLO compliance: latency within budget
                     if self.action.budget.max_latency_ms > 100 {
-                        return false;  // Hot path only
+                        return false; // Hot path only
                     }
                 }
                 "Q5" => {
@@ -135,7 +135,11 @@ impl fmt::Display for ChatmanEquation {
         write!(
             f,
             "A = μ(O): observation={}, ontology={}, action={}, ticks={}/8, receipt={}",
-            self.observation, self.ontology_id, self.action.command, self.ticks_used, self.receipt_id
+            self.observation,
+            self.ontology_id,
+            self.action.command,
+            self.ticks_used,
+            self.receipt_id
         )
     }
 }
@@ -180,7 +184,7 @@ mod tests {
                 preconditions: vec![],
                 postconditions: vec![],
                 budget: ResourceBudget {
-                    max_ticks: 16,  // Violates Chatman constant!
+                    max_ticks: 16, // Violates Chatman constant!
                     max_memory_mb: 256,
                     max_latency_ms: 10,
                 },

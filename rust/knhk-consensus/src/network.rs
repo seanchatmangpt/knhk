@@ -8,7 +8,7 @@ use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Arc;
-use tracing::{debug, error, warn, info};
+use tracing::{debug, error, info, warn};
 
 /// Peer message with authentication
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +103,10 @@ impl PeerDiscovery {
 
     /// Get all peers
     pub fn get_all_peers(&self) -> Vec<PeerInfo> {
-        self.peers.iter().map(|entry| entry.value().clone()).collect()
+        self.peers
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     /// Peer count
@@ -230,9 +233,10 @@ impl NetworkNode {
         // Validate sender is known peer
         if !self.discovery.get_peer(&msg.source).is_some() {
             warn!(source = %msg.source, "Message from unknown peer");
-            return Err(ConsensusError::ByzantineNodeDetected(
-                format!("Unknown sender: {}", msg.source),
-            ));
+            return Err(ConsensusError::ByzantineNodeDetected(format!(
+                "Unknown sender: {}",
+                msg.source
+            )));
         }
 
         // Check timestamp is reasonable (within 5 minutes)
@@ -270,22 +274,15 @@ impl NetworkNode {
 
     /// Get Byzantine nodes
     pub fn get_byzantine_nodes(&self) -> Vec<String> {
-        self.byzantine
-            .lock()
-            .iter()
-            .cloned()
-            .collect()
+        self.byzantine.lock().iter().cloned().collect()
     }
 
     /// Message ordering: verify monotonic increase
-    pub fn verify_message_order(
-        &self,
-        peer_id: &str,
-        sequence: u64,
-    ) -> Result<()> {
-        let received = self.received.iter().filter(|entry| {
-            entry.value().source == peer_id
-        });
+    pub fn verify_message_order(&self, peer_id: &str, sequence: u64) -> Result<()> {
+        let received = self
+            .received
+            .iter()
+            .filter(|entry| entry.value().source == peer_id);
 
         let mut max_seq = 0;
         for entry in received {
@@ -295,9 +292,10 @@ impl NetworkNode {
         }
 
         if sequence <= max_seq {
-            return Err(ConsensusError::ByzantineNodeDetected(
-                format!("Out-of-order message from {}", peer_id),
-            ));
+            return Err(ConsensusError::ByzantineNodeDetected(format!(
+                "Out-of-order message from {}",
+                peer_id
+            )));
         }
 
         Ok(())

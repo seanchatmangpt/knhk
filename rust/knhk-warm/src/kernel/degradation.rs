@@ -2,14 +2,14 @@
 // Phase 3: Handling cascading failures and recovery paths
 // DOCTRINE: Covenant 5 (Latency Is Our Currency) - Degrade gracefully to preserve latency
 
+use dashmap::DashMap;
+use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use std::collections::{HashMap, VecDeque};
-use parking_lot::{Mutex, RwLock};
-use dashmap::DashMap;
 use tracing::{debug, error, info, warn};
-use serde::{Serialize, Deserialize};
 
 /// Degradation strategy for system overload
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -136,7 +136,8 @@ impl DegradationManager {
         let mut decision = DegradationDecision::default();
 
         // Get or create component state
-        let mut entry = self.component_states
+        let mut entry = self
+            .component_states
             .entry(component.clone())
             .or_insert_with(|| DegradationState {
                 component: component.clone(),
@@ -155,14 +156,20 @@ impl DegradationManager {
             if new_level > old_level {
                 // Degrading
                 entry.degraded_since = Some(Instant::now());
-                self.metrics.degradation_events.fetch_add(1, Ordering::Relaxed);
-                self.metrics.current_degraded_components.fetch_add(1, Ordering::Relaxed);
+                self.metrics
+                    .degradation_events
+                    .fetch_add(1, Ordering::Relaxed);
+                self.metrics
+                    .current_degraded_components
+                    .fetch_add(1, Ordering::Relaxed);
 
                 decision.action = DegradationAction::Degrade;
                 decision.strategies = entry.active_strategies.clone();
 
-                warn!("Component {} degraded to level {}: {}",
-                    component, new_level, self.levels[new_level].name);
+                warn!(
+                    "Component {} degraded to level {}: {}",
+                    component, new_level, self.levels[new_level].name
+                );
             } else {
                 // Recovering
                 entry.recovery_attempts += 1;
@@ -170,13 +177,17 @@ impl DegradationManager {
 
                 if new_level == 0 {
                     entry.degraded_since = None;
-                    self.metrics.current_degraded_components.fetch_sub(1, Ordering::Relaxed);
+                    self.metrics
+                        .current_degraded_components
+                        .fetch_sub(1, Ordering::Relaxed);
                 }
 
                 decision.action = DegradationAction::Recover;
 
-                info!("Component {} recovered to level {}: {}",
-                    component, new_level, self.levels[new_level].name);
+                info!(
+                    "Component {} recovered to level {}: {}",
+                    component, new_level, self.levels[new_level].name
+                );
             }
         } else {
             decision.action = DegradationAction::Maintain;
@@ -200,9 +211,10 @@ impl DegradationManager {
 
     /// Apply degradation strategy to work item
     pub fn apply_degradation(&self, component: &str, work: WorkItem) -> DegradedWork {
-        let state = self.component_states.get(component);
+        let state = self.component_states.get(component).map(|s| s.clone());
 
         let strategies = state
+            .as_ref()
             .map(|s| s.active_strategies.clone())
             .unwrap_or_default();
 
@@ -217,13 +229,19 @@ impl DegradationManager {
         for strategy in strategies {
             match strategy {
                 DegradationStrategy::LoadShedding => {
-                    if work.priority < state.as_ref().map(|s| self.levels[s.current_level].priority_cutoff).unwrap_or(0) {
+                    if work.priority
+                        < state
+                            .as_ref()
+                            .map(|s| self.levels[s.current_level].priority_cutoff)
+                            .unwrap_or(0)
+                    {
                         degraded.should_process = false;
                         self.metrics.work_items_shed.fetch_add(1, Ordering::Relaxed);
                     }
                 }
                 DegradationStrategy::RateLimiting => {
-                    let sampling_rate = state.as_ref()
+                    let sampling_rate = state
+                        .as_ref()
                         .map(|s| self.levels[s.current_level].sampling_rate)
                         .unwrap_or(1.0);
 
@@ -233,11 +251,15 @@ impl DegradationManager {
                 }
                 DegradationStrategy::Buffering => {
                     degraded.deferred = true;
-                    self.metrics.work_items_deferred.fetch_add(1, Ordering::Relaxed);
+                    self.metrics
+                        .work_items_deferred
+                        .fetch_add(1, Ordering::Relaxed);
                 }
                 DegradationStrategy::FeatureReduction => {
                     degraded.simplified = true;
-                    self.metrics.feature_reductions.fetch_add(1, Ordering::Relaxed);
+                    self.metrics
+                        .feature_reductions
+                        .fetch_add(1, Ordering::Relaxed);
                 }
                 DegradationStrategy::ApproximateComputation => {
                     degraded.simplified = true;
@@ -265,22 +287,26 @@ impl DegradationManager {
 
     /// Get circuit breaker for component
     pub fn get_circuit_breaker(&self, component: &str) -> Arc<CircuitBreaker> {
-        Arc::clone(
-            self.circuit_breakers
-                .entry(component.to_string())
-                .or_insert_with(|| Arc::new(CircuitBreaker::new(
-                    component.to_string(),
-                    CircuitBreakerConfig::default(),
-                )))
-                .value()
-        )
+        if let Some(cb_ref) = self.circuit_breakers.get(component) {
+            Arc::new(cb_ref.value().clone())
+        } else {
+            let cb = CircuitBreaker::new(
+                component.to_string(),
+                CircuitBreakerConfig::default(),
+            );
+            self.circuit_breakers.insert(component.to_string(), cb.clone());
+            Arc::new(cb)
+        }
     }
 
     pub fn get_metrics(&self) -> DegradationStatistics {
         DegradationStatistics {
             degradation_events: self.metrics.degradation_events.load(Ordering::Relaxed),
             recovery_events: self.metrics.recovery_events.load(Ordering::Relaxed),
-            current_degraded_components: self.metrics.current_degraded_components.load(Ordering::Relaxed),
+            current_degraded_components: self
+                .metrics
+                .current_degraded_components
+                .load(Ordering::Relaxed),
             work_items_shed: self.metrics.work_items_shed.load(Ordering::Relaxed),
             work_items_deferred: self.metrics.work_items_deferred.load(Ordering::Relaxed),
             feature_reductions: self.metrics.feature_reductions.load(Ordering::Relaxed),
@@ -347,12 +373,13 @@ impl Default for RecoveryPolicy {
 }
 
 /// Circuit breaker for cascading failure prevention
+#[derive(Clone)]
 pub struct CircuitBreaker {
     name: String,
     state: Arc<Mutex<CircuitBreakerState>>,
     config: CircuitBreakerConfig,
-    failure_count: AtomicU64,
-    success_count: AtomicU64,
+    failure_count: Arc<AtomicU64>,
+    success_count: Arc<AtomicU64>,
     last_failure: Arc<Mutex<Option<Instant>>>,
     last_state_change: Arc<Mutex<Instant>>,
 }
@@ -389,8 +416,8 @@ impl CircuitBreaker {
             name,
             state: Arc::new(Mutex::new(CircuitBreakerState::Closed)),
             config,
-            failure_count: AtomicU64::new(0),
-            success_count: AtomicU64::new(0),
+            failure_count: Arc::new(AtomicU64::new(0)),
+            success_count: Arc::new(AtomicU64::new(0)),
             last_failure: Arc::new(Mutex::new(None)),
             last_state_change: Arc::new(Mutex::new(Instant::now())),
         }
@@ -413,12 +440,8 @@ impl CircuitBreaker {
                     Err(E::from(format!("Circuit breaker {} is open", self.name)))
                 }
             }
-            CircuitBreakerState::HalfOpen => {
-                self.attempt_call(f)
-            }
-            CircuitBreakerState::Closed => {
-                self.attempt_call(f)
-            }
+            CircuitBreakerState::HalfOpen => self.attempt_call(f),
+            CircuitBreakerState::Closed => self.attempt_call(f),
         }
     }
 
@@ -468,13 +491,18 @@ impl CircuitBreaker {
             CircuitBreakerState::Closed => {
                 if self.failure_count.load(Ordering::Relaxed) >= self.config.failure_threshold {
                     self.transition_to(CircuitBreakerState::Open);
-                    warn!("Circuit breaker {} opened after {} failures",
-                        self.name, self.config.failure_threshold);
+                    warn!(
+                        "Circuit breaker {} opened after {} failures",
+                        self.name, self.config.failure_threshold
+                    );
                 }
             }
             CircuitBreakerState::HalfOpen => {
                 self.transition_to(CircuitBreakerState::Open);
-                warn!("Circuit breaker {} reopened after failure in half-open state", self.name);
+                warn!(
+                    "Circuit breaker {} reopened after failure in half-open state",
+                    self.name
+                );
             }
             _ => {}
         }
@@ -493,7 +521,10 @@ impl CircuitBreaker {
         *state = new_state;
         *self.last_state_change.lock() = Instant::now();
 
-        debug!("Circuit breaker {} transitioned to {:?}", self.name, new_state);
+        debug!(
+            "Circuit breaker {} transitioned to {:?}",
+            self.name, new_state
+        );
     }
 
     fn reset_counts(&self) {

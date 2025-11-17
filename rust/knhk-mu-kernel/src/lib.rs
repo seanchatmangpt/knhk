@@ -35,7 +35,7 @@
 
 #![no_std]
 #![cfg_attr(not(test), no_main)]
-#![forbid(unsafe_code)]  // Except in verified modules
+#![forbid(unsafe_code)] // Except in verified modules
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![deny(clippy::panic)]
@@ -50,31 +50,31 @@ extern crate alloc;
 
 // Core modules (μ_hot - no allocation, ≤8 cycles)
 pub mod core;
-pub mod isa;
-pub mod sigma;
 pub mod guards;
 pub mod guards_simd;
+pub mod isa;
 pub mod patterns;
 pub mod receipts;
+pub mod sigma;
 pub mod timing;
 pub mod timing_const;
 
 // Warm modules (μ_warm - ≤1ms, can allocate)
-pub mod overlay;
-pub mod overlay_types;
-pub mod overlay_proof;
-pub mod overlay_safety;
-pub mod overlay_compiler;
 pub mod compiler;
 pub mod compiler_proof;
-pub mod sigma_ir;
-pub mod sigma_types;
-pub mod mape;
 pub mod concurrency;
 #[cfg(any(feature = "concurrent-structures", test))]
 pub mod concurrent;
+pub mod mape;
+pub mod overlay;
+pub mod overlay_compiler;
+pub mod overlay_proof;
+pub mod overlay_safety;
+pub mod overlay_types;
 pub mod proofs;
 pub mod protocols;
+pub mod sigma_ir;
+pub mod sigma_types;
 
 // Cold modules (μ_cold - unbounded)
 pub mod analytics;
@@ -91,85 +91,71 @@ pub mod constitutional;
 pub mod verification;
 
 // Re-exports
-pub use core::{MuKernel, MuState, MuResult, MuError};
-pub use isa::{MuOps, MuInstruction};
-pub use sigma::{SigmaCompiled, SigmaHash};
-pub use guards::{GuardContext, GuardResult};
-pub use guards_simd::{SimdGuardBatch, SimdGuardEvaluator, evaluate_guards_batch, GuardBitmap};
-pub use patterns::{PatternId};
-pub use receipts::{Receipt, ReceiptChain};
-pub use timing::{TickCounter, TickBudget};
-pub use timing_const::{
-    ConstTickCost, SequencePattern, ParallelSplitPattern, SynchronizationPattern,
-    total_tick_cost, within_chatman, compute_task_wcet,
-};
-pub use overlay::{
-    DeltaSigma, OverlayAlgebra, ProofCarryingOverlay,
-    ProofAlgebra, KernelPromotion, RolloutStrategy, PromoteError,
-};
-pub use overlay_types::{
-    OverlayValue, OverlayChanges, OverlayChange, OverlayMetadata,
-    OverlayError, SnapshotId, PerfImpact,
-};
-pub use overlay_proof::{
-    OverlayProof, ComposedProof, ProofStrength, ProofMethod,
-};
-pub use overlay_safety::{
-    SafeProof, HotSafe, WarmSafe, ColdUnsafe, SafetyPromotion,
-};
-pub use mape::{MapeKColon, MonitorOp, AnalyzeOp, PlanOp, ExecuteOp};
-pub use compiler_proof::{CompilationCertificate, CertifiedSigma, ProofBuilder};
-pub use sigma_ir::{SigmaIR, validation};
-pub use sigma_types::{CompiledTask, CompiledPattern, CompiledGuard, WithinChatmanConstant};
+pub use compiler_proof::{CertifiedSigma, CompilationCertificate, ProofBuilder};
 pub use concurrency::{
-    CoreLocal, Shared, GuardSet,
-    WorkQueue, GlobalOrdered, BestEffort,
-    DeterministicScheduler, SchedulableTask, Priority, PriorityHigh, PriorityNormal, PriorityLow,
-    LogicalClock, Timestamp, HappensBefore,
-    ReplayLog, Deterministic as ReplayDeterministic,
+    BestEffort, CoreLocal, Deterministic as ReplayDeterministic, DeterministicScheduler,
+    GlobalOrdered, GuardSet, HappensBefore, LogicalClock, Priority, PriorityHigh, PriorityLow,
+    PriorityNormal, ReplayLog, SchedulableTask, Shared, Timestamp, WorkQueue,
+};
+pub use core::{MuError, MuKernel, MuResult, MuState};
+pub use guards::{GuardContext, GuardResult};
+pub use guards_simd::{evaluate_guards_batch, GuardBitmap, SimdGuardBatch, SimdGuardEvaluator};
+pub use isa::{MuInstruction, MuOps};
+pub use mape::{AnalyzeOp, ExecuteOp, MapeKColon, MonitorOp, PlanOp};
+pub use overlay::{
+    DeltaSigma, KernelPromotion, OverlayAlgebra, PromoteError, ProofAlgebra, ProofCarryingOverlay,
+    RolloutStrategy,
+};
+pub use overlay_proof::{ComposedProof, OverlayProof, ProofMethod, ProofStrength};
+pub use overlay_safety::{ColdUnsafe, HotSafe, SafeProof, SafetyPromotion, WarmSafe};
+pub use overlay_types::{
+    OverlayChange, OverlayChanges, OverlayError, OverlayMetadata, OverlayValue, PerfImpact,
+    SnapshotId,
+};
+pub use patterns::PatternId;
+pub use receipts::{Receipt, ReceiptChain};
+pub use sigma::{SigmaCompiled, SigmaHash};
+pub use sigma_ir::{validation, SigmaIR};
+pub use sigma_types::{CompiledGuard, CompiledPattern, CompiledTask, WithinChatmanConstant};
+pub use timing::{TickBudget, TickCounter};
+pub use timing_const::{
+    compute_task_wcet, total_tick_cost, within_chatman, ConstTickCost, ParallelSplitPattern,
+    SequencePattern, SynchronizationPattern,
 };
 
 // Lock-free concurrent data structures (Phase 10)
 #[cfg(feature = "concurrent-structures")]
 pub use concurrent::{
-    LockFreeSkipList, HazardGuard,
-    ConcurrentHAMT,
-    TreiberStack, MichaelScottQueue,
-    Guard, Atomic,
-    AtomicArc, WeakArc, AtomicArcCell,
+    Atomic, AtomicArc, AtomicArcCell, ConcurrentHAMT, Guard, HazardGuard, LockFreeSkipList,
+    MichaelScottQueue, TreiberStack, WeakArc,
 };
 
 // AHI re-exports
 pub use ahi::{
-    Decision, ObservationSlice, InvariantId, RiskClass,
-    AhiContext, AhiProvenOverlay, AhiOverlayProof, SubmitToken,
-    Hot, Warm, Cold, TimescaleClass,
+    AhiContext, AhiOverlayProof, AhiProvenOverlay, Cold, Decision, Hot, InvariantId,
+    ObservationSlice, RiskClass, SubmitToken, TimescaleClass, Warm,
 };
 
 // Constitutional re-exports
 pub use constitutional::{
-    DoctrineAligned, ChatmanBounded, ClosedWorld, Deterministic, Constitutional,
-    Doctrine, ConstitutionalReceipt,
+    ChatmanBounded, ClosedWorld, Constitutional, ConstitutionalReceipt, Deterministic, Doctrine,
+    DoctrineAligned,
 };
 
 // Proof re-exports
-pub use proofs::{
-    Proven, Witness, Proof, Predicate,
-    NonZero, ChatmanCompliant, Sorted, PowerOfTwo,
-    Bounded, ConstNonZero, Aligned,
-    ConstRange, ChatmanProof, PowerOfTwoProof,
-    IsWithinChatman, IsPowerOfTwo, IsSorted,
-    ProvenSorted, ProvenUnique, ProvenNonEmpty, ProvenChatmanBounded,
-    ProofExt, ProofResult, ProofError,
-    ProofChain, ProofValidator,
-};
 pub use proofs::combinators::ProofBuilder as ProofsBuilder;
+pub use proofs::{
+    Aligned, Bounded, ChatmanCompliant, ChatmanProof, ConstNonZero, ConstRange, IsPowerOfTwo,
+    IsSorted, IsWithinChatman, NonZero, PowerOfTwo, PowerOfTwoProof, Predicate, Proof, ProofChain,
+    ProofError, ProofExt, ProofResult, ProofValidator, Proven, ProvenChatmanBounded,
+    ProvenNonEmpty, ProvenSorted, ProvenUnique, Sorted, Witness,
+};
 
 // Protocol re-exports
 pub use protocols::{
-    Session, SessionProtocol, StateMachine, MapeKCycle, OverlayPipeline,
-    MonitorPhase, AnalyzePhase, PlanPhase, ExecutePhase, KnowledgePhase,
-    ShadowPhase, TestPhase, ValidatePhase, PromotePhase,
+    AnalyzePhase, ExecutePhase, KnowledgePhase, MapeKCycle, MonitorPhase, OverlayPipeline,
+    PlanPhase, PromotePhase, Session, SessionProtocol, ShadowPhase, StateMachine, TestPhase,
+    ValidatePhase,
 };
 
 /// The Chatman Constant - maximum ticks for hot path

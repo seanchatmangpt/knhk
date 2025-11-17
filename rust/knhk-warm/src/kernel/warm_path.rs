@@ -2,18 +2,18 @@
 // Phase 3: Warm Path & Descriptor Management
 // DOCTRINE: All 6 covenants apply, Rule 4 (All changes are descriptor changes)
 
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
 use crossbeam::channel::{bounded, Receiver, Sender, TryRecvError};
 use dashmap::DashMap;
-use parking_lot::{RwLock, Mutex};
-use tracing::{debug, error, info, warn, trace};
-use serde::{Serialize, Deserialize};
+use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
+use std::alloc::{alloc, dealloc, Layout};
 use std::collections::VecDeque;
 use std::mem::ManuallyDrop;
 use std::ptr;
-use std::alloc::{alloc, dealloc, Layout};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tracing::{debug, error, info, trace, warn};
 
 // Constants for warm path execution
 const WARM_PATH_BUDGET_US: u64 = 1000; // 1ms budget for warm path
@@ -59,7 +59,7 @@ pub enum RecoveryAction {
 }
 
 /// Statistics for warm path execution
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct WarmPathStats {
     pub total_executions: AtomicU64,
     pub successful_executions: AtomicU64,
@@ -71,6 +71,23 @@ pub struct WarmPathStats {
     pub budget_violations: AtomicU64,
     pub current_load: AtomicU64,
     pub peak_load: AtomicU64,
+}
+
+impl Clone for WarmPathStats {
+    fn clone(&self) -> Self {
+        Self {
+            total_executions: AtomicU64::new(self.total_executions.load(std::sync::atomic::Ordering::Relaxed)),
+            successful_executions: AtomicU64::new(self.successful_executions.load(std::sync::atomic::Ordering::Relaxed)),
+            degraded_executions: AtomicU64::new(self.degraded_executions.load(std::sync::atomic::Ordering::Relaxed)),
+            failed_executions: AtomicU64::new(self.failed_executions.load(std::sync::atomic::Ordering::Relaxed)),
+            total_execution_time_us: AtomicU64::new(self.total_execution_time_us.load(std::sync::atomic::Ordering::Relaxed)),
+            items_processed: AtomicU64::new(self.items_processed.load(std::sync::atomic::Ordering::Relaxed)),
+            telemetry_emitted: AtomicU64::new(self.telemetry_emitted.load(std::sync::atomic::Ordering::Relaxed)),
+            budget_violations: AtomicU64::new(self.budget_violations.load(std::sync::atomic::Ordering::Relaxed)),
+            current_load: AtomicU64::new(self.current_load.load(std::sync::atomic::Ordering::Relaxed)),
+            peak_load: AtomicU64::new(self.peak_load.load(std::sync::atomic::Ordering::Relaxed)),
+        }
+    }
 }
 
 impl WarmPathStats {
@@ -92,13 +109,20 @@ impl WarmPathStats {
     pub fn record_execution(&self, result: &WarmPathResult, duration: Duration) {
         self.total_executions.fetch_add(1, Ordering::Relaxed);
         let duration_us = duration.as_micros() as u64;
-        self.total_execution_time_us.fetch_add(duration_us, Ordering::Relaxed);
+        self.total_execution_time_us
+            .fetch_add(duration_us, Ordering::Relaxed);
 
         match result {
-            WarmPathResult::Success { items_processed, telemetry_emitted, .. } => {
+            WarmPathResult::Success {
+                items_processed,
+                telemetry_emitted,
+                ..
+            } => {
                 self.successful_executions.fetch_add(1, Ordering::Relaxed);
-                self.items_processed.fetch_add(*items_processed as u64, Ordering::Relaxed);
-                self.telemetry_emitted.fetch_add(*telemetry_emitted as u64, Ordering::Relaxed);
+                self.items_processed
+                    .fetch_add(*items_processed as u64, Ordering::Relaxed);
+                self.telemetry_emitted
+                    .fetch_add(*telemetry_emitted as u64, Ordering::Relaxed);
             }
             WarmPathResult::Degraded { .. } => {
                 self.degraded_executions.fetch_add(1, Ordering::Relaxed);
@@ -123,7 +147,7 @@ impl WarmPathStats {
                 peak,
                 current,
                 Ordering::Release,
-                Ordering::Relaxed
+                Ordering::Relaxed,
             ) {
                 Ok(_) => break,
                 Err(x) => peak = x,
@@ -188,8 +212,11 @@ impl TelemetryBuffer {
 
         let flushed_receipts: Vec<Receipt> = receipts.drain(..).collect();
         let flushed_events: Vec<Event> = events.drain(..).collect();
-        let flushed_metrics: Vec<(String, f64)> =
-            self.metrics.iter().map(|e| (e.key().clone(), *e.value())).collect();
+        let flushed_metrics: Vec<(String, f64)> = self
+            .metrics
+            .iter()
+            .map(|e| (e.key().clone(), *e.value()))
+            .collect();
 
         self.metrics.clear();
 
@@ -197,10 +224,15 @@ impl TelemetryBuffer {
     }
 }
 
+fn default_instant() -> Instant {
+    Instant::now()
+}
+
 /// Receipt for completed work
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Receipt {
     pub work_id: u64,
+    #[serde(skip, default = "default_instant")]
     pub completed_at: Instant,
     pub execution_time_us: u64,
     pub result: String,
@@ -209,6 +241,7 @@ pub struct Receipt {
 /// Event for telemetry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
+    #[serde(skip, default = "default_instant")]
     pub timestamp: Instant,
     pub event_type: String,
     pub details: String,
@@ -253,9 +286,7 @@ impl WarmPathAllocator {
             return None;
         }
 
-        unsafe {
-            Some(self.slab.add(current))
-        }
+        unsafe { Some(self.slab.add(current)) }
     }
 
     pub fn deallocate(&self, _ptr: *mut u8, _size: usize) {
@@ -321,7 +352,9 @@ impl WarmPathExecutor {
         }
 
         // Process work items within budget
-        while start.elapsed().as_micros() < WARM_PATH_BUDGET_US as u128 * DEGRADATION_THRESHOLD as u128 {
+        while start.elapsed().as_micros()
+            < WARM_PATH_BUDGET_US as u128 * DEGRADATION_THRESHOLD as u128
+        {
             match self.work_queue.pop() {
                 Some(item) => {
                     match self.process_item(&item) {
@@ -351,7 +384,10 @@ impl WarmPathExecutor {
 
         // Check for budget violation
         if execution_time_us > WARM_PATH_BUDGET_US {
-            warn!("Warm path budget exceeded: {}us > {}us", execution_time_us, WARM_PATH_BUDGET_US);
+            warn!(
+                "Warm path budget exceeded: {}us > {}us",
+                execution_time_us, WARM_PATH_BUDGET_US
+            );
             self.degraded.store(true, Ordering::Release);
 
             return WarmPathResult::Degraded {
@@ -393,7 +429,8 @@ impl WarmPathExecutor {
         let mut recovered = item.clone();
         recovered.priority = recovered.priority.saturating_sub(1);
 
-        self.work_queue.push(recovered)
+        self.work_queue
+            .push(recovered)
             .map_err(|_| "Recovery queue full".to_string())
     }
 
@@ -401,15 +438,18 @@ impl WarmPathExecutor {
         // In degraded mode, we buffer work for later processing
         let items_deferred = self.work_queue.len();
 
-        info!("Executing in degraded mode, {} items deferred", items_deferred);
+        info!(
+            "Executing in degraded mode, {} items deferred",
+            items_deferred
+        );
 
         // Notify coordination layer
-        let _ = self.coordination_tx.try_send(
-            CoordinationMessage::DegradationNotice {
+        let _ = self
+            .coordination_tx
+            .try_send(CoordinationMessage::DegradationNotice {
                 mode: FallbackMode::BufferedExecution,
                 items_deferred,
-            }
-        );
+            });
 
         WarmPathResult::Degraded {
             reason: "System in degraded mode".to_string(),
@@ -424,14 +464,20 @@ impl WarmPathExecutor {
         let degraded = self.stats.degraded_executions.load(Ordering::Relaxed);
         let failed = self.stats.failed_executions.load(Ordering::Relaxed);
 
-        self.telemetry_buffer.add_metric("warm_path.total".to_string(), total as f64);
-        self.telemetry_buffer.add_metric("warm_path.successful".to_string(), successful as f64);
-        self.telemetry_buffer.add_metric("warm_path.degraded".to_string(), degraded as f64);
-        self.telemetry_buffer.add_metric("warm_path.failed".to_string(), failed as f64);
+        self.telemetry_buffer
+            .add_metric("warm_path.total".to_string(), total as f64);
+        self.telemetry_buffer
+            .add_metric("warm_path.successful".to_string(), successful as f64);
+        self.telemetry_buffer
+            .add_metric("warm_path.degraded".to_string(), degraded as f64);
+        self.telemetry_buffer
+            .add_metric("warm_path.failed".to_string(), failed as f64);
 
         if total > 0 {
-            let avg_time = self.stats.total_execution_time_us.load(Ordering::Relaxed) as f64 / total as f64;
-            self.telemetry_buffer.add_metric("warm_path.avg_execution_us".to_string(), avg_time);
+            let avg_time =
+                self.stats.total_execution_time_us.load(Ordering::Relaxed) as f64 / total as f64;
+            self.telemetry_buffer
+                .add_metric("warm_path.avg_execution_us".to_string(), avg_time);
         }
     }
 

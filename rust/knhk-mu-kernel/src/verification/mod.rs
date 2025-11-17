@@ -100,25 +100,14 @@ pub mod const_proofs;
 
 // Re-export key verification functions
 pub use const_proofs::{
-    prove_system_invariants,
-    max_ticks_for_patterns,
-    min_buffer_size_for_receipts,
+    max_ticks_for_patterns, min_buffer_size_for_receipts, prove_system_invariants,
 };
 
 #[cfg(not(kani))]
 pub use prusti_specs::{
-    chatman_verified,
-    new_verified,
-    consume_verified,
-    remaining_verified,
-    reset_verified,
-    execute_hot_path,
-    pattern_tick_cost_verified,
-    create_guard_context_verified,
-    memory_layout_valid,
-    saturating_add_verified,
-    saturating_sub_verified,
-    deterministic_execution,
+    chatman_verified, consume_verified, create_guard_context_verified, deterministic_execution,
+    execute_hot_path, memory_layout_valid, new_verified, pattern_tick_cost_verified,
+    remaining_verified, reset_verified, saturating_add_verified, saturating_sub_verified,
 };
 
 /// Verification status summary
@@ -152,9 +141,8 @@ impl VerificationStatus {
 
     /// Get verification level (0=none, 1=some, 2=all)
     pub const fn level(&self) -> u8 {
-        let count = self.kani_available as u8
-            + self.miri_available as u8
-            + self.prusti_available as u8;
+        let count =
+            self.kani_available as u8 + self.miri_available as u8 + self.prusti_available as u8;
 
         if count == 3 {
             2 // All tools
@@ -194,13 +182,13 @@ impl FormalGuarantees {
     /// Get guarantees provided by const proofs
     pub const fn from_const_proofs() -> Self {
         Self {
-            chatman_constant: true,    // Proven by const_proofs
-            memory_safety: true,        // Memory layout proven by const_proofs
-            determinism: true,          // Const values are deterministic
-            idempotence: true,          // Const evaluation is idempotent
-            arithmetic_safety: true,    // Saturating arithmetic proven
-            tick_budget_safety: true,   // Budget construction proven
-            memory_layout: true,        // Layout proven by const_proofs
+            chatman_constant: true,   // Proven by const_proofs
+            memory_safety: true,      // Memory layout proven by const_proofs
+            determinism: true,        // Const values are deterministic
+            idempotence: true,        // Const evaluation is idempotent
+            arithmetic_safety: true,  // Saturating arithmetic proven
+            tick_budget_safety: true, // Budget construction proven
+            memory_layout: true,      // Layout proven by const_proofs
         }
     }
 

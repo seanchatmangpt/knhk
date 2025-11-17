@@ -29,10 +29,10 @@
 //! // Invalid: pipeline.promote(); // ERROR: no method `promote` on ShadowPhase
 //! ```
 
-use core::marker::PhantomData;
-use crate::overlay_types::{OverlayValue, SnapshotId};
 use crate::overlay::{OverlayAlgebra, PromoteError, RolloutStrategy};
 use crate::overlay_proof::OverlayProof;
+use crate::overlay_types::{OverlayValue, SnapshotId};
+use core::marker::PhantomData;
 
 /// Overlay promotion pipeline
 ///
@@ -106,7 +106,9 @@ impl<P: OverlayProof> OverlayPipeline<ShadowPhase, P> {
     #[inline(always)]
     pub fn deploy_shadow(self) -> Result<OverlayPipeline<TestPhase, P>, PromoteError> {
         // Validate overlay before deploying to shadow
-        self.overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        self.overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
 
         Ok(OverlayPipeline::new(self.overlay))
     }
@@ -145,7 +147,9 @@ impl<P: OverlayProof> OverlayPipeline<ValidatePhase, P> {
     #[inline(always)]
     pub fn validate(self) -> Result<OverlayPipeline<PromotePhase, P>, PromoteError> {
         // Validate proof
-        self.overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        self.overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
 
         // Check timing bound
         if self.overlay.proof().timing_bound() > crate::CHATMAN_CONSTANT {
@@ -170,7 +174,9 @@ impl<P: OverlayProof> OverlayPipeline<PromotePhase, P> {
     #[inline(always)]
     pub fn promote(self) -> Result<OverlayPipeline<PromotedPhase, P>, PromoteError> {
         // Final validation before promotion
-        self.overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        self.overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
 
         // In real implementation, would atomically swap Σ*
         Ok(OverlayPipeline::new(self.overlay))
@@ -273,8 +279,12 @@ impl<P: OverlayProof> OverlayPipelineWithData<ShadowPhase, P, TestResults> {
 
     /// Deploy shadow with data
     #[inline(always)]
-    pub fn deploy_shadow(self) -> Result<OverlayPipelineWithData<TestPhase, P, TestResults>, PromoteError> {
-        self.overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+    pub fn deploy_shadow(
+        self,
+    ) -> Result<OverlayPipelineWithData<TestPhase, P, TestResults>, PromoteError> {
+        self.overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
         Ok(OverlayPipelineWithData::new(self.overlay, self.data))
     }
 }
@@ -282,7 +292,10 @@ impl<P: OverlayProof> OverlayPipelineWithData<ShadowPhase, P, TestResults> {
 impl<P: OverlayProof> OverlayPipelineWithData<TestPhase, P, TestResults> {
     /// Run tests with result tracking
     #[inline(always)]
-    pub fn run_tests(mut self, results: TestResults) -> Result<OverlayPipelineWithData<ValidatePhase, P, TestResults>, PromoteError> {
+    pub fn run_tests(
+        mut self,
+        results: TestResults,
+    ) -> Result<OverlayPipelineWithData<ValidatePhase, P, TestResults>, PromoteError> {
         if !results.all_passed() {
             return Err(PromoteError::ValidationFailed);
         }
@@ -295,7 +308,9 @@ impl<P: OverlayProof> OverlayPipelineWithData<TestPhase, P, TestResults> {
 impl<P: OverlayProof> OverlayPipelineWithData<ValidatePhase, P, TestResults> {
     /// Validate with data
     #[inline(always)]
-    pub fn validate(self) -> Result<OverlayPipelineWithData<PromotePhase, P, TestResults>, PromoteError> {
+    pub fn validate(
+        self,
+    ) -> Result<OverlayPipelineWithData<PromotePhase, P, TestResults>, PromoteError> {
         // Check test results
         if !self.data.all_passed() {
             return Err(PromoteError::ValidationFailed);
@@ -308,7 +323,9 @@ impl<P: OverlayProof> OverlayPipelineWithData<ValidatePhase, P, TestResults> {
             }
         }
 
-        self.overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        self.overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
         Ok(OverlayPipelineWithData::new(self.overlay, self.data))
     }
 }
@@ -320,7 +337,9 @@ impl<P: OverlayProof> OverlayPipelineWithData<PromotePhase, P, TestResults> {
         self,
         _strategy: RolloutStrategy,
     ) -> Result<OverlayPipelineWithData<PromotedPhase, P, TestResults>, PromoteError> {
-        self.overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        self.overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
         Ok(OverlayPipelineWithData::new(self.overlay, self.data))
     }
 
@@ -464,8 +483,8 @@ impl<P: OverlayProof> CanaryDeployment<CanaryRollingOut, P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::overlay_types::{OverlayChanges, OverlayMetadata, PerfImpact};
     use crate::overlay_proof::CompilerProof;
+    use crate::overlay_types::{OverlayChanges, OverlayMetadata, PerfImpact};
     use alloc::vec;
 
     fn make_test_overlay() -> OverlayValue<CompilerProof> {
@@ -538,7 +557,9 @@ mod tests {
         assert!(pipeline.data().all_passed());
 
         let pipeline = pipeline.validate().unwrap();
-        let _pipeline = pipeline.promote_with_strategy(RolloutStrategy::Immediate).unwrap();
+        let _pipeline = pipeline
+            .promote_with_strategy(RolloutStrategy::Immediate)
+            .unwrap();
     }
 
     #[test]
@@ -558,10 +579,8 @@ mod tests {
     #[test]
     fn test_rollback_protocol() {
         let overlay = make_test_overlay();
-        let rollback = RollbackProtocol::new(
-            overlay,
-            RollbackReason::TestsFailed { failed_count: 3 },
-        );
+        let rollback =
+            RollbackProtocol::new(overlay, RollbackReason::TestsFailed { failed_count: 3 });
 
         let _pipeline = rollback.execute();
     }

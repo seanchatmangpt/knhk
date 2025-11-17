@@ -3,10 +3,10 @@
 //! Comprehensive benchmark of the complete hot path: O → μ → A
 //! Verifies end-to-end performance ≤8 ticks
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use knhk_mu_kernel::core::MuKernel;
-use knhk_mu_kernel::sigma::{SigmaPointer, SigmaHash};
 use knhk_mu_kernel::guards::GuardContext;
+use knhk_mu_kernel::sigma::{SigmaHash, SigmaPointer};
 use knhk_mu_kernel::CHATMAN_CONSTANT;
 
 fn bench_complete_hot_path(c: &mut Criterion) {

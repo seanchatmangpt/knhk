@@ -8,12 +8,12 @@
 // - Covenant 3: Reproducibility through deterministic training
 // - Covenant 6: Full observability through telemetry
 
-use std::sync::{Arc, RwLock};
-use std::time::Instant;
-use std::path::Path;
 use ndarray::Array1;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
+use std::sync::{Arc, RwLock};
+use std::time::Instant;
 
 /// Training configuration with learning rate, batch size, and convergence parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,21 +65,13 @@ pub enum LRScheduleConfig {
     Constant,
 
     /// Step decay: multiply by decay_rate every step_size epochs
-    StepDecay {
-        decay_rate: f32,
-        step_size: usize,
-    },
+    StepDecay { decay_rate: f32, step_size: usize },
 
     /// Exponential decay: multiply by decay_rate every epoch
-    ExponentialDecay {
-        decay_rate: f32,
-    },
+    ExponentialDecay { decay_rate: f32 },
 
     /// Cosine annealing from initial_lr to eta_min
-    CosineAnnealing {
-        t_max: usize,
-        eta_min: f32,
-    },
+    CosineAnnealing { t_max: usize, eta_min: f32 },
 
     /// Linear warmup followed by decay
     WarmupDecay {
@@ -108,8 +100,7 @@ impl LRScheduleConfig {
 
             LRScheduleConfig::CosineAnnealing { t_max, eta_min } => {
                 let progress = (step as f32) / (*t_max as f32);
-                let cosine_decay =
-                    (1.0 + (progress * std::f32::consts::PI).cos()) / 2.0;
+                let cosine_decay = (1.0 + (progress * std::f32::consts::PI).cos()) / 2.0;
                 eta_min + (base_lr - eta_min) * cosine_decay
             }
 
@@ -330,7 +321,10 @@ impl DataLoader {
         batch_size: usize,
         validation_split: f32,
     ) -> (DataLoader, DataLoader) {
-        assert!(validation_split > 0.0 && validation_split < 1.0, "Invalid split ratio");
+        assert!(
+            validation_split > 0.0 && validation_split < 1.0,
+            "Invalid split ratio"
+        );
 
         let split_idx = (samples.len() as f32 * (1.0 - validation_split)) as usize;
         let (train_samples, val_samples) = samples.split_at(split_idx);
@@ -516,7 +510,9 @@ impl SimpleTrainer {
         };
 
         let epoch_duration = epoch_start.elapsed();
-        self.history.epoch_durations.push(epoch_duration.as_millis());
+        self.history
+            .epoch_durations
+            .push(epoch_duration.as_millis());
         self.current_epoch += 1;
 
         avg_loss
@@ -607,11 +603,7 @@ impl SimpleTrainer {
         self.best_val_loss = f32::INFINITY;
         self.patience_counter = 0;
 
-        let train_loader = DataLoader::new(
-            train_data,
-            self.config.batch_size,
-            true,
-        );
+        let train_loader = DataLoader::new(train_data, self.config.batch_size, true);
 
         for epoch in 0..self.config.epochs {
             if self.patience_counter >= self.config.early_stopping_patience {
@@ -645,10 +637,7 @@ impl SimpleTrainer {
         self.history.total_duration_ms = training_start.elapsed().as_millis();
 
         if !self.history.converged {
-            self.history.stopping_reason = format!(
-                "Completed {} epochs",
-                self.config.epochs
-            );
+            self.history.stopping_reason = format!("Completed {} epochs", self.config.epochs);
         }
 
         self.history.clone()
@@ -665,11 +654,7 @@ impl SimpleTrainer {
     }
 
     /// Save model checkpoint to disk
-    pub async fn save_checkpoint(
-        &self,
-        path: &Path,
-        weights: Vec<u8>,
-    ) -> std::io::Result<()> {
+    pub async fn save_checkpoint(&self, path: &Path, weights: Vec<u8>) -> std::io::Result<()> {
         let checkpoint = ModelCheckpoint::new(
             weights,
             self.current_epoch,
@@ -719,7 +704,11 @@ impl SimpleTrainer {
 mod tests {
     use super::*;
 
-    fn create_synthetic_data(num_samples: usize, input_dim: usize, output_dim: usize) -> Vec<TrainingSample> {
+    fn create_synthetic_data(
+        num_samples: usize,
+        input_dim: usize,
+        output_dim: usize,
+    ) -> Vec<TrainingSample> {
         (0..num_samples)
             .map(|i| {
                 let seed = i as f32 / num_samples as f32;
@@ -741,10 +730,7 @@ mod tests {
 
     #[test]
     fn test_training_sample_creation() {
-        let sample = TrainingSample::new(
-            vec![1.0, 2.0, 3.0],
-            vec![0.1, 0.2],
-        );
+        let sample = TrainingSample::new(vec![1.0, 2.0, 3.0], vec![0.1, 0.2]);
         assert_eq!(sample.input.len(), 3);
         assert_eq!(sample.target.len(), 2);
     }
@@ -831,9 +817,7 @@ mod tests {
         let data = create_synthetic_data(50, 5, 3);
 
         // Simple forward function that outputs zeros
-        let forward = |_input: &Array1<f32>| -> Array1<f32> {
-            Array1::zeros(3)
-        };
+        let forward = |_input: &Array1<f32>| -> Array1<f32> { Array1::zeros(3) };
 
         let metrics = trainer.evaluate(&data, forward).await;
         assert!(metrics.loss >= 0.0);
@@ -911,9 +895,7 @@ mod tests {
 
     #[test]
     fn test_lr_schedule_exponential_decay() {
-        let schedule = LRScheduleConfig::ExponentialDecay {
-            decay_rate: 0.9,
-        };
+        let schedule = LRScheduleConfig::ExponentialDecay { decay_rate: 0.9 };
         let lr_0 = schedule.get_lr(0.1, 0);
         let lr_1 = schedule.get_lr(0.1, 1);
         assert!(lr_0 > lr_1);
@@ -940,13 +922,7 @@ mod tests {
         let config = TrainingConfig::default();
         let history = TrainingHistory::new();
 
-        let checkpoint = ModelCheckpoint::new(
-            weights.clone(),
-            10,
-            0.5,
-            config,
-            history,
-        );
+        let checkpoint = ModelCheckpoint::new(weights.clone(), 10, 0.5, config, history);
 
         assert_eq!(checkpoint.epoch, 10);
         assert_eq!(checkpoint.best_val_loss, 0.5);
@@ -959,13 +935,7 @@ mod tests {
         let config = TrainingConfig::default();
         let history = TrainingHistory::new();
 
-        let checkpoint = ModelCheckpoint::new(
-            weights,
-            5,
-            0.25,
-            config,
-            history,
-        );
+        let checkpoint = ModelCheckpoint::new(weights, 5, 0.25, config, history);
 
         // Serialize to JSON
         let json = serde_json::to_string(&checkpoint).unwrap();

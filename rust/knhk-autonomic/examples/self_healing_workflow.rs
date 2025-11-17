@@ -18,8 +18,8 @@
 //! 4. Observe learning and improvement over time
 
 use knhk_autonomic::{
+    types::{Action, ActionType, MetricType, RiskLevel, RuleType},
     AutonomicController, Config,
-    types::{Action, ActionType, RiskLevel, MetricType, RuleType},
 };
 use std::time::Duration;
 use tracing_subscriber;
@@ -46,31 +46,37 @@ async fn main() -> anyhow::Result<()> {
         let mut monitor = controller.monitor().write().await;
 
         // Register payment success rate metric
-        monitor.register_metric(
-            "Payment Success Rate",
-            MetricType::Reliability,
-            0.99,      // expected: 99%
-            0.95,      // anomaly threshold: 95%
-            "percent",
-        ).await?;
+        monitor
+            .register_metric(
+                "Payment Success Rate",
+                MetricType::Reliability,
+                0.99, // expected: 99%
+                0.95, // anomaly threshold: 95%
+                "percent",
+            )
+            .await?;
 
         // Register payment latency metric
-        monitor.register_metric(
-            "Payment Latency",
-            MetricType::Performance,
-            1500.0,    // expected: 1500ms
-            2500.0,    // anomaly threshold: 2500ms
-            "milliseconds",
-        ).await?;
+        monitor
+            .register_metric(
+                "Payment Latency",
+                MetricType::Performance,
+                1500.0, // expected: 1500ms
+                2500.0, // anomaly threshold: 2500ms
+                "milliseconds",
+            )
+            .await?;
 
         // Register error count metric
-        monitor.register_metric(
-            "Error Count",
-            MetricType::Reliability,
-            0.0,       // expected: 0
-            5.0,       // anomaly threshold: 5
-            "count",
-        ).await?;
+        monitor
+            .register_metric(
+                "Error Count",
+                MetricType::Reliability,
+                0.0, // expected: 0
+                5.0, // anomaly threshold: 5
+                "count",
+            )
+            .await?;
 
         println!("✓ Registered 3 metrics");
     }
@@ -80,18 +86,22 @@ async fn main() -> anyhow::Result<()> {
         let mut analyzer = controller.analyzer().write().await;
 
         // Register high error rate rule
-        analyzer.register_rule(
-            "High Error Rate Detection",
-            RuleType::HighErrorRate,
-            "?metric mape:metricName 'Error Count' ; mape:currentValue ?val . FILTER(?val > 5)"
-        ).await?;
+        analyzer
+            .register_rule(
+                "High Error Rate Detection",
+                RuleType::HighErrorRate,
+                "?metric mape:metricName 'Error Count' ; mape:currentValue ?val . FILTER(?val > 5)",
+            )
+            .await?;
 
         // Register performance degradation rule
-        analyzer.register_rule(
-            "Performance Degradation Detection",
-            RuleType::PerformanceDegradation,
-            "?metric mape:metricType mape:PerformanceMetric ; mape:isAnomalous true"
-        ).await?;
+        analyzer
+            .register_rule(
+                "Performance Degradation Detection",
+                RuleType::PerformanceDegradation,
+                "?metric mape:metricType mape:PerformanceMetric ; mape:isAnomalous true",
+            )
+            .await?;
 
         println!("✓ Registered 2 analysis rules");
     }
@@ -144,20 +154,24 @@ async fn main() -> anyhow::Result<()> {
         planner.register_action(optimize_action).await?;
 
         // Register retry policy
-        planner.register_policy(
-            "Retry on Failure",
-            "HighErrorRate",
-            vec![retry_action_id, fallback_action_id],
-            100, // high priority
-        ).await?;
+        planner
+            .register_policy(
+                "Retry on Failure",
+                "HighErrorRate",
+                vec![retry_action_id, fallback_action_id],
+                100, // high priority
+            )
+            .await?;
 
         // Register optimize policy
-        planner.register_policy(
-            "Optimize on Slowdown",
-            "PerformanceDegradation",
-            vec![optimize_action_id],
-            80, // medium priority
-        ).await?;
+        planner
+            .register_policy(
+                "Optimize on Slowdown",
+                "PerformanceDegradation",
+                vec![optimize_action_id],
+                80, // medium priority
+            )
+            .await?;
 
         println!("✓ Registered 3 actions and 2 policies");
     }
@@ -167,9 +181,7 @@ async fn main() -> anyhow::Result<()> {
     // Start controller in background
     let controller_handle = tokio::spawn({
         let mut controller_clone = controller.clone();
-        async move {
-            controller_clone.start().await
-        }
+        async move { controller_clone.start().await }
     });
 
     // Wait for loop to stabilize

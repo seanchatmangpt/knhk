@@ -9,21 +9,59 @@
 //! Focus: 80/20 critical path validation
 
 use knhk_workflow_engine::innovation::{
-    // Verified kernel
-    KernelResult, KernelError, TickBudget, KernelState, ExecutionPhase,
-    GuardResult, KernelOp, GuardCheckOp, KernelSequence, VerifiedContext,
-    // Refinement guards
-    PublicSector, PrivateSector, CriticalSector, GuardProperty,
-    BudgetGuard, ProofToken, GuardVector, StrictDoctrine, RelaxedDoctrine,
-    // Cluster types
-    Leader, Follower, Observer, ClusterConfig, TripleReplication,
-    ConsensusOp, Proposal, DistributedContext,
+    AdaptiveExecutor,
+    AutoSelector,
+    BackgroundScheduler,
+    Batch,
+    BudgetGuard,
+    ClusterConfig,
+    ConsensusOp,
+    CriticalSector,
+    DistributedContext,
+    ExecutionPhase,
+    Follower,
     // Auto-specialization
-    GenericCpu, X86Avx2, SmallData, LargeData, ScalarKernel,
-    SimdAvx2Kernel, AutoSelector, KernelSelection, AdaptiveExecutor,
+    GenericCpu,
+    GuardCheckOp,
+    GuardProperty,
+    GuardResult,
+    GuardVector,
+    HotPathScheduler,
+    Interactive,
+    KernelError,
+    KernelOp,
+    // Verified kernel
+    KernelResult,
+    KernelSelection,
+    KernelSequence,
+    KernelState,
+    LargeData,
+    // Cluster types
+    Leader,
+    Observer,
+    PrivateSector,
+    ProofToken,
+    Proposal,
+    // Refinement guards
+    PublicSector,
+    RelaxedDoctrine,
+    ResourcePool,
+    ResourceQuota,
     // Linear resources
-    ResourceToken, ResourceQuota, P0, P1, P2, P4, Interactive, Batch,
-    ScheduledAction, HotPathScheduler, BackgroundScheduler, ResourcePool,
+    ResourceToken,
+    ScalarKernel,
+    ScheduledAction,
+    SimdAvx2Kernel,
+    SmallData,
+    StrictDoctrine,
+    TickBudget,
+    TripleReplication,
+    VerifiedContext,
+    X86Avx2,
+    P0,
+    P1,
+    P2,
+    P4,
 };
 
 // ============================================================================
@@ -39,8 +77,10 @@ fn test_chatman_constant_enforced_across_all_modules() {
     // Execute exactly 8 ticks - should succeed
     for _ in 0..8 {
         match state.tick() {
-            KernelResult::Success(()) => {},
-            KernelResult::Failure(e) => panic!("Unexpected failure at tick {}: {:?}", state.tick_count, e),
+            KernelResult::Success(()) => {}
+            KernelResult::Failure(e) => {
+                panic!("Unexpected failure at tick {}: {:?}", state.tick_count, e)
+            }
         }
     }
     assert_eq!(state.tick_count, 8);
@@ -66,7 +106,10 @@ fn test_chatman_enforcement_in_guard_vector() {
     // let _max_guards = GuardVector::<BudgetGuard<8>, BudgetGuard<0>, BudgetGuard<0>>::new();
 
     // This demonstrates compile-time enforcement works
-    assert_eq!(GuardVector::<BudgetGuard<2>, BudgetGuard<3>, BudgetGuard<3>>::TOTAL_TICKS, 8);
+    assert_eq!(
+        GuardVector::<BudgetGuard<2>, BudgetGuard<3>, BudgetGuard<3>>::TOTAL_TICKS,
+        8
+    );
 }
 
 #[test]
@@ -186,24 +229,24 @@ fn test_end_to_end_verified_workflow_execution() {
     let result = ctx.run(|state, budget| {
         // Check budget (2 ticks)
         match budget.consume(2) {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
 
         // Execute guard check (consumes 1 tick internally)
         let guard = GuardCheckOp::new(|| true, 1);
         match guard.execute(state, budget) {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
 
         // Additional processing (2 ticks)
         match state.tick() {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
         match state.tick() {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
 
@@ -381,11 +424,15 @@ fn test_resource_pool_priority_allocation() {
     let mut pool = ResourcePool::<1000>::new();
 
     // P0 can always allocate (highest priority)
-    let p0_token = pool.allocate_p0::<300>().expect("P0 should always allocate");
+    let p0_token = pool
+        .allocate_p0::<300>()
+        .expect("P0 should always allocate");
     assert_eq!(pool.remaining(), 700);
 
     // P2 can allocate if enough remains (> 50% total)
-    let p2_token = pool.allocate_p2::<200>().expect("Should allocate when >50% remains");
+    let p2_token = pool
+        .allocate_p2::<200>()
+        .expect("Should allocate when >50% remains");
     assert_eq!(pool.remaining(), 500);
 
     // P2 blocked when ≤50% remains (reserved for P0)
@@ -425,7 +472,10 @@ fn test_proof_tokens_are_zero_sized() {
 
     // Proof tokens should be zero-sized (compile-time only)
     assert_eq!(mem::size_of::<ProofToken<BudgetGuard<5>>>(), 0);
-    assert_eq!(mem::size_of::<ProofToken<GuardVector<BudgetGuard<2>, BudgetGuard<3>, BudgetGuard<3>>>>(), 0);
+    assert_eq!(
+        mem::size_of::<ProofToken<GuardVector<BudgetGuard<2>, BudgetGuard<3>, BudgetGuard<3>>>>(),
+        0
+    );
 
     // Type-level constraints have zero runtime cost
 }
@@ -464,7 +514,10 @@ fn test_cpu_capability_types_zero_cost() {
 #[test]
 fn test_closed_world_assumption_all_errors_enumerated() {
     // All kernel errors are enumerated in KernelError enum
-    let chatman_error = KernelError::ChatmanViolation { actual: 9, limit: 8 };
+    let chatman_error = KernelError::ChatmanViolation {
+        actual: 9,
+        limit: 8,
+    };
     let guard_error = KernelError::GuardFailure { guard_id: 1 };
     let state_error = KernelError::InvalidStateTransition;
     let capacity_error = KernelError::InsufficientCapacity;

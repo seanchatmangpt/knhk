@@ -1,11 +1,11 @@
 //! Plan Phase - Generates adaptation plans from symptoms
 
-use super::{Symptom, SymptomType, AdaptationPlan, AdaptationType, KnowledgeBase};
+use super::{AdaptationPlan, AdaptationType, KnowledgeBase, Symptom, SymptomType};
 use crate::error::WorkflowResult;
 use crate::snapshots::SnapshotVersioning;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Plan phase generates adaptation strategies
 pub struct PlanPhase {
@@ -28,7 +28,10 @@ impl PlanPhase {
     ///
     /// This implements the "Plan" phase of MAPE-K, creating
     /// structured change proposals.
-    pub async fn generate_plans(&self, symptoms: &[Symptom]) -> WorkflowResult<Vec<AdaptationPlan>> {
+    pub async fn generate_plans(
+        &self,
+        symptoms: &[Symptom],
+    ) -> WorkflowResult<Vec<AdaptationPlan>> {
         let mut plans = Vec::new();
 
         for symptom in symptoms {
@@ -46,12 +49,8 @@ impl PlanPhase {
             SymptomType::PerformanceDegradation => {
                 Ok(Some(self.plan_performance_optimization(symptom)))
             }
-            SymptomType::GuardFailureSpike => {
-                Ok(Some(self.plan_guard_relaxation(symptom)))
-            }
-            SymptomType::UnexpectedBehavior => {
-                Ok(Some(self.plan_pattern_adaptation(symptom)))
-            }
+            SymptomType::GuardFailureSpike => Ok(Some(self.plan_guard_relaxation(symptom))),
+            SymptomType::UnexpectedBehavior => Ok(Some(self.plan_pattern_adaptation(symptom))),
             _ => Ok(None),
         }
     }
@@ -80,7 +79,8 @@ impl PlanPhase {
         let sigma_delta = r#"
             # Relax guard thresholds
             :AmountGuard knhk:maxValue "20000"^^xsd:decimal .
-        "#.to_string();
+        "#
+        .to_string();
 
         AdaptationPlan {
             plan_id: uuid::Uuid::new_v4().to_string(),
@@ -98,7 +98,8 @@ impl PlanPhase {
         let sigma_delta = r#"
             # Change to parallel pattern for better throughput
             :ProcessTask yawl:pattern "ParallelSplit" .
-        "#.to_string();
+        "#
+        .to_string();
 
         AdaptationPlan {
             plan_id: uuid::Uuid::new_v4().to_string(),

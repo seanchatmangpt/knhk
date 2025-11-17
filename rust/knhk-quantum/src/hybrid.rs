@@ -43,7 +43,10 @@ impl HybridEncryption {
     /// Generate hybrid keypair (classical + quantum)
     pub fn keygen() -> Result<(HybridEncryption, Vec<u8>, Vec<u8>)> {
         // Generate classical keypair (X25519)
-        let classical_sk = x25519_dalek::StaticSecret::random_from_rng(rand::thread_rng());
+        let mut sk_bytes = [0u8; 32];
+        use rand::RngCore;
+        rand::thread_rng().fill_bytes(&mut sk_bytes);
+        let classical_sk = x25519_dalek::StaticSecret::from(sk_bytes);
         let classical_pk = x25519_dalek::PublicKey::from(&classical_sk);
 
         // Generate quantum keypair (Kyber)
@@ -69,7 +72,10 @@ impl HybridEncryption {
         let (quantum_ss, quantum_ct) = kem.encapsulate(&self.quantum_pk)?;
 
         // For classical component, we use the public key directly as ephemeral
-        let ephemeral_sk = x25519_dalek::StaticSecret::random_from_rng(rand::thread_rng());
+        let mut eph_bytes = [0u8; 32];
+        use rand::RngCore;
+        rand::thread_rng().fill_bytes(&mut eph_bytes);
+        let ephemeral_sk = x25519_dalek::StaticSecret::from(eph_bytes);
         let ephemeral_pk = x25519_dalek::PublicKey::from(&ephemeral_sk);
 
         let classical_pk =

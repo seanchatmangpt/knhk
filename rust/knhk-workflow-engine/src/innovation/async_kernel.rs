@@ -416,8 +416,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_async_workflow_builder() {
-        let builder = AsyncWorkflowBuilder::<i32>::new()
-            .with_timeout(Duration::from_secs(1));
+        let builder = AsyncWorkflowBuilder::<i32>::new().with_timeout(Duration::from_secs(1));
 
         let result = builder.execute(async { Ok(42) }).await;
         assert_eq!(result, Ok(42));
@@ -441,11 +440,7 @@ mod tests {
             value
         }
 
-        let futures = vec![
-            make_future(1),
-            make_future(2),
-            make_future(3),
-        ];
+        let futures = vec![make_future(1), make_future(2), make_future(3)];
 
         let results = executor.spawn_many(futures).await;
         assert_eq!(results.len(), 3);

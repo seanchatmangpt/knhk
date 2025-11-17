@@ -3,7 +3,7 @@
 //! Performs optimization passes on generated code.
 //! Includes dead code elimination, constant folding, and more.
 
-use crate::compiler::code_generator::{GeneratedCode, GeneratedGuard, DispatchEntry};
+use crate::compiler::code_generator::{DispatchEntry, GeneratedCode, GeneratedGuard};
 use crate::compiler::OptimizationStats;
 use crate::error::WorkflowResult;
 use std::collections::{HashMap, HashSet};
@@ -28,12 +28,18 @@ impl Optimizer {
 
     /// Optimize generated code
     #[instrument(skip(self, code))]
-    pub async fn optimize(&mut self, code: &mut GeneratedCode) -> WorkflowResult<OptimizationStats> {
+    pub async fn optimize(
+        &mut self,
+        code: &mut GeneratedCode,
+    ) -> WorkflowResult<OptimizationStats> {
         if !self.enabled {
             return Ok(OptimizationStats::default());
         }
 
-        info!("Starting optimization pass (level {})", self.optimization_level);
+        info!(
+            "Starting optimization pass (level {})",
+            self.optimization_level
+        );
 
         let initial_size = self.calculate_code_size(code);
 
@@ -69,8 +75,10 @@ impl Optimizer {
         self.stats.size_reduction_percent =
             ((initial_size as f32 - final_size as f32) / initial_size as f32) * 100.0;
 
-        info!("Optimization complete: {} passes, {:.1}% size reduction",
-            8, self.stats.size_reduction_percent);
+        info!(
+            "Optimization complete: {} passes, {:.1}% size reduction",
+            8, self.stats.size_reduction_percent
+        );
 
         Ok(self.stats.clone())
     }
@@ -93,8 +101,12 @@ impl Optimizer {
         while let Some(pattern_id) = work_list.pop() {
             if reachable.insert(pattern_id) {
                 // Find patterns referenced from this one
-                if let Some(entry) = code.dispatch_table.entries.iter()
-                    .find(|e| e.pattern_id == pattern_id) {
+                if let Some(entry) = code
+                    .dispatch_table
+                    .entries
+                    .iter()
+                    .find(|e| e.pattern_id == pattern_id)
+                {
                     // Check guard references
                     for guard in &code.guards {
                         // Guards might reference other patterns
@@ -106,7 +118,9 @@ impl Optimizer {
 
         // Remove unreachable entries
         let original_count = code.dispatch_table.entries.len();
-        code.dispatch_table.entries.retain(|entry| reachable.contains(&entry.pattern_id));
+        code.dispatch_table
+            .entries
+            .retain(|entry| reachable.contains(&entry.pattern_id));
 
         let eliminated = original_count - code.dispatch_table.entries.len();
         if eliminated > 0 {
@@ -164,7 +178,8 @@ impl Optimizer {
         }
 
         let original_count = code.constants.len();
-        code.constants.retain(|constant| used_const_ids.contains(&constant.id));
+        code.constants
+            .retain(|constant| used_const_ids.contains(&constant.id));
 
         let eliminated = original_count - code.constants.len();
         if eliminated > 0 {
@@ -198,69 +213,78 @@ impl Optimizer {
         let mut i = 0;
         while i < guard.bytecode.len() {
             match guard.bytecode[i] {
-                0x01 => { // CONST_FLOAT
+                0x01 => {
+                    // CONST_FLOAT
                     if i + 9 < guard.bytecode.len() && guard.bytecode[i + 9] == 0x01 {
                         // Two consecutive float constants
                         if i + 18 < guard.bytecode.len() {
                             match guard.bytecode[i + 18] {
-                                0x20 => { // ADD
+                                0x20 => {
+                                    // ADD
                                     // Fold: const1 + const2
                                     let val1 = f64::from_le_bytes(
-                                        guard.bytecode[i+1..i+9].try_into().unwrap()
+                                        guard.bytecode[i + 1..i + 9].try_into().unwrap(),
                                     );
                                     let val2 = f64::from_le_bytes(
-                                        guard.bytecode[i+10..i+18].try_into().unwrap()
+                                        guard.bytecode[i + 10..i + 18].try_into().unwrap(),
                                     );
                                     let result = val1 + val2;
 
                                     // Replace with single const
                                     guard.bytecode[i] = 0x01;
-                                    guard.bytecode[i+1..i+9].copy_from_slice(&result.to_le_bytes());
+                                    guard.bytecode[i + 1..i + 9]
+                                        .copy_from_slice(&result.to_le_bytes());
 
                                     // Remove second const and op
-                                    guard.bytecode.drain(i+9..i+19);
+                                    guard.bytecode.drain(i + 9..i + 19);
                                     folded += 1;
                                 }
-                                0x21 => { // SUBTRACT
+                                0x21 => {
+                                    // SUBTRACT
                                     let val1 = f64::from_le_bytes(
-                                        guard.bytecode[i+1..i+9].try_into().unwrap()
+                                        guard.bytecode[i + 1..i + 9].try_into().unwrap(),
                                     );
                                     let val2 = f64::from_le_bytes(
-                                        guard.bytecode[i+10..i+18].try_into().unwrap()
+                                        guard.bytecode[i + 10..i + 18].try_into().unwrap(),
                                     );
                                     let result = val1 - val2;
 
                                     guard.bytecode[i] = 0x01;
-                                    guard.bytecode[i+1..i+9].copy_from_slice(&result.to_le_bytes());
-                                    guard.bytecode.drain(i+9..i+19);
+                                    guard.bytecode[i + 1..i + 9]
+                                        .copy_from_slice(&result.to_le_bytes());
+                                    guard.bytecode.drain(i + 9..i + 19);
                                     folded += 1;
                                 }
-                                0x22 => { // MULTIPLY
+                                0x22 => {
+                                    // MULTIPLY
                                     let val1 = f64::from_le_bytes(
-                                        guard.bytecode[i+1..i+9].try_into().unwrap()
+                                        guard.bytecode[i + 1..i + 9].try_into().unwrap(),
                                     );
                                     let val2 = f64::from_le_bytes(
-                                        guard.bytecode[i+10..i+18].try_into().unwrap()
+                                        guard.bytecode[i + 10..i + 18].try_into().unwrap(),
                                     );
                                     let result = val1 * val2;
 
                                     guard.bytecode[i] = 0x01;
-                                    guard.bytecode[i+1..i+9].copy_from_slice(&result.to_le_bytes());
-                                    guard.bytecode.drain(i+9..i+19);
+                                    guard.bytecode[i + 1..i + 9]
+                                        .copy_from_slice(&result.to_le_bytes());
+                                    guard.bytecode.drain(i + 9..i + 19);
                                     folded += 1;
                                 }
-                                0x23 => { // DIVIDE
+                                0x23 => {
+                                    // DIVIDE
                                     let val1 = f64::from_le_bytes(
-                                        guard.bytecode[i+1..i+9].try_into().unwrap()
+                                        guard.bytecode[i + 1..i + 9].try_into().unwrap(),
                                     );
                                     let val2 = f64::from_le_bytes(
-                                        guard.bytecode[i+10..i+18].try_into().unwrap()
+                                        guard.bytecode[i + 10..i + 18].try_into().unwrap(),
                                     );
                                     if val2 != 0.0 {
                                         let result = val1 / val2;
                                         guard.bytecode[i] = 0x01;
-                                        guard.bytecode[i+1..i+9].copy_from_slice(&result.to_le_bytes());
-                                        guard.bytecode.drain(i+9..i+19);
+                                        guard.bytecode[i + 1..i + 9]
+                                            .copy_from_slice(&result.to_le_bytes());
+                                        guard.bytecode.drain(i + 9..i + 19);
                                         folded += 1;
                                     }
                                 }
@@ -270,29 +294,32 @@ impl Optimizer {
                     }
                     i += 9;
                 }
-                0x02 => { // CONST_BOOL
+                0x02 => {
+                    // CONST_BOOL
                     if i + 2 < guard.bytecode.len() && guard.bytecode[i + 2] == 0x02 {
                         // Two consecutive bool constants
                         if i + 4 < guard.bytecode.len() {
                             match guard.bytecode[i + 4] {
-                                0x2A => { // AND
+                                0x2A => {
+                                    // AND
                                     let val1 = guard.bytecode[i + 1] != 0;
                                     let val2 = guard.bytecode[i + 3] != 0;
                                     let result = val1 && val2;
 
                                     guard.bytecode[i] = 0x02;
                                     guard.bytecode[i + 1] = if result { 1 } else { 0 };
-                                    guard.bytecode.drain(i+2..i+5);
+                                    guard.bytecode.drain(i + 2..i + 5);
                                     folded += 1;
                                 }
-                                0x2B => { // OR
+                                0x2B => {
+                                    // OR
                                     let val1 = guard.bytecode[i + 1] != 0;
                                     let val2 = guard.bytecode[i + 3] != 0;
                                     let result = val1 || val2;
 
                                     guard.bytecode[i] = 0x02;
                                     guard.bytecode[i + 1] = if result { 1 } else { 0 };
-                                    guard.bytecode.drain(i+2..i+5);
+                                    guard.bytecode.drain(i + 2..i + 5);
                                     folded += 1;
                                 }
                                 _ => {}
@@ -321,8 +348,9 @@ impl Optimizer {
             // Find subexpressions in bytecode
             for window_size in 3..20 {
                 for i in 0..guard.bytecode.len().saturating_sub(window_size) {
-                    let expr = &guard.bytecode[i..i+window_size];
-                    expr_map.entry(expr.to_vec())
+                    let expr = &guard.bytecode[i..i + window_size];
+                    expr_map
+                        .entry(expr.to_vec())
                         .or_insert_with(Vec::new)
                         .push(idx);
                 }
@@ -400,11 +428,11 @@ impl Optimizer {
             match (guard.bytecode[i], guard.bytecode.get(i + 1)) {
                 (0x30, Some(&0x30)) => {
                     // NOT NOT -> remove both
-                    guard.bytecode.drain(i..i+2);
+                    guard.bytecode.drain(i..i + 2);
                 }
                 (0x31, Some(&0x31)) => {
                     // NEGATE NEGATE -> remove both
-                    guard.bytecode.drain(i..i+2);
+                    guard.bytecode.drain(i..i + 2);
                 }
                 _ => {
                     i += 1;
@@ -419,19 +447,19 @@ impl Optimizer {
     fn strength_reduce(&mut self, guard: &mut GeneratedGuard) -> WorkflowResult<()> {
         let mut i = 0;
         while i < guard.bytecode.len() {
-            if guard.bytecode[i] == 0x22 { // MULTIPLY
+            if guard.bytecode[i] == 0x22 {
+                // MULTIPLY
                 // Check if multiplying by power of 2
-                if i >= 9 && guard.bytecode[i - 9] == 0x01 { // Previous is float const
-                    let val = f64::from_le_bytes(
-                        guard.bytecode[i-8..i].try_into().unwrap()
-                    );
+                if i >= 9 && guard.bytecode[i - 9] == 0x01 {
+                    // Previous is float const
+                    let val = f64::from_le_bytes(guard.bytecode[i - 8..i].try_into().unwrap());
                     if val == 2.0 {
                         // Replace multiply by 2 with add to self
                         guard.bytecode[i] = 0x20; // ADD
-                        // Duplicate previous value on stack (would need DUP instruction)
+                                                  // Duplicate previous value on stack (would need DUP instruction)
                     } else if val == 0.5 {
                         // Replace multiply by 0.5 with divide by 2
-                        guard.bytecode[i-8..i].copy_from_slice(&2.0f64.to_le_bytes());
+                        guard.bytecode[i - 8..i].copy_from_slice(&2.0f64.to_le_bytes());
                         guard.bytecode[i] = 0x23; // DIVIDE
                     }
                 }
@@ -530,7 +558,7 @@ impl Default for Optimizer {
 mod tests {
     use super::*;
     use crate::compiler::code_generator::{
-        GeneratedCode, DispatchTable, SymbolTable, CodeMetadata,
+        CodeMetadata, DispatchTable, GeneratedCode, SymbolTable,
     };
 
     fn create_test_code() -> GeneratedCode {

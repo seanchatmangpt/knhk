@@ -307,10 +307,7 @@ fn test_cancellation_patterns() {
     // THEN: Cancellation patterns are expressible
     if let QueryResults::Solutions(solutions) = results {
         let count = solutions.count();
-        assert!(
-            count > 0,
-            "Cancellation patterns (19-21) not expressible"
-        );
+        assert!(count > 0, "Cancellation patterns (19-21) not expressible");
     }
 }
 

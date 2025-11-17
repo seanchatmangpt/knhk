@@ -7,16 +7,16 @@
 // - Implementation: Async workflow loops with metrics emission
 // - Platform Integration: Phase 5 autonomic components with neural optimization
 
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use serde::{Serialize, Deserialize};
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::reinforcement::{QLearning, WorkflowAction, WorkflowState};
 use crate::model::DenseLayer;
+use crate::reinforcement::{QLearning, WorkflowAction, WorkflowState};
 
 /// Workflow execution metrics for MAPE-K feedback loops
 /// Tracks performance of individual workflow executions for adaptive optimization
@@ -40,12 +40,7 @@ pub struct WorkflowMetrics {
 
 impl WorkflowMetrics {
     /// Create new workflow metrics
-    pub fn new(
-        duration_ms: f32,
-        success: bool,
-        resource_usage: f32,
-        pattern_id: u8,
-    ) -> Self {
+    pub fn new(duration_ms: f32, success: bool, resource_usage: f32, pattern_id: u8) -> Self {
         let quality_score = if success {
             (100.0 - resource_usage.min(100.0)) / 100.0
         } else {
@@ -314,8 +309,8 @@ impl PerformanceTracker {
             let recent = &history[recent_idx];
             let previous = &history[previous_idx];
 
-            let improvement = (previous.duration_ms - recent.duration_ms)
-                / previous.duration_ms.max(1.0) * 100.0;
+            let improvement =
+                (previous.duration_ms - recent.duration_ms) / previous.duration_ms.max(1.0) * 100.0;
             *self.improvement_percentage.write().unwrap() = improvement.max(0.0);
         }
     }
@@ -514,19 +509,28 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
         let success = (state.features().len() as f32).sin().abs() > 0.3;
 
         // Record execution metrics
-        let metrics = self.executor.execute(
-            start.elapsed().as_secs_f32() * 1000.0,
-            success,
-            resource_usage,
-            pattern_id,
-        ).await;
+        let metrics = self
+            .executor
+            .execute(
+                start.elapsed().as_secs_f32() * 1000.0,
+                success,
+                resource_usage,
+                pattern_id,
+            )
+            .await;
 
         // Calculate reward and update Q-value
         let next_state = (self.state_observer)();
         let reward = (self.reward_calculator)(&state, &action, &next_state);
 
         let agent = self.agent.read().unwrap();
-        agent.update(&state, &action, reward, &next_state, next_state.is_terminal());
+        agent.update(
+            &state,
+            &action,
+            reward,
+            &next_state,
+            next_state.is_terminal(),
+        );
         drop(agent);
 
         // Record in execution history
@@ -562,8 +566,7 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
         let first = &history[0];
         let last = &history[history.len() - 1];
 
-        let improvement_ratio = (first.duration_ms - last.duration_ms)
-            / first.duration_ms.max(1.0);
+        let improvement_ratio = (first.duration_ms - last.duration_ms) / first.duration_ms.max(1.0);
 
         drop(history);
 
@@ -598,15 +601,12 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
             let last = &history[history.len() - 1];
 
             // Speed improvement (negative is good, we want lower durations)
-            speed_improvement = ((first.duration_ms - last.duration_ms)
-                / first.duration_ms.max(1.0))
-                .max(0.0)
-                * 100.0;
+            speed_improvement =
+                ((first.duration_ms - last.duration_ms) / first.duration_ms.max(1.0)).max(0.0)
+                    * 100.0;
 
             // Quality improvement
-            quality_improvement = (last.quality_score - first.quality_score)
-                .max(0.0)
-                * 100.0;
+            quality_improvement = (last.quality_score - first.quality_score).max(0.0) * 100.0;
         }
 
         PerformanceImprovements {
@@ -682,7 +682,11 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
         let duration = start.elapsed().as_millis();
 
         // Compute convergence metric (simple heuristic)
-        let convergence = if loss < 0.1 { 0.9 } else { (1.0 - loss).max(0.0) };
+        let convergence = if loss < 0.1 {
+            0.9
+        } else {
+            (1.0 - loss).max(0.0)
+        };
 
         EpisodeResult {
             total_reward,
@@ -721,7 +725,10 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
                 // Check for convergence
                 if metrics.is_converged {
                     // Log convergence but continue learning
-                    println!("[Workflow] Episode {}: Converged at loss={:.4}", episode, metrics.loss_trend);
+                    println!(
+                        "[Workflow] Episode {}: Converged at loss={:.4}",
+                        episode, metrics.loss_trend
+                    );
                 }
             }
 
@@ -781,7 +788,11 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
         }
 
         let recent_avg = recent.iter().sum::<f32>() / recent.len() as f32;
-        let older: Vec<f32> = reward_hist.iter().take(std::cmp::min(20, reward_hist.len() - 20)).cloned().collect();
+        let older: Vec<f32> = reward_hist
+            .iter()
+            .take(std::cmp::min(20, reward_hist.len() - 20))
+            .cloned()
+            .collect();
         let older_avg = if older.is_empty() {
             recent_avg
         } else {
@@ -816,7 +827,8 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> SelfLearningWorkfl
 
         let episode = *self.episode_count.read().unwrap();
         let convergence = self.calculate_convergence();
-        let is_converged = loss_trend < self.config.convergence_threshold && episode > 100 && convergence > 0.7;
+        let is_converged =
+            loss_trend < self.config.convergence_threshold && episode > 100 && convergence > 0.7;
 
         LearningMetrics {
             episode,
@@ -894,10 +906,7 @@ pub struct AdaptiveWorkflowExecutor<S: WorkflowState + 'static, A: WorkflowActio
 
 impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> AdaptiveWorkflowExecutor<S, A> {
     /// Create new adaptive executor
-    pub fn new(
-        workflow: Arc<SelfLearningWorkflow<S, A>>,
-        retraining_threshold: f32,
-    ) -> Self {
+    pub fn new(workflow: Arc<SelfLearningWorkflow<S, A>>, retraining_threshold: f32) -> Self {
         Self {
             workflow,
             performance_history: Arc::new(RwLock::new(VecDeque::with_capacity(200))),
@@ -931,7 +940,10 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> AdaptiveWorkflowEx
             if metrics.is_converged {
                 let mut trainer = self.workflow.trainer.write().unwrap();
                 trainer.decay_learning_rate(0.95);
-                println!("[Adaptive] Decayed learning rate to {:.6}", trainer.learning_rate());
+                println!(
+                    "[Adaptive] Decayed learning rate to {:.6}",
+                    trainer.learning_rate()
+                );
             }
 
             sleep(Duration::from_millis(10)).await;
@@ -964,7 +976,10 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> AdaptiveWorkflowEx
 
     /// Trigger retraining with learning rate adaptation
     async fn trigger_retraining(&self, metrics: &LearningMetrics) {
-        println!("[Adaptive] Triggering retraining at episode {}", metrics.total_episodes);
+        println!(
+            "[Adaptive] Triggering retraining at episode {}",
+            metrics.total_episodes
+        );
 
         // Increase learning rate for faster adaptation
         let mut trainer = self.workflow.trainer.write().unwrap();
@@ -972,7 +987,10 @@ impl<S: WorkflowState + 'static, A: WorkflowAction + 'static> AdaptiveWorkflowEx
         trainer.learning_rate = old_lr * 1.5;
         let new_lr = trainer.learning_rate();
         drop(trainer);
-        println!("[Adaptive] Increased learning rate from {:.6} to {:.6}", old_lr, new_lr);
+        println!(
+            "[Adaptive] Increased learning rate from {:.6} to {:.6}",
+            old_lr, new_lr
+        );
 
         *self.last_retraining.write().unwrap() = metrics.total_episodes;
     }
@@ -1116,7 +1134,10 @@ mod tests {
         );
 
         let result = workflow.execute_episode().await;
-        assert!(result.total_reward > 0.0, "Episode should accumulate positive reward");
+        assert!(
+            result.total_reward > 0.0,
+            "Episode should accumulate positive reward"
+        );
         assert!(result.steps > 0, "Episode should have steps");
     }
 
@@ -1142,7 +1163,10 @@ mod tests {
         );
 
         let convergence = workflow.calculate_convergence();
-        assert!(convergence >= 0.0 && convergence <= 1.0, "Convergence should be in [0, 1]");
+        assert!(
+            convergence >= 0.0 && convergence <= 1.0,
+            "Convergence should be in [0, 1]"
+        );
     }
 
     #[tokio::test]
@@ -1185,7 +1209,10 @@ mod tests {
         let new_lr = trainer.learning_rate();
 
         assert!(new_lr < initial_lr, "Learning rate should decay");
-        assert!((new_lr - initial_lr * 0.95).abs() < 1e-6, "Decay should be 5%");
+        assert!(
+            (new_lr - initial_lr * 0.95).abs() < 1e-6,
+            "Decay should be 5%"
+        );
     }
 
     #[tokio::test]
@@ -1287,7 +1314,10 @@ mod tests {
         tracker.record(metrics2);
 
         let improvement = tracker.improvement_percentage();
-        assert!(improvement > 0.0, "Should show improvement from 100ms to 70ms");
+        assert!(
+            improvement > 0.0,
+            "Should show improvement from 100ms to 70ms"
+        );
     }
 
     #[test]

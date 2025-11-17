@@ -58,15 +58,14 @@ pub struct HookEngine {
 
 impl HookEngine {
     /// Create new hook engine
-    pub fn new(
-        hook_registry: Arc<HookRegistry>,
-        tracer: Arc<RwLock<Tracer>>,
-    ) -> Self {
+    pub fn new(hook_registry: Arc<HookRegistry>, tracer: Arc<RwLock<Tracer>>) -> Self {
         Self {
             hook_registry,
             tracer: tracer.clone(),
             pattern_library: Arc::new(crate::engine::pattern_library::PatternLibrary::new()),
-            scheduler: Arc::new(crate::engine::scheduler::LatencyBoundedScheduler::new(MAX_HOT_PATH_TICKS)),
+            scheduler: Arc::new(crate::engine::scheduler::LatencyBoundedScheduler::new(
+                MAX_HOT_PATH_TICKS,
+            )),
         }
     }
 
@@ -90,17 +89,16 @@ impl HookEngine {
                 format!("{:?}", hook_type),
             );
             if let Some(ref task_id) = context.task_id {
-                tracer.add_attribute(
-                    span_ctx.clone(),
-                    "task.id".to_string(),
-                    task_id.clone(),
-                );
+                tracer.add_attribute(span_ctx.clone(), "task.id".to_string(), task_id.clone());
             }
             span_ctx
         };
 
         // Execute hook through registry
-        let result = self.hook_registry.execute_hooks(hook_type, context.clone()).await?;
+        let result = self
+            .hook_registry
+            .execute_hooks(hook_type, context.clone())
+            .await?;
 
         // Calculate ticks and time
         let tick_end = self.get_tick_count();
@@ -159,18 +157,29 @@ impl HookEngine {
             data: input_data.clone(),
         };
 
-        let pre_result = self.execute_hook(HookType::BeforePatternExecution, pre_context).await?;
+        let pre_result = self
+            .execute_hook(HookType::BeforePatternExecution, pre_context)
+            .await?;
 
         if !pre_result.result.continue_execution {
             return Err(WorkflowError::HookFailed(
-                pre_result.result.error.unwrap_or_else(|| "Pre-pattern hook failed".to_string())
+                pre_result
+                    .result
+                    .error
+                    .unwrap_or_else(|| "Pre-pattern hook failed".to_string()),
             ));
         }
 
-        let modified_input = pre_result.result.modified_data.unwrap_or(input_data.clone());
+        let modified_input = pre_result
+            .result
+            .modified_data
+            .unwrap_or(input_data.clone());
 
         // Execute pattern via pattern library
-        let output_data = self.pattern_library.execute_pattern(pattern_id, modified_input).await?;
+        let output_data = self
+            .pattern_library
+            .execute_pattern(pattern_id, modified_input)
+            .await?;
 
         // Post-pattern hook
         let post_context = HookContext {
@@ -182,7 +191,9 @@ impl HookEngine {
             data: output_data.clone(),
         };
 
-        let post_result = self.execute_hook(HookType::AfterPatternExecution, post_context).await?;
+        let post_result = self
+            .execute_hook(HookType::AfterPatternExecution, post_context)
+            .await?;
 
         Ok(post_result.result.modified_data.unwrap_or(output_data))
     }
@@ -258,7 +269,10 @@ mod tests {
             priority: 0,
         };
 
-        registry.register(hook).await.expect("Failed to register hook");
+        registry
+            .register(hook)
+            .await
+            .expect("Failed to register hook");
 
         let context = HookContext {
             hook_type: HookType::BeforeTaskExecution,
@@ -269,7 +283,10 @@ mod tests {
             data: serde_json::json!({}),
         };
 
-        let result = engine.execute_hook(HookType::BeforeTaskExecution, context).await.expect("Hook execution failed");
+        let result = engine
+            .execute_hook(HookType::BeforeTaskExecution, context)
+            .await
+            .expect("Hook execution failed");
 
         assert!(result.result.continue_execution);
         // Note: tick counting in tests may not be accurate, but we verify it returns a value
@@ -287,16 +304,21 @@ mod tests {
             hook_type: HookType::BeforeTaskExecution,
             name: "Latency Hook".to_string(),
             description: "Hook with delay".to_string(),
-            hook_fn: Arc::new(|_ctx| Box::pin(async move {
-                // Small delay
-                tokio::time::sleep(std::time::Duration::from_micros(10)).await;
-                HookResult::success()
-            })),
+            hook_fn: Arc::new(|_ctx| {
+                Box::pin(async move {
+                    // Small delay
+                    tokio::time::sleep(std::time::Duration::from_micros(10)).await;
+                    HookResult::success()
+                })
+            }),
             enabled: true,
             priority: 0,
         };
 
-        registry.register(hook).await.expect("Failed to register hook");
+        registry
+            .register(hook)
+            .await
+            .expect("Failed to register hook");
 
         let context = HookContext {
             hook_type: HookType::BeforeTaskExecution,
@@ -307,7 +329,10 @@ mod tests {
             data: serde_json::json!({}),
         };
 
-        let result = engine.execute_hook(HookType::BeforeTaskExecution, context).await.expect("Hook execution failed");
+        let result = engine
+            .execute_hook(HookType::BeforeTaskExecution, context)
+            .await
+            .expect("Hook execution failed");
 
         assert!(result.execution_time_us > 0);
 

@@ -141,7 +141,9 @@ macro_rules! build_receipt {
 #[macro_export]
 macro_rules! atomic_transition {
     ($task:expr, $new_state:expr) => {{
-        let old = $task.state.swap($new_state as u32, std::sync::atomic::Ordering::AcqRel);
+        let old = $task
+            .state
+            .swap($new_state as u32, std::sync::atomic::Ordering::AcqRel);
         unsafe { std::mem::transmute::<u32, TaskState>(old) }
     }};
 }
@@ -152,16 +154,22 @@ macro_rules! validate_pattern_config {
     ($config:expr, $pattern_type:expr) => {{
         match $pattern_type {
             PatternType::ParallelSplit | PatternType::MultiChoice => {
-                assert!($config.max_instances > 0 && $config.max_instances <= 64,
-                    "Invalid max_instances for split pattern");
+                assert!(
+                    $config.max_instances > 0 && $config.max_instances <= 64,
+                    "Invalid max_instances for split pattern"
+                );
             }
             PatternType::Synchronization | PatternType::StructuredSyncMerge => {
-                assert!($config.join_threshold > 0 && $config.join_threshold <= 64,
-                    "Invalid join_threshold for sync pattern");
+                assert!(
+                    $config.join_threshold > 0 && $config.join_threshold <= 64,
+                    "Invalid join_threshold for sync pattern"
+                );
             }
             PatternType::Recursion => {
-                assert!($config.flags.is_cancellable(),
-                    "Recursion patterns must be cancellable");
+                assert!(
+                    $config.flags.is_cancellable(),
+                    "Recursion patterns must be cancellable"
+                );
             }
             _ => {}
         }
@@ -197,7 +205,10 @@ macro_rules! simd_match_observations {
 macro_rules! simd_match_observations {
     ($observations:expr, $pattern:expr) => {{
         // Fallback scalar implementation
-        $observations.iter().zip($pattern.iter()).all(|(a, b)| a == b)
+        $observations
+            .iter()
+            .zip($pattern.iter())
+            .all(|(a, b)| a == b)
     }};
 }
 
@@ -212,7 +223,9 @@ macro_rules! validate_permutation {
             // Add all valid permutations from matrix
         ];
 
-        VALID_PERMUTATIONS.iter().any(|&(s, t)| s == $source && t == $target)
+        VALID_PERMUTATIONS
+            .iter()
+            .any(|&(s, t)| s == $source && t == $target)
     }};
 }
 
@@ -273,7 +286,7 @@ macro_rules! create_pattern {
                 join_threshold: $join_thr,
                 timeout_ticks: $timeout,
                 flags: $flags,
-            }
+            },
         )
     }};
 }
@@ -324,8 +337,8 @@ macro_rules! generate_all_patterns {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pattern::{PatternType, PatternConfig, PatternFlags};
     use crate::guard::{GuardType, Predicate};
+    use crate::pattern::{PatternConfig, PatternFlags, PatternType};
 
     #[test]
     fn test_guard_macro() {

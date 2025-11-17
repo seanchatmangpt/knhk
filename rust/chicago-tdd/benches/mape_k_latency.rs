@@ -3,7 +3,7 @@
 //! Measures Monitor-Analyze-Plan-Execute-Knowledge loop latency.
 //! Critical MAPE-K operations MUST complete in ≤8 ticks.
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 /// Monitor: Metric collection decision (hot path)
@@ -55,21 +55,15 @@ fn knowledge_pattern() -> bool {
 fn bench_mape_k_hot_path(c: &mut Criterion) {
     let mut harness = PerformanceHarness::with_iterations(1000, 10000, 100);
 
-    c.bench_function("mape_k_monitor", |b| {
-        b.iter(|| black_box(monitor_metric()))
-    });
+    c.bench_function("mape_k_monitor", |b| b.iter(|| black_box(monitor_metric())));
 
     c.bench_function("mape_k_analyze", |b| {
         b.iter(|| black_box(analyze_anomaly()))
     });
 
-    c.bench_function("mape_k_plan", |b| {
-        b.iter(|| black_box(plan_policy()))
-    });
+    c.bench_function("mape_k_plan", |b| b.iter(|| black_box(plan_policy())));
 
-    c.bench_function("mape_k_execute", |b| {
-        b.iter(|| black_box(execute_action()))
-    });
+    c.bench_function("mape_k_execute", |b| b.iter(|| black_box(execute_action())));
 
     c.bench_function("mape_k_knowledge", |b| {
         b.iter(|| black_box(knowledge_pattern()))

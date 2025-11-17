@@ -23,9 +23,9 @@
 //! - Optimal cache utilization (only load needed fields)
 //! - 256-bit aligned for AVX2
 
-use crate::isa::GuardContext;
+use super::{SimdGuardBatch, SIMD_ALIGNMENT, SIMD_BATCH_SIZE};
 use crate::guards::GuardId;
-use super::{SimdGuardBatch, SIMD_BATCH_SIZE, SIMD_ALIGNMENT};
+use crate::isa::GuardContext;
 
 /// Maximum number of guard batches in a pool
 pub const MAX_GUARD_BATCHES: usize = 128;
@@ -178,7 +178,13 @@ impl AosToSoaConverter {
     ///
     /// Extracts guard parameters from context and adds to current batch.
     /// When batch is full, it's moved to completed batches.
-    pub fn add_context(&mut self, ctx: &GuardContext, value_idx: usize, min_idx: usize, max_idx: usize) {
+    pub fn add_context(
+        &mut self,
+        ctx: &GuardContext,
+        value_idx: usize,
+        min_idx: usize,
+        max_idx: usize,
+    ) {
         if self.batch_size >= SIMD_BATCH_SIZE {
             // Batch full - move to completed batches
             self.batches.push(self.current_batch);
@@ -239,7 +245,8 @@ impl CacheAlignedBatch {
     pub const fn new() -> Self {
         Self {
             batch: SimdGuardBatch::new(),
-            _padding: [0; CACHE_LINE_SIZE - core::mem::size_of::<SimdGuardBatch>() % CACHE_LINE_SIZE],
+            _padding: [0; CACHE_LINE_SIZE
+                - core::mem::size_of::<SimdGuardBatch>() % CACHE_LINE_SIZE],
         }
     }
 
@@ -247,7 +254,8 @@ impl CacheAlignedBatch {
     pub const fn from_batch(batch: SimdGuardBatch) -> Self {
         Self {
             batch,
-            _padding: [0; CACHE_LINE_SIZE - core::mem::size_of::<SimdGuardBatch>() % CACHE_LINE_SIZE],
+            _padding: [0; CACHE_LINE_SIZE
+                - core::mem::size_of::<SimdGuardBatch>() % CACHE_LINE_SIZE],
         }
     }
 }

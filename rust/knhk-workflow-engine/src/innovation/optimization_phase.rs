@@ -11,9 +11,9 @@
 //! - Branch prediction hints
 //! - SIMD auto-vectorization
 
+use crate::const_assert;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use crate::const_assert;
 
 /// Optimization level - controls trade-off between speed and code size
 pub trait OptimizationLevel: 'static {
@@ -130,7 +130,9 @@ impl<const THRESHOLD: usize> HotPathDetector<THRESHOLD> {
             return false;
         }
 
-        let total: usize = self.counters.iter()
+        let total: usize = self
+            .counters
+            .iter()
             .map(|c| c.load(Ordering::Relaxed))
             .sum();
 
@@ -144,7 +146,7 @@ impl<const THRESHOLD: usize> HotPathDetector<THRESHOLD> {
 }
 
 /// Cache-aware data structure - optimized for cache locality
-#[repr(align(64))]  // Cache line alignment
+#[repr(align(64))] // Cache line alignment
 pub struct CacheAligned<T> {
     data: T,
 }
@@ -290,11 +292,7 @@ impl<const MIN: usize, const MAX: usize> AutoTune<MIN, MAX> {
         } else {
             // Performance degraded, try different value
             let current = self.current.load(Ordering::Relaxed);
-            let new_value = if current < MAX {
-                current + 1
-            } else {
-                MIN
-            };
+            let new_value = if current < MAX { current + 1 } else { MIN };
             self.current.store(new_value, Ordering::Relaxed);
         }
     }
@@ -324,14 +322,30 @@ impl<const FACTOR: usize> LoopUnroller<FACTOR> {
         for chunk_idx in 0..chunks {
             let start = chunk_idx * FACTOR;
             // Manual unroll
-            if FACTOR >= 1 { f(&mut data[start]); }
-            if FACTOR >= 2 { f(&mut data[start + 1]); }
-            if FACTOR >= 3 { f(&mut data[start + 2]); }
-            if FACTOR >= 4 { f(&mut data[start + 3]); }
-            if FACTOR >= 5 { f(&mut data[start + 4]); }
-            if FACTOR >= 6 { f(&mut data[start + 5]); }
-            if FACTOR >= 7 { f(&mut data[start + 6]); }
-            if FACTOR >= 8 { f(&mut data[start + 7]); }
+            if FACTOR >= 1 {
+                f(&mut data[start]);
+            }
+            if FACTOR >= 2 {
+                f(&mut data[start + 1]);
+            }
+            if FACTOR >= 3 {
+                f(&mut data[start + 2]);
+            }
+            if FACTOR >= 4 {
+                f(&mut data[start + 3]);
+            }
+            if FACTOR >= 5 {
+                f(&mut data[start + 4]);
+            }
+            if FACTOR >= 6 {
+                f(&mut data[start + 5]);
+            }
+            if FACTOR >= 7 {
+                f(&mut data[start + 6]);
+            }
+            if FACTOR >= 8 {
+                f(&mut data[start + 7]);
+            }
         }
 
         // Process remainder
@@ -408,7 +422,9 @@ impl PgoCollector {
 
     /// Get hottest edges (top 10%)
     pub fn hot_edges(&self) -> Vec<usize> {
-        let total: usize = self.edge_counts.iter()
+        let total: usize = self
+            .edge_counts
+            .iter()
             .map(|c| c.load(Ordering::Relaxed))
             .sum();
 
@@ -416,7 +432,7 @@ impl PgoCollector {
             return Vec::new();
         }
 
-        let threshold = total / 10;  // Top 10%
+        let threshold = total / 10; // Top 10%
 
         self.edge_counts
             .iter()
@@ -495,8 +511,8 @@ mod tests {
         let tuner: AutoTune<1, 10> = AutoTune::new();
         assert_eq!(tuner.get(), 1);
 
-        tuner.update(100);  // Good performance
-        tuner.update(200);  // Worse performance - should adjust
+        tuner.update(100); // Good performance
+        tuner.update(200); // Worse performance - should adjust
         assert!(tuner.get() >= 1 && tuner.get() <= 10);
     }
 
@@ -517,7 +533,7 @@ mod tests {
         let a = vec![1.0, 2.0, 3.0];
         let b = vec![4.0, 5.0, 6.0];
         let dot = Vectorize::dot_product(&a, &b);
-        assert_eq!(dot, 32.0);  // 1*4 + 2*5 + 3*6
+        assert_eq!(dot, 32.0); // 1*4 + 2*5 + 3*6
     }
 
     #[test]

@@ -2,9 +2,9 @@
 // Monitor: First phase of MAPE-K, ingests data from observation plane
 
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 use std::collections::HashMap;
 use std::sync::Arc;
-use sha2::Digest;
 
 /// An observation from the system (event, telemetry, receipt)
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -143,7 +143,10 @@ impl ObservationStore {
     }
 
     pub fn list_patterns(&self) -> Vec<Arc<DetectedPattern>> {
-        self.patterns.iter().map(|entry| entry.value().clone()).collect()
+        self.patterns
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 }
 

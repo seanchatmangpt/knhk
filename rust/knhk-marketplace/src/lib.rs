@@ -7,11 +7,11 @@
 //! - Telemetry and analytics collection
 //! - Cloud deployment integration (AWS, GCP, Azure)
 
+pub mod billing;
+pub mod deployment;
 pub mod licensing;
 pub mod marketplace;
-pub mod billing;
 pub mod telemetry;
-pub mod deployment;
 
 /// Phase 10 version identifier
 pub const PHASE_10_VERSION: &str = "0.10.0";

@@ -1,9 +1,9 @@
 // knhk-kernel: Hot path performance benchmarks
 // Measures all operations in CPU ticks
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use knhk_kernel::prelude::*;
-use knhk_kernel::{pattern::PatternType, descriptor::PatternEntry};
+use knhk_kernel::{descriptor::PatternEntry, pattern::PatternType};
 
 fn setup_kernel() {
     knhk_kernel::init().expect("Kernel init failed");
@@ -75,7 +75,7 @@ fn bench_pattern_dispatch(c: &mut Criterion) {
                 let ctx = knhk_kernel::pattern::PatternFactory::create(
                     pt,
                     i as u32,
-                    knhk_kernel::pattern::PatternConfig::default()
+                    knhk_kernel::pattern::PatternConfig::default(),
                 );
 
                 b.iter(|| {
@@ -90,8 +90,8 @@ fn bench_pattern_dispatch(c: &mut Criterion) {
 }
 
 fn bench_guard_evaluation(c: &mut Criterion) {
+    use knhk_kernel::descriptor::{ExecutionContext, ObservationBuffer, ResourceState};
     use knhk_kernel::guard::{Guard, Predicate, ResourceType};
-    use knhk_kernel::descriptor::{ExecutionContext, ResourceState, ObservationBuffer};
 
     let mut group = c.benchmark_group("guard_evaluation");
 

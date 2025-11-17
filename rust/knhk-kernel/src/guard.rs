@@ -1,8 +1,8 @@
 // knhk-kernel: Guard evaluation engine for hot path
 // Boolean gates with zero-overhead evaluation
 
+use crate::descriptor::ExecutionContext;
 use bitflags::bitflags;
-use crate::descriptor::{ExecutionContext, ResourceState};
 
 /// Guard types for different conditions
 #[repr(u8)]
@@ -325,9 +325,8 @@ impl GuardEvaluator {
 
     /// Clear expired cache entries
     pub fn clear_expired(&mut self, current_timestamp: u64) {
-        self.cache.retain(|_, &mut (_, timestamp)| {
-            current_timestamp - timestamp < self.cache_ttl
-        });
+        self.cache
+            .retain(|_, &mut (_, timestamp)| current_timestamp - timestamp < self.cache_ttl);
     }
 }
 
@@ -336,7 +335,7 @@ pub struct GuardCompiler;
 
 impl GuardCompiler {
     /// Compile guard to optimized evaluation function
-    pub fn compile(guard: &Guard) -> Box<dyn Fn(&ExecutionContext) -> bool> {
+    pub fn compile(guard: &Guard) -> Box<dyn Fn(&ExecutionContext) -> bool + '_> {
         match guard.guard_type {
             GuardType::Predicate => {
                 let pred = guard.predicate;

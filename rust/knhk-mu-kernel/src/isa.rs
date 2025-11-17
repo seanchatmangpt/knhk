@@ -3,9 +3,9 @@
 //! Defines the primitive operations (μ-ops) and composite instructions
 //! that form the knowledge operations ISA.
 
-use crate::timing::{TickBudget, BudgetStatus};
-use crate::patterns::PatternId;
 use crate::guards::GuardId;
+use crate::patterns::PatternId;
+use crate::timing::{BudgetStatus, TickBudget};
 
 /// μ-Operation result type
 pub type MuOpResult<T> = Result<T, MuOpError>;
@@ -139,7 +139,7 @@ pub struct DispatchResult {
 
 /// Guard evaluation context
 #[derive(Debug, Clone, Copy)]
-#[repr(C, align(64))]  // Cache-aligned
+#[repr(C, align(64))] // Cache-aligned
 pub struct GuardContext {
     /// Task ID being guarded
     pub task_id: u64,

@@ -9,11 +9,11 @@
 //! 4. Timescale separation (hot/warm/cold enforced)
 //! 5. Constitutional invariants (all four traits)
 
-use knhk_mu_kernel::*;
 use knhk_mu_kernel::ahi::*;
 use knhk_mu_kernel::constitutional::*;
-use knhk_mu_kernel::sigma::{SigmaCompiled, SigmaPointer};
 use knhk_mu_kernel::core::MuKernel;
+use knhk_mu_kernel::sigma::{SigmaCompiled, SigmaPointer};
+use knhk_mu_kernel::*;
 
 /// Test that AHI cannot directly modify Σ*
 #[test]
@@ -253,12 +253,7 @@ fn test_decision_interface() {
     let obs = U64Observation(42);
     let invariants = heapless::Vec::new();
 
-    let mut decision: Decision<_, 8> = Decision::new(
-        obs,
-        sigma,
-        invariants,
-        RiskClass::Low,
-    );
+    let mut decision: Decision<_, 8> = Decision::new(obs, sigma, invariants, RiskClass::Low);
 
     // Verify compile-time properties
     assert!(Decision::<U64Observation, 8>::within_chatman_constant());
@@ -278,12 +273,7 @@ fn test_high_risk_decision() {
     let obs = U64Observation(42);
     let invariants = heapless::Vec::new();
 
-    let mut decision: Decision<_, 8> = Decision::new(
-        obs,
-        sigma,
-        invariants,
-        RiskClass::Critical,
-    );
+    let mut decision: Decision<_, 8> = Decision::new(obs, sigma, invariants, RiskClass::Critical);
 
     // High risk decisions require approval
     let result = decision.execute();
@@ -331,11 +321,7 @@ fn test_invariant_proof() {
     invariants.push(1).unwrap();
     invariants.push(2).unwrap();
 
-    let proof = factory.invariant_proof(
-        invariants,
-        SigmaHash([0; 32]),
-        SigmaHash([1; 32]),
-    );
+    let proof = factory.invariant_proof(invariants, SigmaHash([0; 32]), SigmaHash([1; 32]));
 
     assert!(proof.verify().is_ok());
     assert_eq!(proof.proof_hash().len(), 32);
@@ -360,18 +346,16 @@ fn test_cross_layer_integration() {
     let obs = U64Observation(42);
     let invariants = heapless::Vec::new();
 
-    let mut decision: Decision<_, 8> = Decision::new(
-        obs,
-        sigma,
-        invariants,
-        RiskClass::Low,
-    );
+    let mut decision: Decision<_, 8> = Decision::new(obs, sigma, invariants, RiskClass::Low);
 
     // Execute decision
     let action = decision.execute().unwrap();
 
     // Create proof from execution
-    let proof = ctx.proof_factory().tick_proof::<8>(action.ticks_consumed).unwrap();
+    let proof = ctx
+        .proof_factory()
+        .tick_proof::<8>(action.ticks_consumed)
+        .unwrap();
 
     // Create overlay with proof
     let overlay = DeltaSigma::new();

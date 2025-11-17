@@ -63,10 +63,10 @@ pub struct Thresholds {
 impl Default for Thresholds {
     fn default() -> Self {
         Self {
-            max_dark_energy: 5.0,      // <5% dark energy
-            min_coverage: 95.0,         // >95% instrumentation coverage
-            hot_path_ticks: 8,          // ≤8 ticks for hot path
-            critical_threshold: 80.0,   // Top paths accounting for 80%
+            max_dark_energy: 5.0,     // <5% dark energy
+            min_coverage: 95.0,       // >95% instrumentation coverage
+            hot_path_ticks: 8,        // ≤8 ticks for hot path
+            critical_threshold: 80.0, // Top paths accounting for 80%
         }
     }
 }
@@ -236,9 +236,7 @@ impl MapekManager {
             // Policy 3: Hot path optimization (autonomic 80%)
             AutonomicPolicy {
                 name: "optimize_hot_80".to_string(),
-                condition: Condition::And(vec![
-                    Condition::DarkEnergyExceeds(2.0),
-                ]),
+                condition: Condition::And(vec![Condition::DarkEnergyExceeds(2.0)]),
                 action: Action::OptimizeHotPath {
                     path: "critical".to_string(),
                     strategy: "simd_vectorization".to_string(),
@@ -268,7 +266,9 @@ impl MapekManager {
         // Calculate dark energy (simulated for now)
         let observed_time = Duration::from_millis(95);
         let wall_clock = Duration::from_millis(100);
-        let dark_energy_metrics = self.detector.calculate_dark_energy(observed_time, wall_clock);
+        let dark_energy_metrics = self
+            .detector
+            .calculate_dark_energy(observed_time, wall_clock);
 
         MonitoringData {
             critical_paths,
@@ -348,7 +348,10 @@ impl MapekManager {
                             action: Action::InvestigateDarkPath {
                                 location: "auto_detected".to_string(),
                             },
-                            reason: format!("Dark energy {:.1}% exceeds {:.1}%", current, threshold),
+                            reason: format!(
+                                "Dark energy {:.1}% exceeds {:.1}%",
+                                current, threshold
+                            ),
                             autonomic: true,
                         });
                     }
@@ -362,13 +365,20 @@ impl MapekManager {
                             autonomic: true,
                         });
                     }
-                    Issue::HotPathViolation { path, expected, actual } => {
+                    Issue::HotPathViolation {
+                        path,
+                        expected,
+                        actual,
+                    } => {
                         actions.push(PlannedAction {
                             action: Action::OptimizeHotPath {
                                 path: path.clone(),
                                 strategy: "simd_optimization".to_string(),
                             },
-                            reason: format!("Hot path {} exceeded {} ticks (actual: {})", path, expected, actual),
+                            reason: format!(
+                                "Hot path {} exceeded {} ticks (actual: {})",
+                                path, expected, actual
+                            ),
                             autonomic: true,
                         });
                     }
@@ -378,7 +388,8 @@ impl MapekManager {
             // 20% category: Require human intervention
             actions.push(PlannedAction {
                 action: Action::AlertHuman {
-                    message: "System outside 80% autonomic range - human intervention required".to_string(),
+                    message: "System outside 80% autonomic range - human intervention required"
+                        .to_string(),
                     severity: Severity::Critical,
                 },
                 reason: "Analysis indicates non-standard behavior pattern".to_string(),
@@ -449,13 +460,11 @@ impl MapekManager {
                     message: format!("Investigating dark path at {}", location),
                 }
             }
-            Action::AdjustResources { path, adjustment } => {
-                ActionResult {
-                    action: action.clone(),
-                    success: true,
-                    message: format!("Adjusted resources for {} by {}", path, adjustment),
-                }
-            }
+            Action::AdjustResources { path, adjustment } => ActionResult {
+                action: action.clone(),
+                success: true,
+                message: format!("Adjusted resources for {} by {}", path, adjustment),
+            },
             _ => ActionResult {
                 action: action.clone(),
                 success: false,
@@ -483,7 +492,9 @@ impl MapekManager {
             dark_energy: monitoring.dark_energy_percentage,
             coverage: monitoring.coverage_percentage,
             critical_paths_count: monitoring.critical_paths.len(),
-            actions_taken: result.results.iter()
+            actions_taken: result
+                .results
+                .iter()
                 .filter(|r| r.success)
                 .map(|r| format!("{:?}", r.action))
                 .collect(),
@@ -547,9 +558,19 @@ pub struct AnalysisResult {
 /// Identified issue
 #[derive(Debug, Clone)]
 pub enum Issue {
-    HighDarkEnergy { current: f64, threshold: f64 },
-    LowCoverage { current: f64, threshold: f64 },
-    HotPathViolation { path: String, expected: u32, actual: u32 },
+    HighDarkEnergy {
+        current: f64,
+        threshold: f64,
+    },
+    LowCoverage {
+        current: f64,
+        threshold: f64,
+    },
+    HotPathViolation {
+        path: String,
+        expected: u32,
+        actual: u32,
+    },
 }
 
 /// Execution plan from Plan phase
@@ -616,7 +637,7 @@ mod tests {
         let data = MonitoringData {
             critical_paths: vec![],
             dark_paths_count: 0,
-            coverage_percentage: 98.0, // >95%
+            coverage_percentage: 98.0,   // >95%
             dark_energy_percentage: 3.0, // <5%
             timestamp: Instant::now(),
         };
@@ -633,7 +654,7 @@ mod tests {
         let data = MonitoringData {
             critical_paths: vec![],
             dark_paths_count: 10,
-            coverage_percentage: 85.0, // <95%
+            coverage_percentage: 85.0,   // <95%
             dark_energy_percentage: 8.0, // >5%
             timestamp: Instant::now(),
         };

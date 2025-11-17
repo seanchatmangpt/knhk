@@ -2,7 +2,7 @@
 //!
 //! Ensures performance doesn't regress over time.
 
-use chicago_tdd::{PerformanceHarness, OperationType, MeasurementResult, Statistics};
+use chicago_tdd::{MeasurementResult, OperationType, PerformanceHarness, Statistics};
 
 /// Create a baseline measurement for testing
 fn create_baseline(name: &str, p50: u64) -> MeasurementResult {
@@ -23,15 +23,15 @@ fn create_baseline(name: &str, p50: u64) -> MeasurementResult {
 fn test_regression_detection_pass() {
     let mut harness = PerformanceHarness::with_iterations(100, 1000, 10);
 
-    let result = harness.measure("stable_operation", OperationType::HotPath, || {
-        42 + 58
-    });
+    let result = harness.measure("stable_operation", OperationType::HotPath, || 42 + 58);
 
     // Create baseline with similar performance
     let baseline = create_baseline("stable_operation", result.statistics.p50);
 
     // Should not detect regression (within 20% threshold)
-    assert!(result.check_regression(baseline.statistics.p50, 20.0).is_ok());
+    assert!(result
+        .check_regression(baseline.statistics.p50, 20.0)
+        .is_ok());
 }
 
 #[test]
@@ -72,6 +72,8 @@ fn test_batch_regression_check() {
     ];
 
     // Should pass regression check with generous threshold
-    assert!(harness.check_regressions(&baselines, 200.0).is_ok(),
-        "Regression check should pass with high threshold");
+    assert!(
+        harness.check_regressions(&baselines, 200.0).is_ok(),
+        "Regression check should pass with high threshold"
+    );
 }

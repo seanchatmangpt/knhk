@@ -9,10 +9,10 @@
 //! - **Γ(O)**: Receipts form the global queryable history
 //! - **Q enforcement**: All guards checked are listed in receipt
 
-use sha3::{Digest, Sha3_256};
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, RwLock};
+use sha3::{Digest, Sha3_256};
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 use super::snapshot::SnapshotId;
 
@@ -222,7 +222,8 @@ impl ReceiptStore {
 
     /// Query receipts by workflow instance
     pub fn get_by_workflow(&self, workflow_id: &str) -> Result<Vec<Receipt>, String> {
-        let ids = self.by_workflow
+        let ids = self
+            .by_workflow
             .read()
             .map_err(|e| e.to_string())?
             .get(workflow_id)
@@ -230,14 +231,16 @@ impl ReceiptStore {
             .unwrap_or_default();
 
         let receipts = self.receipts.read().map_err(|e| e.to_string())?;
-        Ok(ids.iter()
+        Ok(ids
+            .iter()
             .filter_map(|id| receipts.get(id).cloned())
             .collect())
     }
 
     /// Query receipts by snapshot (for MAPE-K analysis)
     pub fn get_by_snapshot(&self, snapshot_id: &SnapshotId) -> Result<Vec<Receipt>, String> {
-        let ids = self.by_snapshot
+        let ids = self
+            .by_snapshot
             .read()
             .map_err(|e| e.to_string())?
             .get(snapshot_id)
@@ -245,14 +248,16 @@ impl ReceiptStore {
             .unwrap_or_default();
 
         let receipts = self.receipts.read().map_err(|e| e.to_string())?;
-        Ok(ids.iter()
+        Ok(ids
+            .iter()
             .filter_map(|id| receipts.get(id).cloned())
             .collect())
     }
 
     /// Get all receipts (for Γ(O) queries)
     pub fn get_all(&self) -> Result<Vec<Receipt>, String> {
-        Ok(self.receipts
+        Ok(self
+            .receipts
             .read()
             .map_err(|e| e.to_string())?
             .values()
@@ -262,7 +267,8 @@ impl ReceiptStore {
 
     /// Query for Chatman constant violations
     pub fn get_violations(&self) -> Result<Vec<Receipt>, String> {
-        Ok(self.get_all()?
+        Ok(self
+            .get_all()?
             .into_iter()
             .filter(|r| r.ticks_used > 8)
             .collect())
@@ -270,7 +276,8 @@ impl ReceiptStore {
 
     /// Query for guard failures
     pub fn get_guard_failures(&self, guard_name: &str) -> Result<Vec<Receipt>, String> {
-        Ok(self.get_all()?
+        Ok(self
+            .get_all()?
             .into_iter()
             .filter(|r| r.guards_failed.iter().any(|g| g == guard_name))
             .collect())
@@ -343,12 +350,7 @@ mod tests {
     #[test]
     fn test_guard_checks() {
         let snapshot_id = SnapshotId::from_string("Σ_test_001".to_string());
-        let mut receipt = Receipt::new(
-            snapshot_id,
-            b"input",
-            b"output",
-            "workflow-1".to_string(),
-        );
+        let mut receipt = Receipt::new(snapshot_id, b"input", b"output", "workflow-1".to_string());
 
         receipt.add_guard_check("Q1".to_string(), true);
         receipt.add_guard_check("Q2".to_string(), true);
@@ -362,12 +364,7 @@ mod tests {
     #[test]
     fn test_chatman_constant_enforcement() {
         let snapshot_id = SnapshotId::from_string("Σ_test_001".to_string());
-        let mut receipt = Receipt::new(
-            snapshot_id,
-            b"input",
-            b"output",
-            "workflow-1".to_string(),
-        );
+        let mut receipt = Receipt::new(snapshot_id, b"input", b"output", "workflow-1".to_string());
 
         receipt.set_ticks(6);
         assert!(receipt.verify());
@@ -376,7 +373,9 @@ mod tests {
         receipt.set_ticks(10); // Violates Chatman constant
         assert!(receipt.verify()); // Receipt is internally consistent
         assert!(!receipt.success); // But execution failed
-        assert!(receipt.guards_failed.contains(&"CHATMAN_CONSTANT".to_string()));
+        assert!(receipt
+            .guards_failed
+            .contains(&"CHATMAN_CONSTANT".to_string()));
     }
 
     #[test]
@@ -384,12 +383,7 @@ mod tests {
         let store = ReceiptStore::new();
         let snapshot_id = SnapshotId::from_string("Σ_test_001".to_string());
 
-        let mut receipt = Receipt::new(
-            snapshot_id,
-            b"input",
-            b"output",
-            "workflow-1".to_string(),
-        );
+        let mut receipt = Receipt::new(snapshot_id, b"input", b"output", "workflow-1".to_string());
         receipt.set_ticks(5);
 
         let id = store.append(receipt.clone()).unwrap();
@@ -432,12 +426,8 @@ mod tests {
         );
         receipt1.set_ticks(5); // OK
 
-        let mut receipt2 = Receipt::new(
-            snapshot_id,
-            b"input2",
-            b"output2",
-            "workflow-2".to_string(),
-        );
+        let mut receipt2 =
+            Receipt::new(snapshot_id, b"input2", b"output2", "workflow-2".to_string());
         receipt2.set_ticks(10); // Violation
 
         store.append(receipt1).unwrap();
@@ -465,9 +455,16 @@ mod tests {
             receipt.set_ticks(ticks); // Some violations (9, 10, 11)
 
             // Debug: print ID to see if they're unique
-            eprintln!("Created receipt {}: id={}, ticks={}", i, receipt.receipt_id.as_str(), ticks);
+            eprintln!(
+                "Created receipt {}: id={}, ticks={}",
+                i,
+                receipt.receipt_id.as_str(),
+                ticks
+            );
 
-            let id = store.append(receipt).expect(&format!("Failed to append receipt {}", i));
+            let id = store
+                .append(receipt)
+                .expect(&format!("Failed to append receipt {}", i));
             eprintln!("Appended receipt {} with id={}", i, id.as_str());
         }
 
@@ -475,12 +472,24 @@ mod tests {
         let all = store.get_all().unwrap();
         eprintln!("Total receipts in store: {}", all.len());
         for (idx, r) in all.iter().enumerate() {
-            eprintln!("  Receipt {}: id={}, ticks={}", idx, r.receipt_id.as_str(), r.ticks_used);
+            eprintln!(
+                "  Receipt {}: id={}, ticks={}",
+                idx,
+                r.receipt_id.as_str(),
+                r.ticks_used
+            );
         }
 
         let stats = store.get_statistics().unwrap();
-        assert_eq!(stats.total_receipts, 10, "Expected 10 receipts but got {}", stats.total_receipts);
+        assert_eq!(
+            stats.total_receipts, 10,
+            "Expected 10 receipts but got {}",
+            stats.total_receipts
+        );
         assert!(stats.average_ticks > 0.0);
-        assert!(stats.chatman_violations > 0, "Expected some Chatman violations"); // Should have violations for i >= 9
+        assert!(
+            stats.chatman_violations > 0,
+            "Expected some Chatman violations"
+        ); // Should have violations for i >= 9
     }
 }

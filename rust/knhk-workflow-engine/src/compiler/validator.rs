@@ -3,7 +3,7 @@
 //! Validates extracted patterns against the pattern permutation matrix.
 //! Ensures all patterns are valid according to YAWL semantics.
 
-use crate::compiler::extractor::{ExtractedPattern, PatternType, Guard, GuardType};
+use crate::compiler::extractor::{ExtractedPattern, Guard, GuardType, PatternType};
 use crate::error::{WorkflowError, WorkflowResult};
 use oxigraph::{
     io::{RdfFormat, RdfParser},
@@ -13,7 +13,7 @@ use oxigraph::{
 };
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
-use tracing::{debug, info, instrument, warn, error};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Pattern validator
 pub struct PatternValidator {
@@ -64,7 +64,7 @@ impl Default for ValidationRules {
         compatibility.insert((2, 3), true); // ParallelSplit -> Synchronization
         compatibility.insert((4, 5), true); // ExclusiveChoice -> SimpleMerge
         compatibility.insert((6, 7), true); // MultiChoice -> SynchronizingMerge
-        // Add more as needed
+                                            // Add more as needed
 
         Self {
             max_guards: 10,
@@ -106,7 +106,8 @@ impl PatternValidator {
             .map_err(|e| WorkflowError::Parse(format!("Failed to parse pattern matrix: {}", e)))?;
 
         for quad in quads {
-            store.insert(&quad)
+            store
+                .insert(&quad)
                 .map_err(|e| WorkflowError::Internal(format!("Failed to insert quad: {}", e)))?;
         }
 
@@ -115,7 +116,10 @@ impl PatternValidator {
         // Extract valid patterns from matrix
         self.extract_valid_patterns(&store)?;
 
-        info!("Loaded {} valid pattern signatures", self.valid_patterns.len());
+        info!(
+            "Loaded {} valid pattern signatures",
+            self.valid_patterns.len()
+        );
         Ok(())
     }
 
@@ -134,32 +138,48 @@ impl PatternValidator {
             }
         "#;
 
-        let results = store.query(query)
+        let results = store
+            .query(query)
             .map_err(|e| WorkflowError::Parse(format!("Pattern extraction failed: {}", e)))?;
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 if let Some(Term::Literal(id_lit)) = solution.get("id") {
                     if let Ok(pattern_id) = id_lit.value().parse::<u8>() {
-                        let has_guards = solution.get("guards")
-                            .and_then(|t| if let Term::Literal(lit) = t {
-                                lit.value().parse::<bool>().ok()
-                            } else { None })
+                        let has_guards = solution
+                            .get("guards")
+                            .and_then(|t| {
+                                if let Term::Literal(lit) = t {
+                                    lit.value().parse::<bool>().ok()
+                                } else {
+                                    None
+                                }
+                            })
                             .unwrap_or(false);
 
-                        let has_timeout = solution.get("timeout")
-                            .and_then(|t| if let Term::Literal(lit) = t {
-                                lit.value().parse::<bool>().ok()
-                            } else { None })
+                        let has_timeout = solution
+                            .get("timeout")
+                            .and_then(|t| {
+                                if let Term::Literal(lit) = t {
+                                    lit.value().parse::<bool>().ok()
+                                } else {
+                                    None
+                                }
+                            })
                             .unwrap_or(false);
 
-                        let has_mi = solution.get("mi")
-                            .and_then(|t| if let Term::Literal(lit) = t {
-                                lit.value().parse::<bool>().ok()
-                            } else { None })
+                        let has_mi = solution
+                            .get("mi")
+                            .and_then(|t| {
+                                if let Term::Literal(lit) = t {
+                                    lit.value().parse::<bool>().ok()
+                                } else {
+                                    None
+                                }
+                            })
                             .unwrap_or(false);
 
                         self.valid_patterns.insert(PatternSignature {
@@ -237,43 +257,48 @@ impl PatternValidator {
 
         // Check pattern ID range
         if pattern.pattern_id < 1 || pattern.pattern_id > 43 {
-            return Err(WorkflowError::Validation(
-                format!("Invalid pattern ID: {} (must be 1-43)", pattern.pattern_id)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Invalid pattern ID: {} (must be 1-43)",
+                pattern.pattern_id
+            )));
         }
 
         // Check tick budget
         if pattern.tick_budget > self.rules.max_ticks {
-            return Err(WorkflowError::Validation(
-                format!("Pattern {} exceeds tick budget: {} > {}",
-                    pattern.iri, pattern.tick_budget, self.rules.max_ticks)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Pattern {} exceeds tick budget: {} > {}",
+                pattern.iri, pattern.tick_budget, self.rules.max_ticks
+            )));
         }
 
         // Check guard requirements
         if let Some(&requires_guards) = self.rules.guard_requirements.get(&pattern.pattern_id) {
             if requires_guards && pattern.guards.is_empty() {
-                return Err(WorkflowError::Validation(
-                    format!("Pattern {} (type {}) requires guards",
-                        pattern.iri, pattern.pattern_id)
-                ));
+                return Err(WorkflowError::Validation(format!(
+                    "Pattern {} (type {}) requires guards",
+                    pattern.iri, pattern.pattern_id
+                )));
             }
         }
 
         // Check guard count
         if pattern.guards.len() > self.rules.max_guards {
-            return Err(WorkflowError::Validation(
-                format!("Pattern {} has too many guards: {} > {}",
-                    pattern.iri, pattern.guards.len(), self.rules.max_guards)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Pattern {} has too many guards: {} > {}",
+                pattern.iri,
+                pattern.guards.len(),
+                self.rules.max_guards
+            )));
         }
 
         // Check variable count
         if pattern.variables.len() > self.rules.max_variables {
-            return Err(WorkflowError::Validation(
-                format!("Pattern {} has too many variables: {} > {}",
-                    pattern.iri, pattern.variables.len(), self.rules.max_variables)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Pattern {} has too many variables: {} > {}",
+                pattern.iri,
+                pattern.variables.len(),
+                self.rules.max_variables
+            )));
         }
 
         // Validate against pattern matrix
@@ -315,10 +340,10 @@ impl PatternValidator {
             };
 
             if !self.valid_patterns.contains(&basic_signature) {
-                return Err(WorkflowError::Validation(
-                    format!("Pattern {} with signature {:?} is not in valid pattern matrix",
-                        pattern.iri, signature)
-                ));
+                return Err(WorkflowError::Validation(format!(
+                    "Pattern {} with signature {:?} is not in valid pattern matrix",
+                    pattern.iri, signature
+                )));
             }
         }
 
@@ -329,14 +354,18 @@ impl PatternValidator {
     fn validate_guard(&self, guard: &Guard) -> WorkflowResult<()> {
         // Check expression is not empty
         if guard.expression.trim().is_empty() {
-            return Err(WorkflowError::Validation(
-                format!("Guard {} has empty expression", guard.id)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Guard {} has empty expression",
+                guard.id
+            )));
         }
 
         // Check variables referenced exist
         if guard.variables.is_empty() && guard.expression != "true" && guard.expression != "false" {
-            warn!("Guard {} references no variables: {}", guard.id, guard.expression);
+            warn!(
+                "Guard {} references no variables: {}",
+                guard.id, guard.expression
+            );
         }
 
         // Validate guard type specific rules
@@ -353,9 +382,10 @@ impl PatternValidator {
             GuardType::Invariant => {
                 // Invariants must be pure boolean expressions
                 if guard.expression.contains(":=") || guard.expression.contains("++") {
-                    return Err(WorkflowError::Validation(
-                        format!("Invariant guard {} must not have side effects", guard.id)
-                    ));
+                    return Err(WorkflowError::Validation(format!(
+                        "Invariant guard {} must not have side effects",
+                        guard.id
+                    )));
                 }
             }
             GuardType::ExceptionHandler => {
@@ -371,20 +401,24 @@ impl PatternValidator {
         for constraint in &pattern.constraints {
             // Check expression is valid
             if constraint.expression.trim().is_empty() {
-                return Err(WorkflowError::Validation(
-                    format!("Pattern {} has constraint with empty expression", pattern.iri)
-                ));
+                return Err(WorkflowError::Validation(format!(
+                    "Pattern {} has constraint with empty expression",
+                    pattern.iri
+                )));
             }
 
             // Type-specific validation
             match constraint.constraint_type {
                 crate::compiler::extractor::ConstraintType::Temporal => {
                     // Temporal constraints should reference time
-                    if !constraint.expression.contains("time") &&
-                       !constraint.expression.contains("duration") &&
-                       !constraint.expression.contains("timeout") {
-                        warn!("Temporal constraint may not reference time: {}",
-                            constraint.expression);
+                    if !constraint.expression.contains("time")
+                        && !constraint.expression.contains("duration")
+                        && !constraint.expression.contains("timeout")
+                    {
+                        warn!(
+                            "Temporal constraint may not reference time: {}",
+                            constraint.expression
+                        );
                     }
                 }
                 _ => {}
@@ -412,7 +446,10 @@ impl PatternValidator {
     }
 
     /// Check for invalid cycles
-    fn check_for_cycles(&self, patterns: &HashMap<String, &ExtractedPattern>) -> WorkflowResult<()> {
+    fn check_for_cycles(
+        &self,
+        patterns: &HashMap<String, &ExtractedPattern>,
+    ) -> WorkflowResult<()> {
         // Simple cycle detection
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
@@ -420,9 +457,10 @@ impl PatternValidator {
         for (iri, _) in patterns.iter() {
             if !visited.contains(iri) {
                 if self.has_cycle_util(iri, patterns, &mut visited, &mut rec_stack)? {
-                    return Err(WorkflowError::Validation(
-                        format!("Cycle detected in workflow patterns starting at {}", iri)
-                    ));
+                    return Err(WorkflowError::Validation(format!(
+                        "Cycle detected in workflow patterns starting at {}",
+                        iri
+                    )));
                 }
             }
         }
@@ -462,7 +500,10 @@ impl PatternValidator {
     }
 
     /// Validate pattern compatibility
-    fn validate_compatibility(&self, patterns: &HashMap<String, &ExtractedPattern>) -> WorkflowResult<()> {
+    fn validate_compatibility(
+        &self,
+        patterns: &HashMap<String, &ExtractedPattern>,
+    ) -> WorkflowResult<()> {
         // Check if patterns that flow into each other are compatible
         for (_, pattern) in patterns.iter() {
             for flow in &pattern.data_flows {
@@ -470,11 +511,13 @@ impl PatternValidator {
                     let key = (pattern.pattern_id, target_pattern.pattern_id);
                     if let Some(&compatible) = self.rules.compatibility.get(&key) {
                         if !compatible {
-                            return Err(WorkflowError::Validation(
-                                format!("Incompatible pattern flow: {} ({}) -> {} ({})",
-                                    pattern.iri, pattern.pattern_id,
-                                    target_pattern.iri, target_pattern.pattern_id)
-                            ));
+                            return Err(WorkflowError::Validation(format!(
+                                "Incompatible pattern flow: {} ({}) -> {} ({})",
+                                pattern.iri,
+                                pattern.pattern_id,
+                                target_pattern.iri,
+                                target_pattern.pattern_id
+                            )));
                         }
                     }
                 }
@@ -487,18 +530,22 @@ impl PatternValidator {
     /// Validate pattern completeness
     pub fn validate_completeness(&self, patterns: &[ExtractedPattern]) -> WorkflowResult<()> {
         // Check for start patterns
-        let has_start = patterns.iter().any(|p|
-            p.guards.iter().any(|g| g.guard_type == GuardType::PreCondition &&
-                                    g.expression.contains("start")));
+        let has_start = patterns.iter().any(|p| {
+            p.guards
+                .iter()
+                .any(|g| g.guard_type == GuardType::PreCondition && g.expression.contains("start"))
+        });
 
         if !has_start {
             warn!("No explicit start condition found in patterns");
         }
 
         // Check for end patterns
-        let has_end = patterns.iter().any(|p|
-            p.guards.iter().any(|g| g.guard_type == GuardType::PostCondition &&
-                                    g.expression.contains("complete")));
+        let has_end = patterns.iter().any(|p| {
+            p.guards.iter().any(|g| {
+                g.guard_type == GuardType::PostCondition && g.expression.contains("complete")
+            })
+        });
 
         if !has_end {
             warn!("No explicit completion condition found in patterns");
@@ -511,7 +558,7 @@ impl PatternValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compiler::extractor::{Variable, DataType, Constraint, DataFlow, EventHandler};
+    use crate::compiler::extractor::{Constraint, DataFlow, DataType, EventHandler, Variable};
 
     fn create_test_pattern(id: u8) -> ExtractedPattern {
         ExtractedPattern {

@@ -1,13 +1,13 @@
 // Guard Governance: Multi-party approval for critical policy changes
 // Implements cryptographically-signed quorum-based approval workflows
 
+use chrono::{DateTime, Duration, Utc};
 use dashmap::DashMap;
-use parking_lot::RwLock;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use chrono::{DateTime, Duration, Utc};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -64,55 +64,40 @@ pub struct Guard {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum GuardType {
-    ApprovalChain {
-        required_signers: Vec<String>
-    },
-    SafetyInterlock {
-        condition: String
-    },
-    DataResidency {
-        allowed_regions: Vec<String>
-    },
-    PerformanceBound {
-        max_ticks: u32
-    },
-    ComplianceRule {
-        regulations: Vec<String>
-    },
+    ApprovalChain { required_signers: Vec<String> },
+    SafetyInterlock { condition: String },
+    DataResidency { allowed_regions: Vec<String> },
+    PerformanceBound { max_ticks: u32 },
+    ComplianceRule { regulations: Vec<String> },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Criticality {
-    Critical,    // Cannot be relaxed without board approval
-    High,        // Requires C-level approval
-    Medium,      // Requires department head approval
-    Low,         // Can be relaxed by team lead
+    Critical, // Cannot be relaxed without board approval
+    High,     // Requires C-level approval
+    Medium,   // Requires department head approval
+    Low,      // Can be relaxed by team lead
 }
 
 /// Policy for how a guard can be relaxed (changed)
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RelaxationPolicy {
     pub requires_multi_party: bool,
-    pub required_approvers: Vec<String>,  // Role IDs or person IDs
-    pub approval_quorum: usize,           // How many must approve
-    pub min_approval_duration_ms: u64,    // Minimum review period (ms)
+    pub required_approvers: Vec<String>, // Role IDs or person IDs
+    pub approval_quorum: usize,          // How many must approve
+    pub min_approval_duration_ms: u64,   // Minimum review period (ms)
     pub can_be_revoked: bool,
     pub revocation_requires_same_quorum: bool,
 }
 
 impl Guard {
-    pub fn new(
-        id: String,
-        name: String,
-        guard_type: GuardType,
-        criticality: Criticality,
-    ) -> Self {
+    pub fn new(id: String, name: String, guard_type: GuardType, criticality: Criticality) -> Self {
         // Derive relaxation policy from criticality
         let (requires_multi, quorum, min_duration) = match criticality {
-            Criticality::Critical => (true, 3, 86400000),     // Board + Legal + CTO, 24h
-            Criticality::High => (true, 2, 43200000),         // C-level + VP, 12h
-            Criticality::Medium => (false, 1, 3600000),       // Single approver, 1h
-            Criticality::Low => (false, 1, 0),                // No special approval, instant
+            Criticality::Critical => (true, 3, 86400000), // Board + Legal + CTO, 24h
+            Criticality::High => (true, 2, 43200000),     // C-level + VP, 12h
+            Criticality::Medium => (false, 1, 3600000),   // Single approver, 1h
+            Criticality::Low => (false, 1, 0),            // No special approval, instant
         };
 
         let is_mutable = matches!(criticality, Criticality::Medium | Criticality::Low);
@@ -190,8 +175,8 @@ pub enum RequestState {
 pub struct GuardApproval {
     pub approver_id: String,
     pub signed_at: DateTime<Utc>,
-    pub signature: String,  // hex-encoded ed25519 signature
-    pub verifying_key: String,  // hex-encoded VerifyingKey
+    pub signature: String,     // hex-encoded ed25519 signature
+    pub verifying_key: String, // hex-encoded VerifyingKey
     pub metadata: HashMap<String, serde_json::Value>,
 }
 
@@ -200,10 +185,16 @@ impl GuardApproval {
         let sig_bytes = hex::decode(&self.signature)?;
         let key_bytes = hex::decode(&self.verifying_key)?;
 
-        let signature = Signature::from_bytes(&sig_bytes.try_into()
-            .map_err(|_| GovernanceError::InvalidSignature)?);
-        let verifying_key = VerifyingKey::from_bytes(&key_bytes.try_into()
-            .map_err(|_| GovernanceError::InvalidSignature)?)?;
+        let signature = Signature::from_bytes(
+            &sig_bytes
+                .try_into()
+                .map_err(|_| GovernanceError::InvalidSignature)?,
+        );
+        let verifying_key = VerifyingKey::from_bytes(
+            &key_bytes
+                .try_into()
+                .map_err(|_| GovernanceError::InvalidSignature)?,
+        )?;
 
         verifying_key.verify(message.as_bytes(), &signature)?;
         Ok(())
@@ -253,7 +244,8 @@ impl GovernanceEngine {
 
     /// Get a guard by ID
     pub fn get_guard(&self, guard_id: &str) -> Result<Arc<Guard>> {
-        self.guards.get(guard_id)
+        self.guards
+            .get(guard_id)
             .map(|g| g.clone())
             .ok_or_else(|| GovernanceError::GuardNotFound(guard_id.to_string()))
     }
@@ -266,7 +258,9 @@ impl GovernanceEngine {
         reason: String,
         proposed_change: String,
     ) -> Result<String> {
-        let guard = self.guards.get(&guard_id)
+        let guard = self
+            .guards
+            .get(&guard_id)
             .ok_or_else(|| GovernanceError::GuardNotFound(guard_id.clone()))?;
 
         if !guard.is_mutable {
@@ -301,10 +295,8 @@ impl GovernanceEngine {
             state: RequestState::Submitted,
         };
 
-        self.relaxation_requests.insert(
-            request_id.clone(),
-            Arc::new(RwLock::new(request))
-        );
+        self.relaxation_requests
+            .insert(request_id.clone(), Arc::new(RwLock::new(request)));
 
         Ok(request_id)
     }
@@ -316,7 +308,9 @@ impl GovernanceEngine {
         approver_id: String,
         signing_key: &SigningKey,
     ) -> Result<()> {
-        let request_ref = self.relaxation_requests.get(request_id)
+        let request_ref = self
+            .relaxation_requests
+            .get(request_id)
             .ok_or_else(|| GovernanceError::RequestNotFound(request_id.to_string()))?;
 
         let mut request = request_ref.write();
@@ -328,7 +322,11 @@ impl GovernanceEngine {
         }
 
         // Check if already approved by this person
-        if request.approval_signatures.iter().any(|a| a.approver_id == approver_id) {
+        if request
+            .approval_signatures
+            .iter()
+            .any(|a| a.approver_id == approver_id)
+        {
             return Ok(()); // Already approved, idempotent
         }
 
@@ -352,7 +350,9 @@ impl GovernanceEngine {
         request.approval_signatures.push(approval);
 
         // Check if we have quorum
-        let guard = self.guards.get(&request.guard_id)
+        let guard = self
+            .guards
+            .get(&request.guard_id)
             .ok_or_else(|| GovernanceError::GuardNotFound(request.guard_id.clone()))?;
 
         if request.approval_signatures.len() >= guard.relaxation_policy.approval_quorum {
@@ -365,20 +365,21 @@ impl GovernanceEngine {
                 request.state = RequestState::UnderReview;
             }
         } else {
-            let pending = guard.relaxation_policy.approval_quorum - request.approval_signatures.len();
-            request.state = RequestState::ApprovalsPending { pending_count: pending };
+            let pending =
+                guard.relaxation_policy.approval_quorum - request.approval_signatures.len();
+            request.state = RequestState::ApprovalsPending {
+                pending_count: pending,
+            };
         }
 
         Ok(())
     }
 
     /// Reject a relaxation request
-    pub fn reject_relaxation(
-        &self,
-        request_id: &str,
-        reason: String,
-    ) -> Result<()> {
-        let request_ref = self.relaxation_requests.get(request_id)
+    pub fn reject_relaxation(&self, request_id: &str, reason: String) -> Result<()> {
+        let request_ref = self
+            .relaxation_requests
+            .get(request_id)
             .ok_or_else(|| GovernanceError::RequestNotFound(request_id.to_string()))?;
 
         let mut request = request_ref.write();
@@ -397,7 +398,9 @@ impl GovernanceEngine {
 
     /// Finalize approval after minimum duration has passed
     pub fn finalize_approval(&self, request_id: &str) -> Result<()> {
-        let request_ref = self.relaxation_requests.get(request_id)
+        let request_ref = self
+            .relaxation_requests
+            .get(request_id)
             .ok_or_else(|| GovernanceError::RequestNotFound(request_id.to_string()))?;
 
         let mut request = request_ref.write();
@@ -406,7 +409,9 @@ impl GovernanceEngine {
             return Ok(()); // Already in final state
         }
 
-        let guard = self.guards.get(&request.guard_id)
+        let guard = self
+            .guards
+            .get(&request.guard_id)
             .ok_or_else(|| GovernanceError::GuardNotFound(request.guard_id.clone()))?;
 
         // Check quorum
@@ -440,7 +445,9 @@ impl GovernanceEngine {
         }
 
         // Get request to extract guard_id and reason
-        let request_ref = self.relaxation_requests.get(&request_id)
+        let request_ref = self
+            .relaxation_requests
+            .get(&request_id)
             .ok_or_else(|| GovernanceError::RequestNotFound(request_id.clone()))?;
 
         let request = request_ref.read();
@@ -448,7 +455,9 @@ impl GovernanceEngine {
         let reason = request.reason.clone();
 
         // Get guard and verify it exists
-        let guard = self.guards.get(&guard_id)
+        let guard = self
+            .guards
+            .get(&guard_id)
             .ok_or_else(|| GovernanceError::GuardNotFound(guard_id.clone()))?;
 
         // Create relaxation window
@@ -460,7 +469,8 @@ impl GovernanceEngine {
             reason,
         };
 
-        self.active_relaxations.insert(request_id.clone(), window.clone());
+        self.active_relaxations
+            .insert(request_id.clone(), window.clone());
 
         // Temporarily disable guard
         guard.temporarily_disable();
@@ -473,7 +483,9 @@ impl GovernanceEngine {
 
     /// Revoke a relaxation before expiration
     pub fn revoke_relaxation(&self, request_id: &str) -> Result<()> {
-        let (_, window) = self.active_relaxations.remove(request_id)
+        let (_, window) = self
+            .active_relaxations
+            .remove(request_id)
             .ok_or_else(|| GovernanceError::RelaxationNotFound(request_id.to_string()))?;
 
         // Re-enable guard
@@ -485,7 +497,7 @@ impl GovernanceEngine {
         if let Some(req_ref) = self.relaxation_requests.get(request_id) {
             let mut req = req_ref.write();
             req.state = RequestState::Revoked {
-                reason: "Manual revocation".to_string()
+                reason: "Manual revocation".to_string(),
             };
         }
 
@@ -517,10 +529,13 @@ impl GovernanceEngine {
 
     /// Get guard status
     pub fn guard_status(&self, guard_id: &str) -> Result<GuardStatus> {
-        let guard = self.guards.get(guard_id)
+        let guard = self
+            .guards
+            .get(guard_id)
             .ok_or_else(|| GovernanceError::GuardNotFound(guard_id.to_string()))?;
 
-        let active_relaxation = self.active_relaxations
+        let active_relaxation = self
+            .active_relaxations
             .iter()
             .find(|entry| entry.value().guard_id == guard_id)
             .map(|entry| entry.value().clone());
@@ -536,7 +551,9 @@ impl GovernanceEngine {
 
     /// Get request status
     pub fn request_status(&self, request_id: &str) -> Result<RequestStatus> {
-        let request_ref = self.relaxation_requests.get(request_id)
+        let request_ref = self
+            .relaxation_requests
+            .get(request_id)
             .ok_or_else(|| GovernanceError::RequestNotFound(request_id.to_string()))?;
 
         let request = request_ref.read();
@@ -546,7 +563,9 @@ impl GovernanceEngine {
             guard_id: request.guard_id.clone(),
             state: request.state.clone(),
             approvals_received: request.approval_signatures.len(),
-            approvals_needed: self.guards.get(&request.guard_id)
+            approvals_needed: self
+                .guards
+                .get(&request.guard_id)
                 .map(|g| g.relaxation_policy.approval_quorum)
                 .unwrap_or(0),
             created_at: request.created_at,
@@ -556,12 +575,18 @@ impl GovernanceEngine {
 
     /// List all guards
     pub fn list_guards(&self) -> Vec<String> {
-        self.guards.iter().map(|entry| entry.key().clone()).collect()
+        self.guards
+            .iter()
+            .map(|entry| entry.key().clone())
+            .collect()
     }
 
     /// List all active relaxations
     pub fn list_active_relaxations(&self) -> Vec<RelaxationWindow> {
-        self.active_relaxations.iter().map(|entry| entry.value().clone()).collect()
+        self.active_relaxations
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 }
 
@@ -606,7 +631,11 @@ mod tests {
             },
             criticality,
         )
-        .with_required_approvers(vec!["CFO".to_string(), "Legal".to_string(), "CTO".to_string()])
+        .with_required_approvers(vec![
+            "CFO".to_string(),
+            "Legal".to_string(),
+            "CTO".to_string(),
+        ])
     }
 
     #[test]
@@ -646,12 +675,14 @@ mod tests {
 
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-2".to_string(),
-            "alice".to_string(),
-            "Need to bypass for emergency".to_string(),
-            "Disable for 1 hour".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-2".to_string(),
+                "alice".to_string(),
+                "Need to bypass for emergency".to_string(),
+                "Disable for 1 hour".to_string(),
+            )
+            .unwrap();
 
         assert!(request_id.starts_with("req-"));
     }
@@ -663,23 +694,23 @@ mod tests {
 
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-3".to_string(),
-            "bob".to_string(),
-            "Testing signatures".to_string(),
-            "Temporary relaxation".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-3".to_string(),
+                "bob".to_string(),
+                "Testing signatures".to_string(),
+                "Temporary relaxation".to_string(),
+            )
+            .unwrap();
 
         // Generate signing key
         let mut csprng = OsRng;
         let signing_key = SigningKey::generate(&mut csprng);
 
         // Approve with signature
-        engine.approve_relaxation(
-            &request_id,
-            "CFO".to_string(),
-            &signing_key,
-        ).unwrap();
+        engine
+            .approve_relaxation(&request_id, "CFO".to_string(), &signing_key)
+            .unwrap();
 
         // Verify signature was stored
         let request_ref = engine.relaxation_requests.get(&request_id).unwrap();
@@ -696,37 +727,49 @@ mod tests {
     #[test]
     fn test_quorum_approval() {
         let engine = GovernanceEngine::new();
-        let guard = create_test_guard("test-4", Criticality::Critical)
-            .with_required_approvers(vec!["CFO".to_string(), "Legal".to_string(), "CTO".to_string()]);
+        let guard =
+            create_test_guard("test-4", Criticality::Critical).with_required_approvers(vec![
+                "CFO".to_string(),
+                "Legal".to_string(),
+                "CTO".to_string(),
+            ]);
 
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-4".to_string(),
-            "carol".to_string(),
-            "Critical change needed".to_string(),
-            "Relax compliance rule".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-4".to_string(),
+                "carol".to_string(),
+                "Critical change needed".to_string(),
+                "Relax compliance rule".to_string(),
+            )
+            .unwrap();
 
         let mut csprng = OsRng;
 
         // First approval
         let key1 = SigningKey::generate(&mut csprng);
-        engine.approve_relaxation(&request_id, "CFO".to_string(), &key1).unwrap();
+        engine
+            .approve_relaxation(&request_id, "CFO".to_string(), &key1)
+            .unwrap();
 
         // Not yet approved (need 3)
         assert!(!engine.is_relaxation_approved(&request_id));
 
         // Second approval
         let key2 = SigningKey::generate(&mut csprng);
-        engine.approve_relaxation(&request_id, "Legal".to_string(), &key2).unwrap();
+        engine
+            .approve_relaxation(&request_id, "Legal".to_string(), &key2)
+            .unwrap();
 
         // Still not approved (need 3)
         assert!(!engine.is_relaxation_approved(&request_id));
 
         // Third approval
         let key3 = SigningKey::generate(&mut csprng);
-        engine.approve_relaxation(&request_id, "CTO".to_string(), &key3).unwrap();
+        engine
+            .approve_relaxation(&request_id, "CTO".to_string(), &key3)
+            .unwrap();
 
         // Need to wait for minimum duration, so state is UnderReview
         let status = engine.request_status(&request_id).unwrap();
@@ -742,23 +785,29 @@ mod tests {
         let guard = create_test_guard("test-5", Criticality::Low);
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-5".to_string(),
-            "dave".to_string(),
-            "Quick test".to_string(),
-            "Temporary relaxation".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-5".to_string(),
+                "dave".to_string(),
+                "Quick test".to_string(),
+                "Temporary relaxation".to_string(),
+            )
+            .unwrap();
 
         // Approve with required quorum (1 for low criticality)
         let mut csprng = OsRng;
         let key = SigningKey::generate(&mut csprng);
-        engine.approve_relaxation(&request_id, "TeamLead".to_string(), &key).unwrap();
+        engine
+            .approve_relaxation(&request_id, "TeamLead".to_string(), &key)
+            .unwrap();
 
         // Should be approved immediately (low criticality has 0ms min duration)
         assert!(engine.is_relaxation_approved(&request_id));
 
         // Activate relaxation
-        let window = engine.activate_relaxation(request_id.clone(), 1000).unwrap();
+        let window = engine
+            .activate_relaxation(request_id.clone(), 1000)
+            .unwrap();
 
         assert_eq!(window.guard_id, "test-5");
 
@@ -774,16 +823,20 @@ mod tests {
         let guard = create_test_guard("test-6", Criticality::Low);
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-6".to_string(),
-            "eve".to_string(),
-            "Expiration test".to_string(),
-            "Will expire".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-6".to_string(),
+                "eve".to_string(),
+                "Expiration test".to_string(),
+                "Will expire".to_string(),
+            )
+            .unwrap();
 
         let mut csprng = OsRng;
         let key = SigningKey::generate(&mut csprng);
-        engine.approve_relaxation(&request_id, "Approver".to_string(), &key).unwrap();
+        engine
+            .approve_relaxation(&request_id, "Approver".to_string(), &key)
+            .unwrap();
 
         // Activate with very short duration
         let window = engine.activate_relaxation(request_id.clone(), 1).unwrap();
@@ -810,19 +863,25 @@ mod tests {
         let guard = create_test_guard("test-7", Criticality::Low);
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-7".to_string(),
-            "frank".to_string(),
-            "Revocation test".to_string(),
-            "Will be revoked".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-7".to_string(),
+                "frank".to_string(),
+                "Revocation test".to_string(),
+                "Will be revoked".to_string(),
+            )
+            .unwrap();
 
         let mut csprng = OsRng;
         let key = SigningKey::generate(&mut csprng);
-        engine.approve_relaxation(&request_id, "Approver".to_string(), &key).unwrap();
+        engine
+            .approve_relaxation(&request_id, "Approver".to_string(), &key)
+            .unwrap();
 
         // Activate relaxation
-        engine.activate_relaxation(request_id.clone(), 60000).unwrap();
+        engine
+            .activate_relaxation(request_id.clone(), 60000)
+            .unwrap();
 
         // Guard is disabled
         let guard = engine.get_guard("test-7").unwrap();
@@ -857,7 +916,10 @@ mod tests {
         );
 
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), GovernanceError::GuardImmutable(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            GovernanceError::GuardImmutable(_)
+        ));
     }
 
     #[test]
@@ -882,21 +944,27 @@ mod tests {
 
         engine.register_guard(guard).unwrap();
 
-        let request_id = engine.request_relaxation(
-            "test-10".to_string(),
-            "grace".to_string(),
-            "Idempotency test".to_string(),
-            "Double approval".to_string(),
-        ).unwrap();
+        let request_id = engine
+            .request_relaxation(
+                "test-10".to_string(),
+                "grace".to_string(),
+                "Idempotency test".to_string(),
+                "Double approval".to_string(),
+            )
+            .unwrap();
 
         let mut csprng = OsRng;
         let key = SigningKey::generate(&mut csprng);
 
         // Approve once
-        engine.approve_relaxation(&request_id, "Approver1".to_string(), &key).unwrap();
+        engine
+            .approve_relaxation(&request_id, "Approver1".to_string(), &key)
+            .unwrap();
 
         // Approve again with same approver - should be idempotent
-        engine.approve_relaxation(&request_id, "Approver1".to_string(), &key).unwrap();
+        engine
+            .approve_relaxation(&request_id, "Approver1".to_string(), &key)
+            .unwrap();
 
         // Should only have 1 approval
         let status = engine.request_status(&request_id).unwrap();

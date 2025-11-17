@@ -16,8 +16,8 @@
 //!
 //! Everything else runs in "user space" outside the kernel.
 
-use core::marker::PhantomData;
 use crate::const_assert;
+use core::marker::PhantomData;
 
 /// Kernel execution result - total function, no panics
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -245,11 +245,11 @@ where
     ) -> KernelResult<(), KernelError> {
         // Consume 1 tick for guard check
         match budget.consume(1) {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
         match state.tick() {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
 
@@ -263,7 +263,7 @@ where
 
         // Store result
         match state.add_guard(result) {
-            KernelResult::Success(()) => {},
+            KernelResult::Success(()) => {}
             KernelResult::Failure(e) => return KernelResult::Failure(e),
         }
 
@@ -304,7 +304,7 @@ impl<const N: usize, const TOTAL_TICKS: u8> KernelSequence<N, TOTAL_TICKS> {
 
         for op in ops {
             match op.execute(state, &mut budget) {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
         }
@@ -352,7 +352,10 @@ impl<const MAX_TICKS: u8, const MAX_GUARDS: usize> VerifiedContext<MAX_TICKS, MA
     /// Execute verified workflow
     pub fn run<F>(&mut self, f: F) -> KernelResult<(), KernelError>
     where
-        F: FnOnce(&mut KernelState<MAX_GUARDS>, &mut TickBudget<MAX_TICKS>) -> KernelResult<(), KernelError>,
+        F: FnOnce(
+            &mut KernelState<MAX_GUARDS>,
+            &mut TickBudget<MAX_TICKS>,
+        ) -> KernelResult<(), KernelError>,
     {
         let mut budget = TickBudget::<MAX_TICKS>::new();
         f(&mut self.state, &mut budget)
@@ -413,15 +416,15 @@ mod tests {
 
         let result = ctx.run(|state, budget| {
             match budget.consume(2) {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
             match state.tick() {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
             match state.tick() {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
             KernelResult::Success(())
@@ -439,7 +442,7 @@ mod tests {
         let result = ctx.run(|state, _budget| {
             for _ in 0..9 {
                 match state.tick() {
-                    KernelResult::Success(()) => {},
+                    KernelResult::Success(()) => {}
                     KernelResult::Failure(e) => return KernelResult::Failure(e),
                 }
             }

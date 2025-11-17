@@ -19,8 +19,8 @@
 //! 4. **Traces**: Full execution context with spans
 
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn, debug, span, Level};
 use std::time::Duration;
+use tracing::{debug, info, span, warn, Level};
 
 /// Workflow telemetry emitter
 pub struct WorkflowTelemetry {
@@ -102,7 +102,10 @@ impl WorkflowTelemetry {
     /// - Trace span event
     pub async fn emit_workflow_event(&self, event: WorkflowEvent) {
         match event {
-            WorkflowEvent::Started { ref workflow_id, ref instance_id } => {
+            WorkflowEvent::Started {
+                ref workflow_id,
+                ref instance_id,
+            } => {
                 info!(
                     workflow_id = %workflow_id,
                     instance_id = %instance_id,
@@ -112,9 +115,13 @@ impl WorkflowTelemetry {
                 metrics::counter!("workflow_started_total",
                     "workflow_id" => workflow_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
-            WorkflowEvent::Completed { ref workflow_id, ref instance_id } => {
+            WorkflowEvent::Completed {
+                ref workflow_id,
+                ref instance_id,
+            } => {
                 info!(
                     workflow_id = %workflow_id,
                     instance_id = %instance_id,
@@ -124,9 +131,14 @@ impl WorkflowTelemetry {
                 metrics::counter!("workflow_completed_total",
                     "workflow_id" => workflow_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
-            WorkflowEvent::Failed { ref workflow_id, ref instance_id, ref error } => {
+            WorkflowEvent::Failed {
+                ref workflow_id,
+                ref instance_id,
+                ref error,
+            } => {
                 warn!(
                     workflow_id = %workflow_id,
                     instance_id = %instance_id,
@@ -138,9 +150,13 @@ impl WorkflowTelemetry {
                     "workflow_id" => workflow_id.clone(),
                     "instance_id" => instance_id.clone(),
                     "error" => error.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
-            WorkflowEvent::Cancelled { ref workflow_id, ref instance_id } => {
+            WorkflowEvent::Cancelled {
+                ref workflow_id,
+                ref instance_id,
+            } => {
                 info!(
                     workflow_id = %workflow_id,
                     instance_id = %instance_id,
@@ -150,7 +166,8 @@ impl WorkflowTelemetry {
                 metrics::counter!("workflow_cancelled_total",
                     "workflow_id" => workflow_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
         }
     }
@@ -166,7 +183,10 @@ impl WorkflowTelemetry {
     /// - Latency histogram (for completed tasks)
     pub async fn emit_task_event(&self, event: TaskEvent) {
         match event {
-            TaskEvent::Enabled { ref task_id, ref instance_id } => {
+            TaskEvent::Enabled {
+                ref task_id,
+                ref instance_id,
+            } => {
                 debug!(
                     task_id = %task_id,
                     instance_id = %instance_id,
@@ -176,9 +196,13 @@ impl WorkflowTelemetry {
                 metrics::counter!("task_enabled_total",
                     "task_id" => task_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
-            TaskEvent::Started { ref task_id, ref instance_id } => {
+            TaskEvent::Started {
+                ref task_id,
+                ref instance_id,
+            } => {
                 info!(
                     task_id = %task_id,
                     instance_id = %instance_id,
@@ -188,9 +212,14 @@ impl WorkflowTelemetry {
                 metrics::counter!("task_started_total",
                     "task_id" => task_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
-            TaskEvent::Completed { ref task_id, ref instance_id, duration } => {
+            TaskEvent::Completed {
+                ref task_id,
+                ref instance_id,
+                duration,
+            } => {
                 info!(
                     task_id = %task_id,
                     instance_id = %instance_id,
@@ -201,24 +230,35 @@ impl WorkflowTelemetry {
                 metrics::counter!("task_completed_total",
                     "task_id" => task_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
 
                 if let Some(d) = duration {
                     metrics::histogram!("task_duration_seconds",
                         "task_id" => task_id.clone(),
                         "instance_id" => instance_id.clone()
-                    ).record(d.as_secs_f64());
+                    )
+                    .record(d.as_secs_f64());
 
                     // Covenant 5: Check against Chatman constant (8 ticks)
                     if d.as_nanos() > 8 {
-                        warn!("Task {} exceeded 8 tick limit: {} ns", task_id, d.as_nanos());
+                        warn!(
+                            "Task {} exceeded 8 tick limit: {} ns",
+                            task_id,
+                            d.as_nanos()
+                        );
                         metrics::counter!("task_chatman_violations_total",
                             "task_id" => task_id.clone()
-                        ).increment(1);
+                        )
+                        .increment(1);
                     }
                 }
             }
-            TaskEvent::Failed { ref task_id, ref instance_id, ref error } => {
+            TaskEvent::Failed {
+                ref task_id,
+                ref instance_id,
+                ref error,
+            } => {
                 warn!(
                     task_id = %task_id,
                     instance_id = %instance_id,
@@ -230,9 +270,13 @@ impl WorkflowTelemetry {
                     "task_id" => task_id.clone(),
                     "instance_id" => instance_id.clone(),
                     "error" => error.as_ref().unwrap_or(&"unknown".to_string()).clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
-            TaskEvent::Cancelled { ref task_id, ref instance_id } => {
+            TaskEvent::Cancelled {
+                ref task_id,
+                ref instance_id,
+            } => {
                 info!(
                     task_id = %task_id,
                     instance_id = %instance_id,
@@ -242,7 +286,8 @@ impl WorkflowTelemetry {
                 metrics::counter!("task_cancelled_total",
                     "task_id" => task_id.clone(),
                     "instance_id" => instance_id.clone()
-                ).increment(1);
+                )
+                .increment(1);
             }
         }
     }
@@ -290,7 +335,8 @@ impl WorkflowTelemetry {
         // Emit OTEL histogram
         metrics::histogram!("workflow_transition_duration_seconds",
             "operation" => operation.to_string()
-        ).record(duration.as_secs_f64());
+        )
+        .record(duration.as_secs_f64());
 
         // Covenant 5: Check against Chatman constant
         const CHATMAN_CONSTANT_NS: u128 = 8;
@@ -302,7 +348,8 @@ impl WorkflowTelemetry {
             );
             metrics::counter!("workflow_chatman_violations_total",
                 "operation" => operation.to_string()
-            ).increment(1);
+            )
+            .increment(1);
         }
     }
 
@@ -317,8 +364,7 @@ impl WorkflowTelemetry {
         );
 
         // Emit OTEL gauge
-        metrics::gauge!("workflow_throughput_tasks_per_second")
-            .set(throughput);
+        metrics::gauge!("workflow_throughput_tasks_per_second").set(throughput);
     }
 
     /// Record resource usage metrics
@@ -362,36 +408,46 @@ mod tests {
     async fn test_workflow_events() {
         let telemetry = WorkflowTelemetry::new("test-instance".to_string());
 
-        telemetry.emit_workflow_event(WorkflowEvent::Started {
-            workflow_id: "test-workflow".to_string(),
-            instance_id: "test-instance".to_string(),
-        }).await;
+        telemetry
+            .emit_workflow_event(WorkflowEvent::Started {
+                workflow_id: "test-workflow".to_string(),
+                instance_id: "test-instance".to_string(),
+            })
+            .await;
 
-        telemetry.emit_workflow_event(WorkflowEvent::Completed {
-            workflow_id: "test-workflow".to_string(),
-            instance_id: "test-instance".to_string(),
-        }).await;
+        telemetry
+            .emit_workflow_event(WorkflowEvent::Completed {
+                workflow_id: "test-workflow".to_string(),
+                instance_id: "test-instance".to_string(),
+            })
+            .await;
     }
 
     #[tokio::test]
     async fn test_task_events() {
         let telemetry = WorkflowTelemetry::new("test-instance".to_string());
 
-        telemetry.emit_task_event(TaskEvent::Enabled {
-            task_id: "task1".to_string(),
-            instance_id: "test-instance".to_string(),
-        }).await;
+        telemetry
+            .emit_task_event(TaskEvent::Enabled {
+                task_id: "task1".to_string(),
+                instance_id: "test-instance".to_string(),
+            })
+            .await;
 
-        telemetry.emit_task_event(TaskEvent::Started {
-            task_id: "task1".to_string(),
-            instance_id: "test-instance".to_string(),
-        }).await;
+        telemetry
+            .emit_task_event(TaskEvent::Started {
+                task_id: "task1".to_string(),
+                instance_id: "test-instance".to_string(),
+            })
+            .await;
 
-        telemetry.emit_task_event(TaskEvent::Completed {
-            task_id: "task1".to_string(),
-            instance_id: "test-instance".to_string(),
-            duration: Some(Duration::from_micros(5)),
-        }).await;
+        telemetry
+            .emit_task_event(TaskEvent::Completed {
+                task_id: "task1".to_string(),
+                instance_id: "test-instance".to_string(),
+                duration: Some(Duration::from_micros(5)),
+            })
+            .await;
     }
 
     #[test]

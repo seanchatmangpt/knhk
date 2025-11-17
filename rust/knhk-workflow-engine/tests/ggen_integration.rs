@@ -81,8 +81,8 @@ fn test_e2e_rdf_to_sparql_to_code_generation_pipeline() {
     let template_dir = temp_dir.path().join("templates");
 
     // Create SPARQL engine with RDF data
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create SPARQL engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create SPARQL engine");
 
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
@@ -98,9 +98,7 @@ fn test_e2e_rdf_to_sparql_to_code_generation_pipeline() {
         }
     "#;
 
-    let results = sparql_engine
-        .execute_query(query)
-        .expect("Query failed");
+    let results = sparql_engine.execute_query(query).expect("Query failed");
 
     // Generate code from query results
     let rust_generator =
@@ -139,7 +137,8 @@ fn test_e2e_multi_language_generation_from_single_rdf_spec() {
     let template_dir = temp_dir.path().join("templates");
 
     // Create generators for multiple languages
-    let rust_gen = create_generator("rust", &template_dir).expect("Failed to create Rust generator");
+    let rust_gen =
+        create_generator("rust", &template_dir).expect("Failed to create Rust generator");
     let python_gen =
         create_generator("python", &template_dir).expect("Failed to create Python generator");
 
@@ -174,8 +173,8 @@ fn test_e2e_sparql_query_caching_improves_pipeline_performance() {
     let temp_dir = setup_integrated_environment();
     let template_dir = temp_dir.path().join("templates");
 
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create SPARQL engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create SPARQL engine");
 
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
@@ -187,16 +186,12 @@ fn test_e2e_sparql_query_caching_improves_pipeline_performance() {
     // Act: Execute query multiple times in pipeline
     let start = std::time::Instant::now();
     for _ in 0..5 {
-        sparql_engine
-            .execute_query(query)
-            .expect("Query failed");
+        sparql_engine.execute_query(query).expect("Query failed");
     }
     let total_duration = start.elapsed();
 
     // Assert: Caching improves performance
-    let (hits, misses, hit_ratio) = sparql_engine
-        .cache_stats()
-        .expect("Failed to get stats");
+    let (hits, misses, hit_ratio) = sparql_engine.cache_stats().expect("Failed to get stats");
 
     assert_eq!(misses, 1, "Should have 1 cache miss");
     assert_eq!(hits, 4, "Should have 4 cache hits");
@@ -251,10 +246,7 @@ fn test_e2e_hooks_and_telemetry_generation_together() {
     let telemetry = telemetry_code.expect("Telemetry generation failed");
 
     assert!(hooks.contains("HookContext"), "Should have hook context");
-    assert!(
-        telemetry.contains("hook.execute"),
-        "Should have hook span"
-    );
+    assert!(telemetry.contains("hook.execute"), "Should have hook span");
 }
 
 #[test]
@@ -337,7 +329,10 @@ fn test_e2e_test_generation_follows_chicago_tdd_principles() {
         test_code.content.contains("// Arrange:"),
         "Should have Arrange phase"
     );
-    assert!(test_code.content.contains("// Act:"), "Should have Act phase");
+    assert!(
+        test_code.content.contains("// Act:"),
+        "Should have Act phase"
+    );
     assert!(
         test_code.content.contains("// Assert:"),
         "Should have Assert phase"
@@ -404,8 +399,8 @@ fn test_e2e_sparql_template_rendering_with_query_bindings() {
     let template_path = template_dir.join("summary.tera");
     std::fs::write(&template_path, template_content).expect("Failed to write template");
 
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create engine");
 
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
@@ -431,8 +426,8 @@ fn test_e2e_performance_of_complete_generation_pipeline() {
     let temp_dir = setup_integrated_environment();
     let template_dir = temp_dir.path().join("templates");
 
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create engine");
 
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
@@ -446,9 +441,7 @@ fn test_e2e_performance_of_complete_generation_pipeline() {
 
     // Query data
     let query = r#"SELECT ?task WHERE { ?task a ?type . }"#;
-    sparql_engine
-        .execute_query(query)
-        .expect("Query failed");
+    sparql_engine.execute_query(query).expect("Query failed");
 
     // Generate code
     let mut context = GenerationContext::new();
@@ -478,8 +471,8 @@ fn test_e2e_pipeline_continues_after_partial_sparql_failure() {
     let temp_dir = setup_integrated_environment();
     let template_dir = temp_dir.path().join("templates");
 
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create engine");
 
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
@@ -516,10 +509,7 @@ fn test_e2e_code_generation_continues_after_missing_context() {
     let complete_result = rust_gen.generate_domain_model(&complete_context);
 
     // Assert: Incomplete fails, complete succeeds
-    assert!(
-        incomplete_result.is_err(),
-        "Incomplete context should fail"
-    );
+    assert!(incomplete_result.is_err(), "Incomplete context should fail");
     assert!(complete_result.is_ok(), "Complete context should succeed");
 }
 
@@ -551,8 +541,7 @@ fn test_e2e_telemetry_generation_works_with_empty_definitions() {
     let temp_dir = setup_integrated_environment();
     let template_dir = temp_dir.path().join("templates");
 
-    let telemetry_gen =
-        TelemetryGenerator::new(&template_dir).expect("Failed to create generator");
+    let telemetry_gen = TelemetryGenerator::new(&template_dir).expect("Failed to create generator");
 
     // Act: Generate code with empty definitions
     let span_code = telemetry_gen.generate_span_definitions();
@@ -571,8 +560,8 @@ fn test_e2e_pipeline_recovers_from_rdf_parsing_error() {
     let temp_dir = setup_integrated_environment();
     let template_dir = temp_dir.path().join("templates");
 
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create engine");
 
     // Act: Try to load invalid RDF, then load valid RDF
     let invalid_rdf_path = temp_dir.path().join("invalid.ttl");
@@ -606,8 +595,8 @@ fn test_sparql_results_feed_into_code_generation_context() {
     let temp_dir = setup_integrated_environment();
     let template_dir = temp_dir.path().join("templates");
 
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create engine");
 
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
@@ -896,8 +885,8 @@ fn test_complete_workflow_from_rdf_to_deployable_code() {
 
     // Act: Execute complete workflow
     // 1. Load RDF
-    let mut sparql_engine = SparqlTemplateEngine::new(&template_dir, 100)
-        .expect("Failed to create engine");
+    let mut sparql_engine =
+        SparqlTemplateEngine::new(&template_dir, 100).expect("Failed to create engine");
     let rdf_path = temp_dir.path().join("workflow.ttl");
     sparql_engine
         .load_rdf_graph(&rdf_path)
@@ -927,7 +916,10 @@ fn test_complete_workflow_from_rdf_to_deployable_code() {
     assert!(query_result.is_ok(), "SPARQL query should succeed");
     assert!(code_result.is_ok(), "Code generation should succeed");
     assert!(test_result.is_ok(), "Test generation should succeed");
-    assert!(doc_result.is_ok(), "Documentation generation should succeed");
+    assert!(
+        doc_result.is_ok(),
+        "Documentation generation should succeed"
+    );
 
     println!("✓ Complete workflow: RDF → SPARQL → Code → Tests → Docs");
 }

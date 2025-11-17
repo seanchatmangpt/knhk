@@ -1,6 +1,6 @@
 //! Knowledge Base - Stores learned patterns and historical data
 
-use super::{Observation, Symptom, AdaptationResult};
+use super::{AdaptationResult, Observation, Symptom};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -40,7 +40,10 @@ impl KnowledgeBase {
         if results.adaptations_applied > 0 {
             let pattern = LearnedPattern {
                 pattern_id: uuid::Uuid::new_v4().to_string(),
-                symptom_types: symptoms.iter().map(|s| format!("{:?}", s.symptom_type)).collect(),
+                symptom_types: symptoms
+                    .iter()
+                    .map(|s| format!("{:?}", s.symptom_type))
+                    .collect(),
                 adaptation_type: "multi".to_string(),
                 success_rate: 1.0,
                 avg_improvement: 0.3,
@@ -59,7 +62,8 @@ impl KnowledgeBase {
 
         // Keep only last 1000 entries
         if self.adaptation_history.len() > 1000 {
-            self.adaptation_history.drain(0..self.adaptation_history.len() - 1000);
+            self.adaptation_history
+                .drain(0..self.adaptation_history.len() - 1000);
         }
     }
 
@@ -68,7 +72,14 @@ impl KnowledgeBase {
         self.patterns
             .iter()
             .filter(|p| p.symptom_types.iter().any(|s| s.contains(query)))
-            .map(|p| format!("{}: {} (success: {}%)", p.pattern_id, p.adaptation_type, (p.success_rate * 100.0) as u32))
+            .map(|p| {
+                format!(
+                    "{}: {} (success: {}%)",
+                    p.pattern_id,
+                    p.adaptation_type,
+                    (p.success_rate * 100.0) as u32
+                )
+            })
             .collect()
     }
 

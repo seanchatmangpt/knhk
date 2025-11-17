@@ -76,18 +76,18 @@ mod lib_compat;
 // atomic.store(100, &guard);
 // ```
 
-pub mod skiplist;
-pub mod hamt;
-pub mod stack_queue;
-pub mod epoch;
 pub mod arc_atomic;
+pub mod epoch;
+pub mod hamt;
+pub mod skiplist;
+pub mod stack_queue;
 
 // Re-export main types
-pub use skiplist::{LockFreeSkipList, HazardGuard};
+pub use arc_atomic::{AtomicArc, AtomicArcCell, WeakArc};
+pub use epoch::{Atomic, Guard};
 pub use hamt::ConcurrentHAMT;
-pub use stack_queue::{TreiberStack, MichaelScottQueue};
-pub use epoch::{Guard, Atomic};
-pub use arc_atomic::{AtomicArc, WeakArc, AtomicArcCell};
+pub use skiplist::{HazardGuard, LockFreeSkipList};
+pub use stack_queue::{MichaelScottQueue, TreiberStack};
 
 #[cfg(test)]
 mod integration_tests {

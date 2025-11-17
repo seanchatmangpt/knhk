@@ -4,7 +4,7 @@
 //! request resources from the μ-kernel. AHI components cannot directly
 //! modify Σ* or generate receipts - they must submit proven overlays.
 
-use crate::core::{MuKernel, MuError};
+use crate::core::{MuError, MuKernel};
 use crate::overlay::DeltaSigma;
 use crate::sigma::SigmaHash;
 use core::marker::PhantomData;
@@ -21,10 +21,7 @@ pub struct TickQuota {
 impl TickQuota {
     /// Create a new tick quota
     pub const fn new(limit: u64) -> Self {
-        Self {
-            limit,
-            consumed: 0,
-        }
+        Self { limit, consumed: 0 }
     }
 
     /// Check if quota is exhausted
@@ -368,7 +365,7 @@ pub enum AhiError {
 mod tests {
     use super::*;
     use crate::core::MuKernel;
-    use crate::sigma::{SigmaPointer, SigmaCompiled};
+    use crate::sigma::{SigmaCompiled, SigmaPointer};
 
     #[test]
     fn test_tick_quota() {

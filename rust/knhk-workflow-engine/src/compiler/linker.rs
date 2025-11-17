@@ -166,8 +166,12 @@ impl Linker {
 
         let pattern_count = code.dispatch_table.entries.len();
 
-        info!("Linked {} patterns, {} symbols, {} relocations",
-            pattern_count, symbol_table.symbols.len(), relocations.len());
+        info!(
+            "Linked {} patterns, {} symbols, {} relocations",
+            pattern_count,
+            symbol_table.symbols.len(),
+            relocations.len()
+        );
 
         Ok(LinkedDescriptor {
             pattern_count,
@@ -181,7 +185,10 @@ impl Linker {
     }
 
     /// Layout memory segments
-    fn layout_segments(&mut self, code: &GeneratedCode) -> WorkflowResult<(CodeSegment, DataSegment)> {
+    fn layout_segments(
+        &mut self,
+        code: &GeneratedCode,
+    ) -> WorkflowResult<(CodeSegment, DataSegment)> {
         debug!("Laying out memory segments");
 
         // Layout code segment
@@ -220,7 +227,8 @@ impl Linker {
         // Add constants
         for constant in &code.constants {
             let const_offset = self.data_offset;
-            self.address_map.insert(format!("const_{}", constant.id), const_offset);
+            self.address_map
+                .insert(format!("const_{}", constant.id), const_offset);
 
             match &constant.value {
                 crate::compiler::code_generator::ConstantValue::Integer(i) => {
@@ -246,10 +254,8 @@ impl Linker {
         // Add receipt templates
         for receipt in &code.receipts {
             let receipt_offset = data.len() as u32;
-            self.address_map.insert(
-                format!("receipt_{}", receipt.pattern_id),
-                receipt_offset
-            );
+            self.address_map
+                .insert(format!("receipt_{}", receipt.pattern_id), receipt_offset);
 
             // Serialize receipt template
             data.push(receipt.pattern_id);
@@ -380,10 +386,7 @@ impl Linker {
             symbols.push(symbol);
         }
 
-        Ok(LinkedSymbolTable {
-            symbols,
-            name_map,
-        })
+        Ok(LinkedSymbolTable { symbols, name_map })
     }
 
     /// Resolve references
@@ -478,9 +481,10 @@ impl Linker {
     ) -> WorkflowResult<()> {
         for reloc in relocations {
             if reloc.symbol >= symbol_table.symbols.len() {
-                return Err(WorkflowError::Internal(
-                    format!("Invalid symbol index: {}", reloc.symbol)
-                ));
+                return Err(WorkflowError::Internal(format!(
+                    "Invalid symbol index: {}",
+                    reloc.symbol
+                )));
             }
 
             let symbol = &symbol_table.symbols[reloc.symbol];

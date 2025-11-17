@@ -3,8 +3,8 @@
 //! Measures performance of individual μ-ops (should be ≤1 tick each)
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use knhk_mu_kernel::isa::{MuOps, DispatchPhase};
 use knhk_mu_kernel::guards::GuardContext;
+use knhk_mu_kernel::isa::{DispatchPhase, MuOps};
 
 fn bench_load_sigma(c: &mut Criterion) {
     let mut group = c.benchmark_group("mu_ops");
@@ -26,10 +26,8 @@ fn bench_dispatch_pattern(c: &mut Criterion) {
 
     group.bench_function("dispatch_pattern", |b| {
         b.iter(|| {
-            let result = MuOps::dispatch_pattern(
-                black_box(0),
-                black_box(DispatchPhase::Begin as u8),
-            );
+            let result =
+                MuOps::dispatch_pattern(black_box(0), black_box(DispatchPhase::Begin as u8));
             black_box(result)
         });
     });
@@ -75,7 +73,7 @@ fn bench_emit_obs(c: &mut Criterion) {
 
 fn bench_gen_receipt(c: &mut Criterion) {
     let mut group = c.benchmark_group("mu_ops");
-    group.sample_size(10000);  // Slower operation
+    group.sample_size(10000); // Slower operation
 
     group.bench_function("gen_receipt", |b| {
         b.iter(|| {

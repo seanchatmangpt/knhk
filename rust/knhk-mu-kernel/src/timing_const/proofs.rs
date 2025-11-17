@@ -3,9 +3,9 @@
 //! This module provides compile-time proofs of timing guarantees.
 //! Timing proofs are encoded in the type system and verified at compile time.
 
-use core::marker::PhantomData;
-use crate::CHATMAN_CONSTANT;
 use super::wcet::WcetResult;
+use crate::CHATMAN_CONSTANT;
+use core::marker::PhantomData;
 
 /// Proof strength indicator
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,10 +30,15 @@ pub struct TimingProof<const WORST_CASE: u64> {
     /// Supporting evidence (hash of proof)
     pub evidence: [u64; 4],
     /// Type-level proof
-    _marker: PhantomData<[(); {
-        assert!(WORST_CASE <= CHATMAN_CONSTANT, "WCET exceeds Chatman Constant");
-        0
-    }]>,
+    _marker: PhantomData<
+        [(); {
+            assert!(
+                WORST_CASE <= CHATMAN_CONSTANT,
+                "WCET exceeds Chatman Constant"
+            );
+            0
+        }],
+    >,
 }
 
 impl<const WORST_CASE: u64> TimingProof<WORST_CASE> {
@@ -131,10 +136,15 @@ pub struct CompositionProof<const TOTAL_WCET: u64> {
     /// Individual WCETs
     pub operation_wcets: [u64; 16],
     /// Type-level proof
-    _marker: PhantomData<[(); {
-        assert!(TOTAL_WCET <= CHATMAN_CONSTANT, "Composed WCET exceeds Chatman Constant");
-        0
-    }]>,
+    _marker: PhantomData<
+        [(); {
+            assert!(
+                TOTAL_WCET <= CHATMAN_CONSTANT,
+                "Composed WCET exceeds Chatman Constant"
+            );
+            0
+        }],
+    >,
 }
 
 impl<const TOTAL_WCET: u64> CompositionProof<TOTAL_WCET> {
@@ -170,10 +180,15 @@ pub struct ParallelProof<const MAX_WCET: u64> {
     /// Branch WCETs
     pub branch_wcets: [u64; 8],
     /// Type-level proof
-    _marker: PhantomData<[(); {
-        assert!(MAX_WCET <= CHATMAN_CONSTANT, "Parallel WCET exceeds Chatman Constant");
-        0
-    }]>,
+    _marker: PhantomData<
+        [(); {
+            assert!(
+                MAX_WCET <= CHATMAN_CONSTANT,
+                "Parallel WCET exceeds Chatman Constant"
+            );
+            0
+        }],
+    >,
 }
 
 impl<const MAX_WCET: u64> ParallelProof<MAX_WCET> {
@@ -216,7 +231,10 @@ pub struct LoopProof<const WORST_CASE_ITERATIONS: u64, const ITERATION_WCET: u64
         [(); ITERATION_WCET as usize],
         [(); {
             let total = WORST_CASE_ITERATIONS * ITERATION_WCET;
-            assert!(total <= CHATMAN_CONSTANT, "Loop WCET exceeds Chatman Constant");
+            assert!(
+                total <= CHATMAN_CONSTANT,
+                "Loop WCET exceeds Chatman Constant"
+            );
             0
         }],
     )>,
@@ -261,7 +279,10 @@ pub struct ConditionalProof<const CONDITION_WCET: u64, const MAX_BRANCH_WCET: u6
         [(); MAX_BRANCH_WCET as usize],
         [(); {
             let total = CONDITION_WCET + MAX_BRANCH_WCET;
-            assert!(total <= CHATMAN_CONSTANT, "Conditional WCET exceeds Chatman Constant");
+            assert!(
+                total <= CHATMAN_CONSTANT,
+                "Conditional WCET exceeds Chatman Constant"
+            );
             0
         }],
     )>,
@@ -271,11 +292,7 @@ impl<const CONDITION_WCET: u64, const MAX_BRANCH_WCET: u64>
     ConditionalProof<CONDITION_WCET, MAX_BRANCH_WCET>
 {
     /// Create a conditional proof
-    pub const fn new(
-        condition_cost: u64,
-        true_branch_wcet: u64,
-        false_branch_wcet: u64,
-    ) -> Self {
+    pub const fn new(condition_cost: u64, true_branch_wcet: u64, false_branch_wcet: u64) -> Self {
         Self {
             condition_cost,
             true_branch_wcet,
@@ -347,10 +364,7 @@ mod tests {
 
     #[test]
     fn test_timing_proof_creation() {
-        let proof = TimingProof::<5>::new(
-            ProofStrength::Strong,
-            [1, 2, 3, 4],
-        );
+        let proof = TimingProof::<5>::new(ProofStrength::Strong, [1, 2, 3, 4]);
 
         assert_eq!(TimingProof::<5>::worst_case(), 5);
         assert_eq!(TimingProof::<5>::safety_margin(), 3);
@@ -375,13 +389,7 @@ mod tests {
     #[test]
     fn test_timing_certificate() {
         let wcet = WcetResult::new(6, 5, 5);
-        let cert = TimingCertificate::new(
-            1,
-            wcet,
-            ProofStrength::Strong,
-            [1, 2, 3, 4],
-            1000,
-        );
+        let cert = TimingCertificate::new(1, wcet, ProofStrength::Strong, [1, 2, 3, 4], 1000);
 
         assert!(cert.verify());
         assert!(cert.is_valid(1500, 1000)); // 500 ticks old, max age 1000

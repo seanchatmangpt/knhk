@@ -62,7 +62,10 @@ impl SnapshotPromoter {
 
     /// Promote a new snapshot to active
     /// This is the atomic operation: ~1ns via pointer swap
-    pub fn promote(&self, new_snapshot: SnapshotDescriptor) -> Result<Arc<SnapshotDescriptor>, PromotionError> {
+    pub fn promote(
+        &self,
+        new_snapshot: SnapshotDescriptor,
+    ) -> Result<Arc<SnapshotDescriptor>, PromotionError> {
         // Verify parent exists in history
         if let Some(parent_id) = &new_snapshot.parent_id {
             if !self.history.contains_key(parent_id) {
@@ -133,7 +136,10 @@ impl SnapshotPromoter {
 
     /// List all snapshot IDs
     pub fn list_snapshots(&self) -> Vec<String> {
-        self.history.iter().map(|entry| entry.key().clone()).collect()
+        self.history
+            .iter()
+            .map(|entry| entry.key().clone())
+            .collect()
     }
 }
 
@@ -336,10 +342,8 @@ mod tests {
         let promoter = SnapshotPromoterWithStats::new(snapshot1);
 
         for i in 2..=10 {
-            let snapshot = create_descriptor(
-                &format!("snap{}", i),
-                Some(&format!("snap{}", i - 1)),
-            );
+            let snapshot =
+                create_descriptor(&format!("snap{}", i), Some(&format!("snap{}", i - 1)));
             promoter.promote(snapshot).expect("promote failed");
         }
 

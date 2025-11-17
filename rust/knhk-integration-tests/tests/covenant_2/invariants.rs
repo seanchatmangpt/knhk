@@ -160,10 +160,7 @@ fn test_q3_bounded_recursion_chatman_constant() {
     if let QueryResults::Solutions(solutions) = results {
         let count = solutions.count();
         // Recursion pattern should be defined in permutation matrix
-        assert!(
-            count >= 0,
-            "Recursion pattern validation check complete"
-        );
+        assert!(count >= 0, "Recursion pattern validation check complete");
     }
 }
 
@@ -211,7 +208,10 @@ fn test_q4_latency_slos_declared() {
             }
         }
 
-        assert!(has_sync || has_async, "No execution mode declarations (Q4 latency SLOs)");
+        assert!(
+            has_sync || has_async,
+            "No execution mode declarations (Q4 latency SLOs)"
+        );
     }
 }
 

@@ -136,9 +136,7 @@ pub struct SimdAvx2Kernel<D> {
 
 impl<D: DataProfile> SimdAvx2Kernel<D> {
     pub const fn new() -> Self {
-        Self {
-            _data: PhantomData,
-        }
+        Self { _data: PhantomData }
     }
 }
 

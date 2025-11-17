@@ -2,15 +2,15 @@
 // Phase 3: Time-travel execution and version rollback
 // DOCTRINE: Covenant 2 (Invariants Are Law) - Version integrity must be preserved
 
-use std::sync::Arc;
-use std::collections::{HashMap, BTreeMap};
-use parking_lot::RwLock;
-use serde::{Serialize, Deserialize};
 use blake3;
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
+use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
+use parking_lot::RwLock;
 use rand::rngs::OsRng;
-use tracing::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::{debug, error, info, warn};
 
 /// Version metadata with full tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,9 +88,7 @@ impl VersionGraph {
         Self {
             versions: RwLock::new(BTreeMap::new()),
             tags: RwLock::new(HashMap::new()),
-            branches: RwLock::new(HashMap::from([
-                ("main".to_string(), 0),
-            ])),
+            branches: RwLock::new(HashMap::from([("main".to_string(), 0)])),
             current_branch: RwLock::new("main".to_string()),
             head: RwLock::new(0),
         }
@@ -113,7 +111,9 @@ impl VersionGraph {
         }
 
         // Store version
-        self.versions.write().insert(version_id, Arc::new(version.clone()));
+        self.versions
+            .write()
+            .insert(version_id, Arc::new(version.clone()));
 
         // Update head if this is newer
         let mut head = self.head.write();
@@ -231,50 +231,51 @@ impl VersionGraph {
 
 /// Cryptographic signer for versions
 pub struct VersionSigner {
-    keypair: Keypair,
+    signing_key: SigningKey,
 }
 
 impl VersionSigner {
     pub fn new() -> Self {
-        let mut csprng = OsRng;
-        let keypair = Keypair::generate(&mut csprng);
+        use rand::RngCore;
+        let mut secret = [0u8; 32];
+        OsRng.fill_bytes(&mut secret);
+        let signing_key = SigningKey::from_bytes(&secret);
 
-        Self { keypair }
+        Self { signing_key }
     }
 
-    pub fn from_keys(public: &[u8], secret: &[u8]) -> Result<Self, String> {
-        let public_key = PublicKey::from_bytes(public)
-            .map_err(|e| format!("Invalid public key: {}", e))?;
+    pub fn from_keys(secret: &[u8]) -> Result<Self, String> {
+        let signing_key = SigningKey::from_bytes(
+            <&[u8; 32]>::try_from(secret).map_err(|e| format!("Invalid secret key length: {}", e))?,
+        );
 
-        let secret_key = SecretKey::from_bytes(secret)
-            .map_err(|e| format!("Invalid secret key: {}", e))?;
-
-        let keypair = Keypair {
-            public: public_key,
-            secret: secret_key,
-        };
-
-        Ok(Self { keypair })
+        Ok(Self { signing_key })
     }
 
     pub fn sign_version(&self, version: &Version) -> Vec<u8> {
         let message = serde_json::to_vec(version).unwrap_or_default();
-        let signature = self.keypair.sign(&message);
+        let signature = self.signing_key.sign(&message);
         signature.to_bytes().to_vec()
     }
 
     pub fn verify_signature(&self, version: &Version, signature: &[u8]) -> bool {
         let message = serde_json::to_vec(version).unwrap_or_default();
+        let verifying_key = self.signing_key.verifying_key();
 
-        if let Ok(sig) = Signature::from_bytes(signature) {
-            self.keypair.public.verify(&message, &sig).is_ok()
+        if signature.len() == 64 {
+            if let Ok(sig_array) = <&[u8; 64]>::try_from(signature) {
+                let sig = Signature::from_bytes(sig_array);
+                verifying_key.verify(&message, &sig).is_ok()
+            } else {
+                false
+            }
         } else {
             false
         }
     }
 
     pub fn get_public_key(&self) -> Vec<u8> {
-        self.keypair.public.to_bytes().to_vec()
+        self.signing_key.verifying_key().to_bytes().to_vec()
     }
 }
 
@@ -303,14 +304,22 @@ impl RollbackManager {
     }
 
     /// Create rollback point
-    pub fn create_rollback_point(&self, version_id: u64, reason: String, automatic: bool) -> Result<(), String> {
+    pub fn create_rollback_point(
+        &self,
+        version_id: u64,
+        reason: String,
+        automatic: bool,
+    ) -> Result<(), String> {
         if self.graph.get_version(version_id).is_none() {
             return Err(format!("Version {} not found", version_id));
         }
 
         let rollback_point = RollbackPoint {
             version_id,
-            created_at: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            created_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             reason,
             automatic,
         };
@@ -320,7 +329,8 @@ impl RollbackManager {
 
         // Prune old points if needed
         if points.len() > self.max_rollback_points {
-            points.drain(0..points.len() - self.max_rollback_points);
+            let drain_count = points.len() - self.max_rollback_points;
+            points.drain(0..drain_count).for_each(drop);
         }
 
         Ok(())
@@ -340,8 +350,10 @@ impl RollbackManager {
         let current_version = *self.graph.head.read();
 
         if !self.graph.is_ancestor(target_version, current_version) {
-            return Err(format!("Version {} is not an ancestor of current version {}",
-                target_version, current_version));
+            return Err(format!(
+                "Version {} is not an ancestor of current version {}",
+                target_version, current_version
+            ));
         }
 
         // Calculate changes needed for rollback
@@ -354,10 +366,13 @@ impl RollbackManager {
         self.create_rollback_point(
             current_version,
             format!("Before rollback to {}", target_version),
-            true
+            true,
         )?;
 
-        info!("Rolled back from version {} to {}", current_version, target_version);
+        info!(
+            "Rolled back from version {} to {}",
+            current_version, target_version
+        );
         Ok(changes)
     }
 
@@ -416,7 +431,9 @@ impl DependencyResolver {
 
     /// Check if all dependencies are satisfied
     pub fn check_dependencies(&self, version_id: u64) -> Result<(), Vec<String>> {
-        let version = self.graph.get_version(version_id)
+        let version = self
+            .graph
+            .get_version(version_id)
             .ok_or_else(|| vec![format!("Version {} not found", version_id)])?;
 
         let mut errors = Vec::new();
@@ -438,8 +455,10 @@ impl DependencyResolver {
         // In a real system, this would check actual component versions
         // For now, we'll simulate
         if dep.min_version > 100 && !dep.optional {
-            return Err(format!("Dependency {} requires version >= {}",
-                dep.component, dep.min_version));
+            return Err(format!(
+                "Dependency {} requires version >= {}",
+                dep.component, dep.min_version
+            ));
         }
         Ok(())
     }
@@ -457,7 +476,10 @@ impl DependencyResolver {
             if let Some(ancestor) = self.graph.find_common_ancestor(common, version) {
                 common = ancestor;
             } else {
-                return Err(format!("No common ancestor found for versions {:?}", versions));
+                return Err(format!(
+                    "No common ancestor found for versions {:?}",
+                    versions
+                ));
             }
         }
 
@@ -495,7 +517,10 @@ impl TimeTravelExecutor {
 
         let snapshot = StateSnapshot {
             version_id,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             state,
             metadata: HashMap::new(),
         };
@@ -522,7 +547,11 @@ impl TimeTravelExecutor {
         Ok(state)
     }
 
-    fn reconstruct_state(&self, _version: u64, _changes: Vec<VersionChange>) -> Result<Vec<u8>, String> {
+    fn reconstruct_state(
+        &self,
+        _version: u64,
+        _changes: Vec<VersionChange>,
+    ) -> Result<Vec<u8>, String> {
         // In a real system, this would apply changes to reconstruct state
         // For now, return placeholder
         Ok(vec![0u8; 100])
@@ -533,16 +562,14 @@ impl TimeTravelExecutor {
         let versions = self.graph.versions.read();
         let tags = self.graph.tags.read();
 
-        let tag_map: HashMap<u64, String> = tags.iter()
-            .map(|(tag, &id)| (id, tag.clone()))
-            .collect();
+        let tag_map: HashMap<u64, String> =
+            tags.iter().map(|(tag, &id)| (id, tag.clone())).collect();
 
-        versions.iter()
+        versions
+            .iter()
             .rev()
             .take(limit)
-            .map(|(&id, version)| {
-                (id, version.timestamp, tag_map.get(&id).cloned())
-            })
+            .map(|(&id, version)| (id, version.timestamp, tag_map.get(&id).cloned()))
             .collect()
     }
 }
@@ -555,7 +582,10 @@ mod tests {
         Version {
             id,
             tag: None,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             parent,
             author: VersionAuthor {
                 id: "test".to_string(),
@@ -563,15 +593,13 @@ mod tests {
                 email: "test@example.com".to_string(),
                 public_key: None,
             },
-            changes: vec![
-                VersionChange {
-                    change_type: ChangeType::Add,
-                    path: format!("file_{}.txt", id),
-                    old_value: None,
-                    new_value: Some("content".to_string()),
-                    description: format!("Added file {}", id),
-                },
-            ],
+            changes: vec![VersionChange {
+                change_type: ChangeType::Add,
+                path: format!("file_{}.txt", id),
+                old_value: None,
+                new_value: Some("content".to_string()),
+                description: format!("Added file {}", id),
+            }],
             signature: None,
             hash: [0u8; 32],
             dependencies: vec![],
@@ -631,7 +659,9 @@ mod tests {
 
         let rollback_mgr = RollbackManager::new(Arc::clone(&graph));
 
-        rollback_mgr.create_rollback_point(3, "Test point".to_string(), false).unwrap();
+        rollback_mgr
+            .create_rollback_point(3, "Test point".to_string(), false)
+            .unwrap();
 
         let points = rollback_mgr.get_rollback_points();
         assert_eq!(points.len(), 1);
@@ -646,14 +676,12 @@ mod tests {
         let graph = Arc::new(VersionGraph::new());
 
         let mut v1 = create_test_version(1, None);
-        v1.dependencies = vec![
-            VersionDependency {
-                component: "core".to_string(),
-                min_version: 10,
-                max_version: Some(20),
-                optional: false,
-            },
-        ];
+        v1.dependencies = vec![VersionDependency {
+            component: "core".to_string(),
+            min_version: 10,
+            max_version: Some(20),
+            optional: false,
+        }];
         graph.add_version(v1).unwrap();
 
         let resolver = DependencyResolver::new(Arc::clone(&graph));

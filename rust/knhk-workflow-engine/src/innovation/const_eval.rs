@@ -252,11 +252,7 @@ impl<W: WorkflowPattern> WorkflowMetrics<W> {
             100 * CHATMAN_CONSTANT / W::ESTIMATED_TICKS
         };
 
-        let complexity_penalty = if W::STEPS > 50 {
-            20
-        } else {
-            0
-        };
+        let complexity_penalty = if W::STEPS > 50 { 20 } else { 0 };
 
         if tick_score > complexity_penalty {
             tick_score - complexity_penalty

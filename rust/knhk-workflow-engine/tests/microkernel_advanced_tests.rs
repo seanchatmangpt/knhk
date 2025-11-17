@@ -9,11 +9,11 @@
 //!
 //! Chicago School TDD: State-based assertions, real collaborators, no mocks
 
-#![allow(dead_code)]  // Test-only code
+#![allow(dead_code)] // Test-only code
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 // ============================================================================
 // PROPERTY-BASED TESTING: Exhaustive Edge Case Discovery
@@ -133,9 +133,9 @@ fn property_guard_ticks_associative_commutative() {
 /// Concurrency: Resource pool under concurrent allocation pressure
 #[test]
 fn concurrency_resource_pool_under_contention() {
-    use loom::thread;
     use loom::sync::Arc;
     use loom::sync::Mutex;
+    use loom::thread;
 
     loom::model(|| {
         use knhk_workflow_engine::innovation::ResourcePool;
@@ -144,19 +144,21 @@ fn concurrency_resource_pool_under_contention() {
         let pool = Arc::new(Mutex::new(ResourcePool::<1000>::new()));
 
         // Act: Spawn 3 threads competing for resources
-        let handles: Vec<_> = (0..3).map(|i| {
-            let pool = Arc::clone(&pool);
-            thread::spawn(move || {
-                let mut p = pool.lock().unwrap();
+        let handles: Vec<_> = (0..3)
+            .map(|i| {
+                let pool = Arc::clone(&pool);
+                thread::spawn(move || {
+                    let mut p = pool.lock().unwrap();
 
-                // Try to allocate based on thread priority
-                match i {
-                    0 => p.allocate_p0::<100>(),  // High priority
-                    1 => p.allocate_p2::<200>(),  // Medium priority
-                    _ => p.allocate_p4::<50>(),   // Low priority
-                }
+                    // Try to allocate based on thread priority
+                    match i {
+                        0 => p.allocate_p0::<100>(), // High priority
+                        1 => p.allocate_p2::<200>(), // Medium priority
+                        _ => p.allocate_p4::<50>(),  // Low priority
+                    }
+                })
             })
-        }).collect();
+            .collect();
 
         // Assert: Join all threads without panics
         let mut total_allocated = 0u32;
@@ -167,7 +169,11 @@ fn concurrency_resource_pool_under_contention() {
         }
 
         // Property: Never over-allocate
-        assert!(total_allocated <= 1000, "Over-allocated: {}", total_allocated);
+        assert!(
+            total_allocated <= 1000,
+            "Over-allocated: {}",
+            total_allocated
+        );
 
         // Property: At least P0 should succeed
         assert!(total_allocated >= 100, "P0 should always allocate");
@@ -177,12 +183,14 @@ fn concurrency_resource_pool_under_contention() {
 /// Concurrency: Distributed consensus under partition
 #[test]
 fn concurrency_consensus_under_network_partition() {
-    use loom::thread;
-    use loom::sync::Arc;
     use loom::sync::atomic::{AtomicBool, Ordering};
+    use loom::sync::Arc;
+    use loom::thread;
 
     loom::model(|| {
-        use knhk_workflow_engine::innovation::{DistributedContext, Leader, Proposal, TripleReplication};
+        use knhk_workflow_engine::innovation::{
+            DistributedContext, Leader, Proposal, TripleReplication,
+        };
 
         // Arrange: Network partition flag
         let partitioned = Arc::new(AtomicBool::new(false));
@@ -227,24 +235,26 @@ fn concurrency_consensus_under_network_partition() {
 /// Concurrency: Adaptive executor under load
 #[test]
 fn concurrency_adaptive_executor_kernel_switching() {
-    use loom::thread;
     use loom::sync::Arc;
     use loom::sync::Mutex;
+    use loom::thread;
 
     loom::model(|| {
-        use knhk_workflow_engine::innovation::{AdaptiveExecutor, X86Avx2, SmallData};
+        use knhk_workflow_engine::innovation::{AdaptiveExecutor, SmallData, X86Avx2};
 
         // Arrange: Shared adaptive executor
         let executor = Arc::new(Mutex::new(AdaptiveExecutor::<X86Avx2, SmallData>::new()));
 
         // Act: Concurrent executions
-        let handles: Vec<_> = (0..2).map(|_| {
-            let executor = Arc::clone(&executor);
-            thread::spawn(move || {
-                let mut exec = executor.lock().unwrap();
-                exec.execute_and_adapt(&[1, 2, 3])
+        let handles: Vec<_> = (0..2)
+            .map(|_| {
+                let executor = Arc::clone(&executor);
+                thread::spawn(move || {
+                    let mut exec = executor.lock().unwrap();
+                    exec.execute_and_adapt(&[1, 2, 3])
+                })
             })
-        }).collect();
+            .collect();
 
         // Assert: All executions succeed
         for handle in handles {
@@ -261,7 +271,7 @@ fn concurrency_adaptive_executor_kernel_switching() {
 /// Performance: Hot-path execution stays within Chatman constant statistically
 #[test]
 fn performance_hot_path_tick_budget_statistical() {
-    use knhk_workflow_engine::innovation::{VerifiedContext, GuardCheckOp};
+    use knhk_workflow_engine::innovation::{GuardCheckOp, VerifiedContext};
 
     // Arrange: Run 1000 iterations
     const ITERATIONS: usize = 1000;
@@ -277,19 +287,19 @@ fn performance_hot_path_tick_budget_statistical() {
             // Typical hot-path: 2 guards + 3 ticks processing
             let guard1 = GuardCheckOp::new(|| true, 1);
             match guard1.execute(state, budget) {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
 
             let guard2 = GuardCheckOp::new(|| true, 2);
             match guard2.execute(state, budget) {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
 
             for _ in 0..3 {
                 match state.tick() {
-                    KernelResult::Success(()) => {},
+                    KernelResult::Success(()) => {}
                     KernelResult::Failure(e) => return KernelResult::Failure(e),
                 }
             }
@@ -343,14 +353,18 @@ fn performance_resource_allocation_constant_time() {
     assert!(
         ratio < 2.0,
         "Allocation not O(1): 100-quota={:?}, 10000-quota={:?}, ratio={}",
-        timings[&100], timings[&10000], ratio
+        timings[&100],
+        timings[&10000],
+        ratio
     );
 }
 
 /// Performance: Kernel selection overhead is negligible
 #[test]
 fn performance_kernel_selection_zero_cost_abstraction() {
-    use knhk_workflow_engine::innovation::{AutoSelector, X86Avx2, SmallData, GenericCpu, LargeData};
+    use knhk_workflow_engine::innovation::{
+        AutoSelector, GenericCpu, LargeData, SmallData, X86Avx2,
+    };
     use std::time::Instant;
 
     const ITERATIONS: usize = 100_000;
@@ -397,8 +411,8 @@ fn performance_kernel_selection_zero_cost_abstraction() {
 /// Chaos: Random guard failures shouldn't leak resources
 #[test]
 fn chaos_random_guard_failures_no_resource_leaks() {
+    use knhk_workflow_engine::innovation::{GuardCheckOp, KernelResult, VerifiedContext};
     use rand::Rng;
-    use knhk_workflow_engine::innovation::{VerifiedContext, GuardCheckOp, KernelResult};
 
     let mut rng = rand::thread_rng();
     const TRIALS: usize = 100;
@@ -415,7 +429,7 @@ fn chaos_random_guard_failures_no_resource_leaks() {
             let guard = GuardCheckOp::new(move || !should_fail, 1);
 
             match guard.execute(state, budget) {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
 
@@ -433,15 +447,20 @@ fn chaos_random_guard_failures_no_resource_leaks() {
         }
 
         // Property: Tick count never exceeds budget even with failures
-        assert!(ctx.ticks_used() <= 8, "Trial {}: Ticks leaked: {}", trial, ctx.ticks_used());
+        assert!(
+            ctx.ticks_used() <= 8,
+            "Trial {}: Ticks leaked: {}",
+            trial,
+            ctx.ticks_used()
+        );
     }
 }
 
 /// Chaos: Byzantine faults in consensus (malicious actors)
 #[test]
 fn chaos_byzantine_faults_cannot_break_quorum() {
+    use knhk_workflow_engine::innovation::{Follower, Leader, Proposal, TripleReplication};
     use rand::Rng;
-    use knhk_workflow_engine::innovation::{Proposal, TripleReplication, Leader, Follower};
 
     let mut rng = rand::thread_rng();
 
@@ -476,8 +495,8 @@ fn chaos_byzantine_faults_cannot_break_quorum() {
 /// Chaos: Resource exhaustion under pressure
 #[test]
 fn chaos_resource_exhaustion_graceful_degradation() {
-    use rand::Rng;
     use knhk_workflow_engine::innovation::ResourcePool;
+    use rand::Rng;
 
     let mut rng = rand::thread_rng();
     let mut pool = ResourcePool::<1000>::new();
@@ -538,11 +557,11 @@ fn chaos_resource_exhaustion_graceful_degradation() {
 /// Type invariant: Zero-sized types compile away completely
 #[test]
 fn type_invariant_zero_sized_types_have_no_runtime_cost() {
-    use std::mem;
     use knhk_workflow_engine::innovation::{
-        ProofToken, BudgetGuard, PublicSector, PrivateSector, CriticalSector,
-        StrictDoctrine, RelaxedDoctrine, GenericCpu, X86Avx2, SmallData, LargeData,
+        BudgetGuard, CriticalSector, GenericCpu, LargeData, PrivateSector, ProofToken,
+        PublicSector, RelaxedDoctrine, SmallData, StrictDoctrine, X86Avx2,
     };
+    use std::mem;
 
     // Assert: All phantom types are zero-sized
     assert_eq!(mem::size_of::<ProofToken<BudgetGuard<5>>>(), 0);
@@ -589,7 +608,7 @@ fn type_invariant_linear_types_single_use_enforced() {
 /// Type invariant: Type-state transitions enforce valid sequences
 #[test]
 fn type_invariant_state_machine_prevents_invalid_transitions() {
-    use knhk_workflow_engine::innovation::{KernelState, ExecutionPhase, KernelResult};
+    use knhk_workflow_engine::innovation::{ExecutionPhase, KernelResult, KernelState};
 
     let mut state = KernelState::<32>::new();
 
@@ -632,8 +651,8 @@ fn type_invariant_state_machine_prevents_invalid_transitions() {
 #[test]
 fn integration_full_workflow_all_modules_under_load() {
     use knhk_workflow_engine::innovation::{
-        VerifiedContext, GuardCheckOp, ResourcePool, DistributedContext,
-        Leader, AdaptiveExecutor, X86Avx2, SmallData, KernelResult,
+        AdaptiveExecutor, DistributedContext, GuardCheckOp, KernelResult, Leader, ResourcePool,
+        SmallData, VerifiedContext, X86Avx2,
     };
 
     // Arrange: Initialize all subsystems
@@ -644,21 +663,23 @@ fn integration_full_workflow_all_modules_under_load() {
     // Act: Execute workflow 10 times
     for iteration in 0..10 {
         // 1. Allocate resources
-        let token = resource_pool.allocate_p0::<100>()
-            .expect(&format!("Iteration {}: P0 allocation should succeed", iteration));
+        let token = resource_pool.allocate_p0::<100>().expect(&format!(
+            "Iteration {}: P0 allocation should succeed",
+            iteration
+        ));
 
         // 2. Execute verified workflow
         let mut verified_ctx = VerifiedContext::<8, 32>::new();
         let verify_result = verified_ctx.run(|state, budget| {
             let guard = GuardCheckOp::new(|| true, 1);
             match guard.execute(state, budget) {
-                KernelResult::Success(()) => {},
+                KernelResult::Success(()) => {}
                 KernelResult::Failure(e) => return KernelResult::Failure(e),
             }
 
             for _ in 0..3 {
                 match state.tick() {
-                    KernelResult::Success(()) => {},
+                    KernelResult::Success(()) => {}
                     KernelResult::Failure(e) => return KernelResult::Failure(e),
                 }
             }
@@ -666,19 +687,35 @@ fn integration_full_workflow_all_modules_under_load() {
             KernelResult::Success(())
         });
 
-        assert!(verify_result.is_success(), "Iteration {}: Workflow failed", iteration);
+        assert!(
+            verify_result.is_success(),
+            "Iteration {}: Workflow failed",
+            iteration
+        );
 
         // 3. Run adaptive kernel
         let kernel_result = adaptive_exec.execute_and_adapt(&[1, 2, 3, 4, 5]);
-        assert_eq!(kernel_result, 15, "Iteration {}: Kernel result wrong", iteration);
+        assert_eq!(
+            kernel_result, 15,
+            "Iteration {}: Kernel result wrong",
+            iteration
+        );
 
         // 4. Consensus decision
         let decision_result = distributed_ctx.execute(|| iteration);
-        assert!(decision_result.is_ok(), "Iteration {}: Consensus failed", iteration);
+        assert!(
+            decision_result.is_ok(),
+            "Iteration {}: Consensus failed",
+            iteration
+        );
 
         // 5. Commit decision
         let commit_result = distributed_ctx.commit_decision(iteration as u64);
-        assert!(commit_result.is_ok(), "Iteration {}: Commit failed", iteration);
+        assert!(
+            commit_result.is_ok(),
+            "Iteration {}: Commit failed",
+            iteration
+        );
 
         // 6. Reclaim resources
         resource_pool.reclaim(token.consume());

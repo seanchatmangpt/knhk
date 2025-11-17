@@ -3,13 +3,13 @@
 //! This module provides the infrastructure for the Σ→Σ* compiler to generate
 //! proofs during compilation. Only the compiler can create these proofs.
 
-use crate::overlay_proof::{CompilerProof, ChangeCoverage};
-use crate::overlay_types::{OverlayChanges, OverlayChange, OverlayError};
-use crate::overlay_safety::{SafeProof, HotSafe, WarmSafe, ColdUnsafe};
-use alloc::vec::Vec;
-use alloc::vec;
-use alloc::string::{String, ToString};
+use crate::overlay_proof::{ChangeCoverage, CompilerProof};
+use crate::overlay_safety::{ColdUnsafe, HotSafe, SafeProof, WarmSafe};
+use crate::overlay_types::{OverlayChange, OverlayChanges, OverlayError};
 use alloc::format;
+use alloc::string::{String, ToString};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Compiler context for proof generation
 ///
@@ -86,9 +86,8 @@ impl CompilerContext {
     {
         let proof = self.generate_proof(changes)?;
 
-        SafeProof::new(proof).map_err(|e| CompilerError::SafetyClassificationFailed(
-            format!("{:?}", e)
-        ))
+        SafeProof::new(proof)
+            .map_err(|e| CompilerError::SafetyClassificationFailed(format!("{:?}", e)))
     }
 
     /// Compute coverage for changes
@@ -103,7 +102,12 @@ impl CompilerContext {
     }
 
     /// Sign the proof (simplified)
-    fn sign_proof(&self, invariants: &[u16], timing_bound: u64, coverage: &ChangeCoverage) -> [u8; 64] {
+    fn sign_proof(
+        &self,
+        invariants: &[u16],
+        timing_bound: u64,
+        coverage: &ChangeCoverage,
+    ) -> [u8; 64] {
         // In reality, would use ed25519 or similar
         // For now, just create a deterministic signature
         let mut sig = [0u8; 64];
@@ -260,7 +264,7 @@ impl TimingAnalyzer {
             OverlayChange::AddTask { tick_budget, .. } => Ok(*tick_budget),
             OverlayChange::RemoveTask { .. } => Ok(1), // Constant time
             OverlayChange::ModifyTask { .. } => Ok(2), // Constant time
-            OverlayChange::AddGuard { .. } => Ok(4), // Guard registration
+            OverlayChange::AddGuard { .. } => Ok(4),   // Guard registration
             OverlayChange::ModifyGuardThreshold { .. } => Ok(1), // Constant time
             OverlayChange::AddPattern { .. } => Ok(2), // Pattern registration
             OverlayChange::RemovePattern { .. } => Ok(1), // Constant time
@@ -302,16 +306,10 @@ pub enum SafetyClass {
 #[derive(Debug, Clone)]
 pub enum CompilerError {
     /// Invariant violation
-    InvariantViolation {
-        id: u16,
-        name: &'static str,
-    },
+    InvariantViolation { id: u16, name: &'static str },
 
     /// Timing bound exceeded
-    TimingBoundExceeded {
-        max_allowed: u64,
-        actual: u64,
-    },
+    TimingBoundExceeded { max_allowed: u64, actual: u64 },
 
     /// Safety classification failed
     SafetyClassificationFailed(String),
@@ -326,8 +324,15 @@ impl core::fmt::Display for CompilerError {
             Self::InvariantViolation { id, name } => {
                 write!(f, "invariant {} ({}) violated", id, name)
             }
-            Self::TimingBoundExceeded { max_allowed, actual } => {
-                write!(f, "timing bound exceeded: max {}, actual {}", max_allowed, actual)
+            Self::TimingBoundExceeded {
+                max_allowed,
+                actual,
+            } => {
+                write!(
+                    f,
+                    "timing bound exceeded: max {}, actual {}",
+                    max_allowed, actual
+                )
             }
             Self::SafetyClassificationFailed(msg) => {
                 write!(f, "safety classification failed: {}", msg)
@@ -415,7 +420,7 @@ mod tests {
         changes.push(OverlayChange::AddTask {
             task_id: 1,
             descriptor: TaskDescriptor::default(),
-            tick_budget: 100,  // Exceeds CHATMAN_CONSTANT
+            tick_budget: 100, // Exceeds CHATMAN_CONSTANT
         });
 
         let proof = ctx.generate_proof(&changes);

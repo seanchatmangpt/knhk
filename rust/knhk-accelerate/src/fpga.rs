@@ -3,8 +3,8 @@
 // Supports Xilinx, Intel, and generic FPGA platforms
 
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 use std::collections::HashMap;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum FPGAError {
@@ -97,7 +97,7 @@ impl FPGAOffload {
         // Validate configuration
         if config.bandwidth_gb_s <= 0.0 {
             return Err(FPGAError::RuntimeError(
-                "Invalid bandwidth configuration".to_string()
+                "Invalid bandwidth configuration".to_string(),
             ));
         }
 
@@ -220,7 +220,9 @@ impl FPGAOffload {
         self.patterns_loaded = patterns.len();
 
         // Simulate transfer time based on PCIe bandwidth
-        let transfer_time_us = (total_pattern_bytes as f32 / (self.config.bandwidth_gb_s * 1_000_000_000.0)) * 1_000_000.0;
+        let transfer_time_us = (total_pattern_bytes as f32
+            / (self.config.bandwidth_gb_s * 1_000_000_000.0))
+            * 1_000_000.0;
         tracing::trace!(
             "FPGA offload: pattern transfer completed in {:.2} us",
             transfer_time_us
@@ -245,20 +247,18 @@ impl FPGAOffload {
 
         if data.is_empty() {
             return Err(FPGAError::RuntimeError(
-                "Cannot search empty data".to_string()
+                "Cannot search empty data".to_string(),
             ));
         }
 
         if self.patterns_loaded == 0 {
             return Err(FPGAError::RuntimeError(
-                "No patterns loaded for matching".to_string()
+                "No patterns loaded for matching".to_string(),
             ));
         }
 
         if !self.bitstream_loaded {
-            return Err(FPGAError::RuntimeError(
-                "Bitstream not loaded".to_string()
-            ));
+            return Err(FPGAError::RuntimeError("Bitstream not loaded".to_string()));
         }
 
         tracing::trace!(
@@ -283,7 +283,9 @@ impl FPGAOffload {
         // 7. Parse match buffer into Vec<PatternMatch>
 
         // Simulate search execution time based on throughput
-        let search_time_us = (data.len() as f32 / (self.config.throughput_patterns_sec as f32 / 1_000_000.0)).max(1.0);
+        let search_time_us = (data.len() as f32
+            / (self.config.throughput_patterns_sec as f32 / 1_000_000.0))
+            .max(1.0);
 
         tracing::trace!(
             "FPGA offload: pattern search completed in {:.2} us",
@@ -315,7 +317,7 @@ impl FPGAOffload {
 
         if !self.bitstream_loaded {
             return Err(FPGAError::RuntimeError(
-                "Bitstream not loaded, no results available".to_string()
+                "Bitstream not loaded, no results available".to_string(),
             ));
         }
 
@@ -334,7 +336,7 @@ impl FPGAOffload {
         // 5. Return aggregated results
 
         // Simulate collecting pattern IDs that matched
-        let mut patterns_matched = Vec::new();
+        let patterns_matched = Vec::new();
         // In production, this would come from FPGA match data
         // For now, simulate that no patterns matched
 
@@ -447,7 +449,7 @@ impl PatternMatcher {
 
         if data.is_empty() {
             return Err(FPGAError::RuntimeError(
-                "Cannot match against empty data".to_string()
+                "Cannot match against empty data".to_string(),
             ));
         }
 

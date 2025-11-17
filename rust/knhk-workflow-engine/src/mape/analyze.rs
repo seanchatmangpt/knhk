@@ -1,9 +1,9 @@
 //! Analyze Phase - Detects symptoms from observations
 
-use super::{Observation, Symptom, SymptomType, KnowledgeBase};
+use super::{KnowledgeBase, Observation, Symptom, SymptomType};
 use crate::error::WorkflowResult;
-use std::sync::Arc;
 use parking_lot::RwLock;
+use std::sync::Arc;
 
 /// Analyze phase detects symptoms from collected observations
 pub struct AnalyzePhase {
@@ -19,7 +19,10 @@ impl AnalyzePhase {
     ///
     /// This implements the "Analyze" phase of MAPE-K, examining
     /// observations to identify problems or opportunities.
-    pub async fn detect_symptoms(&self, observations: &[Observation]) -> WorkflowResult<Vec<Symptom>> {
+    pub async fn detect_symptoms(
+        &self,
+        observations: &[Observation],
+    ) -> WorkflowResult<Vec<Symptom>> {
         let mut symptoms = Vec::new();
 
         // Analyze performance degradation (Chatman Constant violations)
@@ -77,11 +80,11 @@ impl AnalyzePhase {
             Some(Symptom {
                 symptom_type: SymptomType::GuardFailureSpike,
                 severity,
-                description: format!(
-                    "Guard failure rate: {}%",
-                    (severity * 100.0) as u32
-                ),
-                observations: failed_observations.iter().map(|o| o.receipt_id.clone()).collect(),
+                description: format!("Guard failure rate: {}%", (severity * 100.0) as u32),
+                observations: failed_observations
+                    .iter()
+                    .map(|o| o.receipt_id.clone())
+                    .collect(),
             })
         } else {
             None
@@ -91,10 +94,13 @@ impl AnalyzePhase {
     /// Detect unexpected behavior patterns
     fn detect_unexpected_behavior(&self, observations: &[Observation]) -> Option<Symptom> {
         // Check for unusual sigma version distribution
-        let sigma_counts = observations.iter().fold(std::collections::HashMap::new(), |mut acc, obs| {
-            *acc.entry(&obs.sigma_id).or_insert(0) += 1;
-            acc
-        });
+        let sigma_counts =
+            observations
+                .iter()
+                .fold(std::collections::HashMap::new(), |mut acc, obs| {
+                    *acc.entry(&obs.sigma_id).or_insert(0) += 1;
+                    acc
+                });
 
         // If we have multiple sigma versions with significant usage, that might be unexpected
         if sigma_counts.len() > 2 {
@@ -105,7 +111,11 @@ impl AnalyzePhase {
                     "Multiple active Σ versions detected: {}",
                     sigma_counts.len()
                 ),
-                observations: observations.iter().take(10).map(|o| o.receipt_id.clone()).collect(),
+                observations: observations
+                    .iter()
+                    .take(10)
+                    .map(|o| o.receipt_id.clone())
+                    .collect(),
             })
         } else {
             None
@@ -139,6 +149,8 @@ mod tests {
         let symptoms = analyze.detect_symptoms(&observations).await.unwrap();
 
         // Should detect performance degradation
-        assert!(symptoms.iter().any(|s| s.symptom_type == SymptomType::PerformanceDegradation));
+        assert!(symptoms
+            .iter()
+            .any(|s| s.symptom_type == SymptomType::PerformanceDegradation));
     }
 }

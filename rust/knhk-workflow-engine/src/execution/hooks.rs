@@ -10,11 +10,11 @@
 //! - **Q enforcement**: Guards are checked at every hook
 //! - **Receipt generation**: Every hook execution is recorded
 
-use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
+use super::receipt::{Receipt, ReceiptId, ReceiptStore};
 use super::snapshot::{SnapshotId, SnapshotStore};
-use super::receipt::{Receipt, ReceiptStore, ReceiptId};
 
 /// Hook execution context
 ///
@@ -111,7 +111,8 @@ impl HookRegistry {
 
     /// List all registered hooks
     pub fn list(&self) -> Result<Vec<String>, String> {
-        Ok(self.hooks
+        Ok(self
+            .hooks
             .read()
             .map_err(|e| e.to_string())?
             .keys()
@@ -177,10 +178,7 @@ impl HookEngine {
         // Verify all required guards from snapshot
         for guard in &snapshot.guards_checked {
             if !result.guards_passed.contains(guard) && !result.guards_failed.contains(guard) {
-                result.add_guard_check(
-                    format!("MISSING_GUARD_{}", guard),
-                    false,
-                );
+                result.add_guard_check(format!("MISSING_GUARD_{}", guard), false);
             }
         }
 
@@ -286,7 +284,9 @@ pub mod patterns {
             let mut result = HookResult::success(ctx.input_data.clone(), 1);
 
             // Check if all inputs received
-            let received = ctx.variables.get("sync_count")
+            let received = ctx
+                .variables
+                .get("sync_count")
                 .and_then(|s| s.parse::<usize>().ok())
                 .unwrap_or(1);
 
@@ -307,7 +307,9 @@ pub mod patterns {
             let mut result = HookResult::success(ctx.input_data.clone(), 1);
 
             // Evaluate condition from context
-            let choice = ctx.variables.get(&condition)
+            let choice = ctx
+                .variables
+                .get(&condition)
                 .cloned()
                 .unwrap_or_else(|| "default".to_string());
 
@@ -329,16 +331,14 @@ pub mod patterns {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::snapshot::*;
+    use super::*;
 
     #[test]
     fn test_hook_registry() {
         let registry = HookRegistry::new();
 
-        let hook = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 1)
-        });
+        let hook = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 1));
 
         registry.register("test_hook".to_string(), hook).unwrap();
 
@@ -419,7 +419,9 @@ mod tests {
         let receipt = receipt_store.get(&receipt_id).unwrap();
 
         assert!(!receipt.success); // Should fail due to Chatman violation
-        assert!(receipt.guards_failed.contains(&"CHATMAN_CONSTANT".to_string()));
+        assert!(receipt
+            .guards_failed
+            .contains(&"CHATMAN_CONSTANT".to_string()));
     }
 
     #[test]
@@ -451,7 +453,11 @@ mod tests {
             variables: HashMap::new(),
         };
 
-        let hooks = vec!["hook_1".to_string(), "hook_2".to_string(), "hook_3".to_string()];
+        let hooks = vec![
+            "hook_1".to_string(),
+            "hook_2".to_string(),
+            "hook_3".to_string(),
+        ];
         let receipts = engine.execute_workflow(&hooks, context).unwrap();
 
         assert_eq!(receipts.len(), 3);
@@ -477,7 +483,9 @@ mod tests {
         let result = hook(&ctx);
         assert!(result.success);
         assert_eq!(result.next_hooks.len(), 2);
-        assert!(result.guards_passed.contains(&"PATTERN_SEQUENCE".to_string()));
+        assert!(result
+            .guards_passed
+            .contains(&"PATTERN_SEQUENCE".to_string()));
     }
 
     #[test]
@@ -494,6 +502,8 @@ mod tests {
         let result = hook(&ctx);
         assert!(result.success);
         assert_eq!(result.next_hooks.len(), 2);
-        assert!(result.guards_passed.contains(&"PATTERN_PARALLEL_SPLIT".to_string()));
+        assert!(result
+            .guards_passed
+            .contains(&"PATTERN_PARALLEL_SPLIT".to_string()));
     }
 }

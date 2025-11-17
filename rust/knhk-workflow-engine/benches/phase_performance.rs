@@ -67,19 +67,15 @@ fn bench_formal_soundness(c: &mut Criterion) {
         });
 
         group.throughput(Throughput::Elements(*num_tasks as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(num_tasks),
-            num_tasks,
-            |b, _| {
-                b.to_async(&rt).iter(|| async {
-                    let ctx = PhaseContext::new(engine.clone(), spec_id);
-                    let executor = PhaseExecutor::new();
-                    let phase = FormalSoundnessPhase::new();
-                    let result = executor.execute_phase(&phase, ctx).await.unwrap();
-                    black_box(result)
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(num_tasks), num_tasks, |b, _| {
+            b.to_async(&rt).iter(|| async {
+                let ctx = PhaseContext::new(engine.clone(), spec_id);
+                let executor = PhaseExecutor::new();
+                let phase = FormalSoundnessPhase::new();
+                let result = executor.execute_phase(&phase, ctx).await.unwrap();
+                black_box(result)
+            });
+        });
     }
 
     group.finish();
@@ -101,19 +97,15 @@ fn bench_conformance_metrics(c: &mut Criterion) {
         });
 
         group.throughput(Throughput::Elements(*num_tasks as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(num_tasks),
-            num_tasks,
-            |b, _| {
-                b.to_async(&rt).iter(|| async {
-                    let ctx = PhaseContext::new(engine.clone(), spec_id);
-                    let executor = PhaseExecutor::new();
-                    let phase = ConformanceMetricsPhase::new();
-                    let result = executor.execute_phase(&phase, ctx).await.unwrap();
-                    black_box(result)
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(num_tasks), num_tasks, |b, _| {
+            b.to_async(&rt).iter(|| async {
+                let ctx = PhaseContext::new(engine.clone(), spec_id);
+                let executor = PhaseExecutor::new();
+                let phase = ConformanceMetricsPhase::new();
+                let result = executor.execute_phase(&phase, ctx).await.unwrap();
+                black_box(result)
+            });
+        });
     }
 
     group.finish();
@@ -135,19 +127,15 @@ fn bench_pattern_semantics(c: &mut Criterion) {
         });
 
         group.throughput(Throughput::Elements(*num_tasks as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(num_tasks),
-            num_tasks,
-            |b, _| {
-                b.to_async(&rt).iter(|| async {
-                    let ctx = PhaseContext::new(engine.clone(), spec_id);
-                    let executor = PhaseExecutor::new();
-                    let phase = PatternSemanticsPhase::new();
-                    let result = executor.execute_phase(&phase, ctx).await.unwrap();
-                    black_box(result)
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(num_tasks), num_tasks, |b, _| {
+            b.to_async(&rt).iter(|| async {
+                let ctx = PhaseContext::new(engine.clone(), spec_id);
+                let executor = PhaseExecutor::new();
+                let phase = PatternSemanticsPhase::new();
+                let result = executor.execute_phase(&phase, ctx).await.unwrap();
+                black_box(result)
+            });
+        });
     }
 
     group.finish();

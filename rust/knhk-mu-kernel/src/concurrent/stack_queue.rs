@@ -255,23 +255,27 @@ impl<T> MichaelScottQueue<T> {
                     if tail_node.cas_next(next, new_next).is_ok() {
                         // Successfully linked, try to swing tail
                         let new_tail = TaggedPtr::new(new_node, tail.tag().wrapping_add(1));
-                        self.tail.compare_exchange(
-                            tail.to_usize(),
-                            new_tail.to_usize(),
-                            Ordering::Release,
-                            Ordering::Relaxed,
-                        ).ok();
+                        self.tail
+                            .compare_exchange(
+                                tail.to_usize(),
+                                new_tail.to_usize(),
+                                Ordering::Release,
+                                Ordering::Relaxed,
+                            )
+                            .ok();
                         break;
                     }
                 } else {
                     // Tail is not pointing to last node, try to swing tail
                     let new_tail = TaggedPtr::new(next.ptr(), tail.tag().wrapping_add(1));
-                    self.tail.compare_exchange(
-                        tail.to_usize(),
-                        new_tail.to_usize(),
-                        Ordering::Release,
-                        Ordering::Relaxed,
-                    ).ok();
+                    self.tail
+                        .compare_exchange(
+                            tail.to_usize(),
+                            new_tail.to_usize(),
+                            Ordering::Release,
+                            Ordering::Relaxed,
+                        )
+                        .ok();
                 }
             }
         }
@@ -295,24 +299,30 @@ impl<T> MichaelScottQueue<T> {
 
                     // Tail is falling behind, try to advance it
                     let new_tail = TaggedPtr::new(next.ptr(), tail.tag().wrapping_add(1));
-                    self.tail.compare_exchange(
-                        tail.to_usize(),
-                        new_tail.to_usize(),
-                        Ordering::Release,
-                        Ordering::Relaxed,
-                    ).ok();
+                    self.tail
+                        .compare_exchange(
+                            tail.to_usize(),
+                            new_tail.to_usize(),
+                            Ordering::Release,
+                            Ordering::Relaxed,
+                        )
+                        .ok();
                 } else {
                     // Read value before CAS
                     let value = unsafe { ptr::read(&(*next.ptr()).data) };
 
                     // Try to swing head
                     let new_head = TaggedPtr::new(next.ptr(), head.tag().wrapping_add(1));
-                    if self.head.compare_exchange(
-                        head.to_usize(),
-                        new_head.to_usize(),
-                        Ordering::Release,
-                        Ordering::Acquire,
-                    ).is_ok() {
+                    if self
+                        .head
+                        .compare_exchange(
+                            head.to_usize(),
+                            new_head.to_usize(),
+                            Ordering::Release,
+                            Ordering::Acquire,
+                        )
+                        .is_ok()
+                    {
                         // Successfully dequeued, deallocate old dummy
                         unsafe {
                             drop(Box::from_raw(head.ptr()));

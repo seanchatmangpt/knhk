@@ -2,7 +2,7 @@
 
 mod bounds_tests;
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 
 #[test]
 fn test_full_harness_workflow() {
@@ -11,7 +11,9 @@ fn test_full_harness_workflow() {
     // Measure various operations
     harness.measure("operation_1", OperationType::HotPath, || 42);
     harness.measure("operation_2", OperationType::WarmPath, || vec![1, 2, 3]);
-    harness.measure("operation_3", OperationType::ColdPath, || format!("test_{}", 123));
+    harness.measure("operation_3", OperationType::ColdPath, || {
+        format!("test_{}", 123)
+    });
 
     // Generate report
     let report = harness.report();
@@ -37,8 +39,11 @@ fn test_bounds_enforcement() {
     // Check that measurements are reasonable (not necessarily within 8 ticks)
     // In real-world scenarios, the harness identifies which operations meet bounds
     for result in harness.results() {
-        assert!(result.statistics.p99 < 1000,
-            "Measurement for {} should be reasonable", result.operation_name);
+        assert!(
+            result.statistics.p99 < 1000,
+            "Measurement for {} should be reasonable",
+            result.operation_name
+        );
     }
 }
 

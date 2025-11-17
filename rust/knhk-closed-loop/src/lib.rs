@@ -1,58 +1,50 @@
 // KNHK Closed Loop System - Dark Matter Implementation
 // The 20% critical infrastructure that closes all loops
 
-pub mod receipt;
-pub mod observation;
-pub mod invariants;
-pub mod coordinator;
-pub mod promoter;
 pub mod chatman_equation;
+pub mod coordinator;
 pub mod doctrine;
 pub mod governance;
+pub mod invariants;
+pub mod observation;
+pub mod promoter;
+pub mod receipt;
 pub mod shadow;
 
 // Phase 7: LLM-Based Proposer modules
-pub mod proposer;
-pub mod prompt_engine;
-pub mod validator_llm;
 pub mod learning;
+pub mod prompt_engine;
+pub mod proposer;
+pub mod validator_llm;
 
-pub use receipt::{Receipt, ReceiptStore, ReceiptError};
-pub use observation::{PatternDetector, Observation, ObservationStore};
-pub use invariants::{HardInvariants, InvariantValidator, InvariantViolation};
-pub use coordinator::{MapEKCoordinator, CoordinationError, LoopCycle};
-pub use promoter::{SnapshotPromoter, PromotionError};
-pub use chatman_equation::{ChatmanEquation, Action, ResourceBudget};
+pub use chatman_equation::{Action, ChatmanEquation, ResourceBudget};
+pub use coordinator::{CoordinationError, LoopCycle, MapEKCoordinator};
 pub use doctrine::{
-    DoctrineRule, DoctrineStore, DoctrineSnapshot, DoctrineViolation,
-    ConstraintType, EnforcementLevel, ValidationContext, Signer,
-    DoctrineToBoundInvariant, DoctrineError,
+    ConstraintType, DoctrineError, DoctrineRule, DoctrineSnapshot, DoctrineStore,
+    DoctrineToBoundInvariant, DoctrineViolation, EnforcementLevel, Signer, ValidationContext,
 };
 pub use governance::{
-    Guard, GuardType, Criticality, RelaxationPolicy, GuardRelaxationRequest,
-    RequestState, GuardApproval, Approval, GovernanceEngine, RelaxationWindow,
-    GuardStatus, RequestStatus, GovernanceError,
+    Approval, Criticality, GovernanceEngine, GovernanceError, Guard, GuardApproval,
+    GuardRelaxationRequest, GuardStatus, GuardType, RelaxationPolicy, RelaxationWindow,
+    RequestState, RequestStatus,
 };
-pub use shadow::{
-    ShadowEnvironment, ShadowManager, OntologyData, DeltaSigma,
-    ClassDef, PropertyDef, GuardDef, GuardSeverity,
-    ShadowTest, TestAssertion, TestCriticality, TestResult,
-    ValidationState, IsolationLevel,
-};
-pub use proposer::{
-    LLMProposer, OllamaLLMProposer, Proposal, ProposalRequest,
-    SigmaDiff, ClassDefinition, PropertyDefinition, Cardinality,
-    ValidationReport, ValidationStage, GuardProfile, PerformanceTier,
-    PerformanceBudget, Sector, FewShotExample, LLMClient,
-};
+pub use invariants::{HardInvariants, InvariantValidator, InvariantViolation};
+pub use learning::{LearningMetrics, LearningSystem, ProposalCorpus, ProposalOutcome};
+pub use observation::{Observation, ObservationStore, PatternDetector};
+pub use promoter::{PromotionError, SnapshotPromoter};
 pub use prompt_engine::{PromptEngine, PromptEngineError};
-pub use validator_llm::{
-    ProposalValidator, ValidationPipeline, ValidationError,
-    InvariantChecker,
+pub use proposer::{
+    Cardinality, ClassDefinition, FewShotExample, GuardProfile, LLMClient, LLMProposer,
+    OllamaLLMProposer, PerformanceBudget, PerformanceTier, PropertyDefinition, Proposal,
+    ProposalRequest, Sector, SigmaDiff, ValidationReport, ValidationStage,
 };
-pub use learning::{
-    LearningSystem, ProposalOutcome, ProposalCorpus, LearningMetrics,
+pub use receipt::{Receipt, ReceiptError, ReceiptStore};
+pub use shadow::{
+    ClassDef, DeltaSigma, GuardDef, GuardSeverity, IsolationLevel, OntologyData, PropertyDef,
+    ShadowEnvironment, ShadowManager, ShadowTest, TestAssertion, TestCriticality, TestResult,
+    ValidationState,
 };
+pub use validator_llm::{InvariantChecker, ProposalValidator, ValidationError, ValidationPipeline};
 
 /// The Chatman Constant: maximum ticks for a hot path operation
 pub const CHATMAN_CONSTANT: u32 = 8;

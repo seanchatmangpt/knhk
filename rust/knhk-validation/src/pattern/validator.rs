@@ -5,7 +5,7 @@
 use super::matrix::{
     JoinType, MatrixError, PatternCombination, PatternModifiers, PermutationMatrix, SplitType,
 };
-use super::rules::{ValidationRules, ValidationContext};
+use super::rules::{ValidationContext, ValidationRules};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -167,18 +167,19 @@ impl PatternValidator {
         }
 
         // Get the combination from the matrix
-        let combination = match self
-            .matrix
-            .get_combination(task.split_type, task.join_type, &task.modifiers)
-        {
-            Some(c) => c.clone(),
-            None => {
-                return ValidationResult::invalid(vec![format!(
-                    "Task '{}': Combination not found in matrix",
-                    task.task_id
-                )])
-            }
-        };
+        let combination =
+            match self
+                .matrix
+                .get_combination(task.split_type, task.join_type, &task.modifiers)
+            {
+                Some(c) => c.clone(),
+                None => {
+                    return ValidationResult::invalid(vec![format!(
+                        "Task '{}': Combination not found in matrix",
+                        task.task_id
+                    )])
+                }
+            };
 
         // Validate rules
         let context = ValidationContext {
@@ -220,10 +221,7 @@ impl PatternValidator {
             .flat_map(|r| r.errors.clone())
             .collect();
 
-        let warnings: Vec<String> = results
-            .iter()
-            .flat_map(|r| r.warnings.clone())
-            .collect();
+        let warnings: Vec<String> = results.iter().flat_map(|r| r.warnings.clone()).collect();
 
         if errors.is_empty() {
             ValidationResult {
@@ -352,9 +350,7 @@ impl PatternValidator {
 
 impl Default for PatternValidator {
     fn default() -> Self {
-        Self::new().unwrap_or_else(|_| {
-            Self::with_matrix(PermutationMatrix::new())
-        })
+        Self::new().unwrap_or_else(|_| Self::with_matrix(PermutationMatrix::new()))
     }
 }
 

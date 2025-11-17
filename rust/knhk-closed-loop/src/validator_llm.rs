@@ -331,7 +331,8 @@ impl InvariantChecker for Q1NoRetrocausationChecker {
         for prop in &proposal.delta_sigma.added_properties {
             // Property domain depends on range (if range is also a class)
             if prop.range.contains(':') && !prop.range.starts_with("xsd:") {
-                dependencies.entry(prop.domain.clone())
+                dependencies
+                    .entry(prop.domain.clone())
                     .or_insert_with(Vec::new)
                     .push(prop.range.clone());
             }
@@ -339,10 +340,15 @@ impl InvariantChecker for Q1NoRetrocausationChecker {
 
         // Detect cycles using DFS
         for start_node in dependencies.keys() {
-            if Self::has_cycle(&dependencies, start_node, &mut std::collections::HashSet::new())? {
-                return Err(ValidationError::InvariantViolation(
-                    format!("Q1 violation: detected cycle in causal graph starting from {}", start_node)
-                ));
+            if Self::has_cycle(
+                &dependencies,
+                start_node,
+                &mut std::collections::HashSet::new(),
+            )? {
+                return Err(ValidationError::InvariantViolation(format!(
+                    "Q1 violation: detected cycle in causal graph starting from {}",
+                    start_node
+                )));
             }
         }
 
@@ -522,12 +528,16 @@ fn validate_single_doctrine(proposal: &Proposal, doctrine: &DoctrineRule) -> Res
     // Implement doctrine applicability checking
 
     // 1. Check if doctrine applies to any of the affected classes
-    let affected_classes: Vec<String> = proposal.delta_sigma.added_classes
+    let affected_classes: Vec<String> = proposal
+        .delta_sigma
+        .added_classes
         .iter()
         .map(|c| c.uri.clone())
         .collect();
 
-    let affected_properties: Vec<String> = proposal.delta_sigma.added_properties
+    let affected_properties: Vec<String> = proposal
+        .delta_sigma
+        .added_properties
         .iter()
         .map(|p| p.uri.clone())
         .collect();
@@ -539,8 +549,7 @@ fn validate_single_doctrine(proposal: &Proposal, doctrine: &DoctrineRule) -> Res
     if is_applicable && !proposal.doctrines_satisfied.contains(&doctrine.id) {
         return Err(ValidationError::DoctrineViolation(format!(
             "Doctrine {} applies to this proposal but is not satisfied. Affected classes: {:?}",
-            doctrine.id,
-            affected_classes
+            doctrine.id, affected_classes
         )));
     }
 
@@ -572,13 +581,21 @@ fn doctrine_applies_to(
 
     for class in affected_classes {
         if doctrine.id.to_lowercase().contains(&class.to_lowercase())
-            || doctrine.description.to_lowercase().contains(&class.to_lowercase()) {
+            || doctrine
+                .description
+                .to_lowercase()
+                .contains(&class.to_lowercase())
+        {
             return true;
         }
     }
 
     for prop in affected_properties {
-        if doctrine.description.to_lowercase().contains(&prop.to_lowercase()) {
+        if doctrine
+            .description
+            .to_lowercase()
+            .contains(&prop.to_lowercase())
+        {
             return true;
         }
     }

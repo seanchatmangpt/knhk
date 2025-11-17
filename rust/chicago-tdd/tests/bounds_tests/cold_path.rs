@@ -2,7 +2,7 @@
 //!
 //! Cold path operations have no hard bound (diagnostic only).
 
-use chicago_tdd::{PerformanceHarness, OperationType};
+use chicago_tdd::{OperationType, PerformanceHarness};
 
 #[test]
 fn test_cold_path_large_allocation() {
@@ -38,7 +38,9 @@ fn test_cold_path_thread_spawn() {
         std::thread::spawn(|| {
             // Minimal work
             42
-        }).join().unwrap()
+        })
+        .join()
+        .unwrap()
     });
 
     println!("Thread spawn: p99={}ns", result.statistics.p99);

@@ -15,7 +15,9 @@ use tokio::task::JoinSet;
 use crate::api::models::requests::CreateCaseRequest;
 use crate::api::service::CaseService;
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::validation::phases::core::{Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus};
+use crate::validation::phases::core::{
+    Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus,
+};
 
 /// Load testing data
 #[derive(Debug, Clone)]
@@ -102,10 +104,7 @@ impl<M: Send + Sync> Phase<LoadTestingData, M> for LoadTestingPhase<M> {
         }
     }
 
-    async fn execute(
-        &self,
-        ctx: PhaseContext,
-    ) -> WorkflowResult<PhaseResult<LoadTestingData>> {
+    async fn execute(&self, ctx: PhaseContext) -> WorkflowResult<PhaseResult<LoadTestingData>> {
         let start = Instant::now();
 
         // Run load test

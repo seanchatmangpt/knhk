@@ -2,8 +2,8 @@
 // Q-Learning, SARSA, and Actor-Critic for self-optimizing workflows
 
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 use std::hash::Hash;
+use std::sync::{Arc, RwLock};
 
 /// State for reinforcement learning (must be hashable and cloneable)
 pub trait WorkflowState: Clone + Eq + Hash + Send + Sync {
@@ -83,7 +83,8 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     /// Get action with highest Q-value
     fn best_action(&self, state: &S) -> A {
         let q_table = self.q_table.read().unwrap();
-        let q_values = q_table.get(state)
+        let q_values = q_table
+            .get(state)
             .cloned()
             .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
 
@@ -98,28 +99,26 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     }
 
     /// Q-Learning update: Q(s,a) ← Q(s,a) + α[r + γ max Q(s',a') - Q(s,a)]
-    pub fn update(
-        &self,
-        state: &S,
-        action: &A,
-        reward: f32,
-        next_state: &S,
-        done: bool,
-    ) {
+    pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         let mut q_table = self.q_table.write().unwrap();
 
         // Initialize Q(s) if needed
-        q_table.entry(state.clone())
+        q_table
+            .entry(state.clone())
             .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
 
         // Get max Q(s', a')
-        let next_q_values = q_table.get(next_state)
+        let next_q_values = q_table
+            .get(next_state)
             .cloned()
             .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
         let max_next_q = if done {
             0.0 // Terminal state has no future value
         } else {
-            next_q_values.iter().cloned().fold(f32::NEG_INFINITY, f32::max)
+            next_q_values
+                .iter()
+                .cloned()
+                .fold(f32::NEG_INFINITY, f32::max)
         };
 
         // Q-Learning update
@@ -189,17 +188,11 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     /// SARSA update: Q(s,a) ← Q(s,a) + α[r + γ Q(s',a') - Q(s,a)]
     /// Note: Uses next_action instead of max_next_action (on-policy)
-    pub fn update(
-        &self,
-        state: &S,
-        action: &A,
-        reward: f32,
-        next_state: &S,
-        next_action: &A,
-    ) {
+    pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, next_action: &A) {
         let mut q_table = self.q_table.write().unwrap();
 
-        q_table.entry(state.clone())
+        q_table
+            .entry(state.clone())
             .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
 
         // Get Q(s', a') - the actual next action taken

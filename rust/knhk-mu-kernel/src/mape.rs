@@ -3,13 +3,13 @@
 //! MAPE-K is not "beside" μ; it IS μ at different time scales.
 //! μ = (μ_monitor, μ_analyze, μ_plan, μ_execute) sharing Σ, Q, Γ
 
-use alloc::vec::Vec;
-use alloc::vec;
+use crate::overlay::DeltaSigma;
+use crate::receipts::{Receipt, ReceiptChain, ReceiptQuery};
+use crate::sigma::{SigmaCompiled, SigmaPointer};
 use alloc::format;
 use alloc::string::String;
-use crate::receipts::{Receipt, ReceiptChain, ReceiptQuery};
-use crate::overlay::DeltaSigma;
-use crate::sigma::{SigmaCompiled, SigmaPointer};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// MAPE-K Colon - autonomic control loop
 pub struct MapeKColon {
@@ -171,7 +171,7 @@ impl MapeKColon {
         DeltaSigma {
             id: 1,
             base_sigma: self.sigma_ptr.load().unwrap().header.hash,
-            changes: vec![],  // Would contain actual changes
+            changes: vec![], // Would contain actual changes
             proof: ProofSketch {
                 invariants_checked: vec![],
                 perf_estimate: PerformanceEstimate {
@@ -269,7 +269,7 @@ mod tests {
                 SigmaHash([1; 32]),
                 [i; 32],
                 [i; 32],
-                if i > 5 { 10 } else { 5 },  // Some violations
+                if i > 5 { 10 } else { 5 }, // Some violations
                 i as u64,
                 0,
             );

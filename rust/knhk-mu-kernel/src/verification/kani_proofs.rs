@@ -22,13 +22,13 @@
 #![cfg(kani)]
 
 use crate::{
-    timing::{TickBudget, TickCounter, BudgetStatus},
-    patterns::{PatternId, PatternExecutor},
+    core::{MuKernel, MuResult, MuState},
     guards::{GuardContext, GuardResult},
-    isa::{MuOps, MuInstruction},
-    sigma::{SigmaCompiled, SigmaHash},
+    isa::{MuInstruction, MuOps},
+    patterns::{PatternExecutor, PatternId},
     receipts::{Receipt, ReceiptChain},
-    core::{MuKernel, MuState, MuResult},
+    sigma::{SigmaCompiled, SigmaHash},
+    timing::{BudgetStatus, TickBudget, TickCounter},
     CHATMAN_CONSTANT,
 };
 
@@ -56,24 +56,21 @@ fn prove_chatman_constant() {
     if ticks_consumed <= budget {
         kani::assert(
             status == BudgetStatus::Ok || tick_budget.used <= CHATMAN_CONSTANT,
-            "Tick budget must stay within Chatman Constant"
+            "Tick budget must stay within Chatman Constant",
         );
     }
 
     // PROOF: Total ticks used never exceeds limit
     kani::assert(
         tick_budget.used <= tick_budget.limit,
-        "Ticks used must not exceed limit"
+        "Ticks used must not exceed limit",
     );
 }
 
 /// Proof: Chatman Constant is exactly 8
 #[kani::proof]
 fn prove_chatman_constant_value() {
-    kani::assert(
-        CHATMAN_CONSTANT == 8,
-        "Chatman Constant must be exactly 8"
-    );
+    kani::assert(CHATMAN_CONSTANT == 8, "Chatman Constant must be exactly 8");
 }
 
 /// Proof: TickBudget::chatman() creates budget with limit 8
@@ -103,13 +100,13 @@ fn prove_tick_budget_monotonic() {
     // PROOF: Used ticks only increases
     kani::assert(
         budget.used >= initial_used,
-        "Tick consumption must be monotonic"
+        "Tick consumption must be monotonic",
     );
 
     // PROOF: Increase equals consumed amount (saturating)
     kani::assert(
         budget.used == initial_used.saturating_add(ticks),
-        "Used must increase by consumed amount"
+        "Used must increase by consumed amount",
     );
 }
 
@@ -126,7 +123,7 @@ fn prove_no_obs_buffer_overflow() {
         let address = OBS_BASE + index;
         kani::assert(
             address >= OBS_BASE && address < OBS_BASE + OBS_SIZE,
-            "Observation buffer access must be in bounds"
+            "Observation buffer access must be in bounds",
         );
     }
 }
@@ -142,7 +139,7 @@ fn prove_no_receipt_buffer_overflow() {
         let address = RECEIPT_BASE + index;
         kani::assert(
             address >= RECEIPT_BASE && address < RECEIPT_BASE + RECEIPT_SIZE,
-            "Receipt buffer access must be in bounds"
+            "Receipt buffer access must be in bounds",
         );
     }
 }
@@ -159,14 +156,11 @@ fn prove_pattern_id_validity() {
     let tick_cost = pattern.tick_cost();
     kani::assert(
         tick_cost <= CHATMAN_CONSTANT as u8,
-        "Pattern tick cost must be within Chatman Constant"
+        "Pattern tick cost must be within Chatman Constant",
     );
 
     // PROOF: Tick cost is non-zero (no free operations)
-    kani::assert(
-        tick_cost > 0,
-        "Pattern tick cost must be non-zero"
-    );
+    kani::assert(tick_cost > 0, "Pattern tick cost must be non-zero");
 }
 
 /// Proof: Guard evaluation is deterministic
@@ -175,12 +169,7 @@ fn prove_guard_determinism() {
     // Create symbolic guard context
     let task_id: u64 = kani::any();
     let obs_data: u64 = kani::any();
-    let params: [u64; 4] = [
-        kani::any(),
-        kani::any(),
-        kani::any(),
-        kani::any(),
-    ];
+    let params: [u64; 4] = [kani::any(), kani::any(), kani::any(), kani::any()];
 
     let ctx = GuardContext {
         task_id,
@@ -192,14 +181,8 @@ fn prove_guard_determinism() {
     // and prove the results are identical. For now, we just prove
     // the context is well-formed.
 
-    kani::assert(
-        ctx.task_id == task_id,
-        "Guard context preserves task_id"
-    );
-    kani::assert(
-        ctx.obs_data == obs_data,
-        "Guard context preserves obs_data"
-    );
+    kani::assert(ctx.task_id == task_id, "Guard context preserves task_id");
+    kani::assert(ctx.obs_data == obs_data, "Guard context preserves obs_data");
 }
 
 /// Proof: Tick counter never overflows
@@ -213,10 +196,7 @@ fn prove_tick_counter_no_overflow() {
 
         // PROOF: Ticks are always non-negative (u64 can't be negative)
         // PROOF: Ticks use saturating_sub, so never overflow
-        kani::assert(
-            ticks <= u64::MAX,
-            "Tick counter must not overflow"
-        );
+        kani::assert(ticks <= u64::MAX, "Tick counter must not overflow");
     }
 }
 
@@ -236,14 +216,11 @@ fn prove_budget_status_correctness() {
 
     // PROOF: Status reflects actual budget state
     if budget.used < budget.limit {
-        kani::assert(
-            status == BudgetStatus::Ok,
-            "Status OK when under budget"
-        );
+        kani::assert(status == BudgetStatus::Ok, "Status OK when under budget");
     } else {
         kani::assert(
             status == BudgetStatus::Exhausted,
-            "Status Exhausted when at or over budget"
+            "Status Exhausted when at or over budget",
         );
     }
 }
@@ -266,12 +243,9 @@ fn prove_branchless_consumption() {
     // PROOF: Same input produces same output (determinism)
     kani::assert(
         budget1.used == budget2.used,
-        "Branchless consumption is deterministic"
+        "Branchless consumption is deterministic",
     );
-    kani::assert(
-        status1 == status2,
-        "Branchless status is deterministic"
-    );
+    kani::assert(status1 == status2, "Branchless status is deterministic");
 }
 
 /// Proof: Memory layout is non-overlapping
@@ -282,31 +256,31 @@ fn prove_memory_layout_non_overlapping() {
     // PROOF: Σ* and patterns don't overlap
     kani::assert(
         SIGMA_BASE + SIGMA_SIZE <= PATTERN_BASE,
-        "Sigma and pattern regions must not overlap"
+        "Sigma and pattern regions must not overlap",
     );
 
     // PROOF: Patterns and guards don't overlap
     kani::assert(
         PATTERN_BASE + PATTERN_SIZE <= GUARD_BASE,
-        "Pattern and guard regions must not overlap"
+        "Pattern and guard regions must not overlap",
     );
 
     // PROOF: Guards and observations don't overlap
     kani::assert(
         GUARD_BASE + GUARD_SIZE <= OBS_BASE,
-        "Guard and observation regions must not overlap"
+        "Guard and observation regions must not overlap",
     );
 
     // PROOF: Observations and receipts don't overlap
     kani::assert(
         OBS_BASE + OBS_SIZE <= RECEIPT_BASE,
-        "Observation and receipt regions must not overlap"
+        "Observation and receipt regions must not overlap",
     );
 
     // PROOF: Receipts and warm space don't overlap
     kani::assert(
         RECEIPT_BASE + RECEIPT_SIZE <= WARM_BASE,
-        "Receipt and warm regions must not overlap"
+        "Receipt and warm regions must not overlap",
     );
 }
 
@@ -326,14 +300,11 @@ fn prove_remaining_ticks_correct() {
     // PROOF: Remaining is correct
     kani::assert(
         remaining == limit - used,
-        "Remaining must equal limit minus used"
+        "Remaining must equal limit minus used",
     );
 
     // PROOF: Remaining is within valid range
-    kani::assert(
-        remaining <= limit,
-        "Remaining must not exceed limit"
-    );
+    kani::assert(remaining <= limit, "Remaining must not exceed limit");
 }
 
 /// Proof: Budget reset works correctly
@@ -372,16 +343,10 @@ fn prove_saturating_arithmetic() {
     let result = a.saturating_add(b);
 
     // PROOF: Result never overflows
-    kani::assert(
-        result >= a,
-        "Saturating add never decreases"
-    );
+    kani::assert(result >= a, "Saturating add never decreases");
 
     // PROOF: Result is at most u64::MAX
-    kani::assert(
-        result <= u64::MAX,
-        "Saturating add never exceeds maximum"
-    );
+    kani::assert(result <= u64::MAX, "Saturating add never exceeds maximum");
 }
 
 /// Proof: Pattern execution completes in bounded time
@@ -396,7 +361,7 @@ fn prove_pattern_bounded_execution() {
     // PROOF: Every pattern has bounded tick cost
     kani::assert(
         tick_cost > 0 && tick_cost <= CHATMAN_CONSTANT as u8,
-        "Pattern execution bounded by Chatman Constant"
+        "Pattern execution bounded by Chatman Constant",
     );
 }
 
@@ -420,7 +385,7 @@ fn prove_idempotence() {
     // PROOF: Same input produces same state change
     kani::assert(
         result1 == result2,
-        "Idempotent operations produce identical results"
+        "Idempotent operations produce identical results",
     );
 }
 
@@ -439,7 +404,7 @@ fn prove_no_underflow_remaining() {
     } else {
         kani::assert(
             remaining == limit - used,
-            "Remaining is difference when under budget"
+            "Remaining is difference when under budget",
         );
     }
 }
@@ -458,17 +423,11 @@ fn prove_exhaustion_permanent() {
     budget.consume(1);
 
     // PROOF: Still exhausted
-    kani::assert(
-        budget.is_exhausted(),
-        "Exhausted budget stays exhausted"
-    );
+    kani::assert(budget.is_exhausted(), "Exhausted budget stays exhausted");
 
     // Reset and verify
     budget.reset();
-    kani::assert(
-        !budget.is_exhausted(),
-        "Reset clears exhaustion"
-    );
+    kani::assert(!budget.is_exhausted(), "Reset clears exhaustion");
 }
 
 #[cfg(test)]

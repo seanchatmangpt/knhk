@@ -3,19 +3,19 @@
 //! Tests for proof composition, safety classification, and impossibility results.
 
 use knhk_mu_kernel::{
-    overlay::{OverlayAlgebra, KernelPromotion, RolloutStrategy},
-    overlay_types::{
-        OverlayValue, OverlayChanges, OverlayChange, OverlayMetadata,
-        SnapshotId, PerfImpact, InvariantProof, VerificationMethod,
-    },
-    overlay_proof::{
-        CompilerProof, FormalProof, PropertyProof, RuntimeProof,
-        ChangeCoverage, OverlayProof, ComposedProof,
-    },
-    overlay_safety::{SafeProof, HotSafe, WarmSafe, ColdUnsafe, SafetyPromotion},
-    overlay_compiler::ProofBuilder,
-    sigma::TaskDescriptor,
     core::MuKernel,
+    overlay::{KernelPromotion, OverlayAlgebra, RolloutStrategy},
+    overlay_compiler::ProofBuilder,
+    overlay_proof::{
+        ChangeCoverage, CompilerProof, ComposedProof, FormalProof, OverlayProof, PropertyProof,
+        RuntimeProof,
+    },
+    overlay_safety::{ColdUnsafe, HotSafe, SafeProof, SafetyPromotion, WarmSafe},
+    overlay_types::{
+        InvariantProof, OverlayChange, OverlayChanges, OverlayMetadata, OverlayValue, PerfImpact,
+        SnapshotId, VerificationMethod,
+    },
+    sigma::TaskDescriptor,
 };
 
 // =============================================================================
@@ -78,7 +78,7 @@ fn test_compiler_proof_verification_success() {
 #[test]
 fn test_compiler_proof_requires_signature() {
     let mut proof = make_compiler_proof(6);
-    proof.signature = [0; 64];  // Invalid signature
+    proof.signature = [0; 64]; // Invalid signature
     assert!(proof.verify().is_err());
 }
 
@@ -102,7 +102,7 @@ fn test_formal_proof_requires_certificate() {
         proof_hash: [42; 32],
         invariants: vec![1, 2],
         timing_bound: 6,
-        certificate: vec![],  // Empty certificate
+        certificate: vec![], // Empty certificate
     };
 
     assert!(proof.verify().is_err());
@@ -111,7 +111,7 @@ fn test_formal_proof_requires_certificate() {
 #[test]
 fn test_property_proof_requires_minimum_tests() {
     let proof = PropertyProof {
-        test_cases: 500,  // Too few (requires 1000)
+        test_cases: 500, // Too few (requires 1000)
         shrink_count: 0,
         invariants: vec![1, 2],
         max_ticks_observed: 7,
@@ -128,7 +128,7 @@ fn test_property_proof_requires_high_confidence() {
         shrink_count: 5,
         invariants: vec![1, 2],
         max_ticks_observed: 7,
-        confidence: 0.90,  // Too low (requires 0.95)
+        confidence: 0.90, // Too low (requires 0.95)
     };
 
     assert!(proof.verify().is_err());
@@ -141,7 +141,7 @@ fn test_runtime_proof_rejects_violations() {
         samples: 10_000,
         invariants: vec![1, 2],
         max_ticks_observed: 7,
-        violations: 5,  // Has violations
+        violations: 5, // Has violations
     };
 
     assert!(proof.verify().is_err());
@@ -150,7 +150,7 @@ fn test_runtime_proof_rejects_violations() {
 #[test]
 fn test_runtime_proof_requires_minimum_observation() {
     let proof = RuntimeProof {
-        observation_period: 100,  // Too short
+        observation_period: 100, // Too short
         samples: 10_000,
         invariants: vec![1],
         max_ticks_observed: 7,
@@ -173,7 +173,7 @@ fn test_hot_safe_accepts_fast_compiler_proof() {
 
 #[test]
 fn test_hot_safe_rejects_slow_operations() {
-    let proof = make_compiler_proof(100);  // Too slow
+    let proof = make_compiler_proof(100); // Too slow
     let safe = SafeProof::<HotSafe, _>::new(proof);
     assert!(safe.is_err());
 }
@@ -290,19 +290,9 @@ fn test_compose_non_conflicting_overlays() {
 
     let proof = make_compiler_proof(6);
 
-    let overlay1 = OverlayValue::new(
-        snapshot,
-        changes1,
-        proof.clone(),
-        make_metadata(10),
-    ).unwrap();
+    let overlay1 = OverlayValue::new(snapshot, changes1, proof.clone(), make_metadata(10)).unwrap();
 
-    let overlay2 = OverlayValue::new(
-        snapshot,
-        changes2,
-        proof,
-        make_metadata(10),
-    ).unwrap();
+    let overlay2 = OverlayValue::new(snapshot, changes2, proof, make_metadata(10)).unwrap();
 
     let composed = overlay1.compose(&overlay2);
     assert!(composed.is_ok());
@@ -329,7 +319,7 @@ fn test_compose_rejects_conflicting_changes() {
 
     let mut changes2 = OverlayChanges::new();
     changes2.push(OverlayChange::ModifyTask {
-        task_id: 1,  // Same task - conflict!
+        task_id: 1, // Same task - conflict!
         old_descriptor: TaskDescriptor::default(),
         new_descriptor: TaskDescriptor::default(),
         invariant_proof: InvariantProof {
@@ -341,19 +331,9 @@ fn test_compose_rejects_conflicting_changes() {
 
     let proof = make_compiler_proof(6);
 
-    let overlay1 = OverlayValue::new(
-        snapshot,
-        changes1,
-        proof.clone(),
-        make_metadata(10),
-    ).unwrap();
+    let overlay1 = OverlayValue::new(snapshot, changes1, proof.clone(), make_metadata(10)).unwrap();
 
-    let overlay2 = OverlayValue::new(
-        snapshot,
-        changes2,
-        proof,
-        make_metadata(10),
-    ).unwrap();
+    let overlay2 = OverlayValue::new(snapshot, changes2, proof, make_metadata(10)).unwrap();
 
     let composed = overlay1.compose(&overlay2);
     assert!(composed.is_err());
@@ -367,19 +347,10 @@ fn test_compose_rejects_different_bases() {
     let changes = make_fast_changes();
     let proof = make_compiler_proof(6);
 
-    let overlay1 = OverlayValue::new(
-        snapshot1,
-        changes.clone(),
-        proof.clone(),
-        make_metadata(10),
-    ).unwrap();
+    let overlay1 =
+        OverlayValue::new(snapshot1, changes.clone(), proof.clone(), make_metadata(10)).unwrap();
 
-    let overlay2 = OverlayValue::new(
-        snapshot2,
-        changes,
-        proof,
-        make_metadata(10),
-    ).unwrap();
+    let overlay2 = OverlayValue::new(snapshot2, changes, proof, make_metadata(10)).unwrap();
 
     let composed = overlay1.compose(&overlay2);
     assert!(composed.is_err());
@@ -416,7 +387,7 @@ fn test_composed_proof_takes_max_timing() {
 #[test]
 fn test_composed_proof_verifies_both() {
     let mut proof1 = make_compiler_proof(6);
-    proof1.signature = [0; 64];  // Invalid
+    proof1.signature = [0; 64]; // Invalid
 
     let proof2 = make_compiler_proof(7);
 
@@ -434,12 +405,8 @@ fn test_kernel_accepts_hot_safe_overlay() {
     let safe_proof = SafeProof::<HotSafe, _>::new(proof).unwrap();
 
     let snapshot = make_snapshot();
-    let overlay = OverlayValue::new(
-        snapshot,
-        make_fast_changes(),
-        safe_proof,
-        make_metadata(10),
-    ).unwrap();
+    let overlay =
+        OverlayValue::new(snapshot, make_fast_changes(), safe_proof, make_metadata(10)).unwrap();
 
     let mut kernel = MuKernel::new(1024);
     let result = kernel.promote_hot(overlay);
@@ -454,12 +421,8 @@ fn test_kernel_accepts_warm_safe_with_rollout() {
     let safe_proof = SafeProof::<WarmSafe, _>::new(proof).unwrap();
 
     let snapshot = make_snapshot();
-    let overlay = OverlayValue::new(
-        snapshot,
-        make_fast_changes(),
-        safe_proof,
-        make_metadata(10),
-    ).unwrap();
+    let overlay =
+        OverlayValue::new(snapshot, make_fast_changes(), safe_proof, make_metadata(10)).unwrap();
 
     let mut kernel = MuKernel::new(1024);
     let rollout = RolloutStrategy::Canary {
@@ -549,7 +512,7 @@ fn test_proof_builder_rejects_slow_for_hot() {
     changes.push(OverlayChange::AddTask {
         task_id: 1,
         descriptor: TaskDescriptor::default(),
-        tick_budget: 100,  // Too slow
+        tick_budget: 100, // Too slow
     });
 
     let proof = builder.build_hot_safe(&changes);
@@ -564,7 +527,7 @@ fn test_proof_builder_warm_safe() {
     changes.push(OverlayChange::AddTask {
         task_id: 1,
         descriptor: TaskDescriptor::default(),
-        tick_budget: 1000,  // OK for warm
+        tick_budget: 1000, // OK for warm
     });
 
     let proof = builder.build_warm_safe(&changes);
@@ -581,12 +544,7 @@ fn test_empty_overlay_is_valid() {
     let snapshot = make_snapshot();
     let changes = OverlayChanges::new();
 
-    let overlay = OverlayValue::new(
-        snapshot,
-        changes,
-        proof,
-        make_metadata(10),
-    );
+    let overlay = OverlayValue::new(snapshot, changes, proof, make_metadata(10));
 
     assert!(overlay.is_ok());
 }
@@ -605,12 +563,7 @@ fn test_overlay_with_many_changes() {
     let proof = make_compiler_proof(100);
     let snapshot = make_snapshot();
 
-    let overlay = OverlayValue::new(
-        snapshot,
-        changes,
-        proof,
-        make_metadata(10),
-    );
+    let overlay = OverlayValue::new(snapshot, changes, proof, make_metadata(10));
 
     assert!(overlay.is_ok());
 }

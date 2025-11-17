@@ -31,14 +31,14 @@
 //! # }
 //! ```
 
-use crate::types::{LearnedPattern, SuccessMemory, FeedbackCycle, ActionExecution};
 use crate::error::{AutonomicError, Result};
+use crate::types::{ActionExecution, FeedbackCycle, LearnedPattern, SuccessMemory};
 use chrono::Utc;
 use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{instrument, debug};
+use tracing::{debug, instrument};
 use uuid::Uuid;
 
 /// Knowledge base for persistent learning
@@ -245,28 +245,29 @@ impl KnowledgeBase {
     #[instrument(skip(self))]
     async fn persist(&self) -> Result<()> {
         let db_lock = self.db.read().await;
-        let db = db_lock.as_ref()
+        let db = db_lock
+            .as_ref()
             .ok_or_else(|| AutonomicError::Storage("Database not initialized".to_string()))?;
 
         // Persist patterns
         let patterns = self.patterns.read().await;
-        let patterns_json = serde_json::to_vec(&*patterns)
-            .map_err(|e| AutonomicError::Serialization(e))?;
+        let patterns_json =
+            serde_json::to_vec(&*patterns).map_err(|e| AutonomicError::Serialization(e))?;
         db.insert("patterns", patterns_json)
             .map_err(|e| AutonomicError::Storage(format!("Failed to persist patterns: {}", e)))?;
 
         // Persist memories
         let memories = self.memories.read().await;
-        let memories_json = serde_json::to_vec(&*memories)
-            .map_err(|e| AutonomicError::Serialization(e))?;
+        let memories_json =
+            serde_json::to_vec(&*memories).map_err(|e| AutonomicError::Serialization(e))?;
         db.insert("memories", memories_json)
             .map_err(|e| AutonomicError::Storage(format!("Failed to persist memories: {}", e)))?;
 
         // Persist cycles (last 100)
         let cycles = self.cycles.read().await;
         let recent_cycles: Vec<_> = cycles.iter().rev().take(100).cloned().collect();
-        let cycles_json = serde_json::to_vec(&recent_cycles)
-            .map_err(|e| AutonomicError::Serialization(e))?;
+        let cycles_json =
+            serde_json::to_vec(&recent_cycles).map_err(|e| AutonomicError::Serialization(e))?;
         db.insert("cycles", cycles_json)
             .map_err(|e| AutonomicError::Storage(format!("Failed to persist cycles: {}", e)))?;
 
@@ -281,34 +282,41 @@ impl KnowledgeBase {
     #[instrument(skip(self))]
     async fn load(&mut self) -> Result<()> {
         let db_lock = self.db.read().await;
-        let db = db_lock.as_ref()
+        let db = db_lock
+            .as_ref()
             .ok_or_else(|| AutonomicError::Storage("Database not initialized".to_string()))?;
 
         // Load patterns
-        if let Some(data) = db.get("patterns")
-            .map_err(|e| AutonomicError::Storage(format!("Failed to load patterns: {}", e)))? {
-            let patterns: HashMap<String, LearnedPattern> = serde_json::from_slice(&data)
-                .map_err(|e| AutonomicError::Serialization(e))?;
+        if let Some(data) = db
+            .get("patterns")
+            .map_err(|e| AutonomicError::Storage(format!("Failed to load patterns: {}", e)))?
+        {
+            let patterns: HashMap<String, LearnedPattern> =
+                serde_json::from_slice(&data).map_err(|e| AutonomicError::Serialization(e))?;
             let mut p = self.patterns.write().await;
             *p = patterns;
             debug!("Loaded {} patterns", p.len());
         }
 
         // Load memories
-        if let Some(data) = db.get("memories")
-            .map_err(|e| AutonomicError::Storage(format!("Failed to load memories: {}", e)))? {
-            let memories: HashMap<String, SuccessMemory> = serde_json::from_slice(&data)
-                .map_err(|e| AutonomicError::Serialization(e))?;
+        if let Some(data) = db
+            .get("memories")
+            .map_err(|e| AutonomicError::Storage(format!("Failed to load memories: {}", e)))?
+        {
+            let memories: HashMap<String, SuccessMemory> =
+                serde_json::from_slice(&data).map_err(|e| AutonomicError::Serialization(e))?;
             let mut m = self.memories.write().await;
             *m = memories;
             debug!("Loaded {} memories", m.len());
         }
 
         // Load cycles
-        if let Some(data) = db.get("cycles")
-            .map_err(|e| AutonomicError::Storage(format!("Failed to load cycles: {}", e)))? {
-            let cycles: Vec<FeedbackCycle> = serde_json::from_slice(&data)
-                .map_err(|e| AutonomicError::Serialization(e))?;
+        if let Some(data) = db
+            .get("cycles")
+            .map_err(|e| AutonomicError::Storage(format!("Failed to load cycles: {}", e)))?
+        {
+            let cycles: Vec<FeedbackCycle> =
+                serde_json::from_slice(&data).map_err(|e| AutonomicError::Serialization(e))?;
             let mut c = self.cycles.write().await;
             *c = cycles;
             debug!("Loaded {} cycles", c.len());
@@ -364,7 +372,10 @@ mod tests {
         let mut kb = KnowledgeBase::new(db_path.to_str().unwrap()).await.unwrap();
 
         let action_id = Uuid::new_v4();
-        let pattern_id = kb.record_pattern("Test pattern", vec![action_id]).await.unwrap();
+        let pattern_id = kb
+            .record_pattern("Test pattern", vec![action_id])
+            .await
+            .unwrap();
 
         assert!(pattern_id.as_u128() > 0);
 
@@ -383,14 +394,18 @@ mod tests {
         let action_id = Uuid::new_v4();
 
         // Record success
-        kb.record_success("Test situation", action_id, true).await.unwrap();
+        kb.record_success("Test situation", action_id, true)
+            .await
+            .unwrap();
 
         // Check success rate
         let rate = kb.get_success_rate(&action_id).await.unwrap();
         assert_eq!(rate, 1.0);
 
         // Record failure
-        kb.record_success("Test situation", action_id, false).await.unwrap();
+        kb.record_success("Test situation", action_id, false)
+            .await
+            .unwrap();
 
         // Check updated rate
         let rate = kb.get_success_rate(&action_id).await.unwrap();

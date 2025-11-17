@@ -6,8 +6,8 @@
 //! including detection, analysis, planning, execution, and learning.
 
 use knhk_autonomic::{
+    types::{Action, ActionType, MetricType, RiskLevel, RuleType},
     AutonomicController, Config,
-    types::{Action, ActionType, RiskLevel, MetricType, RuleType},
 };
 use std::time::Duration;
 use tempfile::tempdir;
@@ -29,23 +29,19 @@ async fn test_complete_mape_k_cycle() {
     // === SETUP MONITORING ===
     {
         let mut monitor = controller.monitor().write().await;
-        monitor.register_metric(
-            "Error Count",
-            MetricType::Reliability,
-            0.0,
-            5.0,
-            "count",
-        ).await.unwrap();
+        monitor
+            .register_metric("Error Count", MetricType::Reliability, 0.0, 5.0, "count")
+            .await
+            .unwrap();
     }
 
     // === SETUP ANALYSIS ===
     {
         let mut analyzer = controller.analyzer().write().await;
-        analyzer.register_rule(
-            "High Error Rate",
-            RuleType::HighErrorRate,
-            ""
-        ).await.unwrap();
+        analyzer
+            .register_rule("High Error Rate", RuleType::HighErrorRate, "")
+            .await
+            .unwrap();
     }
 
     // === SETUP PLANNING ===
@@ -65,12 +61,10 @@ async fn test_complete_mape_k_cycle() {
         let action_id = action.id;
         planner.register_action(action).await.unwrap();
 
-        planner.register_policy(
-            "Retry on Failure",
-            "HighErrorRate",
-            vec![action_id],
-            100,
-        ).await.unwrap();
+        planner
+            .register_policy("Retry on Failure", "HighErrorRate", vec![action_id], 100)
+            .await
+            .unwrap();
 
         action_id
     };
@@ -78,9 +72,7 @@ async fn test_complete_mape_k_cycle() {
     // Start controller in background
     let controller_handle = tokio::spawn({
         let mut controller_clone = controller.clone();
-        async move {
-            controller_clone.start().await
-        }
+        async move { controller_clone.start().await }
     });
 
     // Wait for initialization
@@ -125,13 +117,10 @@ async fn test_monitor_component() {
     let mut monitor = MonitoringComponent::new();
 
     // Register metric
-    monitor.register_metric(
-        "Test Metric",
-        MetricType::Performance,
-        100.0,
-        150.0,
-        "ms",
-    ).await.unwrap();
+    monitor
+        .register_metric("Test Metric", MetricType::Performance, 100.0, 150.0, "ms")
+        .await
+        .unwrap();
 
     // Update with normal value
     monitor.update_metric("Test Metric", 120.0).await.unwrap();
@@ -153,32 +142,29 @@ async fn test_monitor_component() {
 /// Test analyze component rule matching
 #[tokio::test]
 async fn test_analyze_component() {
+    use chrono::Utc;
     use knhk_autonomic::analyze::AnalysisComponent;
     use knhk_autonomic::types::{Metric, TrendDirection};
-    use chrono::Utc;
 
     let mut analyzer = AnalysisComponent::new();
 
-    analyzer.register_rule(
-        "High Error Rate",
-        RuleType::HighErrorRate,
-        ""
-    ).await.unwrap();
+    analyzer
+        .register_rule("High Error Rate", RuleType::HighErrorRate, "")
+        .await
+        .unwrap();
 
-    let metrics = vec![
-        Metric {
-            id: Uuid::new_v4(),
-            name: "Error Count".to_string(),
-            metric_type: MetricType::Reliability,
-            current_value: 10.0,
-            expected_value: 1.0,
-            unit: "count".to_string(),
-            anomaly_threshold: 5.0,
-            is_anomalous: true,
-            trend: TrendDirection::Degrading,
-            timestamp: Utc::now(),
-        }
-    ];
+    let metrics = vec![Metric {
+        id: Uuid::new_v4(),
+        name: "Error Count".to_string(),
+        metric_type: MetricType::Reliability,
+        current_value: 10.0,
+        expected_value: 1.0,
+        unit: "count".to_string(),
+        anomaly_threshold: 5.0,
+        is_anomalous: true,
+        trend: TrendDirection::Degrading,
+        timestamp: Utc::now(),
+    }];
 
     let analyses = analyzer.analyze(&[], &metrics).await.unwrap();
     assert_eq!(analyses.len(), 1);
@@ -188,9 +174,9 @@ async fn test_analyze_component() {
 /// Test planner component policy evaluation
 #[tokio::test]
 async fn test_planner_component() {
+    use chrono::Utc;
     use knhk_autonomic::planner::PlanningComponent;
     use knhk_autonomic::types::Analysis;
-    use chrono::Utc;
     use std::collections::HashMap;
 
     let mut planner = PlanningComponent::new();
@@ -210,12 +196,10 @@ async fn test_planner_component() {
     planner.register_action(action).await.unwrap();
 
     // Setup policy
-    planner.register_policy(
-        "Test Policy",
-        "HighErrorRate",
-        vec![action_id],
-        100,
-    ).await.unwrap();
+    planner
+        .register_policy("Test Policy", "HighErrorRate", vec![action_id], 100)
+        .await
+        .unwrap();
 
     // Create analysis
     let analysis = Analysis {
@@ -233,7 +217,10 @@ async fn test_planner_component() {
     let mut success_rates = HashMap::new();
     success_rates.insert(action_id, 0.9);
 
-    let plan = planner.create_plan(&analysis, &success_rates).await.unwrap();
+    let plan = planner
+        .create_plan(&analysis, &success_rates)
+        .await
+        .unwrap();
     assert!(plan.is_some());
 
     let plan = plan.unwrap();
@@ -256,12 +243,20 @@ async fn test_knowledge_persistence() {
         let mut kb = KnowledgeBase::new(db_path.to_str().unwrap()).await.unwrap();
 
         // Record pattern
-        kb.record_pattern("Test pattern", vec![action_id]).await.unwrap();
+        kb.record_pattern("Test pattern", vec![action_id])
+            .await
+            .unwrap();
 
         // Record successes
-        kb.record_success("Test situation", action_id, true).await.unwrap();
-        kb.record_success("Test situation", action_id, true).await.unwrap();
-        kb.record_success("Test situation", action_id, false).await.unwrap();
+        kb.record_success("Test situation", action_id, true)
+            .await
+            .unwrap();
+        kb.record_success("Test situation", action_id, true)
+            .await
+            .unwrap();
+        kb.record_success("Test situation", action_id, false)
+            .await
+            .unwrap();
     }
 
     // Reopen knowledge base and verify persistence
@@ -285,9 +280,9 @@ async fn test_knowledge_persistence() {
 /// Test hooks execution
 #[tokio::test]
 async fn test_hooks_system() {
-    use knhk_autonomic::hooks::{HookRegistry, HookType, HookContext};
-    use std::sync::Arc;
+    use knhk_autonomic::hooks::{HookContext, HookRegistry, HookType};
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     let mut registry = HookRegistry::new();
 
@@ -295,13 +290,15 @@ async fn test_hooks_system() {
     let counter_clone = Arc::clone(&counter);
 
     // Register hook
-    registry.register(HookType::PostMonitor, move |_ctx| {
-        let counter = Arc::clone(&counter_clone);
-        async move {
-            counter.fetch_add(1, Ordering::SeqCst);
-            Ok(())
-        }
-    }).await;
+    registry
+        .register(HookType::PostMonitor, move |_ctx| {
+            let counter = Arc::clone(&counter_clone);
+            async move {
+                counter.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        })
+        .await;
 
     // Execute hook
     let ctx = HookContext::new();

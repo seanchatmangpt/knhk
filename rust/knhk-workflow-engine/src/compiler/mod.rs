@@ -12,18 +12,18 @@
 //! 7. Sign descriptors (signer.rs)
 //! 8. Serialize to binary (serializer.rs)
 
-pub mod loader;
-pub mod extractor;
-pub mod validator;
 pub mod code_generator;
-pub mod optimizer;
+pub mod extractor;
 pub mod linker;
-pub mod signer;
+pub mod loader;
+pub mod optimizer;
 pub mod serializer;
+pub mod signer;
+pub mod validator;
 
 use crate::error::{WorkflowError, WorkflowResult};
 use std::path::Path;
-use tracing::{debug, info, warn, span, Level};
+use tracing::{debug, info, span, warn, Level};
 
 /// Compiler configuration
 #[derive(Debug, Clone)]
@@ -170,7 +170,10 @@ impl DescriptorCompiler {
         debug!("Stage 5: Optimizing");
         let optimization_stats = if self.config.enable_optimizations {
             let stats = self.optimizer.optimize(&mut code).await?;
-            info!("Optimization reduced size by {:.1}%", stats.size_reduction_percent);
+            info!(
+                "Optimization reduced size by {:.1}%",
+                stats.size_reduction_percent
+            );
             stats
         } else {
             OptimizationStats::default()
@@ -238,7 +241,7 @@ impl DescriptorCompiler {
     }
 
     fn compute_descriptor_hash(&self, descriptor: &[u8]) -> [u8; 32] {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(descriptor);
         hasher.finalize().into()

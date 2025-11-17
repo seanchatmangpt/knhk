@@ -21,13 +21,13 @@
 //! 5. **Observable**: All loading operations emit telemetry
 
 use crate::error::{WorkflowError, WorkflowResult};
-use oxigraph::store::Store;
-use oxigraph::model::{NamedNode, Literal, Term, Subject};
+use oxigraph::model::{Literal, NamedNode, Subject, Term};
 use oxigraph::sparql::QueryResults;
+use oxigraph::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use tracing::{info, warn, error, debug, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 /// YAWL namespace
 const YAWL_NS: &str = "http://www.yawlfoundation.org/yawlschema#";
@@ -222,13 +222,12 @@ impl WorkflowLoader {
         info!("Parsing Turtle content");
 
         // Parse Turtle into RDF store
-        self.store.load_from_reader(
-            oxigraph::io::RdfFormat::Turtle,
-            turtle.as_bytes(),
-        ).map_err(|e| {
-            error!("Failed to parse Turtle: {}", e);
-            WorkflowError::Parse(format!("Failed to parse Turtle: {}", e))
-        })?;
+        self.store
+            .load_from_reader(oxigraph::io::RdfFormat::Turtle, turtle.as_bytes())
+            .map_err(|e| {
+                error!("Failed to parse Turtle: {}", e);
+                WorkflowError::Parse(format!("Failed to parse Turtle: {}", e))
+            })?;
 
         // Extract workflow definition using SPARQL
         self.extract_workflow()
@@ -280,9 +279,12 @@ impl WorkflowLoader {
     }
 
     /// Extract workflow metadata
-    fn extract_workflow_metadata(&self) -> WorkflowResult<(String, String, HashMap<String, String>)> {
+    fn extract_workflow_metadata(
+        &self,
+    ) -> WorkflowResult<(String, String, HashMap<String, String>)> {
         // SPARQL query to extract workflow metadata
-        let query = format!(r#"
+        let query = format!(
+            r#"
             PREFIX yawl: <{}>
             PREFIX rdfs: <{}>
             PREFIX rdf: <{}>
@@ -294,7 +296,9 @@ impl WorkflowLoader {
                 OPTIONAL {{ ?spec rdfs:comment ?comment }}
             }}
             LIMIT 1
-        "#, YAWL_NS, RDFS_NS, RDF_NS);
+        "#,
+            YAWL_NS, RDFS_NS, RDF_NS
+        );
 
         let results = self.store.query(&query).map_err(|e| {
             error!("Failed to query workflow metadata: {}", e);
@@ -308,14 +312,16 @@ impl WorkflowLoader {
                     WorkflowError::Parse(format!("Failed to read solution: {}", e))
                 })?;
 
-                let id = solution.get("spec")
+                let id = solution
+                    .get("spec")
                     .and_then(|t| match t {
                         Term::NamedNode(n) => Some(n.as_str().to_string()),
                         _ => None,
                     })
                     .ok_or_else(|| WorkflowError::Parse("Workflow ID not found".to_string()))?;
 
-                let name = solution.get("name")
+                let name = solution
+                    .get("name")
                     .and_then(|t| match t {
                         Term::Literal(l) => Some(l.value().to_string()),
                         _ => None,
@@ -334,13 +340,16 @@ impl WorkflowLoader {
             }
         }
 
-        Err(WorkflowError::Parse("No workflow specification found in Turtle".to_string()))
+        Err(WorkflowError::Parse(
+            "No workflow specification found in Turtle".to_string(),
+        ))
     }
 
     /// Extract task definitions
     fn extract_tasks(&self) -> WorkflowResult<Vec<TaskDefinition>> {
         // SPARQL query to extract all tasks with their properties
-        let query = format!(r#"
+        let query = format!(
+            r#"
             PREFIX yawl: <{}>
             PREFIX yawl-exec: <{}>
             PREFIX rdfs: <{}>
@@ -359,7 +368,9 @@ impl WorkflowLoader {
                 OPTIONAL {{ ?task yawl-exec:TaskDuration ?duration }}
                 OPTIONAL {{ ?task yawl-exec:MaxConcurrency ?maxConcurrency }}
             }}
-        "#, YAWL_NS, YAWL_EXEC_NS, RDFS_NS, RDF_NS);
+        "#,
+            YAWL_NS, YAWL_EXEC_NS, RDFS_NS, RDF_NS
+        );
 
         let results = self.store.query(&query).map_err(|e| {
             error!("Failed to query tasks: {}", e);
@@ -375,14 +386,16 @@ impl WorkflowLoader {
                     WorkflowError::Parse(format!("Failed to read solution: {}", e))
                 })?;
 
-                let id = solution.get("task")
+                let id = solution
+                    .get("task")
                     .and_then(|t| match t {
                         Term::NamedNode(n) => Some(n.as_str().to_string()),
                         _ => None,
                     })
                     .ok_or_else(|| WorkflowError::Parse("Task ID not found".to_string()))?;
 
-                let name = solution.get("name")
+                let name = solution
+                    .get("name")
                     .or_else(|| solution.get("label"))
                     .and_then(|t| match t {
                         Term::Literal(l) => Some(l.value().to_string()),
@@ -390,40 +403,42 @@ impl WorkflowLoader {
                     })
                     .unwrap_or_else(|| id.clone());
 
-                let split_type = solution.get("splitType")
+                let split_type = solution
+                    .get("splitType")
                     .and_then(|t| self.parse_split_type(t));
 
-                let join_type = solution.get("joinType")
+                let join_type = solution
+                    .get("joinType")
                     .and_then(|t| self.parse_join_type(t));
 
-                let execution_mode = solution.get("execMode")
+                let execution_mode = solution
+                    .get("execMode")
                     .and_then(|t| self.parse_execution_mode(t))
                     .unwrap_or(ExecutionMode::Synchronous);
 
-                let runtime_behavior = solution.get("behavior")
-                    .and_then(|t| match t {
-                        Term::NamedNode(n) => Some(n.as_str().to_string()),
-                        Term::Literal(l) => Some(l.value().to_string()),
-                        _ => None,
-                    });
+                let runtime_behavior = solution.get("behavior").and_then(|t| match t {
+                    Term::NamedNode(n) => Some(n.as_str().to_string()),
+                    Term::Literal(l) => Some(l.value().to_string()),
+                    _ => None,
+                });
 
-                let timeout_policy = solution.get("timeout")
+                let timeout_policy = solution
+                    .get("timeout")
                     .and_then(|t| self.parse_timeout_policy(t));
 
-                let retry_policy = solution.get("retry")
+                let retry_policy = solution
+                    .get("retry")
                     .and_then(|t| self.parse_retry_policy(t));
 
-                let duration = solution.get("duration")
-                    .and_then(|t| match t {
-                        Term::Literal(l) => Some(l.value().to_string()),
-                        _ => None,
-                    });
+                let duration = solution.get("duration").and_then(|t| match t {
+                    Term::Literal(l) => Some(l.value().to_string()),
+                    _ => None,
+                });
 
-                let max_concurrency = solution.get("maxConcurrency")
-                    .and_then(|t| match t {
-                        Term::Literal(l) => l.value().parse::<u32>().ok(),
-                        _ => None,
-                    });
+                let max_concurrency = solution.get("maxConcurrency").and_then(|t| match t {
+                    Term::Literal(l) => l.value().parse::<u32>().ok(),
+                    _ => None,
+                });
 
                 tasks.push(TaskDefinition {
                     id,
@@ -446,7 +461,8 @@ impl WorkflowLoader {
 
     /// Extract flow definitions
     fn extract_flows(&self) -> WorkflowResult<Vec<FlowDefinition>> {
-        let query = format!(r#"
+        let query = format!(
+            r#"
             PREFIX yawl: <{}>
             PREFIX rdfs: <{}>
 
@@ -457,7 +473,9 @@ impl WorkflowLoader {
                 OPTIONAL {{ ?flow yawl:predicate ?predicate }}
                 OPTIONAL {{ ?flow yawl:order ?order }}
             }}
-        "#, YAWL_NS, RDFS_NS);
+        "#,
+            YAWL_NS, RDFS_NS
+        );
 
         let results = self.store.query(&query).map_err(|e| {
             error!("Failed to query flows: {}", e);
@@ -473,31 +491,31 @@ impl WorkflowLoader {
                     WorkflowError::Parse(format!("Failed to read solution: {}", e))
                 })?;
 
-                let from = solution.get("from")
+                let from = solution
+                    .get("from")
                     .and_then(|t| match t {
                         Term::NamedNode(n) => Some(n.as_str().to_string()),
                         _ => None,
                     })
                     .ok_or_else(|| WorkflowError::Parse("Flow source not found".to_string()))?;
 
-                let to = solution.get("to")
+                let to = solution
+                    .get("to")
                     .and_then(|t| match t {
                         Term::NamedNode(n) => Some(n.as_str().to_string()),
                         _ => None,
                     })
                     .ok_or_else(|| WorkflowError::Parse("Flow target not found".to_string()))?;
 
-                let predicate = solution.get("predicate")
-                    .and_then(|t| match t {
-                        Term::Literal(l) => Some(l.value().to_string()),
-                        _ => None,
-                    });
+                let predicate = solution.get("predicate").and_then(|t| match t {
+                    Term::Literal(l) => Some(l.value().to_string()),
+                    _ => None,
+                });
 
-                let order = solution.get("order")
-                    .and_then(|t| match t {
-                        Term::Literal(l) => l.value().parse::<i32>().ok(),
-                        _ => None,
-                    });
+                let order = solution.get("order").and_then(|t| match t {
+                    Term::Literal(l) => l.value().parse::<i32>().ok(),
+                    _ => None,
+                });
 
                 flows.push(FlowDefinition {
                     from,
@@ -520,7 +538,8 @@ impl WorkflowLoader {
 
     /// Extract input/output conditions
     fn extract_conditions(&self) -> WorkflowResult<(Option<String>, Option<String>)> {
-        let query = format!(r#"
+        let query = format!(
+            r#"
             PREFIX yawl: <{}>
 
             SELECT ?input ?output WHERE {{
@@ -529,7 +548,9 @@ impl WorkflowLoader {
                 OPTIONAL {{ ?spec yawl:outputCondition ?output }}
             }}
             LIMIT 1
-        "#, YAWL_NS);
+        "#,
+            YAWL_NS
+        );
 
         let results = self.store.query(&query).map_err(|e| {
             error!("Failed to query conditions: {}", e);
@@ -543,17 +564,15 @@ impl WorkflowLoader {
                     WorkflowError::Parse(format!("Failed to read solution: {}", e))
                 })?;
 
-                let input = solution.get("input")
-                    .and_then(|t| match t {
-                        Term::NamedNode(n) => Some(n.as_str().to_string()),
-                        _ => None,
-                    });
+                let input = solution.get("input").and_then(|t| match t {
+                    Term::NamedNode(n) => Some(n.as_str().to_string()),
+                    _ => None,
+                });
 
-                let output = solution.get("output")
-                    .and_then(|t| match t {
-                        Term::NamedNode(n) => Some(n.as_str().to_string()),
-                        _ => None,
-                    });
+                let output = solution.get("output").and_then(|t| match t {
+                    Term::NamedNode(n) => Some(n.as_str().to_string()),
+                    _ => None,
+                });
 
                 return Ok((input, output));
             }
@@ -568,7 +587,11 @@ impl WorkflowLoader {
     ///
     /// This validates that all (split, join) combinations are valid
     /// according to yawl-pattern-permutations.ttl
-    fn validate_patterns(&self, tasks: &[TaskDefinition], _flows: &[FlowDefinition]) -> WorkflowResult<()> {
+    fn validate_patterns(
+        &self,
+        tasks: &[TaskDefinition],
+        _flows: &[FlowDefinition],
+    ) -> WorkflowResult<()> {
         debug!("Validating patterns against permutation matrix");
 
         for task in tasks {
@@ -587,20 +610,24 @@ impl WorkflowLoader {
     }
 
     /// Validate split/join combination is in permutation matrix
-    fn validate_split_join_combination(&self, split: SplitType, join: JoinType) -> WorkflowResult<()> {
+    fn validate_split_join_combination(
+        &self,
+        split: SplitType,
+        join: JoinType,
+    ) -> WorkflowResult<()> {
         // Valid combinations from yawl-pattern-permutations.ttl
         let valid = match (split, join) {
-            (SplitType::AND, JoinType::AND) => true,      // Pattern 2+3: Parallel + Sync
-            (SplitType::AND, JoinType::OR) => true,       // Async parallel
-            (SplitType::AND, JoinType::XOR) => true,      // Unsync parallel
+            (SplitType::AND, JoinType::AND) => true, // Pattern 2+3: Parallel + Sync
+            (SplitType::AND, JoinType::OR) => true,  // Async parallel
+            (SplitType::AND, JoinType::XOR) => true, // Unsync parallel
             (SplitType::AND, JoinType::Discriminator) => true, // Discriminator
-            (SplitType::OR, JoinType::OR) => true,        // Pattern 6+7: Multi-choice + Sync merge
-            (SplitType::OR, JoinType::XOR) => true,       // Multi-merge
-            (SplitType::XOR, JoinType::XOR) => true,      // Pattern 4+5: Exclusive choice + Simple merge
-            (SplitType::XOR, JoinType::AND) => false,     // Invalid: XOR split cannot require AND join
-            (SplitType::XOR, JoinType::OR) => false,      // Invalid: XOR split cannot require OR join
+            (SplitType::OR, JoinType::OR) => true,   // Pattern 6+7: Multi-choice + Sync merge
+            (SplitType::OR, JoinType::XOR) => true,  // Multi-merge
+            (SplitType::XOR, JoinType::XOR) => true, // Pattern 4+5: Exclusive choice + Simple merge
+            (SplitType::XOR, JoinType::AND) => false, // Invalid: XOR split cannot require AND join
+            (SplitType::XOR, JoinType::OR) => false, // Invalid: XOR split cannot require OR join
             (SplitType::XOR, JoinType::Discriminator) => false, // Invalid
-            (SplitType::OR, JoinType::AND) => false,      // Invalid: OR split cannot require AND join
+            (SplitType::OR, JoinType::AND) => false, // Invalid: OR split cannot require AND join
             (SplitType::OR, JoinType::Discriminator) => true, // OR with discriminator is valid
         };
 
@@ -718,9 +745,7 @@ impl WorkflowLoader {
 
 impl Default for WorkflowLoader {
     fn default() -> Self {
-        Self::new().unwrap_or_else(|_| {
-            panic!("Failed to create default WorkflowLoader")
-        })
+        Self::new().unwrap_or_else(|_| panic!("Failed to create default WorkflowLoader"))
     }
 }
 
@@ -739,12 +764,22 @@ mod tests {
         let loader = WorkflowLoader::new().unwrap();
 
         // Valid combinations
-        assert!(loader.validate_split_join_combination(SplitType::AND, JoinType::AND).is_ok());
-        assert!(loader.validate_split_join_combination(SplitType::XOR, JoinType::XOR).is_ok());
-        assert!(loader.validate_split_join_combination(SplitType::OR, JoinType::OR).is_ok());
+        assert!(loader
+            .validate_split_join_combination(SplitType::AND, JoinType::AND)
+            .is_ok());
+        assert!(loader
+            .validate_split_join_combination(SplitType::XOR, JoinType::XOR)
+            .is_ok());
+        assert!(loader
+            .validate_split_join_combination(SplitType::OR, JoinType::OR)
+            .is_ok());
 
         // Invalid combinations
-        assert!(loader.validate_split_join_combination(SplitType::XOR, JoinType::AND).is_err());
-        assert!(loader.validate_split_join_combination(SplitType::OR, JoinType::AND).is_err());
+        assert!(loader
+            .validate_split_join_combination(SplitType::XOR, JoinType::AND)
+            .is_err());
+        assert!(loader
+            .validate_split_join_combination(SplitType::OR, JoinType::AND)
+            .is_err());
     }
 }

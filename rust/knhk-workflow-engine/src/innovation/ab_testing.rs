@@ -9,12 +9,11 @@
 //! Never deploy untested workflows to production. Shadow execution
 //! provides statistical confidence before promotion.
 
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::execution::{
-    SelfExecutingWorkflow, SnapshotId, Receipt, ReceiptStore, ReceiptId,
-    OntologyFile, HookFn,
+    HookFn, OntologyFile, Receipt, ReceiptId, ReceiptStore, SelfExecutingWorkflow, SnapshotId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -92,7 +91,9 @@ impl ABTestOrchestrator {
         }
 
         if config.min_sample_size < 30 {
-            return Err("Minimum sample size must be at least 30 for statistical validity".to_string());
+            return Err(
+                "Minimum sample size must be at least 30 for statistical validity".to_string(),
+            );
         }
 
         self.active_tests.insert(config.test_name.clone(), config);
@@ -107,7 +108,9 @@ impl ABTestOrchestrator {
         observation: Vec<u8>,
         workflow_instance_id: String,
     ) -> Result<ReceiptId, String> {
-        let config = self.active_tests.get(test_name)
+        let config = self
+            .active_tests
+            .get(test_name)
             .ok_or_else(|| "Test not found".to_string())?
             .clone();
 
@@ -125,11 +128,9 @@ impl ABTestOrchestrator {
         self.workflow.set_active_snapshot(snapshot_id.clone())?;
 
         // Execute workflow
-        let receipt_id = self.workflow.execute(
-            hook_name,
-            observation,
-            workflow_instance_id,
-        )?;
+        let receipt_id = self
+            .workflow
+            .execute(hook_name, observation, workflow_instance_id)?;
 
         // Record result
         self.test_results
@@ -148,12 +149,15 @@ impl ABTestOrchestrator {
         observation: Vec<u8>,
         workflow_instance_id: String,
     ) -> Result<ShadowTestResult, String> {
-        let config = self.active_tests.get(test_name)
+        let config = self
+            .active_tests
+            .get(test_name)
             .ok_or_else(|| "Test not found".to_string())?
             .clone();
 
         // Execute control
-        self.workflow.set_active_snapshot(config.control_snapshot.clone())?;
+        self.workflow
+            .set_active_snapshot(config.control_snapshot.clone())?;
         let control_id = self.workflow.execute(
             hook_name,
             observation.clone(),
@@ -161,7 +165,8 @@ impl ABTestOrchestrator {
         )?;
 
         // Execute experiment (shadow)
-        self.workflow.set_active_snapshot(config.experiment_snapshot.clone())?;
+        self.workflow
+            .set_active_snapshot(config.experiment_snapshot.clone())?;
         let experiment_id = self.workflow.execute(
             hook_name,
             observation,
@@ -176,7 +181,8 @@ impl ABTestOrchestrator {
         let results_match = control_receipt.o_in_hash == experiment_receipt.o_in_hash
             && control_receipt.success == experiment_receipt.success;
 
-        let latency_delta = experiment_receipt.ticks_used as i32 - control_receipt.ticks_used as i32;
+        let latency_delta =
+            experiment_receipt.ticks_used as i32 - control_receipt.ticks_used as i32;
 
         Ok(ShadowTestResult {
             control_receipt_id: control_id,
@@ -190,10 +196,14 @@ impl ABTestOrchestrator {
 
     /// Analyze test results
     pub fn analyze_test(&self, test_name: &str) -> Result<ABTestResults, String> {
-        let config = self.active_tests.get(test_name)
+        let config = self
+            .active_tests
+            .get(test_name)
             .ok_or_else(|| "Test not found".to_string())?;
 
-        let results = self.test_results.get(test_name)
+        let results = self
+            .test_results
+            .get(test_name)
             .ok_or_else(|| "No results yet".to_string())?;
 
         // Separate control and experiment results
@@ -343,7 +353,9 @@ impl ABTestOrchestrator {
         match winner {
             TestVariant::Experiment => {
                 let improvement = if control.average_latency > 0.0 {
-                    ((control.average_latency - experiment.average_latency) / control.average_latency) * 100.0
+                    ((control.average_latency - experiment.average_latency)
+                        / control.average_latency)
+                        * 100.0
                 } else {
                     0.0
                 };
@@ -442,12 +454,8 @@ mod tests {
         // Create test receipts
         for i in 0..100 {
             let snapshot_id = SnapshotId::from_string("test".to_string());
-            let mut receipt = Receipt::new(
-                snapshot_id,
-                b"input",
-                b"output",
-                format!("workflow-{}", i),
-            );
+            let mut receipt =
+                Receipt::new(snapshot_id, b"input", b"output", format!("workflow-{}", i));
             receipt.set_ticks((i % 10) as u32);
             receipts.push(receipt);
         }

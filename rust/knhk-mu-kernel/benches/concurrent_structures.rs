@@ -6,29 +6,29 @@
 //! - Performance vs standard library structures
 //! - Memory reclamation overhead
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::collections::HashMap;
 
 // Import our concurrent structures
 // Note: Adjust paths as needed based on your project structure
-#[path = "../src/concurrent/skiplist.rs"]
-mod skiplist;
-#[path = "../src/concurrent/hamt.rs"]
-mod hamt;
-#[path = "../src/concurrent/stack_queue.rs"]
-mod stack_queue;
-#[path = "../src/concurrent/epoch.rs"]
-mod epoch;
 #[path = "../src/concurrent/arc_atomic.rs"]
 mod arc_atomic;
+#[path = "../src/concurrent/epoch.rs"]
+mod epoch;
+#[path = "../src/concurrent/hamt.rs"]
+mod hamt;
+#[path = "../src/concurrent/skiplist.rs"]
+mod skiplist;
+#[path = "../src/concurrent/stack_queue.rs"]
+mod stack_queue;
 
-use skiplist::LockFreeSkipList;
-use hamt::ConcurrentHAMT;
-use stack_queue::{TreiberStack, MichaelScottQueue};
-use epoch::{Guard, Atomic};
 use arc_atomic::{AtomicArc, AtomicArcCell};
+use epoch::{Atomic, Guard};
+use hamt::ConcurrentHAMT;
+use skiplist::LockFreeSkipList;
+use stack_queue::{MichaelScottQueue, TreiberStack};
 
 fn bench_skip_list_insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("skiplist_insert");

@@ -12,9 +12,12 @@ use tokio::sync::RwLock;
 
 /// Pattern execution function
 pub type PatternExecutor = Arc<
-    dyn Fn(serde_json::Value) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = WorkflowResult<serde_json::Value>> + Send>
-    > + Send + Sync
+    dyn Fn(
+            serde_json::Value,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = WorkflowResult<serde_json::Value>> + Send>,
+        > + Send
+        + Sync,
 >;
 
 /// Pattern metadata
@@ -86,7 +89,8 @@ impl PatternLibrary {
             description: "Sequential execution of tasks".to_string(),
             executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
             hot_path_eligible: true,
-        }).await?;
+        })
+        .await?;
 
         // Pattern 2: Parallel Split (AND-split)
         self.register_pattern(PatternMetadata {
@@ -96,7 +100,8 @@ impl PatternLibrary {
             description: "All branches execute in parallel".to_string(),
             executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
             hot_path_eligible: true,
-        }).await?;
+        })
+        .await?;
 
         // Pattern 3: Synchronization (AND-join)
         self.register_pattern(PatternMetadata {
@@ -106,7 +111,8 @@ impl PatternLibrary {
             description: "Wait for all branches to complete".to_string(),
             executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
             hot_path_eligible: true,
-        }).await?;
+        })
+        .await?;
 
         // Pattern 4: Exclusive Choice (XOR-split)
         self.register_pattern(PatternMetadata {
@@ -116,7 +122,8 @@ impl PatternLibrary {
             description: "Exactly one branch executes".to_string(),
             executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
             hot_path_eligible: true,
-        }).await?;
+        })
+        .await?;
 
         // Pattern 5: Simple Merge (XOR-join)
         self.register_pattern(PatternMetadata {
@@ -126,7 +133,8 @@ impl PatternLibrary {
             description: "Wait for one branch to complete".to_string(),
             executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
             hot_path_eligible: true,
-        }).await?;
+        })
+        .await?;
 
         // Patterns 6-11: Advanced Branching and Structural
         for id in 6..=11 {
@@ -141,7 +149,8 @@ impl PatternLibrary {
                 description: format!("Van der Aalst pattern {}", id),
                 executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
                 hot_path_eligible: true,
-            }).await?;
+            })
+            .await?;
         }
 
         // Patterns 12-15: Multiple Instance
@@ -153,7 +162,8 @@ impl PatternLibrary {
                 description: format!("Multiple instance pattern {}", id),
                 executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
                 hot_path_eligible: false, // MI patterns may exceed 8 ticks
-            }).await?;
+            })
+            .await?;
         }
 
         // Patterns 16-27: State-Based, Cancellation, Iteration, Termination, Trigger
@@ -174,7 +184,8 @@ impl PatternLibrary {
                 description: format!("Van der Aalst pattern {}", id),
                 executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
                 hot_path_eligible: true,
-            }).await?;
+            })
+            .await?;
         }
 
         // Patterns 28-43: Resource Patterns
@@ -186,7 +197,8 @@ impl PatternLibrary {
                 description: format!("Resource pattern {}", id),
                 executor: Arc::new(|data| Box::pin(async move { Ok(data) })),
                 hot_path_eligible: false, // Resource patterns may involve external calls
-            }).await?;
+            })
+            .await?;
         }
 
         Ok(())
@@ -197,9 +209,10 @@ impl PatternLibrary {
         let mut patterns = self.patterns.write().await;
 
         if patterns.contains_key(&pattern.id) {
-            return Err(WorkflowError::Validation(
-                format!("Pattern {} already registered", pattern.id)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Pattern {} already registered",
+                pattern.id
+            )));
         }
 
         patterns.insert(pattern.id, pattern);
@@ -239,9 +252,13 @@ impl PatternLibrary {
     }
 
     /// List patterns by category
-    pub async fn list_patterns_by_category(&self, category: PatternCategory) -> Vec<PatternMetadata> {
+    pub async fn list_patterns_by_category(
+        &self,
+        category: PatternCategory,
+    ) -> Vec<PatternMetadata> {
         let patterns = self.patterns.read().await;
-        let mut list: Vec<_> = patterns.values()
+        let mut list: Vec<_> = patterns
+            .values()
             .filter(|p| p.category == category)
             .cloned()
             .collect();
@@ -269,7 +286,10 @@ mod tests {
     #[tokio::test]
     async fn test_pattern_library_initialization() {
         let library = PatternLibrary::new();
-        library.initialize().await.expect("Failed to initialize pattern library");
+        library
+            .initialize()
+            .await
+            .expect("Failed to initialize pattern library");
 
         let patterns = library.list_patterns().await;
         assert_eq!(patterns.len(), 43, "Expected 43 patterns");
@@ -281,7 +301,10 @@ mod tests {
         library.initialize().await.expect("Failed to initialize");
 
         let input = serde_json::json!({"test": "data"});
-        let output = library.execute_pattern(1, input.clone()).await.expect("Pattern execution failed");
+        let output = library
+            .execute_pattern(1, input.clone())
+            .await
+            .expect("Pattern execution failed");
 
         assert_eq!(output, input);
     }
@@ -291,11 +314,23 @@ mod tests {
         let library = PatternLibrary::new();
         library.initialize().await.expect("Failed to initialize");
 
-        let basic_patterns = library.list_patterns_by_category(PatternCategory::BasicControlFlow).await;
-        assert_eq!(basic_patterns.len(), 5, "Expected 5 basic control flow patterns");
+        let basic_patterns = library
+            .list_patterns_by_category(PatternCategory::BasicControlFlow)
+            .await;
+        assert_eq!(
+            basic_patterns.len(),
+            5,
+            "Expected 5 basic control flow patterns"
+        );
 
-        let mi_patterns = library.list_patterns_by_category(PatternCategory::MultipleInstance).await;
-        assert_eq!(mi_patterns.len(), 4, "Expected 4 multiple instance patterns");
+        let mi_patterns = library
+            .list_patterns_by_category(PatternCategory::MultipleInstance)
+            .await;
+        assert_eq!(
+            mi_patterns.len(),
+            4,
+            "Expected 4 multiple instance patterns"
+        );
     }
 
     #[tokio::test]
@@ -304,10 +339,16 @@ mod tests {
         library.initialize().await.expect("Failed to initialize");
 
         let hot_path_count = library.count_hot_path_patterns().await;
-        assert!(hot_path_count > 20, "Expected many hot path eligible patterns");
+        assert!(
+            hot_path_count > 20,
+            "Expected many hot path eligible patterns"
+        );
 
         // Basic control flow patterns should be hot path eligible
         let pattern = library.get_pattern(1).await.expect("Pattern 1 not found");
-        assert!(pattern.hot_path_eligible, "Sequence pattern should be hot path eligible");
+        assert!(
+            pattern.hot_path_eligible,
+            "Sequence pattern should be hot path eligible"
+        );
     }
 }

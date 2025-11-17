@@ -2,15 +2,15 @@
 // Phase 3: Persistent learning integration with MAPE-K
 // DOCTRINE: Covenant 3 (MAPE-K Is Recursive) - Learning feeds back without blocking
 
+use bincode;
+use dashmap::DashMap;
+use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use std::collections::{HashMap, VecDeque};
-use parking_lot::{Mutex, RwLock};
-use dashmap::DashMap;
 use tracing::{debug, error, info, warn};
-use serde::{Serialize, Deserialize};
-use bincode;
 
 /// MAPE-K phases
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -54,7 +54,7 @@ pub struct LearnedPattern {
     pub outcomes: Vec<Outcome>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PatternType {
     Performance,
     Error,
@@ -153,7 +153,10 @@ impl KnowledgeBase {
             .entry(pattern_id.clone())
             .and_modify(|p| {
                 p.occurrences += 1;
-                p.last_seen = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                p.last_seen = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
                 p.confidence = (p.confidence * p.occurrences as f64 + pattern.confidence)
                     / (p.occurrences + 1) as f64;
             })
@@ -175,7 +178,10 @@ impl KnowledgeBase {
 
         let prediction = Prediction {
             id: format!("pred-{}", uuid::Uuid::new_v4()),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             predicted_value: prediction_value,
             confidence,
             model_id: model_id.to_string(),
@@ -183,7 +189,8 @@ impl KnowledgeBase {
             error: None,
         };
 
-        self.predictions.insert(prediction.id.clone(), prediction.clone());
+        self.predictions
+            .insert(prediction.id.clone(), prediction.clone());
         self.stats.predictions_made.fetch_add(1, Ordering::Relaxed);
 
         Some(prediction)
@@ -196,19 +203,26 @@ impl KnowledgeBase {
             prediction.error = Some((prediction.predicted_value - actual_value).abs());
 
             if prediction.error.unwrap() < 0.1 {
-                self.stats.successful_predictions.fetch_add(1, Ordering::Relaxed);
+                self.stats
+                    .successful_predictions
+                    .fetch_add(1, Ordering::Relaxed);
             }
         }
 
         let feedback = FeedbackItem {
             prediction_id,
             actual_value,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             context: HashMap::new(),
         };
 
         self.feedback_queue.lock().push_back(feedback);
-        self.stats.feedback_processed.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .feedback_processed
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     /// Process feedback queue and update models
@@ -236,7 +250,9 @@ impl KnowledgeBase {
             }
         }
 
-        self.stats.learning_iterations.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .learning_iterations
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     /// Get pattern by ID
@@ -245,7 +261,11 @@ impl KnowledgeBase {
     }
 
     /// Find patterns matching criteria
-    pub fn find_patterns(&self, pattern_type: PatternType, min_confidence: f64) -> Vec<LearnedPattern> {
+    pub fn find_patterns(
+        &self,
+        pattern_type: PatternType,
+        min_confidence: f64,
+    ) -> Vec<LearnedPattern> {
         self.patterns
             .iter()
             .filter(|p| p.pattern_type == pattern_type && p.confidence >= min_confidence)
@@ -366,7 +386,13 @@ impl PredictiveModel {
     fn feature_to_value(&self, feature: &Feature) -> f64 {
         match &feature.value {
             FeatureValue::Numeric(v) => *v,
-            FeatureValue::Binary(b) => if *b { 1.0 } else { 0.0 },
+            FeatureValue::Binary(b) => {
+                if *b {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
             FeatureValue::Vector(v) => v.iter().sum::<f64>() / v.len() as f64,
             FeatureValue::Categorical(_) => 0.5, // Simplified
         }
@@ -413,7 +439,9 @@ impl MAPEKIntegration {
     where
         F: FnOnce() -> Result<T, String>,
     {
-        let hook = self.hooks.get(hook_id)
+        let hook = self
+            .hooks
+            .get(hook_id)
             .ok_or_else(|| format!("Hook {} not found", hook_id))?;
 
         let start = Instant::now();
@@ -424,7 +452,10 @@ impl MAPEKIntegration {
         let record = ExecutionRecord {
             hook_id: hook_id.to_string(),
             phase: hook.phase,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             duration_us: duration,
             success: result.is_ok(),
             features: self.extract_features(&hook.phase, duration),
@@ -461,7 +492,12 @@ impl MAPEKIntegration {
             Feature {
                 name: "timestamp_hour".to_string(),
                 value: FeatureValue::Numeric(
-                    (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() / 3600 % 24) as f64
+                    (SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        / 3600
+                        % 24) as f64,
                 ),
                 weight: 0.2,
             },
@@ -470,7 +506,10 @@ impl MAPEKIntegration {
 
     fn learn_from_execution(&self, record: &ExecutionRecord) {
         // Make prediction for next execution
-        if let Some(prediction) = self.knowledge_base.predict("latency_model", &record.features) {
+        if let Some(prediction) = self
+            .knowledge_base
+            .predict("latency_model", &record.features)
+        {
             // Store prediction ID for later feedback
             debug!("Predicted latency: {}us", prediction.predicted_value);
         }
@@ -516,7 +555,11 @@ impl SuccessTracker {
                 hook_id: hook_id.to_string(),
                 total_executions: total,
                 successful_executions: successes,
-                success_rate: if total > 0 { successes as f64 / total as f64 } else { 0.0 },
+                success_rate: if total > 0 {
+                    successes as f64 / total as f64
+                } else {
+                    0.0
+                },
             }
         })
     }
@@ -547,14 +590,12 @@ impl PatternDetector {
                 first_seen: record.timestamp,
                 last_seen: record.timestamp,
                 features: record.features.clone(),
-                outcomes: vec![
-                    Outcome {
-                        success: record.success,
-                        latency_us: record.duration_us,
-                        resource_usage: 0.5,
-                        quality_score: if record.success { 1.0 } else { 0.0 },
-                    },
-                ],
+                outcomes: vec![Outcome {
+                    success: record.success,
+                    latency_us: record.duration_us,
+                    resource_usage: 0.5,
+                    quality_score: if record.success { 1.0 } else { 0.0 },
+                }],
             })
         } else {
             None
@@ -588,7 +629,8 @@ mod uuid {
 
     impl Uuid {
         pub fn new_v4() -> String {
-            format!("{:x}-{:x}-{:x}-{:x}",
+            format!(
+                "{:x}-{:x}-{:x}-{:x}",
                 rand::random::<u32>(),
                 rand::random::<u16>(),
                 rand::random::<u16>(),
@@ -628,13 +670,11 @@ mod tests {
     fn test_predictive_model() {
         let mut model = PredictiveModel::new("test".to_string(), ModelType::Linear);
 
-        let features = vec![
-            Feature {
-                name: "f1".to_string(),
-                value: FeatureValue::Numeric(1.0),
-                weight: 0.5,
-            },
-        ];
+        let features = vec![Feature {
+            name: "f1".to_string(),
+            value: FeatureValue::Numeric(1.0),
+            weight: 0.5,
+        }];
 
         let prediction = model.predict(&features);
         model.update(prediction, 2.0);
@@ -656,9 +696,7 @@ mod tests {
 
         integration.register_hook(hook);
 
-        let result = integration.execute_hook("test-hook", || {
-            Ok::<(), String>(())
-        });
+        let result = integration.execute_hook("test-hook", || Ok::<(), String>(()));
 
         assert!(result.is_ok());
 

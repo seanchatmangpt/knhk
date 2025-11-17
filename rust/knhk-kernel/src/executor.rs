@@ -1,14 +1,16 @@
 // knhk-kernel: Core state machine executor
 // Finite, deterministic state transitions with ≤8 tick guarantee
 
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{
-    descriptor::{Descriptor, DescriptorManager, ExecutionContext, ObservationBuffer, ResourceState},
+    descriptor::{
+        DescriptorManager, ExecutionContext, ObservationBuffer, ResourceState,
+    },
     guard::StateFlags,
-    pattern::{PatternContext, PatternDispatcher, PatternResult, PatternType},
+    pattern::{PatternContext, PatternDispatcher},
     receipt::{Receipt, ReceiptBuilder, ReceiptStatus},
     timer::{HotPathTimer, TickBudget},
 };
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 /// Task states (no invalid states possible)
 #[repr(u32)]
@@ -36,7 +38,10 @@ impl TaskState {
     /// Check if state is terminal
     #[inline(always)]
     pub fn is_terminal(&self) -> bool {
-        matches!(self, TaskState::Completed | TaskState::Failed | TaskState::Cancelled)
+        matches!(
+            self,
+            TaskState::Completed | TaskState::Failed | TaskState::Cancelled
+        )
     }
 
     /// Check if state allows execution
@@ -170,11 +175,11 @@ impl Executor {
     #[inline(always)]
     pub fn execute(&self, task: &Task) -> Receipt {
         let timer = HotPathTimer::start();
-        let mut budget = TickBudget::with_budget(task.tick_budget);
+        let mut budget = TickBudget::with_budget(task.tick_budget as u64);
 
         // Start receipt
         let mut receipt = ReceiptBuilder::new(task.pattern_id, task.task_id)
-            .with_budget(task.tick_budget)
+            .with_budget(task.tick_budget as u32)
             .with_state(task.get_state() as u32, 0)
             .with_inputs(&task.observations[..task.observation_count as usize]);
 
@@ -188,7 +193,8 @@ impl Executor {
 
         // Transition to running
         task.transition(TaskState::Running);
-        task.executed_at.store(crate::timer::read_tsc(), Ordering::Release);
+        task.executed_at
+            .store(crate::timer::read_tsc(), Ordering::Release);
 
         // Get active descriptor
         let descriptor = match DescriptorManager::get_active() {
@@ -265,7 +271,7 @@ impl Executor {
         }
 
         // Create pattern context
-        let mut pattern_ctx = PatternContext {
+        let pattern_ctx = PatternContext {
             pattern_type: pattern_entry.pattern_type,
             pattern_id: task.pattern_id,
             config: pattern_entry.config,
@@ -308,14 +314,15 @@ impl Executor {
             task.transition(TaskState::Failed);
             self.stats.tasks_failed.fetch_add(1, Ordering::Relaxed);
 
-            receipt = receipt
-                .with_result(ReceiptStatus::Failed, timer.elapsed_ticks() as u32);
+            receipt = receipt.with_result(ReceiptStatus::Failed, timer.elapsed_ticks() as u32);
         }
 
         // Update statistics
         let total_ticks = timer.elapsed_ticks();
         self.stats.tasks_executed.fetch_add(1, Ordering::Relaxed);
-        self.stats.total_ticks.fetch_add(total_ticks, Ordering::Relaxed);
+        self.stats
+            .total_ticks
+            .fetch_add(total_ticks, Ordering::Relaxed);
 
         receipt.build()
     }
@@ -455,9 +462,18 @@ mod tests {
 
     #[test]
     fn test_state_machine_validation() {
-        assert!(StateMachine::validate_transition(TaskState::Created, TaskState::Ready));
-        assert!(StateMachine::validate_transition(TaskState::Ready, TaskState::Running));
-        assert!(!StateMachine::validate_transition(TaskState::Completed, TaskState::Running));
+        assert!(StateMachine::validate_transition(
+            TaskState::Created,
+            TaskState::Ready
+        ));
+        assert!(StateMachine::validate_transition(
+            TaskState::Ready,
+            TaskState::Running
+        ));
+        assert!(!StateMachine::validate_transition(
+            TaskState::Completed,
+            TaskState::Running
+        ));
 
         let next = StateMachine::next_states(TaskState::Running);
         assert!(next.contains(&TaskState::Completed));
@@ -467,18 +483,9 @@ mod tests {
     #[test]
     fn test_executor_basic() {
         // Setup descriptor
-        let pattern = PatternEntry::new(
-            PatternType::Sequence,
-            1,
-            10,
-            PatternConfig::default(),
-        );
+        let pattern = PatternEntry::new(PatternType::Sequence, 1, 10, PatternConfig::default());
 
-        let descriptor = Box::new(
-            DescriptorBuilder::new()
-                .add_pattern(pattern)
-                .build()
-        );
+        let descriptor = Box::new(DescriptorBuilder::new().add_pattern(pattern).build());
 
         DescriptorManager::load_descriptor(descriptor).unwrap();
 
@@ -499,18 +506,9 @@ mod tests {
         let executor = Executor::new();
 
         // Setup descriptor
-        let pattern = PatternEntry::new(
-            PatternType::Sequence,
-            2,
-            10,
-            PatternConfig::default(),
-        );
+        let pattern = PatternEntry::new(PatternType::Sequence, 2, 10, PatternConfig::default());
 
-        let descriptor = Box::new(
-            DescriptorBuilder::new()
-                .add_pattern(pattern)
-                .build()
-        );
+        let descriptor = Box::new(DescriptorBuilder::new().add_pattern(pattern).build());
 
         DescriptorManager::load_descriptor(descriptor).unwrap();
 

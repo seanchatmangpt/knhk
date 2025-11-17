@@ -3,8 +3,8 @@
 //! This test suite validates that all proof types have zero runtime cost
 //! and provide the expected compile-time guarantees.
 
-use knhk_mu_kernel::proofs::*;
 use core::mem::size_of;
+use knhk_mu_kernel::proofs::*;
 
 #[test]
 fn test_phantom_zero_cost() {
@@ -28,11 +28,7 @@ fn test_phantom_zero_cost() {
     );
 
     // Witness must be zero-sized
-    assert_eq!(
-        size_of::<Witness<()>>(),
-        0,
-        "Witness should be zero-sized"
-    );
+    assert_eq!(size_of::<Witness<()>>(), 0, "Witness should be zero-sized");
 
     assert_eq!(
         size_of::<Witness<u64>>(),
@@ -155,7 +151,11 @@ fn test_power_of_two_proof() {
     // Non-powers of two should fail
     let non_pot = [0, 3, 5, 6, 7, 9, 15, 100];
     for &value in &non_pot {
-        assert!(PowerOfTwo::new(value).is_none(), "{} is not power of 2", value);
+        assert!(
+            PowerOfTwo::new(value).is_none(),
+            "{} is not power of 2",
+            value
+        );
     }
 }
 
@@ -247,7 +247,11 @@ fn test_type_level_predicates() {
 #[test]
 fn test_is_within_chatman_trait() {
     // These should compile
-    fn assert_chatman<const N: u64>() where (): IsWithinChatman<N> {}
+    fn assert_chatman<const N: u64>()
+    where
+        (): IsWithinChatman<N>,
+    {
+    }
 
     assert_chatman::<0>();
     assert_chatman::<1>();
@@ -259,7 +263,11 @@ fn test_is_within_chatman_trait() {
 
 #[test]
 fn test_is_power_of_two_trait() {
-    fn assert_pot<const N: usize>() where (): IsPowerOfTwo<N> {}
+    fn assert_pot<const N: usize>()
+    where
+        (): IsPowerOfTwo<N>,
+    {
+    }
 
     assert_pot::<1>();
     assert_pot::<2>();
@@ -333,9 +341,7 @@ fn test_proof_builder() {
 
     assert_eq!(*proof.get(), 42);
 
-    let failed = ProofBuilder::<u64, NonZeroPred>::new()
-        .value(0)
-        .build();
+    let failed = ProofBuilder::<u64, NonZeroPred>::new().value(0).build();
 
     assert!(failed.is_err());
 }
@@ -380,7 +386,7 @@ fn test_proof_validator() {
 
     let validator = ProofValidator::<u64, WithinChatmanPred>::new()
         .check(|x| *x % 2 == 0) // Must be even
-        .check(|x| *x > 0);     // Must be positive
+        .check(|x| *x > 0); // Must be positive
 
     assert!(validator.validate(2).is_ok());
     assert!(validator.validate(4).is_ok());
@@ -415,7 +421,7 @@ fn test_proof_memo() {
 
 #[test]
 fn test_value_predicates() {
-    use predicates::{Even, Odd, Positive, Negative, Check};
+    use predicates::{Check, Even, Negative, Odd, Positive};
 
     assert!(Even::check(&4));
     assert!(!Even::check(&5));
@@ -432,7 +438,7 @@ fn test_value_predicates() {
 
 #[test]
 fn test_predicate_composition() {
-    use predicates::{Even, Positive, AndCheck, OrCheck, NotCheck, Check};
+    use predicates::{AndCheck, Check, Even, NotCheck, OrCheck, Positive};
 
     type EvenAndPositive = AndCheck<Even, Positive>;
     assert!(EvenAndPositive::check(&4i64));

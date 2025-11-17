@@ -2,9 +2,12 @@
 //!
 //! Measures Σ → Σ* compilation and loading performance
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use knhk_mu_kernel::sigma::{SigmaCompiled, SigmaHeader, SigmaHash, TaskDescriptor, GuardDescriptor, PatternBinding, SigmaPointer};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use knhk_mu_kernel::compiler::SigmaCompiler;
+use knhk_mu_kernel::sigma::{
+    GuardDescriptor, PatternBinding, SigmaCompiled, SigmaHash, SigmaHeader, SigmaPointer,
+    TaskDescriptor,
+};
 
 fn bench_sigma_load(c: &mut Criterion) {
     let mut group = c.benchmark_group("sigma_load");

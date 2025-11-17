@@ -10,13 +10,11 @@
 //! 7. Sign
 //! 8. Serialize to binary descriptor
 
-use knhk_workflow_engine::compiler::{
-    DescriptorCompiler, CompilerConfig, CompilationResult,
-};
+use knhk_workflow_engine::compiler::{CompilationResult, CompilerConfig, DescriptorCompiler};
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
-use tracing::{info, error};
+use tracing::{error, info};
 use tracing_subscriber;
 
 #[tokio::main]
@@ -103,14 +101,32 @@ fn print_compilation_result(result: &CompilationResult) {
     info!("  Guard count: {}", result.metadata.guard_count);
 
     info!("\nOptimization Statistics:");
-    info!("  Dead code eliminated: {}", result.metadata.optimization_stats.dead_code_eliminated);
-    info!("  Constants folded: {}", result.metadata.optimization_stats.constants_folded);
-    info!("  Common subexpressions: {}", result.metadata.optimization_stats.cse_count);
-    info!("  Size reduction: {:.1}%", result.metadata.optimization_stats.size_reduction_percent);
+    info!(
+        "  Dead code eliminated: {}",
+        result.metadata.optimization_stats.dead_code_eliminated
+    );
+    info!(
+        "  Constants folded: {}",
+        result.metadata.optimization_stats.constants_folded
+    );
+    info!(
+        "  Common subexpressions: {}",
+        result.metadata.optimization_stats.cse_count
+    );
+    info!(
+        "  Size reduction: {:.1}%",
+        result.metadata.optimization_stats.size_reduction_percent
+    );
 
     info!("\nMetadata:");
-    info!("  Source hash: {:?}", hex::encode(&result.metadata.source_hash[..8]));
-    info!("  Descriptor hash: {:?}", hex::encode(&result.metadata.descriptor_hash[..8]));
+    info!(
+        "  Source hash: {:?}",
+        hex::encode(&result.metadata.source_hash[..8])
+    );
+    info!(
+        "  Descriptor hash: {:?}",
+        hex::encode(&result.metadata.descriptor_hash[..8])
+    );
     info!("  Compiler version: {}", result.metadata.compiler_version);
     info!("  Timestamp: {}", result.metadata.timestamp);
 }

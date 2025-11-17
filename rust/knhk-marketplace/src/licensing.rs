@@ -59,7 +59,13 @@ pub struct LicenseKey {
 }
 
 impl LicenseKey {
-    pub fn generate(tier: License, organization: String, seats: u32, duration_days: Option<i64>, secret: &str) -> Self {
+    pub fn generate(
+        tier: License,
+        organization: String,
+        seats: u32,
+        duration_days: Option<i64>,
+        secret: &str,
+    ) -> Self {
         let id = Uuid::new_v4();
         let activated_at = Utc::now();
         let expires_at = duration_days.map(|days| activated_at + Duration::days(days));
@@ -79,7 +85,10 @@ impl LicenseKey {
     }
 
     fn compute_signature(&self, secret: &str) -> String {
-        let payload = format!("{:?}{}{}{}{}", self.id, self.tier as u32, self.organization, self.activated_at, self.seats);
+        let payload = format!(
+            "{:?}{}{}{}{}",
+            self.id, self.tier as u32, self.organization, self.activated_at, self.seats
+        );
         let mut hasher = Sha256::new();
         hasher.update(payload.as_bytes());
         hasher.update(secret.as_bytes());
@@ -92,7 +101,9 @@ impl LicenseKey {
 
     pub fn is_valid(&self, secret: &str) -> Result<()> {
         if !self.verify_signature(secret) {
-            return Err(MarketplaceError::LicenseValidation("Invalid signature".to_string()));
+            return Err(MarketplaceError::LicenseValidation(
+                "Invalid signature".to_string(),
+            ));
         }
 
         if let Some(expires_at) = self.expires_at {
@@ -147,14 +158,26 @@ mod tests {
 
     #[test]
     fn test_license_generation() {
-        let key = LicenseKey::generate(License::Professional, "Test Corp".to_string(), 10, Some(365), "secret");
+        let key = LicenseKey::generate(
+            License::Professional,
+            "Test Corp".to_string(),
+            10,
+            Some(365),
+            "secret",
+        );
         assert_eq!(key.tier, License::Professional);
     }
 
     #[test]
     fn test_license_verification() {
         let secret = "test-secret";
-        let key = LicenseKey::generate(License::Professional, "Test".to_string(), 1, Some(365), secret);
+        let key = LicenseKey::generate(
+            License::Professional,
+            "Test".to_string(),
+            1,
+            Some(365),
+            secret,
+        );
         assert!(key.is_valid(secret).is_ok());
     }
 }

@@ -253,7 +253,11 @@ mod tests {
         });
 
         // Should be very small (likely < 100 ticks even on slow systems)
-        assert!(measurement.value < 1000, "Measurement: {}", measurement.value);
+        assert!(
+            measurement.value < 1000,
+            "Measurement: {}",
+            measurement.value
+        );
         assert!(measurement.is_ticks);
     }
 
@@ -267,7 +271,11 @@ mod tests {
         });
 
         // Should be small but measurable
-        assert!(measurement.value < 1_000_000, "Measurement: {}ns", measurement.value);
+        assert!(
+            measurement.value < 1_000_000,
+            "Measurement: {}ns",
+            measurement.value
+        );
         assert!(!measurement.is_ticks);
     }
 

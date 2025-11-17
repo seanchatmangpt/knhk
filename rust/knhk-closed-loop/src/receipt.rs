@@ -2,7 +2,7 @@
 // Every decision in the closed loop is signed, timestamped, and immutable
 
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Signature, SigningKey, VerifyingKey, Signer, Verifier};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -138,8 +138,8 @@ impl Receipt {
 
     /// Verify receipt signature
     pub fn verify(&self, verifying_key: &VerifyingKey) -> Result<(), ReceiptError> {
-        let signature_bytes = hex::decode(&self.signature)
-            .map_err(|_| ReceiptError::InvalidSignature)?;
+        let signature_bytes =
+            hex::decode(&self.signature).map_err(|_| ReceiptError::InvalidSignature)?;
 
         let signature = Signature::from_bytes(
             signature_bytes
@@ -235,7 +235,10 @@ impl ReceiptStore {
 
     /// List all receipts (for monitoring)
     pub fn list_all(&self) -> Vec<Arc<Receipt>> {
-        self.receipts.iter().map(|entry| entry.value().clone()).collect()
+        self.receipts
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     /// Count receipts by sector

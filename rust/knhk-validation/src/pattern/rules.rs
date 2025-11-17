@@ -1,9 +1,7 @@
 // Validation Rules
 // Defines validation rules for pattern combinations and modifiers
 
-use super::matrix::{
-    CancellationType, IterationType, JoinType, PatternModifiers, SplitType,
-};
+use super::matrix::{CancellationType, IterationType, JoinType, PatternModifiers, SplitType};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -78,7 +76,8 @@ impl ValidationRules {
         // Rule: OR split requires OR join or XOR join
         if context.split_type == SplitType::OR && context.join_type == JoinType::AND {
             return Err(RuleError::InvalidCombination(
-                "OR split with AND join is typically invalid without specific modifiers".to_string(),
+                "OR split with AND join is typically invalid without specific modifiers"
+                    .to_string(),
             ));
         }
 
@@ -96,7 +95,8 @@ impl ValidationRules {
 
         // Rule: Backward flow suggests iteration
         if context.modifiers.backward_flow && context.modifiers.iteration.is_none() {
-            warnings.push("Backward flow without iteration type may cause unbounded loops".to_string());
+            warnings
+                .push("Backward flow without iteration type may cause unbounded loops".to_string());
         }
 
         // Rule: Deferred choice requires runtime decision
@@ -112,7 +112,10 @@ impl ValidationRules {
         // Rule: Critical section requires synchronization
         if context.modifiers.critical_section {
             if context.join_type != JoinType::AND {
-                warnings.push("Critical section typically requires AND join for proper synchronization".to_string());
+                warnings.push(
+                    "Critical section typically requires AND join for proper synchronization"
+                        .to_string(),
+                );
             }
         }
 
@@ -203,9 +206,9 @@ impl ModifierRule for IterationTypeValidation {
     fn validate(&self, modifiers: &PatternModifiers) -> Result<Option<String>, RuleError> {
         if let Some(iter_type) = &modifiers.iteration {
             match iter_type {
-                IterationType::StructuredLoop => {
-                    Ok(Some("Structured loop requires iteration count or condition".to_string()))
-                }
+                IterationType::StructuredLoop => Ok(Some(
+                    "Structured loop requires iteration count or condition".to_string(),
+                )),
                 IterationType::Recursion => Ok(Some(
                     "Recursion must have termination condition to prevent infinite loops"
                         .to_string(),

@@ -8,10 +8,10 @@
 //! Data-driven decisions require sophisticated analytics. This engine
 //! transforms raw receipts into actionable intelligence.
 
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::execution::{ReceiptStore, Receipt, SnapshotId, ReceiptStatistics};
+use crate::execution::{Receipt, ReceiptStatistics, ReceiptStore, SnapshotId};
 use serde::{Deserialize, Serialize};
 
 /// Time-series data point
@@ -191,8 +191,8 @@ impl AnalyticsEngine {
         let latencies: Vec<f64> = receipts.iter().map(|r| r.ticks_used as f64).collect();
         let mean = latencies.iter().sum::<f64>() / latencies.len() as f64;
 
-        let variance = latencies.iter().map(|&x| (x - mean).powi(2)).sum::<f64>()
-            / latencies.len() as f64;
+        let variance =
+            latencies.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / latencies.len() as f64;
         let stddev = variance.sqrt();
 
         // Find anomalies (values beyond threshold * stddev from mean)
@@ -208,7 +208,10 @@ impl AnalyticsEngine {
     }
 
     /// Analyze guard failures
-    pub fn analyze_guard_failures(&self, workflow_id: &str) -> Result<GuardFailureAnalysis, String> {
+    pub fn analyze_guard_failures(
+        &self,
+        workflow_id: &str,
+    ) -> Result<GuardFailureAnalysis, String> {
         let receipts = self.receipt_store.get_by_workflow(workflow_id)?;
 
         let mut guard_counts: HashMap<String, usize> = HashMap::new();
@@ -323,7 +326,8 @@ impl AnalyticsEngine {
             total_executions: stats.total_receipts,
             success_rate: stats.successful_executions as f64 / stats.total_receipts as f64,
             average_latency: stats.average_ticks,
-            chatman_compliance: 1.0 - (stats.chatman_violations as f64 / stats.total_receipts as f64),
+            chatman_compliance: 1.0
+                - (stats.chatman_violations as f64 / stats.total_receipts as f64),
             anomaly_count: anomalies.len(),
             top_failure_guard: guard_analysis
                 .top_failures
@@ -339,9 +343,11 @@ impl AnalyticsEngine {
         anomalies: &[Receipt],
         guard_analysis: &GuardFailureAnalysis,
     ) -> f64 {
-        let success_score = (stats.successful_executions as f64 / stats.total_receipts as f64) * 40.0;
+        let success_score =
+            (stats.successful_executions as f64 / stats.total_receipts as f64) * 40.0;
 
-        let chatman_score = (1.0 - (stats.chatman_violations as f64 / stats.total_receipts as f64)) * 30.0;
+        let chatman_score =
+            (1.0 - (stats.chatman_violations as f64 / stats.total_receipts as f64)) * 30.0;
 
         let anomaly_score = if stats.total_receipts > 0 {
             (1.0 - (anomalies.len() as f64 / stats.total_receipts as f64)) * 20.0
@@ -473,7 +479,9 @@ mod tests {
             store.append(receipt).unwrap();
         }
 
-        let anomalies = engine.detect_latency_anomalies("test-workflow", 2.0).unwrap();
+        let anomalies = engine
+            .detect_latency_anomalies("test-workflow", 2.0)
+            .unwrap();
         assert!(!anomalies.is_empty());
     }
 

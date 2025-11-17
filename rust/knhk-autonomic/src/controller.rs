@@ -32,21 +32,21 @@
 //! ```
 
 use crate::{
-    monitor::MonitoringComponent,
     analyze::AnalysisComponent,
-    planner::PlanningComponent,
-    execute::ExecutionComponent,
-    knowledge::KnowledgeBase,
-    hooks::{HookRegistry, HookType, HookContext},
-    types::{Config, FeedbackCycle},
     error::{AutonomicError, Result},
+    execute::ExecutionComponent,
+    hooks::{HookContext, HookRegistry, HookType},
+    knowledge::KnowledgeBase,
+    monitor::MonitoringComponent,
+    planner::PlanningComponent,
+    types::{Config, FeedbackCycle},
 };
 use chrono::Utc;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::time::{interval, Duration};
-use tracing::{instrument, info, debug, warn, error};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Autonomic controller orchestrating MAPE-K loop
 pub struct AutonomicController {
@@ -106,10 +106,15 @@ impl AutonomicController {
     #[instrument(skip(self))]
     pub async fn start(&mut self) -> Result<()> {
         if self.running.swap(true, Ordering::SeqCst) {
-            return Err(AutonomicError::Config("Controller already running".to_string()));
+            return Err(AutonomicError::Config(
+                "Controller already running".to_string(),
+            ));
         }
 
-        info!("Starting MAPE-K feedback loop (frequency: {:?})", self.config.loop_frequency);
+        info!(
+            "Starting MAPE-K feedback loop (frequency: {:?})",
+            self.config.loop_frequency
+        );
 
         let mut ticker = interval(self.config.loop_frequency);
 
@@ -172,7 +177,11 @@ impl AutonomicController {
             hooks.execute(HookType::PostMonitor, &ctx).await?;
         }
 
-        debug!("Monitor: {} metrics, {} observations", metrics.len(), observations.len());
+        debug!(
+            "Monitor: {} metrics, {} observations",
+            metrics.len(),
+            observations.len()
+        );
 
         // === ANALYZE PHASE ===
         if observations.is_empty() {
@@ -303,11 +312,13 @@ impl AutonomicController {
             // Record successes/failures
             for execution in &all_executions {
                 let success = execution.status == crate::types::ExecutionStatus::Successful;
-                let situation = analyses.first()
+                let situation = analyses
+                    .first()
                     .map(|a| a.problem.clone())
                     .unwrap_or_else(|| "Unknown".to_string());
 
-                kb.record_success(situation, execution.action_id, success).await?;
+                kb.record_success(situation, execution.action_id, success)
+                    .await?;
             }
         }
 
@@ -316,7 +327,10 @@ impl AutonomicController {
             hooks.execute(HookType::PostFeedback, &ctx).await?;
         }
 
-        debug!("Knowledge: Cycle {} recorded (effectiveness: {:.2})", cycle_num, effectiveness);
+        debug!(
+            "Knowledge: Cycle {} recorded (effectiveness: {:.2})",
+            cycle_num, effectiveness
+        );
 
         Ok(())
     }
@@ -327,7 +341,8 @@ impl AutonomicController {
             return 0.0;
         }
 
-        let successes = executions.iter()
+        let successes = executions
+            .iter()
             .filter(|e| e.status == crate::types::ExecutionStatus::Successful)
             .count();
 

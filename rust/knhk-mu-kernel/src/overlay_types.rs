@@ -3,13 +3,13 @@
 //! Overlays are first-class values with type-level proof obligations.
 //! They cannot be applied without a valid proof, enforced at compile time.
 
-use crate::sigma::{SigmaHash, TaskDescriptor};
 use crate::guards::GuardResult;
 use crate::overlay_proof::OverlayProof;
-use core::marker::PhantomData;
-use core::fmt;
-use alloc::vec::Vec;
+use crate::sigma::{SigmaHash, TaskDescriptor};
 use alloc::string::String;
+use alloc::vec::Vec;
+use core::fmt;
+use core::marker::PhantomData;
 
 /// Snapshot ID for base Σ*
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -143,13 +143,10 @@ pub enum Evidence {
     /// Exhaustive testing
     Tested {
         test_count: u64,
-        coverage: u8,  // Percentage
+        coverage: u8, // Percentage
     },
     /// Runtime monitoring
-    Monitored {
-        samples: u64,
-        violations: u64,
-    },
+    Monitored { samples: u64, violations: u64 },
     /// Compiler-generated proof
     Compiler {
         compiler_version: (u8, u8, u8),
@@ -333,22 +330,32 @@ impl OverlayChanges {
     fn changes_conflict(c1: &OverlayChange, c2: &OverlayChange) -> bool {
         match (c1, c2) {
             // Modifying same task
-            (OverlayChange::ModifyTask { task_id: id1, .. },
-             OverlayChange::ModifyTask { task_id: id2, .. }) => id1 == id2,
+            (
+                OverlayChange::ModifyTask { task_id: id1, .. },
+                OverlayChange::ModifyTask { task_id: id2, .. },
+            ) => id1 == id2,
 
             // Removing and modifying same task
-            (OverlayChange::RemoveTask { task_id: id1, .. },
-             OverlayChange::ModifyTask { task_id: id2, .. }) => id1 == id2,
-            (OverlayChange::ModifyTask { task_id: id1, .. },
-             OverlayChange::RemoveTask { task_id: id2, .. }) => id1 == id2,
+            (
+                OverlayChange::RemoveTask { task_id: id1, .. },
+                OverlayChange::ModifyTask { task_id: id2, .. },
+            ) => id1 == id2,
+            (
+                OverlayChange::ModifyTask { task_id: id1, .. },
+                OverlayChange::RemoveTask { task_id: id2, .. },
+            ) => id1 == id2,
 
             // Adding same task ID
-            (OverlayChange::AddTask { task_id: id1, .. },
-             OverlayChange::AddTask { task_id: id2, .. }) => id1 == id2,
+            (
+                OverlayChange::AddTask { task_id: id1, .. },
+                OverlayChange::AddTask { task_id: id2, .. },
+            ) => id1 == id2,
 
             // Modifying same guard
-            (OverlayChange::ModifyGuardThreshold { guard_id: id1, .. },
-             OverlayChange::ModifyGuardThreshold { guard_id: id2, .. }) => id1 == id2,
+            (
+                OverlayChange::ModifyGuardThreshold { guard_id: id1, .. },
+                OverlayChange::ModifyGuardThreshold { guard_id: id2, .. },
+            ) => id1 == id2,
 
             _ => false,
         }

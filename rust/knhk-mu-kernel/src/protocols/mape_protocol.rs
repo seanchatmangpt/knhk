@@ -31,10 +31,10 @@
 //! // Invalid: cycle.plan(); // ERROR: no method `plan` on MonitorPhase
 //! ```
 
-use core::marker::PhantomData;
-use crate::mape::{MonitorResult, AnalyzeResult, PlanResult, ExecuteResult, Symptom};
-use crate::receipts::Receipt;
+use crate::mape::{AnalyzeResult, ExecuteResult, MonitorResult, PlanResult, Symptom};
 use crate::overlay::DeltaSigma;
+use crate::receipts::Receipt;
+use core::marker::PhantomData;
 
 /// MAPE-K cycle state machine
 ///
@@ -257,7 +257,10 @@ impl MapeKCycleWithData<PlanPhase, MapeKData> {
 impl MapeKCycleWithData<ExecutePhase, MapeKData> {
     /// Execute with result tracking
     #[inline(always)]
-    pub fn execute(mut self, result: ExecuteResult) -> MapeKCycleWithData<KnowledgePhase, MapeKData> {
+    pub fn execute(
+        mut self,
+        result: ExecuteResult,
+    ) -> MapeKCycleWithData<KnowledgePhase, MapeKData> {
         self.data.execute_result = Some(result);
         MapeKCycleWithData::with_data(self.data)
     }
@@ -561,11 +564,21 @@ mod tests {
         let mut counter = CycleCounter::new();
 
         // First cycle
-        counter = counter.monitor().analyze().plan().execute().update_knowledge();
+        counter = counter
+            .monitor()
+            .analyze()
+            .plan()
+            .execute()
+            .update_knowledge();
         assert_eq!(counter.count(), 1);
 
         // Second cycle
-        counter = counter.monitor().analyze().plan().execute().update_knowledge();
+        counter = counter
+            .monitor()
+            .analyze()
+            .plan()
+            .execute()
+            .update_knowledge();
         assert_eq!(counter.count(), 2);
     }
 

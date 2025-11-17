@@ -15,7 +15,9 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::validation::phases::core::{Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus};
+use crate::validation::phases::core::{
+    Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus,
+};
 use crate::WorkflowSpec;
 
 /// Conformance metrics data
@@ -105,17 +107,26 @@ impl<M: Send + Sync> Phase<ConformanceMetricsData, M> for ConformanceMetricsPhas
         let metrics = calculate_conformance_metrics(&spec, &ctx).await?;
 
         // Determine status based on thresholds
-        let status = if metrics.fitness >= self.min_fitness && metrics.precision >= self.min_precision
-        {
-            PhaseStatus::Pass
-        } else if metrics.fitness >= self.min_fitness * 0.7 && metrics.precision >= self.min_precision * 0.7 {
-            PhaseStatus::Warning
-        } else {
-            PhaseStatus::Fail
-        };
+        let status =
+            if metrics.fitness >= self.min_fitness && metrics.precision >= self.min_precision {
+                PhaseStatus::Pass
+            } else if metrics.fitness >= self.min_fitness * 0.7
+                && metrics.precision >= self.min_precision * 0.7
+            {
+                PhaseStatus::Warning
+            } else {
+                PhaseStatus::Fail
+            };
 
-        let passed = if metrics.fitness >= self.min_fitness { 1 } else { 0 }
-            + if metrics.precision >= self.min_precision { 1 } else { 0 };
+        let passed = if metrics.fitness >= self.min_fitness {
+            1
+        } else {
+            0
+        } + if metrics.precision >= self.min_precision {
+            1
+        } else {
+            0
+        };
         let failed = 2 - passed;
 
         let mut result = PhaseResult::new("conformance_metrics", status, metrics.clone())
@@ -132,17 +143,32 @@ impl<M: Send + Sync> Phase<ConformanceMetricsData, M> for ConformanceMetricsPhas
         result.add_metric("deviations", metrics.deviations as f64);
 
         // Add messages
-        result.add_message(format!("Fitness: {:.4} (threshold: {:.4})", metrics.fitness, self.min_fitness));
-        result.add_message(format!("Precision: {:.4} (threshold: {:.4})", metrics.precision, self.min_precision));
+        result.add_message(format!(
+            "Fitness: {:.4} (threshold: {:.4})",
+            metrics.fitness, self.min_fitness
+        ));
+        result.add_message(format!(
+            "Precision: {:.4} (threshold: {:.4})",
+            metrics.precision, self.min_precision
+        ));
         result.add_message(format!("F-measure: {:.4}", metrics.f_measure));
         result.add_message(format!("Generalization: {:.4}", metrics.generalization));
-        result.add_message(format!("Conforming traces: {}/{}", metrics.conforming_traces, metrics.traces_analyzed));
+        result.add_message(format!(
+            "Conforming traces: {}/{}",
+            metrics.conforming_traces, metrics.traces_analyzed
+        ));
 
         if metrics.fitness < self.min_fitness {
-            result.add_message(format!("WARNING: Fitness below threshold ({:.4} < {:.4})", metrics.fitness, self.min_fitness));
+            result.add_message(format!(
+                "WARNING: Fitness below threshold ({:.4} < {:.4})",
+                metrics.fitness, self.min_fitness
+            ));
         }
         if metrics.precision < self.min_precision {
-            result.add_message(format!("WARNING: Precision below threshold ({:.4} < {:.4})", metrics.precision, self.min_precision));
+            result.add_message(format!(
+                "WARNING: Precision below threshold ({:.4} < {:.4})",
+                metrics.precision, self.min_precision
+            ));
         }
 
         Ok(result)
@@ -174,10 +200,7 @@ async fn calculate_conformance_metrics(
     };
 
     // Count conforming traces (fitness >= 0.95)
-    let conforming_traces = trace_fitness_scores
-        .iter()
-        .filter(|&&f| f >= 0.95)
-        .count();
+    let conforming_traces = trace_fitness_scores.iter().filter(|&&f| f >= 0.95).count();
 
     // Count deviations
     let deviations = sample_traces.len() - conforming_traces;
@@ -228,11 +251,7 @@ fn calculate_trace_fitness(spec: &WorkflowSpec, trace: &[String]) -> f64 {
     let mut transitions: HashMap<String, HashSet<String>> = HashMap::new();
     for task in &spec.tasks {
         let task_id = task.id.to_string();
-        let successors: HashSet<String> = task
-            .successors
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let successors: HashSet<String> = task.successors.iter().map(|s| s.to_string()).collect();
         transitions.insert(task_id, successors);
     }
 

@@ -3,11 +3,11 @@
 //! Custom CUDA/HIP kernels for neural network inference, pattern matching,
 //! and descriptor processing with auto-tuning and SIMD fallbacks.
 
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use std::collections::HashMap;
 use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
+use thiserror::Error;
 
 /// Kernel execution error
 #[derive(Error, Debug)]
@@ -81,7 +81,7 @@ pub struct GridDimensions {
 impl GridDimensions {
     /// Calculate optimal dimensions for array operations
     pub fn for_array(size: usize, threads_per_block: u32) -> Self {
-        let blocks = ((size as u32) + threads_per_block - 1) / threads_per_block;
+        let blocks = (size as u32).div_ceil(threads_per_block);
         Self {
             grid_x: blocks,
             grid_y: 1,
@@ -95,8 +95,12 @@ impl GridDimensions {
 
     /// Calculate total threads
     pub fn total_threads(&self) -> u64 {
-        (self.grid_x as u64) * (self.grid_y as u64) * (self.grid_z as u64)
-            * (self.block_x as u64) * (self.block_y as u64) * (self.block_z as u64)
+        (self.grid_x as u64)
+            * (self.grid_y as u64)
+            * (self.grid_z as u64)
+            * (self.block_x as u64)
+            * (self.block_y as u64)
+            * (self.block_z as u64)
     }
 
     /// Calculate occupancy (threads / maximum threads)
@@ -119,6 +123,27 @@ pub struct TuningParameters {
     pub registers_per_thread: u32,
     /// Wave/warp width
     pub warp_size: u32,
+}
+
+/// Matrix multiplication parameters
+#[derive(Clone, Debug)]
+pub struct MatMulParams {
+    /// Pointer to matrix A
+    pub a_ptr: *const f32,
+    /// Pointer to matrix B
+    pub b_ptr: *const f32,
+    /// Pointer to result matrix C
+    pub c_ptr: *mut f32,
+    /// Rows in matrix A
+    pub m: usize,
+    /// Columns in A, rows in B
+    pub k: usize,
+    /// Columns in matrix B
+    pub n: usize,
+    /// Scalar multiplier for result
+    pub alpha: f32,
+    /// Scalar multiplier for accumulation
+    pub beta: f32,
 }
 
 impl Default for TuningParameters {
@@ -176,12 +201,12 @@ impl KernelExecutor {
     }
 
     /// Compile kernel source code
-    pub fn compile(&self, name: &str, source: &str) -> Result<Vec<u8>, KernelError> {
+    pub fn compile(&self, name: &str, _source: &str) -> Result<Vec<u8>, KernelError> {
         // Phase 9 stub: Would call NVCC/HIPCC/OpenCL compiler
         tracing::info!("Kernel executor: compiling kernel '{}'", name);
 
         // Optimization flags based on level
-        let flags = match self.optimization_level {
+        let _flags = match self.optimization_level {
             OptimizationLevel::Debug => vec!["--device-debug".to_string()],
             OptimizationLevel::Standard => vec!["-O2".to_string()],
             OptimizationLevel::Aggressive => vec!["-O3".to_string(), "-march=sm_90".to_string()],
@@ -198,7 +223,11 @@ impl KernelExecutor {
     }
 
     /// Auto-tune kernel parameters
-    pub fn autotune(&self, name: &str, problem_size: usize) -> Result<TuningParameters, KernelError> {
+    pub fn autotune(
+        &self,
+        name: &str,
+        problem_size: usize,
+    ) -> Result<TuningParameters, KernelError> {
         tracing::info!("Kernel executor: auto-tuning kernel '{}'", name);
 
         // Phase 9 heuristics for common kernels
@@ -230,23 +259,16 @@ impl KernelExecutor {
     }
 
     /// Launch matrix multiplication kernel
-    pub fn launch_matmul(
-        &self,
-        a_ptr: *const f32,
-        b_ptr: *const f32,
-        c_ptr: *mut f32,
-        m: usize,
-        n: usize,
-        k: usize,
-        alpha: f32,
-        beta: f32,
-    ) -> Result<(), KernelError> {
-        let problem_size = m * n * k;
+    pub fn launch_matmul(&self, matmul_params: &MatMulParams) -> Result<(), KernelError> {
+        let problem_size = matmul_params.m * matmul_params.n * matmul_params.k;
         let params = self.autotune("matmul", problem_size)?;
 
         tracing::info!(
             "Kernel executor: launching matmul {}x{}x{} with {} threads/block",
-            m, n, k, params.threads_per_block
+            matmul_params.m,
+            matmul_params.n,
+            matmul_params.k,
+            params.threads_per_block
         );
 
         // Phase 9 stub: Would call cublasGemmEx or equivalent
@@ -256,16 +278,17 @@ impl KernelExecutor {
     /// Launch activation function kernel
     pub fn launch_activation(
         &self,
-        input: *const f32,
-        output: *mut f32,
+        _input: *const f32,
+        _output: *mut f32,
         size: usize,
         activation: ActivationType,
     ) -> Result<(), KernelError> {
-        let params = self.autotune("activation", size)?;
+        let _params = self.autotune("activation", size)?;
 
         tracing::info!(
             "Kernel executor: launching activation {:?} on {} elements",
-            activation, size
+            activation,
+            size
         );
 
         // Phase 9 stub: Would launch CUDA kernel
@@ -275,17 +298,14 @@ impl KernelExecutor {
     /// Launch softmax kernel
     pub fn launch_softmax(
         &self,
-        input: *const f32,
-        output: *mut f32,
+        _input: *const f32,
+        _output: *mut f32,
         rows: usize,
         cols: usize,
     ) -> Result<(), KernelError> {
-        let params = self.autotune("softmax", rows * cols)?;
+        let _params = self.autotune("softmax", rows * cols)?;
 
-        tracing::info!(
-            "Kernel executor: launching softmax {}x{}",
-            rows, cols
-        );
+        tracing::info!("Kernel executor: launching softmax {}x{}", rows, cols);
 
         // Phase 9 stub: Would launch CUDA kernel
         Ok(())
@@ -294,17 +314,18 @@ impl KernelExecutor {
     /// Launch pattern dispatch kernel
     pub fn launch_pattern_dispatch(
         &self,
-        patterns: *const u8,
-        data: *const u8,
-        matches: *mut u64,
+        _patterns: *const u8,
+        _data: *const u8,
+        _matches: *mut u64,
         pattern_count: usize,
         data_size: usize,
     ) -> Result<usize, KernelError> {
-        let params = self.autotune("pattern_dispatch", data_size)?;
+        let _params = self.autotune("pattern_dispatch", data_size)?;
 
         tracing::info!(
             "Kernel executor: launching pattern dispatch {} patterns on {} bytes",
-            pattern_count, data_size
+            pattern_count,
+            data_size
         );
 
         // Phase 9 stub: Would launch pattern matching kernel
@@ -314,12 +335,12 @@ impl KernelExecutor {
     /// Launch descriptor processing kernel
     pub fn launch_descriptor_process(
         &self,
-        descriptors: *const u8,
-        output: *mut u8,
+        _descriptors: *const u8,
+        _output: *mut u8,
         count: usize,
         descriptor_size: usize,
     ) -> Result<(), KernelError> {
-        let params = self.autotune("descriptor", count * descriptor_size)?;
+        let _params = self.autotune("descriptor", count * descriptor_size)?;
 
         tracing::info!(
             "Kernel executor: launching descriptor processing {} descriptors",
@@ -452,7 +473,7 @@ impl SIMDKernel {
                 }
             }
             ActivationType::GELU => {
-                const SQRT_2_PI: f32 = 0.7978845608;
+                const SQRT_2_PI: f32 = 0.797_884_6;
                 for (i, &val) in input.iter().enumerate() {
                     let cdf = 0.5 * (1.0 + (SQRT_2_PI * (val + 0.044715 * val.powi(3))).tanh());
                     output[i] = val * cdf;

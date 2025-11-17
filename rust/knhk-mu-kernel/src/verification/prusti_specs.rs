@@ -25,9 +25,9 @@
 #![cfg_attr(prusti, register_tool(prusti))]
 
 use crate::{
-    timing::{TickBudget, TickCounter, BudgetStatus},
-    patterns::PatternId,
     guards::GuardContext,
+    patterns::PatternId,
+    timing::{BudgetStatus, TickBudget, TickCounter},
     CHATMAN_CONSTANT,
 };
 
@@ -307,10 +307,7 @@ pub fn saturating_sub_verified(a: u64, b: u64) -> u64 {
     (exhausted_flag == 1) == (result == BudgetStatus::Exhausted)
 ))]
 pub const fn branchless_status(exhausted_flag: u8) -> BudgetStatus {
-    const STATUS_TABLE: [BudgetStatus; 2] = [
-        BudgetStatus::Ok,
-        BudgetStatus::Exhausted,
-    ];
+    const STATUS_TABLE: [BudgetStatus; 2] = [BudgetStatus::Ok, BudgetStatus::Exhausted];
     STATUS_TABLE[exhausted_flag as usize]
 }
 
@@ -345,10 +342,7 @@ pub fn deterministic_execution(ticks1: u64, ticks2: u64) -> bool {
 #[cfg_attr(prusti, requires(guard_params[0] > 0))]
 #[cfg_attr(prusti, ensures(result.budget.used <= CHATMAN_CONSTANT))]
 #[cfg_attr(prusti, ensures(!result.overrun))]
-pub fn complete_hot_path_verified(
-    pattern_id: u8,
-    guard_params: [u64; 4],
-) -> HotPathResult {
+pub fn complete_hot_path_verified(pattern_id: u8, guard_params: [u64; 4]) -> HotPathResult {
     let mut budget = TickBudget::chatman();
 
     // Pattern dispatch (1-2 ticks)

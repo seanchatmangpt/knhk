@@ -10,8 +10,8 @@
 //! - Formal correctness guarantees
 //! - Zero runtime overhead
 
-use core::marker::PhantomData;
 use crate::const_assert;
+use core::marker::PhantomData;
 
 /// Verification level - strength of correctness guarantees
 pub trait VerificationLevel: 'static {
@@ -204,7 +204,7 @@ impl<const TICKS: u8> CorrectnessCondition for Precondition<TICKS> {
     const NAME: &'static str = "precondition";
 
     fn check() -> bool {
-        TICKS <= 8  // Chatman constant
+        TICKS <= 8 // Chatman constant
     }
 }
 
@@ -214,7 +214,7 @@ impl<const RESULT_SIZE: usize> CorrectnessCondition for Postcondition<RESULT_SIZ
     const NAME: &'static str = "postcondition";
 
     fn check() -> bool {
-        RESULT_SIZE > 0  // Must produce non-empty result
+        RESULT_SIZE > 0 // Must produce non-empty result
     }
 }
 
@@ -224,7 +224,7 @@ impl<const MAX_MEMORY: usize> CorrectnessCondition for Invariant<MAX_MEMORY> {
     const NAME: &'static str = "invariant";
 
     fn check() -> bool {
-        MAX_MEMORY <= 1024 * 1024  // Max 1MB
+        MAX_MEMORY <= 1024 * 1024 // Max 1MB
     }
 }
 
@@ -333,7 +333,8 @@ pub struct SymbolicPath<const BRANCH_COUNT: usize> {
 
 impl<const BRANCH_COUNT: usize> SymbolicPath<BRANCH_COUNT> {
     pub const fn new() -> Self {
-        /* const_assert!(BRANCH_COUNT <= 256); */  // Limit path explosion
+        /* const_assert!(BRANCH_COUNT <= 256); */
+        // Limit path explosion
         Self {
             _phantom: PhantomData,
         }
@@ -353,7 +354,8 @@ pub struct ModelChecker<const MAX_STATES: usize> {
 impl<const MAX_STATES: usize> ModelChecker<MAX_STATES> {
     pub const fn new() -> Self {
         /* const_assert!(MAX_STATES > 0); */
-        /* const_assert!(MAX_STATES <= 10000); */  // Prevent state explosion
+        /* const_assert!(MAX_STATES <= 10000); */
+        // Prevent state explosion
         Self {
             _phantom: PhantomData,
         }
@@ -393,14 +395,20 @@ mod tests {
     #[test]
     fn test_proof_creation() {
         let proof: Proof<Terminates> = Proof::new();
-        assert_eq!(Proof::<Terminates>::description(), "Workflow terminates in bounded time");
+        assert_eq!(
+            Proof::<Terminates>::description(),
+            "Workflow terminates in bounded time"
+        );
         assert!(Proof::<Terminates>::is_safety_critical());
     }
 
     #[test]
     fn test_verified_workflow() {
         let workflow: VerifiedWorkflow<u32, u64, Verified> = VerifiedWorkflow::new();
-        assert_eq!(VerifiedWorkflow::<u32, u64, Verified>::verification_level(), "verified");
+        assert_eq!(
+            VerifiedWorkflow::<u32, u64, Verified>::verification_level(),
+            "verified"
+        );
     }
 
     #[test]

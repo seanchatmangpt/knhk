@@ -151,7 +151,8 @@ impl PatternDispatcher {
         dispatch_table[PatternType::MultiChoice as usize] = pattern_multi_choice;
         dispatch_table[PatternType::StructuredSyncMerge as usize] = pattern_structured_sync_merge;
         dispatch_table[PatternType::MultiMerge as usize] = pattern_multi_merge;
-        dispatch_table[PatternType::StructuredDiscriminator as usize] = pattern_structured_discriminator;
+        dispatch_table[PatternType::StructuredDiscriminator as usize] =
+            pattern_structured_discriminator;
         // ... (register all 43 patterns)
 
         Self { dispatch_table }
@@ -459,17 +460,17 @@ pub struct PatternValidator;
 
 impl PatternValidator {
     /// Check if pattern combination is valid
-    pub fn validate_combination(
-        source: PatternType,
-        target: PatternType,
-    ) -> Result<(), String> {
+    pub fn validate_combination(source: PatternType, target: PatternType) -> Result<(), String> {
         // Check against permutation matrix
         match (source, target) {
             (PatternType::ParallelSplit, PatternType::Synchronization) => Ok(()),
             (PatternType::ExclusiveChoice, PatternType::SimpleMerge) => Ok(()),
             (PatternType::MultiChoice, PatternType::StructuredSyncMerge) => Ok(()),
             // ... (full validation matrix)
-            _ => Err(format!("Invalid pattern combination: {:?} -> {:?}", source, target)),
+            _ => Err(format!(
+                "Invalid pattern combination: {:?} -> {:?}",
+                source, target
+            )),
         }
     }
 
@@ -489,11 +490,7 @@ mod tests {
     fn test_pattern_dispatcher() {
         let dispatcher = PatternDispatcher::new();
 
-        let mut ctx = PatternFactory::create(
-            PatternType::Sequence,
-            1,
-            PatternConfig::default(),
-        );
+        let mut ctx = PatternFactory::create(PatternType::Sequence, 1, PatternConfig::default());
         ctx.input_mask = 1;
 
         let result = dispatcher.dispatch(&ctx);
@@ -546,7 +543,8 @@ mod tests {
         assert!(PatternValidator::validate_combination(
             PatternType::ParallelSplit,
             PatternType::Synchronization
-        ).is_ok());
+        )
+        .is_ok());
 
         // Check all patterns are in matrix
         for i in 1..=43 {

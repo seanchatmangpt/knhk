@@ -31,8 +31,8 @@ impl DescriptorSigner {
     /// Generate new key pair
     fn generate_key_pair() -> signature::Ed25519KeyPair {
         let rng = rand::SystemRandom::new();
-        let pkcs8_bytes = signature::Ed25519KeyPair::generate_pkcs8(&rng)
-            .expect("Failed to generate key pair");
+        let pkcs8_bytes =
+            signature::Ed25519KeyPair::generate_pkcs8(&rng).expect("Failed to generate key pair");
 
         signature::Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref())
             .expect("Failed to parse key pair")
@@ -69,7 +69,9 @@ impl DescriptorSigner {
             return Ok(Vec::new());
         }
 
-        let key_pair = self.key_pair.as_ref()
+        let key_pair = self
+            .key_pair
+            .as_ref()
             .ok_or_else(|| WorkflowError::Crypto("No key pair loaded".to_string()))?;
 
         info!("Signing descriptor");
@@ -91,17 +93,18 @@ impl DescriptorSigner {
             return Ok(());
         }
 
-        let key_pair = self.key_pair.as_ref()
+        let key_pair = self
+            .key_pair
+            .as_ref()
             .ok_or_else(|| WorkflowError::Crypto("No key pair loaded".to_string()))?;
 
         let public_key = key_pair.public_key();
-        let peer_public_key = signature::UnparsedPublicKey::new(
-            &signature::ED25519,
-            public_key.as_ref(),
-        );
+        let peer_public_key =
+            signature::UnparsedPublicKey::new(&signature::ED25519, public_key.as_ref());
 
-        peer_public_key.verify(descriptor, signature)
-            .map_err(|e| WorkflowError::Crypto(format!("Signature verification failed: {:?}", e)))?;
+        peer_public_key.verify(descriptor, signature).map_err(|e| {
+            WorkflowError::Crypto(format!("Signature verification failed: {:?}", e))
+        })?;
 
         info!("Signature verified successfully");
         Ok(())
@@ -134,7 +137,7 @@ impl Default for DescriptorSigner {
 mod tests {
     use super::*;
     use crate::compiler::linker::{
-        LinkedDescriptor, CodeSegment, DataSegment, LinkedSymbolTable, LinkMetadata,
+        CodeSegment, DataSegment, LinkMetadata, LinkedDescriptor, LinkedSymbolTable,
     };
     use std::collections::HashMap;
 

@@ -2,14 +2,14 @@
 //!
 //! Integrates all components into the complete μ-kernel
 
+use crate::guards::GuardRegistry;
+use crate::isa::{GuardContext, MuInstruction, TaskResult};
+use crate::mape::MapeKColon;
+use crate::receipts::{Receipt, ReceiptChain};
+use crate::sigma::{SigmaCompiled, SigmaPointer};
+use crate::timing::{TickBudget, TickCounter};
 use alloc::format;
 use alloc::string::String;
-use crate::sigma::{SigmaCompiled, SigmaPointer};
-use crate::isa::{MuInstruction, GuardContext, TaskResult};
-use crate::timing::{TickCounter, TickBudget};
-use crate::receipts::{Receipt, ReceiptChain};
-use crate::guards::GuardRegistry;
-use crate::mape::MapeKColon;
 
 /// μ-Kernel state
 pub struct MuState {
@@ -69,13 +69,13 @@ impl MuKernel {
 
         // Create receipt
         let receipt = Receipt::new(
-            0,  // Will be assigned by chain
+            0, // Will be assigned by chain
             self.state.sigma.load().unwrap().header.hash,
-            [0; 32],  // Would compute O_in hash
+            [0; 32], // Would compute O_in hash
             result.output_hash,
             total_ticks,
             task_id,
-            0,  // pattern_id from result
+            0, // pattern_id from result
         );
 
         // Store receipt

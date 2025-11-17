@@ -12,6 +12,6 @@ pub use invariant_checker::{
     Invariant, InvariantCheckResult, InvariantChecker, InvariantPredicate, InvariantType,
 };
 pub use shacl_validator::{
-    NodeKind, PropertyConstraint, ShaclSeverity, ShaclShape, ShaclValidationResult,
-    ShaclValidator, ShaclViolation,
+    NodeKind, PropertyConstraint, ShaclSeverity, ShaclShape, ShaclValidationResult, ShaclValidator,
+    ShaclViolation,
 };

@@ -11,7 +11,7 @@ fn bench_guard_tick_budget(c: &mut Criterion) {
     group.sample_size(100000);
 
     let ctx = GuardContext {
-        params: [8, 5, 0, 0, 0, 0, 0, 0],  // budget=8, used=5
+        params: [8, 5, 0, 0, 0, 0, 0, 0], // budget=8, used=5
     };
 
     group.bench_function("guard_tick_budget", |b| {
@@ -29,7 +29,7 @@ fn bench_guard_range(c: &mut Criterion) {
     group.sample_size(100000);
 
     let ctx = GuardContext {
-        params: [50, 10, 90, 0, 0, 0, 0, 0],  // value=50, min=10, max=90
+        params: [50, 10, 90, 0, 0, 0, 0, 0], // value=50, min=10, max=90
     };
 
     group.bench_function("guard_range", |b| {
@@ -47,7 +47,7 @@ fn bench_guard_threshold(c: &mut Criterion) {
     group.sample_size(100000);
 
     let ctx = GuardContext {
-        params: [100, 75, 0, 0, 0, 0, 0, 0],  // value=100, threshold=75
+        params: [100, 75, 0, 0, 0, 0, 0, 0], // value=100, threshold=75
     };
 
     group.bench_function("guard_threshold", |b| {
@@ -66,11 +66,11 @@ fn bench_guard_branchless(c: &mut Criterion) {
 
     // Verify branchless execution by testing both paths with same timing
     let ctx_pass = GuardContext {
-        params: [8, 5, 0, 0, 0, 0, 0, 0],  // Passes
+        params: [8, 5, 0, 0, 0, 0, 0, 0], // Passes
     };
 
     let ctx_fail = GuardContext {
-        params: [8, 10, 0, 0, 0, 0, 0, 0],  // Fails
+        params: [8, 10, 0, 0, 0, 0, 0, 0], // Fails
     };
 
     group.bench_function("pass_path", |b| {

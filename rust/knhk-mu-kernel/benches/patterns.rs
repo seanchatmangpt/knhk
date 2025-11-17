@@ -2,10 +2,10 @@
 //!
 //! Measures all 43 Van der Aalst workflow patterns
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use knhk_mu_kernel::patterns::{PatternId, PatternHandler};
-use knhk_mu_kernel::timing::TickBudget;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use knhk_mu_kernel::guards::GuardContext;
+use knhk_mu_kernel::patterns::{PatternHandler, PatternId};
+use knhk_mu_kernel::timing::TickBudget;
 
 fn bench_all_patterns(c: &mut Criterion) {
     let mut group = c.benchmark_group("patterns");
@@ -31,13 +31,25 @@ fn bench_all_patterns(c: &mut Criterion) {
     // Structural Patterns (10-13)
     bench_pattern(&mut group, PatternId::ArbitraryCycles, &obs);
     bench_pattern(&mut group, PatternId::ImplicitTermination, &obs);
-    bench_pattern(&mut group, PatternId::MultipleInstancesWithoutSynchronization, &obs);
-    bench_pattern(&mut group, PatternId::MultipleInstancesWithAPrioriDesignTimeKnowledge, &obs);
+    bench_pattern(
+        &mut group,
+        PatternId::MultipleInstancesWithoutSynchronization,
+        &obs,
+    );
+    bench_pattern(
+        &mut group,
+        PatternId::MultipleInstancesWithAPrioriDesignTimeKnowledge,
+        &obs,
+    );
 
     group.finish();
 }
 
-fn bench_pattern(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>, pattern: PatternId, obs: &GuardContext) {
+fn bench_pattern(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+    pattern: PatternId,
+    obs: &GuardContext,
+) {
     let pattern_name = format!("{:?}", pattern);
 
     group.bench_with_input(
@@ -86,7 +98,11 @@ fn bench_pattern_categories(c: &mut Criterion) {
     for pattern in control_flow {
         let mut budget = TickBudget::chatman();
         let _ = pattern.execute(&obs, &mut budget);
-        assert!(budget.used() <= 2, "Control flow pattern too expensive: {}", budget.used());
+        assert!(
+            budget.used() <= 2,
+            "Control flow pattern too expensive: {}",
+            budget.used()
+        );
     }
 
     // Group 2: Advanced Branching (moderate, 3-5 ticks)
@@ -99,7 +115,11 @@ fn bench_pattern_categories(c: &mut Criterion) {
     for pattern in branching {
         let mut budget = TickBudget::chatman();
         let _ = pattern.execute(&obs, &mut budget);
-        assert!(budget.used() <= 5, "Branching pattern too expensive: {}", budget.used());
+        assert!(
+            budget.used() <= 5,
+            "Branching pattern too expensive: {}",
+            budget.used()
+        );
     }
 
     group.finish();

@@ -2,9 +2,9 @@
 //!
 //! Enables cross-machine reproducibility of scheduler execution.
 
+use crate::concurrency::logical_time::Timestamp;
 use alloc::vec::Vec;
 use core::slice::Iter;
-use crate::concurrency::logical_time::Timestamp;
 
 /// Replay seed (for deterministic initialization)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -270,9 +270,7 @@ impl ReplayStats {
                 ReplayEvent::TaskEnqueued { task_id, .. } => {
                     unique_tasks.insert(*task_id);
                 }
-                ReplayEvent::TaskExecuted {
-                    task_id, ticks, ..
-                } => {
+                ReplayEvent::TaskExecuted { task_id, ticks, .. } => {
                     unique_tasks.insert(*task_id);
                     total_ticks += *ticks;
                 }

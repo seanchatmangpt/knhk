@@ -7,12 +7,12 @@
 //! - Memory pinning for zero-copy transfers
 //! - Garbage collection and defragmentation
 
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use std::sync::Arc;
-use std::collections::VecDeque;
-use parking_lot::RwLock;
 use dashmap::DashMap;
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
+use std::sync::Arc;
+use thiserror::Error;
 
 /// Memory management error
 #[derive(Error, Debug)]
@@ -132,7 +132,7 @@ impl MemoryPool {
         }
 
         // Round up to alignment
-        let aligned_size = (size + align - 1) / align * align;
+        let aligned_size = size.div_ceil(align) * align;
 
         // Try to reuse free block
         if let Some(idx) = self.free_blocks.iter().position(|b| b.size >= aligned_size) {
@@ -265,7 +265,8 @@ impl MemoryPool {
         if self.free_blocks.is_empty() {
             return 0.0;
         }
-        let avg_free = self.free_blocks.iter().map(|b| b.size).sum::<u64>() / self.free_blocks.len() as u64;
+        let avg_free =
+            self.free_blocks.iter().map(|b| b.size).sum::<u64>() / self.free_blocks.len() as u64;
         let largest_free = self.free_blocks.iter().map(|b| b.size).max().unwrap_or(0);
         (largest_free as f64 / avg_free as f64).min(1.0) as f32
     }
@@ -326,7 +327,9 @@ impl MemoryManager {
             4_000_000_000,
         )));
 
-        tracing::info!("Memory manager: initialized with 14GB total (8 device + 2 pinned + 4 unified)");
+        tracing::info!(
+            "Memory manager: initialized with 14GB total (8 device + 2 pinned + 4 unified)"
+        );
 
         Ok(Self {
             device_pool,
@@ -355,7 +358,8 @@ impl MemoryManager {
 
         tracing::debug!(
             "Memory manager: allocated device memory {} bytes at 0x{:x}",
-            size, ptr
+            size,
+            ptr
         );
 
         Ok(ptr)
@@ -381,7 +385,8 @@ impl MemoryManager {
 
         tracing::debug!(
             "Memory manager: allocated pinned memory {} bytes at 0x{:x}",
-            size, ptr
+            size,
+            ptr
         );
 
         Ok(ptr)
@@ -405,7 +410,8 @@ impl MemoryManager {
 
         tracing::debug!(
             "Memory manager: allocated unified memory {} bytes at 0x{:x}",
-            size, ptr
+            size,
+            ptr
         );
 
         Ok(ptr)
@@ -442,7 +448,8 @@ impl MemoryManager {
 
         tracing::debug!(
             "Memory manager: pinned memory {} bytes at 0x{:x}",
-            size, ptr
+            size,
+            ptr
         );
 
         Ok(())

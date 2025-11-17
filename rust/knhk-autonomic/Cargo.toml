@@ -21,7 +21,7 @@ tokio-stream.workspace = true
 futures.workspace = true
 
 # RDF & SPARQL
-oxigraph.workspace = true
+oxigraph = { workspace = true, optional = true }
 
 # Serialization
 serde = { workspace = true, features = ["derive"] }
@@ -50,6 +50,9 @@ chrono = { workspace = true, features = ["serde"] }
 
 # Concurrency
 rayon.workspace = true
+
+[features]
+rdf = ["oxigraph"]
 
 [dev-dependencies]
 tokio-test.workspace = true

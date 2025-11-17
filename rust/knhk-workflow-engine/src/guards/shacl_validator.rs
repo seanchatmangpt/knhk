@@ -104,7 +104,9 @@ impl ShaclValidator {
     /// Register a SHACL shape
     pub fn register_shape(&mut self, shape: ShaclShape) -> WorkflowResult<()> {
         if shape.id.is_empty() {
-            return Err(WorkflowError::Validation("Shape ID cannot be empty".to_string()));
+            return Err(WorkflowError::Validation(
+                "Shape ID cannot be empty".to_string(),
+            ));
         }
 
         self.shapes.insert(shape.id.clone(), shape);
@@ -112,7 +114,10 @@ impl ShaclValidator {
     }
 
     /// Validate RDF graph against shapes
-    pub fn validate(&self, graph_data: &serde_json::Value) -> WorkflowResult<ShaclValidationResult> {
+    pub fn validate(
+        &self,
+        graph_data: &serde_json::Value,
+    ) -> WorkflowResult<ShaclValidationResult> {
         let mut violations = Vec::new();
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -131,7 +136,8 @@ impl ShaclValidator {
                                     if let Some(min_count) = constraint.min_count {
                                         if min_count > 0 && node.get(prop_name).is_none() {
                                             violations.push(ShaclViolation {
-                                                focus_node: node.get("@id")
+                                                focus_node: node
+                                                    .get("@id")
                                                     .and_then(|id| id.as_str())
                                                     .unwrap_or("unknown")
                                                     .to_string(),
@@ -204,7 +210,9 @@ mod tests {
             },
         };
 
-        validator.register_shape(shape).expect("Failed to register shape");
+        validator
+            .register_shape(shape)
+            .expect("Failed to register shape");
 
         // Valid graph
         let valid_graph = serde_json::json!({
@@ -226,7 +234,9 @@ mod tests {
             }]
         });
 
-        let result = validator.validate(&invalid_graph).expect("Validation failed");
+        let result = validator
+            .validate(&invalid_graph)
+            .expect("Validation failed");
         assert!(!result.conforms);
         assert_eq!(result.violations.len(), 1);
     }
@@ -241,7 +251,9 @@ mod tests {
             properties: HashMap::new(),
         };
 
-        validator.register_shape(shape).expect("Registration failed");
+        validator
+            .register_shape(shape)
+            .expect("Registration failed");
 
         let shapes = validator.list_shapes();
         assert_eq!(shapes.len(), 1);

@@ -7,13 +7,13 @@
 //! - Snapshots (Σ) with Versioning
 //! - Ontology parsing with Code generation
 
-use crate::error::{WorkflowError, WorkflowResult};
 use crate::engine::HookEngine;
-use crate::patterns::{PatternId, PatternRegistry};
+use crate::error::{WorkflowError, WorkflowResult};
 use crate::guards::InvariantChecker;
+use crate::parser::WorkflowSpec;
+use crate::patterns::{PatternId, PatternRegistry};
 use crate::receipts::{Receipt, ReceiptStore};
 use crate::snapshots::SnapshotVersioning;
-use crate::parser::WorkflowSpec;
 use std::sync::Arc;
 
 /// Extension trait for integrating hook engine with pattern registry
@@ -47,11 +47,9 @@ impl HookEnginePatternExt for HookEngine {
             let pattern = pattern_library.get_pattern(&task.pattern)?;
 
             // Execute task through hook
-            output = self.execute_task_with_pattern(
-                &task.id,
-                output,
-                pattern,
-            ).await?;
+            output = self
+                .execute_task_with_pattern(&task.id, output, pattern)
+                .await?;
 
             // Validate intermediate state
             invariant_checker.validate_task_output(&task.id, &output)?;
@@ -130,7 +128,9 @@ fn serialize_spec_to_rdf(spec: &WorkflowSpec) -> WorkflowResult<String> {
     // Simple RDF serialization
     let mut rdf = String::new();
     rdf.push_str(&format!("@prefix : <http://example.org/workflow#> .\n"));
-    rdf.push_str(&format!("@prefix yawl: <http://www.yawlfoundation.org/yawlschema#> .\n\n"));
+    rdf.push_str(&format!(
+        "@prefix yawl: <http://www.yawlfoundation.org/yawlschema#> .\n\n"
+    ));
 
     rdf.push_str(&format!(":Workflow{} a yawl:Workflow ;\n", spec.id));
     rdf.push_str(&format!("    yawl:name \"{}\" ;\n", spec.name));
@@ -199,12 +199,15 @@ impl LayerIntegrator {
         let pattern_library = crate::engine::PatternLibrary::new();
 
         // 3. Execute through hooks
-        let output = self.hook_engine.execute_workflow(
-            spec,
-            input.clone(),
-            &pattern_library,
-            &self.invariant_checker,
-        ).await?;
+        let output = self
+            .hook_engine
+            .execute_workflow(
+                spec,
+                input.clone(),
+                &pattern_library,
+                &self.invariant_checker,
+            )
+            .await?;
 
         // 4. Create snapshot
         let snapshot_id = self.snapshot_versioning.create_snapshot_from_spec(spec)?;

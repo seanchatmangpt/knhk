@@ -1,10 +1,10 @@
 // knhk-kernel: Guard evaluation performance benchmarks
 // Measures boolean gate evaluation in CPU ticks
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, BatchSize};
+use criterion::{black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use knhk_kernel::{
+    descriptor::{ExecutionContext, ObservationBuffer, ResourceState},
     guard::{Guard, GuardType, Predicate, ResourceType, StateFlags},
-    descriptor::{ExecutionContext, ResourceState, ObservationBuffer},
     timer::read_tsc,
 };
 
@@ -118,7 +118,7 @@ fn bench_compound_guards(c: &mut Criterion) {
     // OR guards (short-circuit on first true)
     group.bench_function("or_2_guards", |b| {
         let g1 = Guard::predicate(Predicate::Equal, 0, 99); // False
-        let g2 = Guard::resource(ResourceType::Cpu, 50);    // True
+        let g2 = Guard::resource(ResourceType::Cpu, 50); // True
         let guard = Guard::or(vec![g1, g2]);
 
         b.iter(|| {
@@ -145,7 +145,7 @@ fn bench_compound_guards(c: &mut Criterion) {
         let and1 = Guard::and(vec![g1, g2]);
 
         let g3 = Guard::resource(ResourceType::Memory, 2048); // False
-        let g4 = Guard::state(StateFlags::COMPLETED);        // False
+        let g4 = Guard::state(StateFlags::COMPLETED); // False
         let and2 = Guard::and(vec![g3, g4]);
 
         let guard = Guard::or(vec![and1, and2]); // First AND is true
@@ -167,7 +167,10 @@ fn bench_guard_ticks(c: &mut Criterion) {
 
     // Measure in CPU ticks
     let guards = vec![
-        ("simple_predicate", Guard::predicate(Predicate::Equal, 0, 42)),
+        (
+            "simple_predicate",
+            Guard::predicate(Predicate::Equal, 0, 42),
+        ),
         ("resource_check", Guard::resource(ResourceType::Cpu, 50)),
         ("state_check", Guard::state(StateFlags::RUNNING)),
         (
@@ -180,24 +183,20 @@ fn bench_guard_ticks(c: &mut Criterion) {
     ];
 
     for (name, guard) in guards {
-        group.bench_with_input(
-            BenchmarkId::new("ticks", name),
-            &guard,
-            |b, guard| {
-                b.iter_custom(|iters| {
-                    let mut total_ticks = 0u64;
+        group.bench_with_input(BenchmarkId::new("ticks", name), &guard, |b, guard| {
+            b.iter_custom(|iters| {
+                let mut total_ticks = 0u64;
 
-                    for _ in 0..iters {
-                        let start = read_tsc();
-                        let _result = guard.evaluate(&context);
-                        let end = read_tsc();
-                        total_ticks += end - start;
-                    }
+                for _ in 0..iters {
+                    let start = read_tsc();
+                    let _result = guard.evaluate(&context);
+                    let end = read_tsc();
+                    total_ticks += end - start;
+                }
 
-                    std::time::Duration::from_nanos(total_ticks / iters)
-                });
-            },
-        );
+                std::time::Duration::from_nanos(total_ticks / iters)
+            });
+        });
     }
 
     group.finish();
@@ -246,10 +245,7 @@ fn bench_worst_case_guards(c: &mut Criterion) {
         let mut guard = Guard::predicate(Predicate::Equal, 0, 42);
 
         for _ in 0..5 {
-            guard = Guard::and(vec![
-                guard.clone(),
-                Guard::resource(ResourceType::Cpu, 50),
-            ]);
+            guard = Guard::and(vec![guard.clone(), Guard::resource(ResourceType::Cpu, 50)]);
         }
 
         b.iter(|| {
@@ -286,7 +282,7 @@ fn bench_guard_patterns(c: &mut Criterion) {
         let guard = Guard::and(vec![
             Guard::state(StateFlags::INITIALIZED),
             Guard::predicate(Predicate::NotEqual, 0, 0), // User ID != 0
-            Guard::resource(ResourceType::Cpu, 10),       // Has resources
+            Guard::resource(ResourceType::Cpu, 10),      // Has resources
         ]);
 
         b.iter(|| {
@@ -313,12 +309,12 @@ fn bench_guard_patterns(c: &mut Criterion) {
     group.bench_function("fallback_chain", |b| {
         // Try primary, fallback to secondary
         let primary = Guard::and(vec![
-            Guard::resource(ResourceType::Cpu, 90),  // Needs high CPU (will fail)
+            Guard::resource(ResourceType::Cpu, 90), // Needs high CPU (will fail)
             Guard::resource(ResourceType::Memory, 2048), // Needs high memory (will fail)
         ]);
 
         let secondary = Guard::and(vec![
-            Guard::resource(ResourceType::Cpu, 50),   // Lower requirements
+            Guard::resource(ResourceType::Cpu, 50), // Lower requirements
             Guard::resource(ResourceType::Memory, 512),
         ]);
 

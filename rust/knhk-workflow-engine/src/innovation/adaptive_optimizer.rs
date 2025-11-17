@@ -10,11 +10,11 @@
 //! assumptions. The optimizer applies reinforcement learning principles
 //! to discover better execution strategies.
 
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::execution::{ReceiptStore, Receipt, SnapshotId, SnapshotStore, OntologyFile};
-use crate::observability::{MapekManager, DarkMatterDetector};
+use crate::execution::{OntologyFile, Receipt, ReceiptStore, SnapshotId, SnapshotStore};
+use crate::observability::{DarkMatterDetector, MapekManager};
 use serde::{Deserialize, Serialize};
 
 /// Optimization strategy
@@ -44,13 +44,19 @@ pub struct OptimizationRecommendation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OptimizationAction {
     /// Add caching layer
-    AddCaching { hook_name: String, cache_ttl_secs: u64 },
+    AddCaching {
+        hook_name: String,
+        cache_ttl_secs: u64,
+    },
     /// Parallelize sequential steps
     Parallelize { hooks: Vec<String> },
     /// Add retry logic
     AddRetry { hook_name: String, max_retries: u32 },
     /// Reduce timeout
-    ReduceTimeout { hook_name: String, new_timeout_ms: u64 },
+    ReduceTimeout {
+        hook_name: String,
+        new_timeout_ms: u64,
+    },
     /// Add circuit breaker
     AddCircuitBreaker { hook_name: String, threshold: f64 },
     /// Reorder execution
@@ -58,7 +64,10 @@ pub enum OptimizationAction {
     /// Remove redundant step
     RemoveRedundant { hook_name: String },
     /// Increase batch size
-    IncreaseBatchSize { hook_name: String, new_batch_size: usize },
+    IncreaseBatchSize {
+        hook_name: String,
+        new_batch_size: usize,
+    },
 }
 
 /// Workflow performance metrics derived from receipts
@@ -188,7 +197,10 @@ impl AdaptiveOptimizer {
     }
 
     /// Latency-focused optimizations
-    fn latency_optimizations(&self, metrics: &PerformanceMetrics) -> Vec<OptimizationRecommendation> {
+    fn latency_optimizations(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Vec<OptimizationRecommendation> {
         let mut recommendations = Vec::new();
 
         // High average ticks suggests parallelization opportunity
@@ -223,7 +235,8 @@ impl AdaptiveOptimizer {
             recommendations.push(OptimizationRecommendation {
                 strategy: OptimizationStrategy::MinimizeLatency,
                 confidence: 0.9,
-                description: "Reduce Chatman constant violations with hot path optimization".to_string(),
+                description: "Reduce Chatman constant violations with hot path optimization"
+                    .to_string(),
                 estimated_improvement: 40.0,
                 actions: vec![
                     OptimizationAction::AddCaching {
@@ -242,7 +255,10 @@ impl AdaptiveOptimizer {
     }
 
     /// Reliability-focused optimizations
-    fn reliability_optimizations(&self, metrics: &PerformanceMetrics) -> Vec<OptimizationRecommendation> {
+    fn reliability_optimizations(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Vec<OptimizationRecommendation> {
         let mut recommendations = Vec::new();
 
         // Low success rate suggests retry logic needed
@@ -282,7 +298,10 @@ impl AdaptiveOptimizer {
     }
 
     /// Resource-focused optimizations
-    fn resource_optimizations(&self, metrics: &PerformanceMetrics) -> Vec<OptimizationRecommendation> {
+    fn resource_optimizations(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Vec<OptimizationRecommendation> {
         let mut recommendations = Vec::new();
 
         // Low success rate but high execution count suggests waste
@@ -292,15 +311,13 @@ impl AdaptiveOptimizer {
                 confidence: 0.7,
                 description: "Reduce wasted executions with early validation".to_string(),
                 estimated_improvement: 15.0,
-                actions: vec![
-                    OptimizationAction::Reorder {
-                        new_order: vec![
-                            "validate".to_string(),
-                            "process".to_string(),
-                            "store".to_string(),
-                        ],
-                    },
-                ],
+                actions: vec![OptimizationAction::Reorder {
+                    new_order: vec![
+                        "validate".to_string(),
+                        "process".to_string(),
+                        "store".to_string(),
+                    ],
+                }],
             });
         }
 
@@ -314,7 +331,10 @@ impl AdaptiveOptimizer {
         before_metrics: PerformanceMetrics,
         after_metrics: PerformanceMetrics,
     ) {
-        let history = self.learning_history.entry(workflow_id).or_insert_with(Vec::new);
+        let history = self
+            .learning_history
+            .entry(workflow_id)
+            .or_insert_with(Vec::new);
         history.push(before_metrics);
         history.push(after_metrics);
 
@@ -351,7 +371,7 @@ impl AdaptiveOptimizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::execution::{SnapshotManifest, ReceiptId};
+    use crate::execution::{ReceiptId, SnapshotManifest};
 
     #[test]
     fn test_optimizer_creation() {
@@ -360,12 +380,7 @@ mod tests {
         let dark_matter = Arc::new(DarkMatterDetector::new());
         let mape_k = Arc::new(MapekManager::new(dark_matter.clone()));
 
-        let _optimizer = AdaptiveOptimizer::new(
-            receipt_store,
-            snapshot_store,
-            mape_k,
-            dark_matter,
-        );
+        let _optimizer = AdaptiveOptimizer::new(receipt_store, snapshot_store, mape_k, dark_matter);
     }
 
     #[test]
@@ -388,12 +403,7 @@ mod tests {
             receipt_store.append(receipt).unwrap();
         }
 
-        let optimizer = AdaptiveOptimizer::new(
-            receipt_store,
-            snapshot_store,
-            mape_k,
-            dark_matter,
-        );
+        let optimizer = AdaptiveOptimizer::new(receipt_store, snapshot_store, mape_k, dark_matter);
 
         let metrics = optimizer.analyze_performance("test-workflow").unwrap();
 
@@ -409,12 +419,7 @@ mod tests {
         let dark_matter = Arc::new(DarkMatterDetector::new());
         let mape_k = Arc::new(MapekManager::new(dark_matter.clone()));
 
-        let optimizer = AdaptiveOptimizer::new(
-            receipt_store,
-            snapshot_store,
-            mape_k,
-            dark_matter,
-        );
+        let optimizer = AdaptiveOptimizer::new(receipt_store, snapshot_store, mape_k, dark_matter);
 
         let metrics = PerformanceMetrics {
             total_executions: 100,
@@ -432,9 +437,9 @@ mod tests {
         assert!(!recommendations.is_empty());
 
         // Should recommend parallelization and violation reduction
-        assert!(recommendations.iter().any(|r|
-            matches!(r.strategy, OptimizationStrategy::MinimizeLatency)
-        ));
+        assert!(recommendations
+            .iter()
+            .any(|r| matches!(r.strategy, OptimizationStrategy::MinimizeLatency)));
     }
 
     #[test]
@@ -444,12 +449,7 @@ mod tests {
         let dark_matter = Arc::new(DarkMatterDetector::new());
         let mape_k = Arc::new(MapekManager::new(dark_matter.clone()));
 
-        let optimizer = AdaptiveOptimizer::new(
-            receipt_store,
-            snapshot_store,
-            mape_k,
-            dark_matter,
-        );
+        let optimizer = AdaptiveOptimizer::new(receipt_store, snapshot_store, mape_k, dark_matter);
 
         let metrics = PerformanceMetrics {
             total_executions: 100,
@@ -467,9 +467,11 @@ mod tests {
         assert!(!recommendations.is_empty());
 
         // Should recommend retry and circuit breaker
-        let has_retry = recommendations.iter().any(|r|
-            r.actions.iter().any(|a| matches!(a, OptimizationAction::AddRetry { .. }))
-        );
+        let has_retry = recommendations.iter().any(|r| {
+            r.actions
+                .iter()
+                .any(|a| matches!(a, OptimizationAction::AddRetry { .. }))
+        });
         assert!(has_retry);
     }
 
@@ -480,12 +482,8 @@ mod tests {
         let dark_matter = Arc::new(DarkMatterDetector::new());
         let mape_k = Arc::new(MapekManager::new(dark_matter.clone()));
 
-        let mut optimizer = AdaptiveOptimizer::new(
-            receipt_store,
-            snapshot_store,
-            mape_k,
-            dark_matter,
-        );
+        let mut optimizer =
+            AdaptiveOptimizer::new(receipt_store, snapshot_store, mape_k, dark_matter);
 
         let before = PerformanceMetrics {
             total_executions: 100,

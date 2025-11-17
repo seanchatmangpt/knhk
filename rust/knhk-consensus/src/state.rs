@@ -268,10 +268,7 @@ impl StateMachineReplicator {
         let mut state = self.state.lock();
         *state = snapshot.data.clone();
 
-        info!(
-            version = snapshot.version,
-            "State restored from snapshot"
-        );
+        info!(version = snapshot.version, "State restored from snapshot");
 
         Ok(())
     }

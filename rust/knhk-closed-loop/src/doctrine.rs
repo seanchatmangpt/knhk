@@ -2,13 +2,13 @@
 // Converts organizational constraints into enforceable Q invariants
 // Implements the "Doctrine Encoding" layer from "From Programs to Planets" (2027)
 
-use dashmap::DashMap;
 use arc_swap::ArcSwap;
+use chrono::Timelike;
+use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::Arc;
-use chrono::Timelike;
 
 /// Organizational policy or constraint encoded as a machine-readable rule
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -72,14 +72,10 @@ pub enum ConstraintType {
     },
 
     /// SHACL-based schema constraints
-    Schema {
-        rules: Vec<String>,
-    },
+    Schema { rules: Vec<String> },
 
     /// Custom constraint type with flexible rule definition
-    Custom {
-        rule_type: String,
-    },
+    Custom { rule_type: String },
 }
 
 /// How strictly a doctrine rule is enforced
@@ -183,7 +179,9 @@ impl DoctrineStore {
             .as_secs();
 
         {
-            let mut history = self.history.write()
+            let mut history = self
+                .history
+                .write()
                 .map_err(|e| DoctrineError::Internal(format!("Lock error: {}", e)))?;
             history.push((timestamp, "add_rule".to_string(), rule.clone()));
         }
@@ -250,7 +248,10 @@ impl DoctrineStore {
     }
 
     /// Promote a new snapshot (atomic operation)
-    pub fn promote_snapshot(&self, new_rules: Vec<DoctrineRule>) -> Result<Arc<DoctrineSnapshot>, DoctrineError> {
+    pub fn promote_snapshot(
+        &self,
+        new_rules: Vec<DoctrineRule>,
+    ) -> Result<Arc<DoctrineSnapshot>, DoctrineError> {
         let new_snapshot = DoctrineSnapshot::new(new_rules)?;
         let arc_snapshot = Arc::new(new_snapshot);
         self.current_snapshot.store(arc_snapshot.clone());
@@ -259,7 +260,9 @@ impl DoctrineStore {
 
     /// Get history of all doctrine changes
     pub fn get_history(&self) -> Result<Vec<(u64, String, DoctrineRule)>, DoctrineError> {
-        let history = self.history.read()
+        let history = self
+            .history
+            .read()
             .map_err(|e| DoctrineError::Internal(format!("Lock error: {}", e)))?;
         Ok(history.clone())
     }
@@ -267,37 +270,49 @@ impl DoctrineStore {
     /// Validate rule structure
     fn validate_rule(&self, rule: &DoctrineRule) -> Result<(), DoctrineError> {
         if rule.id.is_empty() {
-            return Err(DoctrineError::InvalidRule("Rule ID cannot be empty".to_string()));
+            return Err(DoctrineError::InvalidRule(
+                "Rule ID cannot be empty".to_string(),
+            ));
         }
 
         if rule.name.is_empty() {
-            return Err(DoctrineError::InvalidRule("Rule name cannot be empty".to_string()));
+            return Err(DoctrineError::InvalidRule(
+                "Rule name cannot be empty".to_string(),
+            ));
         }
 
         if rule.sector.is_empty() {
-            return Err(DoctrineError::InvalidRule("Rule sector cannot be empty".to_string()));
+            return Err(DoctrineError::InvalidRule(
+                "Rule sector cannot be empty".to_string(),
+            ));
         }
 
         // Validate constraint type-specific requirements
         match &rule.constraint_type {
-            ConstraintType::ApprovalChain { required_signers, .. } => {
+            ConstraintType::ApprovalChain {
+                required_signers, ..
+            } => {
                 if *required_signers == 0 {
                     return Err(DoctrineError::InvalidRule(
-                        "ApprovalChain requires at least 1 signer".to_string()
+                        "ApprovalChain requires at least 1 signer".to_string(),
                     ));
                 }
             }
             ConstraintType::ResourceLimit { max_value, .. } => {
                 if *max_value < 0.0 {
                     return Err(DoctrineError::InvalidRule(
-                        "ResourceLimit max_value cannot be negative".to_string()
+                        "ResourceLimit max_value cannot be negative".to_string(),
                     ));
                 }
             }
-            ConstraintType::TimeWindow { start_hour, end_hour, .. } => {
+            ConstraintType::TimeWindow {
+                start_hour,
+                end_hour,
+                ..
+            } => {
                 if *start_hour >= 24 || *end_hour >= 24 {
                     return Err(DoctrineError::InvalidRule(
-                        "TimeWindow hours must be 0-23".to_string()
+                        "TimeWindow hours must be 0-23".to_string(),
                     ));
                 }
             }
@@ -337,7 +352,10 @@ impl DoctrineStore {
         context: &ValidationContext,
     ) -> Result<Option<DoctrineViolation>, DoctrineError> {
         match &rule.constraint_type {
-            ConstraintType::ApprovalChain { required_signers, sectors } => {
+            ConstraintType::ApprovalChain {
+                required_signers,
+                sectors,
+            } => {
                 if context.signers.len() < *required_signers {
                     return Ok(Some(DoctrineViolation {
                         rule_id: rule.id.clone(),
@@ -394,7 +412,10 @@ impl DoctrineStore {
                 Ok(None)
             }
 
-            ConstraintType::ResourceLimit { resource_type, max_value } => {
+            ConstraintType::ResourceLimit {
+                resource_type,
+                max_value,
+            } => {
                 if let Some(value) = context.resources.get(resource_type) {
                     if value > max_value {
                         return Ok(Some(DoctrineViolation {
@@ -412,7 +433,11 @@ impl DoctrineStore {
                 Ok(None)
             }
 
-            ConstraintType::TimeWindow { start_hour, end_hour, days } => {
+            ConstraintType::TimeWindow {
+                start_hour,
+                end_hour,
+                days,
+            } => {
                 let now = chrono::Utc::now();
                 let current_hour = now.hour() as u8;
                 let current_day = now.format("%A").to_string();
@@ -442,7 +467,9 @@ impl DoctrineStore {
                 Ok(None)
             }
 
-            ConstraintType::Schema { rules: _schema_rules } => {
+            ConstraintType::Schema {
+                rules: _schema_rules,
+            } => {
                 // Schema validation would parse proposal and check against SHACL rules
                 // Simplified for now - would integrate with actual RDF validation
                 Ok(None)
@@ -456,7 +483,10 @@ impl DoctrineStore {
                         return Ok(Some(DoctrineViolation {
                             rule_id: rule.id.clone(),
                             rule_name: rule.name.clone(),
-                            violation_reason: format!("Custom rule '{}' validation failed", rule_type),
+                            violation_reason: format!(
+                                "Custom rule '{}' validation failed",
+                                rule_type
+                            ),
                             enforcement_level: rule.enforcement_level.clone(),
                         }));
                     }
@@ -654,23 +684,21 @@ mod tests {
 
     #[test]
     fn test_doctrine_snapshot() {
-        let rules = vec![
-            DoctrineRule {
-                id: "R1".to_string(),
-                name: "Rule 1".to_string(),
-                sector: "s1".to_string(),
-                constraint_type: ConstraintType::ResourceLimit {
-                    resource_type: "memory".to_string(),
-                    max_value: 1024.0,
-                },
-                description: "Limit memory".to_string(),
-                parameters: HashMap::new(),
-                enforcement_level: EnforcementLevel::Mandatory,
-                source: "test".to_string(),
-                effective_date: 0,
-                expires: None,
-            }
-        ];
+        let rules = vec![DoctrineRule {
+            id: "R1".to_string(),
+            name: "Rule 1".to_string(),
+            sector: "s1".to_string(),
+            constraint_type: ConstraintType::ResourceLimit {
+                resource_type: "memory".to_string(),
+                max_value: 1024.0,
+            },
+            description: "Limit memory".to_string(),
+            parameters: HashMap::new(),
+            enforcement_level: EnforcementLevel::Mandatory,
+            source: "test".to_string(),
+            effective_date: 0,
+            expires: None,
+        }];
 
         let snapshot = DoctrineSnapshot::new(rules).expect("Failed to create snapshot");
         assert!(snapshot.verify_hash().expect("Hash verification failed"));
@@ -790,8 +818,13 @@ mod tests {
             constraint_type: ConstraintType::TimeWindow {
                 start_hour: 9,
                 end_hour: 17,
-                days: vec!["Monday".to_string(), "Tuesday".to_string(), "Wednesday".to_string(),
-                          "Thursday".to_string(), "Friday".to_string()],
+                days: vec![
+                    "Monday".to_string(),
+                    "Tuesday".to_string(),
+                    "Wednesday".to_string(),
+                    "Thursday".to_string(),
+                    "Friday".to_string(),
+                ],
             },
             description: "Business hours only".to_string(),
             parameters: HashMap::new(),
@@ -926,23 +959,21 @@ mod tests {
 
     #[test]
     fn test_doctrine_snapshot_hash_verification() {
-        let rules = vec![
-            DoctrineRule {
-                id: "R1".to_string(),
-                name: "Rule 1".to_string(),
-                sector: "s1".to_string(),
-                constraint_type: ConstraintType::ResourceLimit {
-                    resource_type: "memory".to_string(),
-                    max_value: 1024.0,
-                },
-                description: "Memory limit".to_string(),
-                parameters: HashMap::new(),
-                enforcement_level: EnforcementLevel::Mandatory,
-                source: "test".to_string(),
-                effective_date: 0,
-                expires: None,
-            }
-        ];
+        let rules = vec![DoctrineRule {
+            id: "R1".to_string(),
+            name: "Rule 1".to_string(),
+            sector: "s1".to_string(),
+            constraint_type: ConstraintType::ResourceLimit {
+                resource_type: "memory".to_string(),
+                max_value: 1024.0,
+            },
+            description: "Memory limit".to_string(),
+            parameters: HashMap::new(),
+            enforcement_level: EnforcementLevel::Mandatory,
+            source: "test".to_string(),
+            effective_date: 0,
+            expires: None,
+        }];
 
         let snapshot = DoctrineSnapshot::new(rules.clone()).expect("Failed to create snapshot");
 

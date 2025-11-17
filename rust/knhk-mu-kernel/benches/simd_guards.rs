@@ -17,24 +17,22 @@
 //! - `simd_bitmask`: SIMD bitmask operations
 //! - `batch_conversion`: AoS to SoA conversion overhead
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
-use knhk_mu_kernel::guards_simd::{
-    SimdGuardBatch, SimdGuardEvaluator, evaluate_guards_batch,
-    GuardBitmap, SIMD_BATCH_SIZE,
-};
-use knhk_mu_kernel::guards_simd::vectorized::{
-    simd_range_check, simd_threshold_ge, simd_threshold_le,
-    simd_equals, simd_bitmask_check, simd_select,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use knhk_mu_kernel::guards::GuardContext;
 use knhk_mu_kernel::guards_simd::fallback::{
-    evaluate_scalar, range_check_scalar, threshold_ge_scalar,
-    threshold_le_scalar, equals_scalar, bitmask_check_scalar,
-    select_scalar, DynamicGuardEvaluator,
+    bitmask_check_scalar, equals_scalar, evaluate_scalar, range_check_scalar, select_scalar,
+    threshold_ge_scalar, threshold_le_scalar, DynamicGuardEvaluator,
 };
 use knhk_mu_kernel::guards_simd::layout::{
-    GuardBatchPool, AosToSoaConverter, CacheAlignedBatch, MemoryStats,
+    AosToSoaConverter, CacheAlignedBatch, GuardBatchPool, MemoryStats,
 };
-use knhk_mu_kernel::guards::GuardContext;
+use knhk_mu_kernel::guards_simd::vectorized::{
+    simd_bitmask_check, simd_equals, simd_range_check, simd_select, simd_threshold_ge,
+    simd_threshold_le,
+};
+use knhk_mu_kernel::guards_simd::{
+    evaluate_guards_batch, GuardBitmap, SimdGuardBatch, SimdGuardEvaluator, SIMD_BATCH_SIZE,
+};
 
 /// Create a test guard batch with range checks
 fn create_test_batch() -> SimdGuardBatch {
@@ -114,22 +112,14 @@ fn bench_simd_range_check(c: &mut Criterion) {
 
     group.bench_function("simd_range_check", |b| {
         b.iter(|| {
-            let result = simd_range_check(
-                black_box(&values),
-                black_box(&mins),
-                black_box(&maxs),
-            );
+            let result = simd_range_check(black_box(&values), black_box(&mins), black_box(&maxs));
             black_box(result);
         });
     });
 
     group.bench_function("scalar_range_check", |b| {
         b.iter(|| {
-            let result = range_check_scalar(
-                black_box(&values),
-                black_box(&mins),
-                black_box(&maxs),
-            );
+            let result = range_check_scalar(black_box(&values), black_box(&mins), black_box(&maxs));
             black_box(result);
         });
     });
@@ -212,22 +202,16 @@ fn bench_simd_bitmask(c: &mut Criterion) {
 
     group.bench_function("simd_bitmask_check", |b| {
         b.iter(|| {
-            let result = simd_bitmask_check(
-                black_box(&values),
-                black_box(&masks),
-                black_box(&expected),
-            );
+            let result =
+                simd_bitmask_check(black_box(&values), black_box(&masks), black_box(&expected));
             black_box(result);
         });
     });
 
     group.bench_function("scalar_bitmask_check", |b| {
         b.iter(|| {
-            let result = bitmask_check_scalar(
-                black_box(&values),
-                black_box(&masks),
-                black_box(&expected),
-            );
+            let result =
+                bitmask_check_scalar(black_box(&values), black_box(&masks), black_box(&expected));
             black_box(result);
         });
     });
@@ -276,20 +260,16 @@ fn bench_guard_evaluator(c: &mut Criterion) {
     for count in [8, 16, 32, 64, 128].iter() {
         group.throughput(Throughput::Elements(*count as u64));
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(count),
-            count,
-            |b, &count| {
-                b.iter(|| {
-                    let mut evaluator = SimdGuardEvaluator::new();
-                    for i in 0..count {
-                        let _ = evaluator.add_guard(i as u64, 0, 100);
-                    }
-                    let result = evaluator.flush();
-                    black_box(result);
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
+            b.iter(|| {
+                let mut evaluator = SimdGuardEvaluator::new();
+                for i in 0..count {
+                    let _ = evaluator.add_guard(i as u64, 0, 100);
+                }
+                let result = evaluator.flush();
+                black_box(result);
+            });
+        });
     }
 
     group.finish();
@@ -302,28 +282,24 @@ fn bench_batch_conversion(c: &mut Criterion) {
     for count in [8, 16, 32, 64].iter() {
         group.throughput(Throughput::Elements(*count as u64));
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(count),
-            count,
-            |b, &count| {
-                let contexts: Vec<GuardContext> = (0..count)
-                    .map(|i| GuardContext {
-                        task_id: i as u64,
-                        obs_data: 0,
-                        params: [i as u64 * 10, 0, 100, 0],
-                    })
-                    .collect();
+        group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
+            let contexts: Vec<GuardContext> = (0..count)
+                .map(|i| GuardContext {
+                    task_id: i as u64,
+                    obs_data: 0,
+                    params: [i as u64 * 10, 0, 100, 0],
+                })
+                .collect();
 
-                b.iter(|| {
-                    let mut converter = AosToSoaConverter::new();
-                    for ctx in &contexts {
-                        converter.add_context(black_box(ctx), 0, 1, 2);
-                    }
-                    let batches = converter.finish();
-                    black_box(batches);
-                });
-            },
-        );
+            b.iter(|| {
+                let mut converter = AosToSoaConverter::new();
+                for ctx in &contexts {
+                    converter.add_context(black_box(ctx), 0, 1, 2);
+                }
+                let batches = converter.finish();
+                black_box(batches);
+            });
+        });
     }
 
     group.finish();
@@ -394,20 +370,14 @@ fn bench_varying_guard_counts(c: &mut Criterion) {
     for count in [1, 2, 4, 8, 16, 32, 64, 128].iter() {
         group.throughput(Throughput::Elements(*count as u64));
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(count),
-            count,
-            |b, &count| {
-                let guards: Vec<(u64, u64, u64)> = (0..count)
-                    .map(|i| (i as u64, 0, 100))
-                    .collect();
+        group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
+            let guards: Vec<(u64, u64, u64)> = (0..count).map(|i| (i as u64, 0, 100)).collect();
 
-                b.iter(|| {
-                    let result = evaluate_guards_batch(black_box(&guards));
-                    black_box(result);
-                });
-            },
-        );
+            b.iter(|| {
+                let result = evaluate_guards_batch(black_box(&guards));
+                black_box(result);
+            });
+        });
     }
 
     group.finish();

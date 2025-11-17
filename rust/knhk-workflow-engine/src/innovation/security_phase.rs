@@ -11,8 +11,8 @@
 //! - Compile-time privilege verification
 //! - Secure by construction
 
-use core::marker::PhantomData;
 use crate::const_assert;
+use core::marker::PhantomData;
 
 /// Capability - unforgeable token granting specific permissions
 pub struct Capability<P: Permission> {
@@ -288,7 +288,8 @@ pub struct CryptoKey<const BITS: usize> {
 impl<const BITS: usize> CryptoKey<BITS> {
     pub const fn new(bytes: [u8; BITS / 8]) -> Self {
         /* const_assert!(BITS % 8 == 0); */
-        /* const_assert!(BITS >= 128); */  // Minimum key size
+        /* const_assert!(BITS >= 128); */
+        // Minimum key size
         Self { bytes }
     }
 

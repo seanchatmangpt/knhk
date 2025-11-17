@@ -373,7 +373,11 @@ impl<T> Guarded<Initial, T> {
 
     /// Guarded start - only transitions if guard passes
     #[inline(always)]
-    pub fn start_if<F, G>(self, guard: F, transform: G) -> Result<Guarded<Running, T>, Guarded<Error, T>>
+    pub fn start_if<F, G>(
+        self,
+        guard: F,
+        transform: G,
+    ) -> Result<Guarded<Running, T>, Guarded<Error, T>>
     where
         F: FnOnce(&T) -> bool,
         G: FnOnce(&mut T),
@@ -485,27 +489,20 @@ mod tests {
 
     #[test]
     fn test_conditional_transition() {
-        let transition: ConditionalTransition<Running, Error> =
-            if true {
-                ConditionalTransition::first()
-            } else {
-                ConditionalTransition::second()
-            };
+        let transition: ConditionalTransition<Running, Error> = if true {
+            ConditionalTransition::first()
+        } else {
+            ConditionalTransition::second()
+        };
 
-        let _result = transition.match_transition(
-            |m| m.pause(),
-            |_m| StateMachine::<Error>::new(),
-        );
+        let _result = transition.match_transition(|m| m.pause(), |_m| StateMachine::<Error>::new());
     }
 
     #[test]
     fn test_guarded_transition() {
         let machine = Guarded::create(10u32);
 
-        let result = machine.start_if(
-            |x| *x > 5,
-            |x| *x *= 2,
-        );
+        let result = machine.start_if(|x| *x > 5, |x| *x *= 2);
 
         assert!(result.is_ok());
         let machine = result.unwrap();
@@ -516,10 +513,7 @@ mod tests {
     fn test_guarded_transition_fails() {
         let machine = Guarded::create(3u32);
 
-        let result = machine.start_if(
-            |x| *x > 5,
-            |x| *x *= 2,
-        );
+        let result = machine.start_if(|x| *x > 5, |x| *x *= 2);
 
         assert!(result.is_err());
     }

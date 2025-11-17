@@ -1,8 +1,6 @@
 //! Integration tests for Phase 4 Descriptor Compiler
 
-use knhk_workflow_engine::compiler::{
-    DescriptorCompiler, CompilerConfig, CompilationResult,
-};
+use knhk_workflow_engine::compiler::{CompilationResult, CompilerConfig, DescriptorCompiler};
 use std::fs;
 use std::path::Path;
 use tempfile::NamedTempFile;
@@ -65,7 +63,8 @@ fn create_test_turtle() -> String {
 :Flow2 a yawl:Flow ;
     yawl:source :Task2 ;
     yawl:target :Task3 .
-"#.to_string()
+"#
+    .to_string()
 }
 
 #[tokio::test]
@@ -142,8 +141,7 @@ async fn test_deterministic_compilation() {
 
     // Should produce same descriptor hash
     assert_eq!(
-        result1.metadata.descriptor_hash,
-        result2.metadata.descriptor_hash,
+        result1.metadata.descriptor_hash, result2.metadata.descriptor_hash,
         "Compilation should be deterministic"
     );
 }
@@ -258,7 +256,10 @@ async fn test_signature_verification() {
     fs::write(&file, turtle).unwrap();
 
     let mut compiler = DescriptorCompiler::new();
-    let result = compiler.compile_with_verification(file.path()).await.unwrap();
+    let result = compiler
+        .compile_with_verification(file.path())
+        .await
+        .unwrap();
 
     // Should have verified signature
     assert!(result.signature.is_some());

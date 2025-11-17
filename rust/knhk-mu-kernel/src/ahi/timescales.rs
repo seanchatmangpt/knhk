@@ -10,7 +10,7 @@
 //! Components claiming a timescale must implement the corresponding trait,
 //! and the compiler enforces allowed operations per mode.
 
-use crate::timing::{TickBudget, BudgetStatus};
+use crate::timing::{BudgetStatus, TickBudget};
 use core::future::Future;
 use core::marker::PhantomData;
 
@@ -285,7 +285,9 @@ impl Hot for ExampleHotOp {
         let result = self.input.wrapping_mul(2);
 
         let mut output = heapless::Vec::new();
-        output.extend_from_slice(&result.to_le_bytes()).map_err(|_| HotError::ExecutionFailed)?;
+        output
+            .extend_from_slice(&result.to_le_bytes())
+            .map_err(|_| HotError::ExecutionFailed)?;
 
         Ok(Action::new(1, output, 2))
     }
@@ -302,10 +304,15 @@ impl Warm for ExampleWarmOp {
 
     async fn execute_warm(&self) -> Result<Action, WarmError> {
         // Can do async work, allocate
-        let processed = self.input.iter().map(|x| x.wrapping_mul(2)).collect::<alloc::vec::Vec<_>>();
+        let processed = self
+            .input
+            .iter()
+            .map(|x| x.wrapping_mul(2))
+            .collect::<alloc::vec::Vec<_>>();
 
         let mut output = heapless::Vec::new();
-        output.extend_from_slice(&processed[..processed.len().min(256)])
+        output
+            .extend_from_slice(&processed[..processed.len().min(256)])
             .map_err(|_| WarmError::ExecutionFailed)?;
 
         Ok(Action::new(2, output, 100))

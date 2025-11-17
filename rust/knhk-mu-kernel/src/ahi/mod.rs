@@ -35,12 +35,12 @@
 //! 4. **Timescale Separation**: Hot/warm/cold enforced by type system
 
 pub mod decision;
-pub mod userspace;
 pub mod timescales;
+pub mod userspace;
 
-pub use decision::{Decision, ObservationSlice, InvariantId, RiskClass};
-pub use userspace::{AhiContext, AhiError, AhiProvenOverlay, AhiOverlayProof, SubmitToken};
-pub use timescales::{Hot, Warm, Cold, HotError, WarmError, ColdError, TimescaleClass};
+pub use decision::{Decision, InvariantId, ObservationSlice, RiskClass};
+pub use timescales::{Cold, ColdError, Hot, HotError, TimescaleClass, Warm, WarmError};
+pub use userspace::{AhiContext, AhiError, AhiOverlayProof, AhiProvenOverlay, SubmitToken};
 
 /// AHI version
 pub const AHI_VERSION: (u8, u8, u8) = (1, 0, 0);

@@ -11,9 +11,9 @@
 //! - Rollback automation
 //! - Canary deployments
 
+use crate::const_assert;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use crate::const_assert;
 
 /// Deployment state - type-level state machine
 pub trait DeploymentState: 'static {
@@ -82,7 +82,7 @@ impl Deployment<Pending> {
     pub fn new(version: String) -> Self {
         Self {
             version,
-            timestamp: 0,  // Would use actual timestamp
+            timestamp: 0, // Would use actual timestamp
             _state: PhantomData,
         }
     }
@@ -221,7 +221,7 @@ impl HealthMonitor {
 
 /// Canary deployment - gradual rollout with traffic splitting
 pub struct CanaryDeployment {
-    pub canary_percentage: AtomicUsize,  // 0-100
+    pub canary_percentage: AtomicUsize, // 0-100
     pub requests_to_canary: AtomicU64,
     pub requests_to_stable: AtomicU64,
 }
@@ -310,7 +310,7 @@ impl ShutdownCoordinator {
 
     /// Wait for all requests to complete
     pub fn wait_for_completion(&self) -> bool {
-        let start = 0;  // Would use actual timestamp
+        let start = 0; // Would use actual timestamp
         let deadline = start + self.shutdown_timeout_ms;
 
         loop {
@@ -318,7 +318,7 @@ impl ShutdownCoordinator {
                 return true;
             }
 
-            let now = 0;  // Would use actual timestamp
+            let now = 0; // Would use actual timestamp
             if now >= deadline {
                 return false;
             }
@@ -335,7 +335,9 @@ pub struct RequestGuard<'a> {
 
 impl<'a> Drop for RequestGuard<'a> {
     fn drop(&mut self) {
-        self.coordinator.active_requests.fetch_sub(1, Ordering::Relaxed);
+        self.coordinator
+            .active_requests
+            .fetch_sub(1, Ordering::Relaxed);
     }
 }
 
@@ -384,7 +386,8 @@ impl DeploymentMetrics {
 
     pub fn record_request(&self, latency_ms: u64, is_error: bool) {
         self.requests.fetch_add(1, Ordering::Relaxed);
-        self.total_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
+        self.total_latency_ms
+            .fetch_add(latency_ms, Ordering::Relaxed);
         if is_error {
             self.errors.fetch_add(1, Ordering::Relaxed);
         }
@@ -503,7 +506,7 @@ mod tests {
         canary.ramp_up(20);
         assert_eq!(canary.canary_percentage.load(Ordering::Relaxed), 30);
 
-        canary.ramp_up(100);  // Should cap at 100
+        canary.ramp_up(100); // Should cap at 100
         assert_eq!(canary.canary_percentage.load(Ordering::Relaxed), 100);
     }
 
@@ -553,20 +556,18 @@ mod tests {
 
         let metrics = DeploymentMetrics::new();
         metrics.record_request(100, false);
-        metrics.record_request(100, true);  // 50% error rate
+        metrics.record_request(100, true); // 50% error rate
 
         assert!(strategy.should_rollback(&metrics));
     }
 
     #[test]
     fn test_latency_rollback() {
-        let strategy = LatencyRollback {
-            threshold_ms: 150,
-        };
+        let strategy = LatencyRollback { threshold_ms: 150 };
 
         let metrics = DeploymentMetrics::new();
         metrics.record_request(100, false);
-        metrics.record_request(300, false);  // avg = 200ms
+        metrics.record_request(300, false); // avg = 200ms
 
         assert!(strategy.should_rollback(&metrics));
     }

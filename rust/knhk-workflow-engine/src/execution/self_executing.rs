@@ -14,13 +14,13 @@
 //!                      MAPE-K ←─────────────────────────┘
 //! ```
 
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use super::snapshot::{SnapshotId, SnapshotStore, SnapshotManifest, OntologyFile};
-use super::receipt::{Receipt, ReceiptStore, ReceiptId};
-use super::hooks::{HookEngine, HookRegistry, HookContext, HookResult, HookFn};
-use crate::observability::{MapekManager, DarkMatterDetector};
+use super::hooks::{HookContext, HookEngine, HookFn, HookRegistry, HookResult};
+use super::receipt::{Receipt, ReceiptId, ReceiptStore};
+use super::snapshot::{OntologyFile, SnapshotId, SnapshotManifest, SnapshotStore};
+use crate::observability::{DarkMatterDetector, MapekManager};
 
 /// Self-executing workflow coordinator
 ///
@@ -182,8 +182,8 @@ impl Default for SelfExecutingWorkflow {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::hooks::patterns;
+    use super::*;
 
     #[test]
     fn test_self_executing_workflow_creation() {
@@ -195,13 +195,11 @@ mod tests {
     fn test_snapshot_creation_and_activation() {
         let workflow = SelfExecutingWorkflow::new();
 
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = workflow.create_snapshot(files).unwrap();
         workflow.set_active_snapshot(id.clone()).unwrap();
@@ -215,13 +213,11 @@ mod tests {
         let workflow = SelfExecutingWorkflow::new();
 
         // Create snapshot
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = workflow.create_snapshot(files).unwrap();
         workflow.set_active_snapshot(id).unwrap();
@@ -233,15 +229,15 @@ mod tests {
             result
         });
 
-        workflow.register_hook("test_hook".to_string(), hook).unwrap();
+        workflow
+            .register_hook("test_hook".to_string(), hook)
+            .unwrap();
 
         // Execute
         let observation = b"test observation".to_vec();
-        let receipt_id = workflow.execute(
-            "test_hook",
-            observation,
-            "workflow-instance-1".to_string(),
-        ).unwrap();
+        let receipt_id = workflow
+            .execute("test_hook", observation, "workflow-instance-1".to_string())
+            .unwrap();
 
         // Verify receipt
         let receipt = workflow.receipts.get(&receipt_id).unwrap();
@@ -254,13 +250,11 @@ mod tests {
         let workflow = SelfExecutingWorkflow::new();
 
         // Create snapshot
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = workflow.create_snapshot(files).unwrap();
         workflow.set_active_snapshot(id).unwrap();
@@ -283,11 +277,9 @@ mod tests {
         ];
 
         let observation = b"initial".to_vec();
-        let receipts = workflow.execute_workflow(
-            &hooks,
-            observation,
-            "workflow-instance-1".to_string(),
-        ).unwrap();
+        let receipts = workflow
+            .execute_workflow(&hooks, observation, "workflow-instance-1".to_string())
+            .unwrap();
 
         assert_eq!(receipts.len(), 3);
 
@@ -303,31 +295,25 @@ mod tests {
         let workflow = SelfExecutingWorkflow::new();
 
         // Create snapshot
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = workflow.create_snapshot(files).unwrap();
         workflow.set_active_snapshot(id).unwrap();
 
         // Register hook
-        let hook = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 1)
-        });
-        workflow.register_hook("test_hook".to_string(), hook).unwrap();
+        let hook = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 1));
+        workflow
+            .register_hook("test_hook".to_string(), hook)
+            .unwrap();
 
         // Execute multiple times to generate data for MAPE-K
         for i in 0..10 {
             let observation = format!("observation-{}", i).into_bytes();
-            let _ = workflow.execute(
-                "test_hook",
-                observation,
-                format!("workflow-{}", i),
-            );
+            let _ = workflow.execute("test_hook", observation, format!("workflow-{}", i));
         }
 
         // Verify MAPE-K manager is functional
@@ -341,30 +327,24 @@ mod tests {
     fn test_receipt_queries() {
         let workflow = SelfExecutingWorkflow::new();
 
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = workflow.create_snapshot(files).unwrap();
         workflow.set_active_snapshot(id).unwrap();
 
-        let hook = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 2)
-        });
-        workflow.register_hook("test_hook".to_string(), hook).unwrap();
+        let hook = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 2));
+        workflow
+            .register_hook("test_hook".to_string(), hook)
+            .unwrap();
 
         // Execute multiple times with same workflow ID
         for i in 0..5 {
             let observation = format!("observation-{}", i).into_bytes();
-            let _ = workflow.execute(
-                "test_hook",
-                observation,
-                "workflow-123".to_string(),
-            );
+            let _ = workflow.execute("test_hook", observation, "workflow-123".to_string());
         }
 
         // Query receipts
@@ -382,21 +362,17 @@ mod tests {
         let workflow = SelfExecutingWorkflow::new();
 
         // Create two snapshots
-        let files1 = vec![
-            OntologyFile {
-                path: "workflow_v1.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files1 = vec![OntologyFile {
+            path: "workflow_v1.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
-        let files2 = vec![
-            OntologyFile {
-                path: "workflow_v2.ttl".to_string(),
-                content_hash: "sha3-256:def456".to_string(),
-                size_bytes: 2048,
-            },
-        ];
+        let files2 = vec![OntologyFile {
+            path: "workflow_v2.ttl".to_string(),
+            content_hash: "sha3-256:def456".to_string(),
+            size_bytes: 2048,
+        }];
 
         let id1 = workflow.create_snapshot(files1).unwrap();
         let id2 = workflow.create_snapshot(files2).unwrap();
@@ -416,37 +392,39 @@ mod tests {
     fn test_pattern_integration() {
         let workflow = SelfExecutingWorkflow::new();
 
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = workflow.create_snapshot(files).unwrap();
         workflow.set_active_snapshot(id).unwrap();
 
         // Register YAWL patterns
-        workflow.register_hook(
-            "sequence".to_string(),
-            patterns::sequence(vec!["step1".to_string(), "step2".to_string()]),
-        ).unwrap();
+        workflow
+            .register_hook(
+                "sequence".to_string(),
+                patterns::sequence(vec!["step1".to_string(), "step2".to_string()]),
+            )
+            .unwrap();
 
-        workflow.register_hook(
-            "parallel".to_string(),
-            patterns::parallel_split(vec!["branch1".to_string(), "branch2".to_string()]),
-        ).unwrap();
+        workflow
+            .register_hook(
+                "parallel".to_string(),
+                patterns::parallel_split(vec!["branch1".to_string(), "branch2".to_string()]),
+            )
+            .unwrap();
 
         // Execute pattern hooks
-        let receipt_id = workflow.execute(
-            "sequence",
-            b"test".to_vec(),
-            "workflow-1".to_string(),
-        ).unwrap();
+        let receipt_id = workflow
+            .execute("sequence", b"test".to_vec(), "workflow-1".to_string())
+            .unwrap();
 
         let receipt = workflow.receipts.get(&receipt_id).unwrap();
         assert!(receipt.success);
-        assert!(receipt.guards_checked.contains(&"PATTERN_SEQUENCE".to_string()));
+        assert!(receipt
+            .guards_checked
+            .contains(&"PATTERN_SEQUENCE".to_string()));
     }
 }

@@ -4,8 +4,8 @@
 //! Budgets are tracked in the type system, making budget violations a
 //! compile-time error.
 
-use core::marker::PhantomData;
 use crate::CHATMAN_CONSTANT;
+use core::marker::PhantomData;
 
 /// Budget status marker - OK
 pub struct BudgetOk;
@@ -27,18 +27,22 @@ pub struct BudgetExhausted;
 /// // budget.spend::<5>() // Would fail to compile (5 + 5 > 8)
 /// ```
 pub struct ConstBudget<const INITIAL: u64, const USED: u64 = 0> {
-    _marker: PhantomData<[(); {
-        // Compile-time assertions
-        assert!(USED <= INITIAL, "Budget exceeded");
-        assert!(INITIAL <= CHATMAN_CONSTANT, "Initial budget too high");
-        0
-    }]>,
+    _marker: PhantomData<
+        [(); {
+            // Compile-time assertions
+            assert!(USED <= INITIAL, "Budget exceeded");
+            assert!(INITIAL <= CHATMAN_CONSTANT, "Initial budget too high");
+            0
+        }],
+    >,
 }
 
 impl<const I: u64, const U: u64> ConstBudget<I, U> {
     /// Create a new budget
     pub const fn new() -> Self {
-        Self { _marker: PhantomData }
+        Self {
+            _marker: PhantomData,
+        }
     }
 
     /// Spend ticks from the budget
@@ -49,7 +53,9 @@ impl<const I: u64, const U: u64> ConstBudget<I, U> {
     where
         [(); (U + COST <= I) as usize]:,
     {
-        ConstBudget { _marker: PhantomData }
+        ConstBudget {
+            _marker: PhantomData,
+        }
     }
 
     /// Get remaining budget
@@ -119,7 +125,11 @@ pub const fn fits_in_budget(cost: u64, budget: u64) -> bool {
 
 /// Const function to merge budgets (take minimum)
 pub const fn merge_budgets(budget1: u64, budget2: u64) -> u64 {
-    if budget1 < budget2 { budget1 } else { budget2 }
+    if budget1 < budget2 {
+        budget1
+    } else {
+        budget2
+    }
 }
 
 /// Type-level budget state
@@ -135,10 +145,7 @@ impl<const I: u64, const U: u64> BudgetState for ConstBudget<I, U> {
 
 /// Budget split result for parallel operations
 pub struct BudgetSplit<const BUDGET1: u64, const BUDGET2: u64> {
-    _marker: PhantomData<(
-        [(); BUDGET1 as usize],
-        [(); BUDGET2 as usize],
-    )>,
+    _marker: PhantomData<([(); BUDGET1 as usize], [(); BUDGET2 as usize])>,
 }
 
 impl<const B1: u64, const B2: u64> BudgetSplit<B1, B2> {
@@ -148,7 +155,9 @@ impl<const B1: u64, const B2: u64> BudgetSplit<B1, B2> {
         [(); (B1 <= CHATMAN_CONSTANT) as usize]:,
         [(); (B2 <= CHATMAN_CONSTANT) as usize]:,
     {
-        Self { _marker: PhantomData }
+        Self {
+            _marker: PhantomData,
+        }
     }
 
     /// Get first budget
@@ -173,7 +182,9 @@ impl<const T: u64> BudgetComposition<T> {
     where
         [(); (T <= CHATMAN_CONSTANT) as usize]:,
     {
-        Self { _marker: PhantomData }
+        Self {
+            _marker: PhantomData,
+        }
     }
 
     /// Get total budget
@@ -222,7 +233,9 @@ impl<const R: u64> BudgetReservation<R> {
     where
         [(); (R <= CHATMAN_CONSTANT) as usize]:,
     {
-        Self { _marker: PhantomData }
+        Self {
+            _marker: PhantomData,
+        }
     }
 
     /// Get reserved amount
@@ -237,10 +250,7 @@ impl<const R: u64> BudgetReservation<R> {
 }
 
 /// Const function to validate budget sequence
-pub const fn validate_budget_sequence<const N: usize>(
-    costs: [u64; N],
-    total_budget: u64,
-) -> bool {
+pub const fn validate_budget_sequence<const N: usize>(costs: [u64; N], total_budget: u64) -> bool {
     let total_cost = compose_budgets(costs);
     total_cost <= total_budget
 }
@@ -258,10 +268,7 @@ impl<const PHASES: usize> BudgetAllocation<PHASES> {
     pub const fn new(allocations: [u64; PHASES]) -> Self {
         let total = compose_budgets(allocations);
 
-        Self {
-            allocations,
-            total,
-        }
+        Self { allocations, total }
     }
 
     /// Check if allocation is valid (within Chatman)

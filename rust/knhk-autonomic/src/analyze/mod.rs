@@ -37,13 +37,13 @@
 //! # }
 //! ```
 
-use crate::types::{Observation, Analysis, Metric, RuleType};
 use crate::error::{AutonomicError, Result};
+use crate::types::{Analysis, Metric, Observation, RuleType};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{instrument, debug};
+use tracing::{debug, instrument};
 use uuid::Uuid;
 
 /// Analysis rule for pattern matching
@@ -162,21 +162,15 @@ impl AnalysisComponent {
         // For now, we use heuristic matching based on rule type
 
         let matched = match rule.rule_type {
-            RuleType::HighErrorRate => {
-                metrics.iter().any(|m| {
-                    m.name.to_lowercase().contains("error") && m.is_anomalous
-                })
-            }
-            RuleType::PerformanceDegradation => {
-                metrics.iter().any(|m| {
-                    m.metric_type == crate::types::MetricType::Performance && m.is_anomalous
-                })
-            }
-            RuleType::ResourceStarvation => {
-                metrics.iter().any(|m| {
-                    m.metric_type == crate::types::MetricType::Resource && m.is_anomalous
-                })
-            }
+            RuleType::HighErrorRate => metrics
+                .iter()
+                .any(|m| m.name.to_lowercase().contains("error") && m.is_anomalous),
+            RuleType::PerformanceDegradation => metrics
+                .iter()
+                .any(|m| m.metric_type == crate::types::MetricType::Performance && m.is_anomalous),
+            RuleType::ResourceStarvation => metrics
+                .iter()
+                .any(|m| m.metric_type == crate::types::MetricType::Resource && m.is_anomalous),
             _ => false,
         };
 
@@ -210,12 +204,19 @@ impl AnalysisComponent {
     fn identify_root_cause(&self, rule_type: RuleType, metrics: &[Metric]) -> String {
         match rule_type {
             RuleType::HighErrorRate => {
-                "Error rate exceeds threshold, likely due to transient failures or resource issues".to_string()
+                "Error rate exceeds threshold, likely due to transient failures or resource issues"
+                    .to_string()
             }
             RuleType::PerformanceDegradation => {
-                if metrics.iter().any(|m| m.name.to_lowercase().contains("cpu") && m.is_anomalous) {
+                if metrics
+                    .iter()
+                    .any(|m| m.name.to_lowercase().contains("cpu") && m.is_anomalous)
+                {
                     "High CPU usage causing performance degradation".to_string()
-                } else if metrics.iter().any(|m| m.name.to_lowercase().contains("memory") && m.is_anomalous) {
+                } else if metrics
+                    .iter()
+                    .any(|m| m.name.to_lowercase().contains("memory") && m.is_anomalous)
+                {
                     "Memory pressure causing performance degradation".to_string()
                 } else {
                     "Performance degradation detected, analyzing root cause".to_string()
@@ -253,17 +254,20 @@ impl AnalysisComponent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{MetricType, EventType, Severity, TrendDirection};
+    use crate::types::{EventType, MetricType, Severity, TrendDirection};
 
     #[tokio::test]
     async fn test_register_rule() {
         let mut analyzer = AnalysisComponent::new();
 
-        let id = analyzer.register_rule(
-            "test_rule",
-            RuleType::HighErrorRate,
-            "?metric mape:currentValue ?val . FILTER(?val > 5)"
-        ).await.unwrap();
+        let id = analyzer
+            .register_rule(
+                "test_rule",
+                RuleType::HighErrorRate,
+                "?metric mape:currentValue ?val . FILTER(?val > 5)",
+            )
+            .await
+            .unwrap();
 
         assert!(id.as_u128() > 0);
     }
@@ -272,27 +276,24 @@ mod tests {
     async fn test_analyze_high_error_rate() {
         let mut analyzer = AnalysisComponent::new();
 
-        analyzer.register_rule(
-            "High Error Rate",
-            RuleType::HighErrorRate,
-            ""
-        ).await.unwrap();
+        analyzer
+            .register_rule("High Error Rate", RuleType::HighErrorRate, "")
+            .await
+            .unwrap();
 
         let observations = vec![];
-        let metrics = vec![
-            Metric {
-                id: Uuid::new_v4(),
-                name: "Error Count".to_string(),
-                metric_type: MetricType::Reliability,
-                current_value: 10.0,
-                expected_value: 1.0,
-                unit: "count".to_string(),
-                anomaly_threshold: 5.0,
-                is_anomalous: true,
-                trend: TrendDirection::Degrading,
-                timestamp: Utc::now(),
-            }
-        ];
+        let metrics = vec![Metric {
+            id: Uuid::new_v4(),
+            name: "Error Count".to_string(),
+            metric_type: MetricType::Reliability,
+            current_value: 10.0,
+            expected_value: 1.0,
+            unit: "count".to_string(),
+            anomaly_threshold: 5.0,
+            is_anomalous: true,
+            trend: TrendDirection::Degrading,
+            timestamp: Utc::now(),
+        }];
 
         let analyses = analyzer.analyze(&observations, &metrics).await.unwrap();
 

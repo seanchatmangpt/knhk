@@ -65,7 +65,7 @@ impl ReceiptStore {
         // Verify receipt signature before storing
         if !receipt.verify_signature() {
             return Err(WorkflowError::ReceiptGenerationFailed(
-                "Invalid receipt signature".to_string()
+                "Invalid receipt signature".to_string(),
             ));
         }
 
@@ -75,9 +75,10 @@ impl ReceiptStore {
 
         // Check for duplicate
         if index_by_id.contains_key(&receipt.receipt_id) {
-            return Err(WorkflowError::Validation(
-                format!("Receipt {} already exists", receipt.receipt_id)
-            ));
+            return Err(WorkflowError::Validation(format!(
+                "Receipt {} already exists",
+                receipt.receipt_id
+            )));
         }
 
         // Append to log
@@ -99,8 +100,7 @@ impl ReceiptStore {
         let log = self.log.read().await;
         let index = self.index_by_id.read().await;
 
-        index.get(receipt_id)
-            .and_then(|&idx| log.get(idx).cloned())
+        index.get(receipt_id).and_then(|&idx| log.get(idx).cloned())
     }
 
     /// Get receipts by sigma ID
@@ -108,9 +108,11 @@ impl ReceiptStore {
         let log = self.log.read().await;
         let index = self.index_by_sigma.read().await;
 
-        index.get(sigma_id)
+        index
+            .get(sigma_id)
             .map(|indices| {
-                indices.iter()
+                indices
+                    .iter()
                     .filter_map(|&idx| log.get(idx).cloned())
                     .collect()
             })
@@ -121,7 +123,8 @@ impl ReceiptStore {
     pub async fn query(&self, query: ReceiptQuery) -> Vec<Receipt> {
         let log = self.log.read().await;
 
-        let mut results: Vec<Receipt> = log.iter()
+        let mut results: Vec<Receipt> = log
+            .iter()
             .filter(|r| {
                 // Filter by sigma ID
                 if let Some(ref sigma_id) = query.sigma_id {
@@ -223,14 +226,9 @@ mod tests {
         let o_in = serde_json::json!({"input": 1});
         let a_out = serde_json::json!({"output": 1});
 
-        let receipt = generator.generate_receipt(
-            "sigma-1".to_string(),
-            &o_in,
-            &a_out,
-            vec![],
-            vec![],
-            5,
-        ).expect("Generation failed");
+        let receipt = generator
+            .generate_receipt("sigma-1".to_string(), &o_in, &a_out, vec![], vec![], 5)
+            .expect("Generation failed");
 
         store.store(receipt.clone()).await.expect("Store failed");
 
@@ -249,14 +247,16 @@ mod tests {
             let o_in = serde_json::json!({"input": i});
             let a_out = serde_json::json!({"output": i});
 
-            let receipt = generator.generate_receipt(
-                "sigma-1".to_string(),
-                &o_in,
-                &a_out,
-                vec![],
-                vec![],
-                i as u32,
-            ).expect("Generation failed");
+            let receipt = generator
+                .generate_receipt(
+                    "sigma-1".to_string(),
+                    &o_in,
+                    &a_out,
+                    vec![],
+                    vec![],
+                    i as u32,
+                )
+                .expect("Generation failed");
 
             store.store(receipt).await.expect("Store failed");
         }
@@ -280,25 +280,22 @@ mod tests {
         let a_out = serde_json::json!({});
 
         // Valid receipt
-        let receipt1 = generator.generate_receipt(
-            "sigma-1".to_string(),
-            &o_in,
-            &a_out,
-            vec![],
-            vec![],
-            10,
-        ).expect("Generation failed");
+        let receipt1 = generator
+            .generate_receipt("sigma-1".to_string(), &o_in, &a_out, vec![], vec![], 10)
+            .expect("Generation failed");
         store.store(receipt1).await.expect("Store failed");
 
         // Invalid receipt
-        let receipt2 = generator.generate_receipt(
-            "sigma-2".to_string(),
-            &o_in,
-            &a_out,
-            vec!["guard1".to_string()],
-            vec!["guard1".to_string()],
-            5,
-        ).expect("Generation failed");
+        let receipt2 = generator
+            .generate_receipt(
+                "sigma-2".to_string(),
+                &o_in,
+                &a_out,
+                vec!["guard1".to_string()],
+                vec!["guard1".to_string()],
+                5,
+            )
+            .expect("Generation failed");
         store.store(receipt2).await.expect("Store failed");
 
         let stats = store.get_stats().await;
@@ -317,16 +314,14 @@ mod tests {
         let o_in = serde_json::json!({});
         let a_out = serde_json::json!({});
 
-        let receipt = generator.generate_receipt(
-            "sigma-1".to_string(),
-            &o_in,
-            &a_out,
-            vec![],
-            vec![],
-            1,
-        ).expect("Generation failed");
+        let receipt = generator
+            .generate_receipt("sigma-1".to_string(), &o_in, &a_out, vec![], vec![], 1)
+            .expect("Generation failed");
 
-        store.store(receipt.clone()).await.expect("First store failed");
+        store
+            .store(receipt.clone())
+            .await
+            .expect("First store failed");
         let result = store.store(receipt).await;
 
         assert!(result.is_err(), "Should reject duplicate receipt");

@@ -27,17 +27,17 @@
 //! }
 //! ```
 
-use core::marker::PhantomData;
 use crate::patterns::PatternId;
 use crate::CHATMAN_CONSTANT;
+use core::marker::PhantomData;
 
-pub mod wcet;
 pub mod budgets;
 pub mod proofs;
+pub mod wcet;
 
-pub use wcet::{WcetAnalyzer, WcetResult, WcetPhase};
-pub use budgets::{ConstBudget, BudgetExhausted, BudgetOk};
-pub use proofs::{TimingProof, TimingCertificate, ProofStrength};
+pub use budgets::{BudgetExhausted, BudgetOk, ConstBudget};
+pub use proofs::{ProofStrength, TimingCertificate, TimingProof};
+pub use wcet::{WcetAnalyzer, WcetPhase, WcetResult};
 
 /// Trait for compile-time tick cost calculation
 ///
@@ -169,13 +169,21 @@ pub const fn compose_costs(cost1: u64, cost2: u64) -> u64 {
 /// Maximum of two tick costs
 #[inline(always)]
 pub const fn max_cost(cost1: u64, cost2: u64) -> u64 {
-    if cost1 > cost2 { cost1 } else { cost2 }
+    if cost1 > cost2 {
+        cost1
+    } else {
+        cost2
+    }
 }
 
 /// Minimum of two tick costs
 #[inline(always)]
 pub const fn min_cost(cost1: u64, cost2: u64) -> u64 {
-    if cost1 < cost2 { cost1 } else { cost2 }
+    if cost1 < cost2 {
+        cost1
+    } else {
+        cost2
+    }
 }
 
 /// Type-level representation of tick costs

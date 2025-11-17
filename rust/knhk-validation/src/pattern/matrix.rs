@@ -115,11 +115,7 @@ pub struct PatternCombination {
 }
 
 impl PatternCombination {
-    pub fn new(
-        split_type: SplitType,
-        join_type: JoinType,
-        modifiers: PatternModifiers,
-    ) -> Self {
+    pub fn new(split_type: SplitType, join_type: JoinType, modifiers: PatternModifiers) -> Self {
         Self {
             split_type,
             join_type,
@@ -460,11 +456,7 @@ impl PermutationMatrix {
         None
     }
 
-    pub fn get_patterns_for_combination(
-        &self,
-        split: SplitType,
-        join: JoinType,
-    ) -> Vec<String> {
+    pub fn get_patterns_for_combination(&self, split: SplitType, join: JoinType) -> Vec<String> {
         let key = format!("{}-{}", split.as_str(), join.as_str());
         self.combinations
             .get(&key)
@@ -523,7 +515,10 @@ mod tests {
     #[test]
     fn test_join_type_from_str() {
         assert_eq!(JoinType::from_str("AND"), Some(JoinType::AND));
-        assert_eq!(JoinType::from_str("discriminator"), Some(JoinType::Discriminator));
+        assert_eq!(
+            JoinType::from_str("discriminator"),
+            Some(JoinType::Discriminator)
+        );
         assert_eq!(JoinType::from_str("invalid"), None);
     }
 
@@ -569,8 +564,10 @@ mod tests {
     fn test_get_patterns_for_combination() {
         let matrix = PermutationMatrix::load_default().unwrap();
         let patterns = matrix.get_patterns_for_combination(SplitType::AND, JoinType::AND);
-        assert!(patterns.contains(&"ParallelSplit".to_string())
-            || patterns.contains(&"Synchronization".to_string()));
+        assert!(
+            patterns.contains(&"ParallelSplit".to_string())
+                || patterns.contains(&"Synchronization".to_string())
+        );
     }
 
     #[test]

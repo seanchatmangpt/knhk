@@ -39,9 +39,7 @@ impl ValidatorMetrics {
 
     /// Is validator healthy
     pub fn is_healthy(&self) -> bool {
-        self.reputation_score() >= 0.7
-            && self.uptime >= 80
-            && self.byzantine_behaviors == 0
+        self.reputation_score() >= 0.7 && self.uptime >= 80 && self.byzantine_behaviors == 0
     }
 }
 
@@ -231,9 +229,7 @@ impl ValidatorSet {
         let to_remove: Vec<_> = self
             .validators
             .iter()
-            .filter(|entry| {
-                now - entry.value().last_activity_ms > self.inactivity_timeout_ms
-            })
+            .filter(|entry| now - entry.value().last_activity_ms > self.inactivity_timeout_ms)
             .map(|entry| entry.key().clone())
             .collect();
 

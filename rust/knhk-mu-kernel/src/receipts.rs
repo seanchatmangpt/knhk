@@ -3,11 +3,11 @@
 //! Every action A produces a receipt proving:
 //! hash(A) = hash(μ(O; Σ*)) with guards Q checked
 
-use alloc::vec::Vec;
 use crate::sigma::SigmaHash;
+use alloc::vec::Vec;
 use core::mem::size_of;
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use sha3::{Digest, Sha3_256};
-use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey, Verifier};
 
 /// Receipt ID (sequential, globally unique)
 pub type ReceiptId = u64;
@@ -79,7 +79,7 @@ impl Receipt {
             o_in_hash,
             a_out_hash,
             tau_used,
-            timestamp_ns: 0,  // Would use hardware timestamp
+            timestamp_ns: 0, // Would use hardware timestamp
             task_id,
             pattern_id,
             guards_checked: 0,
@@ -217,11 +217,11 @@ impl ReceiptChain {
             let parent_id = current.parent_receipt;
 
             if parent_id == 0 {
-                return false;  // Missing parent
+                return false; // Missing parent
             }
 
             if parent_id != self.receipts[i - 1].receipt_id {
-                return false;  // Broken chain
+                return false; // Broken chain
             }
         }
 
@@ -229,7 +229,7 @@ impl ReceiptChain {
         if let Some(latest) = self.latest() {
             let computed_head = latest.hash();
             if computed_head != self.head_hash {
-                return false;  // Head hash mismatch
+                return false; // Head hash mismatch
             }
         }
 
@@ -339,7 +339,7 @@ mod tests {
         let hash1 = receipt.hash();
         let hash2 = receipt.hash();
 
-        assert_eq!(hash1, hash2);  // Deterministic
+        assert_eq!(hash1, hash2); // Deterministic
     }
 
     #[test]
@@ -390,12 +390,20 @@ mod tests {
         let sigma_hash = SigmaHash([1; 32]);
 
         for i in 0..10 {
-            let r = Receipt::new(0, sigma_hash, [i; 32], [i; 32], i as u64 + 1, i as u64, (i % 3) as u8);
+            let r = Receipt::new(
+                0,
+                sigma_hash,
+                [i; 32],
+                [i; 32],
+                i as u64 + 1,
+                i as u64,
+                (i % 3) as u8,
+            );
             chain.append(r);
         }
 
         let by_pattern_0 = chain.query_by_pattern(0);
-        assert_eq!(by_pattern_0.len(), 4);  // 0, 3, 6, 9
+        assert_eq!(by_pattern_0.len(), 4); // 0, 3, 6, 9
 
         let avg = chain.avg_tau();
         assert!(avg > 0.0);
@@ -403,6 +411,6 @@ mod tests {
 
     #[test]
     fn test_receipt_size() {
-        assert_eq!(size_of::<Receipt>(), 256);  // Cache-aligned
+        assert_eq!(size_of::<Receipt>(), 256); // Cache-aligned
     }
 }

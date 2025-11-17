@@ -6,17 +6,17 @@
 
 #![allow(dead_code, unused_variables)]
 
-use knhk_mu_kernel::protocols::*;
-use knhk_mu_kernel::protocols::session_types::*;
-use knhk_mu_kernel::protocols::state_machine::*;
+use knhk_mu_kernel::mape::{AnalyzeResult, ExecuteResult, MonitorResult, PlanResult};
+use knhk_mu_kernel::overlay::OverlayValue;
+use knhk_mu_kernel::overlay_proof::CompilerProof;
+use knhk_mu_kernel::overlay_types::{OverlayChanges, OverlayMetadata, PerfImpact, SnapshotId};
 use knhk_mu_kernel::protocols::mape_protocol::*;
 use knhk_mu_kernel::protocols::overlay_protocol::*;
-use knhk_mu_kernel::mape::{MonitorResult, AnalyzeResult, PlanResult, ExecuteResult};
+use knhk_mu_kernel::protocols::session_types::*;
+use knhk_mu_kernel::protocols::state_machine::*;
+use knhk_mu_kernel::protocols::*;
 use knhk_mu_kernel::receipts::Receipt;
 use knhk_mu_kernel::sigma::SigmaHash;
-use knhk_mu_kernel::overlay_types::{OverlayChanges, OverlayMetadata, PerfImpact, SnapshotId};
-use knhk_mu_kernel::overlay_proof::CompilerProof;
-use knhk_mu_kernel::overlay::OverlayValue;
 
 /// Helper to create test overlay
 fn make_test_overlay() -> OverlayValue<CompilerProof> {
@@ -89,17 +89,13 @@ fn test_choice_combinator() {
     let session = Session::<Uninitialized>::new();
     let session = session.initialize();
 
-    let choice: Choice<Session<Active>, Session<Failed>> =
-        if true {
-            Choice::left(session.activate())
-        } else {
-            Choice::right(session.fail())
-        };
+    let choice: Choice<Session<Active>, Session<Failed>> = if true {
+        Choice::left(session.activate())
+    } else {
+        Choice::right(session.fail())
+    };
 
-    let _result = choice.match_choice(
-        |s| s.complete(),
-        |s| s,
-    );
+    let _result = choice.match_choice(|s| s.complete(), |s| s);
 }
 
 #[test]
@@ -178,20 +174,14 @@ fn test_conditional_transition() {
     }
 
     let transition = process(42);
-    let _result = transition.match_transition(
-        |m| m.pause(),
-        |_m| StateMachine::<Error>::new(),
-    );
+    let _result = transition.match_transition(|m| m.pause(), |_m| StateMachine::<Error>::new());
 }
 
 #[test]
 fn test_guarded_transition_success() {
     let machine = Guarded::create(10u32);
 
-    let result = machine.start_if(
-        |x| *x > 5,
-        |x| *x *= 2,
-    );
+    let result = machine.start_if(|x| *x > 5, |x| *x *= 2);
 
     assert!(result.is_ok());
     let machine = result.unwrap();
@@ -202,10 +192,7 @@ fn test_guarded_transition_success() {
 fn test_guarded_transition_failure() {
     let machine = Guarded::create(3u32);
 
-    let result = machine.start_if(
-        |x| *x > 5,
-        |x| *x *= 2,
-    );
+    let result = machine.start_if(|x| *x > 5, |x| *x *= 2);
 
     assert!(result.is_err());
 }
@@ -270,13 +257,9 @@ fn test_mape_k_with_data() {
         avg_tau: 5.5,
     };
 
-    let analyze_result = AnalyzeResult {
-        symptoms: vec![],
-    };
+    let analyze_result = AnalyzeResult { symptoms: vec![] };
 
-    let plan_result = PlanResult {
-        proposals: vec![],
-    };
+    let plan_result = PlanResult { proposals: vec![] };
 
     let execute_result = ExecuteResult {
         success: true,
@@ -331,15 +314,30 @@ fn test_mape_k_cycle_counter() {
     let receipt = make_test_receipt();
 
     // First cycle
-    counter = counter.monitor().analyze().plan().execute().update_knowledge();
+    counter = counter
+        .monitor()
+        .analyze()
+        .plan()
+        .execute()
+        .update_knowledge();
     assert_eq!(counter.count(), 1);
 
     // Second cycle
-    counter = counter.monitor().analyze().plan().execute().update_knowledge();
+    counter = counter
+        .monitor()
+        .analyze()
+        .plan()
+        .execute()
+        .update_knowledge();
     assert_eq!(counter.count(), 2);
 
     // Third cycle
-    counter = counter.monitor().analyze().plan().execute().update_knowledge();
+    counter = counter
+        .monitor()
+        .analyze()
+        .plan()
+        .execute()
+        .update_knowledge();
     assert_eq!(counter.count(), 3);
 }
 
@@ -417,9 +415,9 @@ fn test_overlay_pipeline_with_data() {
     assert!(pipeline.data().all_passed());
 
     let pipeline = pipeline.validate().unwrap();
-    let _pipeline = pipeline.promote_with_strategy(
-        knhk_mu_kernel::overlay::RolloutStrategy::Immediate
-    ).unwrap();
+    let _pipeline = pipeline
+        .promote_with_strategy(knhk_mu_kernel::overlay::RolloutStrategy::Immediate)
+        .unwrap();
 }
 
 #[test]
@@ -467,10 +465,7 @@ fn test_canary_rollback() {
 #[test]
 fn test_rollback_protocol() {
     let overlay = make_test_overlay();
-    let rollback = RollbackProtocol::new(
-        overlay,
-        RollbackReason::TestsFailed { failed_count: 3 },
-    );
+    let rollback = RollbackProtocol::new(overlay, RollbackReason::TestsFailed { failed_count: 3 });
 
     match rollback.reason() {
         RollbackReason::TestsFailed { failed_count } => {
@@ -511,8 +506,7 @@ fn test_mape_k_with_overlay_promotion() {
 #[test]
 fn test_protocol_composition() {
     // Can compose different protocol types
-    let _composed: Composed<Session<Uninitialized>, StateMachine<Initial>> =
-        Composed::new();
+    let _composed: Composed<Session<Uninitialized>, StateMachine<Initial>> = Composed::new();
 }
 
 #[test]

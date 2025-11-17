@@ -2,9 +2,9 @@
 // Unified interface for GPU, FPGA, and SIMD acceleration
 // Automatic backend selection and fallback
 
+use crate::{AccelerationDevice, FPGAOffload, GPUAccelerator, GPUConfig, SIMDKernel};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use crate::{GPUAccelerator, GPUConfig, FPGAOffload, SIMDKernel, AccelerationDevice};
 
 #[derive(Error, Debug)]
 pub enum AbstractionError {
@@ -81,10 +81,10 @@ impl AccelerationBackend {
     /// Estimated throughput (GB/s)
     pub fn throughput_gb_s(&self) -> f32 {
         match self {
-            AccelerationBackend::CPU => 32.0,           // AVX-512 with DDR5
-            AccelerationBackend::GPU => 896.0,          // A100 with HBM2e
-            AccelerationBackend::FPGA => 256.0,         // PCIe Gen4 x16
-            AccelerationBackend::CPUFallback => 16.0,   // Scalar operations
+            AccelerationBackend::CPU => 32.0,         // AVX-512 with DDR5
+            AccelerationBackend::GPU => 896.0,        // A100 with HBM2e
+            AccelerationBackend::FPGA => 256.0,       // PCIe Gen4 x16
+            AccelerationBackend::CPUFallback => 16.0, // Scalar operations
         }
     }
 
@@ -121,11 +121,13 @@ impl HardwareAbstraction {
         // Step 1: Detect available backends
         let mut available = vec![AccelerationBackend::CPU]; // CPU always available
         let mut gpu = None;
-        let mut fpga = None;
+        let fpga = None;
         let simd = Some(SIMDKernel::new(crate::kernels::KernelType::Custom));
 
         // Step 2: Initialize preferred backend (try GPU first if requested/auto)
-        if preferred_device == AccelerationDevice::CUDA || preferred_device == AccelerationDevice::Auto {
+        if preferred_device == AccelerationDevice::CUDA
+            || preferred_device == AccelerationDevice::Auto
+        {
             match GPUAccelerator::new(GPUConfig::default()) {
                 Ok(gpu_accel) => {
                     available.push(AccelerationBackend::GPU);
@@ -139,7 +141,9 @@ impl HardwareAbstraction {
         }
 
         // Try to initialize FPGA if requested/auto
-        if preferred_device == AccelerationDevice::FPGA || preferred_device == AccelerationDevice::Auto {
+        if preferred_device == AccelerationDevice::FPGA
+            || preferred_device == AccelerationDevice::Auto
+        {
             // FPGA initialization would go here
             // For now, just mark as available (actual hardware detection needed)
             available.push(AccelerationBackend::FPGA);
@@ -149,7 +153,9 @@ impl HardwareAbstraction {
         // Step 3: Setup fallback chain (prefer GPU > FPGA > CPU)
         let active_backend = match preferred_device {
             AccelerationDevice::CUDA if gpu.is_some() => Some(AccelerationBackend::GPU),
-            AccelerationDevice::FPGA if available.contains(&AccelerationBackend::FPGA) => Some(AccelerationBackend::FPGA),
+            AccelerationDevice::FPGA if available.contains(&AccelerationBackend::FPGA) => {
+                Some(AccelerationBackend::FPGA)
+            }
             AccelerationDevice::Auto => {
                 // Auto-select best available: GPU > FPGA > CPU
                 if gpu.is_some() {
@@ -184,10 +190,14 @@ impl HardwareAbstraction {
     }
 
     /// Select backend by capability
-    pub fn select_by_capability(&mut self, capability: AccelerationCapability) -> Result<AccelerationBackend, AbstractionError> {
+    pub fn select_by_capability(
+        &mut self,
+        capability: AccelerationCapability,
+    ) -> Result<AccelerationBackend, AbstractionError> {
         // Step 1: Check if preferred backend has the required capability
         if self.preferred_backend.capabilities().contains(&capability)
-            && self.available_backends.contains(&self.preferred_backend) {
+            && self.available_backends.contains(&self.preferred_backend)
+        {
             self.active_backend = Some(self.preferred_backend);
             tracing::debug!(
                 "Backend selection: using preferred {:?} for {:?}",
@@ -207,7 +217,9 @@ impl HardwareAbstraction {
         ];
 
         for backend in &priority_order {
-            if self.available_backends.contains(backend) && backend.capabilities().contains(&capability) {
+            if self.available_backends.contains(backend)
+                && backend.capabilities().contains(&capability)
+            {
                 self.active_backend = Some(*backend);
                 tracing::info!(
                     "Backend selection: selected {:?} for {:?} (preferred {:?} unavailable)",
@@ -234,7 +246,11 @@ impl HardwareAbstraction {
     }
 
     /// Check if backend supports operation
-    pub fn supports_operation(&self, backend: AccelerationBackend, op: AccelerationCapability) -> bool {
+    pub fn supports_operation(
+        &self,
+        backend: AccelerationBackend,
+        op: AccelerationCapability,
+    ) -> bool {
         backend.capabilities().contains(&op)
     }
 
@@ -279,7 +295,9 @@ impl HardwareAbstraction {
 
         // Step 3: Sort results by throughput (best first)
         results.sort_by(|a, b| {
-            b.throughput_gb_s.partial_cmp(&a.throughput_gb_s).unwrap_or(std::cmp::Ordering::Equal)
+            b.throughput_gb_s
+                .partial_cmp(&a.throughput_gb_s)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         tracing::info!(
@@ -333,8 +351,13 @@ mod tests {
 
     #[test]
     fn test_backend_throughput() {
-        assert!(AccelerationBackend::GPU.throughput_gb_s() > AccelerationBackend::CPU.throughput_gb_s());
-        assert!(AccelerationBackend::CPU.throughput_gb_s() > AccelerationBackend::CPUFallback.throughput_gb_s());
+        assert!(
+            AccelerationBackend::GPU.throughput_gb_s() > AccelerationBackend::CPU.throughput_gb_s()
+        );
+        assert!(
+            AccelerationBackend::CPU.throughput_gb_s()
+                > AccelerationBackend::CPUFallback.throughput_gb_s()
+        );
     }
 
     #[test]
@@ -353,10 +376,8 @@ mod tests {
     #[test]
     fn test_hardware_abstraction_supports_operation() {
         let hw = HardwareAbstraction::new(AccelerationDevice::Auto).unwrap();
-        let supports = hw.supports_operation(
-            AccelerationBackend::GPU,
-            AccelerationCapability::MatMul
-        );
+        let supports =
+            hw.supports_operation(AccelerationBackend::GPU, AccelerationCapability::MatMul);
         assert!(supports);
     }
 

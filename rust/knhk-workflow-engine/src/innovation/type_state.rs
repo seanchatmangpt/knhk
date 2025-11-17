@@ -12,9 +12,9 @@
 //! - Advanced trait bounds and where clauses
 //! - Zero-sized types (ZSTs) for compile-time guarantees
 
+use crate::execution::{HookContext, HookResult, ReceiptId, SnapshotId};
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::execution::{HookContext, HookResult, ReceiptId, SnapshotId};
 
 // Rename Property to avoid conflict with formal::Property
 pub trait TypeStateProperty: 'static {
@@ -126,7 +126,10 @@ impl<const MAX_TICKS: u32> TypedWorkflow<Uninitialized, MAX_TICKS> {
     #[allow(unconditional_panic)]
     pub const fn new() -> Self {
         // Compile-time assertion using const evaluation
-        let _: () = assert!(validate_tick_budget::<MAX_TICKS>(), "MAX_TICKS must be <= 8 (Chatman constant)");
+        let _: () = assert!(
+            validate_tick_budget::<MAX_TICKS>(),
+            "MAX_TICKS must be <= 8 (Chatman constant)"
+        );
 
         Self {
             state: PhantomData,
@@ -359,7 +362,9 @@ impl<const N: usize, const PARALLEL: bool> WorkflowPattern<N, PARALLEL> {
 
 /// Const approximation of log2 (for compile-time use)
 const fn const_log2_approx(mut n: u32) -> u32 {
-    if n <= 1 { return 0; }
+    if n <= 1 {
+        return 0;
+    }
     let mut log = 0;
     while n > 1 {
         n >>= 1;
@@ -500,21 +505,12 @@ mod tests {
     #[test]
     fn test_workflow_pattern() {
         // Sequential pattern
-        let pattern = WorkflowPattern::<3, false>::new([
-            "extract",
-            "transform",
-            "load",
-        ]);
+        let pattern = WorkflowPattern::<3, false>::new(["extract", "transform", "load"]);
         assert_eq!(pattern.estimated_ticks(), 4); // 3 + 1
         assert!(pattern.is_chatman_compliant());
 
         // Parallel pattern
-        let pattern = WorkflowPattern::<4, true>::new([
-            "fetch_a",
-            "fetch_b",
-            "fetch_c",
-            "fetch_d",
-        ]);
+        let pattern = WorkflowPattern::<4, true>::new(["fetch_a", "fetch_b", "fetch_c", "fetch_d"]);
         assert!(pattern.estimated_ticks() <= 4); // log2(4) + 2 = 4
         assert!(pattern.is_chatman_compliant());
     }

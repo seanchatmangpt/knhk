@@ -2,11 +2,11 @@
 //!
 //! Tracks and reports performance metrics across all layers
 
+use chrono::{DateTime, Utc};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
-use chrono::{DateTime, Utc};
 
 /// Performance metrics collector
 #[derive(Clone)]
@@ -50,13 +50,15 @@ impl MetricsCollector {
         }
 
         // Track per-workflow stats
-        let workflow_stats = metrics.per_workflow_stats
+        let workflow_stats = metrics
+            .per_workflow_stats
             .entry(workflow_id.to_string())
             .or_insert_with(WorkflowStats::default);
 
         workflow_stats.executions += 1;
         workflow_stats.total_ticks += ticks as u64;
-        workflow_stats.avg_ticks = workflow_stats.total_ticks as f64 / workflow_stats.executions as f64;
+        workflow_stats.avg_ticks =
+            workflow_stats.total_ticks as f64 / workflow_stats.executions as f64;
     }
 
     /// Record MAPE-K cycle
@@ -72,7 +74,8 @@ impl MetricsCollector {
     /// Record pattern selection
     pub fn record_pattern_selection(&self, pattern: &str, duration_ns: u64) {
         let mut metrics = self.metrics.write();
-        let pattern_stats = metrics.pattern_selection_stats
+        let pattern_stats = metrics
+            .pattern_selection_stats
             .entry(pattern.to_string())
             .or_insert_with(PatternSelectionStats::default);
 

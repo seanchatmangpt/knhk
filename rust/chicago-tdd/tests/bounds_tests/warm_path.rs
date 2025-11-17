@@ -2,7 +2,7 @@
 //!
 //! Warm path operations should complete in ≤100ms.
 
-use chicago_tdd::{PerformanceHarness, OperationType};
+use chicago_tdd::{OperationType, PerformanceHarness};
 
 #[test]
 fn test_warm_path_small_allocation() {

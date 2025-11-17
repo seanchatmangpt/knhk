@@ -10,7 +10,9 @@ use std::time::Instant;
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::{PatternId, PatternRegistry};
-use crate::validation::phases::core::{Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus};
+use crate::validation::phases::core::{
+    Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus,
+};
 use crate::WorkflowSpec;
 
 /// Pattern semantics validation data
@@ -337,15 +339,18 @@ fn categorize_pattern(pattern_name: &str) -> String {
         | "exclusive_choice" | "exclusive-choice" | "simple_merge" | "simple-merge" => {
             "Basic Control Flow".to_string()
         }
-        "multi_choice" | "multi-choice" | "structured_synchronizing_merge"
-        | "structured-synchronizing-merge" | "multi_merge" | "multi-merge" => {
-            "Advanced Branching".to_string()
-        }
-        "deferred_choice" | "deferred-choice" | "interleaved_parallel_routing"
-        | "interleaved-parallel-routing" | "milestone" => "State-based".to_string(),
-        "cancel_task" | "cancel-task" | "cancel_case" | "cancel-case" => {
-            "Cancellation".to_string()
-        }
+        "multi_choice"
+        | "multi-choice"
+        | "structured_synchronizing_merge"
+        | "structured-synchronizing-merge"
+        | "multi_merge"
+        | "multi-merge" => "Advanced Branching".to_string(),
+        "deferred_choice"
+        | "deferred-choice"
+        | "interleaved_parallel_routing"
+        | "interleaved-parallel-routing"
+        | "milestone" => "State-based".to_string(),
+        "cancel_task" | "cancel-task" | "cancel_case" | "cancel-case" => "Cancellation".to_string(),
         _ => "Other".to_string(),
     }
 }

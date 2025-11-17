@@ -2,11 +2,11 @@
 //!
 //! Verifies that ∀o, σ: τ(μ_hot(o;σ)) ≤ 8 CPU cycles
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use knhk_mu_kernel::isa::{MuInstruction, MuOps, DispatchPhase};
-use knhk_mu_kernel::timing::TickBudget;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use knhk_mu_kernel::guards::GuardContext;
+use knhk_mu_kernel::isa::{DispatchPhase, MuInstruction, MuOps};
 use knhk_mu_kernel::patterns::PatternId;
+use knhk_mu_kernel::timing::TickBudget;
 use knhk_mu_kernel::CHATMAN_CONSTANT;
 
 /// Benchmark complete task execution (should be ≤8 ticks)
@@ -21,11 +21,7 @@ fn bench_complete_task(c: &mut Criterion) {
     group.bench_function("eval_task", |b| {
         b.iter(|| {
             let mut budget = TickBudget::chatman();
-            let result = MuInstruction::eval_task(
-                black_box(1),
-                black_box(&obs),
-                &mut budget,
-            );
+            let result = MuInstruction::eval_task(black_box(1), black_box(&obs), &mut budget);
             black_box(result)
         });
     });
@@ -114,7 +110,10 @@ fn bench_determinism(c: &mut Criterion) {
     let max = cycle_counts.iter().max().unwrap();
     let variance = max - min;
 
-    println!("Cycle count variance: {} (min: {}, max: {})", variance, min, max);
+    println!(
+        "Cycle count variance: {} (min: {}, max: {})",
+        variance, min, max
+    );
 
     // Allow small variance due to CPU effects, but should be minimal
     assert!(
@@ -139,11 +138,7 @@ fn bench_sustained_load(c: &mut Criterion) {
         b.iter(|| {
             for i in 0..1000 {
                 let mut budget = TickBudget::chatman();
-                let _ = MuInstruction::eval_task(
-                    black_box(i as u64),
-                    black_box(&obs),
-                    &mut budget,
-                );
+                let _ = MuInstruction::eval_task(black_box(i as u64), black_box(&obs), &mut budget);
             }
         });
     });

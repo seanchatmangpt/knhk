@@ -2,16 +2,16 @@
 // Phase 3: Lock-free descriptor updates with version history
 // DOCTRINE: Rule 4 (All changes are descriptor changes)
 
+use blake3;
+use crossbeam::epoch::{self, Atomic, Guard, Owned, Shared};
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::mem;
+use std::ptr;
 use std::sync::atomic::{AtomicPtr, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::ptr;
-use std::mem;
-use std::collections::HashMap;
-use parking_lot::RwLock;
-use crossbeam::epoch::{self, Atomic, Guard, Owned, Shared};
 use tracing::{debug, error, info, warn};
-use serde::{Serialize, Deserialize};
-use blake3;
 
 /// Descriptor version with cryptographic hash
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,7 +94,10 @@ impl AtomicDescriptor {
         let old_version = self.version.load(Ordering::Acquire);
 
         if new_version <= old_version {
-            return Err(format!("Version {} not newer than current {}", new_version, old_version));
+            return Err(format!(
+                "Version {} not newer than current {}",
+                new_version, old_version
+            ));
         }
 
         let owned = Owned::new(new_descriptor);
@@ -127,6 +130,7 @@ impl AtomicDescriptor {
 pub struct Descriptor {
     pub version: DescriptorVersion,
     pub content: DescriptorContent,
+    #[serde(skip)]
     pub compiled: Option<CompiledDescriptor>,
 }
 
@@ -269,7 +273,10 @@ impl DescriptorManager {
 
         unsafe {
             let current_ref = current.as_ref().unwrap();
-            if !self.compatibility_checker.check_compatibility(&current_ref.content, &new_descriptor.content) {
+            if !self
+                .compatibility_checker
+                .check_compatibility(&current_ref.content, &new_descriptor.content)
+            {
                 return Err("Incompatible descriptor change".to_string());
             }
         }
@@ -279,7 +286,9 @@ impl DescriptorManager {
         self.rollback_stack.write().push(current_version);
 
         // Perform atomic swap
-        let new_version = self.current_descriptor.swap(new_descriptor.clone(), guard)?;
+        let new_version = self
+            .current_descriptor
+            .swap(new_descriptor.clone(), guard)?;
 
         // Add to history
         self.history.add_version(new_descriptor.version.clone());
@@ -300,20 +309,24 @@ impl DescriptorManager {
             reader_impact_us,
         });
 
-        info!("Hot-swapped descriptor from v{} to v{} in {}us",
-            current_version, new_version, duration_us);
+        info!(
+            "Hot-swapped descriptor from v{} to v{} in {}us",
+            current_version, new_version, duration_us
+        );
 
         Ok(new_version)
     }
 
     /// Rollback to previous version
     pub fn rollback(&self) -> Result<u64, String> {
-        let rollback_version = self.rollback_stack
+        let rollback_version = self
+            .rollback_stack
             .write()
             .pop()
             .ok_or_else(|| "No version to rollback to".to_string())?;
 
-        let version_info = self.history
+        let version_info = self
+            .history
             .get_version(rollback_version)
             .ok_or_else(|| format!("Version {} not found in history", rollback_version))?;
 
@@ -479,7 +492,8 @@ impl DescriptorManager {
     pub fn emergency_rollback(&self, version: u64) -> Result<u64, String> {
         warn!("Emergency rollback initiated to version {}", version);
 
-        let version_info = self.history
+        let version_info = self
+            .history
             .get_version(version)
             .ok_or_else(|| format!("Version {} not found", version))?;
 
@@ -564,7 +578,12 @@ impl CompatibilityChecker {
         true
     }
 
-    fn check_rule(&self, rule: &CompatibilityRule, old: &DescriptorContent, new: &DescriptorContent) -> bool {
+    fn check_rule(
+        &self,
+        rule: &CompatibilityRule,
+        old: &DescriptorContent,
+        new: &DescriptorContent,
+    ) -> bool {
         match rule {
             CompatibilityRule::SchemaVersion => {
                 // Major version must match
@@ -578,8 +597,8 @@ impl CompatibilityChecker {
             }
             CompatibilityRule::ConstraintRelaxation => {
                 // Constraints can only be relaxed, not tightened
-                new.constraints.max_execution_time_us >= old.constraints.max_execution_time_us &&
-                new.constraints.max_memory_bytes >= old.constraints.max_memory_bytes
+                new.constraints.max_execution_time_us >= old.constraints.max_execution_time_us
+                    && new.constraints.max_memory_bytes >= old.constraints.max_memory_bytes
             }
         }
     }
@@ -600,14 +619,12 @@ mod tests {
         let content = DescriptorContent {
             id: format!("test-{}", version),
             schema_version: "1.0.0".to_string(),
-            rules: vec![
-                Rule {
-                    id: "rule1".to_string(),
-                    condition: "true".to_string(),
-                    action: "allow".to_string(),
-                    priority: 10,
-                },
-            ],
+            rules: vec![Rule {
+                id: "rule1".to_string(),
+                condition: "true".to_string(),
+                action: "allow".to_string(),
+                priority: 10,
+            }],
             patterns: vec![],
             constraints: Constraints {
                 max_execution_time_us: 1000,
@@ -722,7 +739,7 @@ mod tests {
             patterns: vec![],
             constraints: Constraints {
                 max_execution_time_us: 2000, // Relaxed constraint OK
-                max_memory_bytes: 2048, // Relaxed constraint OK
+                max_memory_bytes: 2048,      // Relaxed constraint OK
                 required_capabilities: vec![],
                 forbidden_operations: vec![],
             },

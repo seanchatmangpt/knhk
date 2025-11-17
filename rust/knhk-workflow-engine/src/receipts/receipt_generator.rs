@@ -6,8 +6,8 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 /// Receipt structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -157,7 +157,7 @@ impl ReceiptGenerator {
         // Verify receipt was generated correctly
         if !receipt.verify_signature() {
             return Err(WorkflowError::ReceiptGenerationFailed(
-                "Receipt signature verification failed".to_string()
+                "Receipt signature verification failed".to_string(),
             ));
         }
 
@@ -192,14 +192,16 @@ mod tests {
         let o_in = serde_json::json!({"input": "data"});
         let a_out = serde_json::json!({"output": "result"});
 
-        let receipt = generator.generate_receipt(
-            "sigma-123".to_string(),
-            &o_in,
-            &a_out,
-            vec!["guard1".to_string()],
-            vec![],
-            5,
-        ).expect("Receipt generation failed");
+        let receipt = generator
+            .generate_receipt(
+                "sigma-123".to_string(),
+                &o_in,
+                &a_out,
+                vec!["guard1".to_string()],
+                vec![],
+                5,
+            )
+            .expect("Receipt generation failed");
 
         assert!(!receipt.receipt_id.is_empty());
         assert_eq!(receipt.sigma_id, "sigma-123");
@@ -215,14 +217,7 @@ mod tests {
         let o_in = serde_json::json!({"test": 123});
         let a_out = serde_json::json!({"result": 456});
 
-        let receipt = Receipt::new(
-            "sigma-1".to_string(),
-            &o_in,
-            &a_out,
-            vec![],
-            vec![],
-            3,
-        );
+        let receipt = Receipt::new("sigma-1".to_string(), &o_in, &a_out, vec![], vec![], 3);
 
         assert!(receipt.verify_signature());
 
@@ -267,25 +262,15 @@ mod tests {
         let o_in = serde_json::json!({});
         let a_out = serde_json::json!({});
 
-        generator.generate_receipt(
-            "sigma-1".to_string(),
-            &o_in,
-            &a_out,
-            vec![],
-            vec![],
-            1,
-        ).expect("Generation failed");
+        generator
+            .generate_receipt("sigma-1".to_string(), &o_in, &a_out, vec![], vec![], 1)
+            .expect("Generation failed");
 
         assert_eq!(generator.get_total_receipts(), 1);
 
-        generator.generate_receipt(
-            "sigma-2".to_string(),
-            &o_in,
-            &a_out,
-            vec![],
-            vec![],
-            2,
-        ).expect("Generation failed");
+        generator
+            .generate_receipt("sigma-2".to_string(), &o_in, &a_out, vec![], vec![], 2)
+            .expect("Generation failed");
 
         assert_eq!(generator.get_total_receipts(), 2);
     }

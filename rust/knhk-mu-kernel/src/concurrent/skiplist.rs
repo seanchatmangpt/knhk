@@ -263,10 +263,7 @@ impl<T: Ord + Clone> LockFreeSkipList<T> {
                 ptr::write(forward.add(i), AtomicUsize::new(0));
             }
 
-            ptr::write(
-                &mut (*ptr).level,
-                MAX_LEVEL,
-            );
+            ptr::write(&mut (*ptr).level, MAX_LEVEL);
 
             ptr
         };
@@ -359,7 +356,9 @@ impl<T: Ord + Clone> LockFreeSkipList<T> {
                 // Link new node at all levels
                 for i in 0..=level {
                     let succ = succs[i];
-                    (*new_node).get_forward(i).store(succ as usize, Ordering::Relaxed);
+                    (*new_node)
+                        .get_forward(i)
+                        .store(succ as usize, Ordering::Relaxed);
                 }
 
                 // CAS at bottom level
@@ -386,12 +385,14 @@ impl<T: Ord + Clone> LockFreeSkipList<T> {
                 // Update max level if needed
                 let current_level = self.level.load(Ordering::Acquire);
                 if level > current_level {
-                    self.level.compare_exchange(
-                        current_level,
-                        level,
-                        Ordering::Release,
-                        Ordering::Relaxed,
-                    ).ok();
+                    self.level
+                        .compare_exchange(
+                            current_level,
+                            level,
+                            Ordering::Release,
+                            Ordering::Relaxed,
+                        )
+                        .ok();
                 }
 
                 self.len.fetch_add(1, Ordering::Relaxed);

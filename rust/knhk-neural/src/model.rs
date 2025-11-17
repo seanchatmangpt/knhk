@@ -7,13 +7,19 @@ use ndarray::{Array1, Array2};
 /// This allows us to return references to internal state without lifetime issues
 pub trait NeuralModel: Clone + Send + Sync {
     /// Input type (can depend on lifetime 'a)
-    type Input<'a>: Clone where Self: 'a;
+    type Input<'a>: Clone
+    where
+        Self: 'a;
 
     /// Output type (can depend on lifetime 'a)
-    type Output<'a> where Self: 'a;
+    type Output<'a>
+    where
+        Self: 'a;
 
     /// Gradient type for backprop
-    type Gradient<'a> where Self: 'a;
+    type Gradient<'a>
+    where
+        Self: 'a;
 
     /// Forward pass: compute output from input
     fn forward(&self, input: Self::Input<'_>) -> Self::Output<'_>;
@@ -58,23 +64,34 @@ impl<const IN: usize, const OUT: usize> DenseLayer<IN, OUT> {
     pub fn initialize_xavier(&mut self) {
         // Xavier initialization: scale by 1/sqrt(input_size)
         let scale = 1.0 / (IN as f32).sqrt();
-        self.weights = Array2::from_shape_fn((OUT, IN), |_| {
-            (rand::random::<f32>() - 0.5) * 2.0 * scale
-        });
+        self.weights =
+            Array2::from_shape_fn((OUT, IN), |_| (rand::random::<f32>() - 0.5) * 2.0 * scale);
         self.biases.fill(0.0);
     }
 
-    pub fn input_size(&self) -> usize { IN }
-    pub fn output_size(&self) -> usize { OUT }
+    pub fn input_size(&self) -> usize {
+        IN
+    }
+    pub fn output_size(&self) -> usize {
+        OUT
+    }
 
     /// ReLU activation
     fn relu(x: f32) -> f32 {
-        if x > 0.0 { x } else { 0.0 }
+        if x > 0.0 {
+            x
+        } else {
+            0.0
+        }
     }
 
     /// ReLU derivative
     fn relu_prime(x: f32) -> f32 {
-        if x > 0.0 { 1.0 } else { 0.0 }
+        if x > 0.0 {
+            1.0
+        } else {
+            0.0
+        }
     }
 }
 
@@ -107,7 +124,10 @@ impl<const IN: usize, const OUT: usize> NeuralModel for DenseLayer<IN, OUT> {
     fn backward(&mut self, gradient: Self::Gradient<'_>) -> f32 {
         if let Some(input) = &self.last_input {
             // Compute weight gradient: ∇W = gradient ⊗ input
-            let weight_gradient = gradient.view().into_shape((OUT, 1)).unwrap()
+            let weight_gradient = gradient
+                .view()
+                .into_shape((OUT, 1))
+                .unwrap()
                 .dot(&input.view().into_shape((1, IN)).unwrap());
 
             // Update weights: W ← W - learning_rate * ∇W
@@ -206,7 +226,10 @@ mod tests {
 
         // Weights should be initialized (non-zero with high probability)
         let sum: f32 = layer.weights.iter().sum();
-        assert!(sum.abs() > 0.1, "Xavier init should create non-trivial weights");
+        assert!(
+            sum.abs() > 0.1,
+            "Xavier init should create non-trivial weights"
+        );
     }
 
     #[test]

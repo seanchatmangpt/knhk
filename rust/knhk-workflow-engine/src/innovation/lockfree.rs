@@ -11,11 +11,11 @@
 //! - Epoch-based memory reclamation
 //! - Hazard pointers for safe concurrent memory access
 
-use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
-use std::ptr::{self, NonNull};
+use crate::execution::{Receipt, ReceiptId};
 use std::cell::UnsafeCell;
 use std::mem;
-use crate::execution::{Receipt, ReceiptId};
+use std::ptr::{self, NonNull};
+use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 
 // ============================================================================
 // Cache-Line Aligned Node to Prevent False Sharing
@@ -256,12 +256,11 @@ impl LockFreeReceiptQueue {
             }
 
             // Try to swing head to next
-            match self.head.value.compare_exchange(
-                head,
-                next,
-                Ordering::Release,
-                Ordering::Acquire,
-            ) {
+            match self
+                .head
+                .value
+                .compare_exchange(head, next, Ordering::Release, Ordering::Acquire)
+            {
                 Ok(_) => {
                     // Successfully dequeued
                     // Safety: next is a valid node pointer, and we're the only thread

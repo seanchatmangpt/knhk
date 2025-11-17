@@ -3,15 +3,15 @@
 //! Directly executes workflows from RDF/Turtle ontologies without manual code generation.
 //! Implements the complete Σ → Π → μ → O → MAPE-K pipeline.
 
-use crate::error::{WorkflowError, WorkflowResult};
-use crate::parser::{WorkflowParser, WorkflowSpec};
-use crate::orchestrator::SelfExecutingOrchestrator;
-use crate::patterns::PatternId;
 use crate::adaptive_patterns::{AdaptivePatternSelector, PatternSelectionContext};
+use crate::error::{WorkflowError, WorkflowResult};
 use crate::mape::KnowledgeBase;
-use std::sync::Arc;
+use crate::orchestrator::SelfExecutingOrchestrator;
+use crate::parser::{WorkflowParser, WorkflowSpec};
+use crate::patterns::PatternId;
 use parking_lot::RwLock;
 use std::path::Path;
+use std::sync::Arc;
 
 /// Ontology-driven executor that bridges RDF ontologies to executable workflows
 pub struct OntologyExecutor {
@@ -49,7 +49,10 @@ impl OntologyExecutor {
         input_data: serde_json::Value,
     ) -> WorkflowResult<OntologyExecutionResult> {
         // 1. Load workflow from ontology
-        let workflow_id = self.orchestrator.load_workflow_from_ontology(ontology_path).await?;
+        let workflow_id = self
+            .orchestrator
+            .load_workflow_from_ontology(ontology_path)
+            .await?;
 
         // 2. Adaptively select execution strategy
         let context = self.infer_context(&input_data)?;
@@ -63,7 +66,10 @@ impl OntologyExecutor {
         );
 
         // 3. Execute workflow
-        let result = self.orchestrator.execute_workflow(&workflow_id, input_data).await?;
+        let result = self
+            .orchestrator
+            .execute_workflow(&workflow_id, input_data)
+            .await?;
 
         // 4. Record execution for learning
         let observation = crate::mape::Observation {
@@ -76,7 +82,8 @@ impl OntologyExecutor {
             metrics: std::collections::HashMap::new(),
         };
 
-        self.pattern_selector.record_execution(selected_pattern, &observation);
+        self.pattern_selector
+            .record_execution(selected_pattern, &observation);
 
         Ok(OntologyExecutionResult {
             workflow_id: result.workflow_id,
@@ -101,7 +108,9 @@ impl OntologyExecutor {
         let paths = std::fs::read_dir(ontology_dir)?
             .filter_map(|entry| entry.ok())
             .filter(|entry| {
-                entry.path().extension()
+                entry
+                    .path()
+                    .extension()
                     .and_then(|s| s.to_str())
                     .map(|s| s == "ttl")
                     .unwrap_or(false)
@@ -110,10 +119,10 @@ impl OntologyExecutor {
             .collect::<Vec<_>>();
 
         for (path, input) in paths.iter().zip(inputs.iter()) {
-            match self.execute_from_ontology(
-                path.to_str().unwrap(),
-                input.clone(),
-            ).await {
+            match self
+                .execute_from_ontology(path.to_str().unwrap(), input.clone())
+                .await
+            {
                 Ok(result) => results.push(result),
                 Err(e) => {
                     tracing::error!("Failed to execute {}: {:?}", path.display(), e);
@@ -139,7 +148,13 @@ impl OntologyExecutor {
 
         // Heuristics for pattern selection
         let requires_parallelism = data_size > 10;
-        let concurrency_level = if data_size > 50 { 8 } else if data_size > 10 { 4 } else { 1 };
+        let concurrency_level = if data_size > 50 {
+            8
+        } else if data_size > 10 {
+            4
+        } else {
+            1
+        };
 
         Ok(PatternSelectionContext {
             data_size,
@@ -158,7 +173,9 @@ impl OntologyExecutor {
             workflows_executed: orchestrator_stats.workflows_loaded,
             current_sigma: orchestrator_stats.current_sigma_id,
             total_receipts: orchestrator_stats.total_receipts,
-            learned_patterns: self.pattern_selector.get_pattern_stats(&PatternId::Sequence)
+            learned_patterns: self
+                .pattern_selector
+                .get_pattern_stats(&PatternId::Sequence)
                 .map(|s| s.total_executions as usize)
                 .unwrap_or(0),
         }
@@ -197,7 +214,8 @@ mod tests {
         let executor = OntologyExecutor::new(
             temp_dir.path().join("snapshots").to_str().unwrap(),
             temp_dir.path().join("receipts").to_str().unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let stats = executor.get_stats();
         assert_eq!(stats.workflows_executed, 0);

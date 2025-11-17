@@ -64,23 +64,23 @@
 //! }
 //! ```
 
-#![allow(unsafe_code)]  // Verified unsafe for lock-free structures
+#![allow(unsafe_code)] // Verified unsafe for lock-free structures
 
-pub mod types;
-pub mod queues;
-pub mod scheduler;
-pub mod replay;
 pub mod logical_time;
+pub mod queues;
+pub mod replay;
+pub mod scheduler;
+pub mod types;
 
 // Re-exports
-pub use types::{CoreLocal, Shared, NotSend, NotSync, GuardSet};
-pub use queues::{WorkQueue, GlobalOrdered, BestEffort, QueueError};
+pub use logical_time::{HappensBefore, LogicalClock, Timestamp};
+pub use queues::{BestEffort, GlobalOrdered, QueueError, WorkQueue};
+pub use replay::{Deterministic, ReplayIterator, ReplayLog, ReplaySeed};
 pub use scheduler::{
-    DeterministicScheduler, SchedulableTask, SchedulerError, ExecutionResult,
-    Priority, PriorityHigh, PriorityNormal, PriorityLow,
+    DeterministicScheduler, ExecutionResult, Priority, PriorityHigh, PriorityLow, PriorityNormal,
+    SchedulableTask, SchedulerError,
 };
-pub use replay::{ReplayLog, ReplayIterator, ReplaySeed, Deterministic};
-pub use logical_time::{LogicalClock, Timestamp, HappensBefore};
+pub use types::{CoreLocal, GuardSet, NotSend, NotSync, Shared};
 
 #[cfg(test)]
 mod tests {

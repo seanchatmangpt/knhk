@@ -34,9 +34,9 @@ use oxigraph::model::Term;
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use std::path::Path;
+use std::time::Instant;
 use tera::{Context, Tera};
 use tracing::{debug, info, instrument};
-use std::time::Instant;
 
 /// Hook trigger type
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

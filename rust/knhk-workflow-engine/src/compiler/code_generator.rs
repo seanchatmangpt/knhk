@@ -3,7 +3,7 @@
 //! Generates executable code from validated patterns.
 //! Produces dispatch tables, guard code, and receipt templates.
 
-use crate::compiler::extractor::{ExtractedPattern, Guard, GuardType, Variable, DataType};
+use crate::compiler::extractor::{DataType, ExtractedPattern, Guard, GuardType, Variable};
 use crate::error::{WorkflowError, WorkflowResult};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
@@ -230,7 +230,10 @@ impl CodeGenerator {
 
     /// Generate code from patterns
     #[instrument(skip(self, patterns))]
-    pub async fn generate(&mut self, patterns: &[ExtractedPattern]) -> WorkflowResult<GeneratedCode> {
+    pub async fn generate(
+        &mut self,
+        patterns: &[ExtractedPattern],
+    ) -> WorkflowResult<GeneratedCode> {
         info!("Generating code for {} patterns", patterns.len());
 
         // Initialize symbol table
@@ -262,7 +265,10 @@ impl CodeGenerator {
     }
 
     /// Generate dispatch table
-    fn generate_dispatch_table(&mut self, patterns: &[ExtractedPattern]) -> WorkflowResult<DispatchTable> {
+    fn generate_dispatch_table(
+        &mut self,
+        patterns: &[ExtractedPattern],
+    ) -> WorkflowResult<DispatchTable> {
         debug!("Generating dispatch table");
 
         let mut entries = Vec::new();
@@ -549,7 +555,10 @@ impl CodeGenerator {
     }
 
     /// Read string
-    fn read_string(&self, chars: &mut std::iter::Peekable<std::str::Chars>) -> WorkflowResult<String> {
+    fn read_string(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+    ) -> WorkflowResult<String> {
         let mut string = String::new();
         while let Some(ch) = chars.next() {
             if ch == '"' {
@@ -590,7 +599,10 @@ impl CodeGenerator {
     }
 
     /// Generate receipt templates
-    fn generate_receipts(&mut self, patterns: &[ExtractedPattern]) -> WorkflowResult<Vec<ReceiptTemplate>> {
+    fn generate_receipts(
+        &mut self,
+        patterns: &[ExtractedPattern],
+    ) -> WorkflowResult<Vec<ReceiptTemplate>> {
         debug!("Generating receipt templates");
 
         let mut receipts = Vec::new();
@@ -605,7 +617,10 @@ impl CodeGenerator {
     }
 
     /// Generate receipt for pattern
-    fn generate_receipt_for_pattern(&mut self, pattern: &ExtractedPattern) -> WorkflowResult<ReceiptTemplate> {
+    fn generate_receipt_for_pattern(
+        &mut self,
+        pattern: &ExtractedPattern,
+    ) -> WorkflowResult<ReceiptTemplate> {
         let mut fields = Vec::new();
         let mut offset = 0u16;
 
@@ -713,17 +728,23 @@ impl CodeGenerator {
                         DataType::Integer => {
                             if let Ok(i) = init.parse::<i64>() {
                                 Some(ConstantValue::Integer(i))
-                            } else { None }
+                            } else {
+                                None
+                            }
                         }
                         DataType::Float => {
                             if let Ok(f) = init.parse::<f64>() {
                                 Some(ConstantValue::Float(f))
-                            } else { None }
+                            } else {
+                                None
+                            }
                         }
                         DataType::Boolean => {
                             if let Ok(b) = init.parse::<bool>() {
                                 Some(ConstantValue::Boolean(b))
-                            } else { None }
+                            } else {
+                                None
+                            }
                         }
                         DataType::String => Some(ConstantValue::String(init.clone())),
                         _ => None,
@@ -750,15 +771,17 @@ impl CodeGenerator {
         guards: &[GeneratedGuard],
         receipts: &[ReceiptTemplate],
     ) -> CodeMetadata {
-        let code_size = dispatch.entries.len() * 64
-            + guards.iter().map(|g| g.bytecode.len()).sum::<usize>();
+        let code_size =
+            dispatch.entries.len() * 64 + guards.iter().map(|g| g.bytecode.len()).sum::<usize>();
 
         let data_size = receipts.iter().map(|r| r.size as usize).sum::<usize>();
 
-        let stack_size = guards.iter()
+        let stack_size = guards
+            .iter()
             .map(|g| g.stack_depth as usize)
             .max()
-            .unwrap_or(0) * 8; // 8 bytes per stack slot
+            .unwrap_or(0)
+            * 8; // 8 bytes per stack slot
 
         CodeMetadata {
             code_size,

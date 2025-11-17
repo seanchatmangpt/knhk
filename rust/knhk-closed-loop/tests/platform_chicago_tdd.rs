@@ -5,11 +5,11 @@
 // CRITICAL: Property-based testing with proptest for invariant verification
 // CRITICAL: Latency measurement against 8-tick budget (Chatman Constant)
 
-use knhk_closed_loop::*;
-use std::sync::Arc;
-use std::collections::HashMap;
 use ed25519_dalek::SigningKey;
+use knhk_closed_loop::*;
 use proptest::prelude::*;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 // ============================================================================
 // TEST FIXTURE - Real Collaborators (Chicago TDD Pattern)
@@ -33,7 +33,8 @@ impl ClosedLoopFixture {
 
         let receipt_store = Arc::new(ReceiptStore::new(verifying_key));
         let observation_store = Arc::new(ObservationStore::new());
-        let doctrine_store = Arc::new(DoctrineStore::new().expect("Failed to create doctrine store"));
+        let doctrine_store =
+            Arc::new(DoctrineStore::new().expect("Failed to create doctrine store"));
 
         let genesis = SnapshotDescriptor {
             snapshot_id: format!("{}-genesis", sector),
@@ -82,7 +83,8 @@ impl ClosedLoopFixture {
                 required_signers: 2,
                 sectors: vec!["finance".to_string(), "compliance".to_string()],
             },
-            description: "All finance changes require dual approval from finance and compliance".to_string(),
+            description: "All finance changes require dual approval from finance and compliance"
+                .to_string(),
             parameters: HashMap::new(),
             enforcement_level: EnforcementLevel::Mandatory,
             source: "SOX-2027".to_string(),
@@ -135,10 +137,15 @@ impl ClosedLoopFixture {
             name: "Logistics Delivery SLA".to_string(),
             sector: "logistics".to_string(),
             constraint_type: ConstraintType::TimeWindow {
-                start_hour: 6,  // 6 AM
-                end_hour: 22,   // 10 PM
-                days: vec!["Monday".to_string(), "Tuesday".to_string(), "Wednesday".to_string(),
-                          "Thursday".to_string(), "Friday".to_string()],
+                start_hour: 6, // 6 AM
+                end_hour: 22,  // 10 PM
+                days: vec![
+                    "Monday".to_string(),
+                    "Tuesday".to_string(),
+                    "Wednesday".to_string(),
+                    "Thursday".to_string(),
+                    "Friday".to_string(),
+                ],
             },
             description: "Deliveries only during business hours on weekdays".to_string(),
             parameters: HashMap::new(),
@@ -174,10 +181,16 @@ fn spec_shadows_are_immutable() {
         promoted_at: chrono::Utc::now().timestamp_millis() as u64,
         version: 1,
     };
-    fixture.promoter.promote(child).expect("Failed to promote child");
+    fixture
+        .promoter
+        .promote(child)
+        .expect("Failed to promote child");
 
     // THEN: Genesis snapshot is unchanged
-    let retrieved_genesis = fixture.promoter.get(&genesis_id).expect("Genesis not found");
+    let retrieved_genesis = fixture
+        .promoter
+        .get(&genesis_id)
+        .expect("Genesis not found");
     assert_eq!(retrieved_genesis.snapshot_id, genesis_id);
     assert_eq!(retrieved_genesis.version, 0);
     assert!(retrieved_genesis.parent_id.is_none());
@@ -236,8 +249,14 @@ fn spec_parallel_shadows_dont_interfere() {
         version: 1,
     };
 
-    fixture1.promoter.promote(snap_a).expect("sector_a promotion failed");
-    fixture2.promoter.promote(snap_b).expect("sector_b promotion failed");
+    fixture1
+        .promoter
+        .promote(snap_a)
+        .expect("sector_a promotion failed");
+    fixture2
+        .promoter
+        .promote(snap_b)
+        .expect("sector_b promotion failed");
 
     // THEN: Each promoter has its own current snapshot
     assert_eq!(fixture1.promoter.current().snapshot_id, "sector-a-v1");
@@ -269,14 +288,20 @@ fn perf_shadow_test_execution_under_budget() {
             promoted_at: chrono::Utc::now().timestamp_millis() as u64,
             version: i,
         };
-        fixture.promoter.promote(snapshot).expect("Promotion failed");
+        fixture
+            .promoter
+            .promote(snapshot)
+            .expect("Promotion failed");
     }
 
     let elapsed = start.elapsed();
 
     // THEN: Total time for 10 promotions is under 100ms
-    assert!(elapsed.as_millis() < 100,
-            "Shadow creation took {}ms, expected <100ms", elapsed.as_millis());
+    assert!(
+        elapsed.as_millis() < 100,
+        "Shadow creation took {}ms, expected <100ms",
+        elapsed.as_millis()
+    );
 }
 
 // ============================================================================
@@ -288,29 +313,33 @@ async fn spec_critical_guards_require_quorum() {
     // GIVEN: A finance doctrine requiring 2 signers
     let fixture = ClosedLoopFixture::new("finance");
     let doctrine = fixture.create_finance_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: We validate with only 1 signer
     let context = ValidationContext {
-        signers: vec![
-            Signer {
-                id: "user1".to_string(),
-                role: "finance_manager".to_string(),
-                sector: "finance".to_string(),
-            }
-        ],
+        signers: vec![Signer {
+            id: "user1".to_string(),
+            role: "finance_manager".to_string(),
+            sector: "finance".to_string(),
+        }],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("critical_change", "finance", &context)
         .expect("Validation failed");
 
     // THEN: Violation is detected
     assert_eq!(violations.len(), 1);
     assert!(violations[0].is_blocking());
-    assert!(violations[0].violation_reason.contains("Requires 2 signers"));
+    assert!(violations[0]
+        .violation_reason
+        .contains("Requires 2 signers"));
 }
 
 #[tokio::test]
@@ -330,15 +359,20 @@ async fn spec_approval_signatures_are_valid() {
         "test_sector".to_string(),
         &fixture.signing_key,
         None,
-    ).expect("Receipt creation failed");
+    )
+    .expect("Receipt creation failed");
 
-    let receipt_id = fixture.receipt_store
+    let receipt_id = fixture
+        .receipt_store
         .append(receipt)
         .await
         .expect("Receipt append failed");
 
     // THEN: Receipt signature is valid
-    let retrieved = fixture.receipt_store.get(&receipt_id).expect("Receipt not found");
+    let retrieved = fixture
+        .receipt_store
+        .get(&receipt_id)
+        .expect("Receipt not found");
     let verifying_key = fixture.signing_key.verifying_key();
     assert!(retrieved.verify(&verifying_key).is_ok());
 }
@@ -382,22 +416,24 @@ async fn spec_doctrine_violation_blocks_promotion() {
     // GIVEN: A finance sector with dual-approval doctrine
     let fixture = ClosedLoopFixture::new("finance");
     let doctrine = fixture.create_finance_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: We try to promote a change with only 1 approval
     let context = ValidationContext {
-        signers: vec![
-            Signer {
-                id: "alice".to_string(),
-                role: "cfo".to_string(),
-                sector: "finance".to_string(),
-            }
-        ],
+        signers: vec![Signer {
+            id: "alice".to_string(),
+            role: "cfo".to_string(),
+            sector: "finance".to_string(),
+        }],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("ΔΣ: increase_budget", "finance", &context)
         .expect("Validation failed");
 
@@ -412,7 +448,10 @@ async fn spec_multiple_doctrines_compose() {
     let fixture = ClosedLoopFixture::new("finance");
 
     let approval_doctrine = fixture.create_finance_doctrine();
-    fixture.doctrine_store.add_rule(approval_doctrine).expect("Failed to add approval doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(approval_doctrine)
+        .expect("Failed to add approval doctrine");
 
     let resource_doctrine = DoctrineRule {
         id: "FIN-BUDGET-001".to_string(),
@@ -429,7 +468,10 @@ async fn spec_multiple_doctrines_compose() {
         effective_date: 0,
         expires: None,
     };
-    fixture.doctrine_store.add_rule(resource_doctrine).expect("Failed to add resource doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(resource_doctrine)
+        .expect("Failed to add resource doctrine");
 
     // WHEN: We validate with 2 signers but excessive amount
     let mut resources = HashMap::new();
@@ -437,19 +479,30 @@ async fn spec_multiple_doctrines_compose() {
 
     let context = ValidationContext {
         signers: vec![
-            Signer { id: "alice".to_string(), role: "cfo".to_string(), sector: "finance".to_string() },
-            Signer { id: "bob".to_string(), role: "compliance".to_string(), sector: "compliance".to_string() },
+            Signer {
+                id: "alice".to_string(),
+                role: "cfo".to_string(),
+                sector: "finance".to_string(),
+            },
+            Signer {
+                id: "bob".to_string(),
+                role: "compliance".to_string(),
+                sector: "compliance".to_string(),
+            },
         ],
         resources,
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("large_transaction", "finance", &context)
         .expect("Validation failed");
 
     // THEN: Resource limit violation is detected (even though approvals are sufficient)
-    assert!(violations.iter().any(|v| v.violation_reason.contains("Resource limit exceeded")));
+    assert!(violations
+        .iter()
+        .any(|v| v.violation_reason.contains("Resource limit exceeded")));
 }
 
 #[tokio::test]
@@ -460,42 +513,64 @@ async fn spec_sector_doctrines_isolated() {
     let finance_doctrine = fixture.create_finance_doctrine();
     let healthcare_doctrine = fixture.create_healthcare_doctrine();
 
-    fixture.doctrine_store.add_rule(finance_doctrine).expect("Failed to add finance doctrine");
-    fixture.doctrine_store.add_rule(healthcare_doctrine).expect("Failed to add healthcare doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(finance_doctrine)
+        .expect("Failed to add finance doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(healthcare_doctrine)
+        .expect("Failed to add healthcare doctrine");
 
     // WHEN: We validate a finance proposal
     let context = ValidationContext {
-        signers: vec![
-            Signer { id: "user1".to_string(), role: "cfo".to_string(), sector: "finance".to_string() },
-        ],
+        signers: vec![Signer {
+            id: "user1".to_string(),
+            role: "cfo".to_string(),
+            sector: "finance".to_string(),
+        }],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
-    let finance_violations = fixture.doctrine_store
+    let finance_violations = fixture
+        .doctrine_store
         .validate_against_doctrines("finance_change", "finance", &context)
         .expect("Finance validation failed");
 
     // THEN: Only finance doctrines are checked
     assert!(!finance_violations.is_empty());
-    assert!(finance_violations.iter().all(|v| v.rule_id.starts_with("FIN-")));
+    assert!(finance_violations
+        .iter()
+        .all(|v| v.rule_id.starts_with("FIN-")));
 
     // WHEN: We validate a healthcare proposal
     let healthcare_context = ValidationContext {
         signers: vec![
-            Signer { id: "dr_smith".to_string(), role: "doctor".to_string(), sector: "healthcare".to_string() },
-            Signer { id: "dr_smith".to_string(), role: "billing".to_string(), sector: "healthcare".to_string() },
+            Signer {
+                id: "dr_smith".to_string(),
+                role: "doctor".to_string(),
+                sector: "healthcare".to_string(),
+            },
+            Signer {
+                id: "dr_smith".to_string(),
+                role: "billing".to_string(),
+                sector: "healthcare".to_string(),
+            },
         ],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
-    let healthcare_violations = fixture.doctrine_store
+    let healthcare_violations = fixture
+        .doctrine_store
         .validate_against_doctrines("patient_access", "healthcare", &healthcare_context)
         .expect("Healthcare validation failed");
 
     // THEN: Only healthcare doctrines are checked
-    assert!(healthcare_violations.iter().all(|v| v.rule_id.starts_with("HIPAA-")));
+    assert!(healthcare_violations
+        .iter()
+        .all(|v| v.rule_id.starts_with("HIPAA-")));
 }
 
 // ============================================================================
@@ -511,10 +586,17 @@ async fn spec_finance_sector_patterns() {
     fixture.add_observations(150, "transaction_event");
 
     // AND: Execute MAPE-K cycle
-    let cycle = fixture.coordinator.execute_cycle().await.expect("Cycle failed");
+    let cycle = fixture
+        .coordinator
+        .execute_cycle()
+        .await
+        .expect("Cycle failed");
 
     // THEN: High-frequency pattern is detected
-    assert!(cycle.patterns_detected > 0, "Should detect high-frequency pattern");
+    assert!(
+        cycle.patterns_detected > 0,
+        "Should detect high-frequency pattern"
+    );
     assert!(cycle.proposals_generated > 0, "Should generate proposals");
 }
 
@@ -523,7 +605,10 @@ async fn spec_health_sector_safety() {
     // GIVEN: A healthcare sector with safety doctrine
     let fixture = ClosedLoopFixture::new("healthcare");
     let doctrine = fixture.create_healthcare_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: A doctor tries to access billing (segregation of duties violation)
     let context = ValidationContext {
@@ -531,26 +616,29 @@ async fn spec_health_sector_safety() {
             Signer {
                 id: "dr_jones".to_string(),
                 role: "doctor".to_string(),
-                sector: "healthcare".to_string()
+                sector: "healthcare".to_string(),
             },
             Signer {
                 id: "dr_jones".to_string(),
                 role: "billing".to_string(),
-                sector: "healthcare".to_string()
+                sector: "healthcare".to_string(),
             },
         ],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("access_billing", "healthcare", &context)
         .expect("Validation failed");
 
     // THEN: Segregation of duties violation is blocked
     assert!(!violations.is_empty());
     assert!(violations[0].is_blocking());
-    assert!(violations[0].violation_reason.contains("Segregation of duties"));
+    assert!(violations[0]
+        .violation_reason
+        .contains("Segregation of duties"));
 }
 
 #[tokio::test]
@@ -558,7 +646,10 @@ async fn spec_mfg_sector_quality() {
     // GIVEN: A manufacturing sector with quality doctrine
     let fixture = ClosedLoopFixture::new("manufacturing");
     let doctrine = fixture.create_manufacturing_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: Quality metrics exceed threshold
     let mut resources = HashMap::new();
@@ -570,14 +661,17 @@ async fn spec_mfg_sector_quality() {
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("quality_report", "manufacturing", &context)
         .expect("Validation failed");
 
     // THEN: Quality violation is detected
     assert!(!violations.is_empty());
     assert!(violations[0].is_blocking());
-    assert!(violations[0].violation_reason.contains("Resource limit exceeded"));
+    assert!(violations[0]
+        .violation_reason
+        .contains("Resource limit exceeded"));
 }
 
 #[tokio::test]
@@ -585,7 +679,10 @@ async fn spec_logistics_sector_slas() {
     // GIVEN: A logistics sector with delivery time window doctrine
     let fixture = ClosedLoopFixture::new("logistics");
     let doctrine = fixture.create_logistics_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: We validate a delivery (time window check happens in doctrine validation)
     let context = ValidationContext {
@@ -594,13 +691,17 @@ async fn spec_logistics_sector_slas() {
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("schedule_delivery", "logistics", &context)
         .expect("Validation failed");
 
     // THEN: Time window doctrine is evaluated (may or may not violate depending on current time)
     // This test validates that logistics doctrine is properly registered and evaluated
-    assert!(fixture.doctrine_store.get_rule("LOG-DELIVERY-SLA-001").is_ok());
+    assert!(fixture
+        .doctrine_store
+        .get_rule("LOG-DELIVERY-SLA-001")
+        .is_ok());
 }
 
 // ============================================================================
@@ -622,12 +723,18 @@ fn perf_snapshot_promotion_under_1ns() {
     };
 
     let start = std::time::Instant::now();
-    fixture.promoter.promote(snapshot).expect("Promotion failed");
+    fixture
+        .promoter
+        .promote(snapshot)
+        .expect("Promotion failed");
     let elapsed = start.elapsed();
 
     // THEN: Promotion completes in sub-microsecond time
-    assert!(elapsed.as_nanos() < 10_000,
-            "Promotion took {}ns, expected <10,000ns", elapsed.as_nanos());
+    assert!(
+        elapsed.as_nanos() < 10_000,
+        "Promotion took {}ns, expected <10,000ns",
+        elapsed.as_nanos()
+    );
 }
 
 #[test]
@@ -635,27 +742,42 @@ fn perf_doctrine_validation_under_8_ticks() {
     // GIVEN: A doctrine store with finance approval doctrine
     let fixture = ClosedLoopFixture::new("finance");
     let doctrine = fixture.create_finance_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: We validate against doctrines
     let context = ValidationContext {
         signers: vec![
-            Signer { id: "user1".to_string(), role: "cfo".to_string(), sector: "finance".to_string() },
-            Signer { id: "user2".to_string(), role: "compliance".to_string(), sector: "compliance".to_string() },
+            Signer {
+                id: "user1".to_string(),
+                role: "cfo".to_string(),
+                sector: "finance".to_string(),
+            },
+            Signer {
+                id: "user2".to_string(),
+                role: "compliance".to_string(),
+                sector: "compliance".to_string(),
+            },
         ],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
     let start = std::time::Instant::now();
-    let _violations = fixture.doctrine_store
+    let _violations = fixture
+        .doctrine_store
         .validate_against_doctrines("test_proposal", "finance", &context)
         .expect("Validation failed");
     let elapsed = start.elapsed();
 
     // THEN: Validation completes in time budget (assuming ~1ns per tick, <8ns)
-    assert!(elapsed.as_micros() < 100,
-            "Validation took {}μs, expected <100μs", elapsed.as_micros());
+    assert!(
+        elapsed.as_micros() < 100,
+        "Validation took {}μs, expected <100μs",
+        elapsed.as_micros()
+    );
 }
 
 #[test]
@@ -679,17 +801,25 @@ fn perf_guard_quorum_check_under_100us() {
                 "test_sector".to_string(),
                 &fixture.signing_key,
                 None,
-            ).expect("Receipt creation failed");
+            )
+            .expect("Receipt creation failed");
 
-            fixture.receipt_store.append(receipt).await.expect("Append failed");
+            fixture
+                .receipt_store
+                .append(receipt)
+                .await
+                .expect("Append failed");
         }
     });
 
     let elapsed = start.elapsed();
 
     // THEN: 10 receipt creations + verifications complete in <100μs
-    assert!(elapsed.as_micros() < 1000,
-            "Guard checks took {}μs, expected <1000μs", elapsed.as_micros());
+    assert!(
+        elapsed.as_micros() < 1000,
+        "Guard checks took {}μs, expected <1000μs",
+        elapsed.as_micros()
+    );
 }
 
 #[test]
@@ -713,14 +843,20 @@ fn perf_shadow_creation_scaling() {
             promoted_at: chrono::Utc::now().timestamp_millis() as u64,
             version: i,
         };
-        fixture.promoter.promote(snapshot).expect("Promotion failed");
+        fixture
+            .promoter
+            .promote(snapshot)
+            .expect("Promotion failed");
     }
 
     let elapsed = start.elapsed();
 
     // THEN: 1000 promotions complete in <100ms
-    assert!(elapsed.as_millis() < 100,
-            "1000 promotions took {}ms, expected <100ms", elapsed.as_millis());
+    assert!(
+        elapsed.as_millis() < 100,
+        "1000 promotions took {}ms, expected <100ms",
+        elapsed.as_millis()
+    );
 }
 
 // ============================================================================
@@ -732,13 +868,20 @@ async fn integration_complete_finance_workflow() {
     // GIVEN: Finance sector with doctrines and observations
     let fixture = ClosedLoopFixture::new("finance");
     let doctrine = fixture.create_finance_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: We add observations
     fixture.add_observations(150, "transaction_spike");
 
     // AND: Execute MAPE-K cycle (Observation → Pattern → Doctrine → Guard → Shadow → Promotion)
-    let cycle = fixture.coordinator.execute_cycle().await.expect("Cycle failed");
+    let cycle = fixture
+        .coordinator
+        .execute_cycle()
+        .await
+        .expect("Cycle failed");
 
     // THEN: Complete workflow executes
     assert!(cycle.patterns_detected > 0, "Patterns should be detected");
@@ -747,9 +890,15 @@ async fn integration_complete_finance_workflow() {
 
     // AND: Receipts are cryptographically valid
     for receipt_id in &cycle.receipt_ids {
-        let receipt = fixture.receipt_store.get(receipt_id).expect("Receipt not found");
+        let receipt = fixture
+            .receipt_store
+            .get(receipt_id)
+            .expect("Receipt not found");
         let verifying_key = fixture.signing_key.verifying_key();
-        assert!(receipt.verify(&verifying_key).is_ok(), "Receipt signature should be valid");
+        assert!(
+            receipt.verify(&verifying_key).is_ok(),
+            "Receipt signature should be valid"
+        );
     }
 }
 
@@ -758,22 +907,24 @@ async fn integration_healthcare_protocol_update() {
     // GIVEN: Healthcare sector with safety doctrines
     let fixture = ClosedLoopFixture::new("healthcare");
     let doctrine = fixture.create_healthcare_doctrine();
-    fixture.doctrine_store.add_rule(doctrine).expect("Failed to add doctrine");
+    fixture
+        .doctrine_store
+        .add_rule(doctrine)
+        .expect("Failed to add doctrine");
 
     // WHEN: We propose a protocol change with proper authorization
     let context = ValidationContext {
-        signers: vec![
-            Signer {
-                id: "dr_admin".to_string(),
-                role: "administrator".to_string(),
-                sector: "healthcare".to_string()
-            },
-        ],
+        signers: vec![Signer {
+            id: "dr_admin".to_string(),
+            role: "administrator".to_string(),
+            sector: "healthcare".to_string(),
+        }],
         resources: HashMap::new(),
         custom_validations: HashMap::new(),
     };
 
-    let violations = fixture.doctrine_store
+    let violations = fixture
+        .doctrine_store
         .validate_against_doctrines("protocol_update", "healthcare", &context)
         .expect("Validation failed");
 
@@ -788,7 +939,10 @@ async fn integration_healthcare_protocol_update() {
         version: 2,
     };
 
-    let promoted = fixture.promoter.promote(new_snapshot).expect("Promotion failed");
+    let promoted = fixture
+        .promoter
+        .promote(new_snapshot)
+        .expect("Promotion failed");
     assert_eq!(promoted.version, 2);
 }
 
@@ -798,9 +952,13 @@ async fn integration_org_restructuring() {
     let finance_fixture = ClosedLoopFixture::new("finance");
     let healthcare_fixture = ClosedLoopFixture::new("healthcare");
 
-    finance_fixture.doctrine_store.add_rule(finance_fixture.create_finance_doctrine())
+    finance_fixture
+        .doctrine_store
+        .add_rule(finance_fixture.create_finance_doctrine())
         .expect("Failed to add finance doctrine");
-    healthcare_fixture.doctrine_store.add_rule(healthcare_fixture.create_healthcare_doctrine())
+    healthcare_fixture
+        .doctrine_store
+        .add_rule(healthcare_fixture.create_healthcare_doctrine())
         .expect("Failed to add healthcare doctrine");
 
     // WHEN: Organization restructures (e.g., CFO also becomes interim healthcare admin)
@@ -809,12 +967,12 @@ async fn integration_org_restructuring() {
             Signer {
                 id: "alice".to_string(),
                 role: "cfo".to_string(),
-                sector: "finance".to_string()
+                sector: "finance".to_string(),
             },
             Signer {
                 id: "alice".to_string(),
                 role: "administrator".to_string(),
-                sector: "healthcare".to_string()
+                sector: "healthcare".to_string(),
             },
         ],
         resources: HashMap::new(),
@@ -822,22 +980,28 @@ async fn integration_org_restructuring() {
     };
 
     // THEN: Finance doctrines still require compliance approval
-    let finance_violations = finance_fixture.doctrine_store
+    let finance_violations = finance_fixture
+        .doctrine_store
         .validate_against_doctrines("finance_change", "finance", &context)
         .expect("Finance validation failed");
 
-    assert!(finance_violations.iter().any(|v|
-        v.violation_reason.contains("compliance") && v.is_blocking()
-    ));
+    assert!(finance_violations
+        .iter()
+        .any(|v| v.violation_reason.contains("compliance") && v.is_blocking()));
 
     // AND: Healthcare doctrines don't have cross-role conflicts for Alice
-    let healthcare_violations = healthcare_fixture.doctrine_store
+    let healthcare_violations = healthcare_fixture
+        .doctrine_store
         .validate_against_doctrines("healthcare_change", "healthcare", &context)
         .expect("Healthcare validation failed");
 
     // Healthcare doctrine checks same-person role conflicts, not cross-sector
-    assert!(healthcare_violations.is_empty() ||
-            !healthcare_violations.iter().any(|v| v.violation_reason.contains("cfo")));
+    assert!(
+        healthcare_violations.is_empty()
+            || !healthcare_violations
+                .iter()
+                .any(|v| v.violation_reason.contains("cfo"))
+    );
 }
 
 // ============================================================================

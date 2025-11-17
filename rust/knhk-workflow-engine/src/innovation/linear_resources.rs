@@ -4,8 +4,8 @@
 //! Priority and SLO bands as type indices.
 //! Compile-time guarantees that code cannot overspend quota.
 
-use core::marker::PhantomData;
 use crate::const_assert;
+use core::marker::PhantomData;
 
 /// Resource token - cannot be cloned (linear-ish semantics)
 pub struct ResourceToken<const AMOUNT: u32> {
@@ -28,9 +28,7 @@ impl<const AMOUNT: u32> ResourceToken<AMOUNT> {
     }
 
     /// Split token into smaller amounts
-    pub fn split<const A1: u32, const A2: u32>(
-        self,
-    ) -> (ResourceToken<A1>, ResourceToken<A2>) {
+    pub fn split<const A1: u32, const A2: u32>(self) -> (ResourceToken<A1>, ResourceToken<A2>) {
         const_assert!(A1 + A2 == AMOUNT);
         (ResourceToken::new(), ResourceToken::new())
     }
@@ -97,7 +95,10 @@ impl<const TOTAL: u32> ResourceQuota<TOTAL> {
 
     /// Runtime allocation (for testing - prefer compile-time allocate())
     #[cfg(test)]
-    pub fn allocate_generic<const AMOUNT: u32>(&mut self, runtime_amount: u32) -> Option<ResourceToken<AMOUNT>> {
+    pub fn allocate_generic<const AMOUNT: u32>(
+        &mut self,
+        runtime_amount: u32,
+    ) -> Option<ResourceToken<AMOUNT>> {
         if self.remaining >= runtime_amount {
             self.remaining -= runtime_amount;
             Some(ResourceToken::new())
@@ -353,7 +354,10 @@ impl<const TOTAL: u32> ResourcePool<TOTAL> {
 
     /// Runtime allocation (for testing)
     #[cfg(test)]
-    pub fn allocate_generic<const AMOUNT: u32>(&mut self, runtime_amount: u32) -> Option<ResourceToken<AMOUNT>> {
+    pub fn allocate_generic<const AMOUNT: u32>(
+        &mut self,
+        runtime_amount: u32,
+    ) -> Option<ResourceToken<AMOUNT>> {
         if self.quota.remaining() >= runtime_amount {
             self.quota.allocate::<AMOUNT>()
         } else {

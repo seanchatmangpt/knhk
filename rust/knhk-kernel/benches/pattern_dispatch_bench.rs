@@ -1,9 +1,9 @@
 // knhk-kernel: Pattern dispatch performance benchmarks
 // Measures dispatch latency for all 43 W3C patterns
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use knhk_kernel::{
-    pattern::{PatternType, PatternDispatcher, PatternFactory, PatternConfig},
+    pattern::{PatternConfig, PatternDispatcher, PatternFactory, PatternType},
     timer::read_tsc,
 };
 
@@ -88,7 +88,7 @@ fn bench_pattern_categories(c: &mut Criterion) {
                     PatternConfig {
                         max_instances: 4,
                         ..Default::default()
-                    }
+                    },
                 )
             })
             .collect();
@@ -204,7 +204,7 @@ fn bench_worst_case_patterns(c: &mut Criterion) {
                         join_threshold: 4,
                         timeout_ticks: 8,
                         ..Default::default()
-                    }
+                    },
                 );
 
                 b.iter(|| {

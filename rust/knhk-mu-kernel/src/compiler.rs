@@ -3,33 +3,30 @@
 //! Compiles RDF/Turtle/YAWL ontologies into binary Σ* descriptors
 //! with machine-checkable proofs of correctness.
 
-use alloc::vec::Vec;
-use alloc::vec;
-use alloc::string::String;
 use alloc::format;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
 use ed25519_dalek::SigningKey;
 
+use crate::compiler_proof::{
+    CertifiedSigma, CompilationCertificate, GuardTimingProof, PatternTimingProof, ProofBuilder,
+    TaskTimingProof, TimingBreakdown,
+};
 use crate::sigma::{
-    SigmaCompiled, SigmaHeader, TaskDescriptor, GuardDescriptor,
-    PatternBinding, GuardType, SigmaHash,
+    GuardDescriptor, GuardType, PatternBinding, SigmaCompiled, SigmaHash, SigmaHeader,
+    TaskDescriptor,
 };
 use crate::sigma_ir::{
-    SigmaIR, validation::{Unvalidated, Certified},
-    TaskId, GuardId, PatternId, Priority,
-    TaskNode, PatternGraph, GuardExpr, Metadata,
-    Schema, SchemaField, FieldType, Phase, HandlerType,
-    Expr, CompareOp, GuardType as IRGuardType,
-};
-use crate::sigma_types::{
-    CompiledTask, CompiledPattern, CompiledGuard,
-    TaskInstructions, WithinChatmanConstant,
-};
-use crate::compiler_proof::{
-    CompilationCertificate, CertifiedSigma, ProofBuilder,
-    TaskTimingProof, PatternTimingProof, GuardTimingProof,
-    TimingBreakdown,
+    validation::{Certified, Unvalidated},
+    CompareOp, Expr, FieldType, GuardExpr, GuardId, GuardType as IRGuardType, HandlerType,
+    Metadata, PatternGraph, PatternId, Phase, Priority, Schema, SchemaField, SigmaIR, TaskId,
+    TaskNode,
 };
 use crate::sigma_types::InvariantId;
+use crate::sigma_types::{
+    CompiledGuard, CompiledPattern, CompiledTask, TaskInstructions, WithinChatmanConstant,
+};
 use crate::CHATMAN_CONSTANT;
 
 /// Compile Σ → Σ* with proof generation
@@ -48,13 +45,16 @@ pub fn compile_with_proof(
     let ir = parse_source(source, format)?;
 
     // 2. Validate IR (type-state transitions)
-    let ir = ir.validate_structure()
+    let ir = ir
+        .validate_structure()
         .map_err(|e| CompilerError::ValidationError(format!("{:?}", e)))?;
 
-    let ir = ir.validate_semantics()
+    let ir = ir
+        .validate_semantics()
         .map_err(|e| CompilerError::ValidationError(format!("{:?}", e)))?;
 
-    let ir = ir.validate_timing()
+    let ir = ir
+        .validate_timing()
         .map_err(|e| CompilerError::PerformanceViolation(format!("{:?}", e)))?;
 
     let ir = ir.certify();
@@ -64,7 +64,8 @@ pub fn compile_with_proof(
 
     // 4. Build certificate
     let sigma_hash = sigma.compute_hash();
-    let certificate = proof_builder.build(sigma_hash, signing_key)
+    let certificate = proof_builder
+        .build(sigma_hash, signing_key)
         .map_err(|e| CompilerError::CertificationFailed(format!("{:?}", e)))?;
 
     Ok(CertifiedSigma::new(sigma, certificate))
@@ -82,10 +83,7 @@ pub enum SourceFormat {
 }
 
 /// Parse source into unvalidated IR
-fn parse_source(
-    source: &str,
-    format: SourceFormat,
-) -> Result<SigmaIR<Unvalidated>, CompilerError> {
+fn parse_source(source: &str, format: SourceFormat) -> Result<SigmaIR<Unvalidated>, CompilerError> {
     match format {
         SourceFormat::Turtle => parse_turtle(source),
         SourceFormat::Yawl => parse_yawl(source),
@@ -194,8 +192,8 @@ fn generate_sigma_star(
 
     // Update header
     sigma.header.guards_offset = (1024 * core::mem::size_of::<TaskDescriptor>()) as u64;
-    sigma.header.patterns_offset = sigma.header.guards_offset
-        + (1024 * core::mem::size_of::<GuardDescriptor>()) as u64;
+    sigma.header.patterns_offset =
+        sigma.header.guards_offset + (1024 * core::mem::size_of::<GuardDescriptor>()) as u64;
 
     // Record invariants
     proof_builder.record_invariant(InvariantId(1)); // Basic structural invariant
@@ -210,18 +208,18 @@ fn compile_task(
     proof_builder: &mut ProofBuilder,
 ) -> Result<TaskDescriptor, CompilerError> {
     // Get pattern
-    let pattern = ir.get_pattern(task.pattern_id)
+    let pattern = ir
+        .get_pattern(task.pattern_id)
         .ok_or(CompilerError::PatternNotFound)?;
 
     // Compute tick estimate
-    let tick_estimate: u64 = pattern.phases.iter()
-        .map(|p| p.tick_estimate)
-        .sum();
+    let tick_estimate: u64 = pattern.phases.iter().map(|p| p.tick_estimate).sum();
 
     if tick_estimate > CHATMAN_CONSTANT {
-        return Err(CompilerError::PerformanceViolation(
-            format!("Task {} exceeds Chatman Constant", task.id.0)
-        ));
+        return Err(CompilerError::PerformanceViolation(format!(
+            "Task {} exceeds Chatman Constant",
+            task.id.0
+        )));
     }
 
     // Record opcodes used (simplified)
@@ -257,7 +255,7 @@ fn compile_task(
         priority: task.priority.0,
         flags: 0,
         guards,
-        input_schema_offset: 0,  // Would be set by schema compiler
+        input_schema_offset: 0, // Would be set by schema compiler
         output_schema_offset: 0,
         _reserved: [0; 6],
     })
@@ -270,9 +268,10 @@ fn compile_guard(
 ) -> Result<GuardDescriptor, CompilerError> {
     // Verify tick budget
     if guard.tick_budget > CHATMAN_CONSTANT {
-        return Err(CompilerError::PerformanceViolation(
-            format!("Guard {} exceeds tick budget", guard.id.0)
-        ));
+        return Err(CompilerError::PerformanceViolation(format!(
+            "Guard {} exceeds tick budget",
+            guard.id.0
+        )));
     }
 
     // Compile expression to branchless code
@@ -310,14 +309,13 @@ fn compile_pattern(
     proof_builder: &mut ProofBuilder,
 ) -> Result<PatternBinding, CompilerError> {
     // Compute total ticks
-    let total_ticks: u64 = pattern.phases.iter()
-        .map(|p| p.tick_estimate)
-        .sum();
+    let total_ticks: u64 = pattern.phases.iter().map(|p| p.tick_estimate).sum();
 
     if total_ticks > CHATMAN_CONSTANT {
-        return Err(CompilerError::PerformanceViolation(
-            format!("Pattern {} exceeds Chatman Constant", pattern.id.0)
-        ));
+        return Err(CompilerError::PerformanceViolation(format!(
+            "Pattern {} exceeds Chatman Constant",
+            pattern.id.0
+        )));
     }
 
     // Record timing
@@ -472,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_expr_compilation() {
-        use crate::sigma_ir::{Expr, CompareOp};
+        use crate::sigma_ir::{CompareOp, Expr};
 
         // Simple constant
         let expr = Expr::Const(42);
@@ -561,19 +559,23 @@ mod tests {
             id: PatternId(0),
             name: String::from("too_slow"),
             phases: alloc::vec![
-                Phase { number: 0, handler: HandlerType::Pure, tick_estimate: 5 },
-                Phase { number: 1, handler: HandlerType::Pure, tick_estimate: 5 },
+                Phase {
+                    number: 0,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 5
+                },
+                Phase {
+                    number: 1,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 5
+                },
             ],
             max_phases: 2,
             _phantom: core::marker::PhantomData,
         };
 
-        let ir = SigmaIR::<Unvalidated>::new(
-            Vec::new(),
-            alloc::vec![pattern],
-            Vec::new(),
-            metadata,
-        );
+        let ir =
+            SigmaIR::<Unvalidated>::new(Vec::new(), alloc::vec![pattern], Vec::new(), metadata);
 
         // Should pass structure and semantics
         let ir = ir.validate_structure().unwrap();

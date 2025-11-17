@@ -156,10 +156,7 @@ impl TelemetryCollector {
             return Ok(());
         }
 
-        tracing::info!(
-            "Flushing {} telemetry events",
-            self.events.len()
-        );
+        tracing::info!("Flushing {} telemetry events", self.events.len());
 
         // In real implementation, would send to backend service
         // For now, just log and clear
@@ -258,12 +255,14 @@ impl AnalyticsDashboard {
 
     /// Record performance metric
     pub fn record_performance(&mut self, metric: PerformanceMetrics) {
-        self.performance_metrics.insert(metric.feature.clone(), metric);
+        self.performance_metrics
+            .insert(metric.feature.clone(), metric);
     }
 
     /// Record feature adoption
     pub fn record_adoption(&mut self, adoption: FeatureAdoption) {
-        self.adoption_tracking.insert(adoption.feature.clone(), adoption);
+        self.adoption_tracking
+            .insert(adoption.feature.clone(), adoption);
     }
 
     /// Record health metrics
@@ -342,7 +341,10 @@ mod tests {
 
         assert_eq!(event.event_type, "error");
         assert!(!event.success);
-        assert_eq!(event.properties.get("error_type"), Some(&"timeout".to_string()));
+        assert_eq!(
+            event.properties.get("error_type"),
+            Some(&"timeout".to_string())
+        );
     }
 
     #[test]
@@ -350,10 +352,7 @@ mod tests {
         let mut collector = TelemetryCollector::new(10, false);
 
         for i in 0..9 {
-            let event = TelemetryEvent::execution_start(
-                format!("org_{}", i),
-                "test".to_string(),
-            );
+            let event = TelemetryEvent::execution_start(format!("org_{}", i), "test".to_string());
             assert!(collector.record(event).is_ok());
         }
 

@@ -122,7 +122,7 @@ impl GPUAccelerator {
                 DeviceType::OneAPI => "1.3".to_string(),
                 DeviceType::OpenCL => "3.0".to_string(),
             },
-            total_memory_mb: 16384, // 16GB mock
+            total_memory_mb: 16384,     // 16GB mock
             available_memory_mb: 15360, // ~15GB available
             max_block_size: 1024,
             warp_size: 32,
@@ -153,31 +153,30 @@ impl GPUAccelerator {
 
         // In production, this would call cudaGetDeviceCount() or rocm equivalent
         // For now, return mock devices for all supported types
-        let mut devices = Vec::new();
-
-        // Mock CUDA device
-        devices.push(GPUDeviceInfo {
-            device_id: 0,
-            device_type: DeviceType::CUDA,
-            device_name: "NVIDIA GeForce RTX 4090".to_string(),
-            compute_capability: "8.9".to_string(),
-            total_memory_mb: 24576, // 24GB
-            available_memory_mb: 23552,
-            max_block_size: 1024,
-            warp_size: 32,
-        });
-
-        // Mock ROCm device
-        devices.push(GPUDeviceInfo {
-            device_id: 1,
-            device_type: DeviceType::ROCm,
-            device_name: "AMD Radeon RX 7900 XTX".to_string(),
-            compute_capability: "gfx1100".to_string(),
-            total_memory_mb: 24576, // 24GB
-            available_memory_mb: 23552,
-            max_block_size: 1024,
-            warp_size: 32,
-        });
+        let devices = vec![
+            // Mock CUDA device
+            GPUDeviceInfo {
+                device_id: 0,
+                device_type: DeviceType::CUDA,
+                device_name: "NVIDIA GeForce RTX 4090".to_string(),
+                compute_capability: "8.9".to_string(),
+                total_memory_mb: 24576, // 24GB
+                available_memory_mb: 23552,
+                max_block_size: 1024,
+                warp_size: 32,
+            },
+            // Mock ROCm device
+            GPUDeviceInfo {
+                device_id: 1,
+                device_type: DeviceType::ROCm,
+                device_name: "AMD Radeon RX 7900 XTX".to_string(),
+                compute_capability: "gfx1100".to_string(),
+                total_memory_mb: 24576, // 24GB
+                available_memory_mb: 23552,
+                max_block_size: 1024,
+                warp_size: 32,
+            },
+        ];
 
         tracing::debug!("GPU accelerator: found {} devices", devices.len());
 
@@ -197,13 +196,11 @@ impl GPUAccelerator {
             let requested_after_alloc = self.allocated_memory + size_bytes;
 
             if requested_after_alloc > available_bytes {
-                return Err(GPUError::MemoryAllocationFailed(
-                    format!(
-                        "Insufficient GPU memory: requested {} MB, available {} MB",
-                        requested_after_alloc / 1024 / 1024,
-                        available_bytes / 1024 / 1024
-                    )
-                ));
+                return Err(GPUError::MemoryAllocationFailed(format!(
+                    "Insufficient GPU memory: requested {} MB, available {} MB",
+                    requested_after_alloc / 1024 / 1024,
+                    available_bytes / 1024 / 1024
+                )));
             }
         }
 
@@ -233,16 +230,17 @@ impl GPUAccelerator {
 
         if ptr.is_null() {
             return Err(GPUError::RuntimeError(
-                "Cannot free null pointer".to_string()
+                "Cannot free null pointer".to_string(),
             ));
         }
 
         // Validate pointer is in our device memory range (0x1000_0000 and above)
         let ptr_addr = ptr as u64;
         if ptr_addr < 0x1000_0000 {
-            return Err(GPUError::RuntimeError(
-                format!("Invalid device pointer: {:p}", ptr)
-            ));
+            return Err(GPUError::RuntimeError(format!(
+                "Invalid device pointer: {:p}",
+                ptr
+            )));
         }
 
         // In production, this would call cudaFree() or hipFree()
@@ -267,7 +265,11 @@ impl GPUAccelerator {
     }
 
     /// Copy data from host to GPU
-    pub fn copy_to_device(&mut self, host_data: &[u8], device_ptr: *mut u8) -> Result<(), GPUError> {
+    pub fn copy_to_device(
+        &mut self,
+        host_data: &[u8],
+        device_ptr: *mut u8,
+    ) -> Result<(), GPUError> {
         // Phase 9 implementation: Host-to-device transfer
         // Step 1: Validate device pointer and size
         // Step 2: Use cudaMemcpyAsync or hipMemcpyAsync for transfer
@@ -276,21 +278,22 @@ impl GPUAccelerator {
 
         if device_ptr.is_null() {
             return Err(GPUError::DataTransferFailed(
-                "Cannot copy to null device pointer".to_string()
+                "Cannot copy to null device pointer".to_string(),
             ));
         }
 
         if host_data.is_empty() {
             return Err(GPUError::DataTransferFailed(
-                "Cannot copy empty data".to_string()
+                "Cannot copy empty data".to_string(),
             ));
         }
 
         let ptr_addr = device_ptr as u64;
         if ptr_addr < 0x1000_0000 {
-            return Err(GPUError::DataTransferFailed(
-                format!("Invalid device pointer: {:p}", device_ptr)
-            ));
+            return Err(GPUError::DataTransferFailed(format!(
+                "Invalid device pointer: {:p}",
+                device_ptr
+            )));
         }
 
         // In production, this would call cudaMemcpyAsync(device_ptr, host_data, size, cudaMemcpyHostToDevice)
@@ -317,7 +320,11 @@ impl GPUAccelerator {
     }
 
     /// Copy data from GPU to host
-    pub fn copy_from_device(&self, device_ptr: *const u8, size_bytes: usize) -> Result<Vec<u8>, GPUError> {
+    pub fn copy_from_device(
+        &self,
+        device_ptr: *const u8,
+        size_bytes: usize,
+    ) -> Result<Vec<u8>, GPUError> {
         // Phase 9 implementation: Device-to-host transfer
         // Step 1: Validate device pointer
         // Step 2: Allocate host buffer
@@ -326,21 +333,22 @@ impl GPUAccelerator {
 
         if device_ptr.is_null() {
             return Err(GPUError::DataTransferFailed(
-                "Cannot copy from null device pointer".to_string()
+                "Cannot copy from null device pointer".to_string(),
             ));
         }
 
         if size_bytes == 0 {
             return Err(GPUError::DataTransferFailed(
-                "Cannot copy zero bytes".to_string()
+                "Cannot copy zero bytes".to_string(),
             ));
         }
 
         let ptr_addr = device_ptr as u64;
         if ptr_addr < 0x1000_0000 {
-            return Err(GPUError::DataTransferFailed(
-                format!("Invalid device pointer: {:p}", device_ptr)
-            ));
+            return Err(GPUError::DataTransferFailed(format!(
+                "Invalid device pointer: {:p}",
+                device_ptr
+            )));
         }
 
         // In production, this would:
@@ -395,14 +403,15 @@ impl GPUAccelerator {
 
         if batch_size == 0 {
             return Err(GPUError::KernelLaunchFailed(
-                "Batch size must be greater than 0".to_string()
+                "Batch size must be greater than 0".to_string(),
             ));
         }
 
         if learning_rate <= 0.0 || learning_rate > 1.0 {
-            return Err(GPUError::KernelLaunchFailed(
-                format!("Invalid learning rate: {} (must be 0 < lr <= 1)", learning_rate)
-            ));
+            return Err(GPUError::KernelLaunchFailed(format!(
+                "Invalid learning rate: {} (must be 0 < lr <= 1)",
+                learning_rate
+            )));
         }
 
         // In production, this would:
@@ -412,12 +421,13 @@ impl GPUAccelerator {
         //    - threads_per_block = min(batch_size, max_block_size)
         // 3. Launch kernel: kernel<<<blocks, threads>>>(weights, gradients, batch_size, lr)
 
-        let device_info = self.device_info.as_ref().ok_or_else(|| {
-            GPUError::KernelLaunchFailed("Device not initialized".to_string())
-        })?;
+        let device_info = self
+            .device_info
+            .as_ref()
+            .ok_or_else(|| GPUError::KernelLaunchFailed("Device not initialized".to_string()))?;
 
         let threads_per_block = device_info.max_block_size.min(batch_size);
-        let num_blocks = (batch_size + threads_per_block - 1) / threads_per_block;
+        let num_blocks = batch_size.div_ceil(threads_per_block);
 
         self.kernels_launched += 1;
 
@@ -449,13 +459,13 @@ impl GPUAccelerator {
 
         if patterns.is_null() || data.is_null() || matches_out.is_null() {
             return Err(GPUError::KernelLaunchFailed(
-                "Null pointer provided for patterns, data, or matches".to_string()
+                "Null pointer provided for patterns, data, or matches".to_string(),
             ));
         }
 
         if pattern_count == 0 {
             return Err(GPUError::KernelLaunchFailed(
-                "Pattern count must be greater than 0".to_string()
+                "Pattern count must be greater than 0".to_string(),
             ));
         }
 
@@ -466,13 +476,14 @@ impl GPUAccelerator {
         // 4. Launch kernel: pattern_match<<<blocks, threads>>>(patterns, data, matches, count)
         // 5. Synchronize and read match count from device
 
-        let device_info = self.device_info.as_ref().ok_or_else(|| {
-            GPUError::KernelLaunchFailed("Device not initialized".to_string())
-        })?;
+        let device_info = self
+            .device_info
+            .as_ref()
+            .ok_or_else(|| GPUError::KernelLaunchFailed("Device not initialized".to_string()))?;
 
         // Configure parallel execution across patterns
         let threads_per_block = device_info.max_block_size.min(pattern_count);
-        let num_blocks = (pattern_count + threads_per_block - 1) / threads_per_block;
+        let num_blocks = pattern_count.div_ceil(threads_per_block);
 
         self.kernels_launched += 1;
 
@@ -601,12 +612,7 @@ mod tests {
     fn test_gpu_training_kernel() {
         let config = GPUConfig::default();
         let mut acc = GPUAccelerator::new(config).unwrap();
-        let result = acc.launch_training_kernel(
-            std::ptr::null(),
-            std::ptr::null_mut(),
-            32,
-            0.01,
-        );
+        let result = acc.launch_training_kernel(std::ptr::null(), std::ptr::null_mut(), 32, 0.01);
         assert!(result.is_ok());
     }
 

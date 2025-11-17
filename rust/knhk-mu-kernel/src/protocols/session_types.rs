@@ -409,7 +409,12 @@ impl<T, Next> Channel<Recv<T, Next>> {
     where
         T: Default,
     {
-        (T::default(), Channel { _session: PhantomData })
+        (
+            T::default(),
+            Channel {
+                _session: PhantomData,
+            },
+        )
     }
 }
 
@@ -481,10 +486,7 @@ mod tests {
 
         let choice = Choice::left(session);
 
-        let _result = choice.match_choice(
-            |s| s.activate().complete(),
-            |s| s.fail(),
-        );
+        let _result = choice.match_choice(|s| s.activate().complete(), |s| s.fail());
     }
 
     #[test]

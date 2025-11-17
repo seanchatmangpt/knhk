@@ -3,8 +3,8 @@
 //! Tests complete A = μ(O) execution with all components
 
 use knhk_mu_kernel::core::MuKernel;
-use knhk_mu_kernel::sigma::SigmaPointer;
 use knhk_mu_kernel::guards::GuardContext;
+use knhk_mu_kernel::sigma::SigmaPointer;
 use knhk_mu_kernel::CHATMAN_CONSTANT;
 
 #[test]
@@ -98,7 +98,12 @@ fn test_chatman_constant_enforcement() {
     // Verify no violations in receipt chain
     let state = kernel.state();
     let violations = state.receipts.chatman_violations();
-    assert_eq!(violations.len(), 0, "Found {} Chatman violations", violations.len());
+    assert_eq!(
+        violations.len(),
+        0,
+        "Found {} Chatman violations",
+        violations.len()
+    );
 }
 
 #[test]
@@ -108,7 +113,7 @@ fn test_guard_enforcement() {
 
     // Observation that violates guard (used > budget)
     let obs_violate = GuardContext {
-        params: [8, 10, 0, 0, 0, 0, 0, 0],  // budget=8, used=10
+        params: [8, 10, 0, 0, 0, 0, 0, 0], // budget=8, used=10
     };
 
     let result = kernel.execute_task(1, &obs_violate);
@@ -122,9 +127,7 @@ fn test_concurrent_execution() {
     let sigma_ptr = Box::leak(Box::new(SigmaPointer::new()));
 
     // Multiple kernels sharing same Σ*
-    let mut kernels: Vec<MuKernel> = (0..4)
-        .map(|_| MuKernel::new(sigma_ptr))
-        .collect();
+    let mut kernels: Vec<MuKernel> = (0..4).map(|_| MuKernel::new(sigma_ptr)).collect();
 
     let obs = GuardContext {
         params: [100, 50, 0, 0, 0, 0, 0, 0],

@@ -2,44 +2,83 @@
 // Phase 3: Coordination between kernel and outer layers
 // DOCTRINE: Covenant 5 (Latency Is Our Currency) - Coordination must not block
 
+use crossbeam::channel::{bounded, unbounded, Receiver, RecvTimeoutError, Sender, TryRecvError};
+use crossbeam::queue::{ArrayQueue, SegQueue};
+use dashmap::DashMap;
+use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use crossbeam::channel::{bounded, unbounded, Receiver, Sender, TryRecvError, RecvTimeoutError};
-use crossbeam::queue::{ArrayQueue, SegQueue};
-use parking_lot::{Mutex, RwLock};
-use dashmap::DashMap;
 use tracing::{debug, error, info, warn};
-use serde::{Serialize, Deserialize};
 
 /// Message types for coordination
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CoordinationMessage {
     // Control messages
-    Startup { config: StartupConfig },
-    Shutdown { graceful: bool, timeout_ms: u64 },
-    Reconfigure { config: RuntimeConfig },
+    Startup {
+        config: StartupConfig,
+    },
+    Shutdown {
+        graceful: bool,
+        timeout_ms: u64,
+    },
+    Reconfigure {
+        config: RuntimeConfig,
+    },
 
     // Health messages
-    HealthCheck { requester_id: String },
-    HealthResponse { status: HealthStatus },
+    HealthCheck {
+        requester_id: String,
+    },
+    HealthResponse {
+        status: HealthStatus,
+    },
 
     // Load management
-    LoadReport { current: f64, predicted: f64, capacity: f64 },
-    BackpressureSignal { level: BackpressureLevel },
+    LoadReport {
+        current: f64,
+        predicted: f64,
+        capacity: f64,
+    },
+    BackpressureSignal {
+        level: BackpressureLevel,
+    },
 
     // Work distribution
-    WorkRequest { priority: u8, estimated_cost: u64 },
-    WorkAssignment { work_id: String, deadline: Option<Instant> },
-    WorkCompletion { work_id: String, result: WorkResult },
+    WorkRequest {
+        priority: u8,
+        estimated_cost: u64,
+    },
+    WorkAssignment {
+        work_id: String,
+        #[serde(skip)]
+        deadline: Option<Instant>,
+    },
+    WorkCompletion {
+        work_id: String,
+        result: WorkResult,
+    },
 
     // Synchronization
-    Barrier { id: String, participants: usize },
-    BarrierReached { id: String, participant: String },
+    Barrier {
+        id: String,
+        participants: usize,
+    },
+    BarrierReached {
+        id: String,
+        participant: String,
+    },
 
     // Telemetry
-    TelemetryBatch { size: usize, compressed: bool },
-    MetricsSnapshot { timestamp: u64, metrics: Vec<(String, f64)> },
+    TelemetryBatch {
+        size: usize,
+        compressed: bool,
+    },
+    MetricsSnapshot {
+        timestamp: u64,
+        metrics: Vec<(String, f64)>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -186,12 +225,12 @@ impl ChannelManager {
     pub fn send_control(&self, msg: CoordinationMessage) -> Result<(), String> {
         let start = Instant::now();
 
-        self.control_tx
-            .try_send(msg)
-            .map_err(|e| {
-                self.stats.channel_full_events.fetch_add(1, Ordering::Relaxed);
-                format!("Control channel full: {}", e)
-            })?;
+        self.control_tx.try_send(msg).map_err(|e| {
+            self.stats
+                .channel_full_events
+                .fetch_add(1, Ordering::Relaxed);
+            format!("Control channel full: {}", e)
+        })?;
 
         self.record_send_latency(start);
         Ok(())
@@ -208,19 +247,22 @@ impl ChannelManager {
     pub fn send_work(&self, msg: CoordinationMessage) -> Result<(), String> {
         let start = Instant::now();
 
-        self.work_tx
-            .try_send(msg)
-            .map_err(|e| {
-                self.stats.channel_full_events.fetch_add(1, Ordering::Relaxed);
-                format!("Work channel full: {}", e)
-            })?;
+        self.work_tx.try_send(msg).map_err(|e| {
+            self.stats
+                .channel_full_events
+                .fetch_add(1, Ordering::Relaxed);
+            format!("Work channel full: {}", e)
+        })?;
 
         self.record_send_latency(start);
         Ok(())
     }
 
     /// Receive work message with timeout
-    pub fn recv_work_timeout(&self, timeout: Duration) -> Result<CoordinationMessage, RecvTimeoutError> {
+    pub fn recv_work_timeout(
+        &self,
+        timeout: Duration,
+    ) -> Result<CoordinationMessage, RecvTimeoutError> {
         let msg = self.work_rx.recv_timeout(timeout)?;
         self.stats.messages_received.fetch_add(1, Ordering::Relaxed);
         Ok(msg)
@@ -255,7 +297,9 @@ impl ChannelManager {
         // Update average (simplified - in production use proper averaging)
         let current = self.stats.average_latency_us.load(Ordering::Relaxed);
         let new_avg = (current + latency_us) / 2;
-        self.stats.average_latency_us.store(new_avg, Ordering::Relaxed);
+        self.stats
+            .average_latency_us
+            .store(new_avg, Ordering::Relaxed);
     }
 
     pub fn get_stats(&self) -> ChannelStatistics {
@@ -326,7 +370,10 @@ impl BackpressureController {
         let mut current = self.current_level.lock();
         if self.level_to_value(new_level) > self.level_to_value(*current) {
             *current = new_level;
-            debug!("Backpressure increased to {:?} for queue {}", new_level, queue_name);
+            debug!(
+                "Backpressure increased to {:?} for queue {}",
+                new_level, queue_name
+            );
         }
     }
 
@@ -409,7 +456,8 @@ impl ShutdownCoordinator {
     }
 
     pub fn register_component(&self, name: String, dependencies: Vec<String>) {
-        self.components.insert(name.clone(), ComponentState::Running);
+        self.components
+            .insert(name.clone(), ComponentState::Running);
 
         // Update shutdown sequence based on dependencies
         let mut sequence = self.shutdown_sequence.write();
@@ -465,7 +513,8 @@ impl ShutdownCoordinator {
 
     pub fn get_shutdown_progress(&self) -> (usize, usize) {
         let total = self.components.len();
-        let stopped = self.components
+        let stopped = self
+            .components
             .iter()
             .filter(|e| matches!(*e.value(), ComponentState::Stopped))
             .count();
@@ -491,12 +540,23 @@ pub struct HealthMonitor {
     last_check: Arc<Mutex<Instant>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct HealthCheck {
     name: String,
     check_fn: Arc<dyn Fn() -> HealthStatus + Send + Sync>,
     last_result: HealthStatus,
     last_checked: Instant,
+}
+
+impl std::fmt::Debug for HealthCheck {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HealthCheck")
+            .field("name", &self.name)
+            .field("last_result", &self.last_result)
+            .field("last_checked", &self.last_checked)
+            .field("check_fn", &"<closure>")
+            .finish()
+    }
 }
 
 impl HealthMonitor {
@@ -643,9 +703,7 @@ mod tests {
     fn test_health_monitor() {
         let monitor = HealthMonitor::new(Duration::from_secs(1));
 
-        monitor.register_health_check("test_check".to_string(), || {
-            HealthStatus::Healthy
-        });
+        monitor.register_health_check("test_check".to_string(), || HealthStatus::Healthy);
 
         monitor.run_health_checks();
 

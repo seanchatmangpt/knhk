@@ -5,28 +5,30 @@
 #![allow(dead_code)] // Phase 9 implementation skeleton
 #![cfg_attr(feature = "simd", feature(portable_simd))]
 
-pub mod gpu;
-pub mod fpga;
-pub mod kernels;
 pub mod dispatch;
+pub mod fpga;
+pub mod gpu;
+pub mod hardware_abstraction;
+pub mod kernels;
 pub mod memory;
 pub mod simd;
-pub mod hardware_abstraction;
 
-pub use gpu::{GPUAccelerator, GPUConfig, GPUError, DeviceType, MemoryInfo};
-pub use fpga::{FPGAOffload, FPGAConfig, PatternMatcher};
-pub use kernels::{KernelExecutor, KernelType, OptimizationLevel, GridDimensions, ActivationType, SIMDKernel};
-pub use dispatch::{DispatchRouter, ExecutionDevice, OperationProfile, DispatchDecision};
-pub use memory::{MemoryManager, MemoryError, AllocationType, MemoryStats};
-pub use simd::{SIMDKernel as SIMDOps, VectorOperation, SIMDOptimization};
-pub use hardware_abstraction::{HardwareAbstraction, AccelerationBackend, AccelerationCapability};
+pub use dispatch::{DispatchDecision, DispatchRouter, ExecutionDevice, OperationProfile};
+pub use fpga::{FPGAConfig, FPGAOffload, PatternMatcher};
+pub use gpu::{DeviceType, GPUAccelerator, GPUConfig, GPUError, MemoryInfo};
+pub use hardware_abstraction::{AccelerationBackend, AccelerationCapability, HardwareAbstraction};
+pub use kernels::{
+    ActivationType, GridDimensions, KernelExecutor, KernelType, OptimizationLevel, SIMDKernel,
+};
+pub use memory::{AllocationType, MemoryError, MemoryManager, MemoryStats};
+pub use simd::{SIMDKernel as SIMDOps, SIMDOptimization, VectorOperation};
 
 /// Prelude for Phase 9 hardware acceleration
 pub mod prelude {
-    pub use crate::gpu::{GPUAccelerator, GPUConfig};
     pub use crate::fpga::FPGAOffload;
-    pub use crate::simd::SIMDKernel;
+    pub use crate::gpu::{GPUAccelerator, GPUConfig};
     pub use crate::hardware_abstraction::HardwareAbstraction;
+    pub use crate::simd::SIMDKernel;
 }
 
 /// Hardware acceleration configuration
@@ -76,7 +78,7 @@ impl Default for AccelerationConfig {
 impl AccelerationConfig {
     /// Get accelerators available on this system
     pub fn detect_available() -> Vec<AccelerationDevice> {
-        let mut available = vec![AccelerationDevice::CPU]; // CPU always available
+        let available = vec![AccelerationDevice::CPU]; // CPU always available
 
         // Step 1: Check for CUDA runtime
         #[cfg(feature = "gpu")]
@@ -126,9 +128,7 @@ impl AccelerationConfig {
         {
             // In production, this would use CPUID to detect instruction sets
             // For now, SIMD is implied by CPU backend
-            tracing::debug!(
-                "Hardware detection: SIMD support available (x86/x86_64)"
-            );
+            tracing::debug!("Hardware detection: SIMD support available (x86/x86_64)");
         }
 
         tracing::info!(

@@ -3,19 +3,21 @@
 //! This module uses const generics to encode compile-time arithmetic
 //! and bounds checking with zero runtime cost.
 
+use alloc::vec::Vec;
 use core::marker::PhantomData;
 use core::mem;
-use alloc::vec::Vec;
 
 /// A value bounded by compile-time constants
 ///
 /// The bounds are checked at compile time through const assertions
 pub struct Bounded<T, const MIN: u64, const MAX: u64> {
     value: T,
-    _bounds: PhantomData<[(); {
-        assert!(MIN <= MAX, "MIN must be <= MAX");
-        0
-    }]>,
+    _bounds: PhantomData<
+        [(); {
+            assert!(MIN <= MAX, "MIN must be <= MAX");
+            0
+        }],
+    >,
 }
 
 impl<T, const MIN: u64, const MAX: u64> Bounded<T, MIN, MAX> {
@@ -86,7 +88,9 @@ impl<T: Clone, const MIN: u64, const MAX: u64> Clone for Bounded<T, MIN, MAX> {
 
 impl<T: Copy, const MIN: u64, const MAX: u64> Copy for Bounded<T, MIN, MAX> {}
 
-impl<T: core::fmt::Debug, const MIN: u64, const MAX: u64> core::fmt::Debug for Bounded<T, MIN, MAX> {
+impl<T: core::fmt::Debug, const MIN: u64, const MAX: u64> core::fmt::Debug
+    for Bounded<T, MIN, MAX>
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Bounded")
             .field("value", &self.value)
@@ -150,11 +154,13 @@ impl<T, const ZERO: u64> ConstNonZero<T, ZERO> {
 /// The alignment is checked at compile time
 pub struct Aligned<T, const ALIGN: usize> {
     value: T,
-    _align: PhantomData<[(); {
-        assert!(ALIGN > 0, "Alignment must be > 0");
-        assert!(ALIGN & (ALIGN - 1) == 0, "Alignment must be a power of 2");
-        0
-    }]>,
+    _align: PhantomData<
+        [(); {
+            assert!(ALIGN > 0, "Alignment must be > 0");
+            assert!(ALIGN & (ALIGN - 1) == 0, "Alignment must be a power of 2");
+            0
+        }],
+    >,
 }
 
 impl<T, const ALIGN: usize> Aligned<T, ALIGN> {
@@ -225,10 +231,12 @@ impl<T: Copy, const ALIGN: usize> Copy for Aligned<T, ALIGN> {}
 
 /// A range with compile-time bounds
 pub struct ConstRange<const START: u64, const END: u64> {
-    _phantom: PhantomData<[(); {
-        assert!(START <= END, "START must be <= END");
-        0
-    }]>,
+    _phantom: PhantomData<
+        [(); {
+            assert!(START <= END, "START must be <= END");
+            0
+        }],
+    >,
 }
 
 impl<const START: u64, const END: u64> ConstRange<START, END> {
@@ -389,10 +397,12 @@ impl<T, N: Nat> ConstArray<T, N> {
 
 /// Proof that a const value is within the Chatman constant
 pub struct ChatmanProof<const N: u64> {
-    _phantom: PhantomData<[(); {
-        assert!(N <= 8, "Value must be <= 8 (Chatman constant)");
-        0
-    }]>,
+    _phantom: PhantomData<
+        [(); {
+            assert!(N <= 8, "Value must be <= 8 (Chatman constant)");
+            0
+        }],
+    >,
 }
 
 impl<const N: u64> ChatmanProof<N> {
@@ -413,11 +423,13 @@ impl<const N: u64> ChatmanProof<N> {
 
 /// Proof that a const value is a power of two
 pub struct PowerOfTwoProof<const N: usize> {
-    _phantom: PhantomData<[(); {
-        assert!(N > 0, "Value must be > 0");
-        assert!(N & (N - 1) == 0, "Value must be a power of 2");
-        0
-    }]>,
+    _phantom: PhantomData<
+        [(); {
+            assert!(N > 0, "Value must be > 0");
+            assert!(N & (N - 1) == 0, "Value must be a power of 2");
+            0
+        }],
+    >,
 }
 
 impl<const N: usize> PowerOfTwoProof<N> {

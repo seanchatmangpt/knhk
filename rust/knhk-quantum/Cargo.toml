@@ -8,10 +8,10 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 # Post-Quantum Cryptography
-pqcrypto = "0.15"
-pqcrypto-kyber = "0.15"
-pqcrypto-dilithium = "0.15"
-pqcrypto-traits = "0.15"
+pqcrypto = "0.18"
+pqcrypto-kyber = "0.8"
+pqcrypto-dilithium = "0.5"
+pqcrypto-traits = "0.3"
 
 # Randomness
 rand = "0.8"
@@ -49,13 +49,14 @@ criterion = "0.5"
 proptest = "1.4"
 tokio = { version = "1.35", features = ["full"] }
 
-[[bench]]
-name = "quantum_kem_bench"
-harness = false
+# Benches disabled - files not present
+# [[bench]]
+# name = "quantum_kem_bench"
+# harness = false
 
-[[bench]]
-name = "quantum_sig_bench"
-harness = false
+# [[bench]]
+# name = "quantum_sig_bench"
+# harness = false
 
 [lib]
 name = "knhk_quantum"

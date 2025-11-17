@@ -108,31 +108,27 @@
 //! - No runtime checks when using proven values
 //! - Optimizes to the same assembly as unchecked code
 
-pub mod phantom;
-pub mod const_generic;
-pub mod predicates;
 pub mod combinators;
+pub mod const_generic;
+pub mod phantom;
+pub mod predicates;
 
 // Re-export commonly used types
 pub use phantom::{
-    Proven, Witness, Proof, Predicate,
-    NonZero, ChatmanCompliant, Sorted, PowerOfTwo,
+    ChatmanCompliant, NonZero, PowerOfTwo, Predicate, Proof, Proven, Sorted, Witness,
 };
 
 pub use const_generic::{
-    Bounded, ChatmanBounded, ConstNonZero, Aligned,
-    ConstRange, ChatmanProof, PowerOfTwoProof,
+    Aligned, Bounded, ChatmanBounded, ChatmanProof, ConstNonZero, ConstRange, PowerOfTwoProof,
 };
 
 pub use predicates::{
-    IsWithinChatman, IsPowerOfTwo, IsSorted,
-    ProvenSorted, ProvenUnique, ProvenNonEmpty, ProvenChatmanBounded,
+    IsPowerOfTwo, IsSorted, IsWithinChatman, ProvenChatmanBounded, ProvenNonEmpty, ProvenSorted,
+    ProvenUnique,
 };
 
 pub use combinators::{
-    ProofExt, ProofResult, ProofError,
-    ProofBuilder, ProofChain, ProofValidator,
-    split, join,
+    join, split, ProofBuilder, ProofChain, ProofError, ProofExt, ProofResult, ProofValidator,
 };
 
 #[cfg(test)]
@@ -187,8 +183,8 @@ mod tests {
         assert!(ChatmanCompliant::new(9).is_none());
 
         // Test Chatman-bounded collections
-        let chatman_vec = ProvenChatmanBounded::new(vec![1, 2, 3, 4, 5, 6, 7, 8])
-            .expect("8 elements ≤ 8");
+        let chatman_vec =
+            ProvenChatmanBounded::new(vec![1, 2, 3, 4, 5, 6, 7, 8]).expect("8 elements ≤ 8");
         assert_eq!(chatman_vec.len(), 8);
 
         assert!(ProvenChatmanBounded::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9]).is_none());
@@ -209,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_predicate_composition() {
-        use predicates::{Even, Positive, AndCheck, Check};
+        use predicates::{AndCheck, Check, Even, Positive};
 
         // Test AND composition
         type EvenAndPositive = AndCheck<Even, Positive>;

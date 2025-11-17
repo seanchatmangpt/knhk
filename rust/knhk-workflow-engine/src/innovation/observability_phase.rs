@@ -11,9 +11,9 @@
 //! - Distributed trace correlation
 //! - Adaptive sampling
 
+use crate::const_assert;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use crate::const_assert;
 
 /// Trace level - severity/importance of trace events
 pub trait TraceLevel: 'static {
@@ -130,7 +130,7 @@ impl TraceContext {
     /// Create root context
     pub fn root() -> Self {
         Self {
-            trace_id: 0,  // Would generate random ID
+            trace_id: 0, // Would generate random ID
             span_id: 1,
             parent_span_id: None,
         }
@@ -147,10 +147,7 @@ impl TraceContext {
 
     /// Serialize for propagation (W3C Trace Context format)
     pub fn to_traceparent(&self) -> String {
-        format!(
-            "00-{:032x}-{:016x}-01",
-            self.trace_id, self.span_id
-        )
+        format!("00-{:032x}-{:016x}-01", self.trace_id, self.span_id)
     }
 }
 
@@ -257,9 +254,7 @@ impl<const BUCKETS: usize> Histogram<BUCKETS> {
     }
 
     pub fn percentile(&self, p: f64) -> Option<u64> {
-        let total: usize = self.buckets.iter()
-            .map(|b| b.load(Ordering::Relaxed))
-            .sum();
+        let total: usize = self.buckets.iter().map(|b| b.load(Ordering::Relaxed)).sum();
 
         if total == 0 {
             return None;
@@ -377,7 +372,7 @@ impl MetricWithExemplars {
             value,
             trace_id: ctx.trace_id,
             span_id: ctx.span_id,
-            timestamp: 0,  // Would use actual timestamp
+            timestamp: 0, // Would use actual timestamp
         };
 
         if self.exemplars.len() < 10 {
@@ -422,13 +417,15 @@ impl LogAggregator {
     }
 
     pub fn filter_by_level(&self, min_level: u8) -> Vec<&LogEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.level >= min_level)
             .collect()
     }
 
     pub fn filter_by_trace(&self, trace_id: u128) -> Vec<&LogEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| {
                 e.trace_context
                     .map(|ctx| ctx.trace_id == trace_id)

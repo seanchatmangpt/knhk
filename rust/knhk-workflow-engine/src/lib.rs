@@ -63,6 +63,8 @@
 #![deny(clippy::expect_used)]
 #![warn(missing_docs)]
 
+/// Adaptive pattern selector using MAPE-K
+pub mod adaptive_patterns;
 pub mod api;
 pub mod cache;
 pub mod capabilities;
@@ -74,34 +76,32 @@ pub mod config;
 pub mod constants;
 /// Data gateway module for workflow data ingress and egress
 pub mod data;
+/// Hook engine and execution layer (μ via KNHK)
+pub mod engine;
 pub mod enterprise;
 pub mod error;
 pub mod events;
 pub mod execution;
 pub mod executor;
 pub mod ggen;
-pub mod hooks;
-/// Hook engine and execution layer (μ via KNHK)
-pub mod engine;
 /// Guard enforcement system (Q invariants)
 pub mod guards;
+pub mod hooks;
+pub mod innovation;
+/// Integration layer glue code
+pub mod integration_layer;
+/// MAPE-K autonomic computing engine
+pub mod mape;
+/// Ontology-driven workflow executor
+pub mod ontology_executor;
+/// Self-executing workflow orchestrator
+pub mod orchestrator;
+/// Performance metrics collection
+pub mod performance_metrics;
 /// Receipt generation and storage
 pub mod receipts;
 /// Snapshot versioning (Σ)
 pub mod snapshots;
-/// MAPE-K autonomic computing engine
-pub mod mape;
-/// Self-executing workflow orchestrator
-pub mod orchestrator;
-/// Adaptive pattern selector using MAPE-K
-pub mod adaptive_patterns;
-/// Ontology-driven workflow executor
-pub mod ontology_executor;
-/// Integration layer glue code
-pub mod integration_layer;
-/// Performance metrics collection
-pub mod performance_metrics;
-pub mod innovation;
 #[macro_use]
 pub mod integration;
 
@@ -142,13 +142,12 @@ pub use capabilities::{
     CapabilityValidationReport, CapabilityValidator,
 };
 pub use case::{Case, CaseId, CaseState};
+pub use compiler::{
+    CompilationMetadata, CompilationResult, CompilerConfig, DescriptorCompiler, OptimizationStats,
+};
 pub use enterprise::{
     EnterpriseConfig, ObservabilityConfig, PerformanceConfig, ReliabilityConfig, ScalabilityConfig,
     SecurityConfig,
-};
-pub use compiler::{
-    CompilerConfig, CompilationResult, CompilationMetadata, DescriptorCompiler,
-    OptimizationStats,
 };
 pub use error::{WorkflowError, WorkflowResult};
 pub use execution::{

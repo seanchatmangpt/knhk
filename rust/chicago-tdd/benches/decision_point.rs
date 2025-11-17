@@ -3,7 +3,7 @@
 //! Measures split/join decision point evaluation latency.
 //! All decision evaluations MUST complete in ≤8 ticks.
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 /// AND-split decision (hot path)
@@ -16,7 +16,13 @@ fn and_split() -> Vec<usize> {
 fn xor_split() -> usize {
     // Exactly one branch
     let condition = 42;
-    if condition > 50 { 0 } else if condition > 25 { 1 } else { 2 }
+    if condition > 50 {
+        0
+    } else if condition > 25 {
+        1
+    } else {
+        2
+    }
 }
 
 /// OR-split decision (hot path)
@@ -25,9 +31,15 @@ fn or_split() -> Vec<usize> {
     let x = 42;
     let y = 30;
     let mut branches = Vec::with_capacity(3);
-    if x > 40 { branches.push(0); }
-    if y > 20 { branches.push(1); }
-    if x + y > 70 { branches.push(2); }
+    if x > 40 {
+        branches.push(0);
+    }
+    if y > 20 {
+        branches.push(1);
+    }
+    if x + y > 70 {
+        branches.push(2);
+    }
     branches
 }
 
@@ -54,17 +66,11 @@ fn branch_select() -> usize {
 fn bench_decision_point_hot_path(c: &mut Criterion) {
     let mut harness = PerformanceHarness::with_iterations(1000, 10000, 100);
 
-    c.bench_function("decision_and_split", |b| {
-        b.iter(|| black_box(and_split()))
-    });
+    c.bench_function("decision_and_split", |b| b.iter(|| black_box(and_split())));
 
-    c.bench_function("decision_xor_split", |b| {
-        b.iter(|| black_box(xor_split()))
-    });
+    c.bench_function("decision_xor_split", |b| b.iter(|| black_box(xor_split())));
 
-    c.bench_function("decision_or_split", |b| {
-        b.iter(|| black_box(or_split()))
-    });
+    c.bench_function("decision_or_split", |b| b.iter(|| black_box(or_split())));
 
     c.bench_function("decision_guard_eval", |b| {
         b.iter(|| black_box(guard_eval()))
@@ -95,7 +101,10 @@ fn bench_decision_point_hot_path(c: &mut Criterion) {
     Reporter::print_report(&report);
 
     if let Err(e) = harness.assert_all_within_bounds() {
-        eprintln!("\n{}", "❌ CRITICAL: Decision Point Chatman Constant Violation");
+        eprintln!(
+            "\n{}",
+            "❌ CRITICAL: Decision Point Chatman Constant Violation"
+        );
         eprintln!("{}", e);
         panic!("{}", e);
     }

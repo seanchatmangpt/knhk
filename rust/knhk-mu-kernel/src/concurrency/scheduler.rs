@@ -2,15 +2,15 @@
 //!
 //! Implements type-safe, deterministic scheduling with resource contracts.
 
-use core::marker::PhantomData;
-use alloc::vec::Vec;
-use crate::timing::{TickBudget, TickCounter};
-use crate::isa::{GuardContext, TaskResult, MuInstruction};
-use crate::sigma::SigmaPointer;
-use crate::concurrency::types::{CoreLocal, GuardSet, NoGuards};
-use crate::concurrency::queues::{WorkQueue, GlobalOrdered, QueueError};
 use crate::concurrency::logical_time::{LogicalClock, Timestamp};
-use crate::concurrency::replay::{ReplayLog, ReplayEvent};
+use crate::concurrency::queues::{GlobalOrdered, QueueError, WorkQueue};
+use crate::concurrency::replay::{ReplayEvent, ReplayLog};
+use crate::concurrency::types::{CoreLocal, GuardSet, NoGuards};
+use crate::isa::{GuardContext, MuInstruction, TaskResult};
+use crate::sigma::SigmaPointer;
+use crate::timing::{TickBudget, TickCounter};
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// Scheduler errors
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -258,9 +258,7 @@ impl<const CORES: usize> DeterministicScheduler<CORES> {
         };
 
         // Enqueue to core-local queue
-        self.core_queues[core_id].with_mut(|queue| {
-            queue.enqueue(scheduled)
-        })?;
+        self.core_queues[core_id].with_mut(|queue| queue.enqueue(scheduled))?;
 
         // Log enqueue event
         let timestamp = self.logical_clock.tick();
@@ -299,7 +297,7 @@ impl<const CORES: usize> DeterministicScheduler<CORES> {
         // Log event
         self.replay_log.record(ReplayEvent::TaskEnqueued {
             task_id: task.task_id,
-            core_id: 255,  // Global queue marker
+            core_id: 255, // Global queue marker
             timestamp,
         });
 
@@ -338,13 +336,11 @@ impl<const CORES: usize> DeterministicScheduler<CORES> {
 
         // Execute based on work type
         let result = match task.work {
-            TaskWork::Observation(ctx) => {
-                MuInstruction::eval_task(task.task_id, &ctx, &mut budget)
-                    .map_err(|_| SchedulerError::TickBudgetExceeded)?
-            }
+            TaskWork::Observation(ctx) => MuInstruction::eval_task(task.task_id, &ctx, &mut budget)
+                .map_err(|_| SchedulerError::TickBudgetExceeded)?,
             TaskWork::Pure(value) => {
                 // Pure computation (deterministic)
-                budget.consume(2);  // 2 ticks for pure computation
+                budget.consume(2); // 2 ticks for pure computation
 
                 TaskResult {
                     task_id: task.task_id,

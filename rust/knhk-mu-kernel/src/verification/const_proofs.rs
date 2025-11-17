@@ -23,9 +23,9 @@
 //! ```
 
 use crate::{
-    CHATMAN_CONSTANT,
     memory,
-    timing::{TickBudget, BudgetStatus},
+    timing::{BudgetStatus, TickBudget},
+    CHATMAN_CONSTANT,
 };
 
 // ============================================================================
@@ -437,7 +437,10 @@ pub const fn prove_system_invariants() {
     // Chatman Constant properties
     assert!(CHATMAN_CONSTANT == 8, "Chatman must be 8");
     assert!(CHATMAN_CONSTANT > 0, "Chatman must be positive");
-    assert!(CHATMAN_CONSTANT.is_power_of_two(), "Chatman must be power of 2");
+    assert!(
+        CHATMAN_CONSTANT.is_power_of_two(),
+        "Chatman must be power of 2"
+    );
 
     // Memory layout properties
     assert!(

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, warn, info};
+use tracing::{debug, error, info, warn};
 
 /// PBFT message types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -187,11 +187,7 @@ impl PBFTNode {
     }
 
     /// Prepare phase: replica responds to pre-prepare
-    pub fn prepare(
-        &mut self,
-        msg: &BFTMessage,
-        config: &PBFTConfig,
-    ) -> Result<Option<BFTMessage>> {
+    pub fn prepare(&mut self, msg: &BFTMessage, config: &PBFTConfig) -> Result<Option<BFTMessage>> {
         if let BFTMessage::PrePrepare {
             sequence,
             digest,

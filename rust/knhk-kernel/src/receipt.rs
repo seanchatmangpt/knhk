@@ -2,8 +2,8 @@
 // Hashable, verifiable, with tick tracking
 
 use blake3::Hasher;
-use xxhash_rust::xxh3::{xxh3_64, xxh3_128};
 use std::sync::atomic::{AtomicU64, Ordering};
+use xxhash_rust::xxh3::xxh3_64;
 
 /// Global receipt counter for unique IDs
 static RECEIPT_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -119,12 +119,7 @@ impl Receipt {
 
     /// Set execution result
     #[inline]
-    pub fn set_result(
-        &mut self,
-        status: ReceiptStatus,
-        ticks_used: u32,
-        state_after: u32,
-    ) {
+    pub fn set_result(&mut self, status: ReceiptStatus, ticks_used: u32, state_after: u32) {
         self.status = status;
         self.ticks_used = ticks_used;
         self.state_after = state_after;

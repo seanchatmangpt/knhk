@@ -1,15 +1,18 @@
 // knhk-kernel: Main hot path execution loop
 // Straight-line code with ≤8 tick guarantee
 
-use std::sync::{Arc, atomic::{AtomicBool, AtomicU64, Ordering}};
-use parking_lot::RwLock;
 use crossbeam_queue::ArrayQueue;
+use parking_lot::RwLock;
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64, Ordering},
+    Arc,
+};
 
 use crate::{
+    descriptor::DescriptorManager,
     executor::{Executor, Task, TaskState},
-    descriptor::{DescriptorManager, ExecutionContext},
     receipt::{Receipt, ReceiptStore},
-    timer::{HotPathTimer, TickBudget},
+    timer::HotPathTimer,
 };
 
 /// Maximum queue depth for hot path
@@ -269,11 +272,11 @@ impl HotPath {
             if let Some(pattern) = descriptor.get_pattern(task.pattern_id) {
                 // Complex patterns go to warm/cold
                 match pattern.pattern_type {
-                    crate::pattern::PatternType::Recursion |
-                    crate::pattern::PatternType::ArbitraryLoop => Stratum::Cold,
+                    crate::pattern::PatternType::Recursion
+                    | crate::pattern::PatternType::ArbitraryLoop => Stratum::Cold,
 
-                    crate::pattern::PatternType::MultiInstanceUnknownRuntime |
-                    crate::pattern::PatternType::InterleavedParallelRouting => Stratum::Warm,
+                    crate::pattern::PatternType::MultiInstanceUnknownRuntime
+                    | crate::pattern::PatternType::InterleavedParallelRouting => Stratum::Warm,
 
                     _ => {
                         // Simple patterns with few observations go to hot
@@ -307,7 +310,11 @@ impl HotPath {
             cycles_total: total,
             cycles_min: self.stats.cycles_min.load(Ordering::Relaxed),
             cycles_max: self.stats.cycles_max.load(Ordering::Relaxed),
-            cycles_avg: if executions > 0 { total / executions } else { 0 },
+            cycles_avg: if executions > 0 {
+                total / executions
+            } else {
+                0
+            },
             queue_depth_hot: self.hot_queue.len() as u64,
             queue_depth_warm: self.warm_queue.len() as u64,
             queue_depth_cold: self.cold_queue.read().len() as u64,
@@ -317,10 +324,29 @@ impl HotPath {
 
     /// Get recent receipts
     pub fn recent_receipts(&self, count: usize) -> Vec<Receipt> {
-        self.receipt_store.read()
+        self.receipt_store
+            .read()
             .get_recent(count)
             .iter()
-            .cloned()
+            .map(|r| {
+                Receipt {
+                    receipt_id: r.receipt_id,
+                    pattern_id: r.pattern_id,
+                    task_id: r.task_id,
+                    timestamp: r.timestamp,
+                    status: r.status,
+                    ticks_used: r.ticks_used,
+                    tick_budget: r.tick_budget,
+                    input_digest: r.input_digest,
+                    output_digest: r.output_digest,
+                    guard_results: r.guard_results,
+                    guard_count: r.guard_count,
+                    state_before: r.state_before,
+                    state_after: r.state_after,
+                    receipt_hash: r.receipt_hash,
+                    quick_hash: r.quick_hash,
+                }
+            })
             .collect()
     }
 }
@@ -413,7 +439,7 @@ impl HotPathRunner {
 mod tests {
     use super::*;
     use crate::descriptor::{DescriptorBuilder, PatternEntry};
-    use crate::pattern::{PatternType, PatternConfig};
+    use crate::pattern::{PatternConfig, PatternType};
 
     #[test]
     fn test_hot_path_creation() {
@@ -427,18 +453,9 @@ mod tests {
     #[test]
     fn test_stratum_estimation() {
         // Setup descriptor
-        let pattern = PatternEntry::new(
-            PatternType::Sequence,
-            1,
-            10,
-            PatternConfig::default(),
-        );
+        let pattern = PatternEntry::new(PatternType::Sequence, 1, 10, PatternConfig::default());
 
-        let descriptor = Box::new(
-            DescriptorBuilder::new()
-                .add_pattern(pattern)
-                .build()
-        );
+        let descriptor = Box::new(DescriptorBuilder::new().add_pattern(pattern).build());
 
         DescriptorManager::load_descriptor(descriptor).unwrap();
 
@@ -468,18 +485,9 @@ mod tests {
     #[test]
     fn test_hot_path_runner() {
         // Setup descriptor
-        let pattern = PatternEntry::new(
-            PatternType::Sequence,
-            2,
-            10,
-            PatternConfig::default(),
-        );
+        let pattern = PatternEntry::new(PatternType::Sequence, 2, 10, PatternConfig::default());
 
-        let descriptor = Box::new(
-            DescriptorBuilder::new()
-                .add_pattern(pattern)
-                .build()
-        );
+        let descriptor = Box::new(DescriptorBuilder::new().add_pattern(pattern).build());
 
         DescriptorManager::load_descriptor(descriptor).unwrap();
 

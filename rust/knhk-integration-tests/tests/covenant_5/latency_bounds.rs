@@ -202,10 +202,7 @@ fn test_max_iterations_bounded() {
     if let QueryResults::Solutions(solutions) = results {
         for solution in solutions {
             let solution = solution.expect("Solution error");
-            let max_iter = solution
-                .get("maxIter")
-                .expect("No maxIter")
-                .to_string();
+            let max_iter = solution.get("maxIter").expect("No maxIter").to_string();
 
             // Parse and verify bound
             if let Ok(iter_val) = max_iter
@@ -323,10 +320,7 @@ fn test_small_workflow_latency() {
 
     let store = Store::new().expect("Failed to create store");
     store
-        .load_from_reader(
-            oxigraph::io::RdfFormat::Turtle,
-            simple_workflow.as_bytes(),
-        )
+        .load_from_reader(oxigraph::io::RdfFormat::Turtle, simple_workflow.as_bytes())
         .expect("Failed to parse");
 
     let query = r#"
@@ -349,9 +343,9 @@ fn test_small_workflow_latency() {
 fn test_latency_scales_linearly() {
     // GIVEN: Workflows of different sizes
     let workflow_sizes = vec![
-        (3, "small"),    // 3 tasks
-        (12, "medium"),  // autonomous-work-definition has 12 tasks
-        (20, "large"),   // hypothetical large workflow
+        (3, "small"),   // 3 tasks
+        (12, "medium"), // autonomous-work-definition has 12 tasks
+        (20, "large"),  // hypothetical large workflow
     ];
 
     let mut latencies = vec![];
@@ -359,8 +353,7 @@ fn test_latency_scales_linearly() {
     for (size, label) in &workflow_sizes {
         if *size == 12 {
             // Use actual autonomous-work-definition
-            let workflow_path =
-                ontology_path("workflows/examples/autonomous-work-definition.ttl");
+            let workflow_path = ontology_path("workflows/examples/autonomous-work-definition.ttl");
             let workflow = fs::read_to_string(&workflow_path).expect("Failed to read workflow");
 
             let start = Instant::now();

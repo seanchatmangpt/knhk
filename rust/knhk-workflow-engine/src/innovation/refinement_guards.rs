@@ -9,8 +9,8 @@
 //! - Proof tokens for certified properties
 //! - Illegal workflows are unrepresentable
 
-use core::marker::PhantomData;
 use crate::const_assert;
+use core::marker::PhantomData;
 
 /// Sector isolation levels - phantom type parameter
 pub trait SectorLevel: 'static {

@@ -2,12 +2,12 @@
 //!
 //! Implements deterministic, cache-friendly work queues for multi-core scheduling.
 
-use core::sync::atomic::{AtomicU64, AtomicUsize, AtomicPtr, Ordering};
-use core::ptr;
-use alloc::boxed::Box;
-use alloc::vec::Vec;
 use crate::concurrency::logical_time::{Timestamp, TimestampedEvent};
 use crate::concurrency::types::CoreLocal;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::ptr;
+use core::sync::atomic::{AtomicPtr, AtomicU64, AtomicUsize, Ordering};
 
 /// Maximum queue capacity
 const MAX_QUEUE_SIZE: usize = 4096;
@@ -48,7 +48,7 @@ pub enum QueueError {
 /// // Consumer (same core)
 /// let item = queue.dequeue()?;
 /// ```
-#[repr(C, align(128))]  // Cache-line aligned (avoid false sharing)
+#[repr(C, align(128))] // Cache-line aligned (avoid false sharing)
 pub struct WorkQueue<T, const CAPACITY: usize> {
     /// Head index (consumer)
     head: AtomicUsize,
@@ -97,7 +97,7 @@ impl<T, const CAPACITY: usize> WorkQueue<T, CAPACITY> {
         let tail = self.tail.load(Ordering::Relaxed);
         let head = self.head.load(Ordering::Acquire);
 
-        let next_tail = (tail + 1) & (CAPACITY - 1);  // Wrap using mask
+        let next_tail = (tail + 1) & (CAPACITY - 1); // Wrap using mask
 
         // Check if full
         if next_tail == head {
@@ -359,12 +359,17 @@ impl<T> BestEffort<T> {
             let next = unsafe { (*tail).next.load(Ordering::Acquire) };
 
             if next.is_null() {
-                if unsafe { (*tail).next.compare_exchange(
-                    ptr::null_mut(),
-                    node,
-                    Ordering::Release,
-                    Ordering::Relaxed,
-                ).is_ok() } {
+                if unsafe {
+                    (*tail)
+                        .next
+                        .compare_exchange(
+                            ptr::null_mut(),
+                            node,
+                            Ordering::Release,
+                            Ordering::Relaxed,
+                        )
+                        .is_ok()
+                } {
                     let _ = self.tail.compare_exchange(
                         tail,
                         node,
@@ -374,12 +379,9 @@ impl<T> BestEffort<T> {
                     return;
                 }
             } else {
-                let _ = self.tail.compare_exchange(
-                    tail,
-                    next,
-                    Ordering::Release,
-                    Ordering::Relaxed,
-                );
+                let _ =
+                    self.tail
+                        .compare_exchange(tail, next, Ordering::Release, Ordering::Relaxed);
             }
         }
     }
@@ -393,14 +395,11 @@ impl<T> BestEffort<T> {
 
             if head == tail {
                 if next.is_null() {
-                    return None;  // Empty
+                    return None; // Empty
                 }
-                let _ = self.tail.compare_exchange(
-                    tail,
-                    next,
-                    Ordering::Release,
-                    Ordering::Relaxed,
-                );
+                let _ =
+                    self.tail
+                        .compare_exchange(tail, next, Ordering::Release, Ordering::Relaxed);
             } else {
                 if next.is_null() {
                     return None;
@@ -408,13 +407,14 @@ impl<T> BestEffort<T> {
 
                 let data = unsafe { (*next).data.take() };
 
-                if self.head.compare_exchange(
-                    head,
-                    next,
-                    Ordering::Release,
-                    Ordering::Relaxed,
-                ).is_ok() {
-                    unsafe { drop(Box::from_raw(head)); }
+                if self
+                    .head
+                    .compare_exchange(head, next, Ordering::Release, Ordering::Relaxed)
+                    .is_ok()
+                {
+                    unsafe {
+                        drop(Box::from_raw(head));
+                    }
                     return data;
                 }
             }
@@ -428,7 +428,9 @@ impl<T> Drop for BestEffort<T> {
 
         let head = self.head.load(Ordering::Relaxed);
         if !head.is_null() {
-            unsafe { drop(Box::from_raw(head)); }
+            unsafe {
+                drop(Box::from_raw(head));
+            }
         }
     }
 }

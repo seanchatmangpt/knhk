@@ -1,10 +1,10 @@
 //! Execute Phase - Applies adaptation plans via shadow deployment
 
 use super::{AdaptationPlan, AdaptationResult};
-use crate::error::WorkflowResult;
-use crate::snapshots::SnapshotVersioning;
-use crate::guards::InvariantChecker;
 use crate::engine::HookEngine;
+use crate::error::WorkflowResult;
+use crate::guards::InvariantChecker;
+use crate::snapshots::SnapshotVersioning;
 use std::sync::Arc;
 
 /// Execute phase applies adaptations using shadow deployment strategy
@@ -34,7 +34,10 @@ impl ExecutePhase {
     /// 2. Validate shadow deployment
     /// 3. Gradually promote (A/B test)
     /// 4. Atomic pointer update if successful
-    pub async fn apply_adaptations(&self, plans: Vec<AdaptationPlan>) -> WorkflowResult<AdaptationResult> {
+    pub async fn apply_adaptations(
+        &self,
+        plans: Vec<AdaptationPlan>,
+    ) -> WorkflowResult<AdaptationResult> {
         let mut adaptations_applied = 0;
         let mut errors = Vec::new();
         let mut new_sigma_id = None;
@@ -61,10 +64,9 @@ impl ExecutePhase {
     /// Apply a single adaptation plan
     async fn apply_single_adaptation(&self, plan: &AdaptationPlan) -> WorkflowResult<String> {
         // 1. Create shadow snapshot with proposed changes
-        let shadow_id = self.snapshot_versioning.create_shadow_snapshot(
-            plan.sigma_delta.as_deref(),
-            plan.config_delta.as_ref(),
-        )?;
+        let shadow_id = self
+            .snapshot_versioning
+            .create_shadow_snapshot(plan.sigma_delta.as_deref(), plan.config_delta.as_ref())?;
 
         // 2. Validate shadow snapshot
         self.validate_shadow(&shadow_id)?;

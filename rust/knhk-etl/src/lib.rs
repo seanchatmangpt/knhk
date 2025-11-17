@@ -60,7 +60,27 @@ pub mod hash; // Provenance hashing for LAW: hash(A) = hash(μ(O))
 pub mod hook_orchestration; // Pattern-based hook orchestration
 pub mod hook_registry; // Hook registry for predicate-to-kernel mapping
 pub mod hot_path_engine; // Reusable hot path engine with memory reuse
+#[cfg(feature = "rdf")]
 pub mod ingest;
+#[cfg(not(feature = "rdf"))]
+pub mod ingest {
+    use crate::error::PipelineError;
+
+    #[derive(Debug)]
+    pub struct IngestStage {
+        pub connectors: Vec<String>,
+        pub format: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct RawTriple {
+        pub subject: String,
+        pub predicate: String,
+        pub object: String,
+    }
+
+    pub type IngestResult = Result<Vec<RawTriple>, PipelineError>;
+}
 pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod load;
 pub mod park; // Park/escalate mechanism for over-budget work

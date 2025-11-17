@@ -4,7 +4,7 @@
 //! Different promotion APIs accept only proofs with appropriate safety levels.
 
 use crate::overlay_proof::{OverlayProof, ProofStrength};
-use crate::overlay_types::{OverlayValue, OverlayError};
+use crate::overlay_types::{OverlayError, OverlayValue};
 use core::marker::PhantomData;
 
 /// Type-level safety marker for hot path promotion
@@ -40,7 +40,7 @@ pub struct WarmSafe(PhantomData<*const ()>);
 impl private::Sealed for WarmSafe {}
 impl SafetyLevel for WarmSafe {
     const NAME: &'static str = "WarmSafe";
-    const MAX_TICKS: u64 = 1_000_000;  // ~1ms at 1GHz
+    const MAX_TICKS: u64 = 1_000_000; // ~1ms at 1GHz
     const MIN_PROOF_STRENGTH: ProofStrength = ProofStrength::PropertyBased;
     const ALLOWS_ALLOCATION: bool = true;
     const ALLOWS_IO: bool = false;
@@ -120,7 +120,9 @@ impl<S: SafetyLevel, P: OverlayProof> SafeProof<S, P> {
     /// If not, returns an error at construction time.
     pub fn new(proof: P) -> Result<Self, SafetyError> {
         // Verify proof first
-        proof.verify().map_err(|_| SafetyError::ProofVerificationFailed)?;
+        proof
+            .verify()
+            .map_err(|_| SafetyError::ProofVerificationFailed)?;
 
         // Check timing bound
         if proof.timing_bound() > S::MAX_TICKS {
@@ -233,10 +235,7 @@ pub enum SafetyError {
     ProofVerificationFailed,
 
     /// Timing bound exceeded for this safety level
-    TimingBoundExceeded {
-        required: u64,
-        actual: u64,
-    },
+    TimingBoundExceeded { required: u64, actual: u64 },
 
     /// Proof strength insufficient for this safety level
     InsufficientProofStrength {
@@ -256,10 +255,18 @@ impl core::fmt::Display for SafetyError {
         match self {
             Self::ProofVerificationFailed => write!(f, "proof verification failed"),
             Self::TimingBoundExceeded { required, actual } => {
-                write!(f, "timing bound exceeded: required ≤{}, actual {}", required, actual)
+                write!(
+                    f,
+                    "timing bound exceeded: required ≤{}, actual {}",
+                    required, actual
+                )
             }
             Self::InsufficientProofStrength { required, actual } => {
-                write!(f, "proof strength insufficient: required {:?}, actual {:?}", required, actual)
+                write!(
+                    f,
+                    "proof strength insufficient: required {:?}, actual {:?}",
+                    required, actual
+                )
             }
             Self::AllocationNotAllowed => write!(f, "allocation not allowed at this safety level"),
             Self::IoNotAllowed => write!(f, "I/O not allowed at this safety level"),
@@ -283,7 +290,7 @@ pub type ColdUnsafeOverlay<P> = OverlayValue<SafeProof<ColdUnsafe, P>>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::overlay_proof::{CompilerProof, RuntimeProof, ChangeCoverage};
+    use crate::overlay_proof::{ChangeCoverage, CompilerProof, RuntimeProof};
 
     #[test]
     fn test_hot_safe_requires_strong_proof() {
@@ -322,7 +329,7 @@ mod tests {
             compiler_version: (2027, 0, 0),
             proof_id: 1,
             invariants: vec![1],
-            timing_bound: 100,  // Exceeds CHATMAN_CONSTANT
+            timing_bound: 100, // Exceeds CHATMAN_CONSTANT
             coverage: ChangeCoverage {
                 covered_changes: 1,
                 coverage_percent: 100,

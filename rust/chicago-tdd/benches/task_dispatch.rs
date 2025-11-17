@@ -3,7 +3,7 @@
 //! Measures task dispatch operations that must be on the critical path.
 //! Task dispatch MUST complete in ≤8 ticks.
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 /// Simulate task queue enqueue (hot path)
@@ -78,7 +78,11 @@ fn bench_task_dispatch_hot_path(c: &mut Criterion) {
     let r2 = harness.measure("priority", OperationType::HotPath, task_priority);
     let r3 = harness.measure("resource_check", OperationType::HotPath, resource_check);
     let r4 = harness.measure("id_generation", OperationType::HotPath, task_id_gen);
-    let r5 = harness.measure("dispatch_decision", OperationType::HotPath, dispatch_decision);
+    let r5 = harness.measure(
+        "dispatch_decision",
+        OperationType::HotPath,
+        dispatch_decision,
+    );
 
     Reporter::print_result(&r1);
     Reporter::print_result(&r2);
@@ -90,7 +94,10 @@ fn bench_task_dispatch_hot_path(c: &mut Criterion) {
     Reporter::print_report(&report);
 
     if let Err(e) = harness.assert_all_within_bounds() {
-        eprintln!("\n{}", "❌ CRITICAL: Task Dispatch Chatman Constant Violation");
+        eprintln!(
+            "\n{}",
+            "❌ CRITICAL: Task Dispatch Chatman Constant Violation"
+        );
         eprintln!("{}", e);
         panic!("{}", e);
     }

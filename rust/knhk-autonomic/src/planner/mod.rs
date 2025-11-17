@@ -40,13 +40,13 @@
 //! # }
 //! ```
 
-use crate::types::{Analysis, Policy, Plan, Action, RiskLevel};
 use crate::error::{AutonomicError, Result};
+use crate::types::{Action, Analysis, Plan, Policy, RiskLevel};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{instrument, debug};
+use tracing::{debug, instrument};
 use uuid::Uuid;
 
 /// Planning component for deciding actions
@@ -132,7 +132,9 @@ impl PlanningComponent {
         }
 
         // Select best actions from matching policies
-        let selected_actions = self.select_actions(&matching_policies, success_rates).await?;
+        let selected_actions = self
+            .select_actions(&matching_policies, success_rates)
+            .await?;
 
         if selected_actions.is_empty() {
             debug!("No suitable actions found for analysis {}", analysis.id);
@@ -145,8 +147,7 @@ impl PlanningComponent {
             actions: selected_actions,
             rationale: format!(
                 "Responding to {} with {} policy",
-                analysis.problem,
-                matching_policies[0].name
+                analysis.problem, matching_policies[0].name
             ),
             expected_outcome: "Problem resolution and metric normalization".to_string(),
             created_at: Utc::now(),
@@ -156,7 +157,11 @@ impl PlanningComponent {
         let mut cache = self.plan_cache.write().await;
         cache.insert(plan.id, plan.clone());
 
-        debug!("Created plan {} with {} actions", plan.id, plan.actions.len());
+        debug!(
+            "Created plan {} with {} actions",
+            plan.id,
+            plan.actions.len()
+        );
         Ok(Some(plan))
     }
 
@@ -185,8 +190,13 @@ impl PlanningComponent {
         let rule_type_str = format!("{:?}", analysis.rule_type).to_lowercase();
 
         trigger_lower.contains(&rule_type_str)
-            || trigger_lower.contains("higherrorrate") && matches!(analysis.rule_type, crate::types::RuleType::HighErrorRate)
-            || trigger_lower.contains("performancedegradation") && matches!(analysis.rule_type, crate::types::RuleType::PerformanceDegradation)
+            || trigger_lower.contains("higherrorrate")
+                && matches!(analysis.rule_type, crate::types::RuleType::HighErrorRate)
+            || trigger_lower.contains("performancedegradation")
+                && matches!(
+                    analysis.rule_type,
+                    crate::types::RuleType::PerformanceDegradation
+                )
     }
 
     /// Select actions from policies based on success rates
@@ -251,12 +261,10 @@ mod tests {
         planner.register_action(action).await.unwrap();
 
         // Register policy
-        let policy_id = planner.register_policy(
-            "Retry on Failure",
-            "HighErrorRate",
-            vec![action_id],
-            100,
-        ).await.unwrap();
+        let policy_id = planner
+            .register_policy("Retry on Failure", "HighErrorRate", vec![action_id], 100)
+            .await
+            .unwrap();
 
         assert!(policy_id.as_u128() > 0);
     }
@@ -279,12 +287,10 @@ mod tests {
         let action_id = action.id;
         planner.register_action(action).await.unwrap();
 
-        planner.register_policy(
-            "Retry on Failure",
-            "HighErrorRate",
-            vec![action_id],
-            100,
-        ).await.unwrap();
+        planner
+            .register_policy("Retry on Failure", "HighErrorRate", vec![action_id], 100)
+            .await
+            .unwrap();
 
         // Create analysis
         let analysis = Analysis {
@@ -302,7 +308,10 @@ mod tests {
         let mut success_rates = HashMap::new();
         success_rates.insert(action_id, 0.85);
 
-        let plan = planner.create_plan(&analysis, &success_rates).await.unwrap();
+        let plan = planner
+            .create_plan(&analysis, &success_rates)
+            .await
+            .unwrap();
 
         assert!(plan.is_some());
         let plan = plan.unwrap();

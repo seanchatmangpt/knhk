@@ -167,7 +167,7 @@ impl SIMDKernel {
         {
             // ARM64 has NEON as baseline, treat as equivalent to SSE
             tracing::debug!("SIMD: ARM64 NEON baseline");
-            return Ok(SIMDLevel::SSE);
+            Ok(SIMDLevel::SSE)
         }
 
         #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
@@ -178,7 +178,12 @@ impl SIMDKernel {
     }
 
     /// Vector addition: dst[i] = a[i] + b[i]
-    pub fn vector_add_f32(&mut self, a: &[f32], b: &[f32], dst: &mut [f32]) -> Result<(), SIMDError> {
+    pub fn vector_add_f32(
+        &mut self,
+        a: &[f32],
+        b: &[f32],
+        dst: &mut [f32],
+    ) -> Result<(), SIMDError> {
         // SIMD-optimized vector addition
         // Uses AVX2 (8 f32/vector) or AVX-512 (16 f32/vector) when available
         //
@@ -259,7 +264,12 @@ impl SIMDKernel {
     }
 
     /// Vector multiplication: dst[i] = a[i] * b[i]
-    pub fn vector_mul_f32(&mut self, a: &[f32], b: &[f32], dst: &mut [f32]) -> Result<(), SIMDError> {
+    pub fn vector_mul_f32(
+        &mut self,
+        a: &[f32],
+        b: &[f32],
+        dst: &mut [f32],
+    ) -> Result<(), SIMDError> {
         // SIMD-optimized element-wise multiplication
         // Uses AVX2 (8 f32/vector) or AVX-512 (16 f32/vector) when available
         //
@@ -336,7 +346,13 @@ impl SIMDKernel {
     }
 
     /// Fused multiply-add: dst[i] = a[i] * b[i] + c[i]
-    pub fn vector_fma_f32(&mut self, a: &[f32], b: &[f32], c: &[f32], dst: &mut [f32]) -> Result<(), SIMDError> {
+    pub fn vector_fma_f32(
+        &mut self,
+        a: &[f32],
+        b: &[f32],
+        c: &[f32],
+        dst: &mut [f32],
+    ) -> Result<(), SIMDError> {
         // SIMD-optimized fused multiply-add (FMA)
         // Critical for neural network operations and matrix math
         //
@@ -553,8 +569,8 @@ impl SIMDKernel {
         }
 
         // Initialize result matrix to zero
-        for i in 0..c.len() {
-            c[i] = 0.0;
+        for cell in c.iter_mut() {
+            *cell = 0.0;
         }
 
         #[cfg(target_arch = "x86_64")]
@@ -665,7 +681,12 @@ impl SIMDKernel {
     }
 
     /// Vectorized comparison: result[i] = (a[i] op b[i]) ? 0xFFFFFFFF : 0
-    pub fn compare_f32(&mut self, a: &[f32], b: &[f32], op: CompareOp) -> Result<Vec<u32>, SIMDError> {
+    pub fn compare_f32(
+        &mut self,
+        a: &[f32],
+        b: &[f32],
+        op: CompareOp,
+    ) -> Result<Vec<u32>, SIMDError> {
         // SIMD-optimized comparison operations
         // Returns bit mask: 0xFFFFFFFF for true, 0x00000000 for false
         //
@@ -748,10 +769,7 @@ impl SIMDKernel {
                     let vcmp = _mm256_cmp_ps(va, vb, $predicate);
 
                     // Store result as u32 bit mask
-                    _mm256_storeu_ps(
-                        result.as_mut_ptr().add(offset) as *mut f32,
-                        vcmp,
-                    );
+                    _mm256_storeu_ps(result.as_mut_ptr().add(offset) as *mut f32, vcmp);
                 }
             };
         }
@@ -794,7 +812,7 @@ impl SIMDKernel {
 
 impl Default for SIMDKernel {
     fn default() -> Self {
-        Self::new().unwrap_or_else(|_| Self {
+        Self::new().unwrap_or(Self {
             simd_level: SIMDLevel::AVX2,
             operations_count: 0,
             data_processed: 0,
@@ -922,6 +940,6 @@ mod tests {
     fn test_simd_stats() {
         let kernel = SIMDKernel::new().unwrap();
         let stats = kernel.get_stats();
-        assert!(stats.operations_executed >= 0);
+        assert_eq!(stats.operations_executed, 0);
     }
 }

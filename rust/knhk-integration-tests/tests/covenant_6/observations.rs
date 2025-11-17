@@ -100,10 +100,7 @@ fn test_mape_k_monitor_consumes_observations() {
     // THEN: Monitors collect observations
     if let QueryResults::Solutions(solutions) = results {
         let count = solutions.count();
-        assert!(
-            count > 0,
-            "MAPE-K monitor doesn't consume observations"
-        );
+        assert!(count > 0, "MAPE-K monitor doesn't consume observations");
     }
 }
 
@@ -206,10 +203,7 @@ fn test_telemetry_schema_exists() {
     if let QueryResults::Solutions(mut solutions) = results {
         if let Some(solution) = solutions.next() {
             let solution = solution.expect("Solution error");
-            let count = solution
-                .get("observableOps")
-                .expect("No count")
-                .to_string();
+            let count = solution.get("observableOps").expect("No count").to_string();
 
             assert!(
                 count.contains("1") || count.parse::<i32>().unwrap_or(0) > 0,

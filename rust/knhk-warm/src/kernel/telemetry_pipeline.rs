@@ -2,18 +2,18 @@
 // Phase 3: Telemetry pipeline with buffering and rate limiting
 // DOCTRINE: Covenant 6 (Observations Are Sacred) - All telemetry must be preserved
 
+use crossbeam::channel::{bounded, unbounded, Receiver, Sender, TryRecvError};
+use dashmap::DashMap;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
+use std::io::Write;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use std::collections::{HashMap, VecDeque};
-use crossbeam::channel::{bounded, unbounded, Receiver, Sender, TryRecvError};
-use dashmap::DashMap;
-use parking_lot::{Mutex, RwLock};
-use tracing::{debug, error, info, warn, trace, span, Level};
-use serde::{Serialize, Deserialize};
-use flate2::write::GzEncoder;
-use flate2::Compression;
-use std::io::Write;
+use tracing::{debug, error, info, span, trace, warn, Level};
 
 /// Telemetry receipt for processed items
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,14 +212,21 @@ impl TelemetryBuffer {
             });
     }
 
-    pub fn flush(&self) -> (Vec<TelemetryReceipt>, Vec<AggregatedMetrics>, Vec<CorrelatedEvent>) {
+    pub fn flush(
+        &self,
+    ) -> (
+        Vec<TelemetryReceipt>,
+        Vec<AggregatedMetrics>,
+        Vec<CorrelatedEvent>,
+    ) {
         let mut receipts = self.receipts.lock();
         let mut events = self.events.lock();
 
         let flushed_receipts: Vec<_> = receipts.drain(..).collect();
         let flushed_events: Vec<_> = events.drain(..).collect();
 
-        let flushed_metrics: Vec<_> = self.metrics
+        let flushed_metrics: Vec<_> = self
+            .metrics
             .iter()
             .map(|entry| entry.value().clone())
             .collect();
@@ -289,7 +296,10 @@ impl EventCorrelator {
     }
 
     pub fn cleanup_old_events(&self, older_than: Instant) {
-        let cutoff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+        let cutoff = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
             - older_than.elapsed().as_secs();
 
         self.trace_map.retain(|_, events| {
@@ -330,11 +340,7 @@ pub struct PipelineStats {
 }
 
 impl TelemetryPipeline {
-    pub fn new(
-        buffer_size: usize,
-        rate_limit: u64,
-        correlation_window: Duration,
-    ) -> Self {
+    pub fn new(buffer_size: usize, rate_limit: u64, correlation_window: Duration) -> Self {
         let (tx, rx) = bounded(100);
 
         Self {
@@ -359,13 +365,17 @@ impl TelemetryPipeline {
     pub fn process_receipt(&self, receipt: TelemetryReceipt) -> Result<(), String> {
         // Check rate limit
         if !self.rate_limiter.try_acquire(1) {
-            self.stats.rate_limited_items.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .rate_limited_items
+                .fetch_add(1, Ordering::Relaxed);
             return Err("Rate limited".to_string());
         }
 
         // Add to buffer
         self.buffer.add_receipt(receipt);
-        self.stats.receipts_processed.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .receipts_processed
+            .fetch_add(1, Ordering::Relaxed);
 
         Ok(())
     }
@@ -373,18 +383,24 @@ impl TelemetryPipeline {
     /// Process a metric through the pipeline
     pub fn process_metric(&self, name: String, value: f64, tags: HashMap<String, String>) {
         if !self.rate_limiter.try_acquire(1) {
-            self.stats.rate_limited_items.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .rate_limited_items
+                .fetch_add(1, Ordering::Relaxed);
             return;
         }
 
         self.buffer.add_metric(name, value, tags);
-        self.stats.metrics_aggregated.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .metrics_aggregated
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     /// Process an event with correlation
     pub fn process_event(&self, event: CorrelatedEvent) {
         if !self.rate_limiter.try_acquire(1) {
-            self.stats.rate_limited_items.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .rate_limited_items
+                .fetch_add(1, Ordering::Relaxed);
             return;
         }
 
@@ -406,14 +422,20 @@ impl TelemetryPipeline {
             metrics,
             events,
             batch_id: generate_batch_id(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
         };
 
         // Estimate batch size
         let batch_size = estimate_batch_size(&batch);
-        self.stats.bytes_sent.fetch_add(batch_size as u64, Ordering::Relaxed);
+        self.stats
+            .bytes_sent
+            .fetch_add(batch_size as u64, Ordering::Relaxed);
 
-        self.stream_tx.try_send(batch)
+        self.stream_tx
+            .try_send(batch)
             .map_err(|_| "Channel full".to_string())?;
 
         self.stats.batches_sent.fetch_add(1, Ordering::Relaxed);
@@ -435,9 +457,9 @@ impl TelemetryPipeline {
                 }
 
                 // Cleanup old correlation data
-                pipeline.correlator.cleanup_old_events(
-                    Instant::now() - Duration::from_secs(300)
-                );
+                pipeline
+                    .correlator
+                    .cleanup_old_events(Instant::now() - Duration::from_secs(300));
             }
         });
 
@@ -672,11 +694,7 @@ mod tests {
         let buffer = TelemetryBuffer::new(100, 50);
 
         for i in 0..10 {
-            buffer.add_metric(
-                "test.metric".to_string(),
-                i as f64,
-                HashMap::new(),
-            );
+            buffer.add_metric("test.metric".to_string(), i as f64, HashMap::new());
         }
 
         let (_, metrics, _) = buffer.flush();

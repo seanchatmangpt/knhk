@@ -12,8 +12,7 @@
 //! ```
 
 use knhk_workflow_engine::executor::{
-    WorkflowLoader, WorkflowRuntime, WorkflowState, TaskExecutor,
-    TaskDefinition, TaskResult,
+    TaskDefinition, TaskExecutor, TaskResult, WorkflowLoader, WorkflowRuntime, WorkflowState,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -132,17 +131,17 @@ async fn execute_sequence_workflow() -> Result<(), Box<dyn std::error::Error>> {
     println!("   Tasks: {}", definition.tasks.len());
     println!("   Flows: {}", definition.flows.len());
 
-    let runtime = WorkflowRuntime::new(definition)
-        .with_executor(Arc::new(ExampleExecutor));
+    let runtime = WorkflowRuntime::new(definition).with_executor(Arc::new(ExampleExecutor));
 
     let final_state = runtime.run().await?;
 
     println!("\n✅ Workflow completed!");
     println!("   State: {:?}", final_state.state);
     println!("   Tasks completed: {}", final_state.completed_tasks.len());
-    if let Some(duration) = final_state.end_time.and_then(|end| {
-        final_state.start_time.map(|start| end - start)
-    }) {
+    if let Some(duration) = final_state
+        .end_time
+        .and_then(|end| final_state.start_time.map(|start| end - start))
+    {
         println!("   Duration: {:?}", duration);
     }
 
@@ -207,8 +206,7 @@ async fn execute_parallel_workflow() -> Result<(), Box<dyn std::error::Error>> {
     println!("📄 Loaded workflow: {}", definition.name);
     println!("   Tasks: {}", definition.tasks.len());
 
-    let runtime = WorkflowRuntime::new(definition)
-        .with_executor(Arc::new(ExampleExecutor));
+    let runtime = WorkflowRuntime::new(definition).with_executor(Arc::new(ExampleExecutor));
 
     let final_state = runtime.run().await?;
 
@@ -288,8 +286,7 @@ async fn execute_multichoice_workflow() -> Result<(), Box<dyn std::error::Error>
     println!("📄 Loaded workflow: {}", definition.name);
     println!("   Tasks: {}", definition.tasks.len());
 
-    let runtime = WorkflowRuntime::new(definition)
-        .with_executor(Arc::new(ExampleExecutor));
+    let runtime = WorkflowRuntime::new(definition).with_executor(Arc::new(ExampleExecutor));
 
     let final_state = runtime.run().await?;
 

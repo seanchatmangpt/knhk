@@ -7,14 +7,14 @@
 //! - Receipt generation
 //! - Snapshot versioning
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use knhk_workflow_engine::ontology_executor::OntologyExecutor;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use knhk_workflow_engine::adaptive_patterns::{AdaptivePatternSelector, PatternSelectionContext};
 use knhk_workflow_engine::mape::KnowledgeBase;
+use knhk_workflow_engine::ontology_executor::OntologyExecutor;
 use knhk_workflow_engine::patterns::PatternId;
+use parking_lot::RwLock;
 use serde_json::json;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tempfile::TempDir;
 
 fn benchmark_pattern_selection(c: &mut Criterion) {
@@ -32,15 +32,9 @@ fn benchmark_pattern_selection(c: &mut Criterion) {
             max_ticks: 8,
         };
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(data_size),
-            data_size,
-            |b, _| {
-                b.iter(|| {
-                    selector.select_pattern(black_box(&context))
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(data_size), data_size, |b, _| {
+            b.iter(|| selector.select_pattern(black_box(&context)));
+        });
     }
 
     group.finish();
@@ -77,12 +71,7 @@ fn benchmark_snapshot_operations(c: &mut Criterion) {
     let config = std::collections::HashMap::new();
 
     c.bench_function("snapshot_create", |b| {
-        b.iter(|| {
-            versioning.create_snapshot(
-                black_box(content),
-                black_box(&config),
-            )
-        });
+        b.iter(|| versioning.create_snapshot(black_box(content), black_box(&config)));
     });
 }
 
@@ -102,9 +91,7 @@ fn benchmark_guard_validation(c: &mut Criterion) {
     };
 
     c.bench_function("guard_validation", |b| {
-        b.iter(|| {
-            checker.validate_workflow_spec(black_box(&spec))
-        });
+        b.iter(|| checker.validate_workflow_spec(black_box(&spec)));
     });
 }
 
@@ -114,12 +101,7 @@ fn benchmark_hook_execution(c: &mut Criterion) {
     let engine = HookEngine::new();
 
     c.bench_function("hook_before_execution", |b| {
-        b.iter(|| {
-            engine.before_hook(
-                black_box("task-1"),
-                black_box(&json!({"data": "test"})),
-            )
-        });
+        b.iter(|| engine.before_hook(black_box("task-1"), black_box(&json!({"data": "test"}))));
     });
 }
 
@@ -140,9 +122,7 @@ fn benchmark_pattern_library_lookup(c: &mut Criterion) {
             BenchmarkId::new("pattern", format!("{:?}", pattern)),
             pattern,
             |b, p| {
-                b.iter(|| {
-                    library.get_pattern(black_box(p))
-                });
+                b.iter(|| library.get_pattern(black_box(p)));
             },
         );
     }

@@ -154,10 +154,7 @@ impl Reporter {
     /// Print report to stdout with colors
     pub fn print_report(report: &BenchmarkReport) {
         println!("\n{}", "=".repeat(80).bright_blue());
-        println!(
-            "{}",
-            "Chicago TDD Performance Report".bright_blue().bold()
-        );
+        println!("{}", "Chicago TDD Performance Report".bright_blue().bold());
         println!("{}", "=".repeat(80).bright_blue());
 
         // Summary
@@ -241,10 +238,7 @@ impl Reporter {
         // Bottlenecks
         if !report.bottlenecks.is_empty() {
             println!("\n{}", "Bottlenecks Identified:".red().bold());
-            println!(
-                "{:<30} {:<10} {}",
-                "Operation", "Severity", "Description"
-            );
+            println!("{:<30} {:<10} {}", "Operation", "Severity", "Description");
             println!("{}", "-".repeat(80));
 
             for bottleneck in &report.bottlenecks {
@@ -297,7 +291,11 @@ impl Reporter {
     /// Print a single result in detail
     pub fn print_result(result: &MeasurementResult) {
         println!("\n{}", "─".repeat(60));
-        println!("{}: {}", "Operation".bright_white().bold(), result.operation_name);
+        println!(
+            "{}: {}",
+            "Operation".bright_white().bold(),
+            result.operation_name
+        );
 
         let type_color = match result.operation_type {
             OperationType::HotPath => "HOT PATH".yellow(),
@@ -358,7 +356,11 @@ impl Reporter {
                 OperationType::ColdPath => "COLD",
             };
 
-            let status = if result.bounds_violated { "FAIL" } else { "PASS" };
+            let status = if result.bounds_violated {
+                "FAIL"
+            } else {
+                "PASS"
+            };
 
             csv.push_str(&format!(
                 "{},{},{},{},{},{},{}\n",

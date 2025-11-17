@@ -165,10 +165,7 @@ impl ShipmentFulfillmentWorkflow {
 pub struct PaymentGatewayWorkflow;
 
 impl PaymentGatewayWorkflow {
-    pub fn execute_with_method(
-        mut ctx: WorkflowContext,
-        payment_method: &str,
-    ) -> WorkflowContext {
+    pub fn execute_with_method(mut ctx: WorkflowContext, payment_method: &str) -> WorkflowContext {
         match payment_method {
             "credit_card" => {
                 ctx.add_variable("payment_method", "credit_card");
@@ -228,10 +225,7 @@ pub fn chain_order_with_payment(case_id: &str, payment_method: &str) -> Workflow
 }
 
 /// Chain 3: Full Transaction (Order + Shipment)
-pub fn chain_complete_transaction(
-    case_id: &str,
-    payment_method: &str,
-) -> WorkflowContext {
+pub fn chain_complete_transaction(case_id: &str, payment_method: &str) -> WorkflowContext {
     let ctx = WorkflowContext::new("Chain3", case_id);
 
     // Phase 1: Order Processing
@@ -274,9 +268,7 @@ fn generate_payment_methods() -> Vec<&'static str> {
 
 /// Generate case IDs for testing
 fn generate_case_ids(count: usize) -> Vec<String> {
-    (0..count)
-        .map(|i| format!("CASE-{:04}", i))
-        .collect()
+    (0..count).map(|i| format!("CASE-{:04}", i)).collect()
 }
 
 // ============================================================================
@@ -365,7 +357,8 @@ chicago_test!(test_permutation_all_payment_methods, {
                 method
             );
             assert!(
-                ctx.completed_steps.contains(&"payment_processed".to_string()),
+                ctx.completed_steps
+                    .contains(&"payment_processed".to_string()),
                 "Payment {} should complete payment_processed step",
                 method
             );
@@ -437,7 +430,10 @@ chicago_test!(test_combination_order_payment_shipment, {
     }
 
     // Should have successful completions
-    assert!(success_count > 0, "Should have at least one successful combination");
+    assert!(
+        success_count > 0,
+        "Should have at least one successful combination"
+    );
 });
 
 // ============================================================================
@@ -523,9 +519,7 @@ chicago_test!(test_chain_idempotence, {
 chicago_test!(test_property_all_chains_complete_expected_steps, {
     // Property: Every workflow chain should complete its expected steps
     // Arrange
-    let chains = vec![
-        ("simple_order", "CASE-PROP-001", chain_order_to_shipment),
-    ];
+    let chains = vec![("simple_order", "CASE-PROP-001", chain_order_to_shipment)];
 
     // Act & Assert: Verify property for each chain
     for (_name, case_id, chain_fn) in chains {
@@ -537,11 +531,7 @@ chicago_test!(test_property_all_chains_complete_expected_steps, {
         // Property: No duplicate steps
         let mut seen = std::collections::HashSet::new();
         for step in &ctx.completed_steps {
-            assert!(
-                seen.insert(step.clone()),
-                "No duplicate steps: {}",
-                step
-            );
+            assert!(seen.insert(step.clone()), "No duplicate steps: {}", step);
         }
     }
 });
@@ -625,7 +615,8 @@ chicago_test!(test_all_jtbds_achievable_through_chaining, {
                 assert!(ctx.verify_jtbd(&jtbd).is_ok());
             }
             JTBD::FulfillShipment => {
-                let ctx = ShipmentFulfillmentWorkflow::execute(WorkflowContext::new("test", "test-case"));
+                let ctx =
+                    ShipmentFulfillmentWorkflow::execute(WorkflowContext::new("test", "test-case"));
                 assert!(ctx.verify_jtbd(&jtbd).is_ok());
             }
             JTBD::CompleteTransaction => {

@@ -53,13 +53,7 @@ impl PhaseTelemetry {
     }
 
     /// Record phase completion
-    pub fn record_completion(
-        &self,
-        status: &str,
-        passed: usize,
-        failed: usize,
-        warnings: usize,
-    ) {
+    pub fn record_completion(&self, status: &str, passed: usize, failed: usize, warnings: usize) {
         let duration = self.start_time.elapsed();
 
         #[cfg(feature = "otel")]

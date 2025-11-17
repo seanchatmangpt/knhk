@@ -33,9 +33,8 @@ impl BinarySerializer {
     pub async fn serialize(&self, descriptor: &LinkedDescriptor) -> WorkflowResult<Vec<u8>> {
         info!("Serializing descriptor to binary format");
 
-        let mut buffer = Vec::with_capacity(
-            descriptor.code_segment.size + descriptor.data_segment.size + 4096
-        );
+        let mut buffer =
+            Vec::with_capacity(descriptor.code_segment.size + descriptor.data_segment.size + 4096);
 
         // Write header
         self.write_header(&mut buffer, descriptor)?;
@@ -68,7 +67,11 @@ impl BinarySerializer {
     }
 
     /// Write descriptor header
-    fn write_header(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
+    fn write_header(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
         // Magic number (4 bytes)
         buffer.extend_from_slice(&MAGIC_NUMBER);
 
@@ -112,7 +115,11 @@ impl BinarySerializer {
     }
 
     /// Write metadata section
-    fn write_metadata(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
+    fn write_metadata(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
         // Timestamp (8 bytes)
         buffer.extend_from_slice(&descriptor.metadata.timestamp.to_le_bytes());
 
@@ -135,8 +142,15 @@ impl BinarySerializer {
     }
 
     /// Write code segment
-    fn write_code_segment(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
-        debug!("Writing code segment: {} bytes", descriptor.code_segment.size);
+    fn write_code_segment(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
+        debug!(
+            "Writing code segment: {} bytes",
+            descriptor.code_segment.size
+        );
 
         // Ensure we're at the expected offset (256)
         while buffer.len() < 256 {
@@ -155,8 +169,15 @@ impl BinarySerializer {
     }
 
     /// Write data segment
-    fn write_data_segment(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
-        debug!("Writing data segment: {} bytes", descriptor.data_segment.size);
+    fn write_data_segment(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
+        debug!(
+            "Writing data segment: {} bytes",
+            descriptor.data_segment.size
+        );
 
         // Data section
         buffer.extend_from_slice(&descriptor.data_segment.data);
@@ -176,8 +197,15 @@ impl BinarySerializer {
     }
 
     /// Write symbol table
-    fn write_symbol_table(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
-        debug!("Writing symbol table: {} symbols", descriptor.symbol_table.symbols.len());
+    fn write_symbol_table(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
+        debug!(
+            "Writing symbol table: {} symbols",
+            descriptor.symbol_table.symbols.len()
+        );
 
         // Symbol count (redundant but useful for verification)
         buffer.extend_from_slice(&(descriptor.symbol_table.symbols.len() as u32).to_le_bytes());
@@ -220,8 +248,15 @@ impl BinarySerializer {
     }
 
     /// Write relocation table
-    fn write_relocation_table(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
-        debug!("Writing relocation table: {} entries", descriptor.relocations.len());
+    fn write_relocation_table(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
+        debug!(
+            "Writing relocation table: {} entries",
+            descriptor.relocations.len()
+        );
 
         // Relocation count
         buffer.extend_from_slice(&(descriptor.relocations.len() as u32).to_le_bytes());
@@ -254,8 +289,15 @@ impl BinarySerializer {
     }
 
     /// Write entry points
-    fn write_entry_points(&self, buffer: &mut Vec<u8>, descriptor: &LinkedDescriptor) -> WorkflowResult<()> {
-        debug!("Writing entry points: {} entries", descriptor.entry_points.len());
+    fn write_entry_points(
+        &self,
+        buffer: &mut Vec<u8>,
+        descriptor: &LinkedDescriptor,
+    ) -> WorkflowResult<()> {
+        debug!(
+            "Writing entry points: {} entries",
+            descriptor.entry_points.len()
+        );
 
         // Entry point count
         buffer.extend_from_slice(&(descriptor.entry_points.len() as u32).to_le_bytes());
@@ -299,7 +341,8 @@ impl BinarySerializer {
         let version = u32::from_le_bytes(data[4..8].try_into().unwrap());
         if version != FORMAT_VERSION {
             return Err(WorkflowError::Parse(format!(
-                "Unsupported format version: {:08x}", version
+                "Unsupported format version: {:08x}",
+                version
             )));
         }
 
@@ -354,7 +397,7 @@ impl Default for BinarySerializer {
 mod tests {
     use super::*;
     use crate::compiler::linker::{
-        LinkedDescriptor, CodeSegment, DataSegment, LinkedSymbolTable, LinkMetadata,
+        CodeSegment, DataSegment, LinkMetadata, LinkedDescriptor, LinkedSymbolTable,
     };
     use std::collections::HashMap;
 

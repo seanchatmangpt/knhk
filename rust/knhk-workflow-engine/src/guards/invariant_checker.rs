@@ -39,9 +39,9 @@ pub struct InvariantCheckResult {
 
 /// Invariant predicate function
 pub type InvariantPredicate = Arc<
-    dyn Fn(&serde_json::Value) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = bool> + Send>
-    > + Send + Sync
+    dyn Fn(&serde_json::Value) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + Send>>
+        + Send
+        + Sync,
 >;
 
 /// Invariant definition
@@ -81,7 +81,9 @@ impl InvariantChecker {
     /// Register an invariant
     pub async fn register_invariant(&self, invariant: Invariant) -> WorkflowResult<()> {
         if invariant.id.is_empty() {
-            return Err(WorkflowError::Validation("Invariant ID cannot be empty".to_string()));
+            return Err(WorkflowError::Validation(
+                "Invariant ID cannot be empty".to_string(),
+            ));
         }
 
         let mut invariants = self.invariants.write().await;
@@ -98,7 +100,8 @@ impl InvariantChecker {
         &self,
         state: &serde_json::Value,
     ) -> WorkflowResult<Vec<InvariantCheckResult>> {
-        self.check_invariants(InvariantType::Precondition, state).await
+        self.check_invariants(InvariantType::Precondition, state)
+            .await
     }
 
     /// Check postconditions
@@ -106,7 +109,8 @@ impl InvariantChecker {
         &self,
         state: &serde_json::Value,
     ) -> WorkflowResult<Vec<InvariantCheckResult>> {
-        self.check_invariants(InvariantType::Postcondition, state).await
+        self.check_invariants(InvariantType::Postcondition, state)
+            .await
     }
 
     /// Check state invariants
@@ -114,7 +118,8 @@ impl InvariantChecker {
         &self,
         state: &serde_json::Value,
     ) -> WorkflowResult<Vec<InvariantCheckResult>> {
-        self.check_invariants(InvariantType::StateInvariant, state).await
+        self.check_invariants(InvariantType::StateInvariant, state)
+            .await
     }
 
     /// Check all invariants of a given type
@@ -215,26 +220,38 @@ mod tests {
             invariant_type: InvariantType::Precondition,
             name: "Positive Value".to_string(),
             description: "Value must be positive".to_string(),
-            predicate: Arc::new(|state| Box::pin(async move {
-                state.get("value")
-                    .and_then(|v| v.as_i64())
-                    .map(|v| v > 0)
-                    .unwrap_or(false)
-            })),
+            predicate: Arc::new(|state| {
+                Box::pin(async move {
+                    state
+                        .get("value")
+                        .and_then(|v| v.as_i64())
+                        .map(|v| v > 0)
+                        .unwrap_or(false)
+                })
+            }),
             severity: 5,
         };
 
-        checker.register_invariant(invariant).await.expect("Failed to register invariant");
+        checker
+            .register_invariant(invariant)
+            .await
+            .expect("Failed to register invariant");
 
         // Test with valid state
         let valid_state = serde_json::json!({"value": 10});
-        let results = checker.check_preconditions(&valid_state).await.expect("Check failed");
+        let results = checker
+            .check_preconditions(&valid_state)
+            .await
+            .expect("Check failed");
         assert_eq!(results.len(), 1);
         assert!(results[0].passed);
 
         // Test with invalid state
         let invalid_state = serde_json::json!({"value": -5});
-        let results = checker.check_preconditions(&invalid_state).await.expect("Check failed");
+        let results = checker
+            .check_preconditions(&invalid_state)
+            .await
+            .expect("Check failed");
         assert_eq!(results.len(), 1);
         assert!(!results[0].passed);
     }
@@ -277,7 +294,10 @@ mod tests {
             severity: 1,
         };
 
-        checker.register_invariant(invariant).await.expect("Failed to register");
+        checker
+            .register_invariant(invariant)
+            .await
+            .expect("Failed to register");
 
         let state = serde_json::json!({});
         let _ = checker.check_state_invariants(&state).await;

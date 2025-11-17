@@ -3,16 +3,16 @@
 //! Integrates all 5 layers: Σ (ontology), Π (projection), μ (execution),
 //! O (observation), and MAPE-K (autonomic feedback).
 
+use crate::engine::{HookEngine, LatencyBoundedScheduler, PatternLibrary};
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::engine::{HookEngine, PatternLibrary, LatencyBoundedScheduler};
 use crate::guards::InvariantChecker;
-use crate::receipts::{ReceiptGenerator, ReceiptStore};
-use crate::snapshots::SnapshotVersioning;
 use crate::mape::MapeKEngine;
 use crate::parser::{WorkflowParser, WorkflowSpec};
-use std::sync::Arc;
+use crate::receipts::{ReceiptGenerator, ReceiptStore};
+use crate::snapshots::SnapshotVersioning;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Self-executing workflow orchestrator that implements A = μ(O)
 ///
@@ -102,7 +102,10 @@ impl SelfExecutingOrchestrator {
     /// 1. Parse ontology (Σ)
     /// 2. Project to executable format (Π)
     /// 3. Register with execution engine (μ)
-    pub async fn load_workflow_from_ontology(&mut self, ontology_path: &str) -> WorkflowResult<String> {
+    pub async fn load_workflow_from_ontology(
+        &mut self,
+        ontology_path: &str,
+    ) -> WorkflowResult<String> {
         // Parse workflow from RDF/Turtle ontology
         let spec = self.parser.parse_file(ontology_path)?;
         let workflow_id = spec.id.clone();
@@ -113,7 +116,11 @@ impl SelfExecutingOrchestrator {
         // Store workflow
         self.workflows.insert(workflow_id.clone(), spec);
 
-        tracing::info!("Loaded workflow {} from ontology {}", workflow_id, ontology_path);
+        tracing::info!(
+            "Loaded workflow {} from ontology {}",
+            workflow_id,
+            ontology_path
+        );
 
         Ok(workflow_id)
     }
@@ -130,19 +137,24 @@ impl SelfExecutingOrchestrator {
         workflow_id: &str,
         input_data: serde_json::Value,
     ) -> WorkflowResult<ExecutionResult> {
-        let workflow = self.workflows.get(workflow_id)
+        let workflow = self
+            .workflows
+            .get(workflow_id)
             .ok_or_else(|| WorkflowError::WorkflowNotFound(workflow_id.to_string()))?;
 
         // Start execution with tick budget
         let start_tick = self.scheduler.current_tick();
 
         // Execute workflow through hook engine
-        let output_data = self.hook_engine.execute_workflow(
-            workflow,
-            input_data.clone(),
-            &self.pattern_library,
-            &self.invariant_checker,
-        ).await?;
+        let output_data = self
+            .hook_engine
+            .execute_workflow(
+                workflow,
+                input_data.clone(),
+                &self.pattern_library,
+                &self.invariant_checker,
+            )
+            .await?;
 
         let end_tick = self.scheduler.current_tick();
         let ticks_used = end_tick - start_tick;
@@ -193,7 +205,10 @@ impl SelfExecutingOrchestrator {
     /// - Execute: Shadow deploy and promote
     /// - Knowledge: Learn and improve
     pub async fn start_autonomic_loop(&self, interval_ms: u64) -> WorkflowResult<()> {
-        tracing::info!("Starting MAPE-K autonomic loop ({}ms interval)", interval_ms);
+        tracing::info!(
+            "Starting MAPE-K autonomic loop ({}ms interval)",
+            interval_ms
+        );
         self.mape_k.start_continuous_loop(interval_ms).await
     }
 
@@ -268,7 +283,8 @@ mod tests {
         let orchestrator = SelfExecutingOrchestrator::new(
             snapshot_dir.to_str().unwrap(),
             receipt_dir.to_str().unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let stats = orchestrator.get_statistics();
         assert_eq!(stats.workflows_loaded, 0);
@@ -281,7 +297,8 @@ mod tests {
         let orchestrator = SelfExecutingOrchestrator::new(
             temp_dir.path().join("snapshots").to_str().unwrap(),
             temp_dir.path().join("receipts").to_str().unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Would test actual execution with mock workflow
         // Verify ticks_used ≤ 8

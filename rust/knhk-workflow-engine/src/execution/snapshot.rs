@@ -10,10 +10,10 @@
 //! - **O ⊨ Σ**: Observations must validate against snapshot ontology
 //! - **Σ ⊨ Q**: Snapshots must satisfy all invariants Q
 
+use serde::{Deserialize, Serialize};
+use sha3::{Digest, Sha3_256};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use sha3::{Digest, Sha3_256};
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "std")]
 use std::time::SystemTime;
@@ -105,7 +105,9 @@ impl SnapshotManifest {
 
     /// Check if snapshot satisfies all invariants Q
     pub fn satisfies_invariants(&self, required_guards: &[String]) -> bool {
-        required_guards.iter().all(|guard| self.guards_checked.contains(guard))
+        required_guards
+            .iter()
+            .all(|guard| self.guards_checked.contains(guard))
     }
 }
 
@@ -163,16 +165,15 @@ impl SnapshotStore {
         // Verify snapshot exists
         let _ = self.get(&id)?;
 
-        *self.current
-            .write()
-            .map_err(|e| e.to_string())? = Some(id);
+        *self.current.write().map_err(|e| e.to_string())? = Some(id);
 
         Ok(())
     }
 
     /// Get the current active snapshot
     pub fn get_current(&self) -> Result<SnapshotManifest, String> {
-        let current_id = self.current
+        let current_id = self
+            .current
             .read()
             .map_err(|e| e.to_string())?
             .clone()
@@ -201,7 +202,8 @@ impl SnapshotStore {
 
     /// List all snapshots (for MAPE-K knowledge base)
     pub fn list_all(&self) -> Result<Vec<SnapshotId>, String> {
-        Ok(self.snapshots
+        Ok(self
+            .snapshots
             .read()
             .map_err(|e| e.to_string())?
             .keys()
@@ -228,13 +230,11 @@ mod tests {
 
     #[test]
     fn test_snapshot_manifest_integrity() {
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = SnapshotId::from_string("Σ_test_001".to_string());
         let manifest = SnapshotManifest::new(id, files);
@@ -246,13 +246,11 @@ mod tests {
     fn test_snapshot_store() {
         let store = SnapshotStore::new();
 
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = SnapshotId::from_string("Σ_test_001".to_string());
         let manifest = SnapshotManifest::new(id.clone(), files);
@@ -267,13 +265,11 @@ mod tests {
     fn test_current_snapshot() {
         let store = SnapshotStore::new();
 
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = SnapshotId::from_string("Σ_test_001".to_string());
         let manifest = SnapshotManifest::new(id.clone(), files);
@@ -289,25 +285,21 @@ mod tests {
     fn test_snapshot_promotion() {
         let store = SnapshotStore::new();
 
-        let files1 = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files1 = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id1 = SnapshotId::from_string("Σ_test_001".to_string());
         let mut manifest1 = SnapshotManifest::new(id1.clone(), files1);
         manifest1.guards_checked = vec!["Q1".to_string(), "Q2".to_string()];
 
-        let files2 = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:def456".to_string(),
-                size_bytes: 2048,
-            },
-        ];
+        let files2 = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:def456".to_string(),
+            size_bytes: 2048,
+        }];
 
         let id2 = SnapshotId::from_string("Σ_test_002".to_string());
         let mut manifest2 = SnapshotManifest::new(id2.clone(), files2);
@@ -325,13 +317,11 @@ mod tests {
 
     #[test]
     fn test_invariant_checking() {
-        let files = vec![
-            OntologyFile {
-                path: "workflow.ttl".to_string(),
-                content_hash: "sha3-256:abc123".to_string(),
-                size_bytes: 1024,
-            },
-        ];
+        let files = vec![OntologyFile {
+            path: "workflow.ttl".to_string(),
+            content_hash: "sha3-256:abc123".to_string(),
+            size_bytes: 1024,
+        }];
 
         let id = SnapshotId::from_string("Σ_test_001".to_string());
         let mut manifest = SnapshotManifest::new(id, files);

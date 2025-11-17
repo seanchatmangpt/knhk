@@ -32,13 +32,13 @@
 //! # }
 //! ```
 
-use crate::types::{Plan, Action, ActionExecution, ExecutionStatus, Metric};
 use crate::error::{AutonomicError, Result};
 use crate::monitor::MonitoringComponent;
+use crate::types::{Action, ActionExecution, ExecutionStatus, Metric, Plan};
 use chrono::Utc;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{instrument, debug, warn, error};
+use tracing::{debug, error, instrument, warn};
 use uuid::Uuid;
 
 /// Execution component for running actions
@@ -81,13 +81,17 @@ impl ExecutionComponent {
     ) -> Result<Vec<ActionExecution>> {
         let mut executions = Vec::new();
 
-        debug!("Executing plan {} with {} actions", plan.id, plan.actions.len());
+        debug!(
+            "Executing plan {} with {} actions",
+            plan.id,
+            plan.actions.len()
+        );
 
         for action_id in &plan.actions {
             // Find action
-            let action = actions.iter()
-                .find(|a| &a.id == action_id)
-                .ok_or_else(|| AutonomicError::Execute(format!("Action not found: {}", action_id)))?;
+            let action = actions.iter().find(|a| &a.id == action_id).ok_or_else(|| {
+                AutonomicError::Execute(format!("Action not found: {}", action_id))
+            })?;
 
             // Execute action
             match self.execute_action(action).await {
@@ -200,17 +204,31 @@ impl ExecutionComponent {
                 let change_pct = (change / metric_before.current_value) * 100.0;
 
                 if change.abs() > 0.1 {
-                    if change_pct < 0.0 && metric_after.metric_type == crate::types::MetricType::Performance {
-                        improvements.push(format!("{}: improved by {:.1}%", metric_after.name, change_pct.abs()));
-                    } else if change_pct > 0.0 && metric_after.metric_type == crate::types::MetricType::Performance {
-                        degradations.push(format!("{}: degraded by {:.1}%", metric_after.name, change_pct));
+                    if change_pct < 0.0
+                        && metric_after.metric_type == crate::types::MetricType::Performance
+                    {
+                        improvements.push(format!(
+                            "{}: improved by {:.1}%",
+                            metric_after.name,
+                            change_pct.abs()
+                        ));
+                    } else if change_pct > 0.0
+                        && metric_after.metric_type == crate::types::MetricType::Performance
+                    {
+                        degradations.push(format!(
+                            "{}: degraded by {:.1}%",
+                            metric_after.name, change_pct
+                        ));
                     }
                 }
             }
         }
 
         if improvements.is_empty() && degradations.is_empty() {
-            return format!("Action {} had minimal impact on metrics", action.description);
+            return format!(
+                "Action {} had minimal impact on metrics",
+                action.description
+            );
         }
 
         let mut analysis = format!("Action {} impact:", action.description);
@@ -234,7 +252,8 @@ impl ExecutionComponent {
     pub async fn get_success_rate(&self, action_id: &Uuid) -> Result<f64> {
         let history = self.history.read().await;
 
-        let executions: Vec<_> = history.iter()
+        let executions: Vec<_> = history
+            .iter()
             .filter(|e| &e.action_id == action_id)
             .collect();
 
@@ -242,7 +261,8 @@ impl ExecutionComponent {
             return Ok(0.5); // Default for unknown actions
         }
 
-        let successes = executions.iter()
+        let successes = executions
+            .iter()
             .filter(|e| e.status == ExecutionStatus::Successful)
             .count();
 

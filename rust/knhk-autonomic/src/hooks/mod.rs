@@ -49,7 +49,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{instrument, debug};
+use tracing::{debug, instrument};
 
 /// Hook execution point in MAPE-K loop
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -93,10 +93,7 @@ impl HookContext {
 
     /// Set value in context
     pub fn set(&mut self, key: impl Into<String>, value: impl serde::Serialize) -> Result<()> {
-        self.data.insert(
-            key.into(),
-            serde_json::to_value(value)?,
-        );
+        self.data.insert(key.into(), serde_json::to_value(value)?);
         Ok(())
     }
 
@@ -111,7 +108,8 @@ impl HookContext {
 }
 
 /// Hook function type
-pub type HookFn = Arc<dyn Fn(HookContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send>> + Send + Sync>;
+pub type HookFn =
+    Arc<dyn Fn(HookContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send>> + Send + Sync>;
 
 /// Registry for autonomic hooks
 #[derive(Clone)]
@@ -143,7 +141,10 @@ impl HookRegistry {
         let hook_fn: HookFn = Arc::new(move |ctx| Box::pin(hook(ctx)));
 
         let mut hooks = self.hooks.write().await;
-        hooks.entry(hook_type).or_insert_with(Vec::new).push(hook_fn);
+        hooks
+            .entry(hook_type)
+            .or_insert_with(Vec::new)
+            .push(hook_fn);
 
         debug!("Registered hook for {:?}", hook_type);
     }
@@ -168,7 +169,10 @@ impl HookRegistry {
     /// Check if hooks are registered for a type
     pub async fn has_hooks(&self, hook_type: HookType) -> bool {
         let hooks = self.hooks.read().await;
-        hooks.get(&hook_type).map(|v| !v.is_empty()).unwrap_or(false)
+        hooks
+            .get(&hook_type)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
     }
 
     /// Get count of hooks for a type
@@ -187,9 +191,9 @@ mod tests {
         let mut registry = HookRegistry::new();
 
         // Register hook
-        registry.register(HookType::PostMonitor, |_ctx| async {
-            Ok(())
-        }).await;
+        registry
+            .register(HookType::PostMonitor, |_ctx| async { Ok(()) })
+            .await;
 
         // Check registration
         assert!(registry.has_hooks(HookType::PostMonitor).await);

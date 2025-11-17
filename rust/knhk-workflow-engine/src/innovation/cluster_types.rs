@@ -10,8 +10,8 @@
 //! - Deterministic state machine replication
 //! - Quorum enforcement at compile time
 
-use core::marker::PhantomData;
 use crate::const_assert;
+use core::marker::PhantomData;
 
 /// Cluster role - phantom type for access control
 pub trait ClusterRole: 'static {

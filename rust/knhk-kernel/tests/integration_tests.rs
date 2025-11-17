@@ -54,7 +54,10 @@ fn test_deterministic_execution() {
     // Verify all executions produce same result (deterministic)
     let first_output = receipts[0].output_digest;
     for receipt in &receipts {
-        assert_eq!(receipt.output_digest, first_output, "Non-deterministic execution detected");
+        assert_eq!(
+            receipt.output_digest, first_output,
+            "Non-deterministic execution detected"
+        );
         assert!(receipt.within_budget(), "Budget exceeded");
     }
 }
@@ -76,9 +79,7 @@ fn test_zero_allocation_hot_path() {
         },
     );
 
-    let desc = DescriptorBuilder::new()
-        .add_pattern(pattern)
-        .build();
+    let desc = DescriptorBuilder::new().add_pattern(pattern).build();
 
     DescriptorManager::load_descriptor(Box::new(desc)).unwrap();
 
@@ -96,19 +97,34 @@ fn test_state_machine_transitions() {
     use knhk_kernel::executor::StateMachine;
 
     // Valid transitions
-    assert!(StateMachine::validate_transition(TaskState::Created, TaskState::Ready));
-    assert!(StateMachine::validate_transition(TaskState::Ready, TaskState::Running));
-    assert!(StateMachine::validate_transition(TaskState::Running, TaskState::Completed));
+    assert!(StateMachine::validate_transition(
+        TaskState::Created,
+        TaskState::Ready
+    ));
+    assert!(StateMachine::validate_transition(
+        TaskState::Ready,
+        TaskState::Running
+    ));
+    assert!(StateMachine::validate_transition(
+        TaskState::Running,
+        TaskState::Completed
+    ));
 
     // Invalid transitions
-    assert!(!StateMachine::validate_transition(TaskState::Completed, TaskState::Running));
-    assert!(!StateMachine::validate_transition(TaskState::Failed, TaskState::Ready));
+    assert!(!StateMachine::validate_transition(
+        TaskState::Completed,
+        TaskState::Running
+    ));
+    assert!(!StateMachine::validate_transition(
+        TaskState::Failed,
+        TaskState::Ready
+    ));
 }
 
 #[test]
 fn test_guard_evaluation() {
+    use knhk_kernel::descriptor::{ExecutionContext, ObservationBuffer, ResourceState};
     use knhk_kernel::guard::{Guard, Predicate, ResourceType};
-    use knhk_kernel::descriptor::{ExecutionContext, ResourceState, ObservationBuffer};
 
     let context = ExecutionContext {
         task_id: 42,
@@ -174,14 +190,19 @@ fn test_pattern_dispatch_performance() {
         let ctx = knhk_kernel::pattern::PatternFactory::create(
             pattern_type,
             i as u32,
-            PatternConfig::default()
+            PatternConfig::default(),
         );
 
         let timer = HotPathTimer::start();
         let result = dispatcher.dispatch(&ctx);
         let ticks = timer.elapsed_ticks();
 
-        assert!(ticks <= 8, "Pattern {:?} exceeded 8 ticks: {} ticks", pattern_type, ticks);
+        assert!(
+            ticks <= 8,
+            "Pattern {:?} exceeded 8 ticks: {} ticks",
+            pattern_type,
+            ticks
+        );
 
         // Basic validation of result
         assert!(result.ticks_used <= 8);
@@ -206,8 +227,8 @@ fn test_hot_path_stratum_isolation() {
         5,
         PatternConfig {
             flags: knhk_kernel::pattern::PatternFlags::new(
-                knhk_kernel::pattern::PatternFlags::CANCELLABLE |
-                knhk_kernel::pattern::PatternFlags::RECURSIVE
+                knhk_kernel::pattern::PatternFlags::CANCELLABLE
+                    | knhk_kernel::pattern::PatternFlags::RECURSIVE,
             ),
             ..Default::default()
         },
@@ -231,16 +252,15 @@ fn test_hot_path_stratum_isolation() {
     assert!(hot_path.submit(complex_task).is_ok());
 
     let stats = hot_path.stats();
-    assert_eq!(stats.queue_depth_hot + stats.queue_depth_warm + stats.queue_depth_cold, 2);
+    assert_eq!(
+        stats.queue_depth_hot + stats.queue_depth_warm + stats.queue_depth_cold,
+        2
+    );
 }
 
 #[test]
 fn test_descriptor_hot_swap() {
-    let desc1 = Box::new(
-        DescriptorBuilder::new()
-            .with_tick_budget(8)
-            .build()
-    );
+    let desc1 = Box::new(DescriptorBuilder::new().with_tick_budget(8).build());
 
     DescriptorManager::load_descriptor(desc1).unwrap();
 
@@ -248,11 +268,7 @@ fn test_descriptor_hot_swap() {
     assert_eq!(active.global_tick_budget, 8);
 
     // Hot swap to new descriptor
-    let desc2 = Box::new(
-        DescriptorBuilder::new()
-            .with_tick_budget(6)
-            .build()
-    );
+    let desc2 = Box::new(DescriptorBuilder::new().with_tick_budget(6).build());
 
     DescriptorManager::hot_swap(desc2).unwrap();
 
@@ -294,10 +310,12 @@ fn test_all_pattern_types() {
     assert!(PatternValidator::validate_combination(
         PatternType::ParallelSplit,
         PatternType::Synchronization
-    ).is_ok());
+    )
+    .is_ok());
 
     assert!(PatternValidator::validate_combination(
         PatternType::ExclusiveChoice,
         PatternType::SimpleMerge
-    ).is_ok());
+    )
+    .is_ok());
 }

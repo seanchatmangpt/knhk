@@ -148,10 +148,7 @@ pub fn generate_workflow(req: WorkflowGenRequest) -> CnvResult<WorkflowGenResult
         match run_weaver_validation(&generated_code, req.output.as_ref()) {
             Ok(result) => {
                 if result.valid {
-                    validate_progress.complete(&format!(
-                        "Validation passed ({})",
-                        result.message
-                    ));
+                    validate_progress.complete(&format!("Validation passed ({})", result.message));
                 } else {
                     validate_progress.fail(&format!("Validation failed: {}", result.message));
                     #[cfg(feature = "otel")]
@@ -1050,7 +1047,8 @@ pub mod templates {
     ) -> CnvResult<TemplatePreviewResult> {
         // Generate preview based on template name
         let preview = match template.as_str() {
-            "workflow-basic" => r#"// Basic Workflow Template
+            "workflow-basic" => {
+                r#"// Basic Workflow Template
 use knhk_workflow_engine::*;
 
 pub struct Workflow {
@@ -1063,8 +1061,10 @@ impl Workflow {
         // Execute workflow tasks
         Ok(())
     }
-}"#,
-            "chicago-tdd" => r#"// Chicago TDD Test Template
+}"#
+            }
+            "chicago-tdd" => {
+                r#"// Chicago TDD Test Template
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1074,8 +1074,10 @@ mod tests {
         let workflow = Workflow::new("test");
         assert!(workflow.execute().is_ok());
     }
-}"#,
-            "mape-k-autonomic" => r#"// MAPE-K Autonomic Workflow Template
+}"#
+            }
+            "mape-k-autonomic" => {
+                r#"// MAPE-K Autonomic Workflow Template
 use knhk_workflow_engine::mape_k::*;
 
 pub struct AutonomicWorkflow {
@@ -1091,8 +1093,10 @@ impl AutonomicWorkflow {
         // Autonomic adaptation loop
         Ok(())
     }
-}"#,
-            "hook-lockchain" => r#"// Knowledge Hook with Lockchain
+}"#
+            }
+            "hook-lockchain" => {
+                r#"// Knowledge Hook with Lockchain
 use knhk_lockchain::*;
 
 pub struct KnowledgeHook {
@@ -1105,8 +1109,12 @@ impl KnowledgeHook {
         // Execute hook and generate receipt
         Ok(Receipt::new())
     }
-}"#,
-            _ => &format!("// Template: {}\n\n// Custom template preview not available", template),
+}"#
+            }
+            _ => &format!(
+                "// Template: {}\n\n// Custom template preview not available",
+                template
+            ),
         };
 
         Ok(TemplatePreviewResult {
@@ -1180,9 +1188,7 @@ impl Workflow {
             install_path.join("metadata.json"),
             serde_json::to_string_pretty(&metadata).unwrap(),
         )
-        .map_err(|e| {
-            NounVerbError::execution_error(format!("Failed to write metadata: {}", e))
-        })?;
+        .map_err(|e| NounVerbError::execution_error(format!("Failed to write metadata: {}", e)))?;
 
         Ok(TemplateInstallResult {
             name,
@@ -1483,12 +1489,19 @@ pub mod marketplace {
         if matches.is_empty() {
             println!("No templates found matching '{}'", pattern);
         } else {
-            println!("Found {} template(s) matching '{}':", matches.len(), pattern);
+            println!(
+                "Found {} template(s) matching '{}':",
+                matches.len(),
+                pattern
+            );
             for (idx, template) in matches.iter().enumerate() {
                 println!();
                 println!("{}. {} (v{})", idx + 1, template.name, template.version);
                 println!("   Author: {}", template.author);
-                println!("   Rating: {:.1}⭐ | Downloads: {}", template.rating, template.downloads);
+                println!(
+                    "   Rating: {:.1}⭐ | Downloads: {}",
+                    template.rating, template.downloads
+                );
                 println!("   {}", template.description);
             }
         }
@@ -1546,9 +1559,7 @@ pub mod marketplace {
             install_path.join("metadata.json"),
             serde_json::to_string_pretty(&metadata).unwrap(),
         )
-        .map_err(|e| {
-            NounVerbError::execution_error(format!("Failed to write metadata: {}", e))
-        })?;
+        .map_err(|e| NounVerbError::execution_error(format!("Failed to write metadata: {}", e)))?;
 
         println!("✅ Successfully installed {} v{}", name, version);
         println!("   Location: {}", install_path.display());
@@ -1570,7 +1581,8 @@ pub mod marketplace {
                     Review {
                         author: "fintech_dev".to_string(),
                         rating: 5.0,
-                        comment: "Perfect for SWIFT payment workflows! Production-ready.".to_string(),
+                        comment: "Perfect for SWIFT payment workflows! Production-ready."
+                            .to_string(),
                         date: "2025-11-10".to_string(),
                     },
                     Review {
@@ -1594,13 +1606,15 @@ pub mod marketplace {
                     Review {
                         author: "tdd_advocate".to_string(),
                         rating: 5.0,
-                        comment: "Best TDD template I've used. Performance profiling is amazing!".to_string(),
+                        comment: "Best TDD template I've used. Performance profiling is amazing!"
+                            .to_string(),
                         date: "2025-11-12".to_string(),
                     },
                     Review {
                         author: "quality_eng".to_string(),
                         rating: 5.0,
-                        comment: "Chatman constant validation is exactly what we needed.".to_string(),
+                        comment: "Chatman constant validation is exactly what we needed."
+                            .to_string(),
                         date: "2025-11-09".to_string(),
                     },
                     Review {
@@ -1642,7 +1656,13 @@ pub mod marketplace {
 
         for (idx, review) in reviews.iter().enumerate() {
             println!();
-            println!("{}. {} - {:.1}⭐ ({})", idx + 1, review.author, review.rating, review.date);
+            println!(
+                "{}. {} - {:.1}⭐ ({})",
+                idx + 1,
+                review.author,
+                review.rating,
+                review.date
+            );
             println!("   \"{}\"", review.comment);
         }
 
@@ -1660,10 +1680,7 @@ pub mod marketplace {
 // ============================================================================
 
 /// Parse RDF/Turtle and generate workflow code
-fn parse_and_generate_workflow(
-    spec_content: &str,
-    req: &WorkflowGenRequest,
-) -> CnvResult<String> {
+fn parse_and_generate_workflow(spec_content: &str, req: &WorkflowGenRequest) -> CnvResult<String> {
     use oxigraph::io::RdfFormat;
     use oxigraph::model::*;
     use oxigraph::store::Store;
@@ -1717,10 +1734,7 @@ fn parse_and_generate_workflow(
     }
 
     if !tasks.is_empty() {
-        let tasks_comment = format!(
-            "\n// Extracted tasks from RDF: {}\n",
-            tasks.join(", ")
-        );
+        let tasks_comment = format!("\n// Extracted tasks from RDF: {}\n", tasks.join(", "));
         generated_code = tasks_comment + &generated_code;
     }
 
@@ -1750,9 +1764,8 @@ fn run_weaver_validation(
 /// Validate schema structure
 fn validate_schema(schema_content: &str) -> CnvResult<()> {
     // Basic YAML schema validation
-    let _schema: serde_json::Value = serde_yaml::from_str(schema_content).map_err(|e| {
-        NounVerbError::execution_error(format!("Invalid YAML schema: {}", e))
-    })?;
+    let _schema: serde_json::Value = serde_yaml::from_str(schema_content)
+        .map_err(|e| NounVerbError::execution_error(format!("Invalid YAML schema: {}", e)))?;
 
     // Check for required fields (simplified)
     if !schema_content.contains("groups") {
@@ -1769,9 +1782,8 @@ fn validate_telemetry(code_path: &PathBuf) -> CnvResult<Vec<String>> {
     let mut issues = Vec::new();
 
     if code_path.exists() {
-        let content = std::fs::read_to_string(code_path).map_err(|e| {
-            NounVerbError::execution_error(format!("Failed to read code: {}", e))
-        })?;
+        let content = std::fs::read_to_string(code_path)
+            .map_err(|e| NounVerbError::execution_error(format!("Failed to read code: {}", e)))?;
 
         // Check for telemetry imports
         if !content.contains("tracing") && !content.contains("opentelemetry") {
@@ -1792,9 +1804,8 @@ fn validate_performance_constraints(code_path: &PathBuf) -> CnvResult<Vec<String
     let mut violations = Vec::new();
 
     if code_path.exists() {
-        let content = std::fs::read_to_string(code_path).map_err(|e| {
-            NounVerbError::execution_error(format!("Failed to read code: {}", e))
-        })?;
+        let content = std::fs::read_to_string(code_path)
+            .map_err(|e| NounVerbError::execution_error(format!("Failed to read code: {}", e)))?;
 
         // Check for performance hints
         if content.contains("unwrap()") {
@@ -1806,7 +1817,10 @@ fn validate_performance_constraints(code_path: &PathBuf) -> CnvResult<Vec<String
 
         // Check for blocking operations in hot path
         if content.contains("thread::sleep") || content.contains("blocking") {
-            violations.push("Blocking operations detected - may violate Chatman Constant (≤8 ticks)".to_string());
+            violations.push(
+                "Blocking operations detected - may violate Chatman Constant (≤8 ticks)"
+                    .to_string(),
+            );
         }
 
         // In production, would run actual performance tests

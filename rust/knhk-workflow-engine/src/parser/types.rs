@@ -188,10 +188,22 @@ impl WorkflowSpec {
         let mut output = String::new();
 
         // Write Turtle prefixes
-        writeln!(&mut output, "@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .")?;
-        writeln!(&mut output, "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .")?;
-        writeln!(&mut output, "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .")?;
-        writeln!(&mut output, "@prefix workflow: <http://knhk.org/ns/workflow#> .")?;
+        writeln!(
+            &mut output,
+            "@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> ."
+        )?;
+        writeln!(
+            &mut output,
+            "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ."
+        )?;
+        writeln!(
+            &mut output,
+            "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ."
+        )?;
+        writeln!(
+            &mut output,
+            "@prefix workflow: <http://knhk.org/ns/workflow#> ."
+        )?;
         writeln!(&mut output)?;
 
         // Generate base IRI from workflow name (sanitize for IRI)
@@ -239,7 +251,8 @@ impl WorkflowSpec {
 
         // Write other conditions (not start/end)
         for (id, condition) in &self.conditions {
-            if Some(id) != self.start_condition.as_ref() && Some(id) != self.end_condition.as_ref() {
+            if Some(id) != self.start_condition.as_ref() && Some(id) != self.end_condition.as_ref()
+            {
                 writeln!(&mut output, "<{}>", condition.id)?;
                 writeln!(&mut output, "    a yawl:Condition ;")?;
                 writeln!(&mut output, "    rdfs:label \"{}\" .", condition.name)?;

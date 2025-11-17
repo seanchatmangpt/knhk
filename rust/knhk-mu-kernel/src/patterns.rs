@@ -143,9 +143,15 @@ impl PatternId {
             Self::ArbitraryCycles => "Arbitrary Cycles",
             Self::ImplicitTermination => "Implicit Termination",
             Self::MultipleInstancesWithoutSync => "Multiple Instances without Synchronization",
-            Self::MultipleInstancesWithDesignTimeKnowledge => "Multiple Instances with a priori Design-Time Knowledge",
-            Self::MultipleInstancesWithRuntimeKnowledge => "Multiple Instances with a priori Runtime Knowledge",
-            Self::MultipleInstancesWithoutRuntimeKnowledge => "Multiple Instances without a priori Runtime Knowledge",
+            Self::MultipleInstancesWithDesignTimeKnowledge => {
+                "Multiple Instances with a priori Design-Time Knowledge"
+            }
+            Self::MultipleInstancesWithRuntimeKnowledge => {
+                "Multiple Instances with a priori Runtime Knowledge"
+            }
+            Self::MultipleInstancesWithoutRuntimeKnowledge => {
+                "Multiple Instances without a priori Runtime Knowledge"
+            }
             Self::DeferredChoice => "Deferred Choice",
             Self::InterleavedParallelRouting => "Interleaved Parallel Routing",
             Self::Milestone => "Milestone",
@@ -183,12 +189,12 @@ impl fmt::Display for PatternId {
 
 /// Pattern dispatch table entry
 #[derive(Debug, Clone, Copy)]
-#[repr(C, align(64))]  // Cache-line aligned
+#[repr(C, align(64))] // Cache-line aligned
 pub struct PatternEntry {
     /// Pattern ID
     pub pattern_id: PatternId,
     /// Phase handlers (Init, Exec, Join, Cancel, etc.)
-    pub phases: [u64; 8],  // Function pointers
+    pub phases: [u64; 8], // Function pointers
     /// Tick budget for this pattern
     pub tick_budget: u8,
     /// Guard bitmap (which guards apply)
@@ -198,7 +204,7 @@ pub struct PatternEntry {
 }
 
 /// Dispatch table for all 43 patterns
-#[repr(C, align(4096))]  // Page-aligned
+#[repr(C, align(4096))] // Page-aligned
 pub struct DispatchTable {
     /// Pattern entries (256 for alignment, only 43 used)
     entries: [PatternEntry; 256],
@@ -278,7 +284,10 @@ mod tests {
             })
             .count();
 
-        assert!(hot_path_count >= 30, "At least 30 patterns should be hot-path eligible");
+        assert!(
+            hot_path_count >= 30,
+            "At least 30 patterns should be hot-path eligible"
+        );
     }
 
     #[test]

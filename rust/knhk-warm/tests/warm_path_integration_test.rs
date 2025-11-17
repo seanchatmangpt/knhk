@@ -2,26 +2,27 @@
 // Phase 3: End-to-end testing of warm path with descriptor management
 
 use knhk_warm::kernel::{
+    BackpressureController, ChannelManager, Constraints, CoordinationMessage, DegradationManager,
+    DegradationStrategy, Descriptor, DescriptorContent, DescriptorManager, DescriptorVersion,
+    HookPoint, KnowledgeBase, MAPEKIntegration, MAPEKPhase, RollbackManager, Rule,
+    TelemetryPipeline, TimeTravelExecutor, TraceContext, TriggerCondition, VersionGraph,
     WarmPathExecutor, WorkItem,
-    DescriptorManager, Descriptor, DescriptorContent, DescriptorVersion,
-    Rule, Constraints,
-    VersionGraph, RollbackManager, TimeTravelExecutor,
-    TelemetryPipeline, TraceContext,
-    ChannelManager, CoordinationMessage, BackpressureController,
-    DegradationManager, DegradationStrategy,
-    KnowledgeBase, MAPEKIntegration, MAPEKPhase, HookPoint, TriggerCondition,
 };
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use std::collections::HashMap;
 
 #[test]
 fn test_end_to_end_warm_path_execution() {
     // Initialize all components
     let warm_executor = Arc::new(WarmPathExecutor::new(1000, 100, 1024 * 1024));
     let descriptor_mgr = Arc::new(DescriptorManager::new(create_initial_descriptor()));
-    let telemetry = Arc::new(TelemetryPipeline::new(10000, 100000, Duration::from_secs(60)));
+    let telemetry = Arc::new(TelemetryPipeline::new(
+        10000,
+        100000,
+        Duration::from_secs(60),
+    ));
     let coordination = Arc::new(ChannelManager::new(100));
     let degradation = Arc::new(DegradationManager::new());
     let knowledge = Arc::new(KnowledgeBase::new());
@@ -64,12 +65,14 @@ fn test_end_to_end_warm_path_execution() {
         let mut degraded = 0;
 
         for _ in 0..50 {
-            let result = mapek_worker.execute_hook("warm-execute", || {
-                Ok(executor_worker.execute())
-            }).unwrap();
+            let result = mapek_worker
+                .execute_hook("warm-execute", || Ok(executor_worker.execute()))
+                .unwrap();
 
             match result {
-                knhk_warm::kernel::WarmPathResult::Success { items_processed, .. } => {
+                knhk_warm::kernel::WarmPathResult::Success {
+                    items_processed, ..
+                } => {
                     successful += items_processed;
                 }
                 knhk_warm::kernel::WarmPathResult::Degraded { .. } => {
@@ -155,8 +158,10 @@ fn test_degradation_and_recovery() {
         // Execute with degradation applied
         let result = warm_executor.execute();
 
-        println!("Load: {:.2}, Decision: {:?}, Result: {:?}",
-            load, decision.action, result);
+        println!(
+            "Load: {:.2}, Decision: {:?}, Result: {:?}",
+            load, decision.action, result
+        );
 
         thread::sleep(Duration::from_millis(50));
     }
@@ -224,7 +229,10 @@ fn test_circuit_breaker_protection() {
         thread::sleep(Duration::from_millis(10));
     }
 
-    println!("Circuit breaker - Successes: {}, Failures: {}", successes, failures);
+    println!(
+        "Circuit breaker - Successes: {}, Failures: {}",
+        successes, failures
+    );
     assert!(successes > 0);
     assert!(failures > 0);
 }
@@ -289,8 +297,10 @@ fn test_coordination_with_backpressure() {
     let (sent, dropped) = producer.join().unwrap();
     let received = consumer.join().unwrap();
 
-    println!("Backpressure test - Sent: {}, Dropped: {}, Received: {}",
-        sent, dropped, received);
+    println!(
+        "Backpressure test - Sent: {}, Dropped: {}, Received: {}",
+        sent, dropped, received
+    );
 
     assert!(sent > 0);
     assert!(received > 0);
@@ -307,14 +317,12 @@ fn create_versioned_descriptor(version: u64) -> Descriptor {
     let content = DescriptorContent {
         id: format!("test-v{}", version),
         schema_version: "1.0.0".to_string(),
-        rules: vec![
-            Rule {
-                id: "rule1".to_string(),
-                condition: "true".to_string(),
-                action: "allow".to_string(),
-                priority: 10,
-            },
-        ],
+        rules: vec![Rule {
+            id: "rule1".to_string(),
+            condition: "true".to_string(),
+            action: "allow".to_string(),
+            priority: 10,
+        }],
         patterns: vec![],
         constraints: Constraints {
             max_execution_time_us: 1000,
@@ -330,7 +338,10 @@ fn create_versioned_descriptor(version: u64) -> Descriptor {
     Descriptor {
         version: DescriptorVersion {
             version,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             hash,
             parent_version: if version > 1 { Some(version - 1) } else { None },
             author: "test".to_string(),
@@ -346,7 +357,10 @@ fn create_version(id: u64) -> knhk_warm::kernel::versioning::Version {
     knhk_warm::kernel::versioning::Version {
         id,
         tag: None,
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
         parent: if id > 1 { Some(id - 1) } else { None },
         author: knhk_warm::kernel::versioning::VersionAuthor {
             id: "test".to_string(),

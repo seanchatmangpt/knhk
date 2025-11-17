@@ -24,7 +24,13 @@ pub struct WorkflowTemplate {
 }
 
 impl WorkflowTemplate {
-    pub fn new(name: String, version: String, description: String, author: String, content: String) -> Result<Self> {
+    pub fn new(
+        name: String,
+        version: String,
+        description: String,
+        author: String,
+        content: String,
+    ) -> Result<Self> {
         Ok(Self {
             id: Uuid::new_v4(),
             name,
@@ -120,9 +126,14 @@ impl TemplatePublisher {
     }
 
     pub fn publish(&mut self, template: WorkflowTemplate) -> Result<Uuid> {
-        let versions = self.versions.entry(template.name.clone()).or_insert_with(Vec::new);
+        let versions = self
+            .versions
+            .entry(template.name.clone())
+            .or_insert_with(Vec::new);
         if versions.contains(&template.version) {
-            return Err(MarketplaceError::Marketplace("Version already exists".to_string()));
+            return Err(MarketplaceError::Marketplace(
+                "Version already exists".to_string(),
+            ));
         }
 
         versions.push(template.version.clone());
@@ -131,7 +142,9 @@ impl TemplatePublisher {
     }
 
     pub fn get_versions(&self, name: &str) -> Option<Vec<&str>> {
-        self.versions.get(name).map(|v| v.iter().map(|s| s.as_str()).collect())
+        self.versions
+            .get(name)
+            .map(|v| v.iter().map(|s| s.as_str()).collect())
     }
 
     pub fn registry(&self) -> &TemplateRegistry {

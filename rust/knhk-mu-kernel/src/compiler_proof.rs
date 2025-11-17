@@ -3,16 +3,16 @@
 //! This module provides machine-checkable proofs that compiled Σ*
 //! artifacts satisfy all μ-kernel invariants.
 
-use core::marker::PhantomData;
-use sha3::{Digest, Sha3_256};
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use alloc::vec::Vec;
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::marker::PhantomData;
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use sha3::{Digest, Sha3_256};
 
 use crate::sigma::{SigmaCompiled, SigmaHash};
 use crate::sigma_types::{
-    IsaComplianceProof, InvariantProof, PatternExpansionProof,
-    WithinChatmanConstant, CompiledTask, CompiledPattern, CompiledGuard,
+    CompiledGuard, CompiledPattern, CompiledTask, InvariantProof, IsaComplianceProof,
+    PatternExpansionProof, WithinChatmanConstant,
 };
 use crate::CHATMAN_CONSTANT;
 
@@ -155,7 +155,11 @@ impl TimingBoundProof {
     ) -> Self {
         // Compute maximum ticks
         let task_max = task_ticks.iter().map(|t| t.ticks).max().unwrap_or(0);
-        let pattern_max = pattern_ticks.iter().map(|p| p.total_ticks).max().unwrap_or(0);
+        let pattern_max = pattern_ticks
+            .iter()
+            .map(|p| p.total_ticks)
+            .max()
+            .unwrap_or(0);
         let guard_max = guard_ticks.iter().map(|g| g.ticks).max().unwrap_or(0);
 
         let max_ticks = task_max.max(pattern_max).max(guard_max);
@@ -249,8 +253,11 @@ pub struct TimingBreakdown {
 impl TimingBreakdown {
     /// Total ticks
     pub fn total(&self) -> u64 {
-        (self.load_ticks + self.dispatch_ticks + self.guard_ticks
-            + self.execute_ticks + self.receipt_ticks) as u64
+        (self.load_ticks
+            + self.dispatch_ticks
+            + self.guard_ticks
+            + self.execute_ticks
+            + self.receipt_ticks) as u64
     }
 }
 
@@ -385,11 +392,8 @@ impl ProofBuilder {
         let isa_proof = IsaComplianceProof::new(self.opcodes, self.opcode_count);
 
         // Build timing proof
-        let timing_proof = TimingBoundProof::new(
-            self.task_timings,
-            self.pattern_timings,
-            self.guard_timings,
-        );
+        let timing_proof =
+            TimingBoundProof::new(self.task_timings, self.pattern_timings, self.guard_timings);
 
         // Verify timing proof
         if !timing_proof.verify() {
@@ -505,11 +509,7 @@ mod tests {
             },
         };
 
-        let timing_proof = TimingBoundProof::new(
-            alloc::vec![task_timing],
-            Vec::new(),
-            Vec::new(),
-        );
+        let timing_proof = TimingBoundProof::new(alloc::vec![task_timing], Vec::new(), Vec::new());
 
         assert!(timing_proof.verify());
         assert!(timing_proof.max_ticks <= CHATMAN_CONSTANT);
@@ -529,11 +529,7 @@ mod tests {
             },
         };
 
-        let timing_proof = TimingBoundProof::new(
-            alloc::vec![task_timing],
-            Vec::new(),
-            Vec::new(),
-        );
+        let timing_proof = TimingBoundProof::new(alloc::vec![task_timing], Vec::new(), Vec::new());
 
         assert!(!timing_proof.verify());
     }

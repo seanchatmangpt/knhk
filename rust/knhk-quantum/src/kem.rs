@@ -54,7 +54,7 @@ impl KyberKEM {
     /// Deserialize public key from standard format
     pub fn deserialize_public_key(bytes: &[u8]) -> Result<kyber768::PublicKey> {
         kyber768::PublicKey::from_bytes(bytes)
-            .ok_or_else(|| KEMError::InvalidKeyFormat("Invalid public key bytes".to_string()))
+            .ok_or(KEMError::InvalidKeyFormat("Invalid public key bytes".to_string()))
     }
 
     /// Serialize secret key to standard format
@@ -65,7 +65,7 @@ impl KyberKEM {
     /// Deserialize secret key from standard format
     pub fn deserialize_secret_key(bytes: &[u8]) -> Result<kyber768::SecretKey> {
         kyber768::SecretKey::from_bytes(bytes)
-            .ok_or_else(|| KEMError::InvalidKeyFormat("Invalid secret key bytes".to_string()))
+            .ok_or(KEMError::InvalidKeyFormat("Invalid secret key bytes".to_string()))
     }
 }
 

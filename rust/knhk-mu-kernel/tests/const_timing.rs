@@ -2,11 +2,11 @@
 //!
 //! This test suite validates compile-time timing analysis and guarantees.
 
-use knhk_mu_kernel::timing_const::*;
-use knhk_mu_kernel::timing_const::wcet::*;
+use knhk_mu_kernel::patterns::PatternId;
 use knhk_mu_kernel::timing_const::budgets::*;
 use knhk_mu_kernel::timing_const::proofs::*;
-use knhk_mu_kernel::patterns::PatternId;
+use knhk_mu_kernel::timing_const::wcet::*;
+use knhk_mu_kernel::timing_const::*;
 use knhk_mu_kernel::CHATMAN_CONSTANT;
 
 /// Test const tick cost trait implementations
@@ -179,7 +179,7 @@ fn test_wcet_parallel_composition() {
     const RESULT: WcetResult = WcetAnalyzer::analyze_parallel(BRANCHES);
 
     assert_eq!(RESULT.worst_case_ticks, 5); // Maximum branch
-    assert_eq!(RESULT.best_case_ticks, 2);  // Minimum branch
+    assert_eq!(RESULT.best_case_ticks, 2); // Minimum branch
     assert!(RESULT.is_hot_path);
 }
 
@@ -187,13 +187,13 @@ fn test_wcet_parallel_composition() {
 #[test]
 fn test_wcet_conditional_analysis() {
     const RESULT: WcetResult = WcetAnalyzer::analyze_conditional(
-        1,  // condition evaluation
-        4,  // true branch
-        3,  // false branch
+        1, // condition evaluation
+        4, // true branch
+        3, // false branch
     );
 
     assert_eq!(RESULT.worst_case_ticks, 5); // 1 + max(4, 3)
-    assert_eq!(RESULT.best_case_ticks, 4);  // 1 + min(4, 3)
+    assert_eq!(RESULT.best_case_ticks, 4); // 1 + min(4, 3)
     assert!(RESULT.is_hot_path);
 }
 
@@ -290,10 +290,7 @@ fn test_budget_validation() {
 /// Test timing proofs
 #[test]
 fn test_timing_proofs() {
-    let proof = TimingProof::<5>::new(
-        ProofStrength::Strong,
-        [1, 2, 3, 4],
-    );
+    let proof = TimingProof::<5>::new(ProofStrength::Strong, [1, 2, 3, 4]);
 
     assert_eq!(TimingProof::<5>::worst_case(), 5);
     assert_eq!(TimingProof::<5>::safety_margin(), 3);
@@ -328,13 +325,7 @@ fn test_proof_strength() {
 #[test]
 fn test_timing_certificates() {
     let wcet = WcetResult::new(6, 5, 5);
-    let cert = TimingCertificate::new(
-        1,
-        wcet,
-        ProofStrength::Strong,
-        [1, 2, 3, 4],
-        1000,
-    );
+    let cert = TimingCertificate::new(1, wcet, ProofStrength::Strong, [1, 2, 3, 4], 1000);
 
     assert!(cert.verify());
     assert!(cert.is_valid(1500, 1000)); // 500 units old, max age 1000
@@ -406,10 +397,7 @@ fn test_full_task_analysis() {
     const GUARD_COUNT: u64 = 2;
 
     // Compute WCET
-    const TASK_WCET: WcetResult = WcetAnalyzer::analyze_task(
-        PatternId::Sequence,
-        GUARD_COUNT,
-    );
+    const TASK_WCET: WcetResult = WcetAnalyzer::analyze_task(PatternId::Sequence, GUARD_COUNT);
 
     // Verify within Chatman
     assert_eq!(TASK_WCET.worst_case_ticks, 6);
@@ -425,13 +413,7 @@ fn test_full_task_analysis() {
     assert_eq!(TimingProof::<6>::safety_margin(), 2);
 
     // Create certificate
-    let cert = TimingCertificate::new(
-        1,
-        TASK_WCET,
-        ProofStrength::Strong,
-        [1, 2, 3, 4],
-        1000,
-    );
+    let cert = TimingCertificate::new(1, TASK_WCET, ProofStrength::Strong, [1, 2, 3, 4], 1000);
 
     assert!(cert.verify());
 }
@@ -458,10 +440,7 @@ fn test_complex_workflow_analysis() {
     assert!(TOTAL_WCET <= CHATMAN_CONSTANT);
 
     // Create proof
-    let proof = TimingProof::<7>::new(
-        ProofStrength::Strong,
-        [TOTAL_WCET, 0, 0, 0],
-    );
+    let proof = TimingProof::<7>::new(ProofStrength::Strong, [TOTAL_WCET, 0, 0, 0]);
 
     assert!(proof.verify());
 }
@@ -475,10 +454,7 @@ fn test_maximum_complexity_within_chatman() {
 
     assert_eq!(TOTAL, CHATMAN_CONSTANT);
 
-    let proof = TimingProof::<8>::new(
-        ProofStrength::Strong,
-        [TOTAL, 0, 0, 0],
-    );
+    let proof = TimingProof::<8>::new(ProofStrength::Strong, [TOTAL, 0, 0, 0]);
 
     assert!(proof.verify());
     assert_eq!(TimingProof::<8>::safety_margin(), 0); // No margin!

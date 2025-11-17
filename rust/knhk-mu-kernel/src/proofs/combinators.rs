@@ -3,12 +3,12 @@
 //! This module provides combinator-based APIs for composing, transforming,
 //! and manipulating proofs in a functional style.
 
-use core::marker::PhantomData;
-use alloc::vec::Vec;
+use super::phantom::{Predicate, Proven, Witness};
 use alloc::boxed::Box;
-use alloc::string::String;
 use alloc::collections::BTreeMap;
-use super::phantom::{Proven, Predicate, Witness};
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// Result type for proof operations
 pub type ProofResult<T, P> = Result<Proven<T, P>, ProofError>;
@@ -111,19 +111,11 @@ where
 {
     let (t, u) = proven.into_inner();
     // Safety: The pair proof implies both component proofs
-    unsafe {
-        (
-            Proven::new_unchecked(t),
-            Proven::new_unchecked(u),
-        )
-    }
+    unsafe { (Proven::new_unchecked(t), Proven::new_unchecked(u)) }
 }
 
 /// Join two proven values into a proven pair
-pub fn join<T, U, P, Q>(
-    proven_t: Proven<T, P>,
-    proven_u: Proven<U, Q>,
-) -> Proven<(T, U), (P, Q)>
+pub fn join<T, U, P, Q>(proven_t: Proven<T, P>, proven_u: Proven<U, Q>) -> Proven<(T, U), (P, Q)>
 where
     P: Predicate<T>,
     Q: Predicate<U>,
@@ -156,9 +148,7 @@ impl<T, P: Predicate<T>> ProofBuilder<T, P> {
     /// Build the proof
     pub fn build(self) -> ProofResult<T, P> {
         match self.value {
-            Some(value) => {
-                Proven::new(value).ok_or(ProofError::PredicateFailed)
-            }
+            Some(value) => Proven::new(value).ok_or(ProofError::PredicateFailed),
             None => Err(ProofError::Custom("No value provided".to_string())),
         }
     }
@@ -197,9 +187,7 @@ impl<T, P: Predicate<T>> ProofChain<T, P> {
 
     /// Start with an existing proven value
     pub fn from_proven(proven: Proven<T, P>) -> Self {
-        Self {
-            result: Ok(proven),
-        }
+        Self { result: Ok(proven) }
     }
 
     /// Map the value if the proof holds
@@ -209,9 +197,9 @@ impl<T, P: Predicate<T>> ProofChain<T, P> {
         P: Predicate<U>,
     {
         ProofChain {
-            result: self.result.and_then(|proven| {
-                proven.try_map(f).map_err(|_| ProofError::CompositionFailed)
-            }),
+            result: self
+                .result
+                .and_then(|proven| proven.try_map(f).map_err(|_| ProofError::CompositionFailed)),
         }
     }
 
@@ -222,9 +210,7 @@ impl<T, P: Predicate<T>> ProofChain<T, P> {
         F: FnOnce(T) -> ProofResult<U, Q>,
     {
         ProofChain {
-            result: self.result.and_then(|proven| {
-                f(proven.into_inner())
-            }),
+            result: self.result.and_then(|proven| f(proven.into_inner())),
         }
     }
 
@@ -377,8 +363,7 @@ impl<T: Clone, P: Predicate<T>> ProofMemo<T, P> {
             return Ok(proven.clone());
         }
 
-        let proven = Proven::new(value.clone())
-            .ok_or(ProofError::PredicateFailed)?;
+        let proven = Proven::new(value.clone()).ok_or(ProofError::PredicateFailed)?;
 
         self.cache.insert(key, proven.clone());
         Ok(proven)
@@ -398,8 +383,8 @@ impl<T: Clone, P: Predicate<T>> Default for ProofMemo<T, P> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::phantom::{ChatmanCompliant, NonZeroPred, WithinChatmanPred};
     use super::*;
-    use super::super::phantom::{NonZeroPred, ChatmanCompliant, WithinChatmanPred};
 
     #[test]
     fn test_proof_builder() {
@@ -442,8 +427,7 @@ mod tests {
 
     #[test]
     fn test_proof_validator() {
-        let validator = ProofValidator::<u64, WithinChatmanPred>::new()
-            .check(|x| *x % 2 == 0); // Must be even
+        let validator = ProofValidator::<u64, WithinChatmanPred>::new().check(|x| *x % 2 == 0); // Must be even
 
         assert!(validator.validate(4).is_ok());
         assert!(validator.validate(5).is_err()); // Odd

@@ -320,12 +320,7 @@ mod tests {
         let obs = U64Observation(42);
         let invariants = heapless::Vec::new();
 
-        let decision: Decision<_, 8> = Decision::new(
-            obs,
-            sigma,
-            invariants,
-            RiskClass::Low,
-        );
+        let decision: Decision<_, 8> = Decision::new(obs, sigma, invariants, RiskClass::Low);
 
         assert!(Decision::<U64Observation, 8>::within_chatman_constant());
         assert_eq!(Decision::<U64Observation, 8>::tick_cost(), 8);

@@ -13,8 +13,8 @@
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-use std::mem;
 use sha3::{Digest, Sha3_256};
+use std::mem;
 
 // ============================================================================
 // SIMD-Aligned Buffer
@@ -502,8 +502,9 @@ mod tests {
     #[test]
     fn test_simd_merkle_tree() {
         // Create tree with 8 leaves
-        let leaves = [[1u8; 32], [2u8; 32], [3u8; 32], [4u8; 32],
-                      [5u8; 32], [6u8; 32], [7u8; 32], [8u8; 32]];
+        let leaves = [
+            [1u8; 32], [2u8; 32], [3u8; 32], [4u8; 32], [5u8; 32], [6u8; 32], [7u8; 32], [8u8; 32],
+        ];
 
         let tree = SimdMerkleTree::new(leaves);
 

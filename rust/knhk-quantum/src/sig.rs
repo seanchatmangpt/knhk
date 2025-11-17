@@ -69,14 +69,13 @@ impl DilithiumSig {
     }
 
     /// Serialize signature to standard format
-    pub fn serialize_signature(sig: &dilithium3::Signature) -> Result<Vec<u8>> {
-        Ok(sig.as_bytes().to_vec())
+    pub fn serialize_signature(sig: &[u8]) -> Result<Vec<u8>> {
+        Ok(sig.to_vec())
     }
 
     /// Deserialize signature from standard format
-    pub fn deserialize_signature(bytes: &[u8]) -> Result<dilithium3::Signature> {
-        dilithium3::Signature::from_bytes(bytes)
-            .ok_or_else(|| SigError::InvalidSignature)
+    pub fn deserialize_signature(bytes: &[u8]) -> Result<Vec<u8>> {
+        Ok(bytes.to_vec())
     }
 }
 

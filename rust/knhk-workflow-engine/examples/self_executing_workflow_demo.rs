@@ -7,8 +7,8 @@
 //! - Run MAPE-K autonomic feedback loops
 //! - Learn and adapt based on observations
 
-use knhk_workflow_engine::ontology_executor::OntologyExecutor;
 use knhk_workflow_engine::error::WorkflowResult;
+use knhk_workflow_engine::ontology_executor::OntologyExecutor;
 use serde_json::json;
 
 #[tokio::main]
@@ -39,10 +39,13 @@ async fn main() -> WorkflowResult<()> {
         "items": ["Widget A", "Widget B"]
     });
 
-    match executor.execute_from_ontology(
-        "ontology/workflows/examples/simple-sequence.ttl",
-        input_data.clone(),
-    ).await {
+    match executor
+        .execute_from_ontology(
+            "ontology/workflows/examples/simple-sequence.ttl",
+            input_data.clone(),
+        )
+        .await
+    {
         Ok(result) => {
             println!("✓ Workflow executed successfully!");
             println!("  - Workflow ID: {}", result.workflow_id);
@@ -50,7 +53,10 @@ async fn main() -> WorkflowResult<()> {
             println!("  - Ticks used: {} (≤8 ✓)", result.ticks_used);
             println!("  - Receipt ID: {}", result.receipt_id);
             println!("  - Sigma version: {}", result.sigma_id);
-            println!("  - Output: {}\n", serde_json::to_string_pretty(&result.output_data)?);
+            println!(
+                "  - Output: {}\n",
+                serde_json::to_string_pretty(&result.output_data)?
+            );
         }
         Err(e) => {
             eprintln!("✗ Execution failed: {:?}\n", e);
@@ -71,13 +77,19 @@ async fn main() -> WorkflowResult<()> {
         ]
     });
 
-    match executor.execute_from_ontology(
-        "ontology/workflows/examples/parallel-processing.ttl",
-        batch_data.clone(),
-    ).await {
+    match executor
+        .execute_from_ontology(
+            "ontology/workflows/examples/parallel-processing.ttl",
+            batch_data.clone(),
+        )
+        .await
+    {
         Ok(result) => {
             println!("✓ Parallel workflow executed!");
-            println!("  - Pattern selected: {:?} (adaptive selection)", result.pattern_used);
+            println!(
+                "  - Pattern selected: {:?} (adaptive selection)",
+                result.pattern_used
+            );
             println!("  - Ticks used: {} (≤8 ✓)", result.ticks_used);
             println!("  - Receipt ID: {}\n", result.receipt_id);
         }

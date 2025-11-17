@@ -101,49 +101,37 @@
 //!
 //! The type system provides all the safety with zero runtime overhead.
 
-pub mod session_types;
-pub mod state_machine;
 pub mod mape_protocol;
 pub mod overlay_protocol;
+pub mod session_types;
+pub mod state_machine;
 
 // Re-exports for convenience
 
 /// Session type exports
 pub use session_types::{
-    Session, SessionProtocol, Linear,
-    Uninitialized, Initialized, Active, Completed, Failed,
-    Choice, Sequence, Recursive,
-    ProtocolValidation, Capability,
-    Read, Write, Execute,
-    ReadOnly, ReadWrite,
-    Composed, Dual,
-    Send, Recv, Channel,
-    Indexed, Z, S,
+    Active, Capability, Channel, Choice, Completed, Composed, Dual, Execute, Failed, Indexed,
+    Initialized, Linear, ProtocolValidation, Read, ReadOnly, ReadWrite, Recursive, Recv, Send,
+    Sequence, Session, SessionProtocol, Uninitialized, Write, S, Z,
 };
 
 /// State machine exports
 pub use state_machine::{
-    StateMachine, StatefulMachine, Builder,
-    Initial, Running, Paused, Stopped, Error,
-    ConditionalTransition, Parallel,
-    Guarded, TimedMachine,
+    Builder, ConditionalTransition, Error, Guarded, Initial, Parallel, Paused, Running,
+    StateMachine, StatefulMachine, Stopped, TimedMachine,
 };
 
 /// MAPE-K protocol exports
 pub use mape_protocol::{
-    MapeKCycle, MapeKCycleWithData, MapeKData,
-    MonitorPhase, AnalyzePhase, PlanPhase, ExecutePhase, KnowledgePhase,
-    MapeKBranch, TimedMapeK, CycleCounter,
+    AnalyzePhase, CycleCounter, ExecutePhase, KnowledgePhase, MapeKBranch, MapeKCycle,
+    MapeKCycleWithData, MapeKData, MonitorPhase, PlanPhase, TimedMapeK,
 };
 
 /// Overlay protocol exports
 pub use overlay_protocol::{
-    OverlayPipeline, OverlayPipelineWithData,
-    ShadowPhase, TestPhase, ValidatePhase, PromotePhase,
-    PromotedPhase, RolledBackPhase,
-    TestResults, PerfMetrics,
-    RollbackProtocol, RollbackReason,
-    CanaryDeployment, CanaryInitial, CanaryRollingOut, CanaryComplete,
+    CanaryComplete, CanaryDeployment, CanaryInitial, CanaryRollingOut, OverlayPipeline,
+    OverlayPipelineWithData, PerfMetrics, PromotePhase, PromotedPhase, RollbackProtocol,
+    RollbackReason, RolledBackPhase, ShadowPhase, TestPhase, TestResults, ValidatePhase,
 };
 
 #[cfg(test)]
@@ -171,7 +159,6 @@ mod tests {
     #[test]
     fn test_protocol_composition() {
         // Can compose different protocols
-        let _composed: Composed<Session<Uninitialized>, StateMachine<Initial>> =
-            Composed::new();
+        let _composed: Composed<Session<Uninitialized>, StateMachine<Initial>> = Composed::new();
     }
 }

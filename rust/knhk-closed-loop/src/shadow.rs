@@ -1,12 +1,12 @@
 // Shadow environment: Immutable copy-on-write ontology for safe experimentation
 
+use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use arc_swap::ArcSwap;
-use std::sync::Arc;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use rayon::prelude::*;
+use std::sync::Arc;
 use std::time::Instant;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -102,7 +102,7 @@ impl Default for OntologyData {
 pub struct ShadowEnvironment {
     pub id: String,
     pub parent_snapshot_id: String,
-    ontology: Arc<OntologyData>,          // Immutable, shared
+    ontology: Arc<OntologyData>, // Immutable, shared
     proposed_changes: DeltaSigma,
     test_results: DashMap<String, TestResult>,
     validation_state: ArcSwap<ValidationState>,
@@ -113,9 +113,9 @@ pub struct ShadowEnvironment {
 
 #[derive(Clone, Debug)]
 pub enum IsolationLevel {
-    Read,           // No writes, only observation collection
-    Write,          // Can apply ΔΣ changes
-    WriteWithRollback,  // Can write and rollback to parent
+    Read,              // No writes, only observation collection
+    Write,             // Can apply ΔΣ changes
+    WriteWithRollback, // Can write and rollback to parent
 }
 
 #[derive(Clone, Debug)]
@@ -150,9 +150,9 @@ pub enum TestAssertion {
 
 #[derive(Clone, Debug)]
 pub enum TestCriticality {
-    Blocker,    // Must pass to approve ΔΣ
-    Warning,    // Should pass, non-blocking
-    Info,       // Informational only
+    Blocker, // Must pass to approve ΔΣ
+    Warning, // Should pass, non-blocking
+    Info,    // Informational only
 }
 
 #[derive(Clone, Debug)]
@@ -195,17 +195,20 @@ impl ShadowEnvironment {
         // Build new ontology by applying ΔΣ to immutable copy
         let new_ontology = self.apply_delta(&self.ontology)?;
 
-        self.validation_state.store(Arc::new(ValidationState::ChangesApplied));
+        self.validation_state
+            .store(Arc::new(ValidationState::ChangesApplied));
         Ok(Arc::new(new_ontology))
     }
 
     /// Run test suite against shadow (parallel execution)
     pub async fn run_tests(&self, tests: Vec<ShadowTest>) -> Result<Vec<TestResult>> {
-        self.validation_state.store(Arc::new(ValidationState::TestsRunning { progress: 0.0 }));
+        self.validation_state
+            .store(Arc::new(ValidationState::TestsRunning { progress: 0.0 }));
 
         // Store criticality map for later lookup
         for test in &tests {
-            self.test_criticality_map.insert(test.id.clone(), test.criticality.clone());
+            self.test_criticality_map
+                .insert(test.id.clone(), test.criticality.clone());
         }
 
         // Run tests in parallel with Rayon
@@ -218,7 +221,8 @@ impl ShadowEnvironment {
 
                 // Update progress (atomic)
                 let progress = (idx + 1) as f32 / total_tests;
-                self.validation_state.store(Arc::new(ValidationState::TestsRunning { progress }));
+                self.validation_state
+                    .store(Arc::new(ValidationState::TestsRunning { progress }));
 
                 result
             })
@@ -240,18 +244,19 @@ impl ShadowEnvironment {
                 .map(|r| r.test_id.clone())
                 .collect();
 
-            self.validation_state.store(Arc::new(
-                ValidationState::TestsFailed {
-                    reason: format!("Blocker tests failed: {:?}", failed_tests)
-                }
-            ));
+            self.validation_state
+                .store(Arc::new(ValidationState::TestsFailed {
+                    reason: format!("Blocker tests failed: {:?}", failed_tests),
+                }));
         } else {
-            self.validation_state.store(Arc::new(ValidationState::TestsPassed));
+            self.validation_state
+                .store(Arc::new(ValidationState::TestsPassed));
         }
 
         // Store results
         for result in &results {
-            self.test_results.insert(result.test_id.clone(), result.clone());
+            self.test_results
+                .insert(result.test_id.clone(), result.clone());
         }
 
         Ok(results)
@@ -264,9 +269,10 @@ impl ShadowEnvironment {
 
     /// Rollback shadow to parent snapshot (fast: just drop this)
     pub async fn rollback(&self) -> Result<()> {
-        self.validation_state.store(Arc::new(ValidationState::Rejected {
-            reason: "Manual rollback".to_string()
-        }));
+        self.validation_state
+            .store(Arc::new(ValidationState::Rejected {
+                reason: "Manual rollback".to_string(),
+            }));
         Ok(())
     }
 
@@ -339,7 +345,10 @@ impl ShadowEnvironment {
         let passed = assertions_failed == 0 && duration_ms <= test.timeout_ms;
 
         if duration_ms > test.timeout_ms && error.is_none() {
-            error = Some(format!("Test timeout: {}ms > {}ms", duration_ms, test.timeout_ms));
+            error = Some(format!(
+                "Test timeout: {}ms > {}ms",
+                duration_ms, test.timeout_ms
+            ));
         }
 
         TestResult {
@@ -377,13 +386,12 @@ impl ShadowEnvironment {
 
                 // Basic SHACL-style checks
                 // Check for common SHACL constraint keywords
-                let has_valid_syntax =
-                    expression.contains("minCount") ||
-                    expression.contains("maxCount") ||
-                    expression.contains("datatype") ||
-                    expression.contains("pattern") ||
-                    expression.contains("class") ||
-                    !expression.trim().is_empty();
+                let has_valid_syntax = expression.contains("minCount")
+                    || expression.contains("maxCount")
+                    || expression.contains("datatype")
+                    || expression.contains("pattern")
+                    || expression.contains("class")
+                    || !expression.trim().is_empty();
 
                 Ok(has_valid_syntax)
             }
@@ -402,9 +410,13 @@ impl ShadowEnvironment {
                 let no_guard_dupes = guard_ids.len() == ontology.guards.len();
 
                 // Check no ID collisions across collections
-                let all_ids: std::collections::HashSet<_> =
-                    class_ids.iter().chain(prop_ids.iter()).chain(guard_ids.iter()).collect();
-                let total_entities = ontology.classes.len() + ontology.properties.len() + ontology.guards.len();
+                let all_ids: std::collections::HashSet<_> = class_ids
+                    .iter()
+                    .chain(prop_ids.iter())
+                    .chain(guard_ids.iter())
+                    .collect();
+                let total_entities =
+                    ontology.classes.len() + ontology.properties.len() + ontology.guards.len();
                 let no_cross_collisions = all_ids.len() == total_entities;
 
                 Ok(no_class_dupes && no_prop_dupes && no_guard_dupes && no_cross_collisions)
@@ -427,11 +439,12 @@ impl ShadowEnvironment {
                 }
 
                 // Basic SHACL constraint check
-                if !guard.expression.contains("minCount") &&
-                   !guard.expression.contains("maxCount") &&
-                   !guard.expression.contains("datatype") &&
-                   !guard.expression.contains("class") &&
-                   !guard.expression.contains("pattern") {
+                if !guard.expression.contains("minCount")
+                    && !guard.expression.contains("maxCount")
+                    && !guard.expression.contains("datatype")
+                    && !guard.expression.contains("class")
+                    && !guard.expression.contains("pattern")
+                {
                     // Allow custom expressions but warn
                     tracing::warn!("Guard {} has non-standard expression", guard.id);
                 }
@@ -458,7 +471,10 @@ impl ShadowEnvironment {
         }
 
         // Check for ID collisions across different entity types
-        let all_ids: Vec<&String> = test_ontology.classes.iter().map(|c| &c.id)
+        let all_ids: Vec<&String> = test_ontology
+            .classes
+            .iter()
+            .map(|c| &c.id)
             .chain(test_ontology.properties.iter().map(|p| &p.id))
             .chain(test_ontology.guards.iter().map(|g| &g.id))
             .collect();
@@ -479,7 +495,9 @@ impl ShadowEnvironment {
         }
 
         // Add classes
-        new_ontology.classes.extend(self.proposed_changes.add_classes.clone());
+        new_ontology
+            .classes
+            .extend(self.proposed_changes.add_classes.clone());
 
         // Remove properties
         for prop_id in &self.proposed_changes.remove_properties {
@@ -487,7 +505,9 @@ impl ShadowEnvironment {
         }
 
         // Add properties
-        new_ontology.properties.extend(self.proposed_changes.add_properties.clone());
+        new_ontology
+            .properties
+            .extend(self.proposed_changes.add_properties.clone());
 
         // Remove guards
         for guard_id in &self.proposed_changes.remove_guards {
@@ -495,7 +515,9 @@ impl ShadowEnvironment {
         }
 
         // Add guards
-        new_ontology.guards.extend(self.proposed_changes.add_guards.clone());
+        new_ontology
+            .guards
+            .extend(self.proposed_changes.add_guards.clone());
 
         // Update metadata
         for (key, value) in &self.proposed_changes.metadata_updates {
@@ -550,7 +572,8 @@ impl ShadowManager {
             IsolationLevel::WriteWithRollback,
         );
 
-        self.active_shadows.insert(shadow.id.clone(), shadow.clone());
+        self.active_shadows
+            .insert(shadow.id.clone(), shadow.clone());
         Ok(shadow)
     }
 
@@ -563,7 +586,9 @@ impl ShadowManager {
     pub async fn finalize_shadow(&self, shadow_id: &str, approved: bool) -> Result<()> {
         if let Some((_, shadow)) = self.active_shadows.remove(shadow_id) {
             if approved {
-                shadow.validation_state.store(Arc::new(ValidationState::Approved));
+                shadow
+                    .validation_state
+                    .store(Arc::new(ValidationState::Approved));
             }
             let mut completed = self.completed_shadows.write();
             completed.push(shadow);
@@ -596,9 +621,7 @@ impl ShadowManager {
         let now = chrono::Utc::now().timestamp_millis() as u64;
         let mut completed = self.completed_shadows.write();
 
-        completed.retain(|shadow| {
-            now - shadow.start_time < max_age_ms
-        });
+        completed.retain(|shadow| now - shadow.start_time < max_age_ms);
     }
 
     /// Clear all completed shadows
@@ -662,7 +685,11 @@ mod tests {
         let duration = start.elapsed();
 
         // Shadow creation should be nearly free (just Arc clone + id generation)
-        assert!(duration.as_micros() < 1000, "Shadow creation took too long: {:?}", duration);
+        assert!(
+            duration.as_micros() < 1000,
+            "Shadow creation took too long: {:?}",
+            duration
+        );
         assert!(shadow.id.starts_with("shadow-snapshot-1"));
     }
 
@@ -711,7 +738,9 @@ mod tests {
                     remove_guards: vec![],
                     metadata_updates: HashMap::new(),
                 };
-                manager.create_shadow("snapshot-1".to_string(), ontology.clone(), delta).unwrap()
+                manager
+                    .create_shadow("snapshot-1".to_string(), ontology.clone(), delta)
+                    .unwrap()
             })
             .collect();
 
@@ -743,7 +772,9 @@ mod tests {
         let tests = vec![ShadowTest {
             id: "test1".to_string(),
             name: "Test class exists".to_string(),
-            assertions: vec![TestAssertion::ClassExists { class_id: "class2".to_string() }],
+            assertions: vec![TestAssertion::ClassExists {
+                class_id: "class2".to_string(),
+            }],
             timeout_ms: 1000,
             criticality: TestCriticality::Blocker,
         }];
@@ -773,14 +804,18 @@ mod tests {
             ShadowTest {
                 id: "test1".to_string(),
                 name: "New class exists".to_string(),
-                assertions: vec![TestAssertion::ClassExists { class_id: "class2".to_string() }],
+                assertions: vec![TestAssertion::ClassExists {
+                    class_id: "class2".to_string(),
+                }],
                 timeout_ms: 1000,
                 criticality: TestCriticality::Blocker,
             },
             ShadowTest {
                 id: "test2".to_string(),
                 name: "Original class still exists".to_string(),
-                assertions: vec![TestAssertion::ClassExists { class_id: "class1".to_string() }],
+                assertions: vec![TestAssertion::ClassExists {
+                    class_id: "class1".to_string(),
+                }],
                 timeout_ms: 1000,
                 criticality: TestCriticality::Blocker,
             },
@@ -798,11 +833,13 @@ mod tests {
         let ontology = create_test_ontology();
 
         // Create shadows
-        let shadow1 = manager.create_shadow(
-            "snapshot-1".to_string(),
-            ontology.clone(),
-            create_test_delta(),
-        ).unwrap();
+        let shadow1 = manager
+            .create_shadow(
+                "snapshot-1".to_string(),
+                ontology.clone(),
+                create_test_delta(),
+            )
+            .unwrap();
 
         assert_eq!(manager.active_count(), 1);
 
@@ -822,13 +859,20 @@ mod tests {
         let ontology = create_test_ontology();
 
         // Create 2 shadows (at limit)
-        manager.create_shadow("s1".to_string(), ontology.clone(), create_test_delta()).unwrap();
-        manager.create_shadow("s2".to_string(), ontology.clone(), create_test_delta()).unwrap();
+        manager
+            .create_shadow("s1".to_string(), ontology.clone(), create_test_delta())
+            .unwrap();
+        manager
+            .create_shadow("s2".to_string(), ontology.clone(), create_test_delta())
+            .unwrap();
 
         // Third should fail
         let result = manager.create_shadow("s3".to_string(), ontology.clone(), create_test_delta());
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Max concurrent shadows"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Max concurrent shadows"));
     }
 
     #[tokio::test]
@@ -865,7 +909,9 @@ mod tests {
         let tests = vec![ShadowTest {
             id: "test1".to_string(),
             name: "Test".to_string(),
-            assertions: vec![TestAssertion::ClassExists { class_id: "class2".to_string() }],
+            assertions: vec![TestAssertion::ClassExists {
+                class_id: "class2".to_string(),
+            }],
             timeout_ms: 1000,
             criticality: TestCriticality::Blocker,
         }];
@@ -882,11 +928,9 @@ mod tests {
         let manager = ShadowManager::new(10);
         let ontology = create_test_ontology();
 
-        let shadow = manager.create_shadow(
-            "snapshot-1".to_string(),
-            ontology,
-            create_test_delta(),
-        ).unwrap();
+        let shadow = manager
+            .create_shadow("snapshot-1".to_string(), ontology, create_test_delta())
+            .unwrap();
 
         // Finalize shadow
         manager.finalize_shadow(&shadow.id, true).await.unwrap();
@@ -920,7 +964,10 @@ mod tests {
 
         // Apply changes and validate
         let result = shadow.apply_changes().await;
-        assert!(result.is_ok(), "SHACL guard with valid expression should pass");
+        assert!(
+            result.is_ok(),
+            "SHACL guard with valid expression should pass"
+        );
     }
 
     #[tokio::test]
@@ -931,7 +978,7 @@ mod tests {
         ontology.guards.push(GuardDef {
             id: "bad-guard-1".to_string(),
             name: "Invalid Guard".to_string(),
-            expression: "".to_string(),  // Empty expression
+            expression: "".to_string(), // Empty expression
             severity: GuardSeverity::Error,
         });
 

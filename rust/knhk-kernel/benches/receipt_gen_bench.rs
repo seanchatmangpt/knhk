@@ -1,7 +1,7 @@
 // knhk-kernel: Receipt generation performance benchmarks
 // Measures cryptographic hashing and verification
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use knhk_kernel::{
     receipt::{Receipt, ReceiptBuilder, ReceiptStatus, ReceiptStore},
     timer::read_tsc,

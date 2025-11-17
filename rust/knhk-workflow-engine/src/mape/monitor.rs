@@ -1,11 +1,11 @@
 //! Monitor Phase - Collects observations from receipts and telemetry
 
-use super::{Observation, KnowledgeBase};
-use crate::receipts::{Receipt, ReceiptStore};
+use super::{KnowledgeBase, Observation};
 use crate::error::WorkflowResult;
-use std::sync::Arc;
+use crate::receipts::{Receipt, ReceiptStore};
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Monitor phase collects observations from the observation plane (O)
 pub struct MonitorPhase {
@@ -14,10 +14,7 @@ pub struct MonitorPhase {
 }
 
 impl MonitorPhase {
-    pub fn new(
-        receipt_store: Arc<ReceiptStore>,
-        knowledge: Arc<RwLock<KnowledgeBase>>,
-    ) -> Self {
+    pub fn new(receipt_store: Arc<ReceiptStore>, knowledge: Arc<RwLock<KnowledgeBase>>) -> Self {
         Self {
             receipt_store,
             knowledge,
@@ -50,7 +47,9 @@ impl MonitorPhase {
         }
 
         // Update knowledge base with latest observations
-        self.knowledge.write().update_observation_stats(&observations);
+        self.knowledge
+            .write()
+            .update_observation_stats(&observations);
 
         Ok(observations)
     }
@@ -61,7 +60,8 @@ impl MonitorPhase {
 
         // Calculate guard failure rate
         if !receipt.guards_checked.is_empty() {
-            let failure_rate = receipt.guards_failed.len() as f64 / receipt.guards_checked.len() as f64;
+            let failure_rate =
+                receipt.guards_failed.len() as f64 / receipt.guards_checked.len() as f64;
             metrics.insert("guard_failure_rate".to_string(), failure_rate);
         }
 

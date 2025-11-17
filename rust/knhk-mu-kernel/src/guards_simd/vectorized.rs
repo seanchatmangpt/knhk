@@ -3,17 +3,14 @@
 //! This module implements optimized SIMD comparison operations for guard evaluation.
 //! All operations are branchless and designed for maximum throughput.
 
-#![cfg_attr(
-    all(feature = "simd", target_feature = "avx2"),
-    feature(portable_simd)
-)]
+#![cfg_attr(all(feature = "simd", target_feature = "avx2"), feature(portable_simd))]
 
 // GuardResult not used in this module
 
 #[cfg(all(feature = "simd", target_feature = "avx2"))]
-use core::simd::{u64x8, u32x16, mask64x8, Simd, SimdPartialOrd, SimdInt};
+use core::simd::{mask64x8, u32x16, u64x8, Simd, SimdInt, SimdPartialOrd};
 
-use super::{SimdGuardBatch, GuardBitmap, SIMD_BATCH_SIZE};
+use super::{GuardBitmap, SimdGuardBatch, SIMD_BATCH_SIZE};
 
 /// SIMD range check: min <= value <= max (AVX2 accelerated)
 ///
@@ -133,11 +130,7 @@ pub fn simd_bitmask_check(values: &[u64; 8], masks: &[u64; 8], expected: &[u64; 
 /// - Scalar: 8 cycles (8 branches or cmov)
 #[inline]
 #[cfg(all(feature = "simd", target_feature = "avx2"))]
-pub fn simd_select(
-    mask: GuardBitmap,
-    true_vals: &[u64; 8],
-    false_vals: &[u64; 8],
-) -> [u64; 8] {
+pub fn simd_select(mask: GuardBitmap, true_vals: &[u64; 8], false_vals: &[u64; 8]) -> [u64; 8] {
     let tv = Simd::<u64, 8>::from_array(*true_vals);
     let fv = Simd::<u64, 8>::from_array(*false_vals);
 
@@ -288,11 +281,7 @@ pub fn simd_bitmask_check(values: &[u64; 8], masks: &[u64; 8], expected: &[u64; 
 /// Scalar fallback for select
 #[inline]
 #[cfg(not(all(feature = "simd", target_feature = "avx2")))]
-pub fn simd_select(
-    mask: GuardBitmap,
-    true_vals: &[u64; 8],
-    false_vals: &[u64; 8],
-) -> [u64; 8] {
+pub fn simd_select(mask: GuardBitmap, true_vals: &[u64; 8], false_vals: &[u64; 8]) -> [u64; 8] {
     let mut result = [0u64; 8];
     for i in 0..8 {
         result[i] = if (mask & (1 << i)) != 0 {
@@ -362,9 +351,15 @@ mod tests {
 
     #[test]
     fn test_simd_bitmask_check() {
-        let values = [0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111];
-        let masks = [0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111];
-        let expected = [0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111];
+        let values = [
+            0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111,
+        ];
+        let masks = [
+            0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111, 0b1111,
+        ];
+        let expected = [
+            0b1111, 0b1010, 0b0101, 0b1100, 0b0011, 0b1001, 0b0110, 0b1111,
+        ];
 
         let bitmap = simd_bitmask_check(&values, &masks, &expected);
         assert_eq!(bitmap, 0xFF, "All masked values should match");

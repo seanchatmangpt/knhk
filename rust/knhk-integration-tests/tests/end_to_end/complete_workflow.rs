@@ -109,7 +109,9 @@ fn test_complete_workflow_cycle() {
         ORDER BY ?task
     "#;
 
-    let exec_results = store.query(execution_query).expect("Execution query failed");
+    let exec_results = store
+        .query(execution_query)
+        .expect("Execution query failed");
 
     // Step 4: Verify MAPE-K integration (μ → O')
     let mape_k_query = r#"
@@ -372,7 +374,9 @@ fn test_all_covenants_in_one_workflow() {
         }
     "#;
 
-    let c1_results = store.query(covenant1_query).expect("Covenant 1 check failed");
+    let c1_results = store
+        .query(covenant1_query)
+        .expect("Covenant 1 check failed");
 
     // Covenant 2: Invariants enforced (pattern matrix validation)
     let covenant2_query = r#"
@@ -387,7 +391,9 @@ fn test_all_covenants_in_one_workflow() {
         }
     "#;
 
-    let c2_results = store.query(covenant2_query).expect("Covenant 2 check failed");
+    let c2_results = store
+        .query(covenant2_query)
+        .expect("Covenant 2 check failed");
 
     // Covenant 3: MAPE-K components
     let covenant3_query = r#"
@@ -403,7 +409,9 @@ fn test_all_covenants_in_one_workflow() {
         }
     "#;
 
-    let c3_results = store.query(covenant3_query).expect("Covenant 3 check failed");
+    let c3_results = store
+        .query(covenant3_query)
+        .expect("Covenant 3 check failed");
 
     // Covenant 4: All patterns expressible
     let covenant4_query = r#"
@@ -414,7 +422,9 @@ fn test_all_covenants_in_one_workflow() {
         }
     "#;
 
-    let c4_results = store.query(covenant4_query).expect("Covenant 4 check failed");
+    let c4_results = store
+        .query(covenant4_query)
+        .expect("Covenant 4 check failed");
 
     // Covenant 5: Latency bounds (checked at runtime by Chicago TDD)
     // Here we just verify execution mode declarations exist
@@ -426,7 +436,9 @@ fn test_all_covenants_in_one_workflow() {
         }
     "#;
 
-    let c5_results = store.query(covenant5_query).expect("Covenant 5 check failed");
+    let c5_results = store
+        .query(covenant5_query)
+        .expect("Covenant 5 check failed");
 
     // Covenant 6: Observations declared
     let covenant6_query = r#"
@@ -437,7 +449,9 @@ fn test_all_covenants_in_one_workflow() {
         }
     "#;
 
-    let c6_results = store.query(covenant6_query).expect("Covenant 6 check failed");
+    let c6_results = store
+        .query(covenant6_query)
+        .expect("Covenant 6 check failed");
 
     // THEN: All covenants are validated
     let mut covenant_checks = vec![];
@@ -454,7 +468,10 @@ fn test_all_covenants_in_one_workflow() {
         if let Some(sol) = solutions.next() {
             let sol = sol.expect("C2 solution error");
             let valid = sol.get("validTasks").expect("No valid tasks").to_string();
-            covenant_checks.push(("Covenant 2 (Invariants)", valid.chars().any(|c| c.is_numeric())));
+            covenant_checks.push((
+                "Covenant 2 (Invariants)",
+                valid.chars().any(|c| c.is_numeric()),
+            ));
         }
     }
 
@@ -470,23 +487,38 @@ fn test_all_covenants_in_one_workflow() {
         if let Some(sol) = solutions.next() {
             let sol = sol.expect("C4 solution error");
             let combos = sol.get("validCombos").expect("No combos").to_string();
-            covenant_checks.push(("Covenant 4 (Patterns)", combos.chars().any(|c| c.is_numeric())));
+            covenant_checks.push((
+                "Covenant 4 (Patterns)",
+                combos.chars().any(|c| c.is_numeric()),
+            ));
         }
     }
 
     if let QueryResults::Solutions(mut solutions) = c5_results {
         if let Some(sol) = solutions.next() {
             let sol = sol.expect("C5 solution error");
-            let exec_modes = sol.get("tasksWithExecMode").expect("No exec modes").to_string();
-            covenant_checks.push(("Covenant 5 (Latency)", exec_modes.chars().any(|c| c.is_numeric())));
+            let exec_modes = sol
+                .get("tasksWithExecMode")
+                .expect("No exec modes")
+                .to_string();
+            covenant_checks.push((
+                "Covenant 5 (Latency)",
+                exec_modes.chars().any(|c| c.is_numeric()),
+            ));
         }
     }
 
     if let QueryResults::Solutions(mut solutions) = c6_results {
         if let Some(sol) = solutions.next() {
             let sol = sol.expect("C6 solution error");
-            let observable = sol.get("observableTasks").expect("No observable").to_string();
-            covenant_checks.push(("Covenant 6 (Observations)", observable.chars().any(|c| c.is_numeric())));
+            let observable = sol
+                .get("observableTasks")
+                .expect("No observable")
+                .to_string();
+            covenant_checks.push((
+                "Covenant 6 (Observations)",
+                observable.chars().any(|c| c.is_numeric()),
+            ));
         }
     }
 
@@ -496,11 +528,7 @@ fn test_all_covenants_in_one_workflow() {
         println!("✅ {}", covenant);
     }
 
-    assert_eq!(
-        covenant_checks.len(),
-        6,
-        "Not all covenants were checked"
-    );
+    assert_eq!(covenant_checks.len(), 6, "Not all covenants were checked");
 }
 
 #[test]

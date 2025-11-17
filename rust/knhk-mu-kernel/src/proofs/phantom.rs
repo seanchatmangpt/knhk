@@ -3,8 +3,8 @@
 //! This module implements phantom types for carrying compile-time proof obligations
 //! with zero runtime cost. All proof types use `PhantomData` and are zero-sized.
 
-use core::marker::PhantomData;
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// A predicate trait that types can implement to define compile-time properties
 pub trait Predicate<T> {

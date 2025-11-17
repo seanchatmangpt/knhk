@@ -251,11 +251,14 @@ impl ValidatedTriples<GuardValidated> {
                 // Registry not found - log warning but don't fail
                 // (allows operation in environments without Weaver)
                 #[cfg(feature = "std")]
-                eprintln!("Warning: Weaver registry not found at {}. Schema validation is limited.",
-                    registry_path.display());
+                eprintln!(
+                    "Warning: Weaver registry not found at {}. Schema validation is limited.",
+                    registry_path.display()
+                );
             } else if !registry_path.is_dir() {
                 return Err(WorkflowError::Validation(
-                    "DFLSS CTQ 1 violation: Registry path exists but is not a directory".to_string()
+                    "DFLSS CTQ 1 violation: Registry path exists but is not a directory"
+                        .to_string(),
                 ));
             }
         }

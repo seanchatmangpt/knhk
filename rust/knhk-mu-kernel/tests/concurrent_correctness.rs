@@ -7,28 +7,28 @@
 //! - Correctness of memory reclamation
 //! - ABA problem mitigation
 
-use std::sync::{Arc, Barrier};
-use std::thread;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Barrier};
+use std::thread;
 
 // Import concurrent structures
-#[path = "../src/concurrent/skiplist.rs"]
-mod skiplist;
-#[path = "../src/concurrent/hamt.rs"]
-mod hamt;
-#[path = "../src/concurrent/stack_queue.rs"]
-mod stack_queue;
-#[path = "../src/concurrent/epoch.rs"]
-mod epoch;
 #[path = "../src/concurrent/arc_atomic.rs"]
 mod arc_atomic;
+#[path = "../src/concurrent/epoch.rs"]
+mod epoch;
+#[path = "../src/concurrent/hamt.rs"]
+mod hamt;
+#[path = "../src/concurrent/skiplist.rs"]
+mod skiplist;
+#[path = "../src/concurrent/stack_queue.rs"]
+mod stack_queue;
 
-use skiplist::LockFreeSkipList;
-use hamt::ConcurrentHAMT;
-use stack_queue::{TreiberStack, MichaelScottQueue};
-use epoch::{Guard, Atomic};
 use arc_atomic::{AtomicArc, AtomicArcCell};
+use epoch::{Atomic, Guard};
+use hamt::ConcurrentHAMT;
+use skiplist::LockFreeSkipList;
+use stack_queue::{MichaelScottQueue, TreiberStack};
 
 // --- Skip List Tests ---
 
@@ -349,10 +349,7 @@ fn test_stack_concurrent_push_pop() {
         remaining += 1;
     }
 
-    assert_eq!(
-        pop_count.load(Ordering::Relaxed) + remaining,
-        4000
-    );
+    assert_eq!(pop_count.load(Ordering::Relaxed) + remaining, 4000);
 }
 
 #[test]
@@ -451,10 +448,7 @@ fn test_queue_concurrent_enqueue_dequeue() {
         remaining += 1;
     }
 
-    assert_eq!(
-        dequeue_count.load(Ordering::Relaxed) + remaining,
-        4000
-    );
+    assert_eq!(dequeue_count.load(Ordering::Relaxed) + remaining, 4000);
 }
 
 #[test]

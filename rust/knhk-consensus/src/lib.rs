@@ -14,17 +14,17 @@
 #![warn(missing_docs)]
 #![warn(unused_crate_dependencies)]
 
-pub mod pbft;
 pub mod hotstuff;
-pub mod state;
 pub mod network;
+pub mod pbft;
+pub mod state;
 pub mod validator;
 
-pub use pbft::{BFTMessage, PBFTNode, PBFTConfig};
-pub use hotstuff::{HotStuffNode, HotStuffConfig, ViewNumber};
-pub use state::{StateMachineReplicator, CommandLog};
-pub use network::{NetworkNode, PeerMessage, PeerDiscovery};
-pub use validator::{ValidatorSet, ValidatorMetrics};
+pub use hotstuff::{HotStuffConfig, HotStuffNode, ViewNumber};
+pub use network::{NetworkNode, PeerDiscovery, PeerMessage};
+pub use pbft::{BFTMessage, PBFTConfig, PBFTNode};
+pub use state::{CommandLog, StateMachineReplicator};
+pub use validator::{ValidatorMetrics, ValidatorSet};
 
 use std::collections::HashSet;
 use std::sync::Arc;

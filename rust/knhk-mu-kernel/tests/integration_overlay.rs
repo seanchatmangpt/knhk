@@ -2,12 +2,11 @@
 //!
 //! Tests proof-carrying overlays and Σ* evolution
 
-use knhk_mu_kernel::overlay::{
-    DeltaSigma, OverlayAlgebra, ProofSketch, PerformanceEstimate,
-    InvariantCheck, SigmaChange,
-};
-use knhk_mu_kernel::sigma::{SigmaHash, SigmaCompiled, SigmaPointer, TaskDescriptor};
 use knhk_mu_kernel::guards::GuardResult;
+use knhk_mu_kernel::overlay::{
+    DeltaSigma, InvariantCheck, OverlayAlgebra, PerformanceEstimate, ProofSketch, SigmaChange,
+};
+use knhk_mu_kernel::sigma::{SigmaCompiled, SigmaHash, SigmaPointer, TaskDescriptor};
 
 #[test]
 fn test_overlay_creation() {
@@ -39,13 +38,11 @@ fn test_overlay_validation() {
         base_sigma: SigmaHash([1; 32]),
         changes: vec![],
         proof: ProofSketch {
-            invariants_checked: vec![
-                InvariantCheck {
-                    name: "tick_budget".to_string(),
-                    result: GuardResult::Pass,
-                    evidence: "all tasks ≤8 ticks".to_string(),
-                }
-            ],
+            invariants_checked: vec![InvariantCheck {
+                name: "tick_budget".to_string(),
+                result: GuardResult::Pass,
+                evidence: "all tasks ≤8 ticks".to_string(),
+            }],
             perf_estimate: PerformanceEstimate {
                 max_ticks: 6,
                 expected_improvement: 0.3,
@@ -66,9 +63,7 @@ fn test_overlay_composition() {
     let delta1 = DeltaSigma {
         id: 1,
         base_sigma: SigmaHash([1; 32]),
-        changes: vec![
-            SigmaChange::AddTask(TaskDescriptor::default()),
-        ],
+        changes: vec![SigmaChange::AddTask(TaskDescriptor::default())],
         proof: ProofSketch {
             invariants_checked: vec![],
             perf_estimate: PerformanceEstimate {
@@ -85,9 +80,7 @@ fn test_overlay_composition() {
     let delta2 = DeltaSigma {
         id: 2,
         base_sigma: SigmaHash([1; 32]),
-        changes: vec![
-            SigmaChange::RemoveTask(100),
-        ],
+        changes: vec![SigmaChange::RemoveTask(100)],
         proof: ProofSketch {
             invariants_checked: vec![],
             perf_estimate: PerformanceEstimate {
@@ -107,7 +100,7 @@ fn test_overlay_composition() {
 
     let composed = result.unwrap();
     assert_eq!(composed.changes.len(), 2);
-    assert_eq!(composed.priority, 10);  // max priority
+    assert_eq!(composed.priority, 10); // max priority
 }
 
 #[test]
@@ -131,7 +124,7 @@ fn test_overlay_incompatible_base() {
 
     let delta2 = DeltaSigma {
         id: 2,
-        base_sigma: SigmaHash([2; 32]),  // Different base
+        base_sigma: SigmaHash([2; 32]), // Different base
         changes: vec![],
         proof: ProofSketch {
             invariants_checked: vec![],
@@ -155,12 +148,10 @@ fn test_overlay_conflict_detection() {
     let delta1 = DeltaSigma {
         id: 1,
         base_sigma: SigmaHash([1; 32]),
-        changes: vec![
-            SigmaChange::ModifyTask {
-                task_id: 100,
-                new_descriptor: TaskDescriptor::default(),
-            },
-        ],
+        changes: vec![SigmaChange::ModifyTask {
+            task_id: 100,
+            new_descriptor: TaskDescriptor::default(),
+        }],
         proof: ProofSketch {
             invariants_checked: vec![],
             perf_estimate: PerformanceEstimate {
@@ -177,12 +168,10 @@ fn test_overlay_conflict_detection() {
     let delta2 = DeltaSigma {
         id: 2,
         base_sigma: SigmaHash([1; 32]),
-        changes: vec![
-            SigmaChange::ModifyTask {
-                task_id: 100,  // Same task
-                new_descriptor: TaskDescriptor::default(),
-            },
-        ],
+        changes: vec![SigmaChange::ModifyTask {
+            task_id: 100, // Same task
+            new_descriptor: TaskDescriptor::default(),
+        }],
         proof: ProofSketch {
             invariants_checked: vec![],
             perf_estimate: PerformanceEstimate {
@@ -196,7 +185,10 @@ fn test_overlay_conflict_detection() {
         priority: 5,
     };
 
-    assert!(delta1.conflicts_with(&delta2), "Should detect conflicting changes");
+    assert!(
+        delta1.conflicts_with(&delta2),
+        "Should detect conflicting changes"
+    );
 }
 
 #[test]
@@ -268,13 +260,11 @@ fn test_proof_sketch_evidence() {
         base_sigma: SigmaHash([1; 32]),
         changes: vec![],
         proof: ProofSketch {
-            invariants_checked: vec![
-                InvariantCheck {
-                    name: "chatman_constant".to_string(),
-                    result: GuardResult::Pass,
-                    evidence: "verified via static analysis".to_string(),
-                }
-            ],
+            invariants_checked: vec![InvariantCheck {
+                name: "chatman_constant".to_string(),
+                result: GuardResult::Pass,
+                evidence: "verified via static analysis".to_string(),
+            }],
             perf_estimate: PerformanceEstimate {
                 max_ticks: 6,
                 expected_improvement: 0.25,

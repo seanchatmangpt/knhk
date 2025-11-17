@@ -1,6 +1,6 @@
 //! Basic usage example of Chicago TDD Performance Harness
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 
 fn main() {
     println!("Chicago TDD Performance Harness - Basic Usage Example\n");

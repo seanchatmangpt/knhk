@@ -13,9 +13,7 @@ static RDTSC_OVERHEAD: AtomicU64 = AtomicU64::new(0);
 #[cfg(target_arch = "x86_64")]
 #[inline(always)]
 pub fn read_tsc() -> u64 {
-    unsafe {
-        std::arch::x86_64::_rdtsc()
-    }
+    unsafe { std::arch::x86_64::_rdtsc() }
 }
 
 /// Read Time Stamp Counter with serialization (more accurate but slower)
@@ -102,7 +100,8 @@ impl HotPathTimer {
     #[inline(always)]
     pub fn elapsed_ticks(&self) -> u64 {
         let end = read_tsc();
-        end.saturating_sub(self.start_ticks).saturating_sub(self.overhead)
+        end.saturating_sub(self.start_ticks)
+            .saturating_sub(self.overhead)
     }
 
     /// Check if elapsed time is within budget (≤8 ticks)
@@ -154,12 +153,14 @@ pub fn calibrate_tsc() -> CalibrationResult {
 
     // Calculate confidence (inverse of variance)
     let mean = frequencies.iter().sum::<u64>() as f64 / frequencies.len() as f64;
-    let variance = frequencies.iter()
+    let variance = frequencies
+        .iter()
         .map(|&f| {
             let diff = f as f64 - mean;
             diff * diff
         })
-        .sum::<f64>() / frequencies.len() as f64;
+        .sum::<f64>()
+        / frequencies.len() as f64;
 
     let std_dev = variance.sqrt();
     let confidence = if std_dev > 0.0 {

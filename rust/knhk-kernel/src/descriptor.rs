@@ -1,12 +1,11 @@
 // knhk-kernel: Descriptor structure for hot path configuration
 // Immutable, cache-friendly, atomic hot-swap capable
 
-use std::sync::atomic::{AtomicU64, AtomicPtr, Ordering};
-use std::sync::Arc;
-use rustc_hash::FxHashMap;
-use arrayvec::ArrayVec;
-use crate::pattern::{PatternType, PatternConfig};
 use crate::guard::{Guard, GuardConfig};
+use crate::pattern::{PatternConfig, PatternType};
+use arrayvec::ArrayVec;
+use rustc_hash::FxHashMap;
+use std::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
 
 /// Maximum patterns per descriptor (fits in cache line)
 pub const MAX_PATTERNS: usize = 64;
@@ -349,9 +348,7 @@ mod tests {
 
     #[test]
     fn test_descriptor_creation() {
-        let descriptor = DescriptorBuilder::new()
-            .with_tick_budget(8)
-            .build();
+        let descriptor = DescriptorBuilder::new().with_tick_budget(8).build();
 
         assert_eq!(descriptor.global_tick_budget, 8);
         assert!(descriptor.validate().is_ok());
@@ -379,22 +376,14 @@ mod tests {
 
     #[test]
     fn test_hot_swap() {
-        let desc1 = Box::new(
-            DescriptorBuilder::new()
-                .with_tick_budget(8)
-                .build()
-        );
+        let desc1 = Box::new(DescriptorBuilder::new().with_tick_budget(8).build());
 
         DescriptorManager::load_descriptor(desc1).unwrap();
 
         let active = DescriptorManager::get_active().unwrap();
         assert_eq!(active.global_tick_budget, 8);
 
-        let desc2 = Box::new(
-            DescriptorBuilder::new()
-                .with_tick_budget(6)
-                .build()
-        );
+        let desc2 = Box::new(DescriptorBuilder::new().with_tick_budget(6).build());
 
         DescriptorManager::hot_swap(desc2).unwrap();
 

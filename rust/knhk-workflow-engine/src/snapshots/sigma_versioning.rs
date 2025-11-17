@@ -43,11 +43,7 @@ pub struct SnapshotMetadata {
 
 impl Snapshot {
     /// Create new snapshot
-    pub fn new(
-        content: serde_json::Value,
-        parent_id: Option<SnapshotId>,
-        version: u64,
-    ) -> Self {
+    pub fn new(content: serde_json::Value, parent_id: Option<SnapshotId>, version: u64) -> Self {
         let id = Self::compute_hash(&content);
         let created_at_ms = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -127,10 +123,7 @@ impl SnapshotVersioning {
     }
 
     /// Create new snapshot from current state
-    pub async fn create_snapshot(
-        &self,
-        content: serde_json::Value,
-    ) -> WorkflowResult<SnapshotId> {
+    pub async fn create_snapshot(&self, content: serde_json::Value) -> WorkflowResult<SnapshotId> {
         let manifest = self.manifest.read().await;
         let parent_id = manifest.current_snapshot_id.clone();
         let version = manifest.version + 1;
@@ -140,7 +133,7 @@ impl SnapshotVersioning {
 
         if !snapshot.verify_integrity() {
             return Err(WorkflowError::SnapshotError(
-                "Snapshot integrity check failed".to_string()
+                "Snapshot integrity check failed".to_string(),
             ));
         }
 
@@ -184,7 +177,7 @@ impl SnapshotVersioning {
 
         if manifest.history.len() <= 1 {
             return Err(WorkflowError::SnapshotError(
-                "Cannot rollback: no previous snapshot".to_string()
+                "Cannot rollback: no previous snapshot".to_string(),
             ));
         }
 
@@ -192,7 +185,9 @@ impl SnapshotVersioning {
         manifest.history.pop();
 
         // Get previous snapshot
-        let previous_id = manifest.history.last()
+        let previous_id = manifest
+            .history
+            .last()
             .ok_or_else(|| WorkflowError::SnapshotError("Invalid history state".to_string()))?
             .clone();
 
@@ -209,9 +204,10 @@ impl SnapshotVersioning {
         {
             let snapshots = self.snapshots.read().await;
             if !snapshots.contains_key(snapshot_id) {
-                return Err(WorkflowError::SnapshotError(
-                    format!("Snapshot {} not found", snapshot_id)
-                ));
+                return Err(WorkflowError::SnapshotError(format!(
+                    "Snapshot {} not found",
+                    snapshot_id
+                )));
             }
         }
 
@@ -226,9 +222,10 @@ impl SnapshotVersioning {
             manifest.version = pos as u64;
             Ok(())
         } else {
-            Err(WorkflowError::SnapshotError(
-                format!("Snapshot {} not in history", snapshot_id)
-            ))
+            Err(WorkflowError::SnapshotError(format!(
+                "Snapshot {} not in history",
+                snapshot_id
+            )))
         }
     }
 
@@ -266,9 +263,15 @@ mod tests {
         let versioning = SnapshotVersioning::new();
 
         let content = serde_json::json!({"state": "v1"});
-        let snapshot_id = versioning.create_snapshot(content.clone()).await.expect("Snapshot creation failed");
+        let snapshot_id = versioning
+            .create_snapshot(content.clone())
+            .await
+            .expect("Snapshot creation failed");
 
-        let snapshot = versioning.get_snapshot(&snapshot_id).await.expect("Snapshot not found");
+        let snapshot = versioning
+            .get_snapshot(&snapshot_id)
+            .await
+            .expect("Snapshot not found");
         assert_eq!(snapshot.content, content);
         assert!(snapshot.verify_integrity());
     }
@@ -278,9 +281,18 @@ mod tests {
         let versioning = SnapshotVersioning::new();
 
         // Create multiple snapshots
-        let id1 = versioning.create_snapshot(serde_json::json!({"v": 1})).await.expect("Failed");
-        let id2 = versioning.create_snapshot(serde_json::json!({"v": 2})).await.expect("Failed");
-        let id3 = versioning.create_snapshot(serde_json::json!({"v": 3})).await.expect("Failed");
+        let id1 = versioning
+            .create_snapshot(serde_json::json!({"v": 1}))
+            .await
+            .expect("Failed");
+        let id2 = versioning
+            .create_snapshot(serde_json::json!({"v": 2}))
+            .await
+            .expect("Failed");
+        let id3 = versioning
+            .create_snapshot(serde_json::json!({"v": 3}))
+            .await
+            .expect("Failed");
 
         let history = versioning.get_history().await;
         assert_eq!(history.len(), 4); // Initial + 3 new
@@ -293,9 +305,18 @@ mod tests {
     async fn test_rollback() {
         let versioning = SnapshotVersioning::new();
 
-        let id1 = versioning.create_snapshot(serde_json::json!({"v": 1})).await.expect("Failed");
-        let id2 = versioning.create_snapshot(serde_json::json!({"v": 2})).await.expect("Failed");
-        let _id3 = versioning.create_snapshot(serde_json::json!({"v": 3})).await.expect("Failed");
+        let id1 = versioning
+            .create_snapshot(serde_json::json!({"v": 1}))
+            .await
+            .expect("Failed");
+        let id2 = versioning
+            .create_snapshot(serde_json::json!({"v": 2}))
+            .await
+            .expect("Failed");
+        let _id3 = versioning
+            .create_snapshot(serde_json::json!({"v": 3}))
+            .await
+            .expect("Failed");
 
         // Rollback once
         let rolled_back_id = versioning.rollback().await.expect("Rollback failed");
@@ -309,9 +330,18 @@ mod tests {
     async fn test_rollback_to_specific() {
         let versioning = SnapshotVersioning::new();
 
-        let id1 = versioning.create_snapshot(serde_json::json!({"v": 1})).await.expect("Failed");
-        let _id2 = versioning.create_snapshot(serde_json::json!({"v": 2})).await.expect("Failed");
-        let _id3 = versioning.create_snapshot(serde_json::json!({"v": 3})).await.expect("Failed");
+        let id1 = versioning
+            .create_snapshot(serde_json::json!({"v": 1}))
+            .await
+            .expect("Failed");
+        let _id2 = versioning
+            .create_snapshot(serde_json::json!({"v": 2}))
+            .await
+            .expect("Failed");
+        let _id3 = versioning
+            .create_snapshot(serde_json::json!({"v": 3}))
+            .await
+            .expect("Failed");
 
         // Rollback to v1
         versioning.rollback_to(&id1).await.expect("Rollback failed");
@@ -340,8 +370,14 @@ mod tests {
     async fn test_snapshot_parent_chain() {
         let versioning = SnapshotVersioning::new();
 
-        let id1 = versioning.create_snapshot(serde_json::json!({"v": 1})).await.expect("Failed");
-        let id2 = versioning.create_snapshot(serde_json::json!({"v": 2})).await.expect("Failed");
+        let id1 = versioning
+            .create_snapshot(serde_json::json!({"v": 1}))
+            .await
+            .expect("Failed");
+        let id2 = versioning
+            .create_snapshot(serde_json::json!({"v": 2}))
+            .await
+            .expect("Failed");
 
         let snapshot2 = versioning.get_snapshot(&id2).await.expect("Not found");
         assert_eq!(snapshot2.parent_id, Some(id1));

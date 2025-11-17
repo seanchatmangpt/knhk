@@ -347,12 +347,10 @@ impl<T> AtomicArcCell<T> {
         let current_ptr = current.map_or(0, |arc| arc.ptr.as_ptr() as usize);
         let new_ptr = new.ptr.as_ptr() as usize;
 
-        match self.ptr.compare_exchange(
-            current_ptr,
-            new_ptr,
-            Ordering::AcqRel,
-            Ordering::Acquire,
-        ) {
+        match self
+            .ptr
+            .compare_exchange(current_ptr, new_ptr, Ordering::AcqRel, Ordering::Acquire)
+        {
             Ok(_) => {
                 std::mem::forget(new); // Stored successfully
                 Ok(())

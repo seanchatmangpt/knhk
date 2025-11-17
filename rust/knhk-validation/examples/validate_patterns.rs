@@ -270,7 +270,11 @@ fn main() {
     for pattern_name in patterns_to_decompose {
         match validator.decompose_pattern(pattern_name) {
             Ok(combinations) => {
-                println!("Pattern '{}' decomposes into {} combination(s):", pattern_name, combinations.len());
+                println!(
+                    "Pattern '{}' decomposes into {} combination(s):",
+                    pattern_name,
+                    combinations.len()
+                );
                 for (i, combo) in combinations.iter().enumerate() {
                     println!(
                         "  {}. {}-{} (generates: {:?})",
@@ -347,7 +351,12 @@ fn main() {
 
 fn validate_and_print(validator: &PatternValidator, task: TaskPattern) {
     let result = validator.validate_task(&task);
-    println!("Task '{}' ({}-{}):", task.task_id, task.split_type.as_str(), task.join_type.as_str());
+    println!(
+        "Task '{}' ({}-{}):",
+        task.task_id,
+        task.split_type.as_str(),
+        task.join_type.as_str()
+    );
     println!("  Valid: {}", result.is_valid);
     if let Some(pattern_name) = &result.pattern_name {
         println!("  Pattern: {}", pattern_name);

@@ -187,10 +187,7 @@ impl InvariantValidator {
         }
 
         if cpu_percent > 50.0 {
-            violations.push(format!(
-                "CPU {:.1}% exceeds budget of 50%",
-                cpu_percent
-            ));
+            violations.push(format!("CPU {:.1}% exceeds budget of 50%", cpu_percent));
         }
 
         if tail_latency_ms > 500 {
@@ -275,15 +272,23 @@ mod tests {
     #[test]
     fn test_q1_no_retrocausation() {
         let mut visited = std::collections::HashSet::new();
-        assert!(InvariantValidator::check_q1_no_retrocausation("snap1", Some("snap0"), &mut visited)
-            .is_ok());
+        assert!(InvariantValidator::check_q1_no_retrocausation(
+            "snap1",
+            Some("snap0"),
+            &mut visited
+        )
+        .is_ok());
     }
 
     #[test]
     fn test_q1_self_reference_fails() {
         let mut visited = std::collections::HashSet::new();
-        assert!(InvariantValidator::check_q1_no_retrocausation("snap1", Some("snap1"), &mut visited)
-            .is_err());
+        assert!(InvariantValidator::check_q1_no_retrocausation(
+            "snap1",
+            Some("snap1"),
+            &mut visited
+        )
+        .is_err());
     }
 
     #[test]
@@ -325,18 +330,8 @@ mod tests {
 
     #[test]
     fn test_comprehensive_check() {
-        let result = InvariantValidator::check_all(
-            "snap1",
-            Some("snap0"),
-            100,
-            0,
-            8,
-            8,
-            50,
-            512,
-            25.0,
-            250,
-        );
+        let result =
+            InvariantValidator::check_all("snap1", Some("snap0"), 100, 0, 8, 8, 50, 512, 25.0, 250);
         assert!(result.is_ok());
         let inv = result.unwrap();
         assert!(inv.all_preserved());
@@ -348,13 +343,13 @@ mod tests {
             "snap1",
             Some("snap0"),
             100,
-            50, // Schema violations
-            9,  // Guard violation
-            9,  // Hot path violation
-            150, // Warm path violation
+            50,   // Schema violations
+            9,    // Guard violation
+            9,    // Hot path violation
+            150,  // Warm path violation
             2048, // Memory violation
             75.0, // CPU violation
-            750, // Tail latency violation
+            750,  // Tail latency violation
         );
         assert!(result.is_err());
     }

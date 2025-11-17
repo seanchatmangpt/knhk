@@ -3,8 +3,8 @@
 //! Guards are not "checks"; they are compiled, branchless predicates
 //! that enforce Q (invariants) at both compile-time and runtime.
 
-use crate::timing::TickBudget;
 use crate::isa::{GuardContext, ObsValue};
+use crate::timing::TickBudget;
 
 pub use crate::sigma::GuardType;
 
@@ -32,8 +32,8 @@ impl GuardResult {
     #[inline(always)]
     pub const fn and(&self, other: &GuardResult) -> GuardResult {
         const RESULTS: [[GuardResult; 2]; 2] = [
-            [GuardResult::Fail, GuardResult::Fail],  // Fail AND _
-            [GuardResult::Fail, GuardResult::Pass],  // Pass AND _
+            [GuardResult::Fail, GuardResult::Fail], // Fail AND _
+            [GuardResult::Fail, GuardResult::Pass], // Pass AND _
         ];
         RESULTS[*self as usize][*other as usize]
     }
@@ -233,22 +233,10 @@ mod tests {
 
     #[test]
     fn test_guard_result_and() {
-        assert_eq!(
-            GuardResult::Pass.and(&GuardResult::Pass),
-            GuardResult::Pass
-        );
-        assert_eq!(
-            GuardResult::Pass.and(&GuardResult::Fail),
-            GuardResult::Fail
-        );
-        assert_eq!(
-            GuardResult::Fail.and(&GuardResult::Pass),
-            GuardResult::Fail
-        );
-        assert_eq!(
-            GuardResult::Fail.and(&GuardResult::Fail),
-            GuardResult::Fail
-        );
+        assert_eq!(GuardResult::Pass.and(&GuardResult::Pass), GuardResult::Pass);
+        assert_eq!(GuardResult::Pass.and(&GuardResult::Fail), GuardResult::Fail);
+        assert_eq!(GuardResult::Fail.and(&GuardResult::Pass), GuardResult::Fail);
+        assert_eq!(GuardResult::Fail.and(&GuardResult::Fail), GuardResult::Fail);
     }
 
     #[test]
@@ -256,7 +244,7 @@ mod tests {
         let ctx = GuardContext {
             task_id: 1,
             obs_data: 0,
-            params: [8, 5, 0, 0],  // budget=8, used=5
+            params: [8, 5, 0, 0], // budget=8, used=5
         };
 
         let result = guard_tick_budget(&ctx);
@@ -265,7 +253,7 @@ mod tests {
         let ctx_exceeded = GuardContext {
             task_id: 1,
             obs_data: 0,
-            params: [8, 10, 0, 0],  // budget=8, used=10
+            params: [8, 10, 0, 0], // budget=8, used=10
         };
 
         let result = guard_tick_budget(&ctx_exceeded);
@@ -277,7 +265,7 @@ mod tests {
         let ctx = GuardContext {
             task_id: 1,
             obs_data: 0,
-            params: [0b0100, 0b0110, 0, 0],  // required=4, user=6 (has 4)
+            params: [0b0100, 0b0110, 0, 0], // required=4, user=6 (has 4)
         };
 
         let result = guard_authorization(&ctx);
@@ -286,7 +274,7 @@ mod tests {
         let ctx_unauthorized = GuardContext {
             task_id: 1,
             obs_data: 0,
-            params: [0b1000, 0b0110, 0, 0],  // required=8, user=6 (no 8)
+            params: [0b1000, 0b0110, 0, 0], // required=8, user=6 (no 8)
         };
 
         let result = guard_authorization(&ctx_unauthorized);
@@ -314,8 +302,20 @@ mod tests {
     fn test_eval_all_guards() {
         let mut registry = GuardRegistry::new();
 
-        registry.register(CompiledGuard::new(0, GuardType::TickBudget, guard_tick_budget)).unwrap();
-        registry.register(CompiledGuard::new(1, GuardType::Authorization, guard_authorization)).unwrap();
+        registry
+            .register(CompiledGuard::new(
+                0,
+                GuardType::TickBudget,
+                guard_tick_budget,
+            ))
+            .unwrap();
+        registry
+            .register(CompiledGuard::new(
+                1,
+                GuardType::Authorization,
+                guard_authorization,
+            ))
+            .unwrap();
 
         let ctx = GuardContext {
             task_id: 1,
@@ -331,8 +331,8 @@ mod tests {
     fn test_compile_time_checks() {
         use compile_time::*;
 
-        assert!(check_tick_budget(3, 2));  // 3 + 2 = 5 ≤ 8
-        assert!(!check_tick_budget(6, 5));  // 6 + 5 = 11 > 8
+        assert!(check_tick_budget(3, 2)); // 3 + 2 = 5 ≤ 8
+        assert!(!check_tick_budget(6, 5)); // 6 + 5 = 11 > 8
 
         assert!(check_pattern_valid(0));
         assert!(check_pattern_valid(42));

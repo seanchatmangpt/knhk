@@ -4,8 +4,8 @@
 //! components (compiler, validators). The type system prevents manual construction.
 
 use crate::overlay_types::{OverlayChanges, OverlayError};
-use core::marker::PhantomData;
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// Sealed trait for overlay proofs
 ///
@@ -476,7 +476,7 @@ mod tests {
     #[test]
     fn test_property_proof_requires_min_tests() {
         let proof = PropertyProof {
-            test_cases: 100,  // Too few
+            test_cases: 100, // Too few
             shrink_count: 0,
             invariants: vec![1],
             max_ticks_observed: 5,
@@ -493,7 +493,7 @@ mod tests {
             samples: 10_000,
             invariants: vec![1, 2],
             max_ticks_observed: 7,
-            violations: 1,  // Has violations
+            violations: 1, // Has violations
         };
 
         assert!(proof.verify().is_err());

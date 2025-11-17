@@ -93,7 +93,8 @@ impl LatencyBoundedScheduler {
 
         // Update statistics
         self.total_tasks.fetch_add(1, Ordering::Relaxed);
-        self.total_ticks.fetch_add(ticks_used as u64, Ordering::Relaxed);
+        self.total_ticks
+            .fetch_add(ticks_used as u64, Ordering::Relaxed);
 
         if !met_constraint {
             self.constraint_violations.fetch_add(1, Ordering::Relaxed);
@@ -185,13 +186,13 @@ mod tests {
     async fn test_scheduler_execution() {
         let scheduler = LatencyBoundedScheduler::new(8);
 
-        let result = scheduler.execute_with_bounds(
-            Priority::Critical,
-            async {
+        let result = scheduler
+            .execute_with_bounds(Priority::Critical, async {
                 // Fast operation
                 Ok::<_, WorkflowError>(())
-            }
-        ).await.expect("Task execution failed");
+            })
+            .await
+            .expect("Task execution failed");
 
         assert!(result.success);
         assert!(result.ticks_used >= 0);
@@ -212,10 +213,9 @@ mod tests {
 
         // Execute several tasks
         for _ in 0..5 {
-            let _ = scheduler.execute_with_bounds(
-                Priority::Critical,
-                async { Ok::<_, WorkflowError>(()) }
-            ).await;
+            let _ = scheduler
+                .execute_with_bounds(Priority::Critical, async { Ok::<_, WorkflowError>(()) })
+                .await;
         }
 
         let stats = scheduler.get_stats();
@@ -228,22 +228,22 @@ mod tests {
         let scheduler = LatencyBoundedScheduler::new(8);
 
         // Critical should have strictest constraint
-        let result = scheduler.execute_with_bounds(
-            Priority::Critical,
-            async {
+        let result = scheduler
+            .execute_with_bounds(Priority::Critical, async {
                 tokio::time::sleep(std::time::Duration::from_nanos(1)).await;
                 Ok::<_, WorkflowError>(())
-            }
-        ).await.expect("Task failed");
+            })
+            .await
+            .expect("Task failed");
 
         // Low priority has no constraint
-        let result_low = scheduler.execute_with_bounds(
-            Priority::Low,
-            async {
+        let result_low = scheduler
+            .execute_with_bounds(Priority::Low, async {
                 tokio::time::sleep(std::time::Duration::from_micros(1)).await;
                 Ok::<_, WorkflowError>(())
-            }
-        ).await.expect("Task failed");
+            })
+            .await
+            .expect("Task failed");
 
         assert!(result_low.met_constraint);
     }

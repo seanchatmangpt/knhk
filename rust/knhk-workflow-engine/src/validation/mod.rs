@@ -55,6 +55,6 @@ pub use report::{ValidationDetail, ValidationReport, ValidationResult, Validatio
 
 // Advanced phase system exports
 pub use phases::{
-    ConformanceMetricsPhase, FormalSoundnessPhase, LoadTestingPhase, PatternSemanticsPhase,
-    Phase, PhaseContext, PhaseExecutor, PhaseMetadata, PhaseRegistry, PhaseResult, PhaseStatus,
+    ConformanceMetricsPhase, FormalSoundnessPhase, LoadTestingPhase, PatternSemanticsPhase, Phase,
+    PhaseContext, PhaseExecutor, PhaseMetadata, PhaseRegistry, PhaseResult, PhaseStatus,
 };

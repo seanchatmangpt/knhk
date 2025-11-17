@@ -228,9 +228,7 @@ pub trait Deterministic {
 /// This is a marker trait for components that satisfy all constitutional
 /// guarantees. Components claiming to be constitutional must implement
 /// all four base traits.
-pub trait Constitutional:
-    DoctrineAligned + ChatmanBounded + ClosedWorld + Deterministic
-{
+pub trait Constitutional: DoctrineAligned + ChatmanBounded + ClosedWorld + Deterministic {
     /// Verify all constitutional guarantees
     fn verify_constitutional(&self, doctrine: &Doctrine) -> Result<(), ConstitutionalViolation> {
         // Verify doctrine alignment

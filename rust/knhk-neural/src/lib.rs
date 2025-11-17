@@ -2,24 +2,24 @@
 // Hyper-advanced Rust with Generic Associated Types (GATs) and neural networks
 
 pub mod model;
-pub mod reinforcement;
 pub mod optimizer;
+pub mod reinforcement;
 pub mod training;
 pub mod workflow;
 
-pub use model::{NeuralModel, Layer, DenseLayer};
-pub use reinforcement::{QLearning, SARSAAgent, WorkflowState, WorkflowAction, Agent};
+pub use model::{DenseLayer, Layer, NeuralModel};
+pub use reinforcement::{Agent, QLearning, SARSAAgent, WorkflowAction, WorkflowState};
 pub use training::Trainer;
 pub use workflow::{
-    SelfLearningWorkflow, AdaptiveWorkflowExecutor, EpisodeResult, LearningMetrics,
-    ModelVersion, WorkflowConfig, WorkflowMetrics, WorkflowExecutor, PerformanceTracker,
-    PerformanceImprovements,
+    AdaptiveWorkflowExecutor, EpisodeResult, LearningMetrics, ModelVersion,
+    PerformanceImprovements, PerformanceTracker, SelfLearningWorkflow, WorkflowConfig,
+    WorkflowExecutor, WorkflowMetrics,
 };
 
 /// Prelude for Phase 6 neural features
 pub mod prelude {
-    pub use crate::model::{NeuralModel, Layer, DenseLayer};
-    pub use crate::reinforcement::{QLearning, SARSAAgent, Agent};
+    pub use crate::model::{DenseLayer, Layer, NeuralModel};
+    pub use crate::reinforcement::{Agent, QLearning, SARSAAgent};
     pub use crate::training::{Trainer, TrainingConfig};
     pub use crate::workflow::SelfLearningWorkflow;
 }

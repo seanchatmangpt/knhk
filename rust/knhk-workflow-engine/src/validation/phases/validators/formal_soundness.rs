@@ -14,7 +14,9 @@ use std::time::Instant;
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::patterns::PatternId;
-use crate::validation::phases::core::{Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus};
+use crate::validation::phases::core::{
+    Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus,
+};
 use crate::WorkflowSpec;
 
 /// Formal soundness validation output
@@ -67,10 +69,7 @@ impl<M: Send + Sync> Phase<FormalSoundnessData, M> for FormalSoundnessPhase<M> {
         }
     }
 
-    async fn execute(
-        &self,
-        ctx: PhaseContext,
-    ) -> WorkflowResult<PhaseResult<FormalSoundnessData>> {
+    async fn execute(&self, ctx: PhaseContext) -> WorkflowResult<PhaseResult<FormalSoundnessData>> {
         let start = Instant::now();
 
         // Get workflow spec
@@ -109,7 +108,10 @@ impl<M: Send + Sync> Phase<FormalSoundnessData, M> for FormalSoundnessPhase<M> {
             .with_counts(passed, failed, 0);
 
         // Add metrics
-        result.add_metric("reachable_tasks", soundness_data.reachable_tasks.len() as f64);
+        result.add_metric(
+            "reachable_tasks",
+            soundness_data.reachable_tasks.len() as f64,
+        );
         result.add_metric("dead_tasks", soundness_data.dead_tasks.len() as f64);
         result.add_metric("completion_paths", soundness_data.completion_paths as f64);
         result.add_metric("state_space_size", soundness_data.state_space_size as f64);
@@ -146,10 +148,7 @@ async fn verify_soundness(spec: &WorkflowSpec) -> WorkflowResult<FormalSoundness
 
     // Check 2: Find dead tasks
     let all_tasks: HashSet<String> = task_graph.keys().cloned().collect();
-    let dead_tasks: HashSet<String> = all_tasks
-        .difference(&reachable_tasks)
-        .cloned()
-        .collect();
+    let dead_tasks: HashSet<String> = all_tasks.difference(&reachable_tasks).cloned().collect();
 
     // Check 3: Verify all reachable tasks can complete (reach end state)
     let option_to_complete = verify_option_to_complete(&task_graph, &reachable_tasks);
@@ -201,11 +200,10 @@ fn build_task_graph(spec: &WorkflowSpec) -> HashMap<String, Vec<String>> {
         for task in &spec.tasks {
             // If task has no predecessors, connect from start
             let task_id = task.id.to_string();
-            let has_predecessor = spec.tasks.iter().any(|t| {
-                t.successors
-                    .iter()
-                    .any(|s| s.to_string() == task_id)
-            });
+            let has_predecessor = spec
+                .tasks
+                .iter()
+                .any(|t| t.successors.iter().any(|s| s.to_string() == task_id));
 
             if !has_predecessor && task_id != "__start__" && task_id != "__end__" {
                 start_successors.push(task_id);
@@ -283,7 +281,9 @@ fn verify_option_to_complete(
     }
 
     // All reachable tasks must be able to reach end
-    reachable_tasks.iter().all(|task| can_reach_end.contains(task))
+    reachable_tasks
+        .iter()
+        .all(|task| can_reach_end.contains(task))
 }
 
 /// Count completion paths (simple path count to end)

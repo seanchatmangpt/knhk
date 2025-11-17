@@ -91,7 +91,7 @@ pub struct TaskDescriptor {
     /// Flags
     pub flags: u8,
     /// Guards applied to this task
-    pub guards: [u16; 8],  // Up to 8 guards per task
+    pub guards: [u16; 8], // Up to 8 guards per task
     /// Input schema offset
     pub input_schema_offset: u32,
     /// Output schema offset
@@ -149,14 +149,14 @@ pub struct PatternBinding {
 }
 
 /// Compiled Σ* (complete snapshot)
-#[repr(C, align(4096))]  // Page-aligned
+#[repr(C, align(4096))] // Page-aligned
 pub struct SigmaCompiled {
     /// Header
     pub header: SigmaHeader,
     /// Task descriptors (variable length)
-    tasks: [TaskDescriptor; 1024],  // Max 1024 tasks
+    tasks: [TaskDescriptor; 1024], // Max 1024 tasks
     /// Guard descriptors (variable length)
-    guards: [GuardDescriptor; 1024],  // Max 1024 guards
+    guards: [GuardDescriptor; 1024], // Max 1024 guards
     /// Pattern bindings (fixed, 256 entries)
     patterns: [PatternBinding; 256],
 }
@@ -227,10 +227,7 @@ impl SigmaCompiled {
     /// Compute SHA3-256 hash of entire Σ*
     pub fn compute_hash(&self) -> SigmaHash {
         let bytes = unsafe {
-            core::slice::from_raw_parts(
-                self as *const Self as *const u8,
-                size_of::<Self>(),
-            )
+            core::slice::from_raw_parts(self as *const Self as *const u8, size_of::<Self>())
         };
         SigmaHash::from_bytes(bytes)
     }

@@ -44,16 +44,15 @@ fn bench_snapshot_promotion(c: &mut Criterion) {
     });
 
     // Measure with statistics tracking
-    let promoter_stats = SnapshotPromoterWithStats::new(create_snapshot_descriptor("genesis", None));
+    let promoter_stats =
+        SnapshotPromoterWithStats::new(create_snapshot_descriptor("genesis", None));
 
     group.bench_function("atomic_swap_with_stats", |b| {
         let mut counter = 0;
         b.iter(|| {
             counter += 1;
-            let new_snapshot = create_snapshot_descriptor(
-                &format!("snap_{}", counter),
-                Some("genesis"),
-            );
+            let new_snapshot =
+                create_snapshot_descriptor(&format!("snap_{}", counter), Some("genesis"));
             let _ = black_box(promoter_stats.promote(new_snapshot));
         });
     });
@@ -61,13 +60,18 @@ fn bench_snapshot_promotion(c: &mut Criterion) {
     // Concurrent promotion stress test
     group.bench_function("concurrent_promotion_10_threads", |b| {
         b.iter(|| {
-            let promoter = Arc::new(SnapshotPromoter::new(create_snapshot_descriptor("genesis", None)));
+            let promoter = Arc::new(SnapshotPromoter::new(create_snapshot_descriptor(
+                "genesis", None,
+            )));
             let handles: Vec<_> = (0..10)
                 .map(|i| {
                     let p = promoter.clone();
                     std::thread::spawn(move || {
                         for j in 0..100 {
-                            let snap = create_snapshot_descriptor(&format!("t{}_s{}", i, j), Some("genesis"));
+                            let snap = create_snapshot_descriptor(
+                                &format!("t{}_s{}", i, j),
+                                Some("genesis"),
+                            );
                             let _ = p.promote(snap);
                         }
                     })
@@ -440,7 +444,11 @@ fn bench_real_world_scenarios(c: &mut Criterion) {
             constraint_type: ConstraintType::TimeWindow {
                 start_hour: 8,
                 end_hour: 18,
-                days: vec!["Monday".to_string(), "Tuesday".to_string(), "Wednesday".to_string()],
+                days: vec![
+                    "Monday".to_string(),
+                    "Tuesday".to_string(),
+                    "Wednesday".to_string(),
+                ],
             },
             description: "PHI access only during business hours".to_string(),
             parameters: HashMap::new(),
@@ -570,7 +578,10 @@ fn bench_latency_percentiles(c: &mut Criterion) {
     let stats = promoter.get_stats();
     println!("\n=== PROMOTION LATENCY STATISTICS ===");
     println!("Total promotions: {}", stats.total_promotions);
-    println!("Average latency: {:.2} ns", stats.average_promotion_latency_ns);
+    println!(
+        "Average latency: {:.2} ns",
+        stats.average_promotion_latency_ns
+    );
     println!("Max latency: {} ns", stats.max_promotion_latency_ns);
     println!(
         "CHATMAN CONSTANT CHECK: {}",
@@ -626,7 +637,10 @@ fn bench_memory_allocation(c: &mut Criterion) {
 // Helper Functions
 // ============================================================================
 
-fn create_snapshot_descriptor(id: &str, parent: Option<&str>) -> knhk_closed_loop::promoter::SnapshotDescriptor {
+fn create_snapshot_descriptor(
+    id: &str,
+    parent: Option<&str>,
+) -> knhk_closed_loop::promoter::SnapshotDescriptor {
     knhk_closed_loop::promoter::SnapshotDescriptor {
         snapshot_id: id.to_string(),
         parent_id: parent.map(|s| s.to_string()),

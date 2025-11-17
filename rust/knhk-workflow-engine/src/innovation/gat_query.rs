@@ -11,8 +11,8 @@
 //! - HRTB (Higher-Ranked Trait Bounds)
 //! - Associated type families
 
-use std::marker::PhantomData;
 use crate::execution::{Receipt, ReceiptId, SnapshotId};
+use std::marker::PhantomData;
 
 // ============================================================================
 // Query Language Traits with GATs
@@ -62,7 +62,10 @@ where
     F: Fn(&<Q::Output as IntoIterator>::Item) -> bool,
 {
     type Output = Vec<<Q::Output as IntoIterator>::Item>;
-    type Context<'a> = Q::Context<'a> where Self: 'a;
+    type Context<'a>
+        = Q::Context<'a>
+    where
+        Self: 'a;
 
     fn execute<'a>(&self, ctx: Self::Context<'a>) -> Self::Output
     where
@@ -100,7 +103,10 @@ where
     F: Fn(<Q::Output as IntoIterator>::Item) -> R,
 {
     type Output = Vec<R>;
-    type Context<'a> = Q::Context<'a> where Self: 'a;
+    type Context<'a>
+        = Q::Context<'a>
+    where
+        Self: 'a;
 
     fn execute<'a>(&self, ctx: Self::Context<'a>) -> Self::Output
     where
@@ -143,7 +149,10 @@ where
     T: Clone,
 {
     type Output = T;
-    type Context<'a> = Q::Context<'a> where Self: 'a;
+    type Context<'a>
+        = Q::Context<'a>
+    where
+        Self: 'a;
 
     fn execute<'a>(&self, ctx: Self::Context<'a>) -> Self::Output
     where
@@ -382,11 +391,7 @@ impl SequentialPlan {
 pub struct ParallelPlan;
 
 impl ParallelPlan {
-    pub fn execute<Q: Query + Parallelizable>(
-        &self,
-        query: &Q,
-        ctx: Q::Context<'_>,
-    ) -> Q::Output {
+    pub fn execute<Q: Query + Parallelizable>(&self, query: &Q, ctx: Q::Context<'_>) -> Q::Output {
         // In production, this would use parallel iterators
         query.execute(ctx)
     }
@@ -460,7 +465,10 @@ where
     F2: Fn(&<Q::Output as IntoIterator>::Item) -> bool,
 {
     type Output = Vec<<Q::Output as IntoIterator>::Item>;
-    type Context<'a> = Q::Context<'a> where Self: 'a;
+    type Context<'a>
+        = Q::Context<'a>
+    where
+        Self: 'a;
 
     fn execute<'a>(&self, ctx: Self::Context<'a>) -> Self::Output
     where
@@ -551,9 +559,7 @@ mod tests {
     fn test_map_query() {
         let receipts = create_test_receipts();
 
-        let query = QueryBuilder::scan()
-            .map(|r| r.workflow_instance_id)
-            .build();
+        let query = QueryBuilder::scan().map(|r| r.workflow_instance_id).build();
 
         let results = query.execute(&receipts);
         assert_eq!(results.len(), 3);

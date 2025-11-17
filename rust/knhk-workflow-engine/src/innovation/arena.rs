@@ -18,8 +18,8 @@
 use std::alloc::{alloc, dealloc, Layout};
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
-use std::ptr::{self, NonNull};
 use std::mem;
+use std::ptr::{self, NonNull};
 
 // ============================================================================
 // Arena Chunk

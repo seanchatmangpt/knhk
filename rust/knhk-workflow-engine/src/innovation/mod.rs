@@ -45,154 +45,153 @@
 //! - **Deployment Phase**: Zero-downtime deployment with health checks and canary releases
 
 // Production features
-pub mod workflow_templates;
-pub mod adaptive_optimizer;
 pub mod ab_testing;
+pub mod adaptive_optimizer;
 pub mod analytics;
 pub mod deterministic;
 pub mod experiment;
 pub mod formal;
 pub mod hardware;
+pub mod workflow_templates;
 pub mod zero_copy;
 
 // Hyper-advanced features
-pub mod type_state;
-pub mod lockfree;
-pub mod simd_hash;
-pub mod gat_query;
 pub mod arena;
 pub mod const_eval;
+pub mod gat_query;
+pub mod lockfree;
+pub mod simd_hash;
+pub mod type_state;
 
 // Microkernel features (AHI Constitution)
-pub mod verified_kernel;
-pub mod refinement_guards;
-pub mod cluster_types;
 pub mod auto_specialize;
+pub mod cluster_types;
 pub mod linear_resources;
+pub mod refinement_guards;
+pub mod verified_kernel;
 
 // 2027 Innovations (Hyper-Advanced Rust)
+pub mod async_kernel;
+pub mod custom_allocators;
 pub mod effect_system;
 pub mod simd_kernels;
-pub mod custom_allocators;
-pub mod async_kernel;
 
 // 2027 Advanced Phases
-pub mod verification_phase;
+pub mod deployment_phase;
+pub mod observability_phase;
 pub mod optimization_phase;
 pub mod security_phase;
-pub mod observability_phase;
-pub mod deployment_phase;
+pub mod verification_phase;
 
 // Production feature exports
-pub use workflow_templates::{WorkflowTemplate, TemplateLibrary, TemplateMetadata};
-pub use adaptive_optimizer::{
-    AdaptiveOptimizer, OptimizationStrategy, OptimizationRecommendation,
-    OptimizationAction, PerformanceMetrics,
-};
 pub use ab_testing::{
-    ABTestOrchestrator, ABTestConfig, ABTestResults, TestVariant,
-    TestRecommendation, ShadowTestResult,
+    ABTestConfig, ABTestOrchestrator, ABTestResults, ShadowTestResult, TestRecommendation,
+    TestVariant,
+};
+pub use adaptive_optimizer::{
+    AdaptiveOptimizer, OptimizationAction, OptimizationRecommendation, OptimizationStrategy,
+    PerformanceMetrics,
 };
 pub use analytics::{
-    AnalyticsEngine, QueryBuilder, DataPoint, GuardFailureAnalysis,
-    SnapshotComparison, ExecutiveSummary,
+    AnalyticsEngine, DataPoint, ExecutiveSummary, GuardFailureAnalysis, QueryBuilder,
+    SnapshotComparison,
 };
-pub use deterministic::{DeterministicExecutor, DeterministicContext, DeltaLogEntry, ExecutionStep};
+pub use deterministic::{
+    DeltaLogEntry, DeterministicContext, DeterministicExecutor, ExecutionStep,
+};
 pub use experiment::*;
 pub use formal::{FormalVerifier, Property, VerificationResult, Violation};
-pub use hardware::{HardwareAccelerator, HardwareAcceleration};
-pub use zero_copy::{ZeroCopyTriple, ZeroCopyTripleBatch, ZeroCopyStr, ZeroCopyBytes};
+pub use hardware::{HardwareAcceleration, HardwareAccelerator};
+pub use workflow_templates::{TemplateLibrary, TemplateMetadata, WorkflowTemplate};
+pub use zero_copy::{ZeroCopyBytes, ZeroCopyStr, ZeroCopyTriple, ZeroCopyTripleBatch};
 
 // Hyper-advanced feature exports
-pub use type_state::{
-    TypedWorkflow, Uninitialized, Configured, Validated, Executing, Completed, Failed,
-    WorkflowPattern, WorkflowTransform, Identity, ConstrainedWorkflow, Proof, TypeStateProperty,
-};
-pub use lockfree::{LockFreeReceiptQueue, LockFreeReceiptIndex};
-pub use simd_hash::{SimdHashVerifier, SimdMerkleTree, SimdAlignedBuffer, simd_constant_time_eq};
-pub use gat_query::{
-    Query, Filter, Map, Reduce, ScanReceipts, GetReceiptById, GetReceiptsByWorkflow,
-    QueryBuilder as GatQueryBuilder, ValidatedQuery, Fusible,
-};
-pub use arena::{Arena, TypedArena, WorkflowContext, ArenaStats};
+pub use arena::{Arena, ArenaStats, TypedArena, WorkflowContext};
 pub use const_eval::{
-    ConstWorkflow, WorkflowPattern as ConstPattern, Sequential, Parallel, Choice, Loop,
-    Sequence, ParallelCompose, WorkflowMetrics, WorkflowBuilder, ConstOptimizer,
-    AssertChatmanCompliant, CHATMAN_CONSTANT, MAX_WORKFLOW_STEPS, MAX_NESTING_DEPTH,
+    AssertChatmanCompliant, Choice, ConstOptimizer, ConstWorkflow, Loop, Parallel, ParallelCompose,
+    Sequence, Sequential, WorkflowBuilder, WorkflowMetrics, WorkflowPattern as ConstPattern,
+    CHATMAN_CONSTANT, MAX_NESTING_DEPTH, MAX_WORKFLOW_STEPS,
+};
+pub use gat_query::{
+    Filter, Fusible, GetReceiptById, GetReceiptsByWorkflow, Map, Query,
+    QueryBuilder as GatQueryBuilder, Reduce, ScanReceipts, ValidatedQuery,
+};
+pub use lockfree::{LockFreeReceiptIndex, LockFreeReceiptQueue};
+pub use simd_hash::{simd_constant_time_eq, SimdAlignedBuffer, SimdHashVerifier, SimdMerkleTree};
+pub use type_state::{
+    Completed, Configured, ConstrainedWorkflow, Executing, Failed, Identity, Proof,
+    TypeStateProperty, TypedWorkflow, Uninitialized, Validated, WorkflowPattern, WorkflowTransform,
 };
 
 // Microkernel feature exports
-pub use verified_kernel::{
-    KernelResult, KernelError, TickBudget, KernelState, ExecutionPhase, GuardResult,
-    KernelOp, GuardCheckOp, KernelSequence, KernelProof, VerifiedContext,
-};
-pub use refinement_guards::{
-    SectorLevel, PublicSector, PrivateSector, CriticalSector, GuardProperty,
-    BudgetGuard, CausalityGuard, LegalityGuard, ProofToken, CertifiedOp,
-    GuardVector, TypedWorkflow as RefinementWorkflow, DoctrineConstraint,
-    StrictDoctrine, RelaxedDoctrine, InvariantQ, NoRetrocausation, BoundedResource,
+pub use auto_specialize::{
+    AdaptationTrigger, AdaptiveExecutor, ArmNeon, AutoSelector, CpuCapability, DataProfile,
+    GenericCpu, KernelSelection, KernelVariant, LargeData, PerformanceMonitor, ScalarKernel,
+    SimdAvx2Kernel, SkewedData, SmallData, SpecializedExecutor, X86Avx2, X86Avx512,
 };
 pub use cluster_types::{
-    ClusterRole, Leader, Follower, Observer, ClusterConfig, ReplicationFactor,
-    TripleReplication, FiveWayReplication, ConsensusOp, Proposal, Committed,
-    LogEntry, ReplicatedLog, DistributedContext, ConsensusState, StateMachine,
-};
-pub use auto_specialize::{
-    CpuCapability, GenericCpu, X86Avx2, X86Avx512, ArmNeon, DataProfile,
-    SmallData, LargeData, SkewedData, KernelVariant, ScalarKernel, SimdAvx2Kernel,
-    AutoSelector, KernelSelection, SpecializedExecutor, AdaptationTrigger,
-    PerformanceMonitor, AdaptiveExecutor,
+    ClusterConfig, ClusterRole, Committed, ConsensusOp, ConsensusState, DistributedContext,
+    FiveWayReplication, Follower, Leader, LogEntry, Observer, Proposal, ReplicatedLog,
+    ReplicationFactor, StateMachine, TripleReplication,
 };
 pub use linear_resources::{
-    ResourceToken, ConsumedToken, ResourceQuota, PriorityClass, P0, P1, P2, P3, P4,
-    SloBand, Interactive, Batch, Background, ScheduledAction, HotPathScheduler,
-    BackgroundScheduler, ResourcePool,
+    Background, BackgroundScheduler, Batch, ConsumedToken, HotPathScheduler, Interactive,
+    PriorityClass, ResourcePool, ResourceQuota, ResourceToken, ScheduledAction, SloBand, P0, P1,
+    P2, P3, P4,
+};
+pub use refinement_guards::{
+    BoundedResource, BudgetGuard, CausalityGuard, CertifiedOp, CriticalSector, DoctrineConstraint,
+    GuardProperty, GuardVector, InvariantQ, LegalityGuard, NoRetrocausation, PrivateSector,
+    ProofToken, PublicSector, RelaxedDoctrine, SectorLevel, StrictDoctrine,
+    TypedWorkflow as RefinementWorkflow,
+};
+pub use verified_kernel::{
+    ExecutionPhase, GuardCheckOp, GuardResult, KernelError, KernelOp, KernelProof, KernelResult,
+    KernelSequence, KernelState, TickBudget, VerifiedContext,
 };
 
 // 2027 Innovation exports
-pub use effect_system::{
-    Effect, Pure, Io, State, Error, Resource, EffectSet, NoEffects, AllEffects,
-    Effectful, IoHandler, StateHandler, Union, EffectfulWorkflow, Permission, EffectContext,
-};
-pub use simd_kernels::{
-    SimdWidth, Scalar, Avx2, Avx512, Neon, SimdVectorSum, SimdDispatcher, SimdReceiptValidator,
+pub use async_kernel::{
+    AsyncCompleted, AsyncExecutor, AsyncFailed, AsyncKernelOp, AsyncKernelResult, AsyncPending,
+    AsyncRunning, AsyncSuspended, AsyncWorkflow, AsyncWorkflowBuilder, AsyncWorkflowState,
+    Cancellable, CancellationToken, Cancelled, TimeoutError, WithTimeout,
 };
 pub use custom_allocators::{
-    Arena as CustomArena, BumpAllocator, ObjectPool, PooledObject, StackAllocator, AllocatorStats,
+    AllocatorStats, Arena as CustomArena, BumpAllocator, ObjectPool, PooledObject, StackAllocator,
 };
-pub use async_kernel::{
-    AsyncWorkflowState, AsyncPending, AsyncRunning, AsyncSuspended, AsyncCompleted, AsyncFailed,
-    AsyncWorkflow, AsyncKernelResult, AsyncKernelOp, WithTimeout, TimeoutError,
-    CancellationToken, Cancellable, Cancelled, AsyncExecutor, AsyncWorkflowBuilder,
+pub use effect_system::{
+    AllEffects, Effect, EffectContext, EffectSet, Effectful, EffectfulWorkflow, Error, Io,
+    IoHandler, NoEffects, Permission, Pure, Resource, State, StateHandler, Union,
+};
+pub use simd_kernels::{
+    Avx2, Avx512, Neon, Scalar, SimdDispatcher, SimdReceiptValidator, SimdVectorSum, SimdWidth,
 };
 
 // 2027 Advanced Phase exports
-pub use verification_phase::{
-    VerificationLevel, Unverified, Tested, Verified, Certified,
-    VerifiableProperty, Terminates, NoDataRaces, MemorySafe, Deterministic,
-    Proof as VerificationProof, VerifiedWorkflow, CorrectnessCondition, Precondition, Postcondition, Invariant,
-    HoareTriple, Owns, AbstractValue, SymbolicPath, ModelChecker,
-};
-pub use optimization_phase::{
-    OptimizationLevel, O0, O2, O3, Os,
-    PerfCounter, HotPathDetector, CacheAligned, Prefetch, BranchHint,
-    AdaptiveSelector, AutoTune, LoopUnroller, Vectorize, InlineControl, PgoCollector,
-};
-pub use security_phase::{
-    Capability, Permission as SecurityPermission, Read, Write, Execute, Admin, Attenuated, Authority,
-    Secured, SecurityLevel, Public, Confidential, Secret, TopSecret, Classified,
-    AuditEntry, AuditTrail, CryptoKey, SecureChannel, ConstantTime, MemoryGuard,
+pub use deployment_phase::{
+    CanaryDeployment, Completed as DeploymentCompleted, Deployment, DeploymentMetrics,
+    DeploymentState, ErrorRateRollback, Failed as DeploymentFailed, HealthCheck, HealthMonitor,
+    HealthStatus, HttpHealthCheck, LatencyRollback, Pending as DeploymentPending, RequestGuard,
+    RollbackStrategy, RolledBack, RollingOut, ShutdownCoordinator, TcpHealthCheck, Validating,
 };
 pub use observability_phase::{
-    TraceLevel, Trace, Debug, Info, Warn, Error as TraceError,
-    Span, TraceContext, Metric, Counter, Gauge, Histogram,
-    SamplingStrategy, AlwaysSample, NeverSample, ProbabilisticSample, AdaptiveSample,
-    Exemplar, MetricWithExemplars, LogEntry as TraceLogEntry, LogAggregator,
+    AdaptiveSample, AlwaysSample, Counter, Debug, Error as TraceError, Exemplar, Gauge, Histogram,
+    Info, LogAggregator, LogEntry as TraceLogEntry, Metric, MetricWithExemplars, NeverSample,
+    ProbabilisticSample, SamplingStrategy, Span, Trace, TraceContext, TraceLevel, Warn,
 };
-pub use deployment_phase::{
-    DeploymentState, Pending as DeploymentPending, RollingOut, Validating,
-    Completed as DeploymentCompleted, Failed as DeploymentFailed, RolledBack,
-    Deployment, HealthCheck, HealthStatus, HttpHealthCheck, TcpHealthCheck, HealthMonitor,
-    CanaryDeployment, ShutdownCoordinator, RequestGuard,
-    RollbackStrategy, ErrorRateRollback, LatencyRollback, DeploymentMetrics,
+pub use optimization_phase::{
+    AdaptiveSelector, AutoTune, BranchHint, CacheAligned, HotPathDetector, InlineControl,
+    LoopUnroller, OptimizationLevel, Os, PerfCounter, PgoCollector, Prefetch, Vectorize, O0, O2,
+    O3,
+};
+pub use security_phase::{
+    Admin, Attenuated, AuditEntry, AuditTrail, Authority, Capability, Classified, Confidential,
+    ConstantTime, CryptoKey, Execute, MemoryGuard, Permission as SecurityPermission, Public, Read,
+    Secret, SecureChannel, Secured, SecurityLevel, TopSecret, Write,
+};
+pub use verification_phase::{
+    AbstractValue, Certified, CorrectnessCondition, Deterministic, HoareTriple, Invariant,
+    MemorySafe, ModelChecker, NoDataRaces, Owns, Postcondition, Precondition,
+    Proof as VerificationProof, SymbolicPath, Terminates, Tested, Unverified, VerifiableProperty,
+    VerificationLevel, Verified, VerifiedWorkflow,
 };

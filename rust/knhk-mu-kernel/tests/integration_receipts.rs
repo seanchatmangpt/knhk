@@ -2,9 +2,9 @@
 //!
 //! Tests cryptographic provenance and Γ queries
 
+use ed25519_dalek::SigningKey;
 use knhk_mu_kernel::receipts::{Receipt, ReceiptChain, ReceiptQuery};
 use knhk_mu_kernel::sigma::SigmaHash;
-use ed25519_dalek::SigningKey;
 use rand::rngs::OsRng;
 
 #[test]
@@ -90,7 +90,10 @@ fn test_receipt_chain_integrity() {
         chain.append(receipt);
     }
 
-    assert!(chain.verify_chain(), "Large chain should maintain integrity");
+    assert!(
+        chain.verify_chain(),
+        "Large chain should maintain integrity"
+    );
     assert_eq!(chain.len(), 100);
 }
 
@@ -133,7 +136,11 @@ fn test_query_by_task() {
     }
 
     let task_5_receipts = chain.query_by_task(5);
-    assert_eq!(task_5_receipts.len(), 3, "Should find 3 receipts for task 5");
+    assert_eq!(
+        task_5_receipts.len(),
+        3,
+        "Should find 3 receipts for task 5"
+    );
 
     for r in task_5_receipts {
         assert_eq!(r.task_id, 5);
@@ -169,15 +176,19 @@ fn test_query_guard_failures() {
 
         if i % 2 == 0 {
             // Simulate guard failures
-            receipt.guard_bitmap = 0b1111;    // 4 guards checked
-            receipt.guard_outcomes = 0b1100;  // 2 passed, 2 failed
+            receipt.guard_bitmap = 0b1111; // 4 guards checked
+            receipt.guard_outcomes = 0b1100; // 2 passed, 2 failed
         }
 
         chain.append(receipt);
     }
 
     let failures = chain.query_guard_failures();
-    assert_eq!(failures.len(), 5, "Should find 5 receipts with guard failures");
+    assert_eq!(
+        failures.len(),
+        5,
+        "Should find 5 receipts with guard failures"
+    );
 }
 
 #[test]

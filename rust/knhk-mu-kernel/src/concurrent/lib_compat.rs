@@ -11,43 +11,43 @@
 extern crate std;
 
 #[cfg(test)]
-pub use std::sync::atomic::{AtomicPtr, AtomicUsize, AtomicBool, AtomicU64, Ordering};
-#[cfg(test)]
-pub use std::sync::Arc;
-#[cfg(test)]
-pub use std::ptr;
-#[cfg(test)]
-pub use std::mem;
-#[cfg(test)]
-pub use std::hash::{Hash, Hasher};
-#[cfg(test)]
-pub use std::collections::{hash_map::DefaultHasher, VecDeque};
-#[cfg(test)]
-pub use std::cell::{RefCell, Cell};
-#[cfg(test)]
-pub use std::marker::PhantomData;
-#[cfg(test)]
 pub use std::alloc::{alloc, dealloc, Layout};
-#[cfg(test)]
-pub use std::thread;
-#[cfg(test)]
-pub use std::cmp::Ordering as CmpOrdering;
-#[cfg(test)]
-pub use std::ops::Deref;
-#[cfg(test)]
-pub use std::ptr::NonNull;
-#[cfg(test)]
-pub use std::vec::Vec;
-#[cfg(test)]
-pub use std::vec;
-#[cfg(test)]
-pub use std::collections::HashSet;
 #[cfg(test)]
 pub use std::boxed::Box;
 #[cfg(test)]
-pub use std::string::String;
+pub use std::cell::{Cell, RefCell};
+#[cfg(test)]
+pub use std::cmp::Ordering as CmpOrdering;
+#[cfg(test)]
+pub use std::collections::HashSet;
+#[cfg(test)]
+pub use std::collections::{hash_map::DefaultHasher, VecDeque};
 #[cfg(test)]
 pub use std::format;
+#[cfg(test)]
+pub use std::hash::{Hash, Hasher};
+#[cfg(test)]
+pub use std::marker::PhantomData;
+#[cfg(test)]
+pub use std::mem;
+#[cfg(test)]
+pub use std::ops::Deref;
+#[cfg(test)]
+pub use std::ptr;
+#[cfg(test)]
+pub use std::ptr::NonNull;
+#[cfg(test)]
+pub use std::string::String;
+#[cfg(test)]
+pub use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicUsize, Ordering};
+#[cfg(test)]
+pub use std::sync::Arc;
+#[cfg(test)]
+pub use std::thread;
+#[cfg(test)]
+pub use std::vec;
+#[cfg(test)]
+pub use std::vec::Vec;
 
 // When not testing but feature is enabled, require std to be available externally
 #[cfg(all(not(test), feature = "concurrent-structures"))]

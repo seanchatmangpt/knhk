@@ -3,7 +3,7 @@
 //! Measures critical path latency for workflow engine executor operations.
 //! All executor hot path operations MUST complete in ≤8 ticks.
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 /// Simulate workflow task lookup (hot path)
@@ -72,10 +72,18 @@ fn bench_executor_hot_path(c: &mut Criterion) {
     println!("{}", "=".repeat(80));
 
     let r1 = harness.measure("task_lookup", OperationType::HotPath, task_lookup);
-    let r2 = harness.measure("case_state_access", OperationType::HotPath, case_state_access);
+    let r2 = harness.measure(
+        "case_state_access",
+        OperationType::HotPath,
+        case_state_access,
+    );
     let r3 = harness.measure("pattern_lookup", OperationType::HotPath, pattern_lookup);
     let r4 = harness.measure("decision_eval", OperationType::HotPath, decision_eval);
-    let r5 = harness.measure("state_transition_check", OperationType::HotPath, state_transition_check);
+    let r5 = harness.measure(
+        "state_transition_check",
+        OperationType::HotPath,
+        state_transition_check,
+    );
 
     // Print individual results
     Reporter::print_result(&r1);
@@ -90,7 +98,10 @@ fn bench_executor_hot_path(c: &mut Criterion) {
 
     // Assert all within bounds (will panic if any violation)
     if let Err(e) = harness.assert_all_within_bounds() {
-        eprintln!("\n{}", "❌ CRITICAL: Chatman Constant Violation".to_uppercase());
+        eprintln!(
+            "\n{}",
+            "❌ CRITICAL: Chatman Constant Violation".to_uppercase()
+        );
         eprintln!("{}", e);
         eprintln!("\nBuild MUST be blocked. Fix hot path latency violations before merging.");
         panic!("{}", e);

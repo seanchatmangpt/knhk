@@ -9,10 +9,10 @@ use oxigraph::{
     model::{GraphName, NamedNode, Quad, Term},
     store::Store,
 };
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::BufReader;
 use std::path::Path;
-use sha2::{Digest, Sha256};
 use tracing::{debug, info, instrument, warn};
 
 /// Ontology namespaces
@@ -151,7 +151,7 @@ impl TurtleLoader {
         // Check for workflow specification
         if !self.has_workflow_spec(store)? {
             return Err(WorkflowError::Validation(
-                "No workflow specification found in Turtle file".to_string()
+                "No workflow specification found in Turtle file".to_string(),
             ));
         }
 
@@ -222,7 +222,7 @@ impl TurtleLoader {
         let task_count = self.count_elements(store, "Task")?;
         if task_count == 0 {
             return Err(WorkflowError::Validation(
-                "No tasks found in workflow".to_string()
+                "No tasks found in workflow".to_string(),
             ));
         }
         debug!("Found {} tasks", task_count);
@@ -262,7 +262,9 @@ impl TurtleLoader {
         if let QueryResults::Solutions(mut solutions) = results {
             if let Some(Ok(solution)) = solutions.next() {
                 if let Some(Term::Literal(lit)) = solution.get("count") {
-                    return lit.value().parse::<usize>()
+                    return lit
+                        .value()
+                        .parse::<usize>()
                         .map_err(|_| WorkflowError::Parse("Invalid count".to_string()));
                 }
             }
@@ -274,9 +276,10 @@ impl TurtleLoader {
     /// Merge stores
     fn merge_stores(&self, target: &mut Store, source: &Store) -> WorkflowResult<()> {
         for quad in source.iter() {
-            let quad = quad
-                .map_err(|e| WorkflowError::Internal(format!("Failed to iterate: {}", e)))?;
-            target.insert(&quad)
+            let quad =
+                quad.map_err(|e| WorkflowError::Internal(format!("Failed to iterate: {}", e)))?;
+            target
+                .insert(&quad)
                 .map_err(|e| WorkflowError::Internal(format!("Failed to merge: {}", e)))?;
         }
         Ok(())
@@ -289,13 +292,18 @@ impl TurtleLoader {
         // Sort quads for deterministic hashing
         let mut quads: Vec<Quad> = Vec::new();
         for quad in store.iter() {
-            let quad = quad
-                .map_err(|e| WorkflowError::Internal(format!("Failed to iterate: {}", e)))?;
+            let quad =
+                quad.map_err(|e| WorkflowError::Internal(format!("Failed to iterate: {}", e)))?;
             quads.push(quad);
         }
 
         // Sort by string representation for determinism
-        quads.sort_by_key(|q| format!("{} {} {} {}", q.subject, q.predicate, q.object, q.graph_name));
+        quads.sort_by_key(|q| {
+            format!(
+                "{} {} {} {}",
+                q.subject, q.predicate, q.object, q.graph_name
+            )
+        });
 
         // Hash sorted quads
         for quad in quads {
@@ -414,8 +422,16 @@ mod tests {
 
         // Create temp file with Turtle content
         let mut file = NamedTempFile::new().unwrap();
-        writeln!(file, "@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> .").unwrap();
-        writeln!(file, "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .").unwrap();
+        writeln!(
+            file,
+            "@prefix yawl: <http://bitflow.ai/ontology/yawl/v2#> ."
+        )
+        .unwrap();
+        writeln!(
+            file,
+            "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ."
+        )
+        .unwrap();
         writeln!(file, ":spec1 rdf:type yawl:Specification .").unwrap();
         writeln!(file, ":task1 rdf:type yawl:Task .").unwrap();
         file.flush().unwrap();

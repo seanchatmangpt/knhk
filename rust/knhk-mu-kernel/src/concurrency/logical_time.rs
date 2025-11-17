@@ -2,8 +2,8 @@
 //!
 //! Implements Lamport clocks for deterministic total ordering of events.
 
-use core::sync::atomic::{AtomicU64, Ordering};
 use core::cmp::Ordering as CmpOrdering;
+use core::sync::atomic::{AtomicU64, Ordering};
 
 /// Logical timestamp (Lamport clock)
 ///
@@ -311,12 +311,12 @@ mod tests {
         let clock = LogicalClock::new();
 
         // Local events
-        let t1 = clock.tick();  // 1
-        let t2 = clock.tick();  // 2
+        let t1 = clock.tick(); // 1
+        let t2 = clock.tick(); // 2
 
         // Receive remote timestamp (ahead)
         let remote = Timestamp::from_raw(10);
-        let t3 = clock.recv(remote);  // max(2, 10) + 1 = 11
+        let t3 = clock.recv(remote); // max(2, 10) + 1 = 11
 
         assert!(t2.happens_before(&t3));
         assert_eq!(t3.as_raw(), 11);
@@ -327,13 +327,13 @@ mod tests {
         let clock = LogicalClock::new();
 
         // Local events
-        clock.tick();  // 1
-        clock.tick();  // 2
-        clock.tick();  // 3
+        clock.tick(); // 1
+        clock.tick(); // 2
+        clock.tick(); // 3
 
         // Receive remote timestamp (behind)
         let remote = Timestamp::from_raw(1);
-        let t4 = clock.recv(remote);  // max(3, 1) + 1 = 4
+        let t4 = clock.recv(remote); // max(3, 1) + 1 = 4
 
         assert_eq!(t4.as_raw(), 4);
     }
@@ -369,8 +369,8 @@ mod tests {
     fn test_fast_forward() {
         let clock = LogicalClock::new();
 
-        clock.tick();  // 1
-        clock.tick();  // 2
+        clock.tick(); // 1
+        clock.tick(); // 2
 
         clock.fast_forward(Timestamp::from_raw(100));
 

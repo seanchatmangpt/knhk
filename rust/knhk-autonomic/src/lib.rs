@@ -74,23 +74,23 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
-pub mod monitor;
 pub mod analyze;
-pub mod planner;
-pub mod execute;
-pub mod knowledge;
-pub mod hooks;
 pub mod controller;
-pub mod types;
 pub mod error;
+pub mod execute;
+pub mod hooks;
+pub mod knowledge;
+pub mod monitor;
+pub mod planner;
+pub mod types;
 
 // Re-export main types
 pub use controller::AutonomicController;
-pub use types::{
-    Config, Metric, MetricType, Observation, Analysis, Policy, Action,
-    Plan, FeedbackCycle, LearnedPattern, SuccessMemory,
-};
 pub use error::{AutonomicError, Result};
+pub use types::{
+    Action, Analysis, Config, FeedbackCycle, LearnedPattern, Metric, MetricType, Observation, Plan,
+    Policy, SuccessMemory,
+};
 
 /// Autonomic system version (aligned with workspace)
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

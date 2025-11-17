@@ -19,13 +19,13 @@
 #![cfg(test)]
 
 use crate::{
-    timing::{TickBudget, TickCounter, BudgetStatus},
-    patterns::PatternId,
     guards::GuardContext,
-    sigma::{SigmaCompiled, SigmaHash},
-    receipts::Receipt,
-    CHATMAN_CONSTANT,
     memory,
+    patterns::PatternId,
+    receipts::Receipt,
+    sigma::{SigmaCompiled, SigmaHash},
+    timing::{BudgetStatus, TickBudget, TickCounter},
+    CHATMAN_CONSTANT,
 };
 
 /// Test: TickBudget has no UB in construction
@@ -326,7 +326,7 @@ fn miri_const_fn_construction() {
 /// Test: Repr(C) layout is stable
 #[test]
 fn miri_repr_c_layout() {
-    use core::mem::{size_of, align_of};
+    use core::mem::{align_of, size_of};
 
     // TickBudget is repr(C, align(8))
     assert_eq!(size_of::<TickBudget>(), 16); // 2 × u64
@@ -339,8 +339,8 @@ fn miri_repr_c_layout() {
 /// Test: Zero-sized types
 #[test]
 fn miri_zero_sized_types() {
-    use core::mem::size_of;
     use core::marker::PhantomData;
+    use core::mem::size_of;
 
     // PhantomData is zero-sized
     assert_eq!(size_of::<PhantomData<u64>>(), 0);

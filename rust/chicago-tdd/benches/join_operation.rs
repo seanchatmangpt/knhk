@@ -3,7 +3,7 @@
 //! Measures join synchronization point latency.
 //! Join operations MUST complete in ≤8 ticks.
 
-use chicago_tdd::{PerformanceHarness, OperationType, Reporter};
+use chicago_tdd::{OperationType, PerformanceHarness, Reporter};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -52,17 +52,11 @@ fn join_condition() -> bool {
 fn bench_join_operation_hot_path(c: &mut Criterion) {
     let mut harness = PerformanceHarness::with_iterations(1000, 10000, 100);
 
-    c.bench_function("join_and_check", |b| {
-        b.iter(|| black_box(and_join()))
-    });
+    c.bench_function("join_and_check", |b| b.iter(|| black_box(and_join())));
 
-    c.bench_function("join_xor_check", |b| {
-        b.iter(|| black_box(xor_join()))
-    });
+    c.bench_function("join_xor_check", |b| b.iter(|| black_box(xor_join())));
 
-    c.bench_function("join_or_check", |b| {
-        b.iter(|| black_box(or_join()))
-    });
+    c.bench_function("join_or_check", |b| b.iter(|| black_box(or_join())));
 
     c.bench_function("join_counter_inc", |b| {
         b.iter(|| black_box(join_counter_inc()))
@@ -80,7 +74,11 @@ fn bench_join_operation_hot_path(c: &mut Criterion) {
     let r1 = harness.measure("and_join", OperationType::HotPath, and_join);
     let r2 = harness.measure("xor_join", OperationType::HotPath, xor_join);
     let r3 = harness.measure("or_join", OperationType::HotPath, or_join);
-    let r4 = harness.measure("counter_increment", OperationType::HotPath, join_counter_inc);
+    let r4 = harness.measure(
+        "counter_increment",
+        OperationType::HotPath,
+        join_counter_inc,
+    );
     let r5 = harness.measure("condition_check", OperationType::HotPath, join_condition);
 
     Reporter::print_result(&r1);
@@ -93,7 +91,10 @@ fn bench_join_operation_hot_path(c: &mut Criterion) {
     Reporter::print_report(&report);
 
     if let Err(e) = harness.assert_all_within_bounds() {
-        eprintln!("\n{}", "❌ CRITICAL: Join Operation Chatman Constant Violation");
+        eprintln!(
+            "\n{}",
+            "❌ CRITICAL: Join Operation Chatman Constant Violation"
+        );
         eprintln!("{}", e);
         panic!("{}", e);
     }

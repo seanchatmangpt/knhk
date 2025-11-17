@@ -1,18 +1,18 @@
 // Integration tests for LLM Proposer System
 // Tests end-to-end proposal generation, validation, and learning
 
-use knhk_closed_loop::proposer::*;
-use knhk_closed_loop::prompt_engine::PromptEngine;
-use knhk_closed_loop::validator_llm::{ValidationPipeline, ProposalValidator};
-use knhk_closed_loop::learning::LearningSystem;
-use knhk_closed_loop::observation::{DetectedPattern, PatternAction};
+use async_trait::async_trait;
+use ed25519_dalek::SigningKey;
 use knhk_closed_loop::doctrine::DoctrineRule;
 use knhk_closed_loop::invariants::HardInvariants;
+use knhk_closed_loop::learning::LearningSystem;
+use knhk_closed_loop::observation::{DetectedPattern, PatternAction};
+use knhk_closed_loop::prompt_engine::PromptEngine;
+use knhk_closed_loop::proposer::*;
 use knhk_closed_loop::receipt::ReceiptStore;
-use async_trait::async_trait;
+use knhk_closed_loop::validator_llm::{ProposalValidator, ValidationPipeline};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use ed25519_dalek::SigningKey;
 
 /// Mock LLM client for testing
 pub struct MockLLMClient {
@@ -56,7 +56,8 @@ impl MockLLMClient {
     }
 
     pub fn with_q3_violation_response() -> Self {
-        MockLLMClient::new(r#"{
+        MockLLMClient::new(
+            r#"{
   "reasoning": "Add comprehensive transaction validation with 10-step verification",
   "confidence": 0.7,
   "estimated_ticks": 12,
@@ -70,13 +71,18 @@ impl MockLLMClient {
   "doctrines_satisfied": [],
   "invariants_satisfied": [],
   "rollback_plan": "N/A"
-}"#.to_string())
+}"#
+            .to_string(),
+        )
     }
 }
 
 #[async_trait]
 impl LLMClient for MockLLMClient {
-    async fn generate(&self, _prompt: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    async fn generate(
+        &self,
+        _prompt: &str,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         Ok(self.response.clone())
     }
 }
@@ -150,7 +156,8 @@ async fn test_end_to_end_proposal_generation_success() {
     let guards = create_test_guards(Sector::Finance);
 
     // Generate proposal
-    let proposal = proposer.generate_proposal(&pattern, &doctrines, &invariants, &guards)
+    let proposal = proposer
+        .generate_proposal(&pattern, &doctrines, &invariants, &guards)
         .await
         .expect("Proposal generation should succeed");
 
@@ -159,7 +166,10 @@ async fn test_end_to_end_proposal_generation_success() {
     assert!(proposal.confidence > 0.7);
     assert!(proposal.estimated_ticks <= 8);
     assert!(!proposal.delta_sigma.added_classes.is_empty());
-    assert_eq!(proposal.delta_sigma.added_classes[0].uri, "finance:RetirementAccount");
+    assert_eq!(
+        proposal.delta_sigma.added_classes[0].uri,
+        "finance:RetirementAccount"
+    );
 }
 
 #[tokio::test]
@@ -189,7 +199,9 @@ async fn test_proposal_validation_rejects_q3_violation() {
     let guards = create_test_guards(Sector::Finance);
 
     // Attempt to generate proposal (should fail constraint check)
-    let result = proposer.generate_proposal(&pattern, &doctrines, &invariants, &guards).await;
+    let result = proposer
+        .generate_proposal(&pattern, &doctrines, &invariants, &guards)
+        .await;
 
     // Should fail due to Q3 violation (12 ticks > 8)
     assert!(result.is_err());
@@ -222,7 +234,9 @@ async fn test_prompt_engine_includes_all_constraints() {
         performance_budget: PerformanceBudget::new(8, 5),
     };
 
-    let prompt = engine.build_full_prompt(&request).expect("Prompt build should succeed");
+    let prompt = engine
+        .build_full_prompt(&request)
+        .expect("Prompt build should succeed");
 
     // Assert all constraint sections are present
     assert!(prompt.contains("Q1: No Retrocausation"));
@@ -275,7 +289,9 @@ async fn test_learning_system_tracks_outcomes() {
     report.add_pass("invariant_Q3");
 
     // Record outcome
-    learning.record_outcome(proposal, report).expect("Record should succeed");
+    learning
+        .record_outcome(proposal, report)
+        .expect("Record should succeed");
 
     // Verify learning system tracked it
     let metrics = learning.metrics();
@@ -312,13 +328,16 @@ async fn test_rate_limiting() {
 
     // Generate 10 proposals (at rate limit)
     for _ in 0..10 {
-        proposer.generate_proposal(&pattern, &doctrines, &invariants, &guards)
+        proposer
+            .generate_proposal(&pattern, &doctrines, &invariants, &guards)
             .await
             .expect("Should succeed within rate limit");
     }
 
     // 11th should fail
-    let result = proposer.generate_proposal(&pattern, &doctrines, &invariants, &guards).await;
+    let result = proposer
+        .generate_proposal(&pattern, &doctrines, &invariants, &guards)
+        .await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("Rate limit"));

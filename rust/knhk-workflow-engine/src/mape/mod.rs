@@ -3,28 +3,28 @@
 //! Implements the Monitor-Analyze-Plan-Execute-Knowledge feedback loop for
 //! self-adapting workflows per SELF_EXECUTING_WORKFLOWS.md specification.
 
+use crate::engine::{HookEngine, PatternLibrary};
 use crate::error::{WorkflowError, WorkflowResult};
+use crate::guards::InvariantChecker;
 use crate::receipts::{Receipt, ReceiptGenerator, ReceiptStore};
 use crate::snapshots::SnapshotVersioning;
-use crate::guards::InvariantChecker;
-use crate::engine::{HookEngine, PatternLibrary};
-use std::sync::Arc;
-use parking_lot::RwLock;
 use chrono::Utc;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
-pub mod monitor;
 pub mod analyze;
-pub mod plan;
 pub mod execute;
 pub mod knowledge;
+pub mod monitor;
+pub mod plan;
 
-pub use monitor::MonitorPhase;
 pub use analyze::AnalyzePhase;
-pub use plan::PlanPhase;
 pub use execute::ExecutePhase;
 pub use knowledge::KnowledgeBase;
+pub use monitor::MonitorPhase;
+pub use plan::PlanPhase;
 
 /// MAPE-K autonomic engine that implements the feedback loop
 /// for self-executing workflows.
@@ -65,13 +65,8 @@ impl MapeKEngine {
         let knowledge = Arc::new(RwLock::new(KnowledgeBase::new()));
 
         Self {
-            monitor: Arc::new(MonitorPhase::new(
-                receipt_store.clone(),
-                knowledge.clone(),
-            )),
-            analyze: Arc::new(AnalyzePhase::new(
-                knowledge.clone(),
-            )),
+            monitor: Arc::new(MonitorPhase::new(receipt_store.clone(), knowledge.clone())),
+            analyze: Arc::new(AnalyzePhase::new(knowledge.clone())),
             plan: Arc::new(PlanPhase::new(
                 knowledge.clone(),
                 snapshot_versioning.clone(),
@@ -106,14 +101,20 @@ impl MapeKEngine {
 
         // 3. Plan: Generate adaptation plans
         let plans = self.plan.generate_plans(&symptoms).await?;
-        let plan_duration = (Utc::now() - start_time).num_milliseconds() - analyze_duration - monitor_duration;
+        let plan_duration =
+            (Utc::now() - start_time).num_milliseconds() - analyze_duration - monitor_duration;
 
         // 4. Execute: Apply adaptations (shadow deploy + promote)
         let results = self.execute.apply_adaptations(plans).await?;
-        let execute_duration = (Utc::now() - start_time).num_milliseconds() - plan_duration - analyze_duration - monitor_duration;
+        let execute_duration = (Utc::now() - start_time).num_milliseconds()
+            - plan_duration
+            - analyze_duration
+            - monitor_duration;
 
         // 5. Knowledge: Store learned patterns
-        self.knowledge.write().record_cycle(&observations, &symptoms, &results);
+        self.knowledge
+            .write()
+            .record_cycle(&observations, &symptoms, &results);
 
         let total_duration = (Utc::now() - start_time).num_milliseconds();
 

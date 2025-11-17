@@ -49,16 +49,13 @@ fn ontology_path(filename: &str) -> PathBuf {
 fn test_covenant1_load_turtle_workflow() {
     // GIVEN: A valid Turtle workflow definition
     let workflow_path = ontology_path("workflows/examples/autonomous-work-definition.ttl");
-    let turtle_content = fs::read_to_string(&workflow_path)
-        .expect("Failed to read workflow Turtle file");
+    let turtle_content =
+        fs::read_to_string(&workflow_path).expect("Failed to read workflow Turtle file");
 
     // WHEN: We load it into RDF store
     let store = Store::new().expect("Failed to create RDF store");
     store
-        .load_from_reader(
-            oxigraph::io::RdfFormat::Turtle,
-            turtle_content.as_bytes(),
-        )
+        .load_from_reader(oxigraph::io::RdfFormat::Turtle, turtle_content.as_bytes())
         .expect("Failed to parse Turtle");
 
     // THEN: The workflow specification exists
@@ -82,8 +79,7 @@ fn test_covenant1_load_turtle_workflow() {
 fn test_covenant1_turtle_structure_preserved() {
     // GIVEN: A workflow with known structure
     let workflow_path = ontology_path("workflows/examples/autonomous-work-definition.ttl");
-    let turtle_content = fs::read_to_string(&workflow_path)
-        .expect("Failed to read workflow");
+    let turtle_content = fs::read_to_string(&workflow_path).expect("Failed to read workflow");
 
     let store = Store::new().expect("Failed to create store");
     store
@@ -105,10 +101,7 @@ fn test_covenant1_turtle_structure_preserved() {
     if let QueryResults::Solutions(mut solutions) = results {
         if let Some(solution) = solutions.next() {
             let solution = solution.expect("Solution error");
-            let count = solution
-                .get("count")
-                .expect("No count binding")
-                .as_ref();
+            let count = solution.get("count").expect("No count binding").as_ref();
 
             // Verify count matches expected structure
             assert!(
@@ -203,10 +196,7 @@ fn test_covenant1_data_flow_preserved() {
     // THEN: All data variables are preserved
     if let QueryResults::Solutions(solutions) = results {
         let count = solutions.count();
-        assert!(
-            count > 0,
-            "Data flow variables not preserved from Turtle"
-        );
+        assert!(count > 0, "Data flow variables not preserved from Turtle");
     }
 }
 
@@ -263,10 +253,7 @@ fn test_covenant1_round_trip_preservation() {
 
     let store = Store::new().expect("Failed to create store");
     store
-        .load_from_reader(
-            oxigraph::io::RdfFormat::Turtle,
-            original_turtle.as_bytes(),
-        )
+        .load_from_reader(oxigraph::io::RdfFormat::Turtle, original_turtle.as_bytes())
         .expect("Failed to parse");
 
     // WHEN: We extract the entire workflow structure
@@ -368,7 +355,11 @@ fn test_covenant1_pattern_permutation_validation() {
     if let QueryResults::Solutions(mut solutions) = results {
         if let Some(solution) = solutions.next() {
             let solution = solution.expect("Solution error");
-            let count = solution.get("count").expect("No count").as_ref().to_string();
+            let count = solution
+                .get("count")
+                .expect("No count")
+                .as_ref()
+                .to_string();
 
             assert!(
                 count.contains("1") || count.contains("2"),
@@ -420,7 +411,10 @@ fn test_covenant1_no_template_conditional_logic() {
 
     // THEN: Extraction is pure (no filtering, no reordering, no reconstruction)
     if let QueryResults::Solutions(mut solutions) = results {
-        let solution = solutions.next().expect("No task found").expect("Solution error");
+        let solution = solutions
+            .next()
+            .expect("No task found")
+            .expect("Solution error");
 
         let label = solution.get("label").expect("No label").to_string();
         let split = solution.get("split").expect("No split").to_string();

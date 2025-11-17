@@ -6,17 +6,17 @@
 //! These benchmarks verify that all MAPE-K hot path operations meet the
 //! 8-tick latency bound defined in the Chatman Equation.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use knhk_autonomic::{
-    monitor::MonitoringComponent,
-    analyze::AnalysisComponent,
-    planner::PlanningComponent,
-    types::{MetricType, RuleType, Action, ActionType, RiskLevel, Metric, TrendDirection},
-};
-use tokio::runtime::Runtime;
 use chrono::Utc;
-use uuid::Uuid;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use knhk_autonomic::{
+    analyze::AnalysisComponent,
+    monitor::MonitoringComponent,
+    planner::PlanningComponent,
+    types::{Action, ActionType, Metric, MetricType, RiskLevel, RuleType, TrendDirection},
+};
 use std::collections::HashMap;
+use tokio::runtime::Runtime;
+use uuid::Uuid;
 
 /// Chatman Constant: Maximum allowed ticks for hot path
 const CHATMAN_CONSTANT_TICKS: u64 = 8;
@@ -36,13 +36,16 @@ fn bench_monitor_collect(c: &mut Criterion) {
 
             // Setup
             for i in 0..10 {
-                monitor.register_metric(
-                    format!("metric_{}", i),
-                    MetricType::Performance,
-                    100.0,
-                    150.0,
-                    "ms",
-                ).await.unwrap();
+                monitor
+                    .register_metric(
+                        format!("metric_{}", i),
+                        MetricType::Performance,
+                        100.0,
+                        150.0,
+                        "ms",
+                    )
+                    .await
+                    .unwrap();
             }
 
             // HOT PATH: Collect metrics
@@ -51,8 +54,12 @@ fn bench_monitor_collect(c: &mut Criterion) {
             let elapsed = start.elapsed().as_nanos() as u64;
 
             let ticks = ns_to_ticks(elapsed);
-            assert!(ticks <= CHATMAN_CONSTANT_TICKS,
-                "Monitor collection took {} ticks (max: {} ticks)", ticks, CHATMAN_CONSTANT_TICKS);
+            assert!(
+                ticks <= CHATMAN_CONSTANT_TICKS,
+                "Monitor collection took {} ticks (max: {} ticks)",
+                ticks,
+                CHATMAN_CONSTANT_TICKS
+            );
 
             black_box(metrics)
         });
@@ -67,20 +74,18 @@ fn bench_monitor_detect_anomalies(c: &mut Criterion) {
         b.to_async(&rt).iter(|| async {
             let monitor = MonitoringComponent::new();
 
-            let metrics = vec![
-                Metric {
-                    id: Uuid::new_v4(),
-                    name: "test_metric".to_string(),
-                    metric_type: MetricType::Performance,
-                    current_value: 200.0,
-                    expected_value: 100.0,
-                    unit: "ms".to_string(),
-                    anomaly_threshold: 150.0,
-                    is_anomalous: true,
-                    trend: TrendDirection::Degrading,
-                    timestamp: Utc::now(),
-                }
-            ];
+            let metrics = vec![Metric {
+                id: Uuid::new_v4(),
+                name: "test_metric".to_string(),
+                metric_type: MetricType::Performance,
+                current_value: 200.0,
+                expected_value: 100.0,
+                unit: "ms".to_string(),
+                anomaly_threshold: 150.0,
+                is_anomalous: true,
+                trend: TrendDirection::Degrading,
+                timestamp: Utc::now(),
+            }];
 
             // HOT PATH: Detect anomalies
             let start = std::time::Instant::now();
@@ -88,8 +93,12 @@ fn bench_monitor_detect_anomalies(c: &mut Criterion) {
             let elapsed = start.elapsed().as_nanos() as u64;
 
             let ticks = ns_to_ticks(elapsed);
-            assert!(ticks <= CHATMAN_CONSTANT_TICKS,
-                "Anomaly detection took {} ticks (max: {} ticks)", ticks, CHATMAN_CONSTANT_TICKS);
+            assert!(
+                ticks <= CHATMAN_CONSTANT_TICKS,
+                "Anomaly detection took {} ticks (max: {} ticks)",
+                ticks,
+                CHATMAN_CONSTANT_TICKS
+            );
 
             black_box(observations)
         });
@@ -105,27 +114,24 @@ fn bench_analyze_rule_match(c: &mut Criterion) {
             let mut analyzer = AnalysisComponent::new();
 
             // Setup rules
-            analyzer.register_rule(
-                "High Error Rate",
-                RuleType::HighErrorRate,
-                ""
-            ).await.unwrap();
+            analyzer
+                .register_rule("High Error Rate", RuleType::HighErrorRate, "")
+                .await
+                .unwrap();
 
             let observations = vec![];
-            let metrics = vec![
-                Metric {
-                    id: Uuid::new_v4(),
-                    name: "Error Count".to_string(),
-                    metric_type: MetricType::Reliability,
-                    current_value: 10.0,
-                    expected_value: 1.0,
-                    unit: "count".to_string(),
-                    anomaly_threshold: 5.0,
-                    is_anomalous: true,
-                    trend: TrendDirection::Degrading,
-                    timestamp: Utc::now(),
-                }
-            ];
+            let metrics = vec![Metric {
+                id: Uuid::new_v4(),
+                name: "Error Count".to_string(),
+                metric_type: MetricType::Reliability,
+                current_value: 10.0,
+                expected_value: 1.0,
+                unit: "count".to_string(),
+                anomaly_threshold: 5.0,
+                is_anomalous: true,
+                trend: TrendDirection::Degrading,
+                timestamp: Utc::now(),
+            }];
 
             // HOT PATH: Analyze
             let start = std::time::Instant::now();
@@ -133,8 +139,12 @@ fn bench_analyze_rule_match(c: &mut Criterion) {
             let elapsed = start.elapsed().as_nanos() as u64;
 
             let ticks = ns_to_ticks(elapsed);
-            assert!(ticks <= CHATMAN_CONSTANT_TICKS,
-                "Analysis took {} ticks (max: {} ticks)", ticks, CHATMAN_CONSTANT_TICKS);
+            assert!(
+                ticks <= CHATMAN_CONSTANT_TICKS,
+                "Analysis took {} ticks (max: {} ticks)",
+                ticks,
+                CHATMAN_CONSTANT_TICKS
+            );
 
             black_box(analyses)
         });
@@ -163,12 +173,10 @@ fn bench_plan_policy_eval(c: &mut Criterion) {
             let action_id = action.id;
             planner.register_action(action).await.unwrap();
 
-            planner.register_policy(
-                "Test Policy",
-                "HighErrorRate",
-                vec![action_id],
-                100,
-            ).await.unwrap();
+            planner
+                .register_policy("Test Policy", "HighErrorRate", vec![action_id], 100)
+                .await
+                .unwrap();
 
             let analysis = crate::types::Analysis {
                 id: Uuid::new_v4(),
@@ -186,12 +194,19 @@ fn bench_plan_policy_eval(c: &mut Criterion) {
 
             // HOT PATH: Create plan
             let start = std::time::Instant::now();
-            let plan = planner.create_plan(&analysis, &success_rates).await.unwrap();
+            let plan = planner
+                .create_plan(&analysis, &success_rates)
+                .await
+                .unwrap();
             let elapsed = start.elapsed().as_nanos() as u64;
 
             let ticks = ns_to_ticks(elapsed);
-            assert!(ticks <= CHATMAN_CONSTANT_TICKS,
-                "Planning took {} ticks (max: {} ticks)", ticks, CHATMAN_CONSTANT_TICKS);
+            assert!(
+                ticks <= CHATMAN_CONSTANT_TICKS,
+                "Planning took {} ticks (max: {} ticks)",
+                ticks,
+                CHATMAN_CONSTANT_TICKS
+            );
 
             black_box(plan)
         });

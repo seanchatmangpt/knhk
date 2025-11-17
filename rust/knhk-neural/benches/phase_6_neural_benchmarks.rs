@@ -22,10 +22,9 @@
 /// - Q-Learning action selection: <1µs (ε-greedy)
 /// - Memory overhead: <10MB per model instance
 /// - Daily improvement: ≥20% within 5 epochs
-
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use std::time::{Instant, Duration};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 // Mock neural training structures (replace with actual knhk-neural imports)
 // For benchmarking purposes, we use simplified versions
@@ -90,7 +89,11 @@ impl Dataset {
                 .map(|_| (rand::random::<f32>() - 0.5) * 2.0)
                 .collect();
             samples.push(sample);
-            labels.push(if rand::random::<f32>() > 0.5 { 1.0 } else { 0.0 });
+            labels.push(if rand::random::<f32>() > 0.5 {
+                1.0
+            } else {
+                0.0
+            });
         }
 
         Dataset { samples, labels }
@@ -163,14 +166,17 @@ impl QLearningAgent {
     /// ε-greedy action selection (benchmark: should be <1µs)
     fn select_action(&self, state: &WorkflowState) -> WorkflowAction {
         if rand::random::<f32>() < self.exploration_rate {
-            WorkflowAction::from_index(rand::random::<usize>() % WorkflowAction::ACTION_COUNT).unwrap()
+            WorkflowAction::from_index(rand::random::<usize>() % WorkflowAction::ACTION_COUNT)
+                .unwrap()
         } else {
             self.best_action(state)
         }
     }
 
     fn best_action(&self, state: &WorkflowState) -> WorkflowAction {
-        let q_values = self.q_table.get(state)
+        let q_values = self
+            .q_table
+            .get(state)
             .cloned()
             .unwrap_or_else(|| vec![0.0; WorkflowAction::ACTION_COUNT]);
 
@@ -191,14 +197,20 @@ impl QLearningAgent {
         reward: f32,
         next_state: &WorkflowState,
     ) {
-        self.q_table.entry(state.clone())
+        self.q_table
+            .entry(state.clone())
             .or_insert_with(|| vec![0.0; WorkflowAction::ACTION_COUNT]);
 
-        let next_q_values = self.q_table.get(next_state)
+        let next_q_values = self
+            .q_table
+            .get(next_state)
             .cloned()
             .unwrap_or_else(|| vec![0.0; WorkflowAction::ACTION_COUNT]);
 
-        let max_next_q = next_q_values.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let max_next_q = next_q_values
+            .iter()
+            .cloned()
+            .fold(f32::NEG_INFINITY, f32::max);
 
         let action_idx = action.to_index();
         let current_q = self.q_table[state][action_idx];
@@ -330,9 +342,7 @@ fn bench_inference_latency(c: &mut Criterion) {
     let sample = black_box(vec![0.5; 128]);
 
     group.bench_function("single_prediction_128x64", |b| {
-        b.iter(|| {
-            layer.forward(&sample)
-        });
+        b.iter(|| layer.forward(&sample));
     });
 
     group.finish();
@@ -352,9 +362,7 @@ fn bench_inference_throughput(c: &mut Criterion) {
             batch_size,
             |b, &size| {
                 let layer = black_box(NeuralLayer::new(128, 64));
-                let samples: Vec<Vec<f32>> = (0..size)
-                    .map(|_| vec![0.5; 128])
-                    .collect();
+                let samples: Vec<Vec<f32>> = (0..size).map(|_| vec![0.5; 128]).collect();
 
                 b.iter_custom(|_| {
                     let start = Instant::now();
@@ -383,9 +391,7 @@ fn bench_ql_action_selection(c: &mut Criterion) {
 
     // Benchmark ε-greedy action selection
     group.bench_function("epsilon_greedy_action", |b| {
-        b.iter(|| {
-            agent.select_action(&state)
-        });
+        b.iter(|| agent.select_action(&state));
     });
 
     group.finish();
@@ -520,7 +526,8 @@ fn bench_optimizer_comparison(c: &mut Criterion) {
             for (batch_samples, _) in dataset.batches(32) {
                 for sample in batch_samples {
                     let output = layer.forward(sample);
-                    let gradient: Vec<f32> = output.iter().map(|x| x * 0.01 + weight_decay).collect();
+                    let gradient: Vec<f32> =
+                        output.iter().map(|x| x * 0.01 + weight_decay).collect();
                     let _ = layer.backward(&gradient, lr);
                     lr *= 0.999;
                 }
@@ -614,11 +621,7 @@ fn bench_adaptive_workflow(c: &mut Criterion) {
                 let action = agent.select_action(&state);
 
                 // Simulate reward (peaks at step 50)
-                let reward = if step > 40 && step < 60 {
-                    1.0
-                } else {
-                    -0.1
-                };
+                let reward = if step > 40 && step < 60 { 1.0 } else { -0.1 };
 
                 cumulative_reward += reward;
 
@@ -679,7 +682,12 @@ criterion_group! {
         bench_adaptive_workflow
 }
 
-criterion_main!(training_benches, inference_benches, rl_benches, validation_benches);
+criterion_main!(
+    training_benches,
+    inference_benches,
+    rl_benches,
+    validation_benches
+);
 
 // ============================================================================
 // PERFORMANCE TARGETS & ACCEPTANCE CRITERIA

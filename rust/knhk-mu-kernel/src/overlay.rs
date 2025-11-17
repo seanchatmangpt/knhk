@@ -9,22 +9,20 @@
 //! - Type-safe overlay application
 //! - Safety-classified promotion
 
-use crate::sigma::{SigmaHash, SigmaCompiled};
+use crate::overlay_proof::{ComposedProof, OverlayProof, ProofStrength};
+use crate::overlay_safety::{ColdUnsafe, HotSafe, SafeProof, SafetyLevel, WarmSafe};
 use crate::overlay_types::{
-    OverlayValue, OverlayChanges, OverlayChange, OverlayMetadata,
-    OverlayError, SnapshotId, PerfImpact,
+    OverlayChange, OverlayChanges, OverlayError, OverlayMetadata, OverlayValue, PerfImpact,
+    SnapshotId,
 };
-use crate::overlay_proof::{OverlayProof, ComposedProof, ProofStrength};
-use crate::overlay_safety::{SafeProof, HotSafe, WarmSafe, ColdUnsafe, SafetyLevel};
-use core::marker::PhantomData;
-use alloc::vec::Vec;
+use crate::sigma::{SigmaCompiled, SigmaHash};
 use alloc::string::String;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 // Re-export for convenience
-pub use crate::overlay_proof::{
-    CompilerProof, FormalProof, PropertyProof, RuntimeProof,
-};
 pub use crate::overlay_compiler::{CompilerContext, ProofBuilder};
+pub use crate::overlay_proof::{CompilerProof, FormalProof, PropertyProof, RuntimeProof};
 
 /// Proof algebra for compositional reasoning
 ///
@@ -37,10 +35,7 @@ pub trait ProofAlgebra: Sized {
     /// Compose two proofs
     ///
     /// Returns a composed proof that preserves the intersection of guarantees.
-    fn compose<P1, P2>(
-        proof1: P1,
-        proof2: P2,
-    ) -> Result<Self::Output, OverlayError>
+    fn compose<P1, P2>(proof1: P1, proof2: P2) -> Result<Self::Output, OverlayError>
     where
         P1: OverlayProof,
         P2: OverlayProof;
@@ -58,10 +53,7 @@ pub struct StandardProofAlgebra;
 impl ProofAlgebra for StandardProofAlgebra {
     type Output = ComposedProof<CompilerProof, CompilerProof>;
 
-    fn compose<P1, P2>(
-        proof1: P1,
-        proof2: P2,
-    ) -> Result<Self::Output, OverlayError>
+    fn compose<P1, P2>(proof1: P1, proof2: P2) -> Result<Self::Output, OverlayError>
     where
         P1: OverlayProof,
         P2: OverlayProof,
@@ -152,10 +144,7 @@ impl<P: OverlayProof> OverlayAlgebra for OverlayValue<P> {
         let composed_changes = self.changes.merge(&other.changes)?;
 
         // Compose proofs
-        let composed_proof = ComposedProof::new(
-            self.proof().clone(),
-            other.proof().clone(),
-        )?;
+        let composed_proof = ComposedProof::new(self.proof().clone(), other.proof().clone())?;
 
         // Merge metadata (take higher priority)
         let metadata = if self.metadata.priority >= other.metadata.priority {
@@ -165,12 +154,7 @@ impl<P: OverlayProof> OverlayAlgebra for OverlayValue<P> {
         };
 
         // Create composed overlay
-        OverlayValue::new(
-            self.base_sigma,
-            composed_changes,
-            composed_proof,
-            metadata,
-        )
+        OverlayValue::new(self.base_sigma, composed_changes, composed_proof, metadata)
     }
 
     fn apply_to(&self, sigma: &SigmaCompiled) -> Result<SigmaCompiled, OverlayError> {
@@ -221,7 +205,11 @@ impl<P: OverlayProof> OverlayValue<P> {
     /// Apply a single change to Σ
     fn apply_change(sigma: &mut SigmaCompiled, change: &OverlayChange) -> Result<(), OverlayError> {
         match change {
-            OverlayChange::AddTask { task_id, descriptor, tick_budget } => {
+            OverlayChange::AddTask {
+                task_id,
+                descriptor,
+                tick_budget,
+            } => {
                 // In reality, would add task to sigma's task table
                 // For now, just verify it's valid
                 if *tick_budget > crate::CHATMAN_CONSTANT {
@@ -232,7 +220,10 @@ impl<P: OverlayProof> OverlayValue<P> {
                 Ok(())
             }
 
-            OverlayChange::RemoveTask { task_id, dependency_proof } => {
+            OverlayChange::RemoveTask {
+                task_id,
+                dependency_proof,
+            } => {
                 // Verify no dependencies
                 if dependency_proof.checked_tasks.is_empty() {
                     return Err(OverlayError::ProofDoesNotCoverChanges);
@@ -242,7 +233,12 @@ impl<P: OverlayProof> OverlayValue<P> {
                 Ok(())
             }
 
-            OverlayChange::ModifyTask { task_id, old_descriptor, new_descriptor, invariant_proof } => {
+            OverlayChange::ModifyTask {
+                task_id,
+                old_descriptor,
+                new_descriptor,
+                invariant_proof,
+            } => {
                 // Verify invariants hold
                 for inv in &invariant_proof.invariants {
                     if inv.result != crate::guards::GuardResult::Pass {
@@ -254,25 +250,40 @@ impl<P: OverlayProof> OverlayValue<P> {
                 Ok(())
             }
 
-            OverlayChange::AddGuard { guard_id, condition, threshold } => {
+            OverlayChange::AddGuard {
+                guard_id,
+                condition,
+                threshold,
+            } => {
                 // Would add guard to sigma's guard table
                 let _ = (guard_id, condition, threshold);
                 Ok(())
             }
 
-            OverlayChange::ModifyGuardThreshold { guard_id, old_threshold, new_threshold } => {
+            OverlayChange::ModifyGuardThreshold {
+                guard_id,
+                old_threshold,
+                new_threshold,
+            } => {
                 // Would update guard threshold
                 let _ = (guard_id, old_threshold, new_threshold);
                 Ok(())
             }
 
-            OverlayChange::AddPattern { pattern_id, target_task, priority } => {
+            OverlayChange::AddPattern {
+                pattern_id,
+                target_task,
+                priority,
+            } => {
                 // Would add pattern to dispatch table
                 let _ = (pattern_id, target_task, priority);
                 Ok(())
             }
 
-            OverlayChange::RemovePattern { pattern_id, usage_proof } => {
+            OverlayChange::RemovePattern {
+                pattern_id,
+                usage_proof,
+            } => {
                 // Verify pattern is unused
                 if usage_proof.invocation_count > 0 {
                     return Err(OverlayError::ProofDoesNotCoverChanges);
@@ -324,11 +335,14 @@ impl KernelPromotion for crate::core::MuKernel {
         overlay: OverlayValue<SafeProof<HotSafe, P>>,
     ) -> Result<(), PromoteError> {
         // Validate overlay
-        overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
 
         // Atomic swap of Σ*
         // (In reality, would use atomic pointer swap)
-        let _new_sigma = overlay.apply_to(&self.sigma)
+        let _new_sigma = overlay
+            .apply_to(&self.sigma)
             .map_err(|_| PromoteError::ApplicationFailed)?;
 
         // Would update self.sigma atomically here
@@ -342,11 +356,14 @@ impl KernelPromotion for crate::core::MuKernel {
         rollout: RolloutStrategy,
     ) -> Result<(), PromoteError> {
         // Validate overlay
-        overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+        overlay
+            .validate()
+            .map_err(|_| PromoteError::ValidationFailed)?;
 
         // Apply with rollout strategy
         let _ = rollout;
-        let _new_sigma = overlay.apply_to(&self.sigma)
+        let _new_sigma = overlay
+            .apply_to(&self.sigma)
             .map_err(|_| PromoteError::ApplicationFailed)?;
 
         // Would gradually roll out according to strategy
@@ -366,7 +383,9 @@ impl KernelPromotion for crate::core::MuKernel {
 
         #[cfg(debug_assertions)]
         {
-            overlay.validate().map_err(|_| PromoteError::ValidationFailed)?;
+            overlay
+                .validate()
+                .map_err(|_| PromoteError::ValidationFailed)?;
             let _ = overlay.apply_to(&self.sigma);
             Ok(())
         }
@@ -387,9 +406,7 @@ pub enum RolloutStrategy {
     },
 
     /// Blue-green deployment
-    BlueGreen {
-        wait_seconds: u64,
-    },
+    BlueGreen { wait_seconds: u64 },
 
     /// A/B test
     ABTest {
@@ -478,9 +495,12 @@ pub type ProofCarryingOverlay<P> = OverlayValue<P>;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::overlay_proof::{ChangeCoverage, CompilerProof};
+    use crate::overlay_types::{
+        InvariantProof, OverlayChange, OverlayChanges, OverlayMetadata, PerfImpact,
+        VerificationMethod,
+    };
     use crate::sigma::TaskDescriptor;
-    use crate::overlay_types::{OverlayChanges, OverlayChange, OverlayMetadata, PerfImpact, InvariantProof, VerificationMethod};
-    use crate::overlay_proof::{CompilerProof, ChangeCoverage};
 
     fn make_test_metadata() -> OverlayMetadata {
         OverlayMetadata {
@@ -544,19 +564,10 @@ mod tests {
         let snapshot = SnapshotId([1; 32]);
         let proof = make_test_proof();
 
-        let overlay1 = OverlayValue::new(
-            snapshot,
-            changes1,
-            proof.clone(),
-            make_test_metadata(),
-        ).unwrap();
+        let overlay1 =
+            OverlayValue::new(snapshot, changes1, proof.clone(), make_test_metadata()).unwrap();
 
-        let overlay2 = OverlayValue::new(
-            snapshot,
-            changes2,
-            proof,
-            make_test_metadata(),
-        ).unwrap();
+        let overlay2 = OverlayValue::new(snapshot, changes2, proof, make_test_metadata()).unwrap();
 
         let composed = overlay1.compose(&overlay2);
         assert!(composed.is_ok());
@@ -578,7 +589,7 @@ mod tests {
 
         let mut changes2 = OverlayChanges::new();
         changes2.push(OverlayChange::ModifyTask {
-            task_id: 1,  // Same task!
+            task_id: 1, // Same task!
             old_descriptor: TaskDescriptor::default(),
             new_descriptor: TaskDescriptor::default(),
             invariant_proof: InvariantProof {
@@ -591,19 +602,10 @@ mod tests {
         let snapshot = SnapshotId([1; 32]);
         let proof = make_test_proof();
 
-        let overlay1 = OverlayValue::new(
-            snapshot,
-            changes1,
-            proof.clone(),
-            make_test_metadata(),
-        ).unwrap();
+        let overlay1 =
+            OverlayValue::new(snapshot, changes1, proof.clone(), make_test_metadata()).unwrap();
 
-        let overlay2 = OverlayValue::new(
-            snapshot,
-            changes2,
-            proof,
-            make_test_metadata(),
-        ).unwrap();
+        let overlay2 = OverlayValue::new(snapshot, changes2, proof, make_test_metadata()).unwrap();
 
         let composed = overlay1.compose(&overlay2);
         assert!(composed.is_err());
@@ -622,12 +624,8 @@ mod tests {
         let safe_proof = SafeProof::<HotSafe, _>::new(proof).unwrap();
 
         let snapshot = SnapshotId([1; 32]);
-        let overlay = OverlayValue::new(
-            snapshot,
-            changes,
-            safe_proof,
-            make_test_metadata(),
-        ).unwrap();
+        let overlay =
+            OverlayValue::new(snapshot, changes, safe_proof, make_test_metadata()).unwrap();
 
         // Type system ensures only HotSafe overlays can be promoted hot
         let mut kernel = crate::core::MuKernel::new(1024);

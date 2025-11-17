@@ -4,8 +4,8 @@
 //! compiled Σ* artifacts satisfy all invariants.
 
 use core::marker::PhantomData;
-use typenum::{Unsigned, U0, U1, U2, U3, U4, U5, U6, U7, U8};
 use typenum::consts::*;
+use typenum::{Unsigned, U0, U1, U2, U3, U4, U5, U6, U7, U8};
 
 /// Type-level natural number representing tick count
 pub trait TickCount: Unsigned {}
@@ -243,9 +243,7 @@ impl IsaComplianceProof {
     pub fn verify(&self) -> bool {
         // In real implementation, check against ISA registry
         // For now, check opcodes are in reasonable range
-        self.opcodes[..self.opcode_count]
-            .iter()
-            .all(|&op| op < 128) // ISA opcodes are 0-127
+        self.opcodes[..self.opcode_count].iter().all(|&op| op < 128) // ISA opcodes are 0-127
     }
 }
 

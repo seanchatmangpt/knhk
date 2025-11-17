@@ -6,11 +6,11 @@
 //! - Device availability and current utilization
 //! - Memory constraints
 
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use std::sync::Arc;
 use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
+use thiserror::Error;
 
 /// Dispatch routing error
 #[derive(Error, Debug)]
@@ -61,22 +61,22 @@ impl ExecutionDevice {
     /// Get estimated memory bandwidth (GB/s)
     pub fn bandwidth_gb_s(&self) -> f32 {
         match self {
-            ExecutionDevice::CPU => 40.0,        // DDR4/DDR5
-            ExecutionDevice::CUDA => 900.0,      // RTX 4090
-            ExecutionDevice::HIP => 576.0,       // MI250X
-            ExecutionDevice::OpenCL => 256.0,    // Varies
-            ExecutionDevice::FPGA => 64.0,       // PCIe Gen4 x16
+            ExecutionDevice::CPU => 40.0,     // DDR4/DDR5
+            ExecutionDevice::CUDA => 900.0,   // RTX 4090
+            ExecutionDevice::HIP => 576.0,    // MI250X
+            ExecutionDevice::OpenCL => 256.0, // Varies
+            ExecutionDevice::FPGA => 64.0,    // PCIe Gen4 x16
         }
     }
 
     /// Get estimated compute throughput (TFLOPS)
     pub fn compute_tflops(&self) -> f32 {
         match self {
-            ExecutionDevice::CPU => 0.5,         // Core i9 scalar
-            ExecutionDevice::CUDA => 83.0,       // RTX 4090 FP32
-            ExecutionDevice::HIP => 47.6,        // MI250X FP32
-            ExecutionDevice::OpenCL => 10.0,     // Varies
-            ExecutionDevice::FPGA => 5.0,        // Estimated
+            ExecutionDevice::CPU => 0.5,     // Core i9 scalar
+            ExecutionDevice::CUDA => 83.0,   // RTX 4090 FP32
+            ExecutionDevice::HIP => 47.6,    // MI250X FP32
+            ExecutionDevice::OpenCL => 10.0, // Varies
+            ExecutionDevice::FPGA => 5.0,    // Estimated
         }
     }
 }
@@ -165,14 +165,17 @@ impl DeviceTracker {
             ExecutionDevice::OpenCL,
             ExecutionDevice::FPGA,
         ] {
-            capabilities.insert(*device, DeviceCapability {
-                device: *device,
-                available_memory: 0,
-                utilization: 0.0,
-                available: false, // Will be detected
-                temperature: 0.0,
-                power_usage: 0.0,
-            });
+            capabilities.insert(
+                *device,
+                DeviceCapability {
+                    device: *device,
+                    available_memory: 0,
+                    utilization: 0.0,
+                    available: false, // Will be detected
+                    temperature: 0.0,
+                    power_usage: 0.0,
+                },
+            );
         }
 
         // CPU always available
@@ -283,10 +286,7 @@ impl DispatchRouter {
     }
 
     /// Make dispatch decision based on operation profile
-    pub fn decide(
-        &self,
-        operation: &OperationProfile,
-    ) -> Result<DispatchDecision, DispatchError> {
+    pub fn decide(&self, operation: &OperationProfile) -> Result<DispatchDecision, DispatchError> {
         let available_devices = self.device_tracker.available_devices();
 
         if available_devices.is_empty() {
@@ -347,8 +347,10 @@ impl DispatchRouter {
         let (h2d_time_us, d2h_time_us) = if device == ExecutionDevice::CPU {
             (0, 0)
         } else {
-            let h2d = Self::estimate_transfer_time(ExecutionDevice::CPU, device, operation.input_size);
-            let d2h = Self::estimate_transfer_time(device, ExecutionDevice::CPU, operation.output_size);
+            let h2d =
+                Self::estimate_transfer_time(ExecutionDevice::CPU, device, operation.input_size);
+            let d2h =
+                Self::estimate_transfer_time(device, ExecutionDevice::CPU, operation.output_size);
             (h2d, d2h)
         };
 

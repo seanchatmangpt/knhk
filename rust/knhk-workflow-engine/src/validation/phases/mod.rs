@@ -10,16 +10,13 @@
 pub mod core;
 pub mod executor;
 pub mod registry;
-pub mod validators;
 pub mod telemetry;
+pub mod validators;
 
 // Re-export core types
 pub use core::{Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus};
 pub use executor::PhaseExecutor;
-pub use registry::{PhaseRegistry, register_phase};
+pub use registry::{register_phase, PhaseRegistry};
 pub use validators::{
-    ConformanceMetricsPhase,
-    FormalSoundnessPhase,
-    LoadTestingPhase,
-    PatternSemanticsPhase,
+    ConformanceMetricsPhase, FormalSoundnessPhase, LoadTestingPhase, PatternSemanticsPhase,
 };

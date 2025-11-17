@@ -311,7 +311,10 @@ pub fn validate(
 }
 
 /// Get real-time phase metrics for a workflow
-#[cfg_attr(feature = "otel", instrument(skip_all, fields(operation = "knhk.console.metrics")))]
+#[cfg_attr(
+    feature = "otel",
+    instrument(skip_all, fields(operation = "knhk.console.metrics"))
+)]
 #[verb(noun = "console")]
 pub fn metrics(workflow_file: PathBuf, state_store: Option<String>) -> CnvResult<MetricsResult> {
     let runtime = get_runtime();
@@ -348,9 +351,10 @@ pub fn metrics(workflow_file: PathBuf, state_store: Option<String>) -> CnvResult
                     .len() as f64,
             );
 
-            Ok::<(WorkflowSpecId, std::collections::HashMap<String, f64>), clap_noun_verb::NounVerbError>(
-                (spec_id, metrics),
-            )
+            Ok::<
+                (WorkflowSpecId, std::collections::HashMap<String, f64>),
+                clap_noun_verb::NounVerbError,
+            >((spec_id, metrics))
         })?;
 
         Ok(MetricsResult {
@@ -414,7 +418,10 @@ pub fn export(
 }
 
 /// Analyze workflow and provide insights
-#[cfg_attr(feature = "otel", instrument(skip_all, fields(operation = "knhk.console.analyze")))]
+#[cfg_attr(
+    feature = "otel",
+    instrument(skip_all, fields(operation = "knhk.console.analyze"))
+)]
 #[verb(noun = "console")]
 pub fn analyze(workflow_file: PathBuf, state_store: Option<String>) -> CnvResult<AnalyzeResult> {
     let runtime = get_runtime();
@@ -454,7 +461,8 @@ pub fn analyze(workflow_file: PathBuf, state_store: Option<String>) -> CnvResult
 
             let mut recommendations = Vec::new();
             if total_tasks > 20 {
-                recommendations.push("Consider breaking workflow into smaller sub-workflows".to_string());
+                recommendations
+                    .push("Consider breaking workflow into smaller sub-workflows".to_string());
             }
             if patterns_used.len() > 10 {
                 recommendations.push("High pattern diversity - ensure consistency".to_string());

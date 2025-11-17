@@ -5,7 +5,7 @@
 
 use crate::error::{WorkflowError, WorkflowResult};
 use oxigraph::{
-    model::{Term, Literal},
+    model::{Literal, Term},
     sparql::{QueryResults, QuerySolution},
     store::Store,
 };
@@ -169,10 +169,22 @@ impl PatternExtractor {
     /// Create new extractor
     pub fn new(parallel: bool) -> Self {
         let mut namespaces = HashMap::new();
-        namespaces.insert("yawl".to_string(), "http://bitflow.ai/ontology/yawl/v2#".to_string());
-        namespaces.insert("rdf".to_string(), "http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_string());
-        namespaces.insert("rdfs".to_string(), "http://www.w3.org/2000/01/rdf-schema#".to_string());
-        namespaces.insert("time".to_string(), "http://www.w3.org/2006/time#".to_string());
+        namespaces.insert(
+            "yawl".to_string(),
+            "http://bitflow.ai/ontology/yawl/v2#".to_string(),
+        );
+        namespaces.insert(
+            "rdf".to_string(),
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_string(),
+        );
+        namespaces.insert(
+            "rdfs".to_string(),
+            "http://www.w3.org/2000/01/rdf-schema#".to_string(),
+        );
+        namespaces.insert(
+            "time".to_string(),
+            "http://www.w3.org/2006/time#".to_string(),
+        );
 
         Self {
             parallel,
@@ -224,8 +236,8 @@ impl PatternExtractor {
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 let task = self.parse_task_info(&solution)?;
                 tasks.push(task);
@@ -237,30 +249,45 @@ impl PatternExtractor {
 
     /// Parse task info from solution
     fn parse_task_info(&self, solution: &QuerySolution) -> WorkflowResult<TaskInfo> {
-        let iri = solution.get("task")
+        let iri = solution
+            .get("task")
             .map(|t| t.to_string())
             .ok_or_else(|| WorkflowError::Parse("Missing task IRI".to_string()))?;
 
-        let name = solution.get("name")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                Some(lit.value().to_string())
-            } else { None })
+        let name = solution
+            .get("name")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    Some(lit.value().to_string())
+                } else {
+                    None
+                }
+            })
             .unwrap_or_else(|| iri.clone());
 
-        let task_type = solution.get("type")
-            .and_then(|t| if let Term::Literal(lit) = t {
+        let task_type = solution.get("type").and_then(|t| {
+            if let Term::Literal(lit) = t {
                 Some(lit.value().to_string())
-            } else { None });
+            } else {
+                None
+            }
+        });
 
-        let split_type = solution.get("split")
-            .and_then(|t| if let Term::Literal(lit) = t {
+        let split_type = solution.get("split").and_then(|t| {
+            if let Term::Literal(lit) = t {
                 Some(lit.value().to_string())
-            } else { None });
+            } else {
+                None
+            }
+        });
 
-        let join_type = solution.get("join")
-            .and_then(|t| if let Term::Literal(lit) = t {
+        let join_type = solution.get("join").and_then(|t| {
+            if let Term::Literal(lit) = t {
                 Some(lit.value().to_string())
-            } else { None });
+            } else {
+                None
+            }
+        });
 
         Ok(TaskInfo {
             iri,
@@ -361,17 +388,15 @@ impl PatternExtractor {
     /// Determine pattern type from task info
     fn determine_pattern_type(&self, task: &TaskInfo) -> PatternType {
         match (&task.split_type, &task.join_type) {
-            (Some(split), Some(join)) => {
-                match (split.as_str(), join.as_str()) {
-                    ("AND", "AND") => PatternType::ParallelSplit,
-                    ("XOR", "XOR") => PatternType::ExclusiveChoice,
-                    ("OR", "OR") => PatternType::MultiChoice,
-                    ("AND", "XOR") => PatternType::Discriminator,
-                    ("XOR", "AND") => PatternType::Synchronization,
-                    ("OR", "AND") => PatternType::SynchronizingMerge,
-                    _ => PatternType::Sequence,
-                }
-            }
+            (Some(split), Some(join)) => match (split.as_str(), join.as_str()) {
+                ("AND", "AND") => PatternType::ParallelSplit,
+                ("XOR", "XOR") => PatternType::ExclusiveChoice,
+                ("OR", "OR") => PatternType::MultiChoice,
+                ("AND", "XOR") => PatternType::Discriminator,
+                ("XOR", "AND") => PatternType::Synchronization,
+                ("OR", "AND") => PatternType::SynchronizingMerge,
+                _ => PatternType::Sequence,
+            },
             _ => {
                 // Check task type for special patterns
                 if let Some(ref task_type) = task.task_type {
@@ -426,15 +451,16 @@ impl PatternExtractor {
             self.namespaces["yawl"], task_iri
         );
 
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("Guard query failed: {}", e)))?;
 
         let mut guards = Vec::new();
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 let guard = self.parse_guard(&solution)?;
                 guards.push(guard);
@@ -446,26 +472,37 @@ impl PatternExtractor {
 
     /// Parse guard from solution
     fn parse_guard(&self, solution: &QuerySolution) -> WorkflowResult<Guard> {
-        let id = solution.get("guard")
+        let id = solution
+            .get("guard")
             .map(|t| t.to_string())
             .unwrap_or_else(|| "guard".to_string());
 
-        let expression = solution.get("expr")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                Some(lit.value().to_string())
-            } else { None })
+        let expression = solution
+            .get("expr")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    Some(lit.value().to_string())
+                } else {
+                    None
+                }
+            })
             .unwrap_or_else(|| "true".to_string());
 
-        let guard_type = solution.get("type")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                match lit.value() {
-                    "precondition" => Some(GuardType::PreCondition),
-                    "postcondition" => Some(GuardType::PostCondition),
-                    "invariant" => Some(GuardType::Invariant),
-                    "exception" => Some(GuardType::ExceptionHandler),
-                    _ => None,
+        let guard_type = solution
+            .get("type")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    match lit.value() {
+                        "precondition" => Some(GuardType::PreCondition),
+                        "postcondition" => Some(GuardType::PostCondition),
+                        "invariant" => Some(GuardType::Invariant),
+                        "exception" => Some(GuardType::ExceptionHandler),
+                        _ => None,
+                    }
+                } else {
+                    None
                 }
-            } else { None })
+            })
             .unwrap_or(GuardType::PreCondition);
 
         // Extract variables from expression
@@ -505,7 +542,11 @@ impl PatternExtractor {
     }
 
     /// Extract variables for task
-    fn extract_variables_sync(&self, store: &Store, task_iri: &str) -> WorkflowResult<Vec<Variable>> {
+    fn extract_variables_sync(
+        &self,
+        store: &Store,
+        task_iri: &str,
+    ) -> WorkflowResult<Vec<Variable>> {
         let query = format!(
             "PREFIX yawl: <{}>\n\
              SELECT ?var ?name ?type ?init WHERE {{\n\
@@ -517,15 +558,16 @@ impl PatternExtractor {
             self.namespaces["yawl"], task_iri
         );
 
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("Variable query failed: {}", e)))?;
 
         let mut variables = Vec::new();
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 let variable = self.parse_variable(&solution)?;
                 variables.push(variable);
@@ -537,30 +579,43 @@ impl PatternExtractor {
 
     /// Parse variable from solution
     fn parse_variable(&self, solution: &QuerySolution) -> WorkflowResult<Variable> {
-        let name = solution.get("name")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                Some(lit.value().to_string())
-            } else { None })
+        let name = solution
+            .get("name")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    Some(lit.value().to_string())
+                } else {
+                    None
+                }
+            })
             .unwrap_or_else(|| "var".to_string());
 
-        let data_type = solution.get("type")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                match lit.value() {
-                    "string" => Some(DataType::String),
-                    "integer" => Some(DataType::Integer),
-                    "float" => Some(DataType::Float),
-                    "boolean" => Some(DataType::Boolean),
-                    "datetime" => Some(DataType::DateTime),
-                    "duration" => Some(DataType::Duration),
-                    other => Some(DataType::Object(other.to_string())),
+        let data_type = solution
+            .get("type")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    match lit.value() {
+                        "string" => Some(DataType::String),
+                        "integer" => Some(DataType::Integer),
+                        "float" => Some(DataType::Float),
+                        "boolean" => Some(DataType::Boolean),
+                        "datetime" => Some(DataType::DateTime),
+                        "duration" => Some(DataType::Duration),
+                        other => Some(DataType::Object(other.to_string())),
+                    }
+                } else {
+                    None
                 }
-            } else { None })
+            })
             .unwrap_or(DataType::String);
 
-        let initial_value = solution.get("init")
-            .and_then(|t| if let Term::Literal(lit) = t {
+        let initial_value = solution.get("init").and_then(|t| {
+            if let Term::Literal(lit) = t {
                 Some(lit.value().to_string())
-            } else { None });
+            } else {
+                None
+            }
+        });
 
         Ok(Variable {
             name,
@@ -571,7 +626,11 @@ impl PatternExtractor {
     }
 
     /// Extract constraints
-    fn extract_constraints_sync(&self, store: &Store, task_iri: &str) -> WorkflowResult<Vec<Constraint>> {
+    fn extract_constraints_sync(
+        &self,
+        store: &Store,
+        task_iri: &str,
+    ) -> WorkflowResult<Vec<Constraint>> {
         let query = format!(
             "PREFIX yawl: <{}>\n\
              SELECT ?constraint ?type ?expr ?severity WHERE {{\n\
@@ -583,15 +642,16 @@ impl PatternExtractor {
             self.namespaces["yawl"], task_iri
         );
 
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("Constraint query failed: {}", e)))?;
 
         let mut constraints = Vec::new();
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 let constraint = self.parse_constraint(&solution)?;
                 constraints.push(constraint);
@@ -603,33 +663,48 @@ impl PatternExtractor {
 
     /// Parse constraint
     fn parse_constraint(&self, solution: &QuerySolution) -> WorkflowResult<Constraint> {
-        let constraint_type = solution.get("type")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                match lit.value() {
-                    "temporal" => Some(ConstraintType::Temporal),
-                    "resource" => Some(ConstraintType::Resource),
-                    "data" => Some(ConstraintType::Data),
-                    "control" => Some(ConstraintType::Control),
-                    _ => None,
+        let constraint_type = solution
+            .get("type")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    match lit.value() {
+                        "temporal" => Some(ConstraintType::Temporal),
+                        "resource" => Some(ConstraintType::Resource),
+                        "data" => Some(ConstraintType::Data),
+                        "control" => Some(ConstraintType::Control),
+                        _ => None,
+                    }
+                } else {
+                    None
                 }
-            } else { None })
+            })
             .unwrap_or(ConstraintType::Data);
 
-        let expression = solution.get("expr")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                Some(lit.value().to_string())
-            } else { None })
+        let expression = solution
+            .get("expr")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    Some(lit.value().to_string())
+                } else {
+                    None
+                }
+            })
             .unwrap_or_default();
 
-        let severity = solution.get("severity")
-            .and_then(|t| if let Term::Literal(lit) = t {
-                match lit.value() {
-                    "must" => Some(ConstraintSeverity::Must),
-                    "should" => Some(ConstraintSeverity::Should),
-                    "may" => Some(ConstraintSeverity::May),
-                    _ => None,
+        let severity = solution
+            .get("severity")
+            .and_then(|t| {
+                if let Term::Literal(lit) = t {
+                    match lit.value() {
+                        "must" => Some(ConstraintSeverity::Must),
+                        "should" => Some(ConstraintSeverity::Should),
+                        "may" => Some(ConstraintSeverity::May),
+                        _ => None,
+                    }
+                } else {
+                    None
                 }
-            } else { None })
+            })
             .unwrap_or(ConstraintSeverity::Must);
 
         Ok(Constraint {
@@ -640,7 +715,11 @@ impl PatternExtractor {
     }
 
     /// Extract data flows
-    fn extract_data_flows_sync(&self, store: &Store, task_iri: &str) -> WorkflowResult<Vec<DataFlow>> {
+    fn extract_data_flows_sync(
+        &self,
+        store: &Store,
+        task_iri: &str,
+    ) -> WorkflowResult<Vec<DataFlow>> {
         let query = format!(
             "PREFIX yawl: <{}>\n\
              SELECT ?flow ?source ?target ?transform WHERE {{\n\
@@ -652,27 +731,33 @@ impl PatternExtractor {
             self.namespaces["yawl"], task_iri
         );
 
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("Data flow query failed: {}", e)))?;
 
         let mut flows = Vec::new();
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 let flow = DataFlow {
-                    source: solution.get("source")
+                    source: solution
+                        .get("source")
                         .map(|t| t.to_string())
                         .unwrap_or_default(),
-                    target: solution.get("target")
+                    target: solution
+                        .get("target")
                         .map(|t| t.to_string())
                         .unwrap_or_default(),
-                    transformation: solution.get("transform")
-                        .and_then(|t| if let Term::Literal(lit) = t {
+                    transformation: solution.get("transform").and_then(|t| {
+                        if let Term::Literal(lit) = t {
                             Some(lit.value().to_string())
-                        } else { None }),
+                        } else {
+                            None
+                        }
+                    }),
                 };
                 flows.push(flow);
             }
@@ -682,7 +767,11 @@ impl PatternExtractor {
     }
 
     /// Extract event handlers
-    fn extract_event_handlers_sync(&self, store: &Store, task_iri: &str) -> WorkflowResult<Vec<EventHandler>> {
+    fn extract_event_handlers_sync(
+        &self,
+        store: &Store,
+        task_iri: &str,
+    ) -> WorkflowResult<Vec<EventHandler>> {
         let query = format!(
             "PREFIX yawl: <{}>\n\
              SELECT ?handler ?event ?expr ?priority WHERE {{\n\
@@ -694,31 +783,47 @@ impl PatternExtractor {
             self.namespaces["yawl"], task_iri
         );
 
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("Event handler query failed: {}", e)))?;
 
         let mut handlers = Vec::new();
 
         if let QueryResults::Solutions(solutions) = results {
             for solution in solutions {
-                let solution = solution
-                    .map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
+                let solution =
+                    solution.map_err(|e| WorkflowError::Parse(format!("Solution error: {}", e)))?;
 
                 let handler = EventHandler {
-                    event_type: solution.get("event")
-                        .and_then(|t| if let Term::Literal(lit) = t {
-                            Some(lit.value().to_string())
-                        } else { None })
+                    event_type: solution
+                        .get("event")
+                        .and_then(|t| {
+                            if let Term::Literal(lit) = t {
+                                Some(lit.value().to_string())
+                            } else {
+                                None
+                            }
+                        })
                         .unwrap_or_default(),
-                    handler: solution.get("expr")
-                        .and_then(|t| if let Term::Literal(lit) = t {
-                            Some(lit.value().to_string())
-                        } else { None })
+                    handler: solution
+                        .get("expr")
+                        .and_then(|t| {
+                            if let Term::Literal(lit) = t {
+                                Some(lit.value().to_string())
+                            } else {
+                                None
+                            }
+                        })
                         .unwrap_or_default(),
-                    priority: solution.get("priority")
-                        .and_then(|t| if let Term::Literal(lit) = t {
-                            lit.value().parse().ok()
-                        } else { None })
+                    priority: solution
+                        .get("priority")
+                        .and_then(|t| {
+                            if let Term::Literal(lit) = t {
+                                lit.value().parse().ok()
+                            } else {
+                                None
+                            }
+                        })
                         .unwrap_or(0),
                 };
                 handlers.push(handler);
@@ -739,7 +844,8 @@ impl PatternExtractor {
             self.namespaces["yawl"], self.namespaces["time"], task_iri
         );
 
-        let results = store.query(&query)
+        let results = store
+            .query(&query)
             .map_err(|e| WorkflowError::Parse(format!("Timeout query failed: {}", e)))?;
 
         if let QueryResults::Solutions(mut solutions) = results {
@@ -812,7 +918,10 @@ mod tests {
 
         assert_eq!(extractor.map_pattern_to_id(&PatternType::Sequence), 1);
         assert_eq!(extractor.map_pattern_to_id(&PatternType::ParallelSplit), 2);
-        assert_eq!(extractor.map_pattern_to_id(&PatternType::MultipleInstance), 13);
+        assert_eq!(
+            extractor.map_pattern_to_id(&PatternType::MultipleInstance),
+            13
+        );
     }
 
     #[tokio::test]

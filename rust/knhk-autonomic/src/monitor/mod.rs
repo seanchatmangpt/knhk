@@ -41,13 +41,13 @@
 //! # }
 //! ```
 
-use crate::types::{Metric, MetricType, Observation, EventType, Severity, TrendDirection};
 use crate::error::{AutonomicError, Result};
+use crate::types::{EventType, Metric, MetricType, Observation, Severity, TrendDirection};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{instrument, debug, warn};
+use tracing::{debug, instrument, warn};
 use uuid::Uuid;
 
 /// Monitoring component for collecting metrics and detecting anomalies
@@ -113,13 +113,10 @@ impl MonitoringComponent {
 
     /// Update metric value
     #[instrument(skip(self))]
-    pub async fn update_metric(
-        &mut self,
-        name: &str,
-        value: f64,
-    ) -> Result<()> {
+    pub async fn update_metric(&mut self, name: &str, value: f64) -> Result<()> {
         let mut metrics = self.metrics.write().await;
-        let metric = metrics.get_mut(name)
+        let metric = metrics
+            .get_mut(name)
             .ok_or_else(|| AutonomicError::Monitor(format!("Metric not found: {}", name)))?;
 
         // Update value
@@ -143,7 +140,10 @@ impl MonitoringComponent {
         metric.trend = self.calculate_trend(values);
 
         if metric.is_anomalous {
-            warn!("Metric {} is anomalous: {} > {}", name, value, metric.anomaly_threshold);
+            warn!(
+                "Metric {} is anomalous: {} > {}",
+                name, value, metric.anomaly_threshold
+            );
         }
 
         Ok(())
@@ -269,13 +269,10 @@ mod tests {
         let mut monitor = MonitoringComponent::new();
 
         // Register metric
-        let id = monitor.register_metric(
-            "test_metric",
-            MetricType::Performance,
-            100.0,
-            150.0,
-            "ms",
-        ).await.unwrap();
+        let id = monitor
+            .register_metric("test_metric", MetricType::Performance, 100.0, 150.0, "ms")
+            .await
+            .unwrap();
 
         assert!(id.as_u128() > 0);
 
@@ -293,13 +290,10 @@ mod tests {
     async fn test_anomaly_detection() {
         let mut monitor = MonitoringComponent::new();
 
-        monitor.register_metric(
-            "test_metric",
-            MetricType::Performance,
-            100.0,
-            150.0,
-            "ms",
-        ).await.unwrap();
+        monitor
+            .register_metric("test_metric", MetricType::Performance, 100.0, 150.0, "ms")
+            .await
+            .unwrap();
 
         // Update with anomalous value
         monitor.update_metric("test_metric", 200.0).await.unwrap();

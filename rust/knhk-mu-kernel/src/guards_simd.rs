@@ -33,20 +33,17 @@
 //! vs ~8 cycles scalar (1 cycle/guard)
 //! ```
 
-#![cfg_attr(
-    all(feature = "simd", target_feature = "avx2"),
-    feature(portable_simd)
-)]
+#![cfg_attr(all(feature = "simd", target_feature = "avx2"), feature(portable_simd))]
 
+use crate::guards::{GuardError, GuardId, GuardResult};
 use crate::isa::GuardContext;
-use crate::guards::{GuardResult, GuardError, GuardId};
 
 #[cfg(all(feature = "simd", target_feature = "avx2"))]
-use core::simd::{u64x8, mask64x8, Simd, SimdPartialOrd};
+use core::simd::{mask64x8, u64x8, Simd, SimdPartialOrd};
 
-pub mod vectorized;
-pub mod layout;
 pub mod fallback;
+pub mod layout;
+pub mod vectorized;
 
 /// SIMD batch size (number of guards evaluated in parallel)
 pub const SIMD_BATCH_SIZE: usize = 8;
@@ -142,7 +139,7 @@ impl SimdGuardBatch {
     #[inline(always)]
     pub fn all_passed(&self) -> bool {
         let bitmap = self.evaluate();
-        bitmap == 0xFF  // All 8 bits set
+        bitmap == 0xFF // All 8 bits set
     }
 
     /// Check if any guard failed
@@ -391,21 +388,13 @@ mod tests {
 
     #[test]
     fn test_evaluate_guards_batch() {
-        let guards = vec![
-            (5, 0, 10),
-            (15, 10, 20),
-            (25, 20, 30),
-            (35, 30, 40),
-        ];
+        let guards = vec![(5, 0, 10), (15, 10, 20), (25, 20, 30), (35, 30, 40)];
 
-        assert!(
-            evaluate_guards_batch(&guards),
-            "All guards should pass"
-        );
+        assert!(evaluate_guards_batch(&guards), "All guards should pass");
 
         let failing_guards = vec![
             (5, 0, 10),
-            (15, 20, 30),  // Fails: 15 < 20
+            (15, 20, 30), // Fails: 15 < 20
             (25, 20, 30),
         ];
 

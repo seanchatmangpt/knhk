@@ -77,10 +77,7 @@ pub enum LRSchedule {
     },
 
     /// Exponential decay: lr = initial_lr * decay_rate^step
-    ExponentialDecay {
-        initial_lr: f32,
-        decay_rate: f32,
-    },
+    ExponentialDecay { initial_lr: f32, decay_rate: f32 },
 
     /// Cosine annealing: lr follows cosine curve from initial to eta_min
     CosineAnnealing {
@@ -116,9 +113,7 @@ impl LRSchedule {
             LRSchedule::ExponentialDecay {
                 initial_lr,
                 decay_rate,
-            } => {
-                initial_lr * decay_rate.powi(step as i32)
-            }
+            } => initial_lr * decay_rate.powi(step as i32),
 
             LRSchedule::CosineAnnealing {
                 initial_lr,
@@ -126,8 +121,7 @@ impl LRSchedule {
                 eta_min,
             } => {
                 let progress = (step as f32) / (*t_max as f32);
-                let cosine_decay =
-                    (1.0 + (progress * std::f32::consts::PI).cos()) / 2.0;
+                let cosine_decay = (1.0 + (progress * std::f32::consts::PI).cos()) / 2.0;
                 eta_min + (initial_lr - eta_min) * cosine_decay
             }
 
@@ -605,11 +599,10 @@ impl OptimizerState for AdamOptimizer {
         for (i, grad) in gradient.iter().enumerate() {
             let grad_with_decay = grad + self.weight_decay;
 
-            self.m_t[i] = self.beta1 * self.m_t[i]
-                + (1.0 - self.beta1) * grad_with_decay;
+            self.m_t[i] = self.beta1 * self.m_t[i] + (1.0 - self.beta1) * grad_with_decay;
 
-            self.v_t[i] = self.beta2 * self.v_t[i]
-                + (1.0 - self.beta2) * grad_with_decay * grad_with_decay;
+            self.v_t[i] =
+                self.beta2 * self.v_t[i] + (1.0 - self.beta2) * grad_with_decay * grad_with_decay;
 
             let m_hat = self.m_t[i] / bias_correction1;
             let v_hat = self.v_t[i] / bias_correction2;
@@ -727,7 +720,7 @@ impl AdamWOptimizer {
             return Err("Weight decay must be non-negative and finite".to_string());
         }
         self.weight_decay = weight_decay;
-        self.adam.weight_decay = 0.0;  // Ensure decoupling
+        self.adam.weight_decay = 0.0; // Ensure decoupling
         Ok(self)
     }
 
@@ -1092,9 +1085,7 @@ mod tests {
     // Gradient Clipping Tests
     #[test]
     fn test_gradient_clipping_value() {
-        let clipping = GradientClipping::new()
-            .with_max_value(0.5)
-            .unwrap();
+        let clipping = GradientClipping::new().with_max_value(0.5).unwrap();
         let mut grad = vec![0.3, 0.7, 0.2];
         clipping.clip(&mut grad);
         assert_eq!(grad[0], 0.3);
@@ -1104,9 +1095,7 @@ mod tests {
 
     #[test]
     fn test_gradient_clipping_norm() {
-        let clipping = GradientClipping::new()
-            .with_max_norm(1.0)
-            .unwrap();
+        let clipping = GradientClipping::new().with_max_norm(1.0).unwrap();
         let mut grad = vec![0.6, 0.8]; // norm = 1.0
         clipping.clip(&mut grad);
         assert_eq!(grad[0], 0.6);
@@ -1120,9 +1109,7 @@ mod tests {
 
     #[test]
     fn test_gradient_clipping_would_clip() {
-        let clipping = GradientClipping::new()
-            .with_max_value(0.5)
-            .unwrap();
+        let clipping = GradientClipping::new().with_max_value(0.5).unwrap();
         let grad = vec![0.3, 0.7, 0.2];
         assert!(clipping.would_clip(&grad));
 

@@ -141,7 +141,10 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
             } => {
                 if leaf_key == &key {
                     // Replace value
-                    (Arc::new(Node::new_leaf(key, value)), Some(leaf_value.clone()))
+                    (
+                        Arc::new(Node::new_leaf(key, value)),
+                        Some(leaf_value.clone()),
+                    )
                 } else {
                     // Create branch or collision
                     let leaf_hash = hash_key(leaf_key);
@@ -156,8 +159,10 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
 
                         if leaf_idx == new_idx {
                             // Need to go deeper
-                            let child = Arc::new(Node::new_leaf(leaf_key.clone(), leaf_value.clone()));
-                            let (new_child, old_value) = child.insert(hash, key, value, shift + BITS);
+                            let child =
+                                Arc::new(Node::new_leaf(leaf_key.clone(), leaf_value.clone()));
+                            let (new_child, old_value) =
+                                child.insert(hash, key, value, shift + BITS);
 
                             let bitmap = 1 << leaf_idx;
                             let children = vec![new_child];
@@ -227,7 +232,12 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
     }
 
     /// Remove key (returns new root and old value)
-    fn remove(self: Arc<Self>, hash: u64, key: &K, shift: usize) -> (Option<Arc<Node<K, V>>>, Option<V>) {
+    fn remove(
+        self: Arc<Self>,
+        hash: u64,
+        key: &K,
+        shift: usize,
+    ) -> (Option<Arc<Node<K, V>>>, Option<V>) {
         match self.as_ref() {
             Node::Branch { bitmap, children } => {
                 let idx = index(hash, shift);
@@ -243,7 +253,10 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
                 if let Some(new_child) = new_child {
                     let mut new_children = children.clone();
                     new_children[pos] = new_child;
-                    (Some(Arc::new(Node::new_branch(*bitmap, new_children))), old_value)
+                    (
+                        Some(Arc::new(Node::new_branch(*bitmap, new_children))),
+                        old_value,
+                    )
                 } else {
                     // Remove child
                     let new_bitmap = *bitmap & !bit;
@@ -252,7 +265,10 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
                     } else {
                         let mut new_children = children.clone();
                         new_children.remove(pos);
-                        (Some(Arc::new(Node::new_branch(new_bitmap, new_children))), old_value)
+                        (
+                            Some(Arc::new(Node::new_branch(new_bitmap, new_children))),
+                            old_value,
+                        )
                     }
                 }
             }
@@ -266,15 +282,19 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
                     (Some(self), None)
                 }
             }
-            Node::Collision { hash: coll_hash, entries } => {
+            Node::Collision {
+                hash: coll_hash,
+                entries,
+            } => {
                 if *coll_hash != hash {
                     return (Some(self), None);
                 }
 
                 let mut new_entries = entries.clone();
-                let old_value = new_entries.iter().position(|(k, _)| k == key).map(|i| {
-                    new_entries.remove(i).1
-                });
+                let old_value = new_entries
+                    .iter()
+                    .position(|(k, _)| k == key)
+                    .map(|i| new_entries.remove(i).1);
 
                 if old_value.is_none() {
                     (Some(self), None)
@@ -283,7 +303,10 @@ impl<K: Eq + Hash + Clone, V: Clone> Node<K, V> {
                     let (k, v) = new_entries.into_iter().next().unwrap();
                     (Some(Arc::new(Node::new_leaf(k, v))), old_value)
                 } else {
-                    (Some(Arc::new(Node::new_collision(hash, new_entries))), old_value)
+                    (
+                        Some(Arc::new(Node::new_collision(hash, new_entries))),
+                        old_value,
+                    )
                 }
             }
         }
@@ -328,12 +351,10 @@ impl<K: Eq + Hash + Clone, V: Clone> ConcurrentHAMT<K, V> {
     fn try_update_root(&self, old: *mut Arc<Node<K, V>>, new: Arc<Node<K, V>>) -> bool {
         let new_ptr = Box::into_raw(Box::new(new));
 
-        match self.root.compare_exchange(
-            old,
-            new_ptr,
-            Ordering::Release,
-            Ordering::Acquire,
-        ) {
+        match self
+            .root
+            .compare_exchange(old, new_ptr, Ordering::Release, Ordering::Acquire)
+        {
             Ok(_) => {
                 // Successfully updated, old root will be dropped when Arc count reaches 0
                 unsafe {

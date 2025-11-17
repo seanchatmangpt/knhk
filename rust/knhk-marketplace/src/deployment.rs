@@ -51,7 +51,11 @@ impl DeploymentManager {
         }
     }
 
-    pub fn create_deployment(&mut self, provider: CloudProvider, registry: String) -> DeploymentConfig {
+    pub fn create_deployment(
+        &mut self,
+        provider: CloudProvider,
+        registry: String,
+    ) -> DeploymentConfig {
         let config = DeploymentConfig {
             id: Uuid::new_v4(),
             provider,

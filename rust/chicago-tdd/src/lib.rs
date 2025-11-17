@@ -158,7 +158,8 @@ impl MeasurementResult {
             return Ok(()); // Cannot compare
         }
 
-        let percent_change = ((current_p50 as f64 - baseline_p50 as f64) / baseline_p50 as f64) * 100.0;
+        let percent_change =
+            ((current_p50 as f64 - baseline_p50 as f64) / baseline_p50 as f64) * 100.0;
 
         if percent_change > threshold_percent {
             Err(ChicagoError::RegressionDetected(
@@ -314,7 +315,12 @@ impl PerformanceHarness {
     }
 
     /// Measure a single operation with warmup and statistical analysis
-    pub fn measure<F, T>(&mut self, name: &str, op_type: OperationType, mut operation: F) -> MeasurementResult
+    pub fn measure<F, T>(
+        &mut self,
+        name: &str,
+        op_type: OperationType,
+        mut operation: F,
+    ) -> MeasurementResult
     where
         F: FnMut() -> T,
     {
@@ -407,9 +413,16 @@ impl PerformanceHarness {
     }
 
     /// Check for regressions against baseline results
-    pub fn check_regressions(&self, baseline: &[MeasurementResult], threshold_percent: f64) -> ChicagoResult<()> {
+    pub fn check_regressions(
+        &self,
+        baseline: &[MeasurementResult],
+        threshold_percent: f64,
+    ) -> ChicagoResult<()> {
         for current in &self.results {
-            if let Some(baseline_result) = baseline.iter().find(|r| r.operation_name == current.operation_name) {
+            if let Some(baseline_result) = baseline
+                .iter()
+                .find(|r| r.operation_name == current.operation_name)
+            {
                 current.check_regression(baseline_result.statistics.p50, threshold_percent)?;
             }
         }
@@ -436,7 +449,11 @@ mod tests {
         assert_eq!(stats.min, 1);
         assert_eq!(stats.max, 10);
         // With linear interpolation, p50 of [1..10] is 5.5 (rounded to 6)
-        assert!(stats.p50 >= 5 && stats.p50 <= 6, "p50 should be 5 or 6, got {}", stats.p50);
+        assert!(
+            stats.p50 >= 5 && stats.p50 <= 6,
+            "p50 should be 5 or 6, got {}",
+            stats.p50
+        );
         assert!((stats.mean - 5.5).abs() < 0.01);
     }
 
@@ -456,7 +473,10 @@ mod tests {
         // measurement overhead. This is expected behavior - the harness is designed
         // to measure real-world operations, not contrived test cases.
         // We verify the measurement infrastructure works, not the arbitrary bound.
-        assert!(result.statistics.p99 < 1000, "Measurement should be reasonable");
+        assert!(
+            result.statistics.p99 < 1000,
+            "Measurement should be reasonable"
+        );
     }
 
     #[test]

@@ -8,10 +8,10 @@
 //! Templates encode best practices and proven patterns, allowing developers
 //! to build workflows from high-level components rather than primitives.
 
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::execution::{HookFn, HookContext, HookResult, patterns};
+use crate::execution::{patterns, HookContext, HookFn, HookResult};
 use serde::{Deserialize, Serialize};
 
 /// Workflow template metadata
@@ -63,7 +63,9 @@ impl WorkflowTemplate {
         self.execution_order
             .iter()
             .filter_map(|name| {
-                self.hooks.get(name).map(|hook| (name.clone(), hook.clone()))
+                self.hooks
+                    .get(name)
+                    .map(|hook| (name.clone(), hook.clone()))
             })
             .collect()
     }
@@ -106,16 +108,25 @@ impl TemplateLibrary {
         self.register("etl-pipeline".to_string(), Self::create_etl_template());
 
         // Request-Response Template
-        self.register("request-response".to_string(), Self::create_request_response_template());
+        self.register(
+            "request-response".to_string(),
+            Self::create_request_response_template(),
+        );
 
         // Saga Pattern Template
         self.register("saga".to_string(), Self::create_saga_template());
 
         // Fan-Out/Fan-In Template
-        self.register("fan-out-fan-in".to_string(), Self::create_fan_out_fan_in_template());
+        self.register(
+            "fan-out-fan-in".to_string(),
+            Self::create_fan_out_fan_in_template(),
+        );
 
         // Circuit Breaker Template
-        self.register("circuit-breaker".to_string(), Self::create_circuit_breaker_template());
+        self.register(
+            "circuit-breaker".to_string(),
+            Self::create_circuit_breaker_template(),
+        );
     }
 
     /// ETL Pipeline: Extract → Transform → Load
@@ -125,7 +136,11 @@ impl TemplateLibrary {
             version: "1.0.0".to_string(),
             description: "Extract, Transform, Load data pipeline with validation".to_string(),
             author: "KNHK Team".to_string(),
-            tags: vec!["etl".to_string(), "data".to_string(), "pipeline".to_string()],
+            tags: vec![
+                "etl".to_string(),
+                "data".to_string(),
+                "pipeline".to_string(),
+            ],
             chatman_compliant: true,
             estimated_ticks: 6,
         };
@@ -181,7 +196,11 @@ impl TemplateLibrary {
             version: "1.0.0".to_string(),
             description: "Synchronous request-response with timeout and retry".to_string(),
             author: "KNHK Team".to_string(),
-            tags: vec!["api".to_string(), "sync".to_string(), "reliability".to_string()],
+            tags: vec![
+                "api".to_string(),
+                "sync".to_string(),
+                "reliability".to_string(),
+            ],
             chatman_compliant: true,
             estimated_ticks: 5,
         };
@@ -215,9 +234,14 @@ impl TemplateLibrary {
         let metadata = TemplateMetadata {
             name: "Saga Pattern".to_string(),
             version: "1.0.0".to_string(),
-            description: "Distributed transaction with automatic compensation on failure".to_string(),
+            description: "Distributed transaction with automatic compensation on failure"
+                .to_string(),
             author: "KNHK Team".to_string(),
-            tags: vec!["distributed".to_string(), "transaction".to_string(), "saga".to_string()],
+            tags: vec![
+                "distributed".to_string(),
+                "transaction".to_string(),
+                "saga".to_string(),
+            ],
             chatman_compliant: true,
             estimated_ticks: 8,
         };
@@ -279,17 +303,11 @@ impl TemplateLibrary {
             "worker3".to_string(),
         ]);
 
-        let worker1 = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 1)
-        });
+        let worker1 = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 1));
 
-        let worker2 = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 1)
-        });
+        let worker2 = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 1));
 
-        let worker3 = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 1)
-        });
+        let worker3 = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 1));
 
         let fan_in = patterns::synchronize(3);
 
@@ -406,9 +424,7 @@ mod tests {
         };
 
         let mut template = WorkflowTemplate::new(metadata);
-        let hook = Arc::new(|ctx: &HookContext| {
-            HookResult::success(ctx.input_data.clone(), 1)
-        });
+        let hook = Arc::new(|ctx: &HookContext| HookResult::success(ctx.input_data.clone(), 1));
         template.add_hook("custom_hook".to_string(), hook);
 
         library.register("custom".to_string(), template);
@@ -431,11 +447,17 @@ mod tests {
     fn test_all_templates_chatman_compliant() {
         let library = TemplateLibrary::new();
         for template in library.templates.values() {
-            assert!(template.metadata.chatman_compliant,
-                "Template {} is not Chatman compliant", template.metadata.name);
-            assert!(template.metadata.estimated_ticks <= 8,
+            assert!(
+                template.metadata.chatman_compliant,
+                "Template {} is not Chatman compliant",
+                template.metadata.name
+            );
+            assert!(
+                template.metadata.estimated_ticks <= 8,
                 "Template {} exceeds Chatman constant: {} ticks",
-                template.metadata.name, template.metadata.estimated_ticks);
+                template.metadata.name,
+                template.metadata.estimated_ticks
+            );
         }
     }
 }

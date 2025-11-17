@@ -3,22 +3,21 @@
 //! These tests verify that the compiler generates valid proofs
 //! and that invalid Σ* artifacts are correctly rejected.
 
+use ed25519_dalek::SigningKey;
 use knhk_mu_kernel::{
-    compiler::{compile_with_proof, compile_ontology, SourceFormat, CompilerError},
+    compiler::{compile_ontology, compile_with_proof, CompilerError, SourceFormat},
     compiler_proof::{
-        CompilationCertificate, CertifiedSigma, verify_for_loading,
-        LoaderVerification, CertificateError,
+        verify_for_loading, CertificateError, CertifiedSigma, CompilationCertificate,
+        LoaderVerification,
     },
     sigma::{SigmaCompiled, SigmaHash},
     sigma_ir::{
-        SigmaIR, validation::{Unvalidated, Certified},
-        TaskId, PatternId, GuardId, Priority,
-        TaskNode, PatternGraph, GuardExpr, Metadata,
-        Schema, Phase, HandlerType, Expr, GuardType,
+        validation::{Certified, Unvalidated},
+        Expr, GuardExpr, GuardId, GuardType, HandlerType, Metadata, PatternGraph, PatternId, Phase,
+        Priority, Schema, SigmaIR, TaskId, TaskNode,
     },
     CHATMAN_CONSTANT,
 };
-use ed25519_dalek::SigningKey;
 
 /// Test signing key (deterministic for testing)
 fn test_signing_key() -> SigningKey {
@@ -45,7 +44,10 @@ fn test_proof_generation_success() {
     let certified = result.unwrap();
 
     // Certificate should exist
-    assert_eq!(certified.certificate.sigma_hash, certified.sigma_star.compute_hash());
+    assert_eq!(
+        certified.certificate.sigma_hash,
+        certified.sigma_star.compute_hash()
+    );
 
     // Proofs should be valid
     assert!(certified.certificate.isa_proof.verify());
@@ -62,12 +64,18 @@ fn test_certificate_signature_verification() {
     let certified = compile_with_proof(source, SourceFormat::Turtle, &signing_key).unwrap();
 
     // Signature verification should pass
-    assert!(certified.certificate.verify_signature(&verifying_key).is_ok());
+    assert!(certified
+        .certificate
+        .verify_signature(&verifying_key)
+        .is_ok());
 
     // Wrong key should fail
     let wrong_key = wrong_signing_key();
     let wrong_verifying_key = wrong_key.verifying_key();
-    assert!(certified.certificate.verify_signature(&wrong_verifying_key).is_err());
+    assert!(certified
+        .certificate
+        .verify_signature(&wrong_verifying_key)
+        .is_err());
 }
 
 #[test]
@@ -100,8 +108,8 @@ fn test_loader_verification_invalid_signature() {
 
 #[test]
 fn test_chatman_constant_enforcement_at_compile_time() {
-    use alloc::vec::Vec;
     use alloc::string::String;
+    use alloc::vec::Vec;
 
     let metadata = Metadata {
         version: String::from("1.0.0"),
@@ -114,19 +122,22 @@ fn test_chatman_constant_enforcement_at_compile_time() {
         id: PatternId(0),
         name: String::from("too_slow"),
         phases: vec![
-            Phase { number: 0, handler: HandlerType::Pure, tick_estimate: 5 },
-            Phase { number: 1, handler: HandlerType::Pure, tick_estimate: 5 }, // 10 total > 8
+            Phase {
+                number: 0,
+                handler: HandlerType::Pure,
+                tick_estimate: 5,
+            },
+            Phase {
+                number: 1,
+                handler: HandlerType::Pure,
+                tick_estimate: 5,
+            }, // 10 total > 8
         ],
         max_phases: 2,
         _phantom: core::marker::PhantomData,
     };
 
-    let ir = SigmaIR::<Unvalidated>::new(
-        Vec::new(),
-        vec![pattern],
-        Vec::new(),
-        metadata,
-    );
+    let ir = SigmaIR::<Unvalidated>::new(Vec::new(), vec![pattern], Vec::new(), metadata);
 
     // Should pass initial validations
     let ir = ir.validate_structure().unwrap();
@@ -138,9 +149,7 @@ fn test_chatman_constant_enforcement_at_compile_time() {
 
 #[test]
 fn test_timing_proof_validation() {
-    use knhk_mu_kernel::compiler_proof::{
-        TimingBoundProof, TaskTimingProof, TimingBreakdown,
-    };
+    use knhk_mu_kernel::compiler_proof::{TaskTimingProof, TimingBoundProof, TimingBreakdown};
 
     // Valid timing proof (within Chatman Constant)
     let valid_task = TaskTimingProof {
@@ -199,8 +208,8 @@ fn test_isa_compliance_proof() {
 
 #[test]
 fn test_type_state_validation_pipeline() {
-    use alloc::vec::Vec;
     use alloc::string::String;
+    use alloc::vec::Vec;
 
     let metadata = Metadata {
         version: String::from("1.0.0"),
@@ -212,8 +221,16 @@ fn test_type_state_validation_pipeline() {
         id: PatternId(0),
         name: String::from("valid_pattern"),
         phases: vec![
-            Phase { number: 0, handler: HandlerType::Pure, tick_estimate: 3 },
-            Phase { number: 1, handler: HandlerType::Receipt, tick_estimate: 2 },
+            Phase {
+                number: 0,
+                handler: HandlerType::Pure,
+                tick_estimate: 3,
+            },
+            Phase {
+                number: 1,
+                handler: HandlerType::Receipt,
+                tick_estimate: 2,
+            },
         ],
         max_phases: 2,
         _phantom: core::marker::PhantomData,
@@ -230,12 +247,7 @@ fn test_type_state_validation_pipeline() {
         _phantom: core::marker::PhantomData,
     };
 
-    let ir = SigmaIR::<Unvalidated>::new(
-        vec![task],
-        vec![pattern],
-        Vec::new(),
-        metadata,
-    );
+    let ir = SigmaIR::<Unvalidated>::new(vec![task], vec![pattern], Vec::new(), metadata);
 
     // Type-state transitions should all succeed
     let ir = ir.validate_structure().unwrap();
@@ -260,9 +272,9 @@ fn test_certified_sigma_full_verification() {
 
 #[test]
 fn test_hash_mismatch_detection() {
-    use knhk_mu_kernel::compiler_proof::{ProofBuilder, InvariantId};
-    use knhk_mu_kernel::sigma_types::{IsaComplianceProof, InvariantProof};
     use knhk_mu_kernel::compiler_proof::TimingBoundProof;
+    use knhk_mu_kernel::compiler_proof::{InvariantId, ProofBuilder};
+    use knhk_mu_kernel::sigma_types::{InvariantProof, IsaComplianceProof};
 
     let signing_key = test_signing_key();
 
@@ -397,8 +409,8 @@ fn test_certification_failure_on_invalid_timing() {
 
 #[test]
 fn test_phase_count_limit() {
-    use alloc::vec;
     use alloc::string::String;
+    use alloc::vec;
 
     let metadata = Metadata {
         version: String::from("1.0.0"),
@@ -411,26 +423,57 @@ fn test_phase_count_limit() {
         id: PatternId(0),
         name: String::from("too_many_phases"),
         phases: vec![
-            Phase { number: 0, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 1, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 2, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 3, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 4, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 5, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 6, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 7, handler: HandlerType::Pure, tick_estimate: 1 },
-            Phase { number: 8, handler: HandlerType::Pure, tick_estimate: 1 }, // 9 phases!
+            Phase {
+                number: 0,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 1,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 2,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 3,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 4,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 5,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 6,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 7,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            },
+            Phase {
+                number: 8,
+                handler: HandlerType::Pure,
+                tick_estimate: 1,
+            }, // 9 phases!
         ],
         max_phases: 9,
         _phantom: core::marker::PhantomData,
     };
 
-    let ir = SigmaIR::<Unvalidated>::new(
-        Vec::new(),
-        vec![pattern],
-        Vec::new(),
-        metadata,
-    );
+    let ir = SigmaIR::<Unvalidated>::new(Vec::new(), vec![pattern], Vec::new(), metadata);
 
     // Should fail structural validation
     assert!(ir.validate_structure().is_err());
@@ -438,8 +481,8 @@ fn test_phase_count_limit() {
 
 #[test]
 fn test_guard_expression_compilation() {
-    use knhk_mu_kernel::sigma_ir::{Expr, CompareOp};
     use knhk_mu_kernel::compiler::compile_expr;
+    use knhk_mu_kernel::sigma_ir::{CompareOp, Expr};
 
     // Const expression
     let expr = Expr::Const(42);
@@ -483,7 +526,10 @@ fn test_proof_system_properties() {
     let certified = compile_with_proof(source, SourceFormat::Turtle, &signing_key).unwrap();
 
     // Property 1: Certificate signature is valid
-    assert!(certified.certificate.verify_signature(&verifying_key).is_ok());
+    assert!(certified
+        .certificate
+        .verify_signature(&verifying_key)
+        .is_ok());
 
     // Property 2: All proofs verify
     assert!(certified.certificate.verify_proofs().is_ok());

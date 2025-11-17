@@ -91,7 +91,9 @@ fn spec_rule_1_observations_form_immutable_append_only_log() {
     assert_eq!(fixture.observation_store.count_observations(), 10);
 
     // And: I can retrieve them
-    let all_obs = fixture.observation_store.get_sector_observations("spec_test");
+    let all_obs = fixture
+        .observation_store
+        .get_sector_observations("spec_test");
     assert_eq!(all_obs.len(), 10);
 
     // And: Observations are immutable (idempotency: appending same obs again gives different ID)
@@ -368,7 +370,10 @@ async fn spec_rule_4_receipt_chain_of_custody() {
     )
     .expect("r2 creation failed");
 
-    store.append(receipt2.clone()).await.expect("r2 append failed");
+    store
+        .append(receipt2.clone())
+        .await
+        .expect("r2 append failed");
 
     // Then: Chain verified (parent must exist and have earlier timestamp)
     let result = receipt2.verify_chain(&store);
@@ -533,7 +538,10 @@ async fn integration_complete_autonomous_loop_closure() {
     assert!(cycle.id.contains("integration"));
 
     // Verify: Patterns detected (high frequency)
-    assert!(cycle.patterns_detected > 0, "No patterns detected in observations");
+    assert!(
+        cycle.patterns_detected > 0,
+        "No patterns detected in observations"
+    );
 
     // Verify: Proposals generated
     assert!(cycle.proposals_generated > 0, "No proposals generated");
@@ -575,13 +583,13 @@ async fn integration_complete_autonomous_loop_closure() {
         version: 1,
     };
 
-    fixture.promoter.promote(new_snapshot).expect("promotion failed");
+    fixture
+        .promoter
+        .promote(new_snapshot)
+        .expect("promotion failed");
 
     // Verify: Current snapshot changed atomically
-    assert_eq!(
-        fixture.promoter.current().snapshot_id,
-        "snap_post_cycle"
-    );
+    assert_eq!(fixture.promoter.current().snapshot_id, "snap_post_cycle");
 
     // Verify: Latency under budget
     let stats = fixture.promoter.get_stats();
@@ -590,17 +598,36 @@ async fn integration_complete_autonomous_loop_closure() {
     // Final: All loop phases completed successfully
     println!("\n✅ INTEGRATION TEST PASSED\n");
     println!("Loop Closure Narrative:");
-    println!("  1. Observed {} system events", fixture.observation_store.count_observations());
-    println!("  2. Detected {} patterns (reality model)", cycle.patterns_detected);
-    println!("  3. Generated {} proposals (binding to guarantees)", cycle.proposals_generated);
-    println!("  4. Executed {} validations ({} passed, {} failed)",
+    println!(
+        "  1. Observed {} system events",
+        fixture.observation_store.count_observations()
+    );
+    println!(
+        "  2. Detected {} patterns (reality model)",
+        cycle.patterns_detected
+    );
+    println!(
+        "  3. Generated {} proposals (binding to guarantees)",
+        cycle.proposals_generated
+    );
+    println!(
+        "  4. Executed {} validations ({} passed, {} failed)",
         cycle.validations_passed + cycle.validations_failed,
         cycle.validations_passed,
         cycle.validations_failed
     );
-    println!("  5. Generated {} receipts (proof of execution)", cycle.receipt_ids.len());
-    println!("  6. Promoted snapshot in {:.2}ns (atomic)", stats.average_promotion_latency_ns);
-    println!("  7. Cycle completed in {}ms", cycle.duration_ms.unwrap_or(0));
+    println!(
+        "  5. Generated {} receipts (proof of execution)",
+        cycle.receipt_ids.len()
+    );
+    println!(
+        "  6. Promoted snapshot in {:.2}ns (atomic)",
+        stats.average_promotion_latency_ns
+    );
+    println!(
+        "  7. Cycle completed in {}ms",
+        cycle.duration_ms.unwrap_or(0)
+    );
     println!("\nThe loop closes. The 2027 narrative is validated.");
 }
 

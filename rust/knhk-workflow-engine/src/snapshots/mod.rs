@@ -4,4 +4,6 @@
 
 pub mod sigma_versioning;
 
-pub use sigma_versioning::{Snapshot, SnapshotId, SnapshotManifest, SnapshotMetadata, SnapshotVersioning};
+pub use sigma_versioning::{
+    Snapshot, SnapshotId, SnapshotManifest, SnapshotMetadata, SnapshotVersioning,
+};

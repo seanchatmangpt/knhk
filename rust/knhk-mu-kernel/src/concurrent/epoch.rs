@@ -97,12 +97,9 @@ impl Participant {
 
         // Check if all participants are in current or future epoch
         if self.can_advance(global) {
-            GLOBAL_EPOCH.compare_exchange(
-                global,
-                global + 1,
-                Ordering::Release,
-                Ordering::Relaxed,
-            ).ok();
+            GLOBAL_EPOCH
+                .compare_exchange(global, global + 1, Ordering::Release, Ordering::Relaxed)
+                .ok();
         }
     }
 
@@ -328,12 +325,10 @@ impl<T> Atomic<T> {
     ) -> Result<*mut T, *mut T> {
         let new_ptr = Box::into_raw(Box::new(new));
 
-        match self.data.compare_exchange(
-            current,
-            new_ptr,
-            Ordering::Release,
-            Ordering::Acquire,
-        ) {
+        match self
+            .data
+            .compare_exchange(current, new_ptr, Ordering::Release, Ordering::Acquire)
+        {
             Ok(old) => {
                 if !old.is_null() {
                     unsafe {

@@ -3,10 +3,10 @@
 //! This module provides a type-safe IR that only allows legal Σ constructs.
 //! Invalid IR is unrepresentable using Rust's type system.
 
-use core::marker::PhantomData;
-use alloc::vec::Vec;
-use alloc::string::String;
 use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// Validation marker types - zero-size types that encode validation state
 pub mod validation {
@@ -305,9 +305,21 @@ impl SigmaIR<Unvalidated> {
 
         // Transform to validated state
         Ok(SigmaIR {
-            tasks: self.tasks.into_iter().map(TaskNode::validate_structure).collect(),
-            patterns: self.patterns.into_iter().map(PatternGraph::validate_structure).collect(),
-            guards: self.guards.into_iter().map(GuardExpr::validate_structure).collect(),
+            tasks: self
+                .tasks
+                .into_iter()
+                .map(TaskNode::validate_structure)
+                .collect(),
+            patterns: self
+                .patterns
+                .into_iter()
+                .map(PatternGraph::validate_structure)
+                .collect(),
+            guards: self
+                .guards
+                .into_iter()
+                .map(GuardExpr::validate_structure)
+                .collect(),
             metadata: self.metadata,
             _phantom: PhantomData,
         })
@@ -336,9 +348,21 @@ impl SigmaIR<StructurallyValid> {
         }
 
         Ok(SigmaIR {
-            tasks: self.tasks.into_iter().map(TaskNode::validate_semantics).collect(),
-            patterns: self.patterns.into_iter().map(PatternGraph::validate_semantics).collect(),
-            guards: self.guards.into_iter().map(GuardExpr::validate_semantics).collect(),
+            tasks: self
+                .tasks
+                .into_iter()
+                .map(TaskNode::validate_semantics)
+                .collect(),
+            patterns: self
+                .patterns
+                .into_iter()
+                .map(PatternGraph::validate_semantics)
+                .collect(),
+            guards: self
+                .guards
+                .into_iter()
+                .map(GuardExpr::validate_semantics)
+                .collect(),
             metadata: self.metadata,
             _phantom: PhantomData,
         })
@@ -362,9 +386,7 @@ impl SigmaIR<SemanticallyValid> {
 
         // Check pattern tick estimates
         for pattern in &self.patterns {
-            let total_ticks: u64 = pattern.phases.iter()
-                .map(|p| p.tick_estimate)
-                .sum();
+            let total_ticks: u64 = pattern.phases.iter().map(|p| p.tick_estimate).sum();
 
             if total_ticks > CHATMAN_CONSTANT {
                 return Err(ValidationError::PatternTicksExceeded {
@@ -375,9 +397,21 @@ impl SigmaIR<SemanticallyValid> {
         }
 
         Ok(SigmaIR {
-            tasks: self.tasks.into_iter().map(TaskNode::validate_timing).collect(),
-            patterns: self.patterns.into_iter().map(PatternGraph::validate_timing).collect(),
-            guards: self.guards.into_iter().map(GuardExpr::validate_timing).collect(),
+            tasks: self
+                .tasks
+                .into_iter()
+                .map(TaskNode::validate_timing)
+                .collect(),
+            patterns: self
+                .patterns
+                .into_iter()
+                .map(PatternGraph::validate_timing)
+                .collect(),
+            guards: self
+                .guards
+                .into_iter()
+                .map(GuardExpr::validate_timing)
+                .collect(),
             metadata: self.metadata,
             _phantom: PhantomData,
         })
@@ -389,7 +423,11 @@ impl SigmaIR<TimingValidated> {
     pub fn certify(self) -> SigmaIR<Certified> {
         SigmaIR {
             tasks: self.tasks.into_iter().map(TaskNode::certify).collect(),
-            patterns: self.patterns.into_iter().map(PatternGraph::certify).collect(),
+            patterns: self
+                .patterns
+                .into_iter()
+                .map(PatternGraph::certify)
+                .collect(),
             guards: self.guards.into_iter().map(GuardExpr::certify).collect(),
             metadata: self.metadata,
             _phantom: PhantomData,
@@ -577,15 +615,51 @@ mod tests {
             id: PatternId(1),
             name: String::from("too_many_phases"),
             phases: vec![
-                Phase { number: 0, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 1, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 2, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 3, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 4, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 5, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 6, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 7, handler: HandlerType::Pure, tick_estimate: 1 },
-                Phase { number: 8, handler: HandlerType::Pure, tick_estimate: 1 }, // Too many!
+                Phase {
+                    number: 0,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 1,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 2,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 3,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 4,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 5,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 6,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 7,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                },
+                Phase {
+                    number: 8,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 1,
+                }, // Too many!
             ],
             max_phases: 9,
             _phantom: PhantomData,
@@ -610,8 +684,16 @@ mod tests {
             id: PatternId(1),
             name: String::from("too_slow"),
             phases: vec![
-                Phase { number: 0, handler: HandlerType::Pure, tick_estimate: 5 },
-                Phase { number: 1, handler: HandlerType::Pure, tick_estimate: 5 }, // 10 total > 8
+                Phase {
+                    number: 0,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 5,
+                },
+                Phase {
+                    number: 1,
+                    handler: HandlerType::Pure,
+                    tick_estimate: 5,
+                }, // 10 total > 8
             ],
             max_phases: 2,
             _phantom: PhantomData,

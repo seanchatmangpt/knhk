@@ -6,7 +6,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 /// Tick counter using hardware cycle counter
-#[repr(C, align(64))]  // Cache-line aligned
+#[repr(C, align(64))] // Cache-line aligned
 pub struct TickCounter {
     start: u64,
     current: AtomicU64,
@@ -130,10 +130,7 @@ impl TickBudget {
         let exhausted = (self.used >= self.limit) as u8;
 
         // Use const array lookup instead of match (branchless)
-        const STATUS_TABLE: [BudgetStatus; 2] = [
-            BudgetStatus::Ok,
-            BudgetStatus::Exhausted,
-        ];
+        const STATUS_TABLE: [BudgetStatus; 2] = [BudgetStatus::Ok, BudgetStatus::Exhausted];
         STATUS_TABLE[exhausted as usize]
     }
 

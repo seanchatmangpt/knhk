@@ -36,7 +36,8 @@ macro_rules! register_phase {
         #[linkme::distributed_slice($crate::validation::phases::registry::REGISTERED_PHASES)]
         static PHASE_ENTRY: $crate::validation::phases::registry::PhaseEntry =
             $crate::validation::phases::registry::PhaseEntry {
-                metadata: <$phase_type as $crate::validation::phases::core::Phase<_, _>>::metadata(),
+                metadata: <$phase_type as $crate::validation::phases::core::Phase<_, _>>::metadata(
+                ),
                 factory: || std::sync::Arc::new($factory()),
             };
     };

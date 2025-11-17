@@ -3,9 +3,9 @@
 //! Tests autonomic control loop: Monitor → Analyze → Plan → Execute
 
 use knhk_mu_kernel::mape::MapeKColon;
-use knhk_mu_kernel::sigma::{SigmaPointer, SigmaHash};
-use knhk_mu_kernel::receipts::Receipt;
 use knhk_mu_kernel::overlay::{DeltaSigma, OverlayAlgebra};
+use knhk_mu_kernel::receipts::Receipt;
+use knhk_mu_kernel::sigma::{SigmaHash, SigmaPointer};
 
 #[test]
 fn test_mape_k_initialization() {
@@ -22,15 +22,7 @@ fn test_monitor_phase() {
     let mut mape = MapeKColon::new(sigma_ptr);
 
     // Create test receipt
-    let receipt = Receipt::new(
-        0,
-        SigmaHash([1; 32]),
-        [2; 32],
-        [3; 32],
-        5,
-        100,
-        0,
-    );
+    let receipt = Receipt::new(0, SigmaHash([1; 32]), [2; 32], [3; 32], 5, 100, 0);
 
     // Monitor phase
     let result = mape.monitor(receipt);
@@ -50,7 +42,7 @@ fn test_analyze_phase() {
             SigmaHash([1; 32]),
             [i; 32],
             [i; 32],
-            if i > 5 { 10 } else { 5 },  // Some violations
+            if i > 5 { 10 } else { 5 }, // Some violations
             i as u64,
             0,
         );
@@ -59,7 +51,10 @@ fn test_analyze_phase() {
 
     // Analyze phase
     let result = mape.analyze();
-    assert!(result.symptoms.len() > 0, "Should detect performance degradation");
+    assert!(
+        result.symptoms.len() > 0,
+        "Should detect performance degradation"
+    );
 }
 
 #[test]
@@ -74,7 +69,7 @@ fn test_plan_phase() {
             SigmaHash([1; 32]),
             [i; 32],
             [i; 32],
-            10,  // Violates Chatman Constant
+            10, // Violates Chatman Constant
             i as u64,
             0,
         );
@@ -129,7 +124,7 @@ fn test_continuous_mape_k_cycles() {
                 SigmaHash([1; 32]),
                 [(cycle * 10 + i) as u8; 32],
                 [(cycle * 10 + i) as u8; 32],
-                5 + (cycle as u64 * 2),  // Gradual degradation
+                5 + (cycle as u64 * 2), // Gradual degradation
                 (cycle * 10 + i) as u64,
                 0,
             );
@@ -138,8 +133,10 @@ fn test_continuous_mape_k_cycles() {
 
         // Run cycle
         let result = mape.run_cycle();
-        println!("Cycle {}: {} symptoms, {} proposals, {} adaptations",
-                 cycle, result.symptoms_detected, result.proposals_generated, result.adaptations_applied);
+        println!(
+            "Cycle {}: {} symptoms, {} proposals, {} adaptations",
+            cycle, result.symptoms_detected, result.proposals_generated, result.adaptations_applied
+        );
     }
 }
 
@@ -152,50 +149,41 @@ fn test_symptom_detection() {
 
     // Create pattern of guard failures
     for i in 0..20 {
-        let mut receipt = Receipt::new(
-            0,
-            SigmaHash([1; 32]),
-            [i; 32],
-            [i; 32],
-            5,
-            i as u64,
-            0,
-        );
+        let mut receipt = Receipt::new(0, SigmaHash([1; 32]), [i; 32], [i; 32], 5, i as u64, 0);
 
         // Set guard failure bits
         if i % 2 == 0 {
             receipt.guard_bitmap = 0b1111;
-            receipt.guard_outcomes = 0b1100;  // 2 failures
+            receipt.guard_outcomes = 0b1100; // 2 failures
         }
 
         mape.monitor(receipt);
     }
 
     let analysis = mape.analyze();
-    let has_guard_symptom = analysis.symptoms.iter().any(|s| {
-        matches!(s, Symptom::GuardFailures { .. })
-    });
+    let has_guard_symptom = analysis
+        .symptoms
+        .iter()
+        .any(|s| matches!(s, Symptom::GuardFailures { .. }));
 
     assert!(has_guard_symptom, "Should detect guard failure pattern");
 }
 
 #[test]
 fn test_delta_sigma_validation() {
-    use knhk_mu_kernel::overlay::{ProofSketch, PerformanceEstimate, InvariantCheck};
     use knhk_mu_kernel::guards::GuardResult;
+    use knhk_mu_kernel::overlay::{InvariantCheck, PerformanceEstimate, ProofSketch};
 
     let delta = DeltaSigma {
         id: 1,
         base_sigma: SigmaHash([1; 32]),
         changes: vec![],
         proof: ProofSketch {
-            invariants_checked: vec![
-                InvariantCheck {
-                    name: "chatman_constant".to_string(),
-                    result: GuardResult::Pass,
-                    evidence: "all operations ≤8 ticks".to_string(),
-                }
-            ],
+            invariants_checked: vec![InvariantCheck {
+                name: "chatman_constant".to_string(),
+                result: GuardResult::Pass,
+                evidence: "all operations ≤8 ticks".to_string(),
+            }],
             perf_estimate: PerformanceEstimate {
                 max_ticks: 7,
                 expected_improvement: 0.2,
@@ -213,7 +201,7 @@ fn test_delta_sigma_validation() {
 
 #[test]
 fn test_delta_sigma_performance_violation() {
-    use knhk_mu_kernel::overlay::{ProofSketch, PerformanceEstimate};
+    use knhk_mu_kernel::overlay::{PerformanceEstimate, ProofSketch};
 
     let delta = DeltaSigma {
         id: 1,
@@ -222,7 +210,7 @@ fn test_delta_sigma_performance_violation() {
         proof: ProofSketch {
             invariants_checked: vec![],
             perf_estimate: PerformanceEstimate {
-                max_ticks: 100,  // Violates Chatman Constant
+                max_ticks: 100, // Violates Chatman Constant
                 expected_improvement: 0.2,
                 confidence: 0.9,
             },
@@ -233,7 +221,10 @@ fn test_delta_sigma_performance_violation() {
     };
 
     // Should fail validation
-    assert!(delta.validate().is_err(), "ΔΣ violating Chatman Constant should fail");
+    assert!(
+        delta.validate().is_err(),
+        "ΔΣ violating Chatman Constant should fail"
+    );
 }
 
 #[test]

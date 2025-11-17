@@ -2,9 +2,9 @@
 // Orchestrates Monitor → Analyze → Plan → Execute → Knowledge cycle
 // This is the "dark matter" that closes all loops
 
-use crate::observation::{ObservationStore, PatternDetector, PatternAction};
 use crate::invariants::HardInvariants;
-use crate::receipt::{Receipt, ReceiptStore, ReceiptOperation, ReceiptOutcome};
+use crate::observation::{ObservationStore, PatternAction, PatternDetector};
+use crate::receipt::{Receipt, ReceiptOperation, ReceiptOutcome, ReceiptStore};
 use chrono::Utc;
 use ed25519_dalek::SigningKey;
 use serde::{Deserialize, Serialize};
@@ -110,11 +110,7 @@ impl MapEKCoordinator {
 
     /// Execute one complete MAPE-K cycle
     pub async fn execute_cycle(&self) -> Result<LoopCycle, CoordinationError> {
-        let cycle_id = format!(
-            "cycle-{}-{}",
-            self.sector,
-            Utc::now().timestamp_millis()
-        );
+        let cycle_id = format!("cycle-{}-{}", self.sector, Utc::now().timestamp_millis());
         let started_at = Utc::now().timestamp_millis() as u64;
         let _start_instant = Instant::now();
 
@@ -135,8 +131,7 @@ impl MapEKCoordinator {
         };
 
         // Phase 1: Monitor (MAPE-K: M)
-        let monitor_receipt =
-            self.phase_monitor(&mut cycle, &cycle_id).await;
+        let monitor_receipt = self.phase_monitor(&mut cycle, &cycle_id).await;
 
         match monitor_receipt {
             Ok(receipt_id) => {
@@ -276,10 +271,7 @@ impl MapEKCoordinator {
         cycle: &mut LoopCycle,
         cycle_id: &str,
     ) -> Result<(Vec<crate::observation::DetectedPattern>, String), CoordinationError> {
-        let patterns = self
-            .pattern_detector
-            .detect_patterns()
-            .await;
+        let patterns = self.pattern_detector.detect_patterns().await;
 
         let receipt = Receipt::create(
             ReceiptOperation::ProposalGenerated {
