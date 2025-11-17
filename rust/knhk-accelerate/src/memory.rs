@@ -198,10 +198,48 @@ impl MemoryPool {
         }
     }
 
-    /// Coalesce adjacent free blocks
+    /// Coalesce adjacent free blocks to reduce fragmentation
     fn coalesce(&mut self) {
-        // Phase 9 stub: Would implement block coalescing
-        // TODO: Merge adjacent free blocks to reduce fragmentation
+        if self.free_blocks.is_empty() {
+            return;
+        }
+
+        // Sort free blocks by address
+        let mut free_list: Vec<MemoryBlock> = self.free_blocks.drain(..).collect();
+        free_list.sort_by_key(|b| b.ptr);
+
+        // Merge adjacent blocks
+        let mut merged = Vec::with_capacity(free_list.len());
+        let mut current = free_list[0].clone();
+
+        for block in free_list.into_iter().skip(1) {
+            // Check if blocks are adjacent (current.ptr + current.size == block.ptr)
+            if current.ptr + current.size == block.ptr {
+                // Merge: extend current block to include next block
+                current.size += block.size;
+                tracing::trace!(
+                    "Memory pool: coalesced blocks at 0x{:x} and 0x{:x} -> size {}",
+                    current.ptr,
+                    block.ptr,
+                    current.size
+                );
+            } else {
+                // Not adjacent, save current and start new block
+                merged.push(current);
+                current = block;
+            }
+        }
+
+        // Don't forget the last block
+        merged.push(current);
+
+        // Restore merged blocks to free_blocks
+        self.free_blocks = merged.into_iter().collect();
+
+        tracing::debug!(
+            "Memory pool: coalescing complete, {} free blocks remaining",
+            self.free_blocks.len()
+        );
     }
 
     /// Get current utilization

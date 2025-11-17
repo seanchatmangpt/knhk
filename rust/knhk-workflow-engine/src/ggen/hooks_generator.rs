@@ -36,9 +36,10 @@ use oxigraph::store::Store;
 use std::path::Path;
 use tera::{Context, Tera};
 use tracing::{debug, info, instrument};
+use std::time::Instant;
 
 /// Hook trigger type
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum TriggerType {
     /// RDF graph change (INSERT/DELETE)
     RdfChange,
@@ -51,7 +52,7 @@ pub enum TriggerType {
 }
 
 /// Hook definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct HookDefinition {
     /// Hook identifier
     pub id: String,
@@ -87,7 +88,7 @@ impl HooksGenerator {
     /// # Errors
     ///
     /// Returns error if template directory is invalid or Tera initialization fails.
-    #[instrument(skip(template_dir))]
+    #[instrument]
     pub fn new(template_dir: impl AsRef<Path>) -> WorkflowResult<Self> {
         let template_dir = template_dir.as_ref();
 
@@ -122,7 +123,7 @@ impl HooksGenerator {
     /// # Errors
     ///
     /// Returns error if file cannot be read or RDF parsing fails.
-    #[instrument(skip(self))]
+    #[instrument(skip(self, ontology_path))]
     pub fn load_ontology(&self, ontology_path: impl AsRef<Path>) -> WorkflowResult<()> {
         let ontology_path = ontology_path.as_ref();
         let ontology_content = std::fs::read_to_string(ontology_path)
@@ -257,6 +258,7 @@ use crate::error::{WorkflowError, WorkflowResult};
 use knhk_lockchain::{Receipt, MerkleTree};
 use tracing::{info, warn, instrument};
 use std::sync::Arc;
+use std::time::Instant;
 
 /// Hook execution context
 pub struct HookContext {
@@ -312,17 +314,26 @@ pub struct HookContext {
             r#"/// Hook: {}
 #[instrument(skip(context))]
 pub async fn hook_{}(context: &HookContext) -> WorkflowResult<()> {{
+    let start_time = std::time::Instant::now();
+
     {}
 
     {}
 
     // Act: Execute action
     // Action: {}
-    let execution_ticks = 0; // TODO: Measure actual ticks
-    let hash_a = 0; // TODO: Compute hash
+
+    // Measure execution time in ticks (nanoseconds)
+    let elapsed = start_time.elapsed();
+    let execution_ticks = elapsed.as_nanos() as u64;
+
+    // Compute action hash using blake3
+    let action_bytes = "{}".as_bytes();
+    let hash_bytes = blake3::hash(action_bytes);
+    let hash_a = u64::from_le_bytes(hash_bytes.as_bytes()[0..8].try_into().unwrap_or([0u8; 8]));
     {}
 
-    info!("Hook '{}' executed successfully");
+    info!("Hook '{}' executed successfully in {{}} ns", execution_ticks);
     Ok(())
 }}
 "#,
@@ -330,6 +341,7 @@ pub async fn hook_{}(context: &HookContext) -> WorkflowResult<()> {{
             hook.id.replace('-', "_"),
             trigger_impl,
             check_impl,
+            hook.action,
             hook.action,
             receipt_impl,
             hook.name
