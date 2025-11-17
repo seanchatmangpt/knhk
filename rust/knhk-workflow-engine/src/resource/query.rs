@@ -18,21 +18,12 @@ use crate::resource::allocation::{Resource, ResourceId};
 use crate::resource::yawl_resource::FilterContext;
 use std::collections::HashMap;
 
-/// Query trait with Generic Associated Type (GAT)
+/// Query trait for resource selection
 ///
-/// GATs allow associated types to be generic, enabling type-safe query builders.
-pub trait ResourceQuery {
-    /// Query result type (GAT)
-    type Result<'a>: 'a
-    where
-        Self: 'a;
-
-    /// Execute query against resources
-    fn execute<'a>(
-        &self,
-        resources: &'a [Resource],
-        context: &'a FilterContext,
-    ) -> Self::Result<'a>;
+/// Simplified to avoid GAT lifetime complexity while maintaining functionality.
+pub trait ResourceQuery: Send + Sync {
+    /// Execute query against resources and return matching resource IDs
+    fn execute(&self, resources: &[Resource], context: &FilterContext) -> Vec<ResourceId>;
 }
 
 /// Simple filter query - returns matching resource IDs
@@ -55,15 +46,9 @@ where
 
 impl<F> ResourceQuery for FilterQuery<F>
 where
-    F: Fn(&Resource, &FilterContext) -> bool,
+    F: Fn(&Resource, &FilterContext) -> bool + Send + Sync,
 {
-    type Result<'a> = Vec<ResourceId>;
-
-    fn execute<'a>(
-        &self,
-        resources: &'a [Resource],
-        context: &'a FilterContext,
-    ) -> Self::Result<'a> {
+    fn execute(&self, resources: &[Resource], context: &FilterContext) -> Vec<ResourceId> {
         resources
             .iter()
             .filter(|resource| (self.filter)(resource, context))
@@ -100,8 +85,8 @@ pub enum QueryCompositeOperator {
 
 impl<Q1, Q2> CompositeQuery<Q1, Q2>
 where
-    for<'a> Q1: ResourceQuery<Result<'a> = Vec<ResourceId>>,
-    for<'a> Q2: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    Q1: ResourceQuery,
+    Q2: ResourceQuery,
 {
     /// Create new composite query
     pub fn new(query1: Q1, query2: Q2, operator: QueryCompositeOperator) -> Self {
@@ -115,16 +100,10 @@ where
 
 impl<Q1, Q2> ResourceQuery for CompositeQuery<Q1, Q2>
 where
-    for<'a> Q1: ResourceQuery<Result<'a> = Vec<ResourceId>>,
-    for<'a> Q2: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    Q1: ResourceQuery,
+    Q2: ResourceQuery,
 {
-    type Result<'a> = Vec<ResourceId>;
-
-    fn execute<'a>(
-        &self,
-        resources: &'a [Resource],
-        context: &'a FilterContext,
-    ) -> Self::Result<'a> {
+    fn execute(&self, resources: &[Resource], context: &FilterContext) -> Vec<ResourceId> {
         let result1 = self.query1.execute(resources, context);
         let result2 = self.query2.execute(resources, context);
 
@@ -181,15 +160,9 @@ where
 
 impl<const OPTIMIZE: bool, Q> ResourceQuery for OptimizedQuery<OPTIMIZE, Q>
 where
-    for<'a> Q: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+    Q: ResourceQuery,
 {
-    type Result<'a> = Vec<ResourceId>;
-
-    fn execute<'a>(
-        &self,
-        resources: &'a [Resource],
-        context: &'a FilterContext,
-    ) -> Self::Result<'a> {
+    fn execute(&self, resources: &[Resource], context: &FilterContext) -> Vec<ResourceId> {
         let result = self.query.execute(resources, context);
 
         // Compile-time optimization: if OPTIMIZE is true, sort results for cache efficiency
@@ -255,7 +228,7 @@ impl QueryBuilder {
     /// Execute query and return matching resources
     pub fn execute<Q>(&self, query: Q, context: &FilterContext) -> WorkflowResult<Vec<Resource>>
     where
-        for<'a> Q: ResourceQuery<Result<'a> = Vec<ResourceId>>,
+        Q: ResourceQuery,
     {
         let resource_ids = query.execute(&self.resources, context);
         let mut results = Vec::new();
