@@ -126,19 +126,19 @@ struct WorkflowGenResult {
 pub fn workflow(
     spec_file: PathBuf,
 
-    #[clap(long)] template: Option<PathBuf>,
+    template: Option<PathBuf>,
 
-    #[clap(long, short = 'o')] output: Option<PathBuf>,
+    output: Option<PathBuf>,
 
-    #[clap(long, short = 'l', default_value = "rust")] language: Language,
+    language: Language,
 
-    #[clap(long)] validate: bool,
+    validate: bool,
 
-    #[clap(long)] emit_hooks: bool,
+    emit_hooks: bool,
 
-    #[clap(long)] emit_telemetry: bool,
+    emit_telemetry: bool,
 
-    #[clap(long, default_value = "text")] format: OutputFormat,
+    format: OutputFormat,
 ) -> CnvResult<WorkflowGenResult> {
     gen_impl::generate_workflow(gen_impl::WorkflowGenRequest {
         spec_file,
@@ -193,15 +193,15 @@ struct TestsGenResult {
 pub fn tests(
     spec_file: PathBuf,
 
-    #[clap(long)] template: Option<PathBuf>,
+    template: Option<PathBuf>,
 
-    #[clap(long, short = 'o')] output: Option<PathBuf>,
+    output: Option<PathBuf>,
 
-    #[clap(long, short = 'c', default_value = "90")] coverage: u8,
+    coverage: u8,
 
-    #[clap(long, short = 'l', default_value = "rust")] language: Language,
+    language: Language,
 
-    #[clap(long, default_value = "text")] format: OutputFormat,
+    format: OutputFormat,
 ) -> CnvResult<TestsGenResult> {
     gen_impl::generate_tests(gen_impl::TestsGenRequest {
         spec_file,
@@ -252,15 +252,15 @@ struct HookGenResult {
 pub fn hook(
     definition_file: PathBuf,
 
-    #[clap(long)] template: Option<PathBuf>,
+    template: Option<PathBuf>,
 
-    #[clap(long, short = 'o')] output: Option<PathBuf>,
+    output: Option<PathBuf>,
 
-    #[clap(long)] with_lockchain: bool,
+    with_lockchain: bool,
 
-    #[clap(long)] with_telemetry: bool,
+    with_telemetry: bool,
 
-    #[clap(long, default_value = "text")] format: OutputFormat,
+    format: OutputFormat,
 ) -> CnvResult<HookGenResult> {
     gen_impl::generate_hook(gen_impl::HookGenRequest {
         definition_file,
@@ -317,15 +317,15 @@ struct ValidateResult {
 pub fn validate(
     code_path: PathBuf,
 
-    #[clap(long)] schema: Option<PathBuf>,
+    schema: Option<PathBuf>,
 
-    #[clap(long)] telemetry: bool,
+    telemetry: bool,
 
-    #[clap(long)] performance: bool,
+    performance: bool,
 
-    #[clap(long)] weaver: bool,
+    weaver: bool,
 
-    #[clap(long, default_value = "text")] format: OutputFormat,
+    format: OutputFormat,
 ) -> CnvResult<ValidateResult> {
     gen_impl::validate_code(gen_impl::ValidateRequest {
         code_path,
@@ -367,9 +367,7 @@ pub mod templates {
         instrument(skip_all, fields(operation = "knhk.gen.templates.list"))
     )]
     #[verb]
-    pub fn list(
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<TemplateListResult> {
+    pub fn list(format: OutputFormat) -> CnvResult<TemplateListResult> {
         gen_impl::templates::list_templates(format)
     }
 
@@ -390,10 +388,7 @@ pub mod templates {
         instrument(skip_all, fields(operation = "knhk.gen.templates.search", pattern = %pattern))
     )]
     #[verb]
-    pub fn search(
-        pattern: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<TemplateSearchResult> {
+    pub fn search(pattern: String, format: OutputFormat) -> CnvResult<TemplateSearchResult> {
         gen_impl::templates::search_templates(pattern, format)
     }
 
@@ -414,10 +409,7 @@ pub mod templates {
         instrument(skip_all, fields(operation = "knhk.gen.templates.preview", template = %template))
     )]
     #[verb]
-    pub fn preview(
-        template: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<TemplatePreviewResult> {
+    pub fn preview(template: String, format: OutputFormat) -> CnvResult<TemplatePreviewResult> {
         gen_impl::templates::preview_template(template, format)
     }
 
@@ -439,10 +431,7 @@ pub mod templates {
         instrument(skip_all, fields(operation = "knhk.gen.templates.install", name = %name))
     )]
     #[verb]
-    pub fn install(
-        name: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<TemplateInstallResult> {
+    pub fn install(name: String, format: OutputFormat) -> CnvResult<TemplateInstallResult> {
         gen_impl::templates::install_template(name, format)
     }
 
@@ -462,10 +451,7 @@ pub mod templates {
         instrument(skip_all, fields(operation = "knhk.gen.templates.validate", path = %path.display()))
     )]
     #[verb]
-    pub fn validate(
-        path: PathBuf,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<TemplateValidateResult> {
+    pub fn validate(path: PathBuf, format: OutputFormat) -> CnvResult<TemplateValidateResult> {
         gen_impl::templates::validate_template(path, format)
     }
 
@@ -484,10 +470,7 @@ pub mod templates {
         instrument(skip_all, fields(operation = "knhk.gen.templates.docs", name = %name))
     )]
     #[verb]
-    pub fn docs(
-        name: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<TemplateDocsResult> {
+    pub fn docs(name: String, format: OutputFormat) -> CnvResult<TemplateDocsResult> {
         gen_impl::templates::show_docs(name, format)
     }
 }
@@ -512,10 +495,7 @@ pub mod marketplace {
         instrument(skip_all, fields(operation = "knhk.gen.marketplace.publish", template = %template.display()))
     )]
     #[verb]
-    pub fn publish(
-        template: PathBuf,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<PublishResult> {
+    pub fn publish(template: PathBuf, format: OutputFormat) -> CnvResult<PublishResult> {
         gen_impl::marketplace::publish_template(template, format)
     }
 
@@ -544,10 +524,7 @@ pub mod marketplace {
         instrument(skip_all, fields(operation = "knhk.gen.marketplace.search", pattern = %pattern))
     )]
     #[verb]
-    pub fn search(
-        pattern: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<MarketplaceSearchResult> {
+    pub fn search(pattern: String, format: OutputFormat) -> CnvResult<MarketplaceSearchResult> {
         gen_impl::marketplace::search_marketplace(pattern, format)
     }
 
@@ -567,10 +544,7 @@ pub mod marketplace {
         instrument(skip_all, fields(operation = "knhk.gen.marketplace.install", name = %name))
     )]
     #[verb]
-    pub fn install(
-        name: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<MarketplaceInstallResult> {
+    pub fn install(name: String, format: OutputFormat) -> CnvResult<MarketplaceInstallResult> {
         gen_impl::marketplace::install_from_marketplace(name, format)
     }
 
@@ -599,10 +573,7 @@ pub mod marketplace {
         instrument(skip_all, fields(operation = "knhk.gen.marketplace.rating", name = %name))
     )]
     #[verb]
-    pub fn rating(
-        name: String,
-        #[clap(long, default_value = "text")] format: OutputFormat,
-    ) -> CnvResult<RatingResult> {
+    pub fn rating(name: String, format: OutputFormat) -> CnvResult<RatingResult> {
         gen_impl::marketplace::show_rating(name, format)
     }
 }

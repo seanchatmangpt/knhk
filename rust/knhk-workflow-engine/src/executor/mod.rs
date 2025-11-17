@@ -18,6 +18,10 @@
 //! - `loader.rs`: Load workflows from Turtle/RDF definitions
 //! - `runtime.rs`: Execute workflows with state machine (Turtle as definition)
 //! - `telemetry.rs`: OpenTelemetry integration for full observability
+//!
+//! # YAWL Port Components
+//!
+//! - `net_runner.rs`: YAWL NetRunner port (workflow net execution)
 
 mod accessors;
 mod case;

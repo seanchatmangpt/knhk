@@ -7,11 +7,15 @@
 //! - Work item service for human task management
 
 pub mod admission;
+pub mod cost;
+pub mod document_store;
 pub mod event_sidecar;
 pub mod timer;
 pub mod work_items;
 
 pub use admission::AdmissionGate;
+pub use cost::{ActivityCost, CaseCostSummary, CostCategory, CostService};
+pub use document_store::{DocumentId, DocumentMetadata, DocumentStore};
 pub use event_sidecar::EventSidecar;
 pub use timer::TimerFired;
 pub use work_items::WorkItemService;

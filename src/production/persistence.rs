@@ -6,7 +6,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock, atomic::{AtomicU64, Ordering}};
 use std::time::{SystemTime, UNIX_EPOCH};
-use rocksdb::{DB, Options, WriteBatch, IteratorMode, ColumnFamilyDescriptor};
+// Temporary: Using in-memory storage instead of RocksDB to avoid conflict with oxigraph
+// use rocksdb::{DB, Options, WriteBatch, IteratorMode, ColumnFamilyDescriptor};
 use serde::{Serialize, Deserialize};
 use sha2::{Sha256, Digest};
 use bincode;
@@ -25,8 +26,11 @@ const WAL_SIZE_LIMIT: u64 = 100 * 1024 * 1024; // 100MB
 const COMPRESSION_THRESHOLD: usize = 1024; // 1KB
 
 /// Persistence layer for receipts and workflow state
+/// Temporary: Using in-memory storage until RocksDB conflict with oxigraph is resolved
 pub struct PersistenceLayer {
-    db: Arc<DB>,
+    // Temporary in-memory storage (replaces RocksDB)
+    receipts: Arc<RwLock<HashMap<String, Vec<ReceiptRecord>>>>,
+    workflows: Arc<RwLock<HashMap<String, Vec<u8>>>>,
     path: PathBuf,
 
     // Metrics

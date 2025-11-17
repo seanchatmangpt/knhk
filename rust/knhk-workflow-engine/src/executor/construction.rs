@@ -3,7 +3,6 @@
 use crate::compliance::ProvenanceTracker;
 use crate::error::WorkflowResult;
 use crate::integration::fortune5::Fortune5Config;
-#[cfg(feature = "connectors")]
 use crate::integration::ConnectorIntegration;
 use crate::integration::{Fortune5Integration, LockchainIntegration, OtelIntegration};
 use crate::patterns::{PatternRegistry, RegisterAllExt};
@@ -88,12 +87,9 @@ impl WorkflowEngine {
             provenance_tracker: None,
             fortune5_integration: None,
             sidecar_integration: None,
-            #[cfg(feature = "connectors")]
             connector_integration: Some(Arc::new(tokio::sync::Mutex::new(
                 ConnectorIntegration::new(),
             ))),
-            #[cfg(not(feature = "connectors"))]
-            connector_integration: None,
             spec_rdf_store,
             pattern_metadata_store,
             case_rdf_stores,
@@ -107,6 +103,26 @@ impl WorkflowEngine {
         let pattern_registry_clone = Arc::clone(&engine.pattern_registry);
         start_timer_loop(pattern_registry_clone.clone(), timer_rx);
         start_event_loop(pattern_registry_clone, event_rx);
+
+        // Recover timers from durable storage on startup
+        if let Err(e) = engine.timer_service.recover_timers().await {
+            tracing::warn!("Failed to recover timers on startup: {}", e);
+        }
+
+        // Start compaction scheduler at fixed tick epochs
+        let state_store_clone = Arc::clone(&engine.state_store);
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                let store = state_store_clone.read().await;
+                if let Err(e) = (*store).compact().await {
+                    tracing::warn!("Compaction failed: {}", e);
+                } else {
+                    tracing::debug!("Compaction completed successfully");
+                }
+            }
+        });
 
         engine
     }
@@ -192,12 +208,9 @@ impl WorkflowEngine {
             auth_manager: None,
             provenance_tracker: Some(Arc::new(ProvenanceTracker::new(true))),
             sidecar_integration: None,
-            #[cfg(feature = "connectors")]
             connector_integration: Some(Arc::new(tokio::sync::Mutex::new(
                 ConnectorIntegration::new(),
             ))),
-            #[cfg(not(feature = "connectors"))]
-            connector_integration: None,
             spec_rdf_store,
             pattern_metadata_store,
             case_rdf_stores,

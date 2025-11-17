@@ -33,17 +33,7 @@ impl Fortune5Middleware {
     }
 
     /// Build middleware stack
-    pub fn build(
-        self,
-    ) -> ServiceBuilder<
-        impl tower::Layer<
-            tower::util::BoxService<
-                axum::http::Request<axum::body::Body>,
-                axum::http::Response<axum::body::Body>,
-                axum::Error,
-            >,
-        >,
-    > {
+    pub fn build(self) -> ServiceBuilder<impl tower::Layer<axum::extract::Request>> {
         ServiceBuilder::new()
             .layer(CorsLayer::permissive())
             .layer(TraceLayer::new_for_http())

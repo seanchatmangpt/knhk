@@ -132,6 +132,26 @@ impl ReceiptGenerator {
         }
     }
 
+    /// Generate receipt (alias for generate_receipt for compatibility)
+    pub fn generate(
+        &self,
+        sigma_id: &str,
+        o_in: &serde_json::Value,
+        a_out: &serde_json::Value,
+        guards_checked: &[String],
+        guards_failed: &[String],
+        ticks_used: u32,
+    ) -> WorkflowResult<Receipt> {
+        self.generate_receipt(
+            sigma_id.to_string(),
+            o_in,
+            a_out,
+            guards_checked.to_vec(),
+            guards_failed.to_vec(),
+            ticks_used,
+        )
+    }
+
     /// Generate receipt for hook execution
     pub fn generate_receipt(
         &self,

@@ -249,10 +249,9 @@ fn calculate_fitness(spec: &WorkflowSpec, traces: &[Vec<String>]) -> (f64, Vec<f
 fn calculate_trace_fitness(spec: &WorkflowSpec, trace: &[String]) -> f64 {
     // Build task transition map from spec
     let mut transitions: HashMap<String, HashSet<String>> = HashMap::new();
-    for task in &spec.tasks {
-        let task_id = task.id.to_string();
-        let successors: HashSet<String> = task.successors.iter().map(|s| s.to_string()).collect();
-        transitions.insert(task_id, successors);
+    for (task_id, task) in &spec.tasks {
+        let successors: HashSet<String> = task.outgoing_flows.iter().cloned().collect();
+        transitions.insert(task_id.clone(), successors);
     }
 
     // Replay trace and count missing/remaining tokens
@@ -300,9 +299,8 @@ fn calculate_precision(spec: &WorkflowSpec, traces: &[Vec<String>]) -> f64 {
 
     // Build allowed transitions from model
     let mut allowed_transitions: HashSet<(String, String)> = HashSet::new();
-    for task in &spec.tasks {
-        let task_id = task.id.to_string();
-        for successor in &task.successors {
+    for (task_id, task) in &spec.tasks {
+        for successor in &task.outgoing_flows {
             allowed_transitions.insert((task_id.clone(), successor.to_string()));
         }
     }
@@ -351,8 +349,8 @@ fn generate_sample_traces(spec: &WorkflowSpec, count: usize) -> Vec<Vec<String>>
         let mut trace = Vec::new();
 
         // Simple linear execution of all tasks
-        for task in &spec.tasks {
-            trace.push(task.id.to_string());
+        for (task_id, _task) in &spec.tasks {
+            trace.push(task_id.clone());
         }
 
         // Add some variations

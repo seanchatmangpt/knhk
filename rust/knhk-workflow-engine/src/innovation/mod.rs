@@ -46,6 +46,7 @@
 
 // Production features
 pub mod ab_testing;
+pub mod hyper_advanced;
 pub mod adaptive_optimizer;
 pub mod analytics;
 pub mod deterministic;

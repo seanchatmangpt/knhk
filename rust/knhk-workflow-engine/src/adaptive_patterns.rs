@@ -39,7 +39,7 @@ impl AdaptivePatternSelector {
         let candidates = self.get_candidate_patterns(context);
 
         // Score each candidate based on learned performance
-        let mut best_pattern = PatternId::Sequence; // Default
+        let mut best_pattern = PatternId::SEQUENCE; // Default
         let mut best_score = 0.0;
 
         for pattern in candidates {
@@ -84,18 +84,18 @@ impl AdaptivePatternSelector {
         // Select candidates based on context
         if context.requires_parallelism {
             vec![
-                PatternId::ParallelSplit,
-                PatternId::MultiChoice,
-                PatternId::MultipleInstancesWithDesignTimeKnowledge,
+                PatternId::PARALLEL_SPLIT,
+                PatternId::MULTI_CHOICE,
+                PatternId::MULTIPLE_INSTANCES_WITH_DESIGN_TIME_KNOWLEDGE,
             ]
         } else if context.requires_exclusive_choice {
             vec![
-                PatternId::ExclusiveChoice,
-                PatternId::MultiChoice,
-                PatternId::DeferredChoice,
+                PatternId::EXCLUSIVE_CHOICE,
+                PatternId::MULTI_CHOICE,
+                PatternId::DEFERRED_CHOICE,
             ]
         } else {
-            vec![PatternId::Sequence, PatternId::ParallelSplit]
+            vec![PatternId::SEQUENCE, PatternId::PARALLEL_SPLIT]
         }
     }
 
@@ -124,28 +124,32 @@ impl AdaptivePatternSelector {
     /// Calculate context affinity (how well pattern matches context)
     fn context_affinity(&self, pattern: &PatternId, context: &PatternSelectionContext) -> f64 {
         match pattern {
-            PatternId::ParallelSplit => {
+            PatternId(2) => {
+                // PARALLEL_SPLIT
                 if context.requires_parallelism {
                     1.0
                 } else {
                     0.3
                 }
             }
-            PatternId::ExclusiveChoice => {
+            PatternId(4) => {
+                // EXCLUSIVE_CHOICE
                 if context.requires_exclusive_choice {
                     1.0
                 } else {
                     0.5
                 }
             }
-            PatternId::MultiChoice => {
+            PatternId(6) => {
+                // MULTI_CHOICE
                 if context.concurrency_level > 2 {
                     0.9
                 } else {
                     0.4
                 }
             }
-            PatternId::Sequence => {
+            PatternId(1) => {
+                // SEQUENCE
                 if !context.requires_parallelism {
                     1.0
                 } else {
@@ -160,15 +164,17 @@ impl AdaptivePatternSelector {
     fn default_score(&self, pattern: &PatternId, context: &PatternSelectionContext) -> f64 {
         // Simple heuristics
         match pattern {
-            PatternId::Sequence => 0.7, // Safe default
-            PatternId::ParallelSplit => {
+            PatternId(1) => 0.7, // SEQUENCE - Safe default
+            PatternId(2) => {
+                // PARALLEL_SPLIT
                 if context.requires_parallelism {
                     0.8
                 } else {
                     0.3
                 }
             }
-            PatternId::ExclusiveChoice => {
+            PatternId(4) => {
+                // EXCLUSIVE_CHOICE
                 if context.requires_exclusive_choice {
                     0.8
                 } else {
@@ -248,9 +254,9 @@ mod tests {
         // Should select a parallel pattern
         assert!(matches!(
             pattern,
-            PatternId::ParallelSplit
-                | PatternId::MultiChoice
-                | PatternId::MultipleInstancesWithDesignTimeKnowledge
+            PatternId(2) // PARALLEL_SPLIT
+                | PatternId(6) // MULTI_CHOICE
+                | PatternId(12) // MULTIPLE_INSTANCES_WITH_DESIGN_TIME_KNOWLEDGE
         ));
     }
 
@@ -269,9 +275,9 @@ mod tests {
             metrics: HashMap::new(),
         };
 
-        selector.record_execution(PatternId::Sequence, &observation);
+        selector.record_execution(PatternId::SEQUENCE, &observation);
 
-        let stats = selector.get_pattern_stats(&PatternId::Sequence).unwrap();
+        let stats = selector.get_pattern_stats(&PatternId::SEQUENCE).unwrap();
         assert_eq!(stats.total_executions, 1);
         assert_eq!(stats.avg_ticks, 3.0);
         assert_eq!(stats.success_rate, 1.0);

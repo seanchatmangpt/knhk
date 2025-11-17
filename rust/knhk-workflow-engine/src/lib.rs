@@ -100,6 +100,10 @@ pub mod orchestrator;
 pub mod performance_metrics;
 /// Receipt generation and storage
 pub mod receipts;
+/// Resource management with 3-phase allocation
+pub mod resourcing;
+/// Scheduling service with resource calendars
+pub mod scheduling;
 /// Snapshot versioning (Σ)
 pub mod snapshots;
 #[macro_use]

@@ -3,19 +3,22 @@
 // This module provides the production-grade runtime for real-world deployments
 
 pub mod platform;
-pub mod persistence;
+// Temporary: persistence disabled due to RocksDB/oxigraph conflict
+// TODO: Migrate to Sled or implement feature flags
+// pub mod persistence;
 pub mod observability;
 pub mod monitoring;
-pub mod recovery;
+// Temporary: recovery disabled (depends on persistence)
+// pub mod recovery;
 pub mod scaling;
 pub mod learning;
 pub mod cost_tracking;
 
 pub use platform::{ProductionPlatform, PlatformConfig, PlatformState, WorkflowState};
-pub use persistence::{PersistenceLayer, ReceiptStore};
+// pub use persistence::{PersistenceLayer, ReceiptStore};
 pub use observability::{ObservabilityLayer, Telemetry};
 pub use monitoring::{MonitoringLayer, SLATracker};
-pub use recovery::{RecoveryManager, StateSnapshot};
+// pub use recovery::{RecoveryManager, StateSnapshot};
 pub use scaling::{ScalingManager, ClusterNode};
 pub use learning::{LearningEngine, PatternRecognition};
 pub use cost_tracking::{CostTracker, ResourceUsage};

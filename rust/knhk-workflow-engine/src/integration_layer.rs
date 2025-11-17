@@ -10,10 +10,10 @@
 use crate::engine::HookEngine;
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::guards::InvariantChecker;
-use crate::parser::WorkflowSpec;
+use crate::parser::{WorkflowSpec, WorkflowSpecId};
 use crate::patterns::{PatternId, PatternRegistry};
 use crate::receipts::{Receipt, ReceiptStore};
-use crate::snapshots::SnapshotVersioning;
+use crate::snapshots::{SnapshotId, SnapshotVersioning};
 use std::sync::Arc;
 
 /// Extension trait for integrating hook engine with pattern registry
@@ -82,7 +82,7 @@ impl ReceiptObservabilityExt for Receipt {
             ticks_used: self.ticks_used,
             guards_checked: self.guards_checked.clone(),
             guards_failed: self.guards_failed.clone(),
-            timestamp: self.timestamp,
+            timestamp: chrono::Utc::now(), // Receipt has timestamp_ms, convert if needed
             metrics: std::collections::HashMap::new(),
         }
     }
@@ -97,29 +97,43 @@ impl ReceiptObservabilityExt for Receipt {
 }
 
 /// Extension trait for snapshot-based versioning
+#[async_trait::async_trait]
 pub trait SnapshotVersioningExt {
     /// Create a new snapshot from workflow spec
-    fn create_snapshot_from_spec(&self, spec: &WorkflowSpec) -> WorkflowResult<String>;
+    async fn create_snapshot_from_spec(&self, spec: &WorkflowSpec) -> WorkflowResult<String>;
 
     /// Load workflow spec from snapshot
-    fn load_spec_from_snapshot(&self, snapshot_id: &str) -> WorkflowResult<WorkflowSpec>;
+    async fn load_spec_from_snapshot(&self, snapshot_id: &str) -> WorkflowResult<WorkflowSpec>;
 }
 
+#[async_trait::async_trait]
 impl SnapshotVersioningExt for SnapshotVersioning {
-    fn create_snapshot_from_spec(&self, spec: &WorkflowSpec) -> WorkflowResult<String> {
+    async fn create_snapshot_from_spec(&self, spec: &WorkflowSpec) -> WorkflowResult<String> {
         // Serialize spec to RDF/Turtle
         let rdf_data = serialize_spec_to_rdf(spec)?;
 
         // Create snapshot
-        self.create_snapshot(&rdf_data, &std::collections::HashMap::new())
+        let snapshot_id = self.create_snapshot(serde_json::json!({"rdf": rdf_data})).await?;
+        Ok(snapshot_id.to_string())
     }
 
-    fn load_spec_from_snapshot(&self, snapshot_id: &str) -> WorkflowResult<WorkflowSpec> {
+    async fn load_spec_from_snapshot(&self, snapshot_id: &str) -> WorkflowResult<WorkflowSpec> {
         // Load snapshot
-        let snapshot = self.load_snapshot(snapshot_id)?;
+        let snapshot_id_parsed: SnapshotId = snapshot_id.to_string();
+        let snapshot = self.get_snapshot(&snapshot_id_parsed).await
+            .ok_or_else(|| WorkflowError::Internal(format!("Snapshot {} not found", snapshot_id)))?;
 
-        // Parse RDF back to spec
-        parse_rdf_to_spec(&snapshot.content)
+        // Parse RDF back to spec - snapshot.content is serde_json::Value
+        if let Some(rdf_str) = snapshot.content.get("rdf").and_then(|v| v.as_str()) {
+            parse_rdf_to_spec(rdf_str)
+        } else {
+            // Try to parse content as string directly
+            if let Some(rdf_str) = snapshot.content.as_str() {
+                parse_rdf_to_spec(rdf_str)
+            } else {
+                Err(WorkflowError::Parse("No RDF content in snapshot".to_string()))
+            }
+        }
     }
 }
 
@@ -134,12 +148,12 @@ fn serialize_spec_to_rdf(spec: &WorkflowSpec) -> WorkflowResult<String> {
 
     rdf.push_str(&format!(":Workflow{} a yawl:Workflow ;\n", spec.id));
     rdf.push_str(&format!("    yawl:name \"{}\" ;\n", spec.name));
-    rdf.push_str(&format!("    yawl:version \"{}\" .\n\n", spec.version));
 
-    for task in &spec.tasks {
-        rdf.push_str(&format!(":Task{} a yawl:Task ;\n", task.id));
+    for (task_id, task) in &spec.tasks {
+        rdf.push_str(&format!(":Task{} a yawl:Task ;\n", task_id));
         rdf.push_str(&format!("    yawl:name \"{}\" ;\n", task.name));
-        rdf.push_str(&format!("    yawl:pattern \"{}\" .\n\n", task.pattern));
+        rdf.push_str(&format!("    yawl:splitType \"{:?}\" ;\n", task.split_type));
+        rdf.push_str(&format!("    yawl:joinType \"{:?}\" .\n\n", task.join_type));
     }
 
     Ok(rdf)
@@ -150,13 +164,14 @@ fn parse_rdf_to_spec(rdf: &str) -> WorkflowResult<WorkflowSpec> {
     // Simple RDF parsing (would use proper SPARQL in production)
     // For now, create a minimal spec
     Ok(WorkflowSpec {
-        id: "parsed".to_string(),
+        id: WorkflowSpecId::parse_str("00000000-0000-0000-0000-000000000000").unwrap_or_else(|_| WorkflowSpecId::new()),
         name: "Parsed Workflow".to_string(),
-        version: "1.0.0".to_string(),
-        tasks: vec![],
-        data_inputs: vec![],
-        data_outputs: vec![],
-        patterns: vec![],
+        tasks: std::collections::HashMap::new(),
+        conditions: std::collections::HashMap::new(),
+        flows: vec![],
+        start_condition: None,
+        end_condition: None,
+        source_turtle: Some(rdf.to_string()),
     })
 }
 

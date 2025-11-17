@@ -146,7 +146,9 @@ pub enum {} {{
             WorkflowError::Internal("Missing handler_name in context".to_string())
         })?;
 
-        let route = context.get("route").unwrap_or(&"/api/resource".to_string());
+        let route = context.get("route")
+            .map(|s| s.as_str().unwrap_or("/api/resource"))
+            .unwrap_or("/api/resource");
 
         let code = format!(
             r#"/// Generated Axum handler: {}

@@ -173,7 +173,8 @@ class {}:
 
         let route_path = context
             .get("route_path")
-            .unwrap_or(&"/api/resource".to_string());
+            .map(|s| s.as_str().unwrap_or("/api/resource"))
+            .unwrap_or("/api/resource");
 
         let code = format!(
             r#"""Generated FastAPI route: {}"""

@@ -175,7 +175,7 @@ impl OntologyExecutor {
             total_receipts: orchestrator_stats.total_receipts,
             learned_patterns: self
                 .pattern_selector
-                .get_pattern_stats(&PatternId::Sequence)
+                .get_pattern_stats(&PatternId::SEQUENCE)
                 .map(|s| s.total_executions as usize)
                 .unwrap_or(0),
         }

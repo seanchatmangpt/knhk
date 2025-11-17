@@ -6,7 +6,7 @@
 use crate::error::{WorkflowError, WorkflowResult};
 use oxigraph::{
     io::{RdfFormat, RdfParser},
-    model::{GraphName, NamedNode, Quad, Term},
+    model::{GraphName, NamedNode, NamedOrBlankNode, Quad, Term},
     store::Store,
 };
 use sha2::{Digest, Sha256};
@@ -170,7 +170,7 @@ impl TurtleLoader {
             for quad in store.iter() {
                 if let Ok(quad) = quad {
                     // Check subject
-                    if let Term::NamedNode(node) = &quad.subject {
+                    if let NamedOrBlankNode::NamedNode(node) = &quad.subject {
                         if node.as_str().starts_with(namespace) {
                             return true;
                         }

@@ -229,6 +229,33 @@ impl SnapshotVersioning {
         }
     }
 
+    /// Get current snapshot ID
+    pub async fn current_id(&self) -> SnapshotId {
+        let manifest = self.manifest.read().await;
+        manifest.current_snapshot_id.clone()
+    }
+
+    /// Create shadow snapshot for testing
+    pub async fn create_shadow_snapshot(&self, content: serde_json::Value) -> WorkflowResult<SnapshotId> {
+        // Create snapshot without updating manifest (shadow)
+        let snapshot = Snapshot::new(content, None, 0);
+        let snapshot_id = snapshot.id.clone();
+        
+        let mut snapshots = self.snapshots.write().await;
+        snapshots.insert(snapshot_id.clone(), snapshot);
+        
+        Ok(snapshot_id)
+    }
+
+    /// Promote shadow snapshot to current
+    pub async fn promote_shadow(&self, shadow_id: &SnapshotId) -> WorkflowResult<()> {
+        let mut manifest = self.manifest.write().await;
+        manifest.current_snapshot_id = shadow_id.clone();
+        manifest.history.push(shadow_id.clone());
+        manifest.version += 1;
+        Ok(())
+    }
+
     /// Get snapshot history
     pub async fn get_history(&self) -> Vec<SnapshotId> {
         let manifest = self.manifest.read().await;

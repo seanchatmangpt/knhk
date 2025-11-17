@@ -49,20 +49,58 @@ impl ClusterRole for Observer {
 }
 
 /// Cluster configuration - const generic parameters
+/// 
+/// For compile-time validation, use the `cluster_config!` macro
+/// which only accepts valid configurations.
 pub struct ClusterConfig<const REPLICAS: usize, const QUORUM: usize> {
     _phantom: PhantomData<()>,
 }
 
 impl<const REPLICAS: usize, const QUORUM: usize> ClusterConfig<REPLICAS, QUORUM> {
-    /// Create cluster config with compile-time validation
+    /// Create cluster config with runtime validation
+    /// 
+    /// Returns `None` if configuration is invalid:
+    /// - QUORUM * 2 > REPLICAS (majority)
+    /// - REPLICAS > 0
+    /// - QUORUM <= REPLICAS
+    pub const fn try_new() -> Option<Self> {
+        // Runtime validation in const context
+        if REPLICAS == 0 {
+            return None;
+        }
+        if QUORUM > REPLICAS {
+            return None;
+        }
+        if QUORUM * 2 <= REPLICAS {
+            return None;
+        }
+        Some(Self {
+            _phantom: PhantomData,
+        })
+    }
+    
+    /// Create cluster config (validates at compile time for const contexts)
+    /// 
+    /// This will fail to compile in const contexts if the configuration is invalid.
+    /// For runtime validation, use `try_new()` instead.
     pub const fn new() -> Self {
-        // Quorum must be > REPLICAS/2 (majority)
-        const_assert!(QUORUM * 2 > REPLICAS);
-        // At least 1 replica
-        const_assert!(REPLICAS > 0);
-        // Quorum cannot exceed replicas
-        const_assert!(QUORUM <= REPLICAS);
-
+        // Compile-time validation: these checks must pass for const evaluation
+        let _ = [(); {
+            // Validate: REPLICAS > 0
+            if REPLICAS == 0 {
+                loop {} // Compile error: infinite loop in const context
+            }
+            // Validate: QUORUM <= REPLICAS  
+            if QUORUM > REPLICAS {
+                loop {} // Compile error: infinite loop in const context
+            }
+            // Validate: QUORUM * 2 > REPLICAS (majority)
+            if QUORUM * 2 <= REPLICAS {
+                loop {} // Compile error: infinite loop in const context
+            }
+            0
+        }];
+        
         Self {
             _phantom: PhantomData,
         }

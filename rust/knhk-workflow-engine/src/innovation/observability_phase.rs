@@ -119,7 +119,7 @@ impl<L: TraceLevel, const ENABLED: bool> Drop for Span<L, ENABLED> {
 }
 
 /// Trace context - correlation across distributed system
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct TraceContext {
     pub trace_id: u128,
     pub span_id: u64,

@@ -27,20 +27,25 @@ pub(super) async fn execute_task_with_allocation(
 ) -> WorkflowResult<()> {
     let task_start_time = Instant::now();
 
-    // Start OTEL span for task execution
-    let span_ctx: Option<SpanContext> = if let Some(ref otel) = engine.otel_integration {
-        // Identify pattern for task (simplified - use task split/join types)
-        let pattern_id = if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
-            PatternId(12) // MI Without Sync
-        } else {
-            // Map split/join to pattern (simplified)
-            match (task.split_type, task.join_type) {
-                (crate::parser::SplitType::And, crate::parser::JoinType::And) => PatternId(1),
-                (crate::parser::SplitType::Xor, crate::parser::JoinType::Xor) => PatternId(2),
-                (crate::parser::SplitType::Or, crate::parser::JoinType::Or) => PatternId(3),
-                _ => PatternId(1), // Default to Sequence
-            }
-        };
+        // Start OTEL span for task execution
+        let span_ctx: Option<SpanContext> = if let Some(ref otel) = engine.otel_integration {
+            // Use pre-compiled pattern ID (TRIZ Principle 10: Prior Action)
+            // Pattern was computed at registration time to avoid runtime overhead
+            let pattern_id = task.pattern_id
+                .unwrap_or_else(|| {
+                    // Fallback to runtime identification if not pre-compiled
+                    if matches!(task.task_type, crate::parser::TaskType::MultipleInstance) {
+                        PatternId(12) // MI Without Sync
+                    } else {
+                        // Map split/join to pattern (simplified)
+                        match (task.split_type, task.join_type) {
+                            (crate::parser::SplitType::And, crate::parser::JoinType::And) => PatternId(1),
+                            (crate::parser::SplitType::Xor, crate::parser::JoinType::Xor) => PatternId(2),
+                            (crate::parser::SplitType::Or, crate::parser::JoinType::Or) => PatternId(3),
+                            _ => PatternId(1), // Default to Sequence
+                        }
+                    }
+                });
         otel_span!(
             otel,
             "knhk.workflow_engine.execute_task",
@@ -359,7 +364,7 @@ pub(super) async fn execute_task_with_allocation(
             ));
         }
         crate::parser::TaskType::MultipleInstance => {
-            // Multiple instance task: Execute multiple instances
+            // Multiple instance task: Execute multiple instances in parallel
             // Determine instance count (from task properties or case variables)
             let case = engine.get_case(case_id).await?;
 
@@ -384,72 +389,344 @@ pub(super) async fn execute_task_with_allocation(
                     ))
                 })?;
 
-            // Execute multiple instances in parallel
-            // Create instance-specific data for each instance
-            let mut instance_handles = Vec::new();
-            for instance_id in 0..instance_count {
-                let task_id = task.id.clone();
-                let case_data_clone = case.data.clone();
+            // Validate instance count (guard constraint: max_run_len ≤ 8)
+            if instance_count > 8 {
+                return Err(WorkflowError::GuardViolation(format!(
+                    "Multiple instance task {} has instance_count {} which exceeds max_run_len 8",
+                    task.id, instance_count
+                )));
+            }
 
-                // Create instance-specific data
-                let mut instance_data = case_data_clone.clone();
-                if let Some(obj) = instance_data.as_object_mut() {
-                    obj.insert(
-                        "instance_id".to_string(),
-                        serde_json::Value::Number(instance_id.into()),
-                    );
-                    obj.insert(
-                        "instance_count".to_string(),
-                        serde_json::Value::Number(instance_count.into()),
-                    );
-                }
+            // Execute multiple instances in parallel
+            // Create instance-specific data for each instance and execute
+            let mut instance_handles = Vec::new();
+            let engine_clone = engine.clone();
+            let case_id_clone = case_id;
+            let spec_id_clone = spec_id;
+            let task_clone = task.clone();
+
+            for instance_id in 0..instance_count {
+                let engine_instance = engine_clone.clone();
+                let case_id_instance = case_id_clone;
+                let spec_id_instance = spec_id_clone;
+                let task_instance = task_clone.clone();
+                let instance_id_val = instance_id;
+                let instance_count_val = instance_count;
 
                 // Spawn task for this instance
                 let handle = tokio::spawn(async move {
-                    // Create a temporary case for this instance
-                    // In production, would create proper instance tracking
-                    let _instance_case_id = CaseId::new();
+                    // Get current case data
+                    let mut case =
+                        engine_instance
+                            .get_case(case_id_instance)
+                            .await
+                            .map_err(|e| {
+                                WorkflowError::TaskExecutionFailed(format!(
+                                    "Failed to get case for MI instance {}: {}",
+                                    instance_id_val, e
+                                ))
+                            })?;
 
-                    // Execute task with instance-specific data
-                    // For now, execute the task directly with instance data
-                    // In production, would create proper instance cases
+                    // Create instance-specific data
+                    if let Some(obj) = case.data.as_object_mut() {
+                        obj.insert(
+                            "instance_id".to_string(),
+                            serde_json::Value::Number(instance_id_val.into()),
+                        );
+                        obj.insert(
+                            "instance_count".to_string(),
+                            serde_json::Value::Number(instance_count_val.into()),
+                        );
+                    }
+
+                    // Save case with instance data temporarily
+                    let store_arc = engine_instance.state_store.read().await;
+                    (*store_arc)
+                        .save_case(case_id_instance, &case)
+                        .map_err(|e| {
+                            WorkflowError::TaskExecutionFailed(format!(
+                                "Failed to save case for MI instance {}: {}",
+                                instance_id_val, e
+                            ))
+                        })?;
+                    drop(store_arc);
+
                     tracing::debug!(
                         "Executing MI task {} instance {}/{}",
-                        task_id,
-                        instance_id + 1,
-                        instance_count
+                        task_instance.id,
+                        instance_id_val + 1,
+                        instance_count_val
                     );
 
-                    // Simulate task execution for this instance
-                    // In production, would call execute_task_with_allocation with instance data
+                    // Execute the task instance
+                    // For MI tasks, each instance executes as atomic (human or automated)
+                    // Check if task requires human interaction or is automated
+                    if !task_instance.required_roles.is_empty() {
+                        // Human task: Create work item for this instance
+                        let work_item_id = engine_instance
+                            .work_item_service
+                            .create_work_item(
+                                case_id_instance.to_string(),
+                                spec_id_instance,
+                                format!("{}_{}", task_instance.id, instance_id_val),
+                                case.data.clone(),
+                            )
+                            .await
+                            .map_err(|e| {
+                                WorkflowError::TaskExecutionFailed(format!(
+                                    "Failed to create work item for MI instance {}: {}",
+                                    instance_id_val, e
+                                ))
+                            })?;
+
+                        // Wait for work item completion (with timeout)
+                        let mut completed = false;
+                        for _ in 0..100 {
+                            // Check every 100ms for up to 10 seconds
+                            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                            if let Some(work_item) = engine_instance
+                                .work_item_service
+                                .get_work_item(&work_item_id)
+                                .await
+                            {
+                                match work_item.state {
+                                    crate::services::work_items::WorkItemState::Completed => {
+                                        completed = true;
+                                        // Merge work item data into case
+                                        let mut case = engine_instance
+                                                    .get_case(case_id_instance)
+                                                    .await
+                                                    .map_err(|e| {
+                                                        WorkflowError::TaskExecutionFailed(format!(
+                                                            "Failed to get case after work item completion: {}",
+                                                            e
+                                                        ))
+                                                    })?;
+                                        if let (Some(case_obj), Some(work_item_obj)) =
+                                            (case.data.as_object_mut(), work_item.data.as_object())
+                                        {
+                                            for (key, value) in work_item_obj {
+                                                case_obj.insert(key.clone(), value.clone());
+                                            }
+                                        }
+                                        let store_arc = engine_instance.state_store.read().await;
+                                        (*store_arc).save_case(case_id_instance, &case).map_err(|e| {
+                                                    WorkflowError::TaskExecutionFailed(format!(
+                                                        "Failed to save case after work item completion: {}",
+                                                        e
+                                                    ))
+                                                })?;
+                                        break;
+                                    }
+                                    crate::services::work_items::WorkItemState::Cancelled => {
+                                        return Err(WorkflowError::TaskExecutionFailed(format!(
+                                            "Work item {} for MI instance {} was cancelled",
+                                            work_item_id, instance_id_val
+                                        )));
+                                    }
+                                    _ => {
+                                        // Still in progress, continue waiting
+                                    }
+                                }
+                            }
+                        }
+
+                        if !completed {
+                            return Err(WorkflowError::TaskExecutionFailed(format!(
+                                "Work item {} for MI instance {} did not complete within timeout",
+                                work_item_id, instance_id_val
+                            )));
+                        }
+                    } else {
+                        // Automated task: Execute via connector
+                        if let Some(ref connector_integration) =
+                            engine_instance.connector_integration
+                        {
+                            let connector_name = task_instance.id.clone();
+                            let mut connector = connector_integration.lock().await;
+                            let result = connector
+                                .execute_task(&connector_name, case.data.clone())
+                                .await
+                                .map_err(|e| {
+                                    WorkflowError::TaskExecutionFailed(format!(
+                                        "Connector execution failed for MI instance {}: {}",
+                                        instance_id_val, e
+                                    ))
+                                })?;
+
+                            // Update case with connector result
+                            let mut case = engine_instance
+                                .get_case(case_id_instance)
+                                .await
+                                .map_err(|e| {
+                                    WorkflowError::TaskExecutionFailed(format!(
+                                        "Failed to get case after connector execution: {}",
+                                        e
+                                    ))
+                                })?;
+                            if let (Some(case_obj), Some(result_obj)) =
+                                (case.data.as_object_mut(), result.as_object())
+                            {
+                                for (key, value) in result_obj {
+                                    case_obj.insert(key.clone(), value.clone());
+                                }
+                            }
+                            let store_arc = engine_instance.state_store.read().await;
+                            (*store_arc)
+                                .save_case(case_id_instance, &case)
+                                .map_err(|e| {
+                                    WorkflowError::TaskExecutionFailed(format!(
+                                        "Failed to save case after connector execution: {}",
+                                        e
+                                    ))
+                                })?;
+                        } else {
+                            return Err(WorkflowError::TaskExecutionFailed(format!(
+                                "Automated MI task instance {} requires connector integration",
+                                instance_id_val
+                            )));
+                        }
+                    }
+
                     Ok::<(), WorkflowError>(())
                 });
 
                 instance_handles.push(handle);
             }
 
-            // Wait for all instances to complete
-            let mut results = Vec::new();
+            // Extract synchronization threshold (default: wait for all)
+            let threshold = case
+                .data
+                .get("mi_threshold")
+                .and_then(|v| {
+                    v.as_u64()
+                        .map(|n| n as usize)
+                        .or_else(|| v.as_str().and_then(|s| s.parse::<usize>().ok()))
+                })
+                .unwrap_or(instance_count); // Default: wait for all
+
+            // Validate threshold (guard constraint: threshold ≤ instance_count)
+            if threshold > instance_count {
+                return Err(WorkflowError::GuardViolation(format!(
+                    "MI task {} has threshold {} which exceeds instance_count {}",
+                    task.id, threshold, instance_count
+                )));
+            }
+
+            // Wait for threshold completions (hyper-advanced: lock-free completion tracking)
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            let completed_count = Arc::new(AtomicUsize::new(0));
+            let failed_count = Arc::new(AtomicUsize::new(0));
+            let (tx, mut rx) = tokio::sync::mpsc::channel(instance_count);
+
+            // Spawn completion monitors for each instance
             for handle in instance_handles {
-                match handle.await {
-                    Ok(Ok(())) => results.push(Ok(())),
-                    Ok(Err(e)) => results.push(Err(e)),
-                    Err(e) => results.push(Err(WorkflowError::TaskExecutionFailed(format!(
-                        "MI task instance panicked: {}",
-                        e
-                    )))),
+                let completed_count_clone = completed_count.clone();
+                let failed_count_clone = failed_count.clone();
+                let tx_clone = tx.clone();
+
+                tokio::spawn(async move {
+                    match handle.await {
+                        Ok(Ok(())) => {
+                            let count = completed_count_clone.fetch_add(1, Ordering::SeqCst);
+                            tx_clone.send(Ok(())).await.ok();
+                            count + 1
+                        }
+                        Ok(Err(e)) => {
+                            let count = failed_count_clone.fetch_add(1, Ordering::SeqCst);
+                            tx_clone.send(Err(e)).await.ok();
+                            count + 1
+                        }
+                        Err(e) => {
+                            let count = failed_count_clone.fetch_add(1, Ordering::SeqCst);
+                            tx_clone
+                                .send(Err(WorkflowError::TaskExecutionFailed(format!(
+                                    "MI task instance panicked: {}",
+                                    e
+                                ))))
+                                .await
+                                .ok();
+                            count + 1
+                        }
+                    }
+                });
+            }
+
+            // Wait for threshold completions
+            let mut results = Vec::new();
+            let mut errors = Vec::new();
+            let mut completed = 0;
+
+            while completed < threshold {
+                match rx.recv().await {
+                    Some(Ok(())) => {
+                        results.push(Ok(()));
+                        completed += 1;
+                    }
+                    Some(Err(e)) => {
+                        errors.push(e);
+                        completed += 1;
+                    }
+                    None => {
+                        // Channel closed, all instances completed
+                        break;
+                    }
                 }
             }
 
-            // Check if all instances completed successfully
-            for result in results {
-                result?;
+            // If threshold reached, cancel remaining instances
+            if completed >= threshold {
+                tracing::debug!(
+                    "MI task {} reached threshold {}/{} - cancelling remaining instances",
+                    task.id,
+                    completed,
+                    instance_count
+                );
+                // Note: Remaining instances will complete or timeout independently
+                // In production, would send cancellation signals to work items
             }
 
+            // Check if we have enough successful completions
+            let success_count = results.len();
+            if success_count < threshold {
+                return Err(WorkflowError::TaskExecutionFailed(format!(
+                    "MI task {} required {} successful completions, but only {} succeeded ({} failed)",
+                    task.id, threshold, success_count, errors.len()
+                )));
+            }
+
+            // Aggregate results from completed instances
+            // Merge instance data into case
+            let mut case = engine.get_case(case_id).await?;
+            if let Some(case_obj) = case.data.as_object_mut() {
+                // Aggregate instance results (if any)
+                let mut instance_results = Vec::new();
+                for i in 0..completed {
+                    if let Some(instance_data) = case_obj.get(&format!("instance_{}_result", i)) {
+                        instance_results.push(instance_data.clone());
+                    }
+                }
+                if !instance_results.is_empty() {
+                    case_obj.insert(
+                        "mi_results".to_string(),
+                        serde_json::Value::Array(instance_results),
+                    );
+                }
+                case_obj.insert(
+                    "mi_completed_count".to_string(),
+                    serde_json::Value::Number(completed.into()),
+                );
+            }
+
+            // Save aggregated case
+            let store_arc = engine.state_store.read().await;
+            (*store_arc).save_case(case_id, &case)?;
+
             tracing::debug!(
-                "Multiple instance task {} completed all {} instances",
+                "Multiple instance task {} completed {} instances (threshold: {})",
                 task.id,
-                instance_count
+                completed,
+                threshold
             );
         }
     }

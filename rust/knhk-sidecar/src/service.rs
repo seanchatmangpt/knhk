@@ -23,6 +23,9 @@ pub mod proto {
 
 use crate::json_parser::parse_json_triples;
 
+// Import proto types regardless of feature flag
+use proto::*;
+
 // Stub proto types for when grpc feature is disabled
 #[cfg(not(feature = "grpc"))]
 pub mod proto {

@@ -28,18 +28,27 @@ pub static REGISTERED_PHASES: [PhaseEntry];
 ///
 /// # Example
 /// ```ignore
-/// register_phase!(MyPhase, MyPhase::new);
+/// register_phase!(MyPhase, MyPhase::new, "MyPhase", "Validates my phase");
 /// ```
 #[macro_export]
 macro_rules! register_phase {
-    ($phase_type:ty, $factory:expr) => {
+    ($phase_type:ty, $factory:expr, $name:expr, $description:expr) => {
         #[linkme::distributed_slice($crate::validation::phases::registry::REGISTERED_PHASES)]
         static PHASE_ENTRY: $crate::validation::phases::registry::PhaseEntry =
             $crate::validation::phases::registry::PhaseEntry {
-                metadata: <$phase_type as $crate::validation::phases::core::Phase<_, _>>::metadata(
-                ),
+                metadata: $crate::validation::phases::core::PhaseMetadata {
+                    name: $name,
+                    description: $description,
+                    version: "1.0.0",
+                    dependencies: &[],
+                    parallel: false,
+                },
                 factory: || std::sync::Arc::new($factory()),
             };
+    };
+    // Backward compatibility - try to extract metadata from type
+    ($phase_type:ty, $factory:expr) => {
+        register_phase!($phase_type, $factory, stringify!($phase_type), "Validation phase");
     };
 }
 
@@ -71,13 +80,13 @@ impl PhaseRegistry {
     /// Register a phase statically (from compile-time registration)
     fn register_static(&self, metadata: &PhaseMetadata, factory: PhaseFactory) {
         let mut phases = self.phases.write().unwrap();
-        phases.insert(metadata.name.to_string(), (*metadata, factory));
+        phases.insert(metadata.name.to_string(), (metadata.clone(), factory));
     }
 
     /// Get phase metadata by name
     pub fn get_metadata(&self, name: &str) -> Option<PhaseMetadata> {
         let phases = self.phases.read().unwrap();
-        phases.get(name).map(|(metadata, _)| *metadata)
+        phases.get(name).map(|(metadata, _)| metadata.clone())
     }
 
     /// List all registered phase names
@@ -89,7 +98,10 @@ impl PhaseRegistry {
     /// Get all phase metadata
     pub fn get_all_metadata(&self) -> Vec<PhaseMetadata> {
         let phases = self.phases.read().unwrap();
-        phases.values().map(|(metadata, _)| *metadata).collect()
+        phases
+            .values()
+            .map(|(metadata, _)| metadata.clone())
+            .collect()
     }
 
     /// Check if a phase exists

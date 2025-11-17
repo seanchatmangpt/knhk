@@ -55,7 +55,7 @@ use oxigraph::store::Store;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tera::{Context, Tera};
+use tera::{Context as TeraContext, Tera};
 
 /// ggen template generator for workflows
 pub struct GgenGenerator {
@@ -125,7 +125,7 @@ impl GgenGenerator {
         template_name: &str,
         context: HashMap<String, Value>,
     ) -> WorkflowResult<String> {
-        let mut tera_context = Context::new();
+        let mut tera_context = TeraContext::new();
         for (key, value) in context {
             tera_context.insert(key, &value);
         }
@@ -148,7 +148,7 @@ impl GgenGenerator {
         spec: &WorkflowSpec,
         template_name: &str,
     ) -> WorkflowResult<String> {
-        let mut context = Context::new();
+        let mut context = TeraContext::new();
 
         // Convert workflow spec to template context
         context.insert("workflow_name", &spec.name);
@@ -183,7 +183,7 @@ impl GgenGenerator {
         spec: &WorkflowSpec,
         template_name: &str,
     ) -> WorkflowResult<String> {
-        let mut context = Context::new();
+        let mut context = TeraContext::new();
 
         // Convert workflow spec to template context
         context.insert("workflow_name", &spec.name);

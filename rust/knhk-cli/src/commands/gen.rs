@@ -1702,23 +1702,17 @@ fn parse_and_generate_workflow(spec_content: &str, req: &WorkflowGenRequest) -> 
     // Query for workflow name (rdfs:label)
     for quad in store.iter() {
         if let Ok(q) = quad {
-            if let Term::Literal(lit) = q.object {
-                if q.predicate
-                    == NamedNode::new("http://www.w3.org/2000/01/rdf-schema#label")
-                        .unwrap()
-                        .into()
-                {
+            let pred = q.predicate.as_str();
+
+            if let Term::Literal(lit) = &q.object {
+                if pred == "http://www.w3.org/2000/01/rdf-schema#label" {
                     workflow_name = lit.value().to_string();
                 }
             }
 
             // Extract tasks (yawl:taskName)
-            if q.predicate
-                == NamedNode::new("http://www.yawlfoundation.org/yawlschema#taskName")
-                    .unwrap()
-                    .into()
-            {
-                if let Term::Literal(lit) = q.object {
+            if pred == "http://www.yawlfoundation.org/yawlschema#taskName" {
+                if let Term::Literal(lit) = &q.object {
                     tasks.push(lit.value().to_string());
                 }
             }

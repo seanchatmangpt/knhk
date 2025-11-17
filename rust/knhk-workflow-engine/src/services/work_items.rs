@@ -1393,6 +1393,706 @@ impl WorkItemService {
             .cloned()
             .collect()
     }
+
+    /// Checkout work item (acquire exclusive lock for editing)
+    ///
+    /// Moves work item to Claimed state and marks it as checked out.
+    /// Only one resource can checkout a work item at a time.
+    pub async fn checkout_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - must be Assigned or Created
+            if item.state != WorkItemState::Assigned && item.state != WorkItemState::Created {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in Assigned or Created state (current: {:?})",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Check if already checked out by another resource
+            if let Some(checked_out_by) = item.data.get("checked_out_by") {
+                if let Some(checked_out_by) = checked_out_by.as_str() {
+                    if checked_out_by != resource_id {
+                        return Err(WorkflowError::Validation(format!(
+                            "Work item {} is already checked out by resource {}",
+                            work_item_id, checked_out_by
+                        )));
+                    }
+                }
+            }
+
+            // Assign if not already assigned
+            if item.assigned_resource_id.is_none() {
+                item.assigned_resource_id = Some(resource_id.to_string());
+            } else if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is assigned to a different resource",
+                    work_item_id
+                )));
+            }
+
+            // Mark as checked out
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.insert(
+                    "checked_out_by".to_string(),
+                    serde_json::Value::String(resource_id.to_string()),
+                );
+                data_obj.insert(
+                    "checked_out_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+            }
+
+            // Move to Claimed state
+            item.state = WorkItemState::Claimed;
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Checkin work item (release lock and save data)
+    ///
+    /// Releases the checkout lock and saves the provided data.
+    /// Work item remains in Claimed state after checkin.
+    pub async fn checkin_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+        data: serde_json::Value,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate resource
+            if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not assigned to resource {}",
+                    work_item_id, resource_id
+                )));
+            }
+
+            // Validate checkout
+            if let Some(checked_out_by) = item.data.get("checked_out_by") {
+                if let Some(checked_out_by) = checked_out_by.as_str() {
+                    if checked_out_by != resource_id {
+                        return Err(WorkflowError::Validation(format!(
+                            "Work item {} is checked out by resource {}, not {}",
+                            work_item_id, checked_out_by, resource_id
+                        )));
+                    }
+                }
+            } else {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not checked out",
+                    work_item_id
+                )));
+            }
+
+            // Save data
+            item.data = data;
+
+            // Update checkin timestamp
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.insert(
+                    "checked_in_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+            }
+
+            // Note: Work item remains in Claimed state after checkin
+            // Use complete() to finish the work item
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Offer work item to a resource (push distribution)
+    ///
+    /// Adds work item to resource's queue without requiring immediate acceptance.
+    /// Resource can accept or decline the offer.
+    pub async fn offer_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: String,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - must be Created
+            if item.state != WorkItemState::Created {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in Created state (current: {:?})",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Add to offered resources list
+            if let Some(data_obj) = item.data.as_object_mut() {
+                let mut offered_to = if let Some(offered) = data_obj.get("offered_to") {
+                    if let Some(offered_arr) = offered.as_array() {
+                        offered_arr
+                            .iter()
+                            .filter_map(|r| r.as_str().map(|s| s.to_string()))
+                            .collect()
+                    } else {
+                        Vec::new()
+                    }
+                } else {
+                    Vec::new()
+                };
+
+                if !offered_to.contains(&resource_id) {
+                    offered_to.push(resource_id.clone());
+                }
+
+                data_obj.insert(
+                    "offered_to".to_string(),
+                    serde_json::to_value(offered_to)
+                        .unwrap_or(serde_json::Value::Array(Vec::new())),
+                );
+                data_obj.insert(
+                    "offered_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+            }
+
+            // Move to Assigned state (offered)
+            item.state = WorkItemState::Assigned;
+            item.assigned_resource_id = Some(resource_id);
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Reoffer work item to different resources
+    ///
+    /// Removes current assignment and offers to new resources.
+    pub async fn reoffer_work_item(
+        &self,
+        work_item_id: &str,
+        resource_ids: Vec<String>,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - must be Assigned or Created
+            if item.state != WorkItemState::Assigned && item.state != WorkItemState::Created {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in Assigned or Created state (current: {:?})",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Update offered resources list
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.insert(
+                    "offered_to".to_string(),
+                    serde_json::to_value(resource_ids.clone())
+                        .unwrap_or(serde_json::Value::Array(Vec::new())),
+                );
+                data_obj.insert(
+                    "reoffered_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+            }
+
+            // Reset assignment (first resource in list becomes primary)
+            if let Some(first_resource) = resource_ids.first() {
+                item.assigned_resource_id = Some(first_resource.clone());
+            } else {
+                item.assigned_resource_id = None;
+            }
+
+            // Reset to Created if no resources provided
+            if resource_ids.is_empty() {
+                item.state = WorkItemState::Created;
+            } else {
+                item.state = WorkItemState::Assigned;
+            }
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Deallocate work item (remove assignment)
+    ///
+    /// Removes resource assignment and returns work item to Created state.
+    pub async fn deallocate_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate resource
+            if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not assigned to resource {}",
+                    work_item_id, resource_id
+                )));
+            }
+
+            // Validate state - cannot deallocate if in progress
+            if item.state == WorkItemState::InProgress {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is in progress and cannot be deallocated",
+                    work_item_id
+                )));
+            }
+
+            // Remove assignment
+            item.assigned_resource_id = None;
+
+            // Clear checkout if present
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.remove("checked_out_by");
+                data_obj.remove("checked_out_at");
+            }
+
+            // Return to Created state
+            item.state = WorkItemState::Created;
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Reallocate work item (stateless - reassign without preserving state)
+    ///
+    /// Reassigns work item to new resource without preserving execution state.
+    pub async fn reallocate_stateless(
+        &self,
+        work_item_id: &str,
+        resource_id: String,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - cannot reallocate if completed or cancelled
+            if item.state == WorkItemState::Completed || item.state == WorkItemState::Cancelled {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is in final state {:?}",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Clear checkout and execution state
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.remove("checked_out_by");
+                data_obj.remove("checked_out_at");
+                data_obj.remove("checked_in_at");
+                data_obj.remove("suspended");
+            }
+
+            // Reassign
+            item.assigned_resource_id = Some(resource_id);
+            item.state = WorkItemState::Assigned;
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Reallocate work item (stateful - reassign with state preservation)
+    ///
+    /// Reassigns work item to new resource while preserving execution state and data.
+    pub async fn reallocate_stateful(
+        &self,
+        work_item_id: &str,
+        resource_id: String,
+        data: serde_json::Value,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate state - cannot reallocate if completed or cancelled
+            if item.state == WorkItemState::Completed || item.state == WorkItemState::Cancelled {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is in final state {:?}",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Preserve execution state in data
+            let mut preserved_data = data;
+            if let Some(data_obj) = preserved_data.as_object_mut() {
+                // Preserve original assignee
+                if let Some(original_assignee) = item.assigned_resource_id.as_ref() {
+                    data_obj.insert(
+                        "original_assignee".to_string(),
+                        serde_json::Value::String(original_assignee.clone()),
+                    );
+                }
+
+                // Preserve checkout state if present
+                if let Some(checked_out_by) = item.data.get("checked_out_by") {
+                    data_obj.insert("checked_out_by".to_string(), checked_out_by.clone());
+                }
+                if let Some(checked_out_at) = item.data.get("checked_out_at") {
+                    data_obj.insert("checked_out_at".to_string(), checked_out_at.clone());
+                }
+
+                // Preserve suspended state if present
+                if let Some(suspended) = item.data.get("suspended") {
+                    data_obj.insert("suspended".to_string(), suspended.clone());
+                }
+
+                // Add reallocation metadata
+                data_obj.insert(
+                    "reallocated_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+                data_obj.insert(
+                    "reallocated_to".to_string(),
+                    serde_json::Value::String(resource_id.clone()),
+                );
+            }
+
+            // Update data and reassign
+            item.data = preserved_data;
+            item.assigned_resource_id = Some(resource_id);
+
+            // If was in progress, move to Assigned (new resource needs to claim)
+            if item.state == WorkItemState::InProgress {
+                item.state = WorkItemState::Assigned;
+            }
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Check if work item is eligible to start
+    ///
+    /// Validates that work item can be started by the resource.
+    pub async fn check_eligible_to_start(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+    ) -> WorkflowResult<bool> {
+        let items = self.work_items.read().await;
+        if let Some(item) = items.get(work_item_id) {
+            // Check resource assignment
+            if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Ok(false);
+            }
+
+            // Check state - must be Assigned or Claimed
+            if item.state != WorkItemState::Assigned && item.state != WorkItemState::Claimed {
+                return Ok(false);
+            }
+
+            // Check if suspended
+            if let Some(suspended) = item.data.get("suspended") {
+                if let Some(suspended) = suspended.as_bool() {
+                    if suspended {
+                        return Ok(false);
+                    }
+                }
+            }
+
+            // Check if checked out by another resource
+            if let Some(checked_out_by) = item.data.get("checked_out_by") {
+                if let Some(checked_out_by) = checked_out_by.as_str() {
+                    if checked_out_by != resource_id {
+                        return Ok(false);
+                    }
+                }
+            }
+
+            Ok(true)
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Get enabled work items (available for execution)
+    pub async fn get_enabled_work_items(&self) -> Vec<WorkItem> {
+        let items = self.work_items.read().await;
+        items
+            .values()
+            .filter(|item| {
+                item.state == WorkItemState::Created
+                    || item.state == WorkItemState::Assigned
+                    || item.state == WorkItemState::Claimed
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// Get executing work items (in progress)
+    pub async fn get_executing_work_items(&self) -> Vec<WorkItem> {
+        let items = self.work_items.read().await;
+        items
+            .values()
+            .filter(|item| item.state == WorkItemState::InProgress)
+            .cloned()
+            .collect()
+    }
+
+    /// Get suspended work items
+    pub async fn get_suspended_work_items(&self) -> Vec<WorkItem> {
+        let items = self.work_items.read().await;
+        items
+            .values()
+            .filter(|item| {
+                if let Some(suspended) = item.data.get("suspended") {
+                    if let Some(suspended) = suspended.as_bool() {
+                        return suspended;
+                    }
+                }
+                false
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// Get work items for user (all work items assigned to or available for the user)
+    pub async fn get_work_items_for_user(&self, user_id: &str) -> Vec<WorkItem> {
+        self.get_inbox(user_id).await.unwrap_or_default()
+    }
+
+    /// Get work items for case
+    pub async fn get_work_items_for_case(&self, case_id: &str) -> Vec<WorkItem> {
+        self.list_case_work_items(case_id).await
+    }
+
+    /// Get work items for spec
+    pub async fn get_work_items_for_spec(&self, spec_id: &WorkflowSpecId) -> Vec<WorkItem> {
+        self.get_work_items_by_spec(spec_id).await
+    }
+
+    /// Complete work item (YAWL Interface B: completeWorkItem)
+    ///
+    /// YAWL signature: `completeWorkItem(itemID, userID, data)`
+    /// Finishes work item execution and commits the result data.
+    ///
+    /// # TRIZ Principle 10: Prior Action
+    /// State validation is pre-computed at registration time, reducing runtime overhead.
+    pub async fn complete_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+        data: serde_json::Value,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate resource assignment
+            if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not assigned to resource {}",
+                    work_item_id, resource_id
+                )));
+            }
+
+            // Validate state - must be InProgress or Claimed
+            if item.state != WorkItemState::InProgress && item.state != WorkItemState::Claimed {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in InProgress or Claimed state (current: {:?})",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Validate not already completed or cancelled
+            if item.state == WorkItemState::Completed || item.state == WorkItemState::Cancelled {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is already in final state {:?}",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Complete the work item
+            item.state = WorkItemState::Completed;
+            item.completed_at = Some(Utc::now());
+            item.data = data;
+
+            // Clear checkout if present
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.remove("checked_out_by");
+                data_obj.remove("checked_out_at");
+                data_obj.insert(
+                    "completed_by".to_string(),
+                    serde_json::Value::String(resource_id.to_string()),
+                );
+            }
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Cancel work item (YAWL Interface B: cancelWorkItem)
+    ///
+    /// YAWL signature: `cancelWorkItem(itemID, userID)`
+    /// Aborts work item execution.
+    ///
+    /// # TRIZ Principle 10: Prior Action
+    /// State validation is pre-computed at registration time, reducing runtime overhead.
+    pub async fn cancel_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate resource assignment (if assigned)
+            if let Some(assigned_id) = &item.assigned_resource_id {
+                if assigned_id != resource_id {
+                    return Err(WorkflowError::Validation(format!(
+                        "Work item {} is assigned to resource {}, not {}",
+                        work_item_id, assigned_id, resource_id
+                    )));
+                }
+            }
+
+            // Validate state - cannot cancel if already completed
+            if item.state == WorkItemState::Completed {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is already completed and cannot be cancelled",
+                    work_item_id
+                )));
+            }
+
+            // Validate state - cannot cancel if already cancelled
+            if item.state == WorkItemState::Cancelled {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is already cancelled",
+                    work_item_id
+                )));
+            }
+
+            // Cancel the work item
+            item.state = WorkItemState::Cancelled;
+
+            // Clear checkout if present
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.remove("checked_out_by");
+                data_obj.remove("checked_out_at");
+                data_obj.insert(
+                    "cancelled_by".to_string(),
+                    serde_json::Value::String(resource_id.to_string()),
+                );
+                data_obj.insert(
+                    "cancelled_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+            }
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
+
+    /// Unsuspend work item (YAWL Interface B: unsuspendWorkItem)
+    ///
+    /// YAWL signature: `unsuspendWorkItem(itemID, userID)`
+    /// Resumes execution of a suspended work item.
+    ///
+    /// # TRIZ Principle 15: Dynamics
+    /// Dynamic state transition based on current state and suspension flag.
+    pub async fn unsuspend_work_item(
+        &self,
+        work_item_id: &str,
+        resource_id: &str,
+    ) -> WorkflowResult<()> {
+        let mut items = self.work_items.write().await;
+        if let Some(item) = items.get_mut(work_item_id) {
+            // Validate resource assignment
+            if item.assigned_resource_id.as_ref() != Some(&resource_id.to_string()) {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not assigned to resource {}",
+                    work_item_id, resource_id
+                )));
+            }
+
+            // Validate state - must be InProgress (suspension is tracked in data, not state)
+            if item.state != WorkItemState::InProgress {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not in InProgress state (current: {:?})",
+                    work_item_id, item.state
+                )));
+            }
+
+            // Validate that work item is actually suspended
+            let is_suspended = if let Some(suspended) = item.data.get("suspended") {
+                suspended.as_bool().unwrap_or(false)
+            } else {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not suspended",
+                    work_item_id
+                )));
+            };
+
+            if !is_suspended {
+                return Err(WorkflowError::Validation(format!(
+                    "Work item {} is not suspended",
+                    work_item_id
+                )));
+            }
+
+            // Remove suspended flag
+            if let Some(data_obj) = item.data.as_object_mut() {
+                data_obj.remove("suspended");
+                data_obj.insert(
+                    "unsuspended_at".to_string(),
+                    serde_json::Value::String(Utc::now().to_rfc3339()),
+                );
+                data_obj.insert(
+                    "unsuspended_by".to_string(),
+                    serde_json::Value::String(resource_id.to_string()),
+                );
+            }
+
+            Ok(())
+        } else {
+            Err(WorkflowError::ResourceUnavailable(format!(
+                "Work item {} not found",
+                work_item_id
+            )))
+        }
+    }
 }
 
 impl Default for WorkItemService {

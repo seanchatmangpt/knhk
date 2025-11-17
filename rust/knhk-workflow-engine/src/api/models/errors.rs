@@ -126,6 +126,23 @@ impl From<WorkflowError> for ApiError {
             WorkflowError::Parse(msg) => {
                 ApiError::new("BAD_REQUEST", format!("Parse error: {}", msg))
             }
+            WorkflowError::HookFailed(msg) => {
+                ApiError::new("INTERNAL_ERROR", format!("Hook execution failed: {}", msg))
+            }
+            WorkflowError::GuardViolation(msg) => {
+                ApiError::new("VALIDATION_ERROR", format!("Guard violation: {}", msg))
+            }
+            WorkflowError::ReceiptGenerationFailed(msg) => ApiError::new(
+                "INTERNAL_ERROR",
+                format!("Receipt generation failed: {}", msg),
+            ),
+            WorkflowError::SnapshotError(msg) => {
+                ApiError::new("INTERNAL_ERROR", format!("Snapshot error: {}", msg))
+            }
+            WorkflowError::Io(msg) => ApiError::new("INTERNAL_ERROR", format!("IO error: {}", msg)),
+            WorkflowError::Crypto(msg) => {
+                ApiError::new("INTERNAL_ERROR", format!("Cryptographic error: {}", msg))
+            }
         }
     }
 }

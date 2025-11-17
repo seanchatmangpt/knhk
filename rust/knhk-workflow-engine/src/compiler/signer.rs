@@ -98,6 +98,7 @@ impl DescriptorSigner {
             .as_ref()
             .ok_or_else(|| WorkflowError::Crypto("No key pair loaded".to_string()))?;
 
+        use ring::signature::KeyPair;
         let public_key = key_pair.public_key();
         let peer_public_key =
             signature::UnparsedPublicKey::new(&signature::ED25519, public_key.as_ref());

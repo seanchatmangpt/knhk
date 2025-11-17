@@ -33,7 +33,7 @@ impl<P: Permission> Capability<P> {
     }
 
     /// Check if capability grants specific action
-    pub const fn can_perform(action: &'static str) -> bool {
+    pub fn can_perform(action: &'static str) -> bool {
         P::can_perform(action)
     }
 }

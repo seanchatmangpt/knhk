@@ -5,9 +5,11 @@ pub mod advanced;
 pub mod advanced_control;
 pub mod basic;
 pub mod cancellation;
+pub mod combinatorics;
 pub mod joins;
 pub mod mi;
 pub mod multiple_instance;
+pub mod permutations;
 pub mod rdf;
 pub mod state_based;
 pub mod trigger;
@@ -30,6 +32,20 @@ impl PatternId {
             Err(WorkflowError::PatternNotFound(id))
         }
     }
+
+    // Pattern constants for common patterns
+    /// Pattern 1: Sequence
+    pub const SEQUENCE: PatternId = PatternId(1);
+    /// Pattern 2: Parallel Split
+    pub const PARALLEL_SPLIT: PatternId = PatternId(2);
+    /// Pattern 4: Exclusive Choice
+    pub const EXCLUSIVE_CHOICE: PatternId = PatternId(4);
+    /// Pattern 6: Multi-Choice
+    pub const MULTI_CHOICE: PatternId = PatternId(6);
+    /// Pattern 16: Deferred Choice
+    pub const DEFERRED_CHOICE: PatternId = PatternId(16);
+    /// Pattern 12: Multiple Instances With Design-Time Knowledge
+    pub const MULTIPLE_INSTANCES_WITH_DESIGN_TIME_KNOWLEDGE: PatternId = PatternId(12);
 }
 
 impl std::fmt::Display for PatternId {

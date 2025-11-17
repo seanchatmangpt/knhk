@@ -76,7 +76,7 @@ pub struct Guard {
 }
 
 /// Guard type
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GuardType {
     PreCondition,
     PostCondition,

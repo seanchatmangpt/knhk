@@ -181,15 +181,14 @@ fn build_task_graph(spec: &WorkflowSpec) -> HashMap<String, Vec<String>> {
     graph.insert("__start__".to_string(), Vec::new());
 
     // Add tasks from workflow patterns
-    for task in &spec.tasks {
-        let task_id = task.id.to_string();
+    for (task_id, task) in &spec.tasks {
         let successors = task
-            .successors
+            .outgoing_flows
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
 
-        graph.insert(task_id, successors);
+        graph.insert(task_id.clone(), successors);
     }
 
     // Add end node
@@ -197,26 +196,24 @@ fn build_task_graph(spec: &WorkflowSpec) -> HashMap<String, Vec<String>> {
 
     // Connect orphan tasks to start
     if let Some(start_successors) = graph.get_mut("__start__") {
-        for task in &spec.tasks {
+        for (task_id, _task) in &spec.tasks {
             // If task has no predecessors, connect from start
-            let task_id = task.id.to_string();
             let has_predecessor = spec
                 .tasks
                 .iter()
-                .any(|t| t.successors.iter().any(|s| s.to_string() == task_id));
+                .any(|(_tid, t)| t.outgoing_flows.iter().any(|s| s == task_id));
 
             if !has_predecessor && task_id != "__start__" && task_id != "__end__" {
-                start_successors.push(task_id);
+                start_successors.push(task_id.clone());
             }
         }
     }
 
     // Connect tasks with no successors to end
-    for task in &spec.tasks {
-        let task_id = task.id.to_string();
-        if let Some(successors) = graph.get(&task_id) {
+    for (task_id, _task) in &spec.tasks {
+        if let Some(successors) = graph.get(task_id) {
             if successors.is_empty() && task_id != "__end__" {
-                graph.get_mut(&task_id).unwrap().push("__end__".to_string());
+                graph.get_mut(task_id).unwrap().push("__end__".to_string());
             }
         }
     }

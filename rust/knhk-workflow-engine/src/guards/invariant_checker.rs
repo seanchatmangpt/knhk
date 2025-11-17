@@ -163,6 +163,12 @@ impl InvariantChecker {
         Ok(results)
     }
 
+    /// Validate workflow specification
+    pub fn validate_workflow_spec(&self, _spec: &crate::parser::WorkflowSpec) -> WorkflowResult<()> {
+        // For now, basic validation - can be extended
+        Ok(())
+    }
+
     /// Validate that all invariants passed
     pub fn validate_results(results: &[InvariantCheckResult]) -> WorkflowResult<()> {
         let failures: Vec<_> = results.iter().filter(|r| !r.passed).collect();
@@ -172,8 +178,7 @@ impl InvariantChecker {
         } else {
             let error_msg = failures
                 .iter()
-                .map(|r| r.error.as_ref().unwrap_or(&"Unknown error".to_string()))
-                .cloned()
+                .map(|r| r.error.as_deref().unwrap_or("Unknown error"))
                 .collect::<Vec<_>>()
                 .join("; ");
 

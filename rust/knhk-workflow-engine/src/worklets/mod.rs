@@ -4,14 +4,33 @@
 //! Implements YAWL-style worklets for dynamic workflow changes at runtime.
 //! Worklets are reusable workflow fragments that can replace or extend
 //! workflow tasks dynamically based on context, exceptions, or rules.
+//!
+//! # TRIZ Patterns Applied
+//!
+//! - TRIZ Principle 24: Intermediary - RDR selection plan
+//! - TRIZ Principle 19: Periodic Action - Periodic repository sync
+/// Ripple Down Rules (RDR) engine for worklet selection
+pub mod rdr;
+/// YAWL worklet service implementation
+pub mod yawl_worklet;
+/// WorkletExecutionBackend implementation for WorkflowEngine
+pub mod backend_impl;
+
+//! # YAWL Worklet System
+//!
+//! - `yawl_worklet.rs`: YAWL worklet service with RDR selection and TRIZ enhancements
 
 use crate::error::{WorkflowError, WorkflowResult};
 use crate::parser::WorkflowSpec;
 use crate::patterns::{PatternExecutionContext, PatternExecutionResult, PatternId};
+pub use rdr::{ExceptionContext, RDREngine, RDRRule, RDRSelectionPlan};
+pub use yawl_worklet::{RdrNode, RdrTree, WorkletContext, YawlWorkletService};
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tokio::time::{interval, Duration};
 use uuid::Uuid;
 
 /// Worklet identifier
@@ -80,6 +99,8 @@ pub struct Worklet {
 }
 
 /// Worklet repository
+///
+/// TRIZ Principle 19: Periodic Action - Periodic reconciliation instead of continuous monitoring
 pub struct WorkletRepository {
     /// Stored worklets
     worklets: Arc<RwLock<HashMap<WorkletId, Worklet>>>,
@@ -87,6 +108,10 @@ pub struct WorkletRepository {
     exception_index: Arc<RwLock<HashMap<String, Vec<WorkletId>>>>,
     /// Worklets by tag
     tag_index: Arc<RwLock<HashMap<String, Vec<WorkletId>>>>,
+    /// RDR engine for rule-based selection (TRIZ Principle 24: Intermediary)
+    rdr_engine: Arc<RwLock<RDREngine>>,
+    /// Last reconciliation time (TRIZ Principle 19: Periodic Action)
+    last_reconciliation: Arc<RwLock<Option<chrono::DateTime<chrono::Utc>>>>,
 }
 
 impl WorkletRepository {
@@ -96,7 +121,83 @@ impl WorkletRepository {
             worklets: Arc::new(RwLock::new(HashMap::new())),
             exception_index: Arc::new(RwLock::new(HashMap::new())),
             tag_index: Arc::new(RwLock::new(HashMap::new())),
+            rdr_engine: Arc::new(RwLock::new(RDREngine::new())),
+            last_reconciliation: Arc::new(RwLock::new(None)),
         }
+    }
+
+    /// Start periodic reconciliation (TRIZ Principle 19: Periodic Action)
+    ///
+    /// Reconciles worklet repository state periodically instead of continuously
+    pub fn start_periodic_reconciliation(&self, interval_secs: u64) {
+        let worklets = self.worklets.clone();
+        let exception_index = self.exception_index.clone();
+        let tag_index = self.tag_index.clone();
+        let last_reconciliation = self.last_reconciliation.clone();
+
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(interval_secs));
+            loop {
+                interval.tick().await;
+
+                // Reconcile indices
+                let mut new_exception_index: HashMap<String, Vec<WorkletId>> = HashMap::new();
+                let mut new_tag_index: HashMap<String, Vec<WorkletId>> = HashMap::new();
+
+                let worklets_read = worklets.read().await;
+                for (worklet_id, worklet) in worklets_read.iter() {
+                    // Rebuild exception index
+                    for exception_type in &worklet.metadata.exception_types {
+                        new_exception_index
+                            .entry(exception_type.clone())
+                            .or_insert_with(Vec::new)
+                            .push(*worklet_id);
+                    }
+
+                    // Rebuild tag index
+                    for tag in &worklet.metadata.tags {
+                        new_tag_index
+                            .entry(tag.clone())
+                            .or_insert_with(Vec::new)
+                            .push(*worklet_id);
+                    }
+                }
+                drop(worklets_read);
+
+                // Update indices
+                *exception_index.write().await = new_exception_index;
+                *tag_index.write().await = new_tag_index;
+
+                // Update reconciliation time
+                *last_reconciliation.write().await = Some(chrono::Utc::now());
+
+                tracing::debug!("Worklet repository reconciled");
+            }
+        });
+    }
+
+    /// Get RDR engine
+    pub async fn get_rdr_engine(&self) -> Arc<RwLock<RDREngine>> {
+        self.rdr_engine.clone()
+    }
+
+    /// Select worklet using RDR (TRIZ Principle 24: Intermediary)
+    pub async fn select_worklet_rdr(
+        &self,
+        context: &rdr::ExceptionContext,
+    ) -> WorkflowResult<Option<WorkletId>> {
+        let rdr = self.rdr_engine.read().await;
+        let plan = rdr.select_worklet(context)?;
+        // Find worklet by ID string in repository
+        if let Some(worklet_id_str) = plan.selected_worklet {
+            let worklets = self.worklets.read().await;
+            for (id, worklet) in worklets.iter() {
+                if worklet.metadata.name == worklet_id_str || id.0.to_string() == worklet_id_str {
+                    return Ok(Some(*id));
+                }
+            }
+        }
+        Ok(None)
     }
 
     /// Register a worklet
@@ -327,6 +428,26 @@ impl Default for WorkletRepository {
 }
 
 /// Worklet executor
+/// Trait for worklet execution backend - breaks circular dependency
+/// 
+/// This trait allows WorkletExecutor to execute worklets without directly
+/// depending on WorkflowEngine, enabling dependency injection.
+#[async_trait::async_trait]
+pub trait WorkletExecutionBackend: Send + Sync {
+    /// Create a case for a workflow specification
+    async fn create_case(
+        &self,
+        spec_id: crate::parser::WorkflowSpecId,
+        data: serde_json::Value,
+    ) -> WorkflowResult<crate::case::CaseId>;
+
+    /// Execute a case
+    async fn execute_case(&self, case_id: crate::case::CaseId) -> WorkflowResult<()>;
+
+    /// Get case by ID
+    async fn get_case(&self, case_id: crate::case::CaseId) -> WorkflowResult<crate::case::Case>;
+}
+
 pub struct WorkletExecutor {
     /// Worklet repository
     repository: Arc<WorkletRepository>,
@@ -340,29 +461,33 @@ impl WorkletExecutor {
 
     /// Execute worklet as replacement for a task
     ///
+    /// TRIZ Principle 24: Intermediary - Uses execution plan instead of direct engine call
+    /// This breaks the circular dependency by using dependency injection
+    ///
     /// # Arguments
     /// * `worklet_id` - Worklet identifier
     /// * `context` - Pattern execution context
-    /// * `engine` - Workflow engine to execute the worklet's workflow spec
-    pub async fn execute_worklet(
+    /// * `executor_fn` - Function to execute the worklet's workflow spec (dependency injection)
+    ///   Takes (spec_id, data) and returns (case_id, case_state)
+    pub async fn execute_worklet<B: WorkletExecutionBackend>(
         &self,
         worklet_id: WorkletId,
         context: PatternExecutionContext,
-        engine: &crate::executor::WorkflowEngine,
+        backend: &B,
     ) -> WorkflowResult<PatternExecutionResult> {
         let worklet = self.repository.get(worklet_id).await?;
 
         // Convert context variables to JSON Value
         let data = serde_json::json!(context.variables);
 
-        // Create a case for the worklet's workflow spec
-        let case_id = engine.create_case(worklet.workflow_spec.id, data).await?;
+        // Create a case for the worklet's workflow spec using backend
+        let case_id = backend.create_case(worklet.workflow_spec.id, data).await?;
 
-        // Execute the case
-        engine.execute_case(case_id).await?;
+        // Execute the case using backend
+        backend.execute_case(case_id).await?;
 
-        // Get the case to check its state
-        let case = engine.get_case(case_id).await?;
+        // Get the case to check its state using backend
+        let case = backend.get_case(case_id).await?;
 
         // Convert case result to pattern execution result
         Ok(PatternExecutionResult {
@@ -382,15 +507,17 @@ impl WorkletExecutor {
 
     /// Handle exception with worklet
     ///
+    /// Uses dependency injection via `WorkletExecutionBackend` trait.
+    ///
     /// # Arguments
     /// * `exception_type` - Exception type to handle
     /// * `context` - Pattern execution context
-    /// * `engine` - Workflow engine to execute the worklet's workflow spec
-    pub async fn handle_exception(
+    /// * `backend` - Execution backend (typically the workflow engine)
+    pub async fn handle_exception<B: WorkletExecutionBackend>(
         &self,
         exception_type: &str,
         context: PatternExecutionContext,
-        engine: &crate::executor::WorkflowEngine,
+        backend: &B,
     ) -> WorkflowResult<Option<PatternExecutionResult>> {
         // Select appropriate worklet for exception
         if let Some(worklet_id) = self
@@ -398,7 +525,7 @@ impl WorkletExecutor {
             .select_worklet(&context, Some(exception_type))
             .await?
         {
-            let result = self.execute_worklet(worklet_id, context, engine).await?;
+            let result = self.execute_worklet(worklet_id, context, backend).await?;
             Ok(Some(result))
         } else {
             Ok(None)

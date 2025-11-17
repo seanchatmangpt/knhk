@@ -119,6 +119,11 @@ impl LatencyBoundedScheduler {
         estimated_ticks <= self.max_hot_path_ticks
     }
 
+    /// Get current tick count (public alias)
+    pub fn current_tick(&self) -> TickCount {
+        self.get_tick_count()
+    }
+
     /// Get current tick count
     #[inline(always)]
     fn get_tick_count(&self) -> TickCount {

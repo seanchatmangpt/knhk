@@ -5,6 +5,7 @@
 use uuid::Uuid;
 
 use crate::error::{WorkflowError, WorkflowResult};
+use crate::patterns::PatternId;
 
 /// Unique identifier for a workflow specification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -118,6 +119,12 @@ pub struct Task {
     pub required_capabilities: Vec<String>,
     /// Worklet ID for exception handling (optional)
     pub exception_worklet: Option<crate::worklets::WorkletId>,
+    /// Pre-compiled pattern ID (TRIZ Principle 10: Prior Action)
+    /// 
+    /// Pattern identification is computed at registration time to avoid
+    /// runtime overhead. This enables ≤8 tick hot path execution.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pattern_id: Option<PatternId>,
 }
 
 /// Flow with optional predicate

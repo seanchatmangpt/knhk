@@ -145,11 +145,13 @@ async fn validate_pattern_semantics(spec: &WorkflowSpec) -> WorkflowResult<Patte
 
     // Get unique patterns from workflow
     let mut patterns_in_use = HashMap::new();
-    for task in &spec.tasks {
+    for (task_id, task) in &spec.tasks {
+        // Determine pattern from task split/join types
+        let pattern = format!("{:?}_{:?}", task.split_type, task.join_type);
         patterns_in_use
-            .entry(task.pattern.clone())
+            .entry(pattern)
             .or_insert_with(Vec::new)
-            .push(task.id.to_string());
+            .push(task_id.clone());
     }
 
     // Validate each pattern
@@ -189,13 +191,17 @@ fn validate_pattern(
         "sequence" => {
             // Sequence: Each task has exactly one successor (or none for last)
             for task_id in task_ids {
-                if let Some(task) = spec.tasks.iter().find(|t| t.id.to_string() == *task_id) {
-                    if task.successors.len() > 1 {
+                if let Some((_, task)) = spec
+                    .tasks
+                    .iter()
+                    .find(|(tid, _)| tid.to_string() == *task_id)
+                {
+                    if task.outgoing_flows.len() > 1 {
                         is_valid = false;
                         messages.push(format!(
                             "Task {} has {} successors, expected 0-1 for sequence pattern",
                             task_id,
-                            task.successors.len()
+                            task.outgoing_flows.len()
                         ));
                     }
                 }
@@ -204,13 +210,17 @@ fn validate_pattern(
         "parallel_split" | "parallel-split" => {
             // Parallel Split: Must have multiple outgoing branches
             for task_id in task_ids {
-                if let Some(task) = spec.tasks.iter().find(|t| t.id.to_string() == *task_id) {
-                    if task.successors.len() < 2 {
+                if let Some((_, task)) = spec
+                    .tasks
+                    .iter()
+                    .find(|(tid, _)| tid.to_string() == *task_id)
+                {
+                    if task.outgoing_flows.len() < 2 {
                         is_valid = false;
                         messages.push(format!(
                             "Task {} has {} successors, expected >= 2 for parallel split",
                             task_id,
-                            task.successors.len()
+                            task.outgoing_flows.len()
                         ));
                     }
                 }
@@ -219,12 +229,12 @@ fn validate_pattern(
         "synchronization" => {
             // Synchronization: Multiple incoming branches, one outgoing
             for task_id in task_ids {
-                if let Some(task) = spec.tasks.iter().find(|t| t.id.to_string() == *task_id) {
+                if let Some((_id, task)) = spec.tasks.iter().find(|(id, _t)| id == task_id) {
                     // Count predecessors
                     let predecessor_count = spec
                         .tasks
                         .iter()
-                        .filter(|t| t.successors.iter().any(|s| s.to_string() == *task_id))
+                        .filter(|(_tid, t)| t.outgoing_flows.iter().any(|s| s == task_id))
                         .count();
 
                     if predecessor_count < 2 {
@@ -235,12 +245,12 @@ fn validate_pattern(
                         ));
                     }
 
-                    if task.successors.len() > 1 {
+                    if task.outgoing_flows.len() > 1 {
                         is_valid = false;
                         messages.push(format!(
                             "Task {} has {} successors, expected 0-1 for synchronization",
                             task_id,
-                            task.successors.len()
+                            task.outgoing_flows.len()
                         ));
                     }
                 }
@@ -249,13 +259,17 @@ fn validate_pattern(
         "exclusive_choice" | "exclusive-choice" => {
             // Exclusive Choice: One incoming, multiple outgoing (XOR-split)
             for task_id in task_ids {
-                if let Some(task) = spec.tasks.iter().find(|t| t.id.to_string() == *task_id) {
-                    if task.successors.len() < 2 {
+                if let Some((_, task)) = spec
+                    .tasks
+                    .iter()
+                    .find(|(tid, _)| tid.to_string() == *task_id)
+                {
+                    if task.outgoing_flows.len() < 2 {
                         is_valid = false;
                         messages.push(format!(
                             "Task {} has {} successors, expected >= 2 for exclusive choice",
                             task_id,
-                            task.successors.len()
+                            task.outgoing_flows.len()
                         ));
                     }
                 }
@@ -264,11 +278,15 @@ fn validate_pattern(
         "simple_merge" | "simple-merge" => {
             // Simple Merge: Multiple incoming, one outgoing (XOR-join)
             for task_id in task_ids {
-                if let Some(task) = spec.tasks.iter().find(|t| t.id.to_string() == *task_id) {
+                if let Some((_, task)) = spec
+                    .tasks
+                    .iter()
+                    .find(|(tid, _)| tid.to_string() == *task_id)
+                {
                     let predecessor_count = spec
                         .tasks
                         .iter()
-                        .filter(|t| t.successors.iter().any(|s| s.to_string() == *task_id))
+                        .filter(|(_tid, t)| t.outgoing_flows.iter().any(|s| s == task_id))
                         .count();
 
                     if predecessor_count < 2 {
@@ -286,13 +304,17 @@ fn validate_pattern(
         "multi_choice" | "multi-choice" => {
             // Multi-Choice: OR-split, can activate multiple branches
             for task_id in task_ids {
-                if let Some(task) = spec.tasks.iter().find(|t| t.id.to_string() == *task_id) {
-                    if task.successors.len() < 2 {
+                if let Some((_, task)) = spec
+                    .tasks
+                    .iter()
+                    .find(|(tid, _)| tid.to_string() == *task_id)
+                {
+                    if task.outgoing_flows.len() < 2 {
                         is_valid = false;
                         messages.push(format!(
                             "Task {} has {} successors, expected >= 2 for multi-choice",
                             task_id,
-                            task.successors.len()
+                            task.outgoing_flows.len()
                         ));
                     }
                 }

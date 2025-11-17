@@ -67,6 +67,8 @@ impl TargetLanguageExt for TargetLanguage {
             Self::Python => "py",
             Self::JavaScript => "js",
             Self::Go => "go",
+            Self::TypeScript => "ts",
+            Self::Generic => "txt",
         }
     }
 
@@ -76,6 +78,8 @@ impl TargetLanguageExt for TargetLanguage {
             Self::Python => "python",
             Self::JavaScript => "javascript",
             Self::Go => "go",
+            Self::TypeScript => "typescript",
+            Self::Generic => "generic",
         }
     }
 
@@ -85,6 +89,8 @@ impl TargetLanguageExt for TargetLanguage {
             Self::Python => "python3",
             Self::JavaScript => "node",
             Self::Go => "go",
+            Self::TypeScript => "tsc",
+            Self::Generic => "echo",
         }
     }
 }
@@ -437,6 +443,15 @@ impl SelfHealingGenerator {
             }
             TargetLanguage::Go => {
                 format!("// Generated from spec: {}\n\npackage main\n\nimport \"fmt\"\n\nfunc main() {{\n    fmt.Println(\"Hello from generated code\")\n}}\n", spec)
+            }
+            TargetLanguage::TypeScript => {
+                format!("// Generated from spec: {}\n\nfunction main(): void {{\n    console.log(\"Hello from generated code\");\n}}\n\nmain();\n", spec)
+            }
+            TargetLanguage::Generic => {
+                format!(
+                    "Generated from spec: {}\n\nHello from generated code\n",
+                    spec
+                )
             }
         };
 

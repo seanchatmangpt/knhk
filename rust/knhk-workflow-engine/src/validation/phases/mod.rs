@@ -16,7 +16,8 @@ pub mod validators;
 // Re-export core types
 pub use core::{Phase, PhaseContext, PhaseMetadata, PhaseResult, PhaseStatus};
 pub use executor::PhaseExecutor;
-pub use registry::{register_phase, PhaseRegistry};
+pub use registry::PhaseRegistry;
+// register_phase is a macro exported at crate root
 pub use validators::{
     ConformanceMetricsPhase, FormalSoundnessPhase, LoadTestingPhase, PatternSemanticsPhase,
 };

@@ -1,0 +1,609 @@
+//! Code Generation CLI Commands (ggen v2.7.1)
+//!
+//! Provides CLI interface for code generation operations:
+//! - gen workflow: Generate Rust workflow from RDF/Turtle specification
+//! - gen tests: Generate Chicago TDD tests from specification
+//! - gen hook: Generate knowledge hook from RDF definition
+//! - gen validate: Validate generated code against schema
+//! - gen templates: Manage code generation templates
+//! - gen marketplace: Marketplace integration for templates
+
+// Allow non_upper_case_globals - #[verb] macro generates static vars with lowercase names
+#![allow(non_upper_case_globals)]
+
+use crate::commands::gen as gen_impl;
+use clap;
+use clap_noun_verb::Result as CnvResult;
+use clap_noun_verb_macros::verb;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+
+#[cfg(feature = "otel")]
+use tracing::instrument;
+
+/// Output format for structured data
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OutputFormat {
+    Json,
+    Yaml,
+    Text,
+}
+
+impl Default for OutputFormat {
+    fn default() -> Self {
+        Self::Text
+    }
+}
+
+impl std::str::FromStr for OutputFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "json" => Ok(Self::Json),
+            "yaml" => Ok(Self::Yaml),
+            "text" => Ok(Self::Text),
+            _ => Err(format!(
+                "Invalid format: {}. Valid options: json, yaml, text",
+                s
+            )),
+        }
+    }
+}
+
+/// Target language for code generation
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Language {
+    Rust,
+    Python,
+    JavaScript,
+    Go,
+}
+
+impl Default for Language {
+    fn default() -> Self {
+        Self::Rust
+    }
+}
+
+impl std::str::FromStr for Language {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "rust" => Ok(Self::Rust),
+            "python" | "py" => Ok(Self::Python),
+            "javascript" | "js" => Ok(Self::JavaScript),
+            "go" | "golang" => Ok(Self::Go),
+            _ => Err(format!(
+                "Invalid language: {}. Valid options: rust, python, js, go",
+                s
+            )),
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct WorkflowGenResult {
+    pub spec_file: String,
+    pub output_file: Option<String>,
+    pub language: String,
+    pub telemetry_enabled: bool,
+    pub hooks_enabled: bool,
+    pub validated: bool,
+}
+
+/// Generate Rust workflow from RDF/Turtle specification
+///
+/// # Examples
+///
+/// ```bash
+/// # Generate workflow from Turtle file
+/// knhk gen workflow spec.ttl
+///
+/// # Generate with specific output file
+/// knhk gen workflow spec.ttl --output workflow.rs
+///
+/// # Generate for Python with telemetry
+/// knhk gen workflow spec.ttl --language python --emit-telemetry
+///
+/// # Validate against Weaver schema
+/// knhk gen workflow spec.ttl --validate --emit-telemetry
+/// ```
+#[cfg_attr(
+    feature = "otel",
+    instrument(
+        skip_all,
+        fields(
+            operation = "knhk.gen.workflow",
+            spec_file = %spec_file.display(),
+            language = ?language
+        )
+    )
+)]
+#[verb]
+pub fn workflow(
+    pub spec_file: PathBuf,
+
+    pub template: Option<PathBuf>,
+
+    pub output: Option<PathBuf>,
+
+    pub language: Language,
+
+    pub validate: bool,
+
+    pub emit_hooks: bool,
+
+    pub emit_telemetry: bool,
+
+    pub format: OutputFormat,
+) -> CnvResult<WorkflowGenResult> {
+    pub gen_impl::generate_workflow(gen_impl::WorkflowGenRequest {
+        spec_file,
+        template,
+        output,
+        language,
+        validate,
+        emit_hooks,
+        emit_telemetry,
+        format,
+    })
+}
+
+#[derive(Serialize, Debug)]
+pub struct TestsGenResult {
+    pub spec_file: String,
+    pub output_dir: String,
+    pub language: String,
+    pub coverage_target: u8,
+    pub test_count: usize,
+}
+
+/// Generate Chicago TDD tests from specification
+///
+/// # Examples
+///
+/// ```bash
+/// # Generate tests from specification
+/// knhk gen tests spec.ttl
+///
+/// # Generate with custom output directory
+/// knhk gen tests spec.ttl --output ./tests
+///
+/// # Generate with 95% coverage target
+/// knhk gen tests spec.ttl --coverage 95
+///
+/// # Generate Python tests
+/// knhk gen tests spec.ttl --language python
+/// ```
+#[cfg_attr(
+    feature = "otel",
+    instrument(
+        skip_all,
+        fields(
+            operation = "knhk.gen.tests",
+            spec_file = %spec_file.display(),
+            coverage = coverage
+        )
+    )
+)]
+#[verb]
+pub fn tests(
+    pub spec_file: PathBuf,
+
+    pub template: Option<PathBuf>,
+
+    pub output: Option<PathBuf>,
+
+    pub coverage: u8,
+
+    pub language: Language,
+
+    pub format: OutputFormat,
+) -> CnvResult<TestsGenResult> {
+    pub gen_impl::generate_tests(gen_impl::TestsGenRequest {
+        spec_file,
+        template,
+        output,
+        coverage,
+        language,
+        format,
+    })
+}
+
+#[derive(Serialize, Debug)]
+pub struct HookGenResult {
+    pub definition_file: String,
+    pub output_file: Option<String>,
+    pub lockchain_enabled: bool,
+    pub telemetry_enabled: bool,
+}
+
+/// Generate knowledge hook from RDF definition
+///
+/// # Examples
+///
+/// ```bash
+/// # Generate hook from definition
+/// knhk gen hook hook-def.ttl
+///
+/// # Generate with Lockchain receipts
+/// knhk gen hook hook-def.ttl --with-lockchain
+///
+/// # Generate with OTEL telemetry
+/// knhk gen hook hook-def.ttl --with-telemetry
+///
+/// # Generate with custom template
+/// knhk gen hook hook-def.ttl --template custom-hook.tmpl
+/// ```
+#[cfg_attr(
+    feature = "otel",
+    instrument(
+        skip_all,
+        fields(
+            operation = "knhk.gen.hook",
+            definition = %definition_file.display()
+        )
+    )
+)]
+#[verb]
+pub fn hook(
+    pub definition_file: PathBuf,
+
+    pub template: Option<PathBuf>,
+
+    pub output: Option<PathBuf>,
+
+    pub with_lockchain: bool,
+
+    pub with_telemetry: bool,
+
+    pub format: OutputFormat,
+) -> CnvResult<HookGenResult> {
+    pub gen_impl::generate_hook(gen_impl::HookGenRequest {
+        definition_file,
+        template,
+        output,
+        with_lockchain,
+        with_telemetry,
+        format,
+    })
+}
+
+#[derive(Serialize, Debug)]
+pub struct ValidateResult {
+    pub code_path: String,
+    pub schema_valid: bool,
+    pub telemetry_valid: bool,
+    pub performance_valid: bool,
+    pub weaver_valid: bool,
+    pub issues: Vec<String>,
+    pub warnings: Vec<String>,
+}
+
+/// Validate generated code against schema
+///
+/// # Examples
+///
+/// ```bash
+/// # Validate generated code
+/// knhk gen validate ./src/workflow.rs
+///
+/// # Validate with custom schema
+/// knhk gen validate ./src/workflow.rs --schema custom.yaml
+///
+/// # Validate telemetry compliance
+/// knhk gen validate ./src/workflow.rs --telemetry
+///
+/// # Check performance constraints
+/// knhk gen validate ./src/workflow.rs --performance
+///
+/// # Run Weaver validation (source of truth)
+/// knhk gen validate ./src/workflow.rs --weaver
+/// ```
+#[cfg_attr(
+    feature = "otel",
+    instrument(
+        skip_all,
+        fields(
+            operation = "knhk.gen.validate",
+            code_path = %code_path.display()
+        )
+    )
+)]
+#[verb]
+pub fn validate(
+    pub code_path: PathBuf,
+
+    pub schema: Option<PathBuf>,
+
+    pub telemetry: bool,
+
+    pub performance: bool,
+
+    pub weaver: bool,
+
+    pub format: OutputFormat,
+) -> CnvResult<ValidateResult> {
+    pub gen_impl::validate_code(gen_impl::ValidateRequest {
+        code_path,
+        schema,
+        telemetry,
+        performance,
+        weaver,
+        format,
+    })
+}
+
+/// Template management commands
+pub mod templates {
+    use super::*;
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplateListResult {
+        pub templates: Vec<TemplateInfo>,
+        pub total_count: usize,
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplateInfo {
+        pub name: String,
+        pub version: String,
+        pub description: String,
+        pub language: String,
+        pub category: String,
+    }
+
+    ///
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.templates.list"))
+    )]
+    #[verb]
+    pub fn list(
+        pub format: OutputFormat,
+    ) -> CnvResult<TemplateListResult> {
+        pub gen_impl::templates::list_templates(format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplateSearchResult {
+        pub matches: Vec<TemplateInfo>,
+        pub match_count: usize,
+    }
+
+    ///
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.templates.search", pattern = %pattern))
+    )]
+    #[verb]
+    pub fn search(
+        pub pattern: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<TemplateSearchResult> {
+        pub gen_impl::templates::search_templates(pattern, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplatePreviewResult {
+        pub template_name: String,
+        pub preview: String,
+    }
+
+    ///
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.templates.preview", template = %template))
+    )]
+    #[verb]
+    pub fn preview(
+        pub template: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<TemplatePreviewResult> {
+        pub gen_impl::templates::preview_template(template, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplateInstallResult {
+        pub name: String,
+        pub version: String,
+        pub installed_path: String,
+    }
+
+    ///
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.templates.install", name = %name))
+    )]
+    #[verb]
+    pub fn install(
+        pub name: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<TemplateInstallResult> {
+        pub gen_impl::templates::install_template(name, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplateValidateResult {
+        pub template_path: String,
+        pub valid: bool,
+        pub issues: Vec<String>,
+    }
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.templates.validate", path = %path.display()))
+    )]
+    #[verb]
+    pub fn validate(
+        pub path: PathBuf,
+        pub format: OutputFormat,
+    ) -> CnvResult<TemplateValidateResult> {
+        pub gen_impl::templates::validate_template(path, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct TemplateDocsResult {
+        pub name: String,
+        pub documentation: String,
+    }
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.templates.docs", name = %name))
+    )]
+    #[verb]
+    pub fn docs(
+        pub name: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<TemplateDocsResult> {
+        pub gen_impl::templates::show_docs(name, format)
+    }
+}
+
+/// Marketplace integration commands
+pub mod marketplace {
+    use super::*;
+
+    #[derive(Serialize, Debug)]
+    pub struct PublishResult {
+        pub template_name: String,
+        pub version: String,
+        pub marketplace_url: String,
+    }
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.marketplace.publish", template = %template.display()))
+    )]
+    #[verb]
+    pub fn publish(
+        pub template: PathBuf,
+        pub format: OutputFormat,
+    ) -> CnvResult<PublishResult> {
+        pub gen_impl::marketplace::publish_template(template, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct MarketplaceSearchResult {
+        pub matches: Vec<MarketplaceTemplate>,
+        pub match_count: usize,
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct MarketplaceTemplate {
+        pub name: String,
+        pub version: String,
+        pub author: String,
+        pub description: String,
+        pub downloads: u64,
+        pub rating: f64,
+    }
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.marketplace.search", pattern = %pattern))
+    )]
+    #[verb]
+    pub fn search(
+        pub pattern: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<MarketplaceSearchResult> {
+        pub gen_impl::marketplace::search_marketplace(pattern, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct MarketplaceInstallResult {
+        pub name: String,
+        pub version: String,
+        pub installed_path: String,
+    }
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.marketplace.install", name = %name))
+    )]
+    #[verb]
+    pub fn install(
+        pub name: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<MarketplaceInstallResult> {
+        pub gen_impl::marketplace::install_from_marketplace(name, format)
+    }
+
+    #[derive(Serialize, Debug)]
+    pub struct RatingResult {
+        pub name: String,
+        pub rating: f64,
+        pub review_count: usize,
+        pub reviews: Vec<Review>,
+    }
+
+    #[derive(Serialize, Debug)]
+    struct Review {
+        pub author: String,
+        pub rating: f64,
+        pub comment: String,
+        pub date: String,
+    }
+
+    ///
+
+    ///
+
+    #[cfg_attr(
+        feature = "otel",
+        instrument(skip_all, fields(operation = "knhk.gen.marketplace.rating", name = %name))
+    )]
+    #[verb]
+    pub fn rating(
+        pub name: String,
+        pub format: OutputFormat,
+    ) -> CnvResult<RatingResult> {
+        pub gen_impl::marketplace::show_rating(name, format)
+    }
+}

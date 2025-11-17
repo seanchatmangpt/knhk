@@ -106,6 +106,27 @@ impl LockchainIntegration {
         self.record_event_internal("audit.log", data).await
     }
 
+    /// Append receipt to lockchain for provenance tracking
+    ///
+    /// Implements the provenance law: hash(A) = hash(μ(O))
+    /// Stores receipt in lockchain for audit equivalence.
+    pub async fn append_receipt(
+        &self,
+        receipt: &crate::compliance::provenance_law::WorkflowReceipt,
+    ) -> WorkflowResult<()> {
+        let receipt_data = serde_json::json!({
+            "receipt_id": receipt.id,
+            "case_id": receipt.case_id,
+            "workflow_id": receipt.workflow_id,
+            "hash_a": receipt.hash_a,
+            "hash_mu_o": receipt.hash_mu_o,
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        });
+
+        self.record_event_internal("receipt.append", &receipt_data)
+            .await
+    }
+
     /// Internal method to record events
     async fn record_event_internal(
         &self,

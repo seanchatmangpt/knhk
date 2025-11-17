@@ -5,6 +5,8 @@
 
 #[cfg(feature = "grpc")]
 pub mod grpc;
+pub mod interface_b;
+pub mod interface_x;
 #[cfg(feature = "http")]
 pub mod middleware;
 pub mod models;
@@ -15,6 +17,9 @@ pub mod transport;
 
 // Re-export service layer for convenience
 pub use service::{CaseService, PatternService, WorkflowService};
+pub use interface_b::{
+    InterfaceB, LaunchMode, SessionHandle, UserId, WorkItemNotification, WorkItemRecord,
+};
 
 /// Workflow engine API placeholder
 pub struct WorkflowEngineApi;

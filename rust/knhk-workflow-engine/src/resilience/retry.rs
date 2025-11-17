@@ -98,6 +98,14 @@ where
                         WorkflowError::ResourceUnavailable(s.clone())
                     }
                     WorkflowError::Internal(s) => WorkflowError::Internal(s.clone()),
+                    WorkflowError::HookFailed(s) => WorkflowError::HookFailed(s.clone()),
+                    WorkflowError::GuardViolation(s) => WorkflowError::GuardViolation(s.clone()),
+                    WorkflowError::ReceiptGenerationFailed(s) => {
+                        WorkflowError::ReceiptGenerationFailed(s.clone())
+                    }
+                    WorkflowError::SnapshotError(s) => WorkflowError::SnapshotError(s.clone()),
+                    WorkflowError::Io(s) => WorkflowError::Io(s.clone()),
+                    WorkflowError::Crypto(s) => WorkflowError::Crypto(s.clone()),
                 });
 
                 // Check if we should retry

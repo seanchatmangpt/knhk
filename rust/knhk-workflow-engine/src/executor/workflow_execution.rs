@@ -216,8 +216,14 @@ pub(super) fn execute_workflow<'a>(
                 completed_tasks.insert(node_id.clone());
 
                 // Van der Aalst Pattern-Based Execution:
-                // Identify pattern and execute via pattern executor for split/join decisions
-                let pattern_id = identify_task_pattern(task);
+                // Use pre-compiled pattern ID (TRIZ Principle 10: Prior Action)
+                // Pattern was computed at registration time to avoid runtime overhead
+                let pattern_id = task.pattern_id
+                    .unwrap_or_else(|| {
+                        // Fallback to runtime identification if not pre-compiled
+                        // (should not happen if registration compiled patterns)
+                        identify_task_pattern(task)
+                    });
                 let case = engine.get_case(case_id).await?;
 
                 // Create pattern execution context

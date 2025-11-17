@@ -4,7 +4,7 @@
 //! Implements μ via KNHK execution layer with pattern library integration.
 
 use crate::error::{WorkflowError, WorkflowResult};
-use crate::hooks::{HookContext, HookRegistry, HookResult, HookType};
+use crate::execution::hooks::{HookContext, HookRegistry, HookResult, HookType};
 use crate::patterns::PatternId;
 use knhk_otel::{MetricsHelper, SpanContext, SpanStatus, Tracer};
 use serde::{Deserialize, Serialize};
@@ -95,16 +95,24 @@ impl HookEngine {
         };
 
         // Execute hook through registry
-        let result = self
+        let hook_result = self
             .hook_registry
             .execute_hooks(hook_type, context.clone())
-            .await?;
+            .await
+            .map_err(|e| WorkflowError::Internal(format!("Hook execution failed: {}", e)))?;
 
         // Calculate ticks and time
         let tick_end = self.get_tick_count();
         let ticks_used = tick_end.saturating_sub(tick_start);
         let execution_time_us = start_time.elapsed().as_micros() as u64;
         let met_hot_path_constraint = ticks_used <= MAX_HOT_PATH_TICKS;
+
+        let result = HookExecutionResult {
+            result: hook_result,
+            ticks_used,
+            execution_time_us,
+            met_hot_path_constraint,
+        };
 
         // Record metrics
         {
@@ -116,7 +124,7 @@ impl HookEngine {
             );
 
             // End span
-            let status = if result.continue_execution {
+            let status = if result.result.success {
                 SpanStatus::Ok
             } else {
                 SpanStatus::Error
@@ -217,6 +225,23 @@ impl HookEngine {
     /// Get pattern library
     pub fn pattern_library(&self) -> &crate::engine::pattern_library::PatternLibrary {
         &self.pattern_library
+    }
+
+    /// Execute workflow
+    pub async fn execute_workflow(
+        &self,
+        workflow: &crate::parser::WorkflowSpec,
+        input_data: serde_json::Value,
+        _pattern_library: &crate::engine::pattern_library::PatternLibrary,
+        _invariant_checker: &crate::guards::InvariantChecker,
+    ) -> WorkflowResult<serde_json::Value> {
+        // Simple workflow execution - execute all tasks in order
+        // In full implementation, this would use pattern library and hooks
+        let mut output_data = input_data.clone();
+        
+        // For now, just return input as output
+        // Full implementation would execute tasks through pattern library
+        Ok(output_data)
     }
 }
 

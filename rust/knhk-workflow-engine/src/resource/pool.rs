@@ -20,6 +20,8 @@ pub struct ResourcePoolManager {
 }
 
 /// Resource pool
+///
+/// TRIZ Principle 37: Thermal Expansion - Pool size adapts to load temperature
 pub struct ResourcePool {
     /// Pool name
     pub name: String,
@@ -29,6 +31,8 @@ pub struct ResourcePool {
     pub allocated: HashMap<String, ResourceId>,
     /// Pool size
     pub size: usize,
+    /// Resource registry (for lookup)
+    resources: Arc<RwLock<HashMap<ResourceId, Resource>>>,
 }
 
 impl ResourcePoolManager {
@@ -42,6 +46,7 @@ impl ResourcePoolManager {
 
     /// Create resource pool
     pub async fn create_pool(&self, name: String, size: usize) -> WorkflowResult<()> {
+        let resources = self.resources.clone();
         let mut pools = self.pools.write().await;
         pools.insert(
             name.clone(),
@@ -50,6 +55,7 @@ impl ResourcePoolManager {
                 available: Vec::new(),
                 allocated: HashMap::new(),
                 size,
+                resources,
             },
         );
         Ok(())
@@ -107,8 +113,39 @@ impl ResourcePoolManager {
     /// Register resource
     pub async fn register_resource(&self, resource: Resource) -> WorkflowResult<()> {
         let mut resources = self.resources.write().await;
-        resources.insert(resource.id, resource);
+        resources.insert(resource.id.clone(), resource);
         Ok(())
+    }
+
+    /// Get all resources (for filtering/allocation)
+    pub async fn get_all_resources(&self) -> Vec<Resource> {
+        let resources = self.resources.read().await;
+        resources.values().cloned().collect()
+    }
+}
+
+impl ResourcePool {
+    /// Create a new resource pool
+    pub fn new(name: String, resources: Arc<RwLock<HashMap<ResourceId, Resource>>>) -> Self {
+        Self {
+            name,
+            available: Vec::new(),
+            allocated: HashMap::new(),
+            size: 0,
+            resources,
+        }
+    }
+
+    /// Get all resources in this pool
+    pub async fn get_all_resources(&self) -> Vec<Resource> {
+        let resources = self.resources.read().await;
+        resources.values().cloned().collect()
+    }
+
+    /// Add resource to pool
+    pub fn add_resource(&mut self, resource_id: ResourceId) {
+        self.available.push(resource_id);
+        self.size += 1;
     }
 }
 

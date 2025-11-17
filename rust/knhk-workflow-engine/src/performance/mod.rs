@@ -8,6 +8,7 @@ pub mod aot;
 pub mod benchmark;
 mod hot_path;
 mod metrics;
+pub mod sharding;
 pub mod simd;
 pub mod tick_budget;
 
@@ -16,4 +17,5 @@ pub use analyzer::{
 };
 pub use hot_path::*;
 pub use metrics::*;
+pub use sharding::*;
 pub use simd::*;

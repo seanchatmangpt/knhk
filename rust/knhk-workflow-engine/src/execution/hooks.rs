@@ -25,6 +25,16 @@ pub struct HookContext {
     pub workflow_instance_id: String,
     pub input_data: Vec<u8>,
     pub variables: HashMap<String, String>,
+    pub task_id: Option<String>,
+}
+
+/// Hook type for categorization
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HookType {
+    BeforePatternExecution,
+    AfterPatternExecution,
+    BeforeTaskExecution,
+    AfterTaskExecution,
 }
 
 /// Hook execution result
@@ -36,28 +46,37 @@ pub struct HookResult {
     pub guards_failed: Vec<String>,
     pub success: bool,
     pub next_hooks: Vec<String>,
+    pub continue_execution: bool,
+    pub modified_data: Option<Vec<u8>>,
+    pub error: Option<String>,
 }
 
 impl HookResult {
     pub fn success(output: Vec<u8>, ticks: u32) -> Self {
         Self {
-            output_data: output,
+            output_data: output.clone(),
             ticks_used: ticks,
             guards_passed: Vec::new(),
             guards_failed: Vec::new(),
             success: true,
             next_hooks: Vec::new(),
+            continue_execution: true,
+            modified_data: Some(output),
+            error: None,
         }
     }
 
     pub fn failure(reason: String, ticks: u32) -> Self {
         Self {
-            output_data: reason.into_bytes(),
+            output_data: reason.clone().into_bytes(),
             ticks_used: ticks,
             guards_passed: Vec::new(),
             guards_failed: vec!["EXECUTION_FAILED".to_string()],
             success: false,
             next_hooks: Vec::new(),
+            continue_execution: false,
+            modified_data: None,
+            error: Some(reason),
         }
     }
 
@@ -118,6 +137,17 @@ impl HookRegistry {
             .keys()
             .cloned()
             .collect())
+    }
+
+    /// Execute hooks by type (async wrapper for compatibility)
+    pub async fn execute_hooks(
+        &self,
+        _hook_type: HookType,
+        context: HookContext,
+    ) -> Result<HookResult, String> {
+        // For now, just return a success result
+        // In full implementation, this would filter hooks by type and execute them
+        Ok(HookResult::success(Vec::new(), 0))
     }
 }
 

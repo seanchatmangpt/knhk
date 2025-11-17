@@ -103,6 +103,45 @@ pub enum WorkflowError {
     /// Cryptographic error
     #[error("Cryptographic error: {0}")]
     Crypto(String),
+
+    /// Workflow not found
+    #[error("Workflow {0} not found")]
+    WorkflowNotFound(String),
+
+    /// Tick budget exceeded
+    #[error("Tick budget exceeded: used {used}, limit {limit}")]
+    TickBudgetExceeded {
+        used: u32,
+        limit: u32,
+    },
+
+    /// Specification not found
+    #[error("Specification {0} not found")]
+    SpecificationNotFound(String),
+
+    /// Duplicate specification
+    #[error("Duplicate specification: {0}")]
+    DuplicateSpecification(String),
+
+    /// Invalid state
+    #[error("Invalid state: {0}")]
+    InvalidState(String),
+
+    /// Worklet not found
+    #[error("Worklet {0} not found")]
+    WorkletNotFound(String),
+
+    /// Exception handling failed
+    #[error("Exception handling failed: {0}")]
+    ExceptionHandlingFailed(String),
+
+    /// Document not found
+    #[error("Document {0} not found")]
+    DocumentNotFound(String),
+
+    /// Constraint violation (SOD, 4-eyes, etc.)
+    #[error("Constraint violation: {0}")]
+    ConstraintViolation(String),
 }
 
 impl From<std::io::Error> for WorkflowError {
