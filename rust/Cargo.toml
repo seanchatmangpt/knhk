@@ -14,6 +14,7 @@ members = [
     "knhk-workflow-engine",   # Enterprise YAWL workflow engine
     "knhk-process-mining",    # Process mining and workflow analytics
     "knhk-autonomic",         # MAPE-K Autonomic Knowledge Integration (Covenant 3)
+    "knhk-consensus",         # Phase 8: Consensus and replication (Raft, Byzantine)
     "knhk-sidecar",
     "knhk-cli",
     "knhk-integration-tests",
@@ -49,6 +50,7 @@ knhk-config = { path = "./knhk-config", version = "1.0.0" }
 knhk-patterns = { path = "./knhk-patterns", version = "1.0.0" }
 knhk-workflow-engine = { path = "./knhk-workflow-engine", version = "1.0.0" }
 knhk-process-mining = { path = "./knhk-process-mining", version = "1.0.0" }
+knhk-consensus = { path = "./knhk-consensus", version = "1.0.0" }
 knhk-sidecar = { path = "./knhk-sidecar", version = "1.0.0" }
 
 # External analytics crates

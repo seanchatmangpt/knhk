@@ -73,6 +73,7 @@ rayon = { workspace = true }
 fastrand = "2.0"
 sha2 = { workspace = true }
 sha3 = "0.10"
+blake3 = { workspace = true }
 hex = { workspace = true }
 linkme = "0.3"
 num_cpus = "1.16"
