@@ -470,7 +470,7 @@ impl StateMachine {
 mod tests {
     use super::*;
     use crate::descriptor::{DescriptorBuilder, PatternEntry};
-    use crate::pattern::PatternConfig;
+    use crate::pattern::{PatternConfig, PatternType};
 
     #[test]
     fn test_task_state_transitions() {

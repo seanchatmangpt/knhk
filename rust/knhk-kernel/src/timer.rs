@@ -12,7 +12,6 @@ static CPU_FREQUENCY: AtomicU64 = AtomicU64::new(0);
 /// Overhead of RDTSC instruction itself (in ticks)
 static RDTSC_OVERHEAD: AtomicU64 = AtomicU64::new(0);
 
-
 /// Calibration result
 #[derive(Debug, Clone, Copy)]
 pub struct CalibrationResult {

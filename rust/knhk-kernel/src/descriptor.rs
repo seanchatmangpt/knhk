@@ -6,7 +6,7 @@ use crate::guard::{Guard, GuardConfig};
 use crate::pattern::{PatternConfig, PatternType};
 use arrayvec::ArrayVec;
 use rustc_hash::FxHashMap;
-use std::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 /// Maximum patterns per descriptor (fits in cache line)
@@ -250,7 +250,8 @@ impl Default for Descriptor {
 pub struct DescriptorManager;
 
 // Use Arc instead of raw pointers for safe reference counting
-static ACTIVE_DESCRIPTOR_ARC: std::sync::RwLock<Option<Arc<Descriptor>>> = std::sync::RwLock::new(None);
+static ACTIVE_DESCRIPTOR_ARC: std::sync::RwLock<Option<Arc<Descriptor>>> =
+    std::sync::RwLock::new(None);
 
 impl DescriptorManager {
     /// Load a new descriptor atomically

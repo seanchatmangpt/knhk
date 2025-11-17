@@ -342,7 +342,7 @@ pub struct GuardCompiler;
 
 impl GuardCompiler {
     /// Compile guard to optimized evaluation function
-    pub fn compile(guard: &Guard) -> Box<dyn for<'a> Fn(&'a ExecutionContext) -> bool + '_> {
+    pub fn compile(guard: &Guard) -> Box<dyn Fn(&ExecutionContext) -> bool + '_> {
         match guard.guard_type {
             GuardType::Predicate => {
                 let pred = guard.predicate;
@@ -375,6 +375,7 @@ impl GuardCompiler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::descriptor::{ExecutionContext, ObservationBuffer, ResourceState};
 
     fn create_test_context() -> ExecutionContext {
         ExecutionContext {
