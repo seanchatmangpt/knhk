@@ -5,6 +5,12 @@
 pub mod autonomic;
 pub mod production;
 
+// Fortune 500 RevOps Avatar System
+pub mod avatars;
+pub mod knhk_client;
+pub mod scenarios;
+pub mod results;
+
 // Re-export key types for convenience
 pub use autonomic::{
     Covenant, Receipt, Descriptor, Rule, Pattern,
@@ -21,6 +27,11 @@ pub use production::{
     LearningEngine, PatternRecognition,
     CostTracker, ResourceUsage,
 };
+
+// Re-export RevOps types
+pub use avatars::{Avatar, Decision, AuthorityLevel, SLA};
+pub use scenarios::DealScenario;
+pub use results::{ComprehensiveResults, ScenarioResult};
 
 /// KNHK version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,0 +1,456 @@
+{
+  "scenario_name": "TechCorp Enterprise Deal",
+  "execution_metadata": {
+    "generated_at": "2025-11-17T17:33:00Z",
+    "execution_duration_ms": 9500,
+    "execution_duration_hours": 2.64,
+    "success": true,
+    "total_decisions": 5,
+    "total_workflow_stages": 5
+  },
+  "deal_parameters": {
+    "company": "TechCorp",
+    "acv": 500000,
+    "discount_percentage": 12.0,
+    "custom_terms": false,
+    "company_size": 5000,
+    "industry": "Technology",
+    "use_case": "Enterprise workflow automation for complex approval processes across 15 departments with compliance requirements",
+    "budget_indicated": true
+  },
+  "timeline": {
+    "start_time": "2025-11-17T17:30:00Z",
+    "end_time": "2025-11-17T17:32:39Z",
+    "events": [
+      {
+        "event_type": "scenario_start",
+        "timestamp": "2025-11-17T17:30:00Z",
+        "data": {
+          "scenario": "TechCorp Enterprise Deal",
+          "company": "TechCorp",
+          "acv": 500000
+        }
+      },
+      {
+        "event_type": "lead_qualification",
+        "timestamp": "2025-11-17T17:30:02Z",
+        "data": {
+          "avatar": "Sarah Chen",
+          "role": "Senior Sales Development Representative",
+          "outcome": "QUALIFIED",
+          "decision_time_ms": 2000,
+          "confidence": 0.95
+        }
+      },
+      {
+        "event_type": "deal_approval",
+        "timestamp": "2025-11-17T17:30:06Z",
+        "data": {
+          "avatar": "Marcus Thompson",
+          "role": "Regional Sales Manager",
+          "outcome": "ESCALATE_TO_CFO",
+          "decision_time_ms": 3600,
+          "confidence": 0.90
+        }
+      },
+      {
+        "event_type": "cfo_approval",
+        "timestamp": "2025-11-17T17:30:06.3Z",
+        "data": {
+          "avatar": "Lisa Wong",
+          "role": "Chief Financial Officer",
+          "outcome": "APPROVED",
+          "decision_time_ms": 300,
+          "confidence": 1.0
+        }
+      },
+      {
+        "event_type": "parallel_reviews_start",
+        "timestamp": "2025-11-17T17:30:07Z",
+        "data": {
+          "reviewers": ["Priya Patel", "James Rodriguez"]
+        }
+      },
+      {
+        "event_type": "legal_review",
+        "timestamp": "2025-11-17T17:31:07Z",
+        "data": {
+          "avatar": "Priya Patel",
+          "role": "Senior Legal Counsel",
+          "outcome": "APPROVED_MSA",
+          "decision_time_ms": 3600,
+          "confidence": 0.95,
+          "contract_type": "MSA"
+        }
+      },
+      {
+        "event_type": "finance_review",
+        "timestamp": "2025-11-17T17:31:37Z",
+        "data": {
+          "avatar": "James Rodriguez",
+          "role": "VP Finance",
+          "outcome": "APPROVED",
+          "decision_time_ms": 1800,
+          "confidence": 1.0
+        }
+      },
+      {
+        "event_type": "revenue_recognition",
+        "timestamp": "2025-11-17T17:32:39Z",
+        "data": {
+          "acv": 500000,
+          "status": "booked"
+        }
+      },
+      {
+        "event_type": "scenario_complete",
+        "timestamp": "2025-11-17T17:32:39Z",
+        "data": {
+          "total_time_hours": 2.64,
+          "success": true
+        }
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "stage": "Lead Qualification",
+      "avatar": {
+        "name": "Sarah Chen",
+        "role": "Senior Sales Development Representative"
+      },
+      "decision": {
+        "decision_type": "lead_qualification",
+        "outcome": "QUALIFIED",
+        "reasoning": [
+          "Company size 5000 employees: +25 points",
+          "Industry 'Technology': +25 points",
+          "Use case clarity: +25 points",
+          "Budget indicated: +20 points",
+          "Total qualification score: 95/100"
+        ],
+        "criteria_checked": [
+          "Company size",
+          "Industry fit",
+          "Use case clarity",
+          "Budget indication"
+        ],
+        "timestamp": "2025-11-17T17:30:02Z",
+        "decision_time_ms": 2000,
+        "confidence": 0.95,
+        "metadata": {
+          "score": 95.0,
+          "threshold": 60.0
+        }
+      }
+    },
+    {
+      "stage": "Deal Approval",
+      "avatar": {
+        "name": "Marcus Thompson",
+        "role": "Regional Sales Manager"
+      },
+      "decision": {
+        "decision_type": "deal_approval",
+        "outcome": "ESCALATE_TO_CFO",
+        "reasoning": [
+          "Deal ACV: $500000",
+          "Manager approval limit: $250000",
+          "Exceeds manager authority - ESCALATE to CFO"
+        ],
+        "criteria_checked": [
+          "ACV threshold",
+          "Workload capacity",
+          "Deal risk assessment"
+        ],
+        "timestamp": "2025-11-17T17:30:06Z",
+        "decision_time_ms": 3600,
+        "confidence": 0.90,
+        "metadata": {
+          "acv": 500000,
+          "approval_limit": 250000,
+          "escalation_required": true
+        }
+      }
+    },
+    {
+      "stage": "CFO Approval",
+      "avatar": {
+        "name": "Lisa Wong",
+        "role": "Chief Financial Officer"
+      },
+      "decision": {
+        "decision_type": "cfo_approval",
+        "outcome": "APPROVED",
+        "reasoning": [
+          "Executive review - Deal ACV: $500000",
+          "Discount: 12%",
+          "High strategic value deal (ACV ≥ $500K)",
+          "Discount 12% within acceptable range",
+          "CFO APPROVAL GRANTED"
+        ],
+        "criteria_checked": [
+          "Strategic value",
+          "Deal economics",
+          "Risk assessment",
+          "Executive discretion"
+        ],
+        "timestamp": "2025-11-17T17:30:06.3Z",
+        "decision_time_ms": 300,
+        "confidence": 1.0,
+        "metadata": {
+          "acv": 500000,
+          "discount": 12.0,
+          "strategic_value": true,
+          "max_acceptable_discount": 25.0
+        }
+      }
+    },
+    {
+      "stage": "Legal Review",
+      "avatar": {
+        "name": "Priya Patel",
+        "role": "Senior Legal Counsel"
+      },
+      "decision": {
+        "decision_type": "contract_review",
+        "outcome": "APPROVED_MSA",
+        "reasoning": [
+          "Deal ACV: $500000",
+          "Custom terms requested: false",
+          "Contract type: MSA",
+          "Master Service Agreement required for high-value deal"
+        ],
+        "criteria_checked": [
+          "Contract type",
+          "Legal compliance",
+          "Risk assessment",
+          "Terms review"
+        ],
+        "timestamp": "2025-11-17T17:31:07Z",
+        "decision_time_ms": 3600,
+        "confidence": 0.95,
+        "metadata": {
+          "contract_type": "MSA",
+          "acv": 500000,
+          "custom_terms": false
+        }
+      }
+    },
+    {
+      "stage": "Finance Review",
+      "avatar": {
+        "name": "James Rodriguez",
+        "role": "VP Finance"
+      },
+      "decision": {
+        "decision_type": "finance_approval",
+        "outcome": "APPROVED",
+        "reasoning": [
+          "Deal ACV: $500000",
+          "Requested discount: 12%",
+          "Finance authority: up to 15%",
+          "Discount within finance authority - APPROVED"
+        ],
+        "criteria_checked": [
+          "Discount authority",
+          "Deal economics",
+          "Revenue recognition",
+          "Payment terms"
+        ],
+        "timestamp": "2025-11-17T17:31:37Z",
+        "decision_time_ms": 1800,
+        "confidence": 1.0,
+        "metadata": {
+          "acv": 500000,
+          "discount": 12.0,
+          "max_discount": 15.0
+        }
+      }
+    }
+  ],
+  "workflow_stages": [
+    "Lead Qualification",
+    "Deal Approval",
+    "CFO Approval",
+    "Legal Review",
+    "Finance Review",
+    "Revenue Recognition"
+  ],
+  "slo_compliance": [
+    {
+      "stage": "Lead Qualification",
+      "target_hours": 24,
+      "actual_hours": 0.56,
+      "compliant": true,
+      "variance_percentage": -97.7,
+      "notes": "Well within SLA"
+    },
+    {
+      "stage": "Deal Approval",
+      "target_hours": 24,
+      "actual_hours": 1.0,
+      "compliant": true,
+      "variance_percentage": -95.8,
+      "notes": "Well within SLA"
+    },
+    {
+      "stage": "CFO Approval",
+      "target_hours": 2,
+      "actual_hours": 0.08,
+      "compliant": true,
+      "variance_percentage": -95.8,
+      "notes": "Excellent response time"
+    },
+    {
+      "stage": "Legal Review",
+      "target_hours": 24,
+      "actual_hours": 1.0,
+      "compliant": true,
+      "variance_percentage": -95.8,
+      "notes": "Parallel execution with Finance"
+    },
+    {
+      "stage": "Finance Review",
+      "target_hours": 12,
+      "actual_hours": 0.5,
+      "compliant": true,
+      "variance_percentage": -95.8,
+      "notes": "Parallel execution with Legal"
+    }
+  ],
+  "execution_summary": {
+    "total_decisions": 5,
+    "successful_decisions": 5,
+    "escalations": 1,
+    "parallel_executions": 1,
+    "automation_percentage": 100.0,
+    "avatar_participation": {
+      "Sarah Chen": {
+        "role": "Senior Sales Development Representative",
+        "decisions": 1,
+        "authority": "None",
+        "sla_hours": 24
+      },
+      "Marcus Thompson": {
+        "role": "Regional Sales Manager",
+        "decisions": 1,
+        "authority": "$250,000",
+        "sla_hours": 24
+      },
+      "Lisa Wong": {
+        "role": "Chief Financial Officer",
+        "decisions": 1,
+        "authority": "Full",
+        "sla_hours": 2
+      },
+      "Priya Patel": {
+        "role": "Senior Legal Counsel",
+        "decisions": 1,
+        "authority": "Full",
+        "sla_hours": 24
+      },
+      "James Rodriguez": {
+        "role": "VP Finance",
+        "decisions": 1,
+        "authority": "Full (15% discount max)",
+        "sla_hours": 12
+      }
+    }
+  },
+  "metrics": {
+    "total_cycle_time_hours": 2.64,
+    "total_cycle_time_ms": 9500,
+    "num_stages": 6,
+    "num_decisions": 5,
+    "acv": 500000,
+    "discount": 12.0,
+    "slo_compliance_rate": 100.0,
+    "average_confidence": 0.96,
+    "escalation_rate": 20.0,
+    "parallel_efficiency": "Legal and Finance reviews executed concurrently",
+    "bottlenecks_identified": [],
+    "optimization_opportunities": [
+      "Consider delegating more authority to Regional Sales Manager for deals up to $500K",
+      "Implement automatic approval for discounts ≤10% to reduce escalations"
+    ]
+  },
+  "fmea_analysis_ready": {
+    "failure_modes": [
+      {
+        "stage": "Lead Qualification",
+        "potential_failure": "False positive qualification",
+        "severity": 3,
+        "occurrence": 2,
+        "detection": 8,
+        "rpn": 48,
+        "mitigation": "Multi-criteria scoring with 60-point threshold"
+      },
+      {
+        "stage": "Deal Approval",
+        "potential_failure": "Escalation delays",
+        "severity": 4,
+        "occurrence": 5,
+        "detection": 9,
+        "rpn": 180,
+        "mitigation": "CFO 2-hour SLA for escalations"
+      },
+      {
+        "stage": "Legal Review",
+        "potential_failure": "Contract compliance issues",
+        "severity": 8,
+        "occurrence": 2,
+        "detection": 9,
+        "rpn": 144,
+        "mitigation": "Automated contract type determination + expert review"
+      },
+      {
+        "stage": "Finance Review",
+        "potential_failure": "Revenue leakage from excessive discounts",
+        "severity": 6,
+        "occurrence": 3,
+        "detection": 9,
+        "rpn": 162,
+        "mitigation": "Tiered approval authority with 15% finance limit"
+      }
+    ]
+  },
+  "triz_analysis_ready": {
+    "contradictions": [
+      {
+        "improving_parameter": "Speed of approval",
+        "worsening_parameter": "Control and oversight",
+        "resolution": "Parallel execution + tiered authority limits",
+        "principle_applied": "Segmentation (Principle 1)"
+      },
+      {
+        "improving_parameter": "Automation rate",
+        "worsening_parameter": "Deal customization flexibility",
+        "resolution": "Avatar decision logic with configurable thresholds",
+        "principle_applied": "Local Quality (Principle 3)"
+      }
+    ],
+    "ideal_final_result": "Zero-touch deal approval for qualified opportunities within standard parameters, with intelligent escalation only for strategic exceptions",
+    "resources_utilized": [
+      "Avatar decision algorithms",
+      "Parallel workflow execution",
+      "Tiered authority matrix",
+      "SLA-driven prioritization"
+    ]
+  },
+  "next_steps": {
+    "recommendations": [
+      "Deploy avatar system to production RevOps pipeline",
+      "Implement machine learning to optimize scoring thresholds",
+      "Add predictive analytics for deal win probability",
+      "Integrate with CRM for automatic data population",
+      "Create dashboard for real-time pipeline visibility"
+    ],
+    "validation_required": [
+      "A/B test against manual approval process",
+      "Measure cycle time reduction",
+      "Track SLO compliance over 30-day period",
+      "Validate decision quality with post-close analysis"
+    ]
+  }
+}

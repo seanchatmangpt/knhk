@@ -51,6 +51,7 @@ chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 num_cpus = "1.16"
 hostname = "0.3"
+rand = "0.8"
 
 # Error handling
 thiserror = "1.0"
@@ -70,6 +71,10 @@ test-case = "3.3"
 [[bin]]
 name = "knhk"
 path = "src/main.rs"
+
+[[bin]]
+name = "execute_revops"
+path = "src/bin/execute_revops.rs"
 
 [lib]
 name = "knhk"
