@@ -2,9 +2,7 @@
 // Encodes Q1-Q5 invariants, doctrines, guards, and performance budgets into prompts
 
 use crate::invariants::HardInvariants;
-use crate::proposer::{
-    GuardProfile, PerformanceBudget, ProposalRequest, Sector,
-};
+use crate::proposer::{GuardProfile, PerformanceBudget, ProposalRequest, Sector};
 use std::collections::HashMap;
 
 pub type Result<T> = std::result::Result<T, PromptEngineError>;
@@ -227,8 +225,7 @@ Recommended Action: {:?}"#,
 
     pub fn build_context_section(&self, request: &ProposalRequest) -> Result<String> {
         // Extract relevant ontology context from snapshot
-        let (relevant_classes, relevant_properties) =
-            Self::extract_relevant_context(request);
+        let (relevant_classes, relevant_properties) = Self::extract_relevant_context(request);
 
         let mut section = format!(
             r#"CURRENT ONTOLOGY SNAPSHOT:
@@ -277,8 +274,8 @@ Current Performance Profile:
         let mut classes = Vec::new();
         let mut properties = Vec::new();
 
-        // Extract from pattern description using keyword analysis
-        let description = request.pattern.description.to_lowercase();
+        // Extract from pattern name using keyword analysis
+        let description = request.pattern.name.to_lowercase();
 
         // Heuristic: Look for class-like terms (capitalized words, "account", "order", etc.)
         // In production, this would query the actual ontology snapshot
@@ -307,7 +304,7 @@ Current Performance Profile:
         }
 
         // Add sector-specific context
-        match request.pattern.sector {
+        match request.sector {
             Sector::Finance => {
                 if classes.is_empty() {
                     classes.push("finance:Account (financial account base)".to_string());
