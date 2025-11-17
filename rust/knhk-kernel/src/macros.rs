@@ -137,14 +137,25 @@ macro_rules! build_receipt {
     }};
 }
 
-/// Macro for atomic state transitions
+/// Macro for atomic state transitions (safe version without transmute)
 #[macro_export]
 macro_rules! atomic_transition {
     ($task:expr, $new_state:expr) => {{
         let old = $task
             .state
             .swap($new_state as u32, std::sync::atomic::Ordering::AcqRel);
-        unsafe { std::mem::transmute::<u32, TaskState>(old) }
+        // Safe conversion without transmute
+        match old {
+            0 => $crate::executor::TaskState::Created,
+            1 => $crate::executor::TaskState::Ready,
+            2 => $crate::executor::TaskState::Running,
+            3 => $crate::executor::TaskState::Waiting,
+            4 => $crate::executor::TaskState::Suspended,
+            5 => $crate::executor::TaskState::Completed,
+            6 => $crate::executor::TaskState::Failed,
+            7 => $crate::executor::TaskState::Cancelled,
+            _ => $crate::executor::TaskState::Failed,
+        }
     }};
 }
 
@@ -176,27 +187,16 @@ macro_rules! validate_pattern_config {
     }};
 }
 
-/// Macro for SIMD-optimized observation matching
-#[cfg(target_arch = "x86_64")]
+/// Macro for observation matching (safe version without SIMD)
+/// Note: SIMD version moved to platform::unsafe_ops for performance-critical paths
 #[macro_export]
-macro_rules! simd_match_observations {
+macro_rules! safe_match_observations {
     ($observations:expr, $pattern:expr) => {{
-        use std::arch::x86_64::*;
-
-        unsafe {
-            // Load observations and pattern into SIMD registers
-            let obs = _mm256_loadu_si256($observations.as_ptr() as *const __m256i);
-            let pat = _mm256_loadu_si256($pattern.as_ptr() as *const __m256i);
-
-            // Compare for equality
-            let cmp = _mm256_cmpeq_epi64(obs, pat);
-
-            // Extract mask
-            let mask = _mm256_movemask_epi8(cmp);
-
-            // Check if all match
-            mask == -1i32
-        }
+        // Safe scalar comparison
+        $observations
+            .iter()
+            .zip($pattern.iter())
+            .all(|(obs, pat)| obs == pat)
     }};
 }
 

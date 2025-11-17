@@ -931,8 +931,8 @@ mod tests {
     #[test]
     fn test_sgd_invalid_momentum() {
         let sgd = SGDOptimizer::new(0.01).unwrap();
-        assert!(sgd.with_momentum(-0.1).is_err());
-        assert!(sgd.with_momentum(1.1).is_err());
+        assert!(sgd.clone().with_momentum(-0.1).is_err());
+        assert!(sgd.clone().with_momentum(1.1).is_err());
     }
 
     #[test]
@@ -999,8 +999,8 @@ mod tests {
     #[test]
     fn test_adam_invalid_betas() {
         let adam = AdamOptimizer::new(0.001).unwrap();
-        assert!(adam.with_beta1(1.0).is_err());
-        assert!(adam.with_beta2(1.0).is_err());
+        assert!(adam.clone().with_beta1(1.0).is_err());
+        assert!(adam.clone().with_beta2(1.0).is_err());
     }
 
     #[test]

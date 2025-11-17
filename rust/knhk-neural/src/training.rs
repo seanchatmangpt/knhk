@@ -918,7 +918,7 @@ mod tests {
 
     #[test]
     fn test_model_checkpoint_creation() {
-        let weights = vec![1.0, 2.0, 3.0].into_iter().map(|f| f as u8).collect();
+        let weights: Vec<u8> = vec![1.0, 2.0, 3.0].into_iter().map(|f| f as u8).collect();
         let config = TrainingConfig::default();
         let history = TrainingHistory::new();
 

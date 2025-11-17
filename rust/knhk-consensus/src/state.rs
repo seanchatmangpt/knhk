@@ -260,8 +260,8 @@ impl StateMachineReplicator {
     pub fn restore_from_snapshot(&self, snapshot: StateSnapshot) -> Result<()> {
         if !snapshot.verify() {
             return Err(ConsensusError::StateMismatch {
-                expected: snapshot.hash.clone(),
-                actual: StateSnapshot::compute_hash(&snapshot.data),
+                expected: hex::encode(&snapshot.hash),
+                actual: hex::encode(StateSnapshot::compute_hash(&snapshot.data)),
             });
         }
 

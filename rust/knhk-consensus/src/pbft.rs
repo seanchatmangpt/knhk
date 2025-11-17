@@ -231,7 +231,7 @@ impl PBFTNode {
         config: &PBFTConfig,
     ) -> Result<Option<BFTMessage>> {
         let key = (sequence, digest.clone());
-        let count = self.prepare_count.entry(key.clone()).or_insert(0);
+        let mut count = self.prepare_count.entry(key.clone()).or_insert(0);
         let updated_count = {
             *count += 1;
             *count
@@ -287,7 +287,7 @@ impl PBFTNode {
         let prepared: Vec<_> = self
             .prepared
             .iter()
-            .map(|entry| (entry.key().0, entry.value().0.clone()))
+            .map(|entry| (*entry.key(), entry.value().0.clone()))
             .collect();
 
         self.view = new_view;

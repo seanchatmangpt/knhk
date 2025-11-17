@@ -3,62 +3,15 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+// Re-export platform-specific unsafe operations from isolated module
+pub use crate::platform::unsafe_ops::{read_tsc, read_tsc_fenced, read_tsc_serialized};
+
 /// CPU frequency in Hz (cached after calibration)
 static CPU_FREQUENCY: AtomicU64 = AtomicU64::new(0);
 
 /// Overhead of RDTSC instruction itself (in ticks)
 static RDTSC_OVERHEAD: AtomicU64 = AtomicU64::new(0);
 
-/// Read Time Stamp Counter (x86-64 only)
-#[cfg(target_arch = "x86_64")]
-#[inline(always)]
-pub fn read_tsc() -> u64 {
-    unsafe { std::arch::x86_64::_rdtsc() }
-}
-
-/// Read Time Stamp Counter with serialization (more accurate but slower)
-#[cfg(target_arch = "x86_64")]
-#[inline(always)]
-pub fn read_tsc_serialized() -> u64 {
-    unsafe {
-        // CPUID serializes instruction stream
-        std::arch::x86_64::__cpuid(0);
-        std::arch::x86_64::_rdtsc()
-    }
-}
-
-/// Read Time Stamp Counter with fence
-#[cfg(target_arch = "x86_64")]
-#[inline(always)]
-pub fn read_tsc_fenced() -> u64 {
-    unsafe {
-        std::arch::x86_64::_mm_mfence();
-        let tsc = std::arch::x86_64::_rdtsc();
-        std::arch::x86_64::_mm_mfence();
-        tsc
-    }
-}
-
-/// Fallback for non-x86_64 platforms
-#[cfg(not(target_arch = "x86_64"))]
-#[inline(always)]
-pub fn read_tsc() -> u64 {
-    // Use high-resolution monotonic clock as fallback
-    let now = std::time::Instant::now();
-    now.elapsed().as_nanos() as u64
-}
-
-#[cfg(not(target_arch = "x86_64"))]
-#[inline(always)]
-pub fn read_tsc_serialized() -> u64 {
-    read_tsc()
-}
-
-#[cfg(not(target_arch = "x86_64"))]
-#[inline(always)]
-pub fn read_tsc_fenced() -> u64 {
-    read_tsc()
-}
 
 /// Calibration result
 #[derive(Debug, Clone, Copy)]

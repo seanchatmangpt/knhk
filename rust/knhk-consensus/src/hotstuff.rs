@@ -284,7 +284,7 @@ impl HotStuffNode {
         view: ViewNumber,
         config: &HotStuffConfig,
     ) -> Result<Option<QuorumCertificate>> {
-        let count = self.vote_count.entry(view).or_insert(0);
+        let mut count = self.vote_count.entry(view).or_insert(0);
         let updated_count = {
             *count += 1;
             *count

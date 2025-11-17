@@ -408,20 +408,10 @@ impl HotPathRunner {
         let hot_path = self.hot_path.clone();
 
         self.thread_handle = Some(std::thread::spawn(move || {
-            // Pin to CPU for consistent performance
+            // Pin to CPU for consistent performance using platform module
             #[cfg(target_os = "linux")]
             {
-                use std::os::unix::thread::JoinHandleExt;
-                // Pin to CPU 0 (or configured CPU)
-                unsafe {
-                    let mut cpu_set: libc::cpu_set_t = std::mem::zeroed();
-                    libc::CPU_SET(0, &mut cpu_set);
-                    libc::pthread_setaffinity_np(
-                        libc::pthread_self(),
-                        std::mem::size_of::<libc::cpu_set_t>(),
-                        &cpu_set,
-                    );
-                }
+                let _ = crate::platform::unsafe_ops::pin_to_cpu(0);
             }
 
             hot_path.run_loop();
