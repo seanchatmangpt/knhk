@@ -102,7 +102,7 @@ impl ChatmanEquation {
                 "Q2" => {
                     // Type soundness: action must be in the ontology
                     // (would check against Σ in real implementation)
-                    true;
+                    // No-op: always passes for now
                 }
                 "Q3" => {
                     // Guard preservation: recursion depth ≤ 8

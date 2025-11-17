@@ -333,7 +333,7 @@ impl InvariantChecker for Q1NoRetrocausationChecker {
             if prop.range.contains(':') && !prop.range.starts_with("xsd:") {
                 dependencies
                     .entry(prop.domain.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(prop.range.clone());
             }
         }
@@ -543,7 +543,7 @@ fn validate_single_doctrine(proposal: &Proposal, doctrine: &DoctrineRule) -> Res
         .collect();
 
     // 2. Determine if doctrine is applicable
-    let is_applicable = doctrine_applies_to(&doctrine, &affected_classes, &affected_properties);
+    let is_applicable = doctrine_applies_to(doctrine, &affected_classes, &affected_properties);
 
     // 3. If applicable, check that proposal claims to satisfy it
     if is_applicable && !proposal.doctrines_satisfied.contains(&doctrine.id) {

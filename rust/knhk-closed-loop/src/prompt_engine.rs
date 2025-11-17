@@ -46,25 +46,14 @@ impl PromptEngine {
 
     /// Build the complete prompt for a proposal request
     pub fn build_full_prompt(&self, request: &ProposalRequest) -> Result<String> {
-        let mut sections = Vec::new();
-
-        // System prompt (role definition)
-        sections.push(self.build_system_prompt(&request.sector)?);
-
-        // Constraint section (Q1-Q5, doctrines, guards)
-        sections.push(self.build_constraint_section(request)?);
-
-        // Pattern section (observed pattern description)
-        sections.push(self.build_pattern_section(request)?);
-
-        // Context section (relevant ontology excerpt)
-        sections.push(self.build_context_section(request)?);
-
-        // Output schema
-        sections.push(self.build_output_schema()?);
-
-        // Few-shot examples
-        sections.push(self.build_few_shot_section(&request.sector)?);
+        let sections = [
+            self.build_system_prompt(&request.sector)?,
+            self.build_constraint_section(request)?,
+            self.build_pattern_section(request)?,
+            self.build_context_section(request)?,
+            self.build_output_schema()?,
+            self.build_few_shot_section(&request.sector)?,
+        ];
 
         Ok(sections.join("\n\n"))
     }
@@ -99,7 +88,7 @@ CRITICAL RULES:
         // 1. Hard Invariants (Q1-Q5)
         section.push_str("1. Hard Invariants (Q1-Q5):\n");
         section.push_str(&self.format_invariants(&request.invariants));
-        section.push_str("\n");
+        section.push('\n');
 
         // 2. Sector Doctrines
         section.push_str(&format!("2. Sector Doctrines ({}):\n", request.sector));
@@ -110,12 +99,12 @@ CRITICAL RULES:
                 section.push_str(&format!("   - {}: {}\n", doctrine.id, doctrine.description));
             }
         }
-        section.push_str("\n");
+        section.push('\n');
 
         // 3. Guard Constraints
         section.push_str("3. Guard Constraints (IMMUTABLE BOUNDARIES):\n");
         section.push_str(&self.format_guards(&request.guard_profile));
-        section.push_str("\n");
+        section.push('\n');
 
         // 4. Performance Budget
         let emphasis = self
@@ -129,9 +118,9 @@ CRITICAL RULES:
         };
 
         section.push_str(header);
-        section.push_str("\n");
+        section.push('\n');
         section.push_str(&self.format_performance_budget(&request.performance_budget));
-        section.push_str("\n");
+        section.push('\n');
 
         // 5. Immutability Rules
         section.push_str("5. Immutability Rules:\n");

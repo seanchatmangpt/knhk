@@ -299,7 +299,9 @@ pub struct OllamaLLMProposer {
     prompt_engine: Arc<PromptEngine>,
     validator: Arc<dyn ProposalValidator>,
     learning_system: Arc<RwLock<LearningSystem>>,
+    #[allow(dead_code)]
     receipt_store: Arc<ReceiptStore>,
+    #[allow(dead_code)]
     signing_key: SigningKey,
     rate_limiter: Arc<RwLock<RateLimiter>>,
     cost_controller: Arc<RwLock<CostController>>,

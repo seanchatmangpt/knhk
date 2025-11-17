@@ -83,6 +83,7 @@ pub enum CycleOutcome {
 
 /// The autonomic MAPE-K coordinator
 pub struct MapEKCoordinator {
+    #[allow(dead_code)]
     observation_store: Arc<ObservationStore>,
     receipt_store: Arc<ReceiptStore>,
     pattern_detector: PatternDetector,

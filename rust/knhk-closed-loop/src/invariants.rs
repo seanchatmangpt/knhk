@@ -205,6 +205,7 @@ impl InvariantValidator {
     }
 
     /// Comprehensive invariant check
+    #[allow(clippy::too_many_arguments)]
     pub fn check_all(
         snapshot_id: &str,
         parent_id: Option<&str>,

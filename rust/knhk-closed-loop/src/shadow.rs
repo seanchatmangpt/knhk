@@ -46,28 +46,27 @@ pub enum GuardSeverity {
 }
 
 /// Delta-Sigma: proposed changes to ontology
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct DeltaSigma {
+    #[serde(default)]
     pub add_classes: Vec<ClassDef>,
+    #[serde(default)]
     pub remove_classes: Vec<String>,
+    #[serde(default)]
     pub add_properties: Vec<PropertyDef>,
+    #[serde(default)]
     pub remove_properties: Vec<String>,
+    #[serde(default)]
     pub add_guards: Vec<GuardDef>,
+    #[serde(default)]
     pub remove_guards: Vec<String>,
+    #[serde(default)]
     pub metadata_updates: HashMap<String, serde_json::Value>,
 }
 
 impl DeltaSigma {
     pub fn new() -> Self {
-        DeltaSigma {
-            add_classes: Vec::new(),
-            remove_classes: Vec::new(),
-            add_properties: Vec::new(),
-            remove_properties: Vec::new(),
-            add_guards: Vec::new(),
-            remove_guards: Vec::new(),
-            metadata_updates: HashMap::new(),
-        }
+        Self::default()
     }
 }
 
@@ -107,6 +106,7 @@ pub struct ShadowEnvironment {
     test_results: DashMap<String, TestResult>,
     validation_state: ArcSwap<ValidationState>,
     start_time: u64,
+    #[allow(dead_code)]
     isolation_level: IsolationLevel,
     test_criticality_map: DashMap<String, TestCriticality>,
 }
@@ -527,6 +527,7 @@ impl ShadowEnvironment {
         Ok(new_ontology)
     }
 
+    #[allow(dead_code)]
     fn get_test_criticality(&self, test_id: &str) -> TestCriticality {
         self.test_criticality_map
             .get(test_id)
@@ -540,6 +541,7 @@ pub struct ShadowManager {
     active_shadows: DashMap<String, Arc<ShadowEnvironment>>,
     completed_shadows: Arc<RwLock<Vec<Arc<ShadowEnvironment>>>>,
     max_concurrent_shadows: usize,
+    #[allow(dead_code)]
     cleanup_interval_ms: u32,
 }
 
