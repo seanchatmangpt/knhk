@@ -372,8 +372,8 @@ mod tests {
         let mut descriptor = Descriptor::new();
 
         let p1 = PatternEntry::new(PatternType::Sequence, 1, 10, PatternConfig::default());
-        let p2 = PatternEntry::new(PatternType::Parallel, 2, 20, PatternConfig::default());
-        let p3 = PatternEntry::new(PatternType::Choice, 3, 15, PatternConfig::default());
+        let p2 = PatternEntry::new(PatternType::ParallelSplit, 2, 20, PatternConfig::default());
+        let p3 = PatternEntry::new(PatternType::ExclusiveChoice, 3, 15, PatternConfig::default());
 
         descriptor.add_pattern(p1).unwrap();
         descriptor.add_pattern(p2).unwrap();

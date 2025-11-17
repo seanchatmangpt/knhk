@@ -322,24 +322,22 @@ impl HotPath {
             .read()
             .get_recent(count)
             .iter()
-            .map(|r| {
-                Receipt {
-                    receipt_id: r.receipt_id,
-                    pattern_id: r.pattern_id,
-                    task_id: r.task_id,
-                    timestamp: r.timestamp,
-                    status: r.status,
-                    ticks_used: r.ticks_used,
-                    tick_budget: r.tick_budget,
-                    input_digest: r.input_digest,
-                    output_digest: r.output_digest,
-                    guard_results: r.guard_results,
-                    guard_count: r.guard_count,
-                    state_before: r.state_before,
-                    state_after: r.state_after,
-                    receipt_hash: r.receipt_hash,
-                    quick_hash: r.quick_hash,
-                }
+            .map(|r| Receipt {
+                receipt_id: r.receipt_id,
+                pattern_id: r.pattern_id,
+                task_id: r.task_id,
+                timestamp: r.timestamp,
+                status: r.status,
+                ticks_used: r.ticks_used,
+                tick_budget: r.tick_budget,
+                input_digest: r.input_digest,
+                output_digest: r.output_digest,
+                guard_results: r.guard_results,
+                guard_count: r.guard_count,
+                state_before: r.state_before,
+                state_after: r.state_after,
+                receipt_hash: r.receipt_hash,
+                quick_hash: r.quick_hash,
             })
             .collect()
     }

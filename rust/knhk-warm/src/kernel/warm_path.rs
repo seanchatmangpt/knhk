@@ -287,12 +287,11 @@ unsafe impl Sync for WarmPathAllocator {}
 
 impl WarmPathAllocator {
     pub fn new(size: usize) -> Self {
-        let layout = Layout::from_size_align(size, 64)
-            .unwrap_or_else(|_| {
-                // Fallback: try smaller alignment if 64 fails
-                Layout::from_size_align(size, 8)
-                    .unwrap_or_else(|_| panic!("FATAL: Cannot create memory layout for size {}", size))
-            });
+        let layout = Layout::from_size_align(size, 64).unwrap_or_else(|_| {
+            // Fallback: try smaller alignment if 64 fails
+            Layout::from_size_align(size, 8)
+                .unwrap_or_else(|_| panic!("FATAL: Cannot create memory layout for size {}", size))
+        });
         let slab = unsafe { alloc(layout) };
 
         if slab.is_null() {

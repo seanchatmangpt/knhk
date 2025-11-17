@@ -64,10 +64,10 @@ pub mod hot_path_engine; // Reusable hot path engine with memory reuse
 pub mod ingest;
 #[cfg(not(feature = "rdf"))]
 pub mod ingest {
+    use crate::error::PipelineError;
     use alloc::collections::BTreeMap;
     use alloc::string::String;
     use alloc::vec::Vec;
-    use crate::error::PipelineError;
 
     #[derive(Debug)]
     pub struct IngestStage {

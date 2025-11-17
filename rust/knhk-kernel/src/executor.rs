@@ -66,6 +66,7 @@ impl TaskState {
 
 /// Task control block (cache-aligned)
 #[repr(C, align(64))]
+#[derive(Debug)]
 pub struct Task {
     /// Unique task ID
     pub task_id: u64,

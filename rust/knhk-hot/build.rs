@@ -41,7 +41,9 @@ fn main() {
                         println!("cargo:rustc-link-lib=static=knhk");
                         println!("cargo:warning=Linked to libknhk.a");
                     } else {
-                        println!("cargo:warning=libknhk.a not found, using workflow_patterns.a only");
+                        println!(
+                            "cargo:warning=libknhk.a not found, using workflow_patterns.a only"
+                        );
                     }
 
                     println!("cargo:rustc-cfg=feature=\"c_compiled\"");

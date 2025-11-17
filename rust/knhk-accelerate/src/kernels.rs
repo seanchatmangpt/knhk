@@ -203,7 +203,7 @@ impl KernelExecutor {
     /// Compile kernel source code
     pub fn compile(&self, name: &str, source: &str) -> Result<Vec<u8>, KernelError> {
         let _ = source; // Mark as intentionally unused
-        // Phase 9 stub: Would call NVCC/HIPCC/OpenCL compiler
+                        // Phase 9 stub: Would call NVCC/HIPCC/OpenCL compiler
         tracing::info!("Kernel executor: compiling kernel '{}'", name);
 
         // Optimization flags based on level

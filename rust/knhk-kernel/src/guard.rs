@@ -159,6 +159,12 @@ impl Guard {
         }
     }
 
+    /// Alias for negate() - creates a NOT guard
+    #[inline]
+    pub fn not(guard: Guard) -> Self {
+        Self::negate(guard)
+    }
+
     /// Evaluate guard against context (hot path optimized)
     #[inline(always)]
     pub fn evaluate(&self, context: &ExecutionContext) -> bool {
