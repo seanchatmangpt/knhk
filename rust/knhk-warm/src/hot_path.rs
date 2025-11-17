@@ -1,5 +1,9 @@
 //! Hot path execution (≤2ns / ≤8 ticks)
 //! Direct calls to C hot path functions for simple queries
+//!
+//! This module is only available with the `rdf` feature enabled.
+
+#![cfg(feature = "rdf")]
 
 use crate::graph::WarmPathGraph;
 use crate::query::{AskResult, QueryError, SelectResult};

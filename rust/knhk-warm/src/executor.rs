@@ -1,5 +1,9 @@
 //! Warm path executor with path selection
 //! Routes queries to oxigraph (warm path)
+//!
+//! This module is only available with the `rdf` feature enabled.
+
+#![cfg(feature = "rdf")]
 
 use crate::graph::WarmPathGraph;
 use crate::query::{AskResult, ConstructResult, DescribeResult, SelectResult};

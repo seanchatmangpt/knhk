@@ -1,6 +1,6 @@
 // knhk-warm: Warm path operations (≤500ms budget)
 // CONSTRUCT8 and other emit operations moved from hot path
-// SPARQL query execution with oxigraph integration
+// SPARQL query execution with oxigraph integration (optional rdf feature)
 
 // CRITICAL: Enforce proper error handling - no unwrap/expect in production code
 // EXCEPTION: Default trait impl fallback expect() calls are acceptable (see graph.rs)
@@ -15,21 +15,28 @@
 #![allow(unexpected_cfgs)] // Some cfg values are informational
 
 #[cfg(not(feature = "std"))]
-compile_error!("knhk-warm requires std feature for oxigraph integration");
+compile_error!("knhk-warm requires std feature");
 
 pub mod construct8;
 pub mod error;
+#[cfg(feature = "rdf")]
 pub mod executor;
 pub mod ffi;
+#[cfg(feature = "rdf")]
 pub mod graph;
+#[cfg(feature = "rdf")]
 pub mod hot_path;
 pub mod kernel;
+#[cfg(feature = "rdf")]
 pub mod query;
 pub mod scheduler;
 pub mod warm_path;
 
+#[cfg(feature = "rdf")]
 pub use executor::WarmPathExecutor;
+#[cfg(feature = "rdf")]
 pub use graph::WarmPathGraph;
+#[cfg(feature = "rdf")]
 pub use query::*;
 pub use scheduler::{EpochPlan, EpochScheduler, ExecutionPlan};
 pub use warm_path::*;

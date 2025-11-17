@@ -1,6 +1,8 @@
 //! Warm path graph wrapper with oxigraph integration
 //! Implements ggen's Graph wrapper pattern with caching
 //!
+//! This module is only available with the `rdf` feature enabled.
+//!
 //! ## Deprecation Notice
 //!
 //! The `oxigraph::sparql::Query` API is deprecated in oxigraph 0.5.x.
@@ -25,17 +27,26 @@
 // Allow deprecated oxigraph::sparql::Query - migration planned for v2.0 (see deprecation notice above)
 #![allow(deprecated)]
 
+#![cfg_attr(feature = "rdf", allow(deprecated))]
+
 use ahash::AHasher;
+#[cfg(feature = "rdf")]
 use oxigraph::io::RdfFormat;
+#[cfg(feature = "rdf")]
 use oxigraph::model::{GraphName, NamedNode, Quad, Term};
+#[cfg(feature = "rdf")]
 use oxigraph::sparql::{Query, QueryResults};
+#[cfg(feature = "rdf")]
 use oxigraph::store::Store;
 use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;
+#[cfg(feature = "rdf")]
 use std::fs::File;
 use std::hash::{Hash, Hasher};
+#[cfg(feature = "rdf")]
 use std::io::BufReader;
 use std::num::NonZeroUsize;
+#[cfg(feature = "rdf")]
 use std::path::Path;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
@@ -44,12 +55,14 @@ use std::sync::{
 
 /// Cached query result
 #[derive(Debug, Clone)]
+#[cfg(feature = "rdf")]
 pub enum CachedResult {
     Boolean(bool),
     Solutions(Vec<BTreeMap<String, String>>),
     Graph(Vec<String>), // Serialized triples
 }
 
+#[cfg(feature = "rdf")]
 impl CachedResult {
     /// Convert to serde_json::Value for consumption
     pub fn to_json(&self) -> JsonValue {
@@ -75,6 +88,7 @@ impl CachedResult {
 
 /// Thread-safe Oxigraph wrapper with SPARQL caching. Clone is cheap (shared store).
 /// Following ggen's Graph wrapper pattern.
+#[cfg(feature = "rdf")]
 pub struct WarmPathGraph {
     inner: Store,
     epoch: Arc<AtomicU64>,
@@ -88,6 +102,7 @@ pub struct WarmPathGraph {
     cache_misses: Arc<AtomicU64>,
 }
 
+#[cfg(feature = "rdf")]
 impl WarmPathGraph {
     /// Create a new warm path graph
     ///
@@ -409,6 +424,7 @@ pub struct QueryMetrics {
     pub cache_hit_rate: f64,
 }
 
+#[cfg(feature = "rdf")]
 impl Default for WarmPathGraph {
     fn default() -> Self {
         // Default implementation should not fail

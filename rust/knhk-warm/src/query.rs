@@ -1,5 +1,9 @@
 //! SPARQL query execution functions for warm path
 //! Wraps oxigraph query execution with KNHK-compatible result formats
+//!
+//! This module is only available with the `rdf` feature enabled.
+
+#![cfg(feature = "rdf")]
 
 use crate::graph::WarmPathGraph;
 use oxigraph::sparql::QueryResults;
