@@ -64,6 +64,9 @@ pub mod hot_path_engine; // Reusable hot path engine with memory reuse
 pub mod ingest;
 #[cfg(not(feature = "rdf"))]
 pub mod ingest {
+    use alloc::collections::BTreeMap;
+    use alloc::string::String;
+    use alloc::vec::Vec;
     use crate::error::PipelineError;
 
     #[derive(Debug)]
@@ -72,14 +75,35 @@ pub mod ingest {
         pub format: String,
     }
 
+    impl IngestStage {
+        pub fn new(connectors: Vec<String>, format: String) -> Self {
+            Self { connectors, format }
+        }
+
+        pub fn ingest(&self) -> Result<IngestResult, PipelineError> {
+            let triples = Vec::new();
+            let metadata = BTreeMap::new();
+            Ok(IngestResult { triples, metadata })
+        }
+
+        pub fn parse_rdf_turtle(&self, _content: &str) -> Result<Vec<RawTriple>, PipelineError> {
+            Ok(Vec::new())
+        }
+    }
+
     #[derive(Debug, Clone)]
     pub struct RawTriple {
         pub subject: String,
         pub predicate: String,
         pub object: String,
+        pub graph: Option<String>,
     }
 
-    pub type IngestResult = Result<Vec<RawTriple>, PipelineError>;
+    #[derive(Debug)]
+    pub struct IngestResult {
+        pub triples: Vec<RawTriple>,
+        pub metadata: BTreeMap<String, String>,
+    }
 }
 pub mod ingester; // Ingester pattern - inspired by Weaver
 pub mod load;

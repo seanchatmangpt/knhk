@@ -54,7 +54,7 @@ impl TransformStage {
         let mut typed_triples = Vec::new();
         let mut validation_errors = Vec::new();
 
-        for raw in input.triples {
+        for raw in &input.triples {
             // Hash IRIs to u64 IDs using FNV-1a (consistent with C implementation)
             let s = Self::hash_iri(&raw.subject);
             let p = Self::hash_iri(&raw.predicate);
