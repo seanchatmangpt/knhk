@@ -1,6 +1,7 @@
-// knhk-sidecar: Build script for gRPC proto compilation
+// knhk-sidecar: Build script
+// 80/20 Principle: Skip gRPC/protobuf - pure HTTP/REST only
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_prost_build::compile_protos("proto/kgc-sidecar.proto")?;
-    Ok(())
+fn main() {
+    println!("cargo:warning=knhk-sidecar: Using HTTP/REST (no protoc needed)");
+    println!("cargo:warning=gRPC support skipped for pragmatic build simplification");
 }

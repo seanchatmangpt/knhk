@@ -16,7 +16,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
 base64 = "0.22"
-oxigraph = { version = "0.5", optional = true }
+oxigraph = { workspace = true, optional = true }
 knhk-validation = { path = "../knhk-validation", version = "1.0.0", optional = true }
 pqcrypto-dilithium = { version = "0.5", optional = true }
 

@@ -13,7 +13,9 @@ authors = ["KNHK Team"]
 
 [lib]
 name = "knhk_hot"
-crate-type = ["staticlib", "cdylib", "rlib"]
+# TRIZ Principle 2 (Taking Out): Default to rlib (pure Rust)
+# C optimization is optional via feature flag
+crate-type = ["rlib"]
 
 [dependencies]
 blake3 = { workspace = true }
@@ -28,7 +30,15 @@ iai-callgrind = "0.16"
 perf-event = "0.4"
 
 [build-dependencies]
-cc = "1.0"
+# cc is required for knhk-hot (FFI wrapper library needs C compiler)
+cc = { version = "1.0" }
+
+[features]
+# knhk-hot is fundamentally a Rust wrapper around C FFI
+# C compilation is required for all functionality
+# Pure Rust rewrite would require complete reimplementation
+default = ["c-optimization"]
+c-optimization = []
 
 [[bench]]
 name = "hot_path_bench"
