@@ -3,13 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { FileText, Network, Zap, BarChart3, BookOpen } from 'lucide-react'
+import { FileText, Network, Zap, BarChart3, BookOpen, Square } from 'lucide-react'
 
 const menuItems = [
   {
     label: 'Workflow Editor',
     href: '/editor',
     icon: FileText,
+  },
+  {
+    label: 'BPMN Editor',
+    href: '/bpmn',
+    icon: Square,
   },
   {
     label: 'Pattern Library',
