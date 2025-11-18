@@ -234,4 +234,6 @@ members = [
     "rust/knhk-consensus",
     "rust/knhk-accelerate",
     "rust/knhk-marketplace",
+    # v4.0: Legacy XML migration support (deprecated)
+    "rust/knhk-workflow-xml-legacy",
 ]

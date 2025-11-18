@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::kem::{QuantumKEM, KyberKEM, KEMError};
 use crate::sig::{QuantumSig, DilithiumSig, SigError};
 use hex;
+use ed25519_dalek::{Signer, Verifier};
 
 /// Hybrid cryptography errors
 #[derive(Error, Debug)]

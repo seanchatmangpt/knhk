@@ -1,0 +1,163 @@
+# OpenTelemetry Weaver Schema for Phase 9: Hardware Acceleration
+# This schema validates GPU/FPGA/SIMD performance
+
+schema_url: https://knhk.io/schemas/accelerate/1.0.0
+groups:
+  - id: accelerate
+    type: span
+    brief: "Hardware acceleration operations"
+    prefix: hw
+    attributes:
+      - id: device_type
+        type: string
+        brief: "Type of hardware accelerator"
+        examples: ["CPU", "GPU", "FPGA", "SIMD"]
+        requirement_level: required
+
+      - id: operation_latency_ns
+        type: int
+        brief: "Operation latency in nanoseconds"
+        examples: [100, 1000, 10000, 1000000]
+        requirement_level: required
+
+      - id: speedup_factor
+        type: double
+        brief: "Speedup compared to CPU baseline"
+        examples: [1.0, 10.0, 100.0, 1000.0]
+        requirement_level: required
+
+      - id: batch_size
+        type: int
+        brief: "Number of operations batched together"
+        examples: [1, 16, 256, 1000]
+        requirement_level: required
+
+spans:
+  - id: hw.dispatch
+    span_name: "hw.dispatch"
+    brief: "Dispatch operation to hardware accelerator"
+    attributes:
+      - ref: hw.device_type
+      - ref: hw.operation_latency_ns
+      - ref: hw.speedup_factor
+
+      - id: dispatch_decision
+        type: string
+        brief: "Why this device was selected"
+        examples: ["best_available", "fallback_cpu", "user_preference"]
+        requirement_level: recommended
+
+  - id: hw.gpu_compute
+    span_name: "hw.gpu.compute"
+    brief: "GPU compute shader execution"
+    attributes:
+      - ref: hw.operation_latency_ns
+      - ref: hw.batch_size
+
+      - id: gpu_device_name
+        type: string
+        brief: "GPU device name"
+        examples: ["NVIDIA RTX 4090", "AMD Radeon RX 7900"]
+        requirement_level: recommended
+
+      - id: workgroup_size
+        type: int
+        brief: "GPU workgroup size"
+        examples: [64, 128, 256]
+        requirement_level: recommended
+
+      - id: memory_transferred_bytes
+        type: int
+        brief: "Data transferred to/from GPU"
+        examples: [1024, 4096, 1048576]
+        requirement_level: recommended
+
+  - id: hw.fpga_offload
+    span_name: "hw.fpga.offload"
+    brief: "FPGA hardware offload"
+    attributes:
+      - ref: hw.operation_latency_ns
+      - ref: hw.speedup_factor
+
+      - id: fpga_device_id
+        type: string
+        brief: "FPGA device identifier"
+        examples: ["xilinx_u250", "intel_stratix10"]
+        requirement_level: recommended
+
+      - id: tick_count
+        type: int
+        brief: "Number of CPU ticks consumed"
+        examples: [1, 2, 4, 8]
+        requirement_level: required
+
+  - id: hw.simd_operation
+    span_name: "hw.simd.operation"
+    brief: "SIMD vectorized operation"
+    attributes:
+      - ref: hw.operation_latency_ns
+      - ref: hw.speedup_factor
+
+      - id: simd_instruction_set
+        type: string
+        brief: "SIMD instruction set used"
+        examples: ["AVX2", "AVX512", "NEON", "SVE"]
+        requirement_level: recommended
+
+      - id: vector_width
+        type: int
+        brief: "SIMD vector width in bits"
+        examples: [128, 256, 512]
+        requirement_level: recommended
+
+      - id: operations_per_cycle
+        type: int
+        brief: "Number of operations per CPU cycle"
+        examples: [2, 4, 8, 16]
+        requirement_level: recommended
+
+  - id: hw.memory_transfer
+    span_name: "hw.memory.transfer"
+    brief: "Zero-copy memory transfer (DMA)"
+    attributes:
+      - ref: hw.device_type
+
+      - id: transfer_size_bytes
+        type: int
+        brief: "Size of data transferred"
+        examples: [1024, 4096, 1048576]
+        requirement_level: required
+
+      - id: transfer_direction
+        type: string
+        brief: "Direction of transfer"
+        examples: ["host_to_device", "device_to_host", "device_to_device"]
+        requirement_level: required
+
+      - id: transfer_latency_ns
+        type: int
+        brief: "Transfer latency in nanoseconds"
+        examples: [1000, 10000, 100000]
+        requirement_level: required
+
+# DOCTRINE Q Invariants (enforced at runtime)
+invariants:
+  - name: fpga_chatman_constant
+    description: "FPGA operations must complete in ≤8 ticks (Covenant 5: Chatman Constant)"
+    validation: "tick_count <= 8 when device_type = 'FPGA'"
+
+  - name: gpu_speedup_target
+    description: "GPU must achieve ≥100x speedup (Phase 9 requirement)"
+    validation: "speedup_factor >= 100.0 when device_type = 'GPU'"
+
+  - name: simd_speedup_target
+    description: "SIMD must achieve ≥10x speedup (Phase 9 requirement)"
+    validation: "speedup_factor >= 10.0 when device_type = 'SIMD'"
+
+  - name: gpu_latency_hot_path
+    description: "GPU dispatch must complete in <1ms for hot path"
+    validation: "operation_latency_ns < 1000000 when device_type = 'GPU'"
+
+  - name: simd_latency_hot_path
+    description: "SIMD operations must complete in <100ns for hot path"
+    validation: "operation_latency_ns < 100 when device_type = 'SIMD'"

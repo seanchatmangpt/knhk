@@ -29,6 +29,11 @@ members = [
     "knhk-accelerate",        # Phase 9: GPU/FPGA Hardware Acceleration
     "knhk-marketplace",       # Phase 10: Market deployment, licensing, and billing
     "knhk-closed-loop",       # Closed-loop MAPE-K dark matter implementation
+    "knhk-workflow-xml-legacy",  # v4.0: Legacy XML migration support (deprecated)
+    "knhk-quantum",           # Phase 7: Quantum-safe cryptography (ML-KEM, ML-DSA)
+    "knhk-admission",         # Admission controllers for quantum-safe workflows
+    "knhk-byzantine",         # Phase 8: Byzantine Fault-Tolerant consensus for distributed MAPE-K
+    "knhk-swarm",             # AI Agent Swarm Framework with Byzantine consensus and federated learning
 ]
 
 [workspace.package]
@@ -52,6 +57,7 @@ knhk-workflow-engine = { path = "./knhk-workflow-engine", version = "1.0.0" }
 knhk-process-mining = { path = "./knhk-process-mining", version = "1.0.0" }
 knhk-consensus = { path = "./knhk-consensus", version = "1.0.0" }
 knhk-sidecar = { path = "./knhk-sidecar", version = "1.0.0" }
+knhk-swarm = { path = "./knhk-swarm", version = "0.1.0" }
 
 # External analytics crates
 process_mining = "0.1"

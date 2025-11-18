@@ -24,12 +24,18 @@ pub mod sig;
 pub mod hybrid;
 pub mod nist;
 pub mod integration;
+pub mod audit_trail;
+pub mod workflow_signing;
+pub mod ca;
 
 // Re-exports for common use
 pub use kem::{QuantumKEM, KyberKEM, KEMError};
 pub use sig::{QuantumSig, DilithiumSig, SigError};
 pub use hybrid::{HybridEncryption, HybridSignature};
 pub use nist::{NISTLevel, validate_nist_compliance};
+pub use audit_trail::{QuantumSafeAuditTrail, SignedReceipt, Receipt, MerkleProof};
+pub use workflow_signing::{WorkflowSigner, YAWLSpecification, SignedSpecification, DelegationCertificate};
+pub use ca::{QuantumSafeCA, Certificate, CertificateSigningRequest};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

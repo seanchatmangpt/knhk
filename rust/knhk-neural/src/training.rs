@@ -12,7 +12,7 @@ use ndarray::Array1;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::time::Instant;
 
 /// Training configuration with learning rate, batch size, and convergence parameters

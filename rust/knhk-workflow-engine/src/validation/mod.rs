@@ -22,6 +22,7 @@ pub mod phases;
 pub mod shacl;
 pub mod sparql;
 pub mod validated;
+pub mod ttl_only_validator;
 
 // Van der Aalst validation framework
 pub mod capability;
@@ -38,6 +39,7 @@ pub mod report;
 pub use deadlock::{DeadlockDetectionResult, DeadlockDetector};
 pub use shacl::{ShaclValidationReport, ShaclValidator, ShaclViolation, ValidationSeverity};
 pub use sparql::{SparqlValidationResult, SparqlValidator, ValidationViolation};
+pub use ttl_only_validator::TTLOnlyValidator;
 
 // Van der Aalst framework exports
 pub use capability::ProcessCapability;

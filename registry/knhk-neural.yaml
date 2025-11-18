@@ -1,0 +1,119 @@
+# OpenTelemetry Weaver Schema for Phase 6: Neural Integration
+# This schema validates that neural learning integrates properly with MAPE-K
+
+schema_url: https://knhk.io/schemas/neural/1.0.0
+groups:
+  - id: neural
+    type: span
+    brief: "Neural integration operations including training, inference, and pattern learning"
+    prefix: neural
+    attributes:
+      - id: episode_number
+        type: int
+        brief: "Training episode number"
+        examples: [1, 100, 1000]
+        requirement_level: required
+
+      - id: reward
+        type: double
+        brief: "Reward received in this episode"
+        examples: [0.5, 0.9, -0.1]
+        requirement_level: required
+
+      - id: loss
+        type: double
+        brief: "Training loss value"
+        examples: [0.01, 0.001, 0.0001]
+        requirement_level: required
+
+      - id: learning_rate
+        type: double
+        brief: "Current learning rate"
+        examples: [0.001, 0.0001]
+        requirement_level: required
+
+      - id: convergence_achieved
+        type: boolean
+        brief: "Whether learning has converged"
+        requirement_level: required
+
+      - id: model_type
+        type: string
+        brief: "Type of neural model"
+        examples: ["dense", "conv", "transformer"]
+        requirement_level: recommended
+
+      - id: optimizer_type
+        type: string
+        brief: "Optimizer algorithm used"
+        examples: ["SGD", "Adam", "AdamW"]
+        requirement_level: recommended
+
+      - id: training_duration_ms
+        type: int
+        brief: "Duration of training episode in milliseconds"
+        examples: [100, 500, 1000]
+        requirement_level: recommended
+
+spans:
+  - id: neural.training_episode
+    span_name: "neural.training_episode"
+    brief: "A single training episode for reinforcement learning"
+    note: "Must complete within 1 second to avoid blocking MAPE-K"
+    attributes:
+      - ref: neural.episode_number
+      - ref: neural.reward
+      - ref: neural.loss
+      - ref: neural.learning_rate
+      - ref: neural.convergence_achieved
+      - ref: neural.optimizer_type
+      - ref: neural.training_duration_ms
+
+  - id: neural.inference
+    span_name: "neural.inference"
+    brief: "Neural network inference for workflow prediction"
+    note: "Must complete in <10ms to meet hot path requirements"
+    attributes:
+      - ref: neural.model_type
+
+      - id: inference_latency_ms
+        type: int
+        brief: "Inference latency in milliseconds"
+        examples: [1, 5, 10]
+        requirement_level: required
+
+      - id: prediction_accuracy
+        type: double
+        brief: "Prediction accuracy (0.0 to 1.0)"
+        examples: [0.95, 0.99]
+        requirement_level: required
+
+  - id: neural.pattern_discovery
+    span_name: "neural.pattern_discovery"
+    brief: "Automatic workflow pattern discovery"
+    attributes:
+      - id: patterns_discovered
+        type: int
+        brief: "Number of new patterns discovered"
+        examples: [0, 1, 5]
+        requirement_level: required
+
+      - id: confidence_score
+        type: double
+        brief: "Confidence in discovered patterns"
+        examples: [0.7, 0.9, 0.99]
+        requirement_level: required
+
+# DOCTRINE Q Invariants (enforced at runtime)
+invariants:
+  - name: convergence_within_1000_episodes
+    description: "Learning must converge within 1000 episodes (Covenant 3: MAPE-K at machine speed)"
+    validation: "episode_number <= 1000 when convergence_achieved = true"
+
+  - name: inference_latency_hot_path
+    description: "Inference must complete in <10ms for hot path (Covenant 5: Chatman Constant)"
+    validation: "inference_latency_ms < 10"
+
+  - name: prediction_accuracy_threshold
+    description: "Prediction accuracy must be ≥95% for production use"
+    validation: "prediction_accuracy >= 0.95"

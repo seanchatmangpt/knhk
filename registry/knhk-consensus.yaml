@@ -1,0 +1,180 @@
+# OpenTelemetry Weaver Schema for Phase 8: Byzantine Consensus
+# This schema validates distributed consensus operations
+
+schema_url: https://knhk.io/schemas/consensus/1.0.0
+groups:
+  - id: consensus
+    type: span
+    brief: "Byzantine fault-tolerant consensus operations"
+    prefix: consensus
+    attributes:
+      - id: algorithm
+        type: string
+        brief: "Consensus algorithm name"
+        examples: ["PBFT", "HotStuff", "Raft"]
+        requirement_level: required
+
+      - id: round_number
+        type: int
+        brief: "Consensus round number"
+        examples: [1, 100, 1000]
+        requirement_level: required
+
+      - id: view_number
+        type: int
+        brief: "View number (for leader rotation)"
+        examples: [0, 1, 2]
+        requirement_level: required
+
+      - id: total_nodes
+        type: int
+        brief: "Total number of nodes in cluster"
+        examples: [3, 5, 7, 10]
+        requirement_level: required
+
+      - id: quorum_size
+        type: int
+        brief: "Number of nodes required for quorum"
+        examples: [2, 3, 5]
+        requirement_level: required
+
+      - id: consensus_latency_ms
+        type: int
+        brief: "Consensus latency in milliseconds"
+        examples: [50, 100, 250]
+        requirement_level: required
+
+      - id: byzantine_detected
+        type: boolean
+        brief: "Whether Byzantine node was detected"
+        requirement_level: required
+
+      - id: region
+        type: string
+        brief: "Geographic region of this node"
+        examples: ["us-east-1", "eu-west-1", "ap-southeast-1"]
+        requirement_level: recommended
+
+spans:
+  - id: consensus.propose
+    span_name: "consensus.propose"
+    brief: "Propose new command for consensus"
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.round_number
+      - ref: consensus.view_number
+
+      - id: command_size_bytes
+        type: int
+        brief: "Command size in bytes"
+        examples: [64, 256, 1024]
+        requirement_level: recommended
+
+  - id: consensus.preprepare
+    span_name: "consensus.pbft.preprepare"
+    brief: "PBFT pre-prepare phase (leader broadcasts proposal)"
+    attributes:
+      - ref: consensus.round_number
+      - ref: consensus.view_number
+
+      - id: leader_id
+        type: int
+        brief: "ID of leader node"
+        examples: [0, 1, 2]
+        requirement_level: required
+
+  - id: consensus.prepare
+    span_name: "consensus.pbft.prepare"
+    brief: "PBFT prepare phase (followers acknowledge)"
+    attributes:
+      - ref: consensus.round_number
+      - ref: consensus.quorum_size
+
+      - id: prepare_messages_received
+        type: int
+        brief: "Number of prepare messages received"
+        examples: [2, 3, 5]
+        requirement_level: required
+
+  - id: consensus.commit
+    span_name: "consensus.pbft.commit"
+    brief: "PBFT commit phase (finalize commitment)"
+    attributes:
+      - ref: consensus.round_number
+      - ref: consensus.quorum_size
+      - ref: consensus.consensus_latency_ms
+
+      - id: commit_messages_received
+        type: int
+        brief: "Number of commit messages received"
+        examples: [2, 3, 5]
+        requirement_level: required
+
+  - id: consensus.hotstuff_vote
+    span_name: "consensus.hotstuff.vote"
+    brief: "HotStuff voting phase"
+    attributes:
+      - ref: consensus.round_number
+      - ref: consensus.view_number
+
+      - id: block_hash
+        type: string
+        brief: "Hash of block being voted on"
+        examples: ["0x1a2b3c4d..."]
+        requirement_level: required
+
+  - id: consensus.byzantine_detection
+    span_name: "consensus.byzantine_detection"
+    brief: "Byzantine node detection and handling"
+    attributes:
+      - ref: consensus.byzantine_detected
+
+      - id: byzantine_node_id
+        type: int
+        brief: "ID of detected Byzantine node"
+        examples: [2, 5, 7]
+        requirement_level:
+          conditionally_required: "if byzantine_detected = true"
+
+      - id: byzantine_behavior_type
+        type: string
+        brief: "Type of Byzantine behavior detected"
+        examples: ["conflicting_votes", "invalid_signature", "equivocation"]
+        requirement_level:
+          conditionally_required: "if byzantine_detected = true"
+
+  - id: consensus.state_machine_apply
+    span_name: "consensus.state_machine.apply"
+    brief: "Apply committed command to state machine"
+    attributes:
+      - ref: consensus.round_number
+
+      - id: state_hash_before
+        type: string
+        brief: "State hash before applying command"
+        examples: ["0xabcd1234..."]
+        requirement_level: required
+
+      - id: state_hash_after
+        type: string
+        brief: "State hash after applying command"
+        examples: ["0xef567890..."]
+        requirement_level: required
+
+# DOCTRINE Q Invariants (enforced at runtime)
+invariants:
+  - name: byzantine_tolerance
+    description: "Must tolerate f < n/3 Byzantine nodes (Covenant 2: Invariants Are Law)"
+    validation: "quorum_size >= (2 * total_nodes / 3) + 1"
+
+  - name: consensus_latency_cross_region
+    description: "Cross-region consensus must complete in <250ms (Covenant 2)"
+    validation: "consensus_latency_ms < 250"
+
+  - name: quorum_majority
+    description: "Quorum must be majority of nodes"
+    validation: "quorum_size > total_nodes / 2"
+
+  - name: no_forking
+    description: "Safety property: no two honest nodes commit different values (Covenant 2)"
+    validation: "state_hash_after matches across all honest nodes for same round"

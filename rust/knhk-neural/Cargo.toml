@@ -40,6 +40,14 @@ prometheus = "0.13"
 # Type utilities
 typenum = "1.17"
 
+# Logging and tracing (for MAPE-K integration)
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Hash utilities
+sha2 = "0.10"
+hex = "0.4"
+
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1.4"

@@ -1,0 +1,145 @@
+# OpenTelemetry Weaver Schema for Phase 7: Quantum-Safe Cryptography
+# This schema validates post-quantum cryptographic operations
+
+schema_url: https://knhk.io/schemas/quantum/1.0.0
+groups:
+  - id: quantum
+    type: span
+    brief: "Quantum-safe cryptographic operations (NIST PQC)"
+    prefix: quantum
+    attributes:
+      - id: algorithm
+        type: string
+        brief: "Quantum-safe algorithm name"
+        examples: ["Kyber768", "Dilithium2", "Dilithium3", "Falcon512"]
+        requirement_level: required
+
+      - id: security_level
+        type: int
+        brief: "NIST security level (1-5)"
+        examples: [1, 2, 3, 4, 5]
+        requirement_level: required
+
+      - id: key_size_bytes
+        type: int
+        brief: "Key size in bytes"
+        examples: [1184, 2400, 1312]
+        requirement_level: required
+
+      - id: signature_size_bytes
+        type: int
+        brief: "Signature size in bytes"
+        examples: [2420, 3293, 666]
+        requirement_level: recommended
+
+      - id: operation_latency_ns
+        type: int
+        brief: "Operation latency in nanoseconds"
+        examples: [500000, 1000000, 5000000]
+        requirement_level: required
+
+      - id: hybrid_mode
+        type: boolean
+        brief: "Whether hybrid classical+quantum mode is enabled"
+        requirement_level: required
+
+spans:
+  - id: quantum.kem_keygen
+    span_name: "quantum.kem.keygen"
+    brief: "Generate quantum-safe KEM keypair (Kyber)"
+    attributes:
+      - ref: quantum.algorithm
+      - ref: quantum.security_level
+      - ref: quantum.key_size_bytes
+      - ref: quantum.operation_latency_ns
+
+  - id: quantum.kem_encapsulate
+    span_name: "quantum.kem.encapsulate"
+    brief: "Encapsulate shared secret using public key"
+    attributes:
+      - ref: quantum.algorithm
+      - ref: quantum.operation_latency_ns
+
+      - id: ciphertext_size_bytes
+        type: int
+        brief: "Ciphertext size in bytes"
+        examples: [1088, 1568]
+        requirement_level: required
+
+  - id: quantum.kem_decapsulate
+    span_name: "quantum.kem.decapsulate"
+    brief: "Decapsulate shared secret using secret key"
+    attributes:
+      - ref: quantum.algorithm
+      - ref: quantum.operation_latency_ns
+
+      - id: shared_secret_size_bytes
+        type: int
+        brief: "Shared secret size in bytes"
+        examples: [32, 48, 64]
+        requirement_level: required
+
+  - id: quantum.signature_sign
+    span_name: "quantum.signature.sign"
+    brief: "Sign message with quantum-safe signature (Dilithium)"
+    attributes:
+      - ref: quantum.algorithm
+      - ref: quantum.security_level
+      - ref: quantum.signature_size_bytes
+      - ref: quantum.operation_latency_ns
+      - ref: quantum.hybrid_mode
+
+      - id: message_size_bytes
+        type: int
+        brief: "Message size in bytes"
+        examples: [64, 256, 1024]
+        requirement_level: recommended
+
+  - id: quantum.signature_verify
+    span_name: "quantum.signature.verify"
+    brief: "Verify quantum-safe signature"
+    attributes:
+      - ref: quantum.algorithm
+      - ref: quantum.operation_latency_ns
+
+      - id: verification_result
+        type: boolean
+        brief: "Whether signature is valid"
+        requirement_level: required
+
+  - id: quantum.hybrid_sign
+    span_name: "quantum.hybrid.sign"
+    brief: "Sign with both classical (Ed25519) and quantum-safe (Dilithium)"
+    attributes:
+      - ref: quantum.hybrid_mode
+      - ref: quantum.operation_latency_ns
+
+      - id: classical_signature_size_bytes
+        type: int
+        brief: "Classical signature size"
+        examples: [64]
+        requirement_level: required
+
+      - id: quantum_signature_size_bytes
+        type: int
+        brief: "Quantum signature size"
+        examples: [2420, 3293]
+        requirement_level: required
+
+# DOCTRINE Q Invariants (enforced at runtime)
+invariants:
+  - name: security_level_minimum
+    description: "Security level must be ≥128-bit equivalent (Level 1+) (Covenant 2: Invariants Are Law)"
+    validation: "security_level >= 1"
+
+  - name: signing_latency_maximum
+    description: "Signing must complete in <1ms (Covenant 2: Invariants Are Law)"
+    validation: "operation_latency_ns < 1000000"
+
+  - name: nist_approved_algorithms
+    description: "Only NIST PQC standardized algorithms allowed"
+    validation: "algorithm in ['Kyber768', 'Kyber1024', 'Dilithium2', 'Dilithium3', 'Dilithium5']"
+
+  - name: hybrid_mode_required
+    description: "Hybrid mode required during migration period"
+    validation: "hybrid_mode = true"

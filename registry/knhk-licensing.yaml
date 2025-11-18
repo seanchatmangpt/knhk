@@ -1,0 +1,216 @@
+# OpenTelemetry Weaver Schema for Phase 10: Enterprise Licensing
+# This schema validates license enforcement and usage tracking
+
+schema_url: https://knhk.io/schemas/licensing/1.0.0
+groups:
+  - id: licensing
+    type: span
+    brief: "Enterprise licensing and usage tracking"
+    prefix: license
+    attributes:
+      - id: customer_id
+        type: string
+        brief: "Unique customer identifier"
+        examples: ["cust_abc123", "org_xyz789"]
+        requirement_level: required
+
+      - id: tier
+        type: string
+        brief: "License tier"
+        examples: ["Community", "Professional", "Enterprise", "Custom"]
+        requirement_level: required
+
+      - id: valid
+        type: boolean
+        brief: "Whether license is currently valid"
+        requirement_level: required
+
+      - id: expires_at
+        type: string
+        brief: "License expiration timestamp (ISO 8601)"
+        examples: ["2025-12-31T23:59:59Z"]
+        requirement_level: required
+
+      - id: workflow_count
+        type: int
+        brief: "Current number of workflows"
+        examples: [10, 100, 10000]
+        requirement_level: required
+
+      - id: workflow_limit
+        type: int
+        brief: "Maximum workflows allowed by tier"
+        examples: [10, 100, 1000000]
+        requirement_level: required
+
+      - id: tpm_current
+        type: int
+        brief: "Current transactions per minute"
+        examples: [10, 100, 10000]
+        requirement_level: required
+
+      - id: tpm_limit
+        type: int
+        brief: "TPM limit for this tier"
+        examples: [100, 10000, 100000]
+        requirement_level: required
+
+spans:
+  - id: license.validation
+    span_name: "license.validation"
+    brief: "Validate license token and check expiration"
+    attributes:
+      - ref: license.customer_id
+      - ref: license.tier
+      - ref: license.valid
+      - ref: license.expires_at
+
+      - id: validation_latency_ms
+        type: int
+        brief: "License validation latency in milliseconds"
+        examples: [1, 5, 10]
+        requirement_level: required
+
+      - id: signature_valid
+        type: boolean
+        brief: "Whether Ed25519 signature is valid"
+        requirement_level: required
+
+      - id: validation_source
+        type: string
+        brief: "Where validation occurred"
+        examples: ["cache_hit", "cache_miss", "remote_api"]
+        requirement_level: recommended
+
+  - id: license.usage_check
+    span_name: "license.usage_check"
+    brief: "Check if usage is within license limits"
+    attributes:
+      - ref: license.customer_id
+      - ref: license.workflow_count
+      - ref: license.workflow_limit
+      - ref: license.tpm_current
+      - ref: license.tpm_limit
+
+      - id: limit_exceeded
+        type: boolean
+        brief: "Whether any limit was exceeded"
+        requirement_level: required
+
+      - id: limit_type_exceeded
+        type: string
+        brief: "Which limit was exceeded"
+        examples: ["workflow_count", "tpm", "concurrent_users", "storage"]
+        requirement_level:
+          conditionally_required: "if limit_exceeded = true"
+
+  - id: license.billing_event
+    span_name: "license.billing.event"
+    brief: "Record billable usage event"
+    attributes:
+      - ref: license.customer_id
+      - ref: license.tier
+
+      - id: billing_event_type
+        type: string
+        brief: "Type of billable event"
+        examples: ["workflow_execution", "storage_usage", "api_call", "compute_time"]
+        requirement_level: required
+
+      - id: billing_amount_cents
+        type: int
+        brief: "Billing amount in cents"
+        examples: [100, 1000, 10000]
+        requirement_level: required
+
+      - id: billing_currency
+        type: string
+        brief: "Currency code"
+        examples: ["USD", "EUR", "GBP"]
+        requirement_level: required
+
+  - id: license.marketplace_download
+    span_name: "license.marketplace.download"
+    brief: "Download workflow template from marketplace"
+    attributes:
+      - ref: license.customer_id
+
+      - id: template_id
+        type: string
+        brief: "Workflow template identifier"
+        examples: ["wf_template_abc123"]
+        requirement_level: required
+
+      - id: template_version
+        type: string
+        brief: "Template version"
+        examples: ["1.0.0", "2.1.5"]
+        requirement_level: required
+
+      - id: download_size_bytes
+        type: int
+        brief: "Template size in bytes"
+        examples: [1024, 10240, 102400]
+        requirement_level: recommended
+
+  - id: license.compliance_audit
+    span_name: "license.compliance.audit"
+    brief: "Log compliance audit event (SOC2, GDPR)"
+    attributes:
+      - ref: license.customer_id
+
+      - id: audit_event_type
+        type: string
+        brief: "Type of audit event"
+        examples: ["data_access", "data_modification", "data_deletion", "export", "admin_action"]
+        requirement_level: required
+
+      - id: user_id
+        type: string
+        brief: "User who performed the action"
+        examples: ["user_abc123"]
+        requirement_level: required
+
+      - id: resource_type
+        type: string
+        brief: "Type of resource accessed"
+        examples: ["workflow", "license", "billing_data", "audit_log"]
+        requirement_level: required
+
+      - id: action
+        type: string
+        brief: "Action performed"
+        examples: ["read", "write", "delete", "export"]
+        requirement_level: required
+
+      - id: audit_result
+        type: string
+        brief: "Result of the action"
+        examples: ["success", "denied", "failed"]
+        requirement_level: required
+
+# DOCTRINE Q Invariants (enforced at runtime)
+invariants:
+  - name: signature_validation_required
+    description: "All licenses must have valid Ed25519 signatures (Covenant 1: Turtle Is Definition)"
+    validation: "signature_valid = true when valid = true"
+
+  - name: expiration_enforcement
+    description: "Expired licenses must not be accepted (Covenant 2: Invariants Are Law)"
+    validation: "expires_at > current_time when valid = true"
+
+  - name: workflow_limit_enforcement
+    description: "Workflow count cannot exceed tier limit (Covenant 2)"
+    validation: "workflow_count <= workflow_limit"
+
+  - name: tpm_limit_enforcement
+    description: "Transactions per minute cannot exceed tier limit (Covenant 2)"
+    validation: "tpm_current <= tpm_limit"
+
+  - name: validation_latency_hot_path
+    description: "License validation must complete in <1ms (cache hit) (Covenant 5: Chatman Constant)"
+    validation: "validation_latency_ms < 1 when validation_source = 'cache_hit'"
+
+  - name: audit_log_immutability
+    description: "Audit log entries are immutable once written (Covenant 6: Observations Drive Everything)"
+    validation: "audit_result cannot be modified after initial write"

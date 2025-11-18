@@ -1,0 +1,26 @@
+[package]
+name = "knhk-swarm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+bincode = { workspace = true }
+oxigraph = { workspace = true }
+uuid = { workspace = true }
+priority-queue = "2.1"
+async-trait = "0.1"
+
+[dev-dependencies]
+criterion = { workspace = true }
+tokio-test = { workspace = true }
+
+[lib]
+name = "knhk_swarm"
+path = "src/lib.rs"
