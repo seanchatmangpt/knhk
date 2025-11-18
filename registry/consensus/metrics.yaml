@@ -1,0 +1,211 @@
+# OpenTelemetry Metrics for KNHK Consensus & Cryptography
+#
+# DOCTRINE ALIGNMENT:
+# - Covenant 5: Chatman Constant - Monitor performance budgets
+# - Covenant 6: Observations Drive Everything - Comprehensive metrics coverage
+
+groups:
+  # ============================================================================
+  # Consensus Metrics
+  # ============================================================================
+
+  - id: metric.consensus.latency
+    type: metric
+    metric_name: consensus.latency
+    brief: "Consensus round latency (milliseconds)"
+    instrument: histogram
+    unit: ms
+    note: >
+      Tracks latency from proposal to finality.
+      SLO: ≤50ms (single-region), ≤300ms (multi-region).
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.phase
+
+  - id: metric.consensus.throughput
+    type: metric
+    metric_name: consensus.throughput
+    brief: "Consensus throughput (commands/second)"
+    instrument: counter
+    unit: "{commands}"
+    note: >
+      Tracks number of commands committed per second.
+      Target: >1000 commands/sec (single-region).
+    attributes:
+      - ref: consensus.algorithm
+
+  - id: metric.consensus.view_changes
+    type: metric
+    metric_name: consensus.view_changes
+    brief: "Number of view changes (leader rotations)"
+    instrument: counter
+    unit: "{changes}"
+    note: >
+      Tracks frequency of view changes (indicator of leader failures).
+      High rate indicates Byzantine nodes or network issues.
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.reason
+
+  - id: metric.consensus.quorum_votes
+    type: metric
+    metric_name: consensus.quorum_votes
+    brief: "Number of votes received for quorum"
+    instrument: gauge
+    unit: "{votes}"
+    note: >
+      Tracks votes received in current consensus round.
+      Should reach 2f+1 for finality.
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.phase
+
+  - id: metric.consensus.byzantine_detected
+    type: metric
+    metric_name: consensus.byzantine_detected
+    brief: "Number of Byzantine nodes detected"
+    instrument: counter
+    unit: "{nodes}"
+    note: >
+      Tracks Byzantine behavior detection (equivocation, invalid signatures, etc.).
+      CRITICAL: High rate indicates attack or misconfiguration.
+    attributes:
+      - ref: consensus.algorithm
+      - id: byzantine.behavior
+        type: string
+        brief: "Type of Byzantine behavior"
+        examples: ["equivocation", "invalid_signature", "double_propose"]
+
+  # ============================================================================
+  # Cryptography Metrics
+  # ============================================================================
+
+  - id: metric.crypto.sign.duration
+    type: metric
+    metric_name: crypto.sign.duration
+    brief: "Signature generation duration (microseconds)"
+    instrument: histogram
+    unit: us
+    note: >
+      Tracks signing latency.
+      SLO: ≤250μs for hybrid signatures (Chatman constant: 2 ticks).
+    attributes:
+      - ref: crypto.algorithm
+
+  - id: metric.crypto.verify.duration
+    type: metric
+    metric_name: crypto.verify.duration
+    brief: "Signature verification duration (microseconds)"
+    instrument: histogram
+    unit: us
+    note: >
+      Tracks verification latency.
+      SLO: ≤400μs for hybrid signatures (Chatman constant: 3 ticks).
+    attributes:
+      - ref: crypto.algorithm
+
+  - id: metric.crypto.keygen.duration
+    type: metric
+    metric_name: crypto.keygen.duration
+    brief: "Keypair generation duration (microseconds)"
+    instrument: histogram
+    unit: us
+    note: >
+      Tracks keygen latency.
+      SLO: ≤200μs (Chatman constant: 2 ticks).
+    attributes:
+      - ref: crypto.algorithm
+
+  - id: metric.crypto.verify.failures
+    type: metric
+    metric_name: crypto.verify.failures
+    brief: "Number of signature verification failures"
+    instrument: counter
+    unit: "{failures}"
+    note: >
+      Tracks verification failures (hard errors per Covenant 2).
+      High rate indicates attack or key compromise.
+    attributes:
+      - ref: crypto.algorithm
+      - ref: crypto.failure_reason
+
+  - id: metric.crypto.policy.violations
+    type: metric
+    metric_name: crypto.policy.violations
+    brief: "Number of signature policy violations"
+    instrument: counter
+    unit: "{violations}"
+    note: >
+      Tracks policy violations (e.g., classical signature in quantum-only era).
+      All violations are HARD ERRORS (Covenant 2).
+    attributes:
+      - ref: crypto.policy
+      - ref: crypto.signature_type
+
+  - id: metric.crypto.key.rotations
+    type: metric
+    metric_name: crypto.key.rotations
+    brief: "Number of key rotations"
+    instrument: counter
+    unit: "{rotations}"
+    note: >
+      Tracks key rotation events (automated every 90 days).
+    attributes:
+      - ref: crypto.rotation_reason
+
+  - id: metric.crypto.chatman.ticks
+    type: metric
+    metric_name: crypto.chatman.ticks
+    brief: "Chatman ticks consumed by crypto operations"
+    instrument: histogram
+    unit: "{ticks}"
+    note: >
+      Tracks Chatman ticks (1 tick = 125μs @ 8MHz).
+      SLO: ≤8 ticks (Covenant 5).
+    attributes:
+      - ref: crypto.algorithm
+      - id: crypto.operation
+        type: string
+        brief: "Cryptographic operation"
+        examples: ["sign", "verify", "keygen"]
+
+  # ============================================================================
+  # Receipt Metrics
+  # ============================================================================
+
+  - id: metric.receipt.generated
+    type: metric
+    metric_name: receipt.generated
+    brief: "Number of cryptographic receipts generated"
+    instrument: counter
+    unit: "{receipts}"
+    note: >
+      Tracks receipt generation (one per workflow execution).
+    attributes:
+      - ref: receipt.consensus_algorithm
+
+  - id: metric.receipt.verification.duration
+    type: metric
+    metric_name: receipt.verification.duration
+    brief: "Receipt verification duration (milliseconds)"
+    instrument: histogram
+    unit: ms
+    note: >
+      Tracks time to verify a receipt (hybrid signature + quorum signatures).
+    attributes:
+      - ref: receipt.consensus_algorithm
+      - id: receipt.signature_count
+        type: int
+        brief: "Number of signatures in receipt"
+
+  - id: metric.receipt.size
+    type: metric
+    metric_name: receipt.size
+    brief: "Cryptographic receipt size (bytes)"
+    instrument: histogram
+    unit: by
+    note: >
+      Tracks receipt size (increases with hybrid sigs + quorum sigs).
+    attributes:
+      - ref: receipt.consensus_algorithm
+      - ref: receipt.signature_count

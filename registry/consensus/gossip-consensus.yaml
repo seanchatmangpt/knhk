@@ -1,0 +1,339 @@
+# OpenTelemetry Weaver Schema for Gossip Consensus
+#
+# DOCTRINE Alignment:
+# - O (Observability): All gossip messages, rounds, and convergence observable
+# - Σ (State Machine): State version transitions tracked
+# - Q (Chatman Constant): ≤8 ticks hot path (hash comparison), async off-path (state merge)
+
+schema_url: https://opentelemetry.io/schemas/1.21.0
+
+attributes:
+  # Gossip Protocol Attributes
+  gossip.round:
+    type: int
+    brief: "Current gossip round number"
+    examples: [1, 10, 100]
+
+  gossip.peer_sample_size:
+    type: int
+    brief: "k parameter (random peers per round)"
+    examples: [3, 5, 10]
+
+  gossip.swarm_size:
+    type: int
+    brief: "Total agents in swarm"
+    examples: [10, 100, 1000, 10000, 100000, 1000000]
+
+  gossip.state_version:
+    type: int
+    brief: "Versioned state counter"
+    examples: [1, 2, 3, 100]
+
+  gossip.state_hash:
+    type: string
+    brief: "Blake3 hash of state value"
+    examples: ["af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262"]
+
+  gossip.agent_id:
+    type: int
+    brief: "Agent identifier"
+    examples: [1, 2, 42, 1000]
+
+  gossip.peer_id:
+    type: int
+    brief: "Peer agent identifier"
+    examples: [2, 3, 100]
+
+  gossip.message_type:
+    type: string
+    brief: "Gossip message type"
+    enum:
+      - push
+      - pull
+      - push_pull
+      - ack
+    examples: ["push", "pull", "push_pull"]
+
+  gossip.byzantine_detected:
+    type: boolean
+    brief: "Byzantine state detected"
+    examples: [true, false]
+
+  gossip.convergence_percentage:
+    type: int
+    brief: "Swarm convergence percentage (0-100)"
+    examples: [50, 75, 90, 100]
+
+  gossip.hierarchy_level:
+    type: int
+    brief: "Hierarchical topology level (0=leaf, 1+=leader)"
+    examples: [0, 1, 2]
+
+  gossip.subswarm_id:
+    type: int
+    brief: "Sub-swarm identifier in hierarchical topology"
+    examples: [0, 1, 10]
+
+  gossip.is_leader:
+    type: boolean
+    brief: "Is this agent a sub-swarm leader?"
+    examples: [true, false]
+
+metrics:
+  # Gossip Round Metrics
+  gossip.round.count:
+    type: counter
+    brief: "Total number of gossip rounds executed"
+    unit: "rounds"
+    instrument: counter
+    attributes:
+      - gossip.swarm_size
+      - gossip.peer_sample_size
+
+  gossip.message.sent:
+    type: counter
+    brief: "Messages sent per round"
+    unit: "messages"
+    instrument: counter
+    attributes:
+      - gossip.round
+      - gossip.message_type
+      - gossip.agent_id
+
+  gossip.message.received:
+    type: counter
+    brief: "Messages received per round"
+    unit: "messages"
+    instrument: counter
+    attributes:
+      - gossip.round
+      - gossip.message_type
+      - gossip.peer_id
+
+  gossip.state.merged:
+    type: counter
+    brief: "States merged from peers"
+    unit: "states"
+    instrument: counter
+    attributes:
+      - gossip.round
+      - gossip.state_version
+
+  gossip.byzantine.detected:
+    type: counter
+    brief: "Byzantine states detected and rejected"
+    unit: "states"
+    instrument: counter
+    attributes:
+      - gossip.round
+      - gossip.peer_id
+
+  gossip.convergence.percentage:
+    type: gauge
+    brief: "Percentage of swarm converged to latest state"
+    unit: "%"
+    instrument: gauge
+    attributes:
+      - gossip.round
+      - gossip.swarm_size
+
+  gossip.round.latency:
+    type: histogram
+    brief: "Gossip round latency distribution"
+    unit: "ms"
+    instrument: histogram
+    explicit_bucket_boundaries: [1, 10, 50, 100, 250, 500, 1000, 2000]
+    attributes:
+      - gossip.swarm_size
+      - gossip.peer_sample_size
+
+  gossip.state_hash.distribution:
+    type: histogram
+    brief: "Distribution of unique state hashes in swarm"
+    unit: "count"
+    instrument: histogram
+    explicit_bucket_boundaries: [1, 2, 3, 5, 10, 20, 50]
+    attributes:
+      - gossip.round
+      - gossip.swarm_size
+
+  gossip.peer.latency:
+    type: histogram
+    brief: "Network latency to peers"
+    unit: "ms"
+    instrument: histogram
+    explicit_bucket_boundaries: [1, 5, 10, 20, 50, 100, 200]
+    attributes:
+      - gossip.peer_id
+
+  # Hierarchical Gossip Metrics
+  gossip.hierarchical.local_messages:
+    type: counter
+    brief: "Messages sent/received in local sub-swarm"
+    unit: "messages"
+    instrument: counter
+    attributes:
+      - gossip.round
+      - gossip.subswarm_id
+
+  gossip.hierarchical.leader_messages:
+    type: counter
+    brief: "Messages sent/received between sub-swarm leaders"
+    unit: "messages"
+    instrument: counter
+    attributes:
+      - gossip.round
+      - gossip.hierarchy_level
+
+  gossip.hierarchical.convergence_rounds:
+    type: histogram
+    brief: "Rounds until hierarchical convergence"
+    unit: "rounds"
+    instrument: histogram
+    explicit_bucket_boundaries: [1, 3, 5, 7, 10, 15, 20, 30]
+    attributes:
+      - gossip.swarm_size
+      - gossip.subswarm_id
+
+traces:
+  # Gossip Round Trace
+  gossip.round.execute:
+    brief: "Execute one gossip round"
+    span_kind: internal
+    attributes:
+      - gossip.round
+      - gossip.swarm_size
+      - gossip.peer_sample_size
+
+  gossip.message.send:
+    brief: "Send gossip message to peer"
+    span_kind: client
+    attributes:
+      - gossip.message_type
+      - gossip.peer_id
+      - gossip.state_version
+
+  gossip.message.receive:
+    brief: "Receive gossip message from peer"
+    span_kind: server
+    attributes:
+      - gossip.message_type
+      - gossip.peer_id
+      - gossip.state_version
+
+  gossip.state.merge:
+    brief: "Merge peer state (conflict resolution)"
+    span_kind: internal
+    attributes:
+      - gossip.state_version
+      - gossip.peer_id
+
+  gossip.majority_vote:
+    brief: "Apply Byzantine-robust majority voting"
+    span_kind: internal
+    attributes:
+      - gossip.round
+      - gossip.byzantine_detected
+
+  gossip.convergence.check:
+    brief: "Check swarm convergence status"
+    span_kind: internal
+    attributes:
+      - gossip.round
+      - gossip.convergence_percentage
+
+  # Hierarchical Gossip Traces
+  gossip.hierarchical.local_round:
+    brief: "Local sub-swarm gossip round"
+    span_kind: internal
+    attributes:
+      - gossip.round
+      - gossip.subswarm_id
+
+  gossip.hierarchical.leader_round:
+    brief: "Leader-level gossip round"
+    span_kind: internal
+    attributes:
+      - gossip.round
+      - gossip.hierarchy_level
+
+events:
+  gossip.round.started:
+    brief: "Gossip round started"
+    attributes:
+      - gossip.round
+      - gossip.swarm_size
+
+  gossip.round.completed:
+    brief: "Gossip round completed"
+    attributes:
+      - gossip.round
+      - gossip.message.sent
+      - gossip.message.received
+
+  gossip.byzantine.detected:
+    brief: "Byzantine state detected from peer"
+    attributes:
+      - gossip.peer_id
+      - gossip.state_hash
+      - gossip.byzantine_detected
+
+  gossip.convergence.achieved:
+    brief: "Swarm converged to consensus state"
+    attributes:
+      - gossip.round
+      - gossip.convergence_percentage
+      - gossip.state_version
+
+# Performance Targets (DOCTRINE Q - Chatman Constant)
+performance:
+  hot_path:
+    - operation: "hash_comparison"
+      max_ticks: 8
+      description: "State hash comparison (≤8 ticks)"
+    - operation: "merkle_verify"
+      max_ticks: 8
+      description: "Merkle proof verification hot path"
+
+  warm_path:
+    - operation: "state_merge"
+      max_ms: 100
+      description: "State merge and conflict resolution"
+    - operation: "majority_vote"
+      max_ms: 100
+      description: "Byzantine-robust majority voting"
+
+  cold_path:
+    - operation: "gossip_round"
+      max_ms: 1000
+      description: "Complete gossip round (swarm size dependent)"
+
+# Convergence Guarantees
+convergence:
+  theorem: "After O(log n) rounds, all non-Byzantine agents converge to same state"
+  byzantine_tolerance: "f < n/3"
+  expected_rounds:
+    - swarm_size: 10
+      peer_sample: 3
+      rounds: 3
+      latency_ms: 10
+    - swarm_size: 100
+      peer_sample: 5
+      rounds: 7
+      latency_ms: 50
+    - swarm_size: 1000
+      peer_sample: 8
+      rounds: 10
+      latency_ms: 100
+    - swarm_size: 10000
+      peer_sample: 10
+      rounds: 14
+      latency_ms: 250
+    - swarm_size: 100000
+      peer_sample: 12
+      rounds: 17
+      latency_ms: 500
+    - swarm_size: 1000000
+      peer_sample: 15
+      rounds: 20
+      latency_ms: 1000

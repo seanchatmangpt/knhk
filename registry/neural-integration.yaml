@@ -1,0 +1,423 @@
+# OpenTelemetry Weaver Registry for Neural Integration
+#
+# This schema defines all telemetry for Phase 6 Neural Integration.
+# All neural operations MUST emit spans/metrics conforming to this schema.
+#
+# Validation:
+#   weaver registry check -r registry/
+#   weaver registry live-check --registry registry/ --endpoint http://localhost:4317
+
+registry_url: https://github.com/knhk/neural-integration
+
+groups:
+  # ============================================================================
+  # REINFORCEMENT LEARNING
+  # ============================================================================
+  - id: rl
+    prefix: neural.rl
+    type: span
+    brief: Reinforcement learning operations
+    spans:
+      - id: action_selection
+        span_name: neural.rl.action_selection
+        brief: RL agent selects action given current state
+        attributes:
+          - id: state
+            type: string
+            brief: String representation of workflow state
+            requirement_level: required
+            examples: ["completed=5,phase=2,resources=67"]
+
+          - id: action
+            type: string
+            brief: Action selected by agent
+            requirement_level: required
+            examples: ["task_7", "allocate_high", "retry_task_3"]
+
+          - id: q_value
+            type: double
+            brief: Q-value for selected state-action pair
+            requirement_level: required
+
+          - id: exploration
+            type: boolean
+            brief: Whether action was exploratory (vs exploitative)
+            requirement_level: required
+
+          - id: epsilon
+            type: double
+            brief: Current exploration rate (0.0-1.0)
+            requirement_level: required
+
+          - id: algorithm
+            type: string
+            brief: RL algorithm used
+            requirement_level: required
+            enum: [q_learning, sarsa, actor_critic, a3c]
+
+      - id: learning
+        span_name: neural.rl.learning
+        brief: RL agent learns from transition
+        attributes:
+          - id: reward
+            type: double
+            brief: Reward received for transition
+            requirement_level: required
+
+          - id: td_error
+            type: double
+            brief: Temporal difference error
+            requirement_level: optional
+
+          - id: q_before
+            type: double
+            brief: Q-value before update
+            requirement_level: optional
+
+          - id: q_after
+            type: double
+            brief: Q-value after update
+            requirement_level: optional
+
+          - id: learning_rate
+            type: double
+            brief: Learning rate used for update
+            requirement_level: optional
+
+  # ============================================================================
+  # NEURAL NETWORK PREDICTION
+  # ============================================================================
+  - id: prediction
+    prefix: neural.prediction
+    type: span
+    brief: Neural network predictions
+    spans:
+      - id: inference
+        span_name: neural.prediction.inference
+        brief: Neural network inference
+        attributes:
+          - id: model
+            type: string
+            brief: Name of prediction model
+            requirement_level: required
+            enum: [duration, success, anomaly]
+
+          - id: input_size
+            type: int
+            brief: Size of input feature vector
+            requirement_level: required
+
+          - id: output_size
+            type: int
+            brief: Size of output vector
+            requirement_level: required
+
+          - id: value
+            type: double
+            brief: Predicted value
+            requirement_level: required
+
+          - id: confidence
+            type: double
+            brief: Prediction confidence score (0.0-1.0)
+            requirement_level: optional
+
+          - id: latency_us
+            type: int
+            brief: Inference latency in microseconds
+            requirement_level: required
+
+      - id: training
+        span_name: neural.prediction.training
+        brief: Neural network training
+        attributes:
+          - id: model
+            type: string
+            brief: Name of model being trained
+            requirement_level: required
+
+          - id: samples
+            type: int
+            brief: Number of training samples
+            requirement_level: required
+
+          - id: epochs
+            type: int
+            brief: Number of training epochs
+            requirement_level: required
+
+          - id: batch_size
+            type: int
+            brief: Training batch size
+            requirement_level: optional
+
+          - id: loss
+            type: double
+            brief: Training loss
+            requirement_level: required
+
+          - id: learning_rate
+            type: double
+            brief: Learning rate
+            requirement_level: optional
+
+  # ============================================================================
+  # ANOMALY DETECTION
+  # ============================================================================
+  - id: anomaly
+    prefix: neural.anomaly
+    type: span
+    brief: Anomaly detection operations
+    spans:
+      - id: detection
+        span_name: neural.anomaly.detection
+        brief: Check for anomalous execution patterns
+        attributes:
+          - id: detected
+            type: boolean
+            brief: Whether anomaly was detected
+            requirement_level: required
+
+          - id: score
+            type: double
+            brief: Anomaly score (reconstruction error)
+            requirement_level: required
+
+          - id: threshold
+            type: double
+            brief: Detection threshold
+            requirement_level: required
+
+          - id: features_size
+            type: int
+            brief: Size of feature vector
+            requirement_level: optional
+
+  # ============================================================================
+  # GENETIC ALGORITHM (DESCRIPTOR EVOLUTION)
+  # ============================================================================
+  - id: evolution
+    prefix: neural.evolution
+    type: span
+    brief: Genetic algorithm evolution
+    spans:
+      - id: generation
+        span_name: neural.evolution.generation
+        brief: Single generation of evolution
+        attributes:
+          - id: generation_num
+            type: int
+            brief: Current generation number
+            requirement_level: required
+
+          - id: population_size
+            type: int
+            brief: Population size
+            requirement_level: required
+
+          - id: elite_count
+            type: int
+            brief: Number of elite genomes preserved
+            requirement_level: required
+
+          - id: best_fitness
+            type: double
+            brief: Fitness of best genome in generation
+            requirement_level: required
+
+          - id: avg_fitness
+            type: double
+            brief: Average population fitness
+            requirement_level: required
+
+          - id: worst_fitness
+            type: double
+            brief: Fitness of worst genome
+            requirement_level: optional
+
+          - id: mutation_rate
+            type: double
+            brief: Mutation rate used
+            requirement_level: optional
+
+          - id: crossover_rate
+            type: double
+            brief: Crossover rate used
+            requirement_level: optional
+
+      - id: mutation
+        span_name: neural.evolution.mutation
+        brief: Genome mutation operation
+        attributes:
+          - id: genome_id
+            type: string
+            brief: ID of genome being mutated
+            requirement_level: optional
+
+          - id: genes_mutated
+            type: int
+            brief: Number of genes mutated
+            requirement_level: required
+
+      - id: crossover
+        span_name: neural.evolution.crossover
+        brief: Genome crossover operation
+        attributes:
+          - id: parent1_fitness
+            type: double
+            brief: Fitness of first parent
+            requirement_level: optional
+
+          - id: parent2_fitness
+            type: double
+            brief: Fitness of second parent
+            requirement_level: optional
+
+  # ============================================================================
+  # FEDERATED LEARNING
+  # ============================================================================
+  - id: federated
+    prefix: neural.federated
+    type: span
+    brief: Federated learning coordination
+    spans:
+      - id: sync
+        span_name: neural.federated.sync
+        brief: Federated learning synchronization
+        attributes:
+          - id: agent_count
+            type: int
+            brief: Number of agents participating
+            requirement_level: required
+
+          - id: strategy
+            type: string
+            brief: Aggregation strategy
+            requirement_level: required
+            enum: [average, weighted, consensus, max_value]
+
+          - id: duration_ms
+            type: int
+            brief: Synchronization duration in milliseconds
+            requirement_level: required
+
+          - id: states_aggregated
+            type: int
+            brief: Number of states aggregated
+            requirement_level: optional
+
+  # ============================================================================
+  # MAPE-K INTEGRATION
+  # ============================================================================
+  - id: mapek
+    prefix: neural.mapek
+    type: span
+    brief: MAPE-K loop with neural integration
+    spans:
+      - id: analyze
+        span_name: neural.mapek.analyze
+        brief: MAPE-K Analyze stage (learning)
+        attributes:
+          - id: execution_id
+            type: string
+            brief: Execution ID being analyzed
+            requirement_level: required
+
+          - id: features_extracted
+            type: int
+            brief: Number of features extracted
+            requirement_level: optional
+
+          - id: transitions_recorded
+            type: int
+            brief: Number of RL transitions recorded
+            requirement_level: optional
+
+      - id: plan
+        span_name: neural.mapek.plan
+        brief: MAPE-K Plan stage (RL-driven)
+        attributes:
+          - id: recommended_action
+            type: string
+            brief: Action recommended by RL agent
+            requirement_level: required
+
+          - id: confidence
+            type: double
+            brief: Confidence in recommendation (0.0-1.0)
+            requirement_level: optional
+
+# ============================================================================
+# METRICS
+# ============================================================================
+metrics:
+  # RL Metrics
+  - id: rl_actions_total
+    metric_name: neural.rl.actions.total
+    brief: Total number of RL actions taken
+    instrument: counter
+    unit: "{action}"
+
+  - id: rl_exploration_ratio
+    metric_name: neural.rl.exploration.ratio
+    brief: Ratio of exploratory vs exploitative actions
+    instrument: gauge
+    unit: "1"
+
+  - id: rl_avg_reward
+    metric_name: neural.rl.reward.avg
+    brief: Average reward per episode
+    instrument: gauge
+    unit: "1"
+
+  # Prediction Metrics
+  - id: prediction_latency
+    metric_name: neural.prediction.latency
+    brief: Neural network inference latency distribution
+    instrument: histogram
+    unit: "us"
+
+  - id: prediction_accuracy
+    metric_name: neural.prediction.accuracy
+    brief: Prediction accuracy (percentage)
+    instrument: gauge
+    unit: "%"
+
+  # Anomaly Detection Metrics
+  - id: anomaly_detections_total
+    metric_name: neural.anomaly.detections.total
+    brief: Total number of anomalies detected
+    instrument: counter
+    unit: "{anomaly}"
+
+  - id: anomaly_false_positive_rate
+    metric_name: neural.anomaly.false_positive_rate
+    brief: False positive rate for anomaly detection
+    instrument: gauge
+    unit: "1"
+
+  # Evolution Metrics
+  - id: evolution_generations_total
+    metric_name: neural.evolution.generations.total
+    brief: Total number of evolution generations
+    instrument: counter
+    unit: "{generation}"
+
+  - id: evolution_best_fitness
+    metric_name: neural.evolution.best_fitness
+    brief: Current best fitness across all generations
+    instrument: gauge
+    unit: "1"
+
+  # Federated Learning Metrics
+  - id: federated_syncs_total
+    metric_name: neural.federated.syncs.total
+    brief: Total number of federated synchronizations
+    instrument: counter
+    unit: "{sync}"
+
+  - id: federated_sync_duration
+    metric_name: neural.federated.sync.duration
+    brief: Federated synchronization duration distribution
+    instrument: histogram
+    unit: "ms"

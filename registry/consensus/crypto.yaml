@@ -1,0 +1,274 @@
+# OpenTelemetry Semantic Conventions for KNHK Cryptography
+#
+# This schema defines the telemetry for quantum-safe cryptographic operations.
+# Weaver validation ensures runtime telemetry matches these declarations.
+#
+# DOCTRINE ALIGNMENT:
+# - Covenant 5: Chatman Constant - All operations ≤8 ticks (1ms @ 8MHz)
+# - Covenant 6: Observations Drive Everything - All crypto operations emit telemetry
+
+groups:
+  # ============================================================================
+  # Cryptographic Signing Spans
+  # ============================================================================
+
+  - id: crypto.sign
+    type: span
+    brief: "Cryptographic signature generation"
+    note: >
+      Tracks generation of a digital signature (Ed25519, Dilithium, or Hybrid).
+      Performance requirement: ≤250μs for hybrid signatures (2 ticks).
+    attributes:
+      - id: crypto.algorithm
+        type: string
+        brief: "Signature algorithm"
+        examples: ["Ed25519", "Dilithium", "Falcon", "Hybrid"]
+        requirement_level: required
+
+      - id: crypto.key_id
+        type: string
+        brief: "Key identifier (blake3 hash of public key + timestamp)"
+        requirement_level: required
+
+      - id: crypto.message_size
+        type: int
+        brief: "Size of message being signed (bytes)"
+        requirement_level: required
+
+      - id: crypto.signature_size
+        type: int
+        brief: "Size of generated signature (bytes)"
+        requirement_level: required
+
+      - id: crypto.duration_us
+        type: int
+        brief: "Signing duration (microseconds)"
+        requirement_level: required
+
+      - id: crypto.chatman_ticks
+        type: int
+        brief: "Ticks consumed (1 tick = 125μs @ 8MHz)"
+        note: "MUST be ≤8 ticks (Chatman constant)"
+        requirement_level: required
+
+  # ============================================================================
+  # Cryptographic Verification Spans
+  # ============================================================================
+
+  - id: crypto.verify
+    type: span
+    brief: "Cryptographic signature verification"
+    note: >
+      Tracks verification of a digital signature.
+      Performance requirement: ≤400μs for hybrid signatures (3 ticks).
+    attributes:
+      - ref: crypto.algorithm
+      - ref: crypto.key_id
+      - ref: crypto.message_size
+      - ref: crypto.signature_size
+      - ref: crypto.duration_us
+      - ref: crypto.chatman_ticks
+
+      - id: crypto.verified
+        type: boolean
+        brief: "Whether signature verification succeeded"
+        requirement_level: required
+
+      - id: crypto.failure_reason
+        type: string
+        brief: "Reason for verification failure (if verified=false)"
+        examples: ["invalid_signature", "public_key_invalid", "policy_violation"]
+        requirement_level:
+          conditionally_required: "if verified=false"
+
+  # ============================================================================
+  # Key Generation Spans
+  # ============================================================================
+
+  - id: crypto.keygen
+    type: span
+    brief: "Cryptographic keypair generation"
+    note: >
+      Tracks generation of a new keypair.
+      Performance requirement: ≤200μs (2 ticks).
+    attributes:
+      - ref: crypto.algorithm
+
+      - id: crypto.key_type
+        type: string
+        brief: "Key type"
+        examples: ["Classical", "QuantumSafe", "Hybrid"]
+        requirement_level: required
+
+      - id: crypto.public_key_size
+        type: int
+        brief: "Size of public key (bytes)"
+        requirement_level: required
+
+      - id: crypto.secret_key_size
+        type: int
+        brief: "Size of secret key (bytes)"
+        requirement_level: required
+
+      - id: crypto.entropy_source
+        type: string
+        brief: "Entropy source for key generation"
+        examples: ["OsRng", "/dev/urandom", "BCryptGenRandom"]
+        requirement_level: required
+
+      - ref: crypto.duration_us
+      - ref: crypto.chatman_ticks
+
+  # ============================================================================
+  # Hybrid Signature Breakdown
+  # ============================================================================
+
+  - id: crypto.hybrid.breakdown
+    type: span
+    brief: "Hybrid signature breakdown (Ed25519 + Dilithium)"
+    note: >
+      Tracks individual components of a hybrid signature.
+      Both classical and quantum-safe signatures MUST succeed.
+    attributes:
+      - id: crypto.classical_duration_us
+        type: int
+        brief: "Ed25519 signing duration (microseconds)"
+        requirement_level: required
+
+      - id: crypto.quantum_duration_us
+        type: int
+        brief: "Dilithium signing duration (microseconds)"
+        requirement_level: required
+
+      - id: crypto.total_duration_us
+        type: int
+        brief: "Total hybrid signing duration (microseconds)"
+        requirement_level: required
+
+      - id: crypto.classical_verified
+        type: boolean
+        brief: "Whether Ed25519 signature verified"
+        requirement_level: required
+
+      - id: crypto.quantum_verified
+        type: boolean
+        brief: "Whether Dilithium signature verified"
+        requirement_level: required
+
+      - id: crypto.hybrid_verified
+        type: boolean
+        brief: "Whether both signatures verified (AND of classical and quantum)"
+        requirement_level: required
+
+  # ============================================================================
+  # Signature Policy Events
+  # ============================================================================
+
+  - id: crypto.policy.check
+    type: event
+    brief: "Signature policy compliance check"
+    note: >
+      Emitted when checking if a signature complies with current policy.
+      Policy violations are HARD ERRORS (Covenant 2).
+    attributes:
+      - id: crypto.policy
+        type: string
+        brief: "Current signature policy"
+        examples: ["ClassicalOnly", "Hybrid", "QuantumOnly"]
+        requirement_level: required
+
+      - id: crypto.signature_type
+        type: string
+        brief: "Signature type being checked"
+        examples: ["Classical", "Quantum", "Hybrid"]
+        requirement_level: required
+
+      - id: crypto.compliant
+        type: boolean
+        brief: "Whether signature complies with policy"
+        requirement_level: required
+
+      - id: crypto.policy_violation
+        type: string
+        brief: "Policy violation reason (if compliant=false)"
+        requirement_level:
+          conditionally_required: "if compliant=false"
+
+  # ============================================================================
+  # Key Rotation Events
+  # ============================================================================
+
+  - id: crypto.key.rotation
+    type: event
+    brief: "Cryptographic key rotation"
+    note: >
+      Emitted when keys are rotated (automated every 90 days).
+      Old keys remain valid for 30 days after rotation.
+    attributes:
+      - id: crypto.old_key_id
+        type: string
+        brief: "Previous key identifier"
+        requirement_level: required
+
+      - id: crypto.new_key_id
+        type: string
+        brief: "New key identifier"
+        requirement_level: required
+
+      - id: crypto.rotation_reason
+        type: string
+        brief: "Reason for rotation"
+        examples: ["scheduled", "compromised", "policy_change"]
+        requirement_level: required
+
+      - id: crypto.old_key_expiry
+        type: string
+        brief: "Expiry timestamp for old key (ISO 8601)"
+        requirement_level: required
+
+  # ============================================================================
+  # Cryptographic Receipt Events
+  # ============================================================================
+
+  - id: crypto.receipt.generated
+    type: event
+    brief: "Cryptographic receipt generated for workflow execution"
+    note: >
+      Emitted when a workflow execution receipt is generated with
+      hybrid signatures and consensus quorum signatures.
+    attributes:
+      - id: receipt.workflow_id
+        type: string
+        brief: "Workflow UUID"
+        requirement_level: required
+
+      - id: receipt.execution_id
+        type: string
+        brief: "Execution UUID"
+        requirement_level: required
+
+      - id: receipt.state_hash
+        type: string
+        brief: "Blake3 hash of final state"
+        requirement_level: required
+
+      - id: receipt.signature_count
+        type: int
+        brief: "Number of signatures (1 for workflow + N for consensus)"
+        requirement_level: required
+
+      - id: receipt.consensus_algorithm
+        type: string
+        brief: "Consensus algorithm used"
+        examples: ["PBFT", "HotStuff", "Raft"]
+        requirement_level: required
+
+      - id: receipt.quorum_size
+        type: int
+        brief: "Consensus quorum size (2f+1)"
+        requirement_level: required
+
+      - id: receipt.finalized
+        type: boolean
+        brief: "Whether consensus finalized this receipt"
+        requirement_level: required

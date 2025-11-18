@@ -1,0 +1,579 @@
+# OpenTelemetry Weaver Schema for Mesh Networking
+# Version: 1.0.0
+# Status: CANONICAL
+#
+# This schema defines all observable behaviors for KNHK distributed mesh networking.
+# All runtime telemetry MUST conform to this schema (validated by Weaver).
+
+registry_url: https://github.com/knhk/knhk/registry
+
+groups:
+  # ============================================================================
+  # MESH NETWORKING - CORE METRICS
+  # ============================================================================
+
+  - id: mesh.core
+    type: metric_group
+    brief: "Core mesh networking metrics for peer-to-peer communication"
+    attributes:
+      - id: mesh.node_id
+        type: string
+        brief: "Unique identifier for mesh node (agent ID)"
+        requirement_level: required
+
+      - id: mesh.region
+        type: string
+        brief: "Geographic region (us-east-1, eu-west-1, etc.)"
+        requirement_level: required
+
+      - id: mesh.topology
+        type: string
+        brief: "Topology type (flat_mesh, single_region, multi_region, hierarchical)"
+        requirement_level: required
+        examples: ["single_region", "hierarchical"]
+
+    metrics:
+      - id: mesh.peer.count
+        type: gauge
+        brief: "Number of peers in peer registry"
+        instrument: updowncounter
+        unit: "peers"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+          - mesh.topology
+
+      - id: mesh.peer.active
+        type: gauge
+        brief: "Number of active peers (seen in last 30s)"
+        instrument: updowncounter
+        unit: "peers"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+
+      - id: mesh.peer.byzantine
+        type: gauge
+        brief: "Number of detected Byzantine peers"
+        instrument: updowncounter
+        unit: "peers"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+
+      - id: mesh.peer.reputation
+        type: gauge
+        brief: "Peer reputation score (0.0-1.0)"
+        instrument: histogram
+        unit: "score"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+          - ref: peer.id
+            type: string
+            brief: "Peer being scored"
+
+  # ============================================================================
+  # GOSSIP PROTOCOL METRICS
+  # ============================================================================
+
+  - id: mesh.gossip
+    type: metric_group
+    brief: "Gossip protocol metrics for epidemic broadcast"
+    attributes:
+      - id: gossip.phase
+        type: string
+        brief: "Gossip phase (push, pull, merge, converge)"
+        requirement_level: required
+        examples: ["push", "pull", "merge"]
+
+      - id: gossip.round
+        type: int
+        brief: "Gossip round number"
+        requirement_level: required
+
+    metrics:
+      - id: mesh.gossip.round
+        type: gauge
+        brief: "Current gossip round number"
+        instrument: updowncounter
+        unit: "round"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+
+      - id: mesh.gossip.messages.sent
+        type: sum
+        brief: "Number of gossip messages sent"
+        instrument: counter
+        unit: "messages"
+        attributes:
+          - mesh.node_id
+          - gossip.phase
+          - ref: message.type
+            type: string
+            brief: "Message type (push, pull, delta)"
+
+      - id: mesh.gossip.messages.received
+        type: sum
+        brief: "Number of gossip messages received"
+        instrument: counter
+        unit: "messages"
+        attributes:
+          - mesh.node_id
+          - gossip.phase
+          - message.type
+
+      - id: mesh.gossip.latency
+        type: histogram
+        brief: "Gossip message processing latency"
+        instrument: histogram
+        unit: "ticks"
+        attributes:
+          - mesh.node_id
+          - gossip.phase
+        # CRITICAL: Must satisfy Chatman constant (≤8 ticks)
+        bounds: [1, 2, 4, 8, 16, 32, 64]
+        requirement:
+          - condition: "p99 <= 8 ticks"
+            rationale: "Covenant 5: Chatman constant guards all complexity"
+
+      - id: mesh.gossip.convergence.time
+        type: gauge
+        brief: "Time to reach gossip convergence"
+        instrument: histogram
+        unit: "ms"
+        attributes:
+          - mesh.node_id
+          - mesh.topology
+        bounds: [10, 50, 100, 500, 1000, 5000, 10000]
+
+      - id: mesh.gossip.convergence.rounds
+        type: gauge
+        brief: "Number of rounds to convergence"
+        instrument: histogram
+        unit: "rounds"
+        attributes:
+          - mesh.node_id
+          - mesh.topology
+        bounds: [3, 5, 7, 10, 15, 20, 30]
+
+      - id: mesh.gossip.fanout
+        type: gauge
+        brief: "Current gossip fanout (k peers per round)"
+        instrument: updowncounter
+        unit: "peers"
+        attributes:
+          - mesh.node_id
+
+  # ============================================================================
+  # NETWORK PARTITION DETECTION
+  # ============================================================================
+
+  - id: mesh.partition
+    type: metric_group
+    brief: "Network partition detection and recovery metrics"
+    attributes:
+      - id: partition.status
+        type: string
+        brief: "Partition status (healthy, partitioned, recovering)"
+        requirement_level: required
+        examples: ["healthy", "partitioned"]
+
+    metrics:
+      - id: mesh.partition.detected
+        type: sum
+        brief: "Number of network partitions detected"
+        instrument: counter
+        unit: "partitions"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+
+      - id: mesh.partition.reachable_peers
+        type: gauge
+        brief: "Number of reachable peers during partition"
+        instrument: updowncounter
+        unit: "peers"
+        attributes:
+          - mesh.node_id
+          - partition.status
+
+      - id: mesh.partition.quorum_size
+        type: gauge
+        brief: "Required quorum size (n - f where f < n/3)"
+        instrument: updowncounter
+        unit: "peers"
+        attributes:
+          - mesh.node_id
+
+      - id: mesh.partition.recovery.time
+        type: gauge
+        brief: "Time to recover from partition"
+        instrument: histogram
+        unit: "ms"
+        attributes:
+          - mesh.node_id
+        bounds: [100, 500, 1000, 5000, 10000, 30000]
+
+  # ============================================================================
+  # TOPOLOGY MANAGEMENT
+  # ============================================================================
+
+  - id: mesh.topology
+    type: metric_group
+    brief: "Topology management and optimization metrics"
+
+    metrics:
+      - id: mesh.topology.rebalance
+        type: sum
+        brief: "Number of topology rebalances performed"
+        instrument: counter
+        unit: "rebalances"
+        attributes:
+          - mesh.node_id
+
+      - id: mesh.topology.clusters
+        type: gauge
+        brief: "Number of latency clusters detected"
+        instrument: updowncounter
+        unit: "clusters"
+        attributes:
+          - mesh.node_id
+
+      - id: mesh.peer.latency
+        type: histogram
+        brief: "Peer-to-peer latency (RTT)"
+        instrument: histogram
+        unit: "ms"
+        attributes:
+          - mesh.node_id
+          - peer.id
+          - mesh.region
+          - ref: peer.region
+            type: string
+            brief: "Peer's region"
+        bounds: [1, 5, 10, 50, 100, 500, 1000]
+
+      - id: mesh.peer.selection.strategy
+        type: sum
+        brief: "Peer selection strategy used"
+        instrument: counter
+        unit: "selections"
+        attributes:
+          - mesh.node_id
+          - ref: strategy
+            type: string
+            brief: "Selection strategy (random, latency_aware, hybrid, geographic)"
+            examples: ["random", "latency_aware"]
+
+  # ============================================================================
+  # MESSAGE VALIDATION & SECURITY
+  # ============================================================================
+
+  - id: mesh.security
+    type: metric_group
+    brief: "Security and Byzantine fault detection metrics"
+
+    metrics:
+      - id: mesh.message.validated
+        type: sum
+        brief: "Messages validated successfully"
+        instrument: counter
+        unit: "messages"
+        attributes:
+          - mesh.node_id
+          - ref: validation.type
+            type: string
+            brief: "Validation type (signature, timestamp, ordering)"
+
+      - id: mesh.message.rejected
+        type: sum
+        brief: "Messages rejected due to validation failure"
+        instrument: counter
+        unit: "messages"
+        attributes:
+          - mesh.node_id
+          - validation.type
+          - ref: rejection.reason
+            type: string
+            brief: "Rejection reason"
+            examples: ["invalid_signature", "timestamp_out_of_bounds", "unknown_sender"]
+
+      - id: mesh.byzantine.detected
+        type: sum
+        brief: "Byzantine nodes detected"
+        instrument: counter
+        unit: "nodes"
+        attributes:
+          - mesh.node_id
+          - ref: byzantine.type
+            type: string
+            brief: "Type of Byzantine behavior"
+            examples: ["invalid_signature", "message_flooding", "timestamp_manipulation"]
+
+      - id: mesh.security.signature.latency
+        type: histogram
+        brief: "Ed25519 signature verification latency"
+        instrument: histogram
+        unit: "ticks"
+        attributes:
+          - mesh.node_id
+        # CRITICAL: Signature verification must be ≤2 ticks
+        bounds: [1, 2, 4, 8]
+        requirement:
+          - condition: "p99 <= 2 ticks"
+            rationale: "Signature verification is on hot path"
+
+  # ============================================================================
+  # BANDWIDTH & THROUGHPUT
+  # ============================================================================
+
+  - id: mesh.bandwidth
+    type: metric_group
+    brief: "Network bandwidth and throughput metrics"
+
+    metrics:
+      - id: mesh.bandwidth.sent
+        type: sum
+        brief: "Total bytes sent"
+        instrument: counter
+        unit: "bytes"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+
+      - id: mesh.bandwidth.received
+        type: sum
+        brief: "Total bytes received"
+        instrument: counter
+        unit: "bytes"
+        attributes:
+          - mesh.node_id
+          - mesh.region
+
+      - id: mesh.throughput.messages_per_sec
+        type: gauge
+        brief: "Message throughput (messages/sec)"
+        instrument: gauge
+        unit: "messages/s"
+        attributes:
+          - mesh.node_id
+
+      - id: mesh.queue.size
+        type: gauge
+        brief: "Message queue size (unbounded channel)"
+        instrument: updowncounter
+        unit: "messages"
+        attributes:
+          - mesh.node_id
+          - ref: queue.type
+            type: string
+            brief: "Queue type (send, receive)"
+
+  # ============================================================================
+  # HIERARCHICAL TOPOLOGY (Level 1, 2, 3)
+  # ============================================================================
+
+  - id: mesh.hierarchical
+    type: metric_group
+    brief: "Metrics for hierarchical mesh topology (100k-1M agents)"
+    attributes:
+      - id: hierarchy.level
+        type: string
+        brief: "Hierarchy level (edge, aggregator, coordinator)"
+        requirement_level: required
+        examples: ["edge", "aggregator", "coordinator"]
+
+      - id: hierarchy.parent_id
+        type: string
+        brief: "Parent node ID in hierarchy"
+        requirement_level: optional
+
+    metrics:
+      - id: mesh.hierarchy.agents
+        type: gauge
+        brief: "Number of agents managed by this node"
+        instrument: updowncounter
+        unit: "agents"
+        attributes:
+          - mesh.node_id
+          - hierarchy.level
+
+      - id: mesh.hierarchy.aggregation.latency
+        type: histogram
+        brief: "State aggregation latency"
+        instrument: histogram
+        unit: "ms"
+        attributes:
+          - mesh.node_id
+          - hierarchy.level
+        bounds: [10, 50, 100, 500, 1000]
+
+      - id: mesh.hierarchy.state.size
+        type: gauge
+        brief: "Aggregated state size"
+        instrument: histogram
+        unit: "bytes"
+        attributes:
+          - mesh.node_id
+          - hierarchy.level
+
+  # ============================================================================
+  # SPANS (Distributed Tracing)
+  # ============================================================================
+
+  - id: mesh.spans
+    type: span_group
+    brief: "Distributed tracing spans for mesh operations"
+
+    spans:
+      - id: mesh.gossip.round
+        brief: "Single gossip round (push-pull-merge)"
+        attributes:
+          - mesh.node_id
+          - gossip.round
+          - gossip.fanout
+        events:
+          - name: gossip.push.start
+          - name: gossip.push.complete
+          - name: gossip.pull.start
+          - name: gossip.pull.complete
+          - name: gossip.merge.start
+          - name: gossip.merge.complete
+          - name: gossip.converged
+
+      - id: mesh.message.send
+        brief: "Send message to peer"
+        attributes:
+          - mesh.node_id
+          - peer.id
+          - message.type
+          - message.size_bytes
+
+      - id: mesh.message.receive
+        brief: "Receive and validate message"
+        attributes:
+          - mesh.node_id
+          - peer.id
+          - message.type
+          - validation.result
+
+      - id: mesh.partition.detection
+        brief: "Detect network partition"
+        attributes:
+          - mesh.node_id
+          - partition.status
+          - mesh.partition.reachable_peers
+          - mesh.partition.quorum_size
+
+      - id: mesh.topology.rebalance
+        brief: "Rebalance topology based on latency"
+        attributes:
+          - mesh.node_id
+          - mesh.topology.clusters
+          - rebalance.duration_ms
+
+  # ============================================================================
+  # LOGS (Structured Logging)
+  # ============================================================================
+
+  - id: mesh.logs
+    type: log_group
+    brief: "Structured logs for mesh events"
+
+    logs:
+      - id: mesh.peer.registered
+        severity: info
+        brief: "New peer registered"
+        attributes:
+          - mesh.node_id
+          - peer.id
+          - peer.region
+
+      - id: mesh.peer.removed
+        severity: info
+        brief: "Peer removed (timeout or explicit)"
+        attributes:
+          - mesh.node_id
+          - peer.id
+          - removal.reason
+
+      - id: mesh.byzantine.detected
+        severity: error
+        brief: "Byzantine node detected"
+        attributes:
+          - mesh.node_id
+          - byzantine.peer_id
+          - byzantine.type
+          - byzantine.evidence
+
+      - id: mesh.partition.detected
+        severity: warn
+        brief: "Network partition detected"
+        attributes:
+          - mesh.node_id
+          - partition.reachable_peers
+          - partition.quorum_size
+
+      - id: mesh.partition.recovered
+        severity: info
+        brief: "Partition healed"
+        attributes:
+          - mesh.node_id
+          - partition.recovery_time_ms
+
+      - id: mesh.gossip.converged
+        severity: info
+        brief: "Gossip reached convergence"
+        attributes:
+          - mesh.node_id
+          - gossip.round
+          - convergence.time_ms
+
+# ============================================================================
+# VALIDATION RULES (Covenant Enforcement)
+# ============================================================================
+
+validation_rules:
+  - id: chatman_constant_gossip
+    covenant: 5
+    description: "Gossip message processing must be ≤8 ticks"
+    metric: mesh.gossip.latency
+    condition: "p99 <= 8"
+    severity: error
+
+  - id: chatman_constant_signature
+    covenant: 5
+    description: "Signature verification must be ≤2 ticks"
+    metric: mesh.security.signature.latency
+    condition: "p99 <= 2"
+    severity: error
+
+  - id: observability_completeness
+    covenant: 6
+    description: "All mesh operations must emit telemetry"
+    condition: "all spans must have corresponding metrics"
+    severity: error
+
+  - id: convergence_time
+    covenant: 5
+    description: "Gossip convergence must complete in O(log n) rounds"
+    metric: mesh.gossip.convergence.rounds
+    condition: "p99 <= log2(peer_count) + 3"
+    severity: warn
+
+# ============================================================================
+# SCHEMA VERSION
+# ============================================================================
+
+schema_version: 1.0.0
+doctrine_version: DOCTRINE_2027 v1.0.0
+covenant_alignment:
+  - covenant: 5
+    principle: "Chatman constant ≤8 ticks"
+    metrics: ["mesh.gossip.latency", "mesh.security.signature.latency"]
+
+  - covenant: 6
+    principle: "All observations drive everything"
+    coverage: "100% of mesh operations observable"

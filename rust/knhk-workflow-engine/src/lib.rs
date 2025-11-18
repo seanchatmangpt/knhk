@@ -83,6 +83,8 @@ pub mod error;
 pub mod events;
 pub mod execution;
 pub mod executor;
+/// Federated learning for AI agent swarms
+pub mod federated;
 pub mod ggen;
 /// Guard enforcement system (Q invariants)
 pub mod guards;

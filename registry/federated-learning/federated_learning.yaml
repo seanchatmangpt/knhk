@@ -1,0 +1,265 @@
+# OpenTelemetry Weaver Schema for Federated Learning
+#
+# This schema defines the observability contract for federated learning operations
+# in the KNHK AI agent swarm system.
+#
+# Validation:
+#   weaver registry check -r registry/federated-learning/
+#   weaver registry live-check --registry registry/federated-learning/
+
+file_format: 1.1.0
+schema_url: https://knhk.io/schemas/federated-learning/1.0.0
+parent_schema_url: https://opentelemetry.io/schemas/1.21.0
+
+groups:
+  # ============================================================================
+  # Attribute Group: Federated Learning Operations
+  # ============================================================================
+  - id: federated.learning
+    type: attribute_group
+    prefix: federated.learning
+    brief: "Attributes for federated learning operations in AI agent swarms"
+    attributes:
+      - id: round
+        type: int
+        brief: "Current federated learning round number"
+        requirement_level: required
+        examples: [1, 10, 100]
+
+      - id: agent_id
+        type: string
+        brief: "Unique identifier for the agent"
+        requirement_level: required
+        examples: ["agent_1", "agent_42", "agent_alice"]
+
+      - id: gradient.byzantine
+        type: string
+        brief: "Byzantine gradient status"
+        requirement_level: required
+        examples: ["clean", "poisoned", "detected_and_rejected"]
+        note: "Indicates whether gradient passed Byzantine tolerance checks"
+
+      - id: convergence.kl_divergence
+        type: double
+        brief: "KL divergence between old and new model"
+        requirement_level: required
+        note: "Convergence threshold: < 0.01"
+
+      - id: convergence.status
+        type: string
+        brief: "Convergence status"
+        requirement_level: required
+        examples: ["converged", "training"]
+
+      - id: aggregation.method
+        type: string
+        brief: "Aggregation method used"
+        requirement_level: optional
+        examples: ["median", "average", "trimmed_mean"]
+
+      - id: model.dimension
+        type: int
+        brief: "Dimensionality of model parameters"
+        requirement_level: optional
+        examples: [1000, 10000, 100000]
+
+  # ============================================================================
+  # Metric Group: Federated Learning Performance
+  # ============================================================================
+  - id: federated.learning.metrics
+    type: metric
+    metric_name: federated.learning
+    brief: "Metrics for federated learning performance and convergence"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: federated.learning.round
+      - ref: federated.learning.agent_id
+
+  - id: federated.learning.local_loss
+    type: metric
+    metric_name: federated.learning.local_loss
+    brief: "Local training loss per agent"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: federated.learning.agent_id
+      - ref: federated.learning.round
+
+  - id: federated.learning.global_loss
+    type: metric
+    metric_name: federated.learning.global_loss
+    brief: "Global loss after aggregation"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: federated.learning.round
+
+  - id: federated.learning.gradient_transmission_count
+    type: metric
+    metric_name: federated.learning.gradient_transmission_count
+    brief: "Number of gradients transmitted"
+    instrument: counter
+    unit: "{count}"
+    attributes:
+      - ref: federated.learning.round
+
+  - id: federated.learning.byzantine_detection_count
+    type: metric
+    metric_name: federated.learning.byzantine_detection_count
+    brief: "Number of Byzantine gradients detected and rejected"
+    instrument: counter
+    unit: "{count}"
+    attributes:
+      - ref: federated.learning.round
+
+  - id: federated.learning.convergence_rounds
+    type: metric
+    metric_name: federated.learning.convergence_rounds
+    brief: "Number of rounds until convergence"
+    instrument: gauge
+    unit: "{rounds}"
+
+  - id: federated.learning.round_duration
+    type: metric
+    metric_name: federated.learning.round_duration
+    brief: "Duration of federated learning round"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: federated.learning.round
+
+  - id: federated.learning.local_training_duration
+    type: metric
+    metric_name: federated.learning.local_training_duration
+    brief: "Duration of local training phase"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: federated.learning.agent_id
+      - ref: federated.learning.round
+
+  - id: federated.learning.aggregation_duration
+    type: metric
+    metric_name: federated.learning.aggregation_duration
+    brief: "Duration of gradient aggregation"
+    instrument: histogram
+    unit: "ms"
+    attributes:
+      - ref: federated.learning.round
+      - ref: federated.learning.aggregation.method
+
+  - id: federated.learning.gradient_norm
+    type: metric
+    metric_name: federated.learning.gradient_norm
+    brief: "L2 norm of gradient vector"
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: federated.learning.agent_id
+      - ref: federated.learning.round
+
+  # ============================================================================
+  # Span Definitions: Federated Learning Operations
+  # ============================================================================
+  - id: federated.learning.span
+    type: span
+    span_name: federated.learning
+    brief: "Span for federated learning operations"
+    span_kind: internal
+    attributes:
+      - ref: federated.learning.round
+      - ref: federated.learning.agent_id
+    events:
+      - name: local_training_started
+        brief: "Local training phase started"
+        attributes:
+          - id: batch_size
+            type: int
+            brief: "Training batch size"
+          - id: num_epochs
+            type: int
+            brief: "Number of local training epochs"
+
+      - name: local_training_completed
+        brief: "Local training phase completed"
+        attributes:
+          - id: loss
+            type: double
+            brief: "Final training loss"
+          - id: duration_ms
+            type: int
+            brief: "Training duration in milliseconds"
+
+      - name: gradients_computed
+        brief: "Gradients computed from local model"
+        attributes:
+          - id: gradient_dimension
+            type: int
+            brief: "Dimensionality of gradient vector"
+          - id: gradient_norm
+            type: double
+            brief: "L2 norm of gradient"
+
+      - name: byzantine_detected
+        brief: "Byzantine agents detected during aggregation"
+        attributes:
+          - id: byzantine_agent_ids
+            type: string[]
+            brief: "IDs of detected Byzantine agents"
+          - id: detection_method
+            type: string
+            brief: "Method used for detection"
+            examples: ["z-score", "median", "outlier"]
+
+      - name: convergence_checked
+        brief: "Convergence validation performed"
+        attributes:
+          - ref: federated.learning.convergence.kl_divergence
+          - ref: federated.learning.convergence.status
+          - id: threshold
+            type: double
+            brief: "KL divergence threshold for convergence"
+
+      - name: model_synchronized
+        brief: "Global model synchronized across agents"
+        attributes:
+          - id: model_size_bytes
+            type: int
+            brief: "Size of synchronized model in bytes"
+          - id: agents_synchronized
+            type: int
+            brief: "Number of agents synchronized"
+
+      - name: aggregation_completed
+        brief: "Gradient aggregation completed"
+        attributes:
+          - id: num_agents
+            type: int
+            brief: "Number of agents participated"
+          - id: byzantine_detected
+            type: int
+            brief: "Number of Byzantine agents detected"
+          - id: dimension
+            type: int
+            brief: "Gradient dimension"
+
+# ============================================================================
+# Resources
+# ============================================================================
+resource_attributes:
+  - id: federated.swarm.id
+    type: string
+    brief: "Unique identifier for the federated swarm"
+    requirement_level: required
+
+  - id: federated.swarm.size
+    type: int
+    brief: "Total number of agents in swarm"
+    requirement_level: required
+
+  - id: federated.topology
+    type: string
+    brief: "Network topology for federated learning"
+    requirement_level: optional
+    examples: ["centralized", "decentralized", "hierarchical"]

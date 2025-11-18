@@ -1,0 +1,251 @@
+# OpenTelemetry Semantic Conventions for KNHK Consensus
+#
+# This schema defines the telemetry for Byzantine consensus operations.
+# Weaver validation ensures runtime telemetry matches these declarations.
+#
+# DOCTRINE ALIGNMENT:
+# - Covenant 6: Observations Drive Everything - All consensus events emit telemetry
+# - Covenant 2: Invariants Are Law - Schema validation is a hard invariant
+
+groups:
+  # ============================================================================
+  # PBFT Consensus Spans
+  # ============================================================================
+
+  - id: consensus.pbft.round
+    type: span
+    brief: "PBFT consensus round (pre-prepare → prepare → commit → execute)"
+    note: >
+      Tracks a complete PBFT consensus round. Emitted by the leader node.
+      Performance requirement: ≤50ms for single-region consensus.
+    attributes:
+      - id: consensus.algorithm
+        type: string
+        brief: "Consensus algorithm name"
+        examples: ["PBFT", "HotStuff", "Raft"]
+        requirement_level: required
+
+      - id: consensus.node_id
+        type: int
+        brief: "This node's unique identifier"
+        requirement_level: required
+
+      - id: consensus.view
+        type: int
+        brief: "Current view number (for leader rotation)"
+        requirement_level: required
+
+      - id: consensus.sequence
+        type: int
+        brief: "Sequence number of this consensus round"
+        requirement_level: required
+
+      - id: consensus.phase
+        type: string
+        brief: "Current PBFT phase"
+        examples: ["pre-prepare", "prepare", "commit", "execute"]
+        requirement_level: required
+
+      - id: consensus.leader_id
+        type: int
+        brief: "Leader node ID for this view"
+        requirement_level: required
+
+      - id: consensus.quorum_size
+        type: int
+        brief: "Required quorum size (2f+1)"
+        requirement_level: required
+
+      - id: consensus.received_votes
+        type: int
+        brief: "Number of votes received in current phase"
+        requirement_level: required
+
+      - id: consensus.command_hash
+        type: string
+        brief: "Blake3 hash of the command being proposed"
+        requirement_level: required
+
+      - id: consensus.state_hash_before
+        type: string
+        brief: "State hash before applying command"
+        requirement_level: required
+
+      - id: consensus.state_hash_after
+        type: string
+        brief: "State hash after applying command"
+        requirement_level: required
+
+  # ============================================================================
+  # HotStuff Consensus Spans
+  # ============================================================================
+
+  - id: consensus.hotstuff.block
+    type: span
+    brief: "HotStuff block proposal and voting"
+    note: >
+      Tracks a single HotStuff block through the 3-phase pipeline.
+      Finality requires 3 consecutive blocks.
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.node_id
+      - ref: consensus.view
+
+      - id: consensus.block_height
+        type: int
+        brief: "Block height in the chain"
+        requirement_level: required
+
+      - id: consensus.block_hash
+        type: string
+        brief: "Blake3 hash of this block"
+        requirement_level: required
+
+      - id: consensus.parent_hash
+        type: string
+        brief: "Blake3 hash of parent block"
+        requirement_level: required
+
+      - id: consensus.qc_hash
+        type: string
+        brief: "Blake3 hash of the quorum certificate"
+        requirement_level: required
+
+      - id: consensus.finalized
+        type: boolean
+        brief: "Whether this block is finalized (3-chain rule)"
+        requirement_level: required
+
+  # ============================================================================
+  # Raft Consensus Spans
+  # ============================================================================
+
+  - id: consensus.raft.log_entry
+    type: span
+    brief: "Raft log entry replication"
+    note: >
+      Tracks replication of a single log entry from leader to followers.
+      Performance requirement: ≤5ms for single-region consensus.
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.node_id
+
+      - id: consensus.term
+        type: int
+        brief: "Current term number"
+        requirement_level: required
+
+      - id: consensus.log_index
+        type: int
+        brief: "Index of this log entry"
+        requirement_level: required
+
+      - id: consensus.commit_index
+        type: int
+        brief: "Highest committed log index"
+        requirement_level: required
+
+      - id: consensus.is_leader
+        type: boolean
+        brief: "Whether this node is the leader"
+        requirement_level: required
+
+  # ============================================================================
+  # Consensus Finality Events
+  # ============================================================================
+
+  - id: consensus.finality
+    type: event
+    brief: "Consensus finality achieved (command committed)"
+    note: >
+      Emitted when a command is committed to the log and can never be reverted.
+      This is the key safety property of consensus.
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.node_id
+      - ref: consensus.sequence
+
+      - id: consensus.finalized_hash
+        type: string
+        brief: "Blake3 hash of the finalized value"
+        requirement_level: required
+
+      - id: consensus.quorum_signatures
+        type: int
+        brief: "Number of quorum signatures (should be ≥2f+1)"
+        requirement_level: required
+
+      - id: consensus.latency_ms
+        type: int
+        brief: "Time from proposal to finality (milliseconds)"
+        requirement_level: required
+
+  # ============================================================================
+  # View Change Events
+  # ============================================================================
+
+  - id: consensus.view_change
+    type: event
+    brief: "View change initiated (leader rotation or timeout)"
+    note: >
+      Emitted when a view change occurs due to leader failure or timeout.
+      Ensures liveness in the presence of Byzantine nodes.
+    attributes:
+      - ref: consensus.algorithm
+      - ref: consensus.node_id
+
+      - id: consensus.old_view
+        type: int
+        brief: "Previous view number"
+        requirement_level: required
+
+      - id: consensus.new_view
+        type: int
+        brief: "New view number"
+        requirement_level: required
+
+      - id: consensus.old_leader
+        type: int
+        brief: "Previous leader node ID"
+        requirement_level: required
+
+      - id: consensus.new_leader
+        type: int
+        brief: "New leader node ID"
+        requirement_level: required
+
+      - id: consensus.reason
+        type: string
+        brief: "Reason for view change"
+        examples: ["timeout", "leader_failure", "equivocation"]
+        requirement_level: required
+
+  # ============================================================================
+  # State Machine Transition Events
+  # ============================================================================
+
+  - id: consensus.state_transition
+    type: span
+    brief: "State machine transition (apply command)"
+    note: >
+      Tracks execution of a single command on the consensus state machine.
+      MUST be deterministic (same state + command → same result).
+    attributes:
+      - ref: consensus.sequence
+      - ref: consensus.state_hash_before
+      - ref: consensus.state_hash_after
+
+      - id: state.command_type
+        type: string
+        brief: "Type of command being applied"
+        requirement_level: required
+
+      - id: state.command_size
+        type: int
+        brief: "Size of command in bytes"
+        requirement_level: required
+
+      - id: state.apply_duration_us
+        type: int
+        brief: "Time to apply command (microseconds)"
+        requirement_level: required
