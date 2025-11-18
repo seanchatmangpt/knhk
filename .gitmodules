@@ -1,0 +1,3 @@
+[submodule "vendors/yawl-editor"]
+	path = vendors/yawl-editor
+	url = https://github.com/yawlfoundation/editor.git
