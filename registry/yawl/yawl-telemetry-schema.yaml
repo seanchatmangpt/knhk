@@ -1,0 +1,379 @@
+# Weaver-compatible OpenTelemetry Semantic Convention Schema for YAWL Workflows
+# DOCTRINE ALIGNMENT:
+# - Covenant 1 (O ⊨ Σ): Turtle is definition and cause - this schema defines observable behavior
+# - Covenant 2 (Q ⊨ Implementation): All operations respect invariants (≤8 ticks hot path)
+# - Covenant 6 (O ⊨ Discovery): Observations drive everything - all behavior is observable
+
+schema_url: http://bitflow.ai/schemas/yawl/v1.0.0
+file_format: "1.1.0"
+
+groups:
+  - id: yawl.workflow
+    type: resource
+    brief: "YAWL workflow execution resource attributes"
+    attributes:
+      - id: yawl.workflow.id
+        type: string
+        brief: "Unique workflow instance identifier"
+        examples: ["wf-12345", "order-processing-001"]
+        requirement_level: required
+
+      - id: yawl.workflow.name
+        type: string
+        brief: "Human-readable workflow name"
+        examples: ["Order Processing", "Customer Onboarding"]
+        requirement_level: required
+
+      - id: yawl.workflow.version
+        type: string
+        brief: "Workflow definition version"
+        examples: ["1.0.0", "2.1.3"]
+        requirement_level: recommended
+
+      - id: yawl.workflow.status
+        type:
+          members:
+            - id: running
+              value: "running"
+              brief: "Workflow is currently executing"
+            - id: success
+              value: "success"
+              brief: "Workflow completed successfully"
+            - id: failed
+              value: "failed"
+              brief: "Workflow failed with error"
+            - id: cancelled
+              value: "cancelled"
+              brief: "Workflow was cancelled"
+        brief: "Current workflow execution status"
+        requirement_level: required
+
+  - id: yawl.task
+    type: span
+    brief: "YAWL task execution"
+    span_kind: internal
+    attributes:
+      - id: yawl.task.id
+        type: string
+        brief: "Unique task identifier"
+        examples: ["task-001", "validate-order"]
+        requirement_level: required
+
+      - id: yawl.task.name
+        type: string
+        brief: "Human-readable task name"
+        examples: ["Validate Order", "Process Payment"]
+        requirement_level: required
+
+      - id: yawl.task.pattern
+        type: string
+        brief: "YAWL pattern type"
+        examples: ["Sequence", "ParallelSplit", "Synchronization"]
+        requirement_level: required
+
+      - id: yawl.task.pattern_number
+        type: int
+        brief: "W3C workflow pattern number (1-43)"
+        examples: [1, 2, 3, 43]
+        requirement_level: required
+
+      - id: yawl.task.status
+        type:
+          members:
+            - id: success
+              value: "success"
+              brief: "Task completed successfully"
+            - id: failed
+              value: "failed"
+              brief: "Task execution failed"
+        brief: "Task execution status"
+        requirement_level: required
+
+  - id: yawl.pattern
+    type: span
+    brief: "YAWL pattern execution"
+    span_kind: internal
+    attributes:
+      - id: yawl.pattern.type
+        type: string
+        brief: "Pattern type name"
+        examples: ["Sequence", "ParallelSplit", "ExclusiveChoice"]
+        requirement_level: required
+
+      - id: yawl.pattern.number
+        type: int
+        brief: "W3C pattern number"
+        examples: [1, 2, 3, 43]
+        requirement_level: required
+
+  - id: yawl.transition
+    type: span
+    brief: "YAWL transition firing"
+    span_kind: internal
+    attributes:
+      - id: yawl.transition.from
+        type: string
+        brief: "Source task ID"
+        examples: ["task-001"]
+        requirement_level: required
+
+      - id: yawl.transition.to
+        type: string
+        brief: "Destination task ID"
+        examples: ["task-002"]
+        requirement_level: required
+
+      - id: yawl.transition.condition
+        type: string
+        brief: "Transition condition expression (if any)"
+        examples: ["amount > 1000", "status == 'approved'"]
+        requirement_level: recommended
+
+  - id: yawl.token
+    type: event
+    brief: "YAWL token lifecycle events"
+    attributes:
+      - id: yawl.token.id
+        type: string
+        brief: "Unique token identifier"
+        examples: ["token-001", "tk-12345"]
+        requirement_level: required
+
+      - id: yawl.token.source_task
+        type: string
+        brief: "Task that created the token"
+        examples: ["task-001"]
+        requirement_level: recommended
+
+      - id: yawl.token.consuming_task
+        type: string
+        brief: "Task consuming the token"
+        examples: ["task-002"]
+        requirement_level: recommended
+
+  - id: yawl.operation
+    type: span
+    brief: "Generic YAWL operation"
+    attributes:
+      - id: yawl.operation.type
+        type:
+          members:
+            - id: workflow
+              value: "workflow"
+              brief: "Workflow-level operation"
+            - id: task
+              value: "task"
+              brief: "Task-level operation"
+            - id: pattern
+              value: "pattern"
+              brief: "Pattern execution"
+            - id: transition
+              value: "transition"
+              brief: "Transition firing"
+        brief: "Type of operation"
+        requirement_level: required
+
+# Metric Groups
+metrics:
+  - id: yawl.workflow.duration
+    type: histogram
+    unit: ms
+    brief: "Workflow execution duration in milliseconds"
+    note: |
+      Measures the total time from workflow start to completion.
+      This metric helps identify slow workflows and track performance trends.
+    attributes:
+      - ref: yawl.workflow.id
+      - ref: yawl.workflow.status
+
+  - id: yawl.task.execution_time
+    type: histogram
+    unit: ms
+    brief: "Task execution time in milliseconds"
+    note: |
+      Measures the time taken to execute a single task.
+      Useful for identifying bottlenecks and optimizing task implementations.
+    attributes:
+      - ref: yawl.task.id
+      - ref: yawl.task.pattern
+      - ref: yawl.task.pattern_number
+      - ref: yawl.task.status
+
+  - id: yawl.workflows.active
+    type: gauge
+    unit: "{workflows}"
+    brief: "Number of currently active workflows"
+    note: |
+      Tracks the number of workflow instances currently executing.
+      Helps monitor system load and capacity planning.
+
+  - id: yawl.tokens.count
+    type: gauge
+    unit: "{tokens}"
+    brief: "Number of active tokens in the workflow"
+    note: |
+      Tracks the number of tokens flowing through the workflow.
+      High token counts may indicate bottlenecks or parallel execution.
+    attributes:
+      - ref: yawl.workflow.id
+
+  - id: yawl.pattern.executions
+    type: counter
+    unit: "{executions}"
+    brief: "Number of pattern executions"
+    note: |
+      Counts how many times each YAWL pattern type has been executed.
+      Useful for understanding workflow complexity and pattern usage.
+    attributes:
+      - ref: yawl.pattern.type
+      - ref: yawl.pattern.number
+
+  - id: yawl.actor.message_latency
+    type: histogram
+    unit: us
+    brief: "Actor message processing latency in microseconds"
+    note: |
+      Measures the time taken to process actor messages in the workflow engine.
+      CRITICAL: Must respect Chatman Constant (≤8 ticks = ~2ns on modern hardware).
+    attributes:
+      - id: yawl.actor.id
+        type: string
+        brief: "Actor identifier"
+        requirement_level: required
+      - id: yawl.message.type
+        type: string
+        brief: "Message type"
+        requirement_level: required
+
+  - id: yawl.errors
+    type: counter
+    unit: "{errors}"
+    brief: "Number of errors encountered"
+    note: |
+      Tracks errors during workflow execution.
+      Essential for monitoring workflow reliability and debugging.
+    attributes:
+      - id: yawl.error.type
+        type: string
+        brief: "Error type or pattern"
+        requirement_level: required
+      - id: yawl.error.severity
+        type:
+          members:
+            - id: warning
+              value: "warning"
+            - id: error
+              value: "error"
+            - id: critical
+              value: "critical"
+        brief: "Error severity level"
+        requirement_level: required
+      - ref: yawl.pattern.type
+        requirement_level: recommended
+
+# Event Groups
+events:
+  - id: yawl.workflow.started
+    name: "yawl.workflow.started"
+    brief: "Workflow execution started"
+    attributes:
+      - ref: yawl.workflow.id
+
+  - id: yawl.workflow.completed
+    name: "yawl.workflow.completed"
+    brief: "Workflow execution completed"
+    attributes:
+      - ref: yawl.workflow.id
+      - id: yawl.workflow.duration_ms
+        type: int
+        brief: "Total workflow duration in milliseconds"
+
+  - id: yawl.workflow.failed
+    name: "yawl.workflow.failed"
+    brief: "Workflow execution failed"
+    attributes:
+      - ref: yawl.workflow.id
+      - id: yawl.error.message
+        type: string
+        brief: "Error message"
+
+  - id: yawl.task.started
+    name: "yawl.task.started"
+    brief: "Task execution started"
+    attributes:
+      - ref: yawl.task.id
+      - ref: yawl.task.pattern
+
+  - id: yawl.task.completed
+    name: "yawl.task.completed"
+    brief: "Task execution completed"
+    attributes:
+      - ref: yawl.task.id
+      - id: yawl.task.duration_ms
+        type: int
+        brief: "Task duration in milliseconds"
+      - id: yawl.task.output
+        type: string
+        brief: "Task output data (optional)"
+        requirement_level: opt_in
+
+  - id: yawl.task.failed
+    name: "yawl.task.failed"
+    brief: "Task execution failed"
+    attributes:
+      - ref: yawl.task.id
+      - ref: yawl.error.message
+
+  - id: yawl.token.created
+    name: "yawl.token.created"
+    brief: "Token created in workflow"
+    attributes:
+      - ref: yawl.token.id
+      - ref: yawl.token.source_task
+
+  - id: yawl.token.consumed
+    name: "yawl.token.consumed"
+    brief: "Token consumed by task"
+    attributes:
+      - ref: yawl.token.id
+      - ref: yawl.token.consuming_task
+
+  - id: yawl.transition.fired
+    name: "yawl.transition.fired"
+    brief: "Workflow transition fired"
+    attributes:
+      - ref: yawl.transition.from
+      - ref: yawl.transition.to
+      - ref: yawl.transition.condition
+
+# Span names (semantic conventions)
+spans:
+  - id: yawl.workflow.execute
+    span_name: "yawl.workflow.execute"
+    brief: "Execute a YAWL workflow"
+    events:
+      - yawl.workflow.started
+      - yawl.workflow.completed
+      - yawl.workflow.failed
+    extends: yawl.workflow
+
+  - id: yawl.task.execute
+    span_name: "yawl.task.execute"
+    brief: "Execute a YAWL task"
+    events:
+      - yawl.task.started
+      - yawl.task.completed
+      - yawl.task.failed
+    extends: yawl.task
+
+  - id: yawl.pattern.execute
+    span_name: "yawl.pattern.execute"
+    brief: "Execute a YAWL pattern"
+    extends: yawl.pattern
+
+  - id: yawl.transition.fire
+    span_name: "yawl.transition.fire"
+    brief: "Fire a workflow transition"
+    events:
+      - yawl.transition.fired
+    extends: yawl.transition

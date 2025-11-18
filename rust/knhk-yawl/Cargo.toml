@@ -1,0 +1,57 @@
+[package]
+name = "knhk-yawl"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["KNHK Team"]
+description = "Core YAWL (Yet Another Workflow Language) data structures and execution engine"
+repository = "https://github.com/knhk/knhk"
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Hashing & crypto
+blake3 = { workspace = true }
+
+# Collections & data structures
+hashbrown = { workspace = true }
+ahash = { workspace = true }
+
+# OpenTelemetry - COVENANT 6: Observations drive everything
+tracing = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+
+# KNHK infrastructure
+knhk-otel = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+futures = { workspace = true }
+async-trait = "0.1"
+
+# Concurrency
+dashmap = "5.5"
+parking_lot = "0.12"
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+# Testing - Following Chicago TDD principles
+criterion = { workspace = true }
+proptest = { workspace = true }
+tempfile = { workspace = true }
+tokio-test = { workspace = true }
+
+[lib]
+name = "knhk_yawl"
+path = "src/lib.rs"

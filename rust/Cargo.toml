@@ -12,6 +12,7 @@ members = [
     "knhk-config",
     "knhk-patterns",          # Van der Aalst workflow patterns
     "knhk-workflow-engine",   # Enterprise YAWL workflow engine
+    "knhk-yawl",              # YAWL workflows with comprehensive OTEL telemetry
     "knhk-process-mining",    # Process mining and workflow analytics
     "knhk-autonomic",         # MAPE-K Autonomic Knowledge Integration (Covenant 3)
     "knhk-consensus",         # Phase 8: Consensus and replication (Raft, Byzantine)
