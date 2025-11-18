@@ -43,5 +43,5 @@ export async function POST(request: NextRequest) {
     messages,
   })
 
-  return result.toDataStreamResponse()
+  return result.toTextStreamResponse()
 }

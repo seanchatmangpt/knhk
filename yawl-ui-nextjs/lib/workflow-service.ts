@@ -238,7 +238,7 @@ export class WorkflowService {
     }
 
     if (taskCount > 5) {
-      patterns.push('multi-instance', 'synchronization')
+      patterns.push('parallel', 'synchronization')
     }
 
     return patterns

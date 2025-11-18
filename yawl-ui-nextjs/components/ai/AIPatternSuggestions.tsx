@@ -26,19 +26,16 @@ export function AIPatternSuggestions({
 }: AIPatternSuggestionsProps) {
   const {
     isGenerating,
-    pattern,
+    generatedPattern,
     explanation,
-    steps,
+    implementationSteps,
     suggestPattern,
   } = useAIPatternGenerator()
 
   useEffect(() => {
     // Suggest patterns on mount
-    const parallelizability = specification.tasks.length > 3 ? 'high' : 'low'
     suggestPattern(
-      `Workflow with ${specification.tasks.length} tasks`,
-      specification.tasks.length,
-      parallelizability
+      `Suggest a control flow pattern for a workflow with ${specification.tasks.length} tasks`
     )
   }, [specification.tasks.length, suggestPattern])
 
@@ -50,10 +47,10 @@ export function AIPatternSuggestions({
             <Sparkles className="h-5 w-5" />
             <CardTitle className="text-lg">AI Pattern Recommendations</CardTitle>
           </div>
-          {pattern && (
+          {generatedPattern && (
             <Button
               size="sm"
-              onClick={() => onPatternSelected?.(pattern)}
+              onClick={() => onPatternSelected?.(generatedPattern)}
             >
               <Zap className="h-3 w-3 mr-1" />
               Apply Pattern
@@ -70,23 +67,23 @@ export function AIPatternSuggestions({
               Analyzing workflow...
             </p>
           </div>
-        ) : pattern ? (
+        ) : generatedPattern ? (
           <div className="space-y-4">
             {/* Pattern Badge */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <p className="font-semibold">{pattern}</p>
+                <p className="font-semibold">{generatedPattern}</p>
               </div>
               <p className="text-sm text-gray-700">{explanation}</p>
             </div>
 
             {/* Implementation Steps */}
-            {steps.length > 0 && (
+            {implementationSteps.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-sm">Implementation Steps</h4>
                 <ol className="space-y-1">
-                  {steps.map((step, idx) => (
+                  {implementationSteps.map((step, idx) => (
                     <li key={idx} className="text-sm flex gap-2">
                       <span className="font-medium text-blue-600">
                         {idx + 1}.

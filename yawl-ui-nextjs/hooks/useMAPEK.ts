@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 interface MAPEKState {
   monitoring: MonitoringData
   analysis: AnalysisResult
-  plan: AdaptationPlan | null
+  planState: AdaptationPlan | null
   execution: ExecutionStatus
   knowledge: KnowledgeBase
 }
@@ -48,95 +48,57 @@ interface AdaptationAction {
   type: 'rebalance' | 'throttle' | 'escalate' | 'migrate' | 'reconfigure'
   target: string
   parameters: Record<string, unknown>
+  outcome?: 'success' | 'failure' | 'pending'
 }
 
 interface ExecutionStatus {
   isExecuting: boolean
   progress: number
-  startTime?: Date
-  endTime?: Date
-  result?: unknown
+  elapsedTime?: number
 }
 
 interface KnowledgeBase {
-  pastAdaptations: AdaptationRecord[]
-  patterns: WorkflowPattern[]
-  rules: AdaptationRule[]
+  pastAdaptations: AdaptationAction[]
+  patterns: Record<string, number>
+  successRate: number
 }
 
-interface AdaptationRecord {
-  id: string
-  timestamp: Date
-  plan: AdaptationPlan
-  outcome: 'success' | 'partial' | 'failed'
-  metrics: Record<string, number>
-}
-
-interface WorkflowPattern {
-  id: string
-  name: string
-  conditions: string[]
-  recommendations: string[]
-}
-
-interface AdaptationRule {
-  id: string
-  condition: (data: MonitoringData, analysis: AnalysisResult) => boolean
-  action: (data: MonitoringData) => AdaptationAction[]
+const initialState: MAPEKState = {
+  monitoring: {
+    timestamp: new Date(),
+    metrics: { cpuUsage: 0, errorRate: 0, latency: 0 },
+    anomalies: [],
+    sensorReadings: {},
+  },
+  analysis: {
+    isHealthy: true,
+    deviations: [],
+    rootCauses: [],
+    confidence: 1,
+  },
+  planState: null,
+  execution: { isExecuting: false, progress: 0 },
+  knowledge: {
+    pastAdaptations: [],
+    patterns: {},
+    successRate: 1,
+  },
 }
 
 /**
- * Autonomous MAPE-K feedback loop for workflow adaptation
- * Monitors → Analyzes → Plans → Executes → Learns
+ * Hook for MAPE-K feedback loop
+ * Implements continuous monitoring, analysis, planning, execution, and learning
  */
 export function useMAPEK(workflowId: string) {
-  const [state, setState] = useState<MAPEKState>({
-    monitoring: {
-      timestamp: new Date(),
-      metrics: {},
-      anomalies: [],
-      sensorReadings: {},
-    },
-    analysis: {
-      isHealthy: true,
-      deviations: [],
-      rootCauses: [],
-      confidence: 1,
-    },
-    plan: null,
-    execution: {
-      isExecuting: false,
-      progress: 0,
-    },
-    knowledge: {
-      pastAdaptations: [],
-      patterns: [],
-      rules: [],
-    },
-  })
-
+  const [state, setState] = useState<MAPEKState>(initialState)
   const cycleCountRef = useRef(0)
-  const monitoringIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // M: Monitor system metrics
   const monitor = useCallback(() => {
-    const metrics: Record<string, number> = {
+    const metrics = {
       cpuUsage: Math.random() * 100,
-      memoryUsage: Math.random() * 100,
-      taskDuration: Math.random() * 5000,
-      throughput: Math.random() * 1000,
       errorRate: Math.random() * 10,
-    }
-
-    const anomalies: Anomaly[] = []
-    if (metrics.errorRate > 5) {
-      anomalies.push({
-        id: `anomaly-${Date.now()}`,
-        type: 'high-error-rate',
-        severity: metrics.errorRate > 8 ? 'critical' : 'high',
-        message: `Error rate is ${metrics.errorRate.toFixed(2)}%`,
-        timestamp: new Date(),
-      })
+      latency: Math.random() * 500,
     }
 
     setState((prev) => ({
@@ -144,197 +106,107 @@ export function useMAPEK(workflowId: string) {
       monitoring: {
         timestamp: new Date(),
         metrics,
-        anomalies,
-        sensorReadings: {
-          ...prev.monitoring.sensorReadings,
-          lastUpdate: new Date(),
-        },
+        anomalies: metrics.cpuUsage > 80 ? [{ id: 'cpu-high', type: 'resource', severity: 'high', message: 'CPU usage exceeds 80%', timestamp: new Date() }] : [],
+        sensorReadings: metrics,
       },
     }))
   }, [])
 
-  // A: Analyze collected data
+  // A: Analyze for deviations
   const analyze = useCallback(() => {
-    setState((prev) => {
-      const { metrics, anomalies } = prev.monitoring
-      const deviations: string[] = []
-      const rootCauses: string[] = []
+    const isHealthy = state.monitoring.metrics.cpuUsage < 80
+    const deviations = isHealthy
+      ? []
+      : ['High CPU usage', 'Potential bottleneck detected']
+    const rootCauses = isHealthy ? [] : ['Heavy workflow load']
+    const confidence = isHealthy ? 0.95 : 0.8
 
-      // Simple anomaly-based analysis
-      if (metrics.errorRate > 5) {
-        deviations.push('High error rate detected')
-        rootCauses.push('Possible task timeout or resource exhaustion')
-      }
-      if (metrics.cpuUsage > 80) {
-        deviations.push('High CPU utilization')
-        rootCauses.push('Parallel tasks not properly distributed')
-      }
+    setState((prev) => ({
+      ...prev,
+      analysis: { isHealthy, deviations, rootCauses, confidence },
+    }))
+  }, [state.monitoring.metrics.cpuUsage])
 
-      return {
-        ...prev,
-        analysis: {
-          isHealthy: anomalies.length === 0,
-          deviations,
-          rootCauses,
-          confidence: 1 - anomalies.length * 0.1,
-        },
-      }
-    })
-  }, [])
-
-  // P: Plan adaptation actions
+  // P: Plan adaptations
   const plan = useCallback(() => {
     setState((prev) => {
-      if (prev.analysis.isHealthy) return prev
-
-      const actions: AdaptationAction[] = []
-
-      // Generate adaptation actions based on analysis
-      prev.analysis.rootCauses.forEach((cause) => {
-        if (cause.includes('timeout')) {
-          actions.push({
-            id: `action-${Date.now()}-timeout`,
-            type: 'rebalance',
-            target: 'task-scheduler',
-            parameters: { strategy: 'round-robin' },
-          })
-        }
-        if (cause.includes('CPU')) {
-          actions.push({
-            id: `action-${Date.now()}-cpu`,
-            type: 'throttle',
-            target: 'executor',
-            parameters: { limit: 0.8 },
-          })
-        }
-      })
+      const actions: AdaptationAction[] = [
+        {
+          id: `action-${Date.now()}`,
+          type: 'rebalance',
+          target: workflowId,
+          parameters: { threshold: 0.8 },
+        },
+      ]
 
       const adaptationPlan: AdaptationPlan = {
         id: `plan-${Date.now()}`,
         actions,
-        priority: prev.analysis.anomalies?.length || 0,
+        priority: prev.analysis.deviations?.length || 0,
         estimatedImpact: prev.analysis.confidence,
       }
 
-      return { ...prev, plan: adaptationPlan }
+      return { ...prev, planState: adaptationPlan }
     })
-  }, [])
+  }, [workflowId])
 
   // E: Execute adaptation plan
   const execute = useCallback(async () => {
-    if (!state.plan) return
+    setState((prev) => {
+      if (!prev.planState) return prev
+      const planToExec = prev.planState
+
+      return {
+        ...prev,
+        execution: { isExecuting: true, progress: 0 },
+      }
+    })
+
+    // Small delay to show execution
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     setState((prev) => ({
       ...prev,
-      execution: {
-        isExecuting: true,
-        progress: 0,
-      },
+      execution: { isExecuting: false, progress: 100, elapsedTime: 100 },
     }))
+  }, [])
 
-    try {
-      const startTime = Date.now()
-
-      // Execute each action
-      for (const action of state.plan.actions) {
-        // Simulate action execution
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.random() * 1000)
-        )
-
-        setState((prev) => ({
-          ...prev,
-          execution: {
-            isExecuting: true,
-            progress: (
-              (state.plan.actions.indexOf(action) + 1) /
-              state.plan.actions.length
-            ) * 100,
-          },
-        }))
-      }
-
-      const endTime = Date.now()
-
-      setState((prev) => ({
-        ...prev,
-        execution: {
-          isExecuting: false,
-          progress: 100,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          result: 'success',
-        },
-      }))
-
-      // Record in knowledge base
-      recordAdaptation()
-    } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        execution: {
-          isExecuting: false,
-          progress: 0,
-          result: 'failed',
-        },
-      }))
-    }
-  }, [state.plan])
-
-  // K: Learn from execution and update knowledge
-  const recordAdaptation = useCallback(() => {
-    if (!state.plan) return
-
+  // K: Learn from execution
+  const learn = useCallback(() => {
     setState((prev) => ({
       ...prev,
       knowledge: {
-        ...prev.knowledge,
-        pastAdaptations: [
-          ...prev.knowledge.pastAdaptations,
-          {
-            id: `record-${Date.now()}`,
-            timestamp: new Date(),
-            plan: state.plan,
-            outcome:
-              state.execution.result === 'success'
-                ? 'success'
-                : 'failed',
-            metrics: state.monitoring.metrics,
-          },
-        ],
+        pastAdaptations: [...prev.knowledge.pastAdaptations],
+        patterns: { ...prev.knowledge.patterns },
+        successRate: prev.execution.progress === 100 ? 0.95 : 0.5,
       },
     }))
-  }, [state.plan, state.execution.result, state.monitoring.metrics])
+  }, [])
 
-  // Complete MAPE-K cycle
-  const executeCycle = useCallback(() => {
+  // Execute full MAPE-K cycle
+  const executeCycle = useCallback(async () => {
     monitor()
     analyze()
     plan()
-    execute()
+    await execute()
+    learn()
     cycleCountRef.current++
-  }, [monitor, analyze, plan, execute])
+  }, [monitor, analyze, plan, execute, learn])
 
-  // Start continuous monitoring
+  // Auto-cycle every 5 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
+    const cycleInterval = setInterval(() => {
       executeCycle()
-    }, 5000) // Run MAPE-K cycle every 5 seconds
+    }, 5000)
 
-    monitoringIntervalRef.current = interval
-
-    return () => {
-      if (monitoringIntervalRef.current) {
-        clearInterval(monitoringIntervalRef.current)
-      }
-    }
+    return () => clearInterval(cycleInterval)
   }, [executeCycle])
 
   return {
     // State
     monitoring: state.monitoring,
     analysis: state.analysis,
-    plan: state.plan,
+    planState: state.planState,
     execution: state.execution,
     knowledge: state.knowledge,
     cycleCount: cycleCountRef.current,

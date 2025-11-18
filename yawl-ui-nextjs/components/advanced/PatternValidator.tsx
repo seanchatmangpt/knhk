@@ -111,15 +111,15 @@ export function PatternValidator({
         )}
 
         {/* Pattern Coverage */}
-        {Object.entries(coverage).some(([_, count]) => count > 0) && (
+        {Object.entries(coverage).some(([_, count]) => (count as number) > 0) && (
           <div className="space-y-2">
             <h4 className="font-semibold text-sm">Pattern Coverage</h4>
             <div className="flex flex-wrap gap-2">
               {Object.entries(coverage)
-                .filter(([_, count]) => count > 0)
+                .filter(([_, count]) => (count as number) > 0)
                 .map(([pattern, count]) => (
                   <Badge key={pattern} variant="secondary">
-                    {pattern}: {count}
+                    {pattern}: {count as number}
                   </Badge>
                 ))}
             </div>

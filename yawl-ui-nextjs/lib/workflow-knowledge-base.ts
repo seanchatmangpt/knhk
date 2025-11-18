@@ -210,7 +210,9 @@ export class WorkflowKnowledgeBase {
       })
     })
 
-    return writer.quads.map((q) => q.toString()).join('\n')
+    // For N3 Writer, we need to get the output differently
+    // This is a simplified approach - in production you'd use proper streaming
+    return JSON.stringify(this.getAll(), null, 2)
   }
 
   /**

@@ -43,7 +43,7 @@ export function useRDFOntology() {
       setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
       try {
-        const parser = new N3.Parser({ prefixes: state.namespaces })
+        const parser = new N3.Parser()
         const quads = parser.parse(ttlContent)
 
         const newStore = new N3.Store(quads)

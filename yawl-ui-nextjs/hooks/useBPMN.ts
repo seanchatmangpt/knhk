@@ -22,7 +22,7 @@ interface BPMNState {
 /**
  * Hook for managing BPMN diagrams with bpmn-js
  */
-export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode = true) {
+export function useBPMN(containerRef: React.RefObject<HTMLDivElement | null>, editMode = true) {
   const [state, setState] = useState<BPMNState>({
     diagram: null,
     modeler: null,
@@ -68,8 +68,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
             const commandStack = modeler.get('commandStack')
             setState((prev) => ({
               ...prev,
-              canUndo: commandStack.canUndo(),
-              canRedo: commandStack.canRedo(),
+              canUndo: (commandStack as any)?.canUndo?.() || false,
+              canRedo: (commandStack as any)?.canRedo?.() || false,
             }))
           })
         }
@@ -82,11 +82,12 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
         // Load default diagram
         const emptyDiagram = getDefaultBPMNDiagram()
         await instance.importXML(emptyDiagram)
+        const definitions = await instance.getDefinitions()
 
         setState((prev) => ({
           ...prev,
           xml: emptyDiagram,
-          diagram: await instance.getDefinitions(),
+          diagram: definitions,
         }))
       } catch (err) {
         const error = err instanceof Error ? err.message : 'Failed to initialize BPMN'
@@ -140,8 +141,9 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
       if (!instanceRef.current) return null
 
       const { xml } = await instanceRef.current.saveXML({ format: true })
-      setState((prev) => ({ ...prev, xml }))
-      return xml
+      const xmlValue = xml || null
+      setState((prev) => ({ ...prev, xml: xmlValue }))
+      return xmlValue
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to export BPMN'
       setState((prev) => ({
@@ -159,8 +161,9 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
     try {
       if (!instanceRef.current) return null
 
-      const { svg } = await instanceRef.current.saveSVG({ format: true })
-      return svg
+      const svg = await instanceRef.current.saveSVG()
+      const svgValue = typeof svg === 'string' ? svg : (svg as any)?.svg || null
+      return svgValue
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to export SVG'
       setState((prev) => ({
@@ -177,8 +180,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
   const undo = () => {
     if (!editMode || !instanceRef.current) return
     const modeler = instanceRef.current as BpmnModeler
-    const commandStack = modeler.get('commandStack')
-    commandStack.undo()
+    const commandStack = modeler.get('commandStack') as any
+    commandStack?.undo?.()
   }
 
   /**
@@ -187,8 +190,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
   const redo = () => {
     if (!editMode || !instanceRef.current) return
     const modeler = instanceRef.current as BpmnModeler
-    const commandStack = modeler.get('commandStack')
-    commandStack.redo()
+    const commandStack = modeler.get('commandStack') as any
+    commandStack?.redo?.()
   }
 
   /**
@@ -203,8 +206,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
    */
   const zoomIn = () => {
     if (!instanceRef.current) return
-    const canvas = instanceRef.current.get('canvas')
-    canvas.zoom(1.2)
+    const canvas = instanceRef.current.get('canvas') as any
+    canvas?.zoom?.(1.2)
   }
 
   /**
@@ -212,8 +215,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
    */
   const zoomOut = () => {
     if (!instanceRef.current) return
-    const canvas = instanceRef.current.get('canvas')
-    canvas.zoom(0.8)
+    const canvas = instanceRef.current.get('canvas') as any
+    canvas?.zoom?.(0.8)
   }
 
   /**
@@ -221,8 +224,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
    */
   const fitToViewport = () => {
     if (!instanceRef.current) return
-    const canvas = instanceRef.current.get('canvas')
-    canvas.zoom('fit-viewport')
+    const canvas = instanceRef.current.get('canvas') as any
+    canvas?.zoom?.('fit-viewport')
   }
 
   /**
@@ -230,8 +233,8 @@ export function useBPMN(containerRef: React.RefObject<HTMLDivElement>, editMode 
    */
   const resetZoom = () => {
     if (!instanceRef.current) return
-    const canvas = instanceRef.current.get('canvas')
-    canvas.zoom(1)
+    const canvas = instanceRef.current.get('canvas') as any
+    canvas?.zoom?.(1)
   }
 
   return {

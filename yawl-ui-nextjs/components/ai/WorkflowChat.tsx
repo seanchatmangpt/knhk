@@ -1,79 +1,79 @@
 /**
- * AI Workflow Assistant Component
- * Chat interface for AI-powered workflow assistance
- * Uses Vercel AI SDK elements
+ * Workflow Chat Component
+ * AI-powered chat interface for workflow design assistance
  */
 
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useAIWorkflowAssistant } from '@/hooks/useAIWorkflowAssistant'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Send, Loader2, Sparkles } from 'lucide-react'
+import { Send, Sparkles } from 'lucide-react'
+import type { YAWLSpecification } from '@/types/yawl'
 
 interface WorkflowChatProps {
-  onWorkflowGenerated?: (spec: any) => void
+  onWorkflowGenerated?: (workflow: YAWLSpecification) => void
   defaultPrompt?: string
 }
 
 /**
- * AI Chat interface for workflow assistance
+ * Chat interface for workflow generation
  */
-export function WorkflowChat({ onWorkflowGenerated, defaultPrompt }: WorkflowChatProps) {
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isGenerating,
-    suggestedWorkflow,
-    suggestions,
-  } = useAIWorkflowAssistant()
+export function WorkflowChat({
+  onWorkflowGenerated,
+  defaultPrompt,
+}: WorkflowChatProps) {
+  const { isGenerating, suggestedWorkflow, analysisResult, generateWorkflow } =
+    useAIWorkflowAssistant()
+  const [input, setInput] = useState(defaultPrompt || '')
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>([
+    {
+      role: 'assistant',
+      content: 'Hello! I\'m your AI workflow assistant. Describe the workflow you need, and I\'ll help you design it.',
+    },
+  ])
 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  useEffect(() => {
-    if (suggestedWorkflow) {
-      onWorkflowGenerated?.(suggestedWorkflow)
-    }
-  }, [suggestedWorkflow, onWorkflowGenerated])
-
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    handleSubmit(e)
+    if (!input.trim()) return
+
+    // Add user message
+    setMessages((prev) => [...prev, { role: 'user', content: input }])
+    const userInput = input
+    setInput('')
+
+    // Generate workflow
+    await generateWorkflow(userInput)
+
+    // Add assistant message
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: analysisResult || 'Processing your request...',
+      },
+    ])
   }
 
   return (
-    <Card className="w-full h-screen flex flex-col">
-      <CardHeader>
+    <Card className="w-full flex flex-col" style={{ height: '600px' }}>
+      <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5" />
           <CardTitle>AI Workflow Assistant</CardTitle>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col overflow-hidden">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              <p className="font-medium">Welcome to AI Workflow Assistant</p>
-              <p className="text-sm mt-2">
-                Describe your workflow and I'll help you design it
-              </p>
-            </div>
-          )}
-
-          {messages.map((message, idx) => (
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-sm text-muted-foreground">
+              Describe your workflow and I'll help you design it
+            </p>
+          </div>
+        ) : (
+          messages.map((message: any, idx: number) => (
             <div
               key={idx}
               className={`flex ${
@@ -87,59 +87,43 @@ export function WorkflowChat({ onWorkflowGenerated, defaultPrompt }: WorkflowCha
                     : 'bg-muted text-muted-foreground'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm">{message.content}</p>
               </div>
             </div>
-          ))}
-
-          {isGenerating && (
-            <div className="flex justify-start">
-              <div className="bg-muted px-4 py-2 rounded-lg flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Generating...</span>
+          ))
+        )}
+        {isGenerating && (
+          <div className="flex justify-start">
+            <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-current rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-current rounded-full animate-bounce delay-100" />
+                <div className="w-2 h-2 bg-current rounded-full animate-bounce delay-200" />
               </div>
             </div>
-          )}
+          </div>
+        )}
+      </CardContent>
 
-          {suggestions.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="font-semibold text-sm mb-2">Suggestions:</p>
-              <ul className="space-y-1">
-                {suggestions.map((suggestion, idx) => (
-                  <li key={idx} className="text-sm text-blue-900">
-                    • {suggestion}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <form onSubmit={handleFormSubmit} className="flex gap-2">
+      <div className="border-t p-4">
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"
-            placeholder="Describe your workflow..."
             value={input}
-            onChange={handleInputChange}
-            className="flex-1 px-3 py-2 border border-input rounded-md bg-background"
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Describe your workflow..."
             disabled={isGenerating}
+            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           />
           <Button
             type="submit"
-            disabled={isGenerating}
-            className="px-4"
+            disabled={isGenerating || !input.trim()}
+            size="sm"
           >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+            <Send className="h-4 w-4" />
           </Button>
         </form>
-      </CardContent>
+      </div>
     </Card>
   )
 }

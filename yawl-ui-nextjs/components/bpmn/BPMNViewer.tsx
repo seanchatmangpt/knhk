@@ -24,6 +24,7 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
 interface BPMNViewerProps {
   xml?: string
   onDiagramLoaded?: (xml: string) => void
+  onDiagramChanged?: (xml: string) => void
 }
 
 /**

@@ -5,7 +5,13 @@
 
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import type { ValidationRule, ValidationError } from '@/types/yawl'
+import type { ValidationError } from '@/types/yawl'
+
+interface ValidationRule {
+  id: string
+  name: string
+  severity: 'warning' | 'error'
+}
 
 interface ValidationStore {
   // Rules

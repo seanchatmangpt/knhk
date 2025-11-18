@@ -20,7 +20,7 @@ interface MAPEKDashboardProps {
  * Real-time MAPE-K dashboard for autonomous workflow adaptation
  */
 export function MAPEKDashboard({ workflowId }: MAPEKDashboardProps) {
-  const { monitoring, analysis, plan, execution, knowledge, cycleCount } =
+  const { monitoring, analysis, planState, execution, knowledge, cycleCount } =
     useMAPEK(workflowId)
   const [chartData, setChartData] = useState<Record<string, number[]>>({})
 
@@ -123,18 +123,18 @@ export function MAPEKDashboard({ workflowId }: MAPEKDashboardProps) {
               <div className="space-y-1 text-sm">
                 <p>
                   Plan Status:{' '}
-                  <Badge variant={plan ? 'secondary' : 'outline'}>
-                    {plan ? 'Ready' : 'Idle'}
+                  <Badge variant={planState ? 'secondary' : 'outline'}>
+                    {planState ? 'Ready' : 'Idle'}
                   </Badge>
                 </p>
-                {plan && (
+                {planState && (
                   <>
                     <p>
-                      Actions: <span className="font-medium">{plan.actions.length}</span>
+                      Actions: <span className="font-medium">{planState.actions.length}</span>
                     </p>
                     <p>
                       Priority:{' '}
-                      <span className="font-medium">{plan.priority}</span>
+                      <span className="font-medium">{planState.priority}</span>
                     </p>
                   </>
                 )}
